@@ -8,6 +8,8 @@ class SettingsModel {
   final bool soundEnabled;
   final bool autoStart;
   final bool strictMode;
+  final String selectedProfileId;
+  final String menuBarStyle; // 'countdown', 'progress', 'icon'
 
   const SettingsModel({
     this.shortBreakIntervalMinutes =
@@ -21,6 +23,8 @@ class SettingsModel {
     this.soundEnabled = true,
     this.autoStart = false,
     this.strictMode = false,
+    this.selectedProfileId = 'health',
+    this.menuBarStyle = 'countdown',
   });
 
   SettingsModel copyWith({
@@ -31,6 +35,8 @@ class SettingsModel {
     bool? soundEnabled,
     bool? autoStart,
     bool? strictMode,
+    String? selectedProfileId,
+    String? menuBarStyle,
   }) {
     return SettingsModel(
       shortBreakIntervalMinutes:
@@ -44,6 +50,8 @@ class SettingsModel {
       soundEnabled: soundEnabled ?? this.soundEnabled,
       autoStart: autoStart ?? this.autoStart,
       strictMode: strictMode ?? this.strictMode,
+      selectedProfileId: selectedProfileId ?? this.selectedProfileId,
+      menuBarStyle: menuBarStyle ?? this.menuBarStyle,
     );
   }
 }

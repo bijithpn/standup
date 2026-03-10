@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/core/services/timer_engine.dart';
+import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/ui/theme/app_theme.dart';
@@ -51,10 +52,30 @@ class BreakOverlay extends StatelessWidget {
                     const SizedBox(height: 48),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 40),
-                      child: Text(
-                        breakInfo.tip,
-                        style: AppTheme.tipStyle,
-                        textAlign: TextAlign.center,
+                      child: Column(
+                        children: [
+                          Text(
+                            breakInfo.tip,
+                            style: AppTheme.tipStyle,
+                            textAlign: TextAlign.center,
+                          ),
+                          if (breakInfo.isLong) ...[
+                            const SizedBox(height: 24),
+                            Text(
+                              'Quick Exercise: ${AppConstants.stretchExercises.first}',
+                              style: AppTheme.tipStyle.copyWith(color: Colors.white),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                          if (!breakInfo.isLong) ...[
+                            const SizedBox(height: 24),
+                            Text(
+                              'Eye Care: ${AppConstants.eyeExercises.first}',
+                              style: AppTheme.tipStyle.copyWith(color: Colors.white),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     const SizedBox(height: 64),

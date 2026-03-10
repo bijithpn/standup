@@ -62,6 +62,30 @@ class NotificationService {
     );
   }
 
+  Future<void> showBlinkReminder() async {
+    await _errorHandler.guard(
+      action: () => _show(
+        id: 4,
+        title: 'Blink Reminder',
+        body: 'Take a second to blink your eyes 5 times.',
+      ),
+      errorType: ErrorType.notification,
+      retry: false,
+    );
+  }
+
+  Future<void> showPostureReminder() async {
+    await _errorHandler.guard(
+      action: () => _show(
+        id: 5,
+        title: 'Posture Check',
+        body: 'Sit up straight and roll your shoulders.',
+      ),
+      errorType: ErrorType.notification,
+      retry: false,
+    );
+  }
+
   Future<void> _show({
     required int id,
     required String title,

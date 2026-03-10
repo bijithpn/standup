@@ -50,6 +50,10 @@ class TrayManagerService with TrayListener {
     _buildMenu();
   }
 
+  Future<void> setTrayTitle(String title) async {
+    await trayManager.setTitle(title);
+  }
+
   @override
   void onTrayIconMouseDown() {
     trayManager.popUpContextMenu();

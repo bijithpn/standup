@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/statistics/stats_model.dart';
 import 'package:standup/features/statistics/stats_service.dart';
+import 'package:standup/features/settings/break_profile.dart';
+import 'package:standup/features/statistics/widgets/stats_chart.dart';
 import 'package:standup/ui/theme/app_theme.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -53,6 +57,10 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _sectionHeader('ACTIVE PROFILE'),
+                  const SizedBox(height: 12),
+                  _buildProfileSelector(),
+                  const SizedBox(height: 28),
                   _sectionHeader('SHORT BREAK'),
                   const SizedBox(height: 12),
                   _buildSettingsCard([
@@ -128,9 +136,21 @@ class _SettingsPageState extends State<SettingsPage> {
                       _settings.strictMode,
                       (v) => _save(_settings.copyWith(strictMode: v)),
                     ),
+                    _divider(),
+                    _dropdownRow(
+                      'Menu Bar Style',
+                      _settings.menuBarStyle,
+                      ['countdown', 'progress', 'icon'],
+                      (v) {
+                        _save(_settings.copyWith(menuBarStyle: v));
+                        sl<TimerEngine>().updateMenuStyle(v ?? 'countdown');
+                      },
+                    ),
                   ]),
                   const SizedBox(height: 28),
                   _sectionHeader('STATISTICS'),
+                  const SizedBox(height: 12),
+                  DailyStatsChart(stats: _stats),
                   const SizedBox(height: 12),
                   _buildStatsCard(),
                 ],
@@ -146,6 +166,92 @@ class _SettingsPageState extends State<SettingsPage> {
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Text(title, style: AppTheme.sectionTitle),
+    );
+  }
+
+  Widget _buildProfileSelector() {
+    return Container(
+      decoration: AppTheme.cardDecoration,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        children: BreakProfile.presets.map((p) {
+          final isSelected = _settings.selectedProfileId == p.id;
+          return _profileRow(p, isSelected);
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _profileRow(BreakProfile profile, bool isSelected) {
+    return Column(
+      children: [
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () {
+            Provider.of<BreakController>(context, listen: false)
+                .changeProfile(profile);
+            setState(() {
+              _settings = Provider.of<SettingsRepository>(context, listen: false)
+                  .currentSettings;
+            });
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: isSelected ? AppTheme.shortBreakColor : Colors.white,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                    Text(
+                      'Every ${profile.shortIntervalMinutes}m / ${profile.shortDurationSeconds}s',
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF8E8EA0)),
+                    ),
+                  ],
+                ),
+                if (isSelected)
+                  const Icon(CupertinoIcons.check_mark,
+                      color: AppTheme.shortBreakColor, size: 16),
+              ],
+            ),
+          ),
+        ),
+        if (profile != BreakProfile.presets.last) _divider(),
+      ],
+    );
+  }
+
+  Widget _dropdownRow(String label, String value, List<String> options,
+      ValueChanged<String?> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 13, color: Color(0xFFF0F0F5)),
+          ),
+          DropdownButton<String>(
+            value: value,
+            underline: const SizedBox(),
+            dropdownColor: AppTheme.cardBackground,
+            style: const TextStyle(fontSize: 13, color: AppTheme.shortBreakColor),
+            items: options.map((o) {
+              return DropdownMenuItem(value: o, child: Text(o));
+            }).toList(),
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 

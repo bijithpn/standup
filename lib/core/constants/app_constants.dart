@@ -1,7 +1,7 @@
 class AppConstants {
   AppConstants._();
 
-  static const String appName = 'DeskRest';
+  static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
   // Short break defaults
@@ -38,23 +38,33 @@ class AppConstants {
 
   // Health tips shown during breaks
   static const List<String> shortBreakTips = [
-    'Look at something 20 feet away',
-    'Blink your eyes slowly',
-    'Close your eyes and relax',
-    'Focus on a distant object',
-    'Roll your eyes gently',
-    'Cup your palms over your eyes',
+    'Look at something 20 feet away for 20 seconds',
+    'Blink your eyes slowly 5 times',
+    'Close your eyes and breathe deeply',
+    'Focus on a distant object outside',
+    'Drink a sip of water',
   ];
 
   static const List<String> longBreakTips = [
     'Stretch your shoulders and neck',
-    'Stand up and walk around',
-    'Do some light stretching',
-    'Hydrate — drink some water',
-    'Take a few deep breaths',
-    'Adjust your posture',
-    'Stretch your wrists and fingers',
-    'Look out the window for a moment',
+    'Stand up and walk for 1 minute',
+    'Do a slow deep breathing exercise',
+    'Adjust your sitting posture',
+    'Roll your wrists and ankles',
+  ];
+
+  static const List<String> eyeExercises = [
+    'Blink rapidly for 10 seconds',
+    'Look top-left then bottom-right 5 times',
+    'Focus on your thumb then the wall',
+    'Gently massage your temples',
+  ];
+
+  static const List<String> stretchExercises = [
+    'Interlace fingers and push palms forward',
+    'Tilt head to shoulder for 10s each side',
+    'Squeeze shoulder blades together',
+    'Stand up and touch your toes',
   ];
 
   static const String trayIconPath = 'assets/icons/tray_icon.png';

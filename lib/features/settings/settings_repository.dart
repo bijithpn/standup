@@ -34,6 +34,8 @@ class SettingsRepository {
       ),
       autoStart: _storage.getBool(AppConstants.keyAutoStart),
       strictMode: _storage.getBool(AppConstants.keyStrictMode),
+      selectedProfileId: _storage.getString('selected_profile_id', defaultValue: 'health'),
+      menuBarStyle: _storage.getString('menu_bar_style', defaultValue: 'countdown'),
     );
   }
 
@@ -59,6 +61,8 @@ class SettingsRepository {
       _storage.setBool(AppConstants.keySoundEnabled, settings.soundEnabled),
       _storage.setBool(AppConstants.keyAutoStart, settings.autoStart),
       _storage.setBool(AppConstants.keyStrictMode, settings.strictMode),
+      _storage.setString('selected_profile_id', settings.selectedProfileId),
+      _storage.setString('menu_bar_style', settings.menuBarStyle),
     ]);
   }
 }

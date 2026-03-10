@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:standup/core/services/timer_engine.dart';
+import 'package:standup/features/settings/break_profile.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/statistics/stats_service.dart';
 
@@ -67,6 +68,19 @@ class BreakController extends ChangeNotifier {
 
   void refreshSettings() {
     _applySettings();
+  }
+
+  void changeProfile(BreakProfile profile) {
+    final updated = _settingsRepo.currentSettings.copyWith(
+      selectedProfileId: profile.id,
+      shortBreakIntervalMinutes: profile.shortIntervalMinutes,
+      shortBreakDurationSeconds: profile.shortDurationSeconds,
+      longBreakIntervalMinutes: profile.longIntervalMinutes,
+      longBreakDurationMinutes: profile.longDurationMinutes,
+    );
+    _settingsRepo.save(updated);
+    _applySettings();
+    notifyListeners();
   }
 
   void _onTimerChanged() {
