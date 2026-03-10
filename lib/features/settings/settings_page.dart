@@ -51,12 +51,14 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         ContentArea(
           builder: (context, scrollController) {
-            return SingleChildScrollView(
-              controller: scrollController,
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            return Material(
+              color: Colors.transparent,
+              child: SingleChildScrollView(
+                controller: scrollController,
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   _sectionHeader('ACTIVE PROFILE'),
                   const SizedBox(height: 12),
                   _buildProfileSelector(),
@@ -155,7 +157,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   _buildStatsCard(),
                 ],
               ),
-            );
+            ),
+          );
           },
         ),
       ],
@@ -240,13 +243,11 @@ class _SettingsPageState extends State<SettingsPage> {
             label,
             style: const TextStyle(fontSize: 13, color: Color(0xFFF0F0F5)),
           ),
-          DropdownButton<String>(
+          MacosPopupButton<String>(
             value: value,
-            underline: const SizedBox(),
-            dropdownColor: AppTheme.cardBackground,
             style: const TextStyle(fontSize: 13, color: AppTheme.shortBreakColor),
             items: options.map((o) {
-              return DropdownMenuItem(value: o, child: Text(o));
+              return MacosPopupMenuItem(value: o, child: Text(o));
             }).toList(),
             onChanged: onChanged,
           ),

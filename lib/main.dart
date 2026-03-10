@@ -7,34 +7,46 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Window Manager
-  await windowManager.ensureInitialized();
+    // Initialize all dependencies first
+    await initDependencies();
 
-  WindowOptions windowOptions = const WindowOptions(
-    size: Size(500, 700),
-    center: true,
-    backgroundColor: Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.hidden,
-  );
+    // Initialize Window Manager
+    await windowManager.ensureInitialized();
 
-  await windowManager.waitUntilReadyToShow(windowOptions, () async {
-    // Hide on start since it's a menu bar app
-    await windowManager.hide();
-    await windowManager.setPreventClose(true);
-  });
+    WindowOptions windowOptions = const WindowOptions(
+      size: Size(500, 700),
+      center: true,
+      backgroundColor: Colors.black, // Opaque for stability
+      skipTaskbar: false,
+      titleBarStyle: TitleBarStyle.hidden,
+    );
 
-  // Setup Launch at Startup
-  PackageInfo packageInfo = await PackageInfo.fromPlatform();
-  launchAtStartup.setup(
-    appName: packageInfo.appName,
-    appPath: Platform.resolvedExecutable,
-  );
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.setPreventClose(true);
+      await windowManager.hide();
+    });
 
-  // Initialize all dependencies
-  await initDependencies();
+    // Setup Launch at Startup (optional, can fail if no info)
+    try {
+      PackageInfo packageInfo = await PackageInfo.fromPlatform();
+      if (packageInfo.appName.isNotEmpty) {
+        launchAtStartup.setup(
+          appName: packageInfo.appName,
+          appPath: Platform.resolvedExecutable,
+        );
+      }
+    } catch (e) {
+      debugPrint('Launch at startup setup failed: $e');
+    }
 
-  runApp(const DeskRestApp());
+    runApp(const DeskRestApp());
+  } catch (e, stack) {
+    debugPrint('FATAL STARTUP ERROR: $e');
+    debugPrint(stack.toString());
+    // Fallback to minimal app if possible to show error? 
+    // For now, just crash safely.
+  }
 }
