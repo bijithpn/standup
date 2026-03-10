@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:standup/ui/theme/app_theme.dart';
 
 class CountdownTimerWidget extends StatelessWidget {
   final int remainingSeconds;
@@ -19,6 +18,14 @@ class CountdownTimerWidget extends StatelessWidget {
         ? '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
         : '$seconds';
 
-    return Text(display, style: AppTheme.countdownStyle);
+    return Text(
+      display,
+      style: const TextStyle(
+        fontSize: 48,
+        fontWeight: FontWeight.w300,
+        color: Colors.white,
+        letterSpacing: -1,
+      ),
+    );
   }
 }

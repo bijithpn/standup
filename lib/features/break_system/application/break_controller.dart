@@ -20,6 +20,7 @@ class BreakController extends ChangeNotifier {
   }
 
   TimerEngine get timerEngine => _timerEngine;
+  SettingsRepository get settingsRepository => _settingsRepo;
   bool get isPaused => _timerEngine.state == TimerState.paused;
   bool get isBreakActive => _timerEngine.state == TimerState.breakActive;
 
@@ -36,6 +37,8 @@ class BreakController extends ChangeNotifier {
       longIntervalMinutes: settings.longBreakIntervalMinutes,
       longDurationSeconds: settings.longBreakDurationMinutes * 60,
     );
+    _timerEngine.updateMenuStyle(settings.menuBarStyle);
+    _timerEngine.setFocusMode(settings.focusModeEnabled);
   }
 
   void togglePause() {

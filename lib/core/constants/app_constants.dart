@@ -4,6 +4,15 @@ class AppConstants {
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
+  // Wellness Slideshow
+  static const List<String> wellnessSlideshow = [
+    'assets/slideshow/slide_1.png',
+    'assets/slideshow/slide_2.png',
+    'assets/slideshow/slide_3.png',
+    'assets/slideshow/slide_4.png',
+    'assets/slideshow/slide_5.png',
+  ];
+
   // Short break defaults
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
@@ -20,7 +29,7 @@ class AppConstants {
   static const int initialRetryDelayMs = 500;
 
   // Notification channels
-  static const String notificationChannelId = 'deskrest_breaks';
+  static const String notificationChannelId = 'breakloop_breaks';
   static const String notificationChannelName = 'Break Reminders';
 
   // Storage keys
@@ -65,6 +74,14 @@ class AppConstants {
     'Tilt head to shoulder for 10s each side',
     'Squeeze shoulder blades together',
     'Stand up and touch your toes',
+  ];
+
+  static const List<String> motivationalQuotes = [
+    'Rest is not idleness, and to lie sometimes on the grass under trees is by no means a waste of time.',
+    'A refreshed mind is a productive mind.',
+    'Your health is your greatest wealth.',
+    'Taking a break is a form of discipline.',
+    'Sometimes the most productive thing you can do is relax.',
   ];
 
   static const String trayIconPath = 'assets/icons/tray_icon.png';

@@ -6,17 +6,17 @@ class AppLogger {
   AppLogger._internal();
 
   void info(String message) {
-    developer.log(message, name: 'DeskRest');
+    developer.log(message, name: 'BreakLoop');
   }
 
   void warning(String message) {
-    developer.log('WARNING: $message', name: 'DeskRest');
+    developer.log('WARNING: $message', name: 'BreakLoop');
   }
 
   void error(String message, {StackTrace? stackTrace}) {
     developer.log(
       'ERROR: $message',
-      name: 'DeskRest',
+      name: 'BreakLoop',
       error: message,
       stackTrace: stackTrace,
     );

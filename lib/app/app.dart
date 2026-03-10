@@ -4,21 +4,22 @@ import 'package:provider/provider.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/break_system/presentation/break_overlay.dart';
-import 'package:standup/features/settings/settings_page.dart';
+import 'package:standup/features/break_system/presentation/flash_overlay.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/statistics/stats_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/ui/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:standup/app/main_layout.dart';
 
-class DeskRestApp extends StatefulWidget {
-  const DeskRestApp({super.key});
+class BreakLoopApp extends StatefulWidget {
+  const BreakLoopApp({super.key});
 
   @override
-  State<DeskRestApp> createState() => _DeskRestAppState();
+  State<BreakLoopApp> createState() => _BreakLoopAppState();
 }
 
-class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
+class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
   @override
   void initState() {
     super.initState();
@@ -53,14 +54,12 @@ class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
           await windowManager.focus();
           break;
         case 'quit':
-          // For a clean quit, we remove the preventClose flag
           await windowManager.setPreventClose(false);
           await windowManager.close();
           break;
       }
     };
 
-    // Update tray if controller changes (e.g. idle detection)
     controller.addListener(() {
       tray.updatePauseState(controller.isPaused);
       _handleWindowState(controller.isBreakActive);
@@ -78,9 +77,6 @@ class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
     } else {
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
-      if (!sl<SettingsRepository>().currentSettings.strictMode) {
-        // Only hide if not manually opened settings
-      }
     }
   }
 
@@ -98,9 +94,9 @@ class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
         theme: AppTheme.macosTheme,
         home: const Stack(
           children: [
-            SettingsPage(),
-            // The break overlay is always present but hidden when no break is active
+            MainLayout(),
             BreakOverlay(),
+            FlashOverlay(),
           ],
         ),
       ),
@@ -109,7 +105,6 @@ class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
 
   @override
   void onWindowClose() async {
-    // Hide window instead of quitting when close button is clicked
     await windowManager.hide();
   }
 }

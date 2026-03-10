@@ -9,6 +9,14 @@ import 'package:window_manager/window_manager.dart';
 void main() async {
   try {
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // Single instance check via Socket
+    try {
+      await ServerSocket.bind('127.0.0.1', 10425);
+    } catch (_) {
+      // Port already in use -> another instance running
+      exit(0);
+    }
 
     // Initialize all dependencies first
     await initDependencies();
@@ -42,7 +50,7 @@ void main() async {
       debugPrint('Launch at startup setup failed: $e');
     }
 
-    runApp(const DeskRestApp());
+    runApp(const BreakLoopApp());
   } catch (e, stack) {
     debugPrint('FATAL STARTUP ERROR: $e');
     debugPrint(stack.toString());

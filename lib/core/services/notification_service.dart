@@ -20,7 +20,24 @@ class NotificationService {
 
     const settings = InitializationSettings(macOS: macOS);
     await _plugin.initialize(settings);
+    
+    // Explicitly request permission on macOS
+    await requestPermission();
+    
     _logger.info('Notification service initialized');
+  }
+
+  Future<bool> requestPermission() async {
+    final granted = await _plugin
+        .resolvePlatformSpecificImplementation<
+            MacOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+    _logger.info('Notification permission: $granted');
+    return granted ?? false;
   }
 
   void setSoundEnabled(bool enabled) {

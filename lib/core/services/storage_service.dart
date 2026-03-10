@@ -48,4 +48,17 @@ class StorageService {
   String getString(String key, {String defaultValue = ''}) {
     return _prefs.getString(key) ?? defaultValue;
   }
+
+  Future<bool> setDouble(String key, double value) async {
+    return await _errorHandler.guard(
+          action: () => _prefs.setDouble(key, value),
+          errorType: ErrorType.storage,
+          fallback: false,
+        ) ??
+        false;
+  }
+
+  double getDouble(String key, {double defaultValue = 0.0}) {
+    return _prefs.getDouble(key) ?? defaultValue;
+  }
 }

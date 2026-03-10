@@ -32,7 +32,7 @@ class ProgressRing extends StatelessWidget {
               progress: progress.clamp(0.0, 1.0),
               strokeWidth: strokeWidth,
               color: color,
-              trackColor: AppTheme.progressTrack,
+              trackColor: AppTheme.borderColor,
             ),
           ),
           if (child != null) child!,

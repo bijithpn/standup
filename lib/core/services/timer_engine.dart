@@ -27,6 +27,9 @@ class TimerEngine extends ChangeNotifier {
   TimerState _state = TimerState.idle;
   BreakModel? _activeBreak;
   int _countdownSeconds = 0;
+  bool _isCompletionState = false;
+  bool _isFlashing = false;
+  bool _focusModeEnabled = false;
 
   // Elapsed tracking for pause/resume
   Duration _shortElapsed = Duration.zero;
@@ -57,6 +60,9 @@ class TimerEngine extends ChangeNotifier {
   TimerState get state => _state;
   BreakModel? get activeBreak => _activeBreak;
   int get countdownSeconds => _countdownSeconds;
+  bool get isCompletionState => _isCompletionState;
+  bool get isFlashing => _isFlashing;
+  bool get focusModeEnabled => _focusModeEnabled;
 
   Duration get shortBreakInterval =>
       Duration(minutes: _shortBreakIntervalMinutes);
@@ -79,6 +85,11 @@ class TimerEngine extends ChangeNotifier {
     return remaining.isNegative ? Duration.zero : remaining;
   }
 
+  void setFocusMode(bool enabled) {
+    _focusModeEnabled = enabled;
+    notifyListeners();
+  }
+
   void updateSettings({
     int? shortIntervalMinutes,
     int? shortDurationSeconds,
@@ -97,6 +108,8 @@ class TimerEngine extends ChangeNotifier {
 
   void updateMenuStyle(String style) {
     _menuBarStyle = style;
+    _updateTrayCountdown();
+    notifyListeners();
   }
 
   void startTimers() {
@@ -118,6 +131,8 @@ class TimerEngine extends ChangeNotifier {
     );
   }
 
+  bool _hasTriggeredPreBreakFlash = false;
+
   void _startTicking() {
     _shortBreakTimer?.cancel();
     _longBreakTimer?.cancel();
@@ -135,15 +150,24 @@ class TimerEngine extends ChangeNotifier {
 
       _updateTrayCountdown();
 
+      final shortInterval = Duration(minutes: _shortBreakIntervalMinutes);
+      
+      // Check if 30s before short break
+      if (!_hasTriggeredPreBreakFlash && 
+          _shortElapsed >= shortInterval - const Duration(seconds: 30)) {
+        _triggerFlash();
+        _hasTriggeredPreBreakFlash = true;
+      }
+
       // Check if short break is due
-      if (_shortElapsed >= Duration(minutes: _shortBreakIntervalMinutes)) {
+      if (_shortElapsed >= shortInterval) {
         if (_shouldDelayBreak()) {
           _delayBreak();
         } else if (!_isBreakDelayed ||
             (_shortElapsed >=
-                Duration(minutes: _shortBreakIntervalMinutes) +
-                    Duration(seconds: _delaySeconds))) {
+                shortInterval + Duration(seconds: _delaySeconds))) {
           _triggerShortBreak();
+          _hasTriggeredPreBreakFlash = false;
         }
       }
 
@@ -166,22 +190,58 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void _updateTrayCountdown() {
-    if (_state != TimerState.running) return;
+    if (_state == TimerState.paused) {
+      sl<TrayManagerService>().setTrayTitle('  [ PAUSED ]  ');
+      return;
+    }
+    
+    if (_state != TimerState.running && _state != TimerState.breakActive) {
+      sl<TrayManagerService>().setTrayTitle('');
+      return;
+    }
 
-    final remaining = timeUntilNextShortBreak;
+    final remaining = _state == TimerState.breakActive 
+        ? Duration(seconds: _countdownSeconds)
+        : timeUntilNextShortBreak;
+        
     final mins = remaining.inMinutes;
     final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
 
-    if (_menuBarStyle == 'countdown') {
-      sl<TrayManagerService>().setTrayTitle('$mins:$secs');
-    } else if (_menuBarStyle == 'progress') {
-      final total = _shortBreakIntervalMinutes * 60;
-      final done = total - remaining.inSeconds;
-      final progress = (done / total * 5).round();
-      final bars = '▓' * progress + '░' * (5 - progress);
-      sl<TrayManagerService>().setTrayTitle(bars);
-    } else {
-      sl<TrayManagerService>().setTrayTitle('');
+    switch (_menuBarStyle) {
+      case 'countdown':
+        sl<TrayManagerService>().setTrayTitle('  [ $mins:$secs ]  ');
+        break;
+      case 'progress':
+        final total = _state == TimerState.breakActive 
+            ? (_activeBreak?.durationSeconds ?? 60)
+            : (_shortBreakIntervalMinutes * 60);
+        final done = total - remaining.inSeconds;
+        final progress = (done / total * 5).clamp(0, 5).round();
+        // Use Pill-like characters for a high-end feel
+        final bars = '▰' * progress + '▱' * (5 - progress);
+        sl<TrayManagerService>().setTrayTitle('  [ $bars ]  ');
+        break;
+      case 'icon':
+        final total = _state == TimerState.breakActive 
+            ? (_activeBreak?.durationSeconds ?? 60)
+            : (_shortBreakIntervalMinutes * 60);
+        final percent = (remaining.inSeconds / total);
+        String icon = '○';
+        if (percent > 0.75) icon = '◔';
+        else if (percent > 0.5) icon = '◑';
+        else if (percent > 0.25) icon = '◕';
+        else icon = '●';
+        sl<TrayManagerService>().setTrayTitle('  [ $icon ${mins}m ]  ');
+        break;
+      case 'focusdot':
+        if (_state == TimerState.breakActive) {
+          sl<TrayManagerService>().setTrayTitle('  [ ○ Break ]  ');
+        } else {
+          sl<TrayManagerService>().setTrayTitle('  [ ● Focus ]  ');
+        }
+        break;
+      default:
+        sl<TrayManagerService>().setTrayTitle('');
     }
   }
 
@@ -284,6 +344,8 @@ class TimerEngine extends ChangeNotifier {
     _activeBreak = breakModel;
     _countdownSeconds = breakModel.durationSeconds;
 
+    // Trigger flash instead of / in addition to notification
+    _triggerFlash();
     _notificationService.showBreakStarted(breakTitle: breakModel.title);
     onBreakTriggered?.call();
 
@@ -301,16 +363,30 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void finishBreak({required bool skipped}) {
+  void _triggerFlash() {
+    _isFlashing = true;
+    notifyListeners();
+    Timer(const Duration(milliseconds: 1500), () {
+      _isFlashing = false;
+      notifyListeners();
+    });
+  }
+
+  Future<void> finishBreak({required bool skipped}) async {
     _countdownTimer?.cancel();
+    
+    if (!skipped) {
+      _isCompletionState = true;
+      notifyListeners();
+      await Future.delayed(const Duration(seconds: 3));
+      _notificationService.showBreakFinished();
+    }
+
     _activeBreak = null;
+    _isCompletionState = false;
     _countdownSeconds = 0;
     _state = TimerState.running;
     _lastTickTime = DateTime.now();
-
-    if (!skipped) {
-      _notificationService.showBreakFinished();
-    }
 
     _logger.info(skipped ? 'Break skipped' : 'Break completed');
     notifyListeners();

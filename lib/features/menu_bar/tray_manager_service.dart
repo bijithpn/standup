@@ -22,14 +22,14 @@ class TrayManagerService with TrayListener {
     // Extract bundled asset to temp file for tray icon
     final byteData = await rootBundle.load('assets/icons/tray_icon.png');
     final tempDir = Directory.systemTemp;
-    final iconFile = File('${tempDir.path}/deskrest_tray_icon.png');
+    final iconFile = File('${tempDir.path}/breakloop_tray_icon.png');
     await iconFile.writeAsBytes(byteData.buffer.asUint8List());
     await trayManager.setIcon(iconFile.path);
   }
 
   Future<void> _buildMenu() async {
     final menu = Menu(items: [
-      MenuItem(label: 'DeskRest', disabled: true),
+        MenuItem(label: 'BreakLoop', disabled: true),
       MenuItem.separator(),
       MenuItem(
         key: 'toggle_pause',
