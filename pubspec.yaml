@@ -1,8 +1,8 @@
 name: standup
-description: "DeskRest — a macOS menu bar break reminder app for healthy work habits."
+description: "standup — a macOS menu bar break reminder app for healthy work habits."
 publish_to: 'none'
 version: 1.0.0+1
-
+#BreakMate
 environment:
   sdk: ^3.10.4
 

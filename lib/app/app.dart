@@ -63,7 +63,25 @@ class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
     // Update tray if controller changes (e.g. idle detection)
     controller.addListener(() {
       tray.updatePauseState(controller.isPaused);
+      _handleWindowState(controller.isBreakActive);
     });
+  }
+
+  void _handleWindowState(bool isBreakActive) async {
+    if (isBreakActive) {
+      await windowManager.setAlwaysOnTop(true);
+      if (sl<SettingsRepository>().currentSettings.strictMode) {
+        await windowManager.setFullScreen(true);
+      }
+      await windowManager.show();
+      await windowManager.focus();
+    } else {
+      await windowManager.setAlwaysOnTop(false);
+      await windowManager.setFullScreen(false);
+      if (!sl<SettingsRepository>().currentSettings.strictMode) {
+        // Only hide if not manually opened settings
+      }
+    }
   }
 
   @override
@@ -75,7 +93,7 @@ class _DeskRestAppState extends State<DeskRestApp> with WindowListener {
         Provider.value(value: sl<StatsService>()),
       ],
       child: MacosApp(
-        title: 'DeskRest',
+        title: 'BreakMate',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.macosTheme,
         home: const Stack(
