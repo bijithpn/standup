@@ -13,6 +13,7 @@ import 'package:standup/features/statistics/widgets/stats_chart.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/ui/theme/app_theme.dart';
+import 'package:standup/core/utils/toast.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -36,10 +37,16 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _save(SettingsModel updated) {
-    setState(() => _settings = updated);
-    final repo = Provider.of<SettingsRepository>(context, listen: false);
-    repo.save(updated);
-    Provider.of<BreakController>(context, listen: false).refreshSettings();
+    try {
+      setState(() => _settings = updated);
+      final repo = Provider.of<SettingsRepository>(context, listen: false);
+      repo.save(updated);
+      Provider.of<BreakController>(context, listen: false).refreshSettings();
+    } catch (e) {
+      if (mounted) {
+        Toast.showError(context, 'Failed to save settings: ${e.toString()}');
+      }
+    }
   }
 
   @override
@@ -141,10 +148,26 @@ class _SettingsPageState extends State<SettingsPage> {
             CupertinoIcons.rocket,
             (v) async {
               _save(_settings.copyWith(autoStart: v));
-              if (v) {
-                await launchAtStartup.enable();
-              } else {
-                await launchAtStartup.disable();
+              try {
+                if (v) {
+                  final result = await launchAtStartup.enable();
+                  if (result && mounted) {
+                    Toast.showSuccess(context, 'Will launch at startup');
+                  } else if (mounted) {
+                    Toast.showError(context, 'Launch at startup not available');
+                  }
+                } else {
+                  final result = await launchAtStartup.disable();
+                  if (result && mounted) {
+                    Toast.showSuccess(context, 'Startup launch disabled');
+                  } else if (mounted) {
+                    Toast.showError(context, 'Could not disable startup launch');
+                  }
+                }
+              } catch (e) {
+                if (mounted) {
+                  Toast.showError(context, 'Launch at startup requires macOS 10.10+');
+                }
               }
             },
           ),
@@ -504,20 +527,33 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void _showClockPreview() {
-    // Show a demo break overlay with current clock style
-    final controller = sl<BreakController>();
-    
-    // Trigger a short preview break
-    controller.timerEngine.triggerBreakNow(isLong: false);
-    
-    // Auto-hide after 10 seconds
-    Future.delayed(const Duration(seconds: 10), () {
-      if (controller.timerEngine.activeBreak != null && 
-          controller.timerEngine.countdownSeconds <= 10) {
-        // Complete the break early if it's still the preview
-        controller.skipCurrentBreak();
+    try {
+      // Show a demo break overlay with current clock style
+      final controller = sl<BreakController>();
+
+      // Trigger a short preview break
+      controller.timerEngine.triggerBreakNow(isLong: false);
+
+      // Auto-hide after 10 seconds
+      Future.delayed(const Duration(seconds: 10), () {
+        if (controller.timerEngine.activeBreak != null &&
+            controller.timerEngine.countdownSeconds <= 10) {
+          // Complete the break early if it's still the preview
+          controller.skipCurrentBreak();
+        }
+      });
+
+      if (mounted) {
+        Toast.showSuccess(
+          context,
+          'Preview started! Break overlay will appear.',
+        );
       }
-    });
+    } catch (e) {
+      if (mounted) {
+        Toast.showError(context, 'Failed to start preview: ${e.toString()}');
+      }
+    }
   }
 
   Widget _buildFocusMode() {
@@ -752,8 +788,6 @@ class _SettingsPageState extends State<SettingsPage> {
           _listTile('Website', CupertinoIcons.globe, () {}),
           _divider(),
           _listTile('Support', CupertinoIcons.question_circle, () {}),
-          _divider(),
-          _listTile('Privacy Policy', CupertinoIcons.lock_shield, () {}),
         ]),
         const SizedBox(height: 40),
         const Text(
@@ -1250,7 +1284,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   onChanged: onChanged,
                   activeTrackColor: AppTheme.accentColor,
                 ),
-              if (trailing != null) trailing,
+              ?trailing,
             ],
           ),
         );

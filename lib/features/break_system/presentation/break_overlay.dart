@@ -409,24 +409,61 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: () => controller.skipCurrentBreak(),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: Text(
-            'Skip this break'.toUpperCase(),
-            style: const TextStyle(
-              color: Colors.white38,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 2,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Postpone button
+          if (controller.timerEngine.canPostpone)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => controller.postponeCurrentBreak(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(CupertinoIcons.clock_fill, size: 14, color: Colors.white54),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Postpone (${controller.timerEngine.postponeCount}/3)',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          if (controller.timerEngine.canPostpone) const SizedBox(width: 12),
+          // Skip button
+          GestureDetector(
+            onTap: () => controller.skipCurrentBreak(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+              ),
+              child: Text(
+                'Skip this break'.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white38,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2,
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

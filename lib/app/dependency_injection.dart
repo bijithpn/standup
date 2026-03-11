@@ -4,6 +4,7 @@ import 'package:standup/core/services/notification_service.dart';
 import 'package:standup/core/services/storage_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
+import 'package:standup/core/services/adaptive_break_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/statistics/stats_service.dart';
@@ -28,6 +29,10 @@ Future<void> initDependencies() async {
   final overlayService = OverlayWindowService();
   sl.registerSingleton<OverlayWindowService>(overlayService);
 
+  // Adaptive Break Service for smart timing
+  final adaptiveBreakService = AdaptiveBreakService(storage: storage);
+  sl.registerSingleton<AdaptiveBreakService>(adaptiveBreakService);
+
   // Feature Services
   final settingsRepo = SettingsRepository(storage: sl());
   settingsRepo.load();
@@ -39,6 +44,7 @@ Future<void> initDependencies() async {
   final timerEngine = TimerEngine(
     activityMonitor: sl(),
     notificationService: sl(),
+    adaptiveBreakService: sl(),
   );
   sl.registerSingleton<TimerEngine>(timerEngine);
 

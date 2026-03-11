@@ -6,15 +6,19 @@ import 'package:standup/core/errors/app_exception.dart';
 import 'package:standup/core/errors/error_handler.dart';
 import 'package:standup/core/services/activity_monitor.dart';
 import 'package:standup/core/services/notification_service.dart';
+import 'package:standup/core/services/storage_service.dart';
+import 'package:standup/features/statistics/stats_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
+import 'package:standup/core/services/adaptive_break_service.dart';
 
 enum TimerState { running, paused, idle, breakActive }
 
 class TimerEngine extends ChangeNotifier {
   final ActivityMonitor _activityMonitor;
   final NotificationService _notificationService;
+  final AdaptiveBreakService? _adaptiveBreakService;
   final ErrorHandler _errorHandler = ErrorHandler();
   final AppLogger _logger = AppLogger();
 
@@ -23,6 +27,7 @@ class TimerEngine extends ChangeNotifier {
   Timer? _countdownTimer;
   Timer? _postureTimer;
   Timer? _blinkTimer;
+  Timer? _usageTrackerTimer;
 
   TimerState _state = TimerState.idle;
   BreakModel? _activeBreak;
@@ -35,11 +40,15 @@ class TimerEngine extends ChangeNotifier {
   Duration _shortElapsed = Duration.zero;
   Duration _longElapsed = Duration.zero;
   DateTime? _lastTickTime;
+  DateTime? _lastSaveTime;
 
   // Smart adaptation state
   int _consecutiveActivePolls = 0;
   bool _isBreakDelayed = false;
   int _delaySeconds = 0;
+  int _postponeCount = 0;
+  static const int maxPostponeCount = 3;
+  static const int postponeDurationSeconds = 120; // 2 minutes per postpone
 
   String _menuBarStyle = 'countdown';
 
@@ -54,8 +63,12 @@ class TimerEngine extends ChangeNotifier {
   TimerEngine({
     required ActivityMonitor activityMonitor,
     required NotificationService notificationService,
+    AdaptiveBreakService? adaptiveBreakService,
   })  : _activityMonitor = activityMonitor,
-        _notificationService = notificationService;
+       _notificationService = notificationService,
+       _adaptiveBreakService = adaptiveBreakService {
+    _loadTimerState();
+  }
 
   TimerState get state => _state;
   BreakModel? get activeBreak => _activeBreak;
@@ -63,6 +76,8 @@ class TimerEngine extends ChangeNotifier {
   bool get isCompletionState => _isCompletionState;
   bool get isFlashing => _isFlashing;
   bool get focusModeEnabled => _focusModeEnabled;
+  int get postponeCount => _postponeCount;
+  bool get canPostpone => _postponeCount < maxPostponeCount;
 
   Duration get shortBreakInterval =>
       Duration(minutes: _shortBreakIntervalMinutes);
@@ -119,16 +134,32 @@ class TimerEngine extends ChangeNotifier {
         _shortElapsed = Duration.zero;
         _longElapsed = Duration.zero;
         _lastTickTime = DateTime.now();
+        _lastSaveTime = DateTime.now();
 
         _startTicking();
         _setupActivityMonitor();
         _startPeriodicReminders();
+        _startUsageTracking();
 
         _logger.info('Timers started');
         notifyListeners();
       },
       errorType: ErrorType.timer,
     );
+  }
+
+  void _startUsageTracking() {
+    _usageTrackerTimer?.cancel();
+    // Track usage minutes every minute
+    _usageTrackerTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (_state == TimerState.running) {
+        try {
+          sl<StatsService>().addUsageMinutes(1);
+        } catch (e) {
+          _logger.error('Failed to track usage: $e');
+        }
+      }
+    });
   }
 
   bool _hasTriggeredPreBreakFlash = false;
@@ -139,7 +170,9 @@ class TimerEngine extends ChangeNotifier {
 
     // Tick every second for accurate tracking
     _shortBreakTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_state != TimerState.running) return;
+      if (_state != TimerState.running && _state != TimerState.breakActive) {
+        return;
+      }
 
       final now = DateTime.now();
       final delta = now.difference(_lastTickTime ?? now);
@@ -150,10 +183,17 @@ class TimerEngine extends ChangeNotifier {
 
       _updateTrayCountdown();
 
+      // Save state every 10 seconds
+      if (DateTime.now().difference(_lastSaveTime ?? DateTime.now()) >
+          const Duration(seconds: 10)) {
+        _saveTimerState();
+        _lastSaveTime = DateTime.now();
+      }
+
       final shortInterval = Duration(minutes: _shortBreakIntervalMinutes);
-      
+
       // Check if 30s before short break
-      if (!_hasTriggeredPreBreakFlash && 
+      if (!_hasTriggeredPreBreakFlash &&
           _shortElapsed >= shortInterval - const Duration(seconds: 30)) {
         _triggerFlash();
         _hasTriggeredPreBreakFlash = true;
@@ -286,7 +326,22 @@ class TimerEngine extends ChangeNotifier {
   void skipNextBreak() {
     // Reset the shorter timer to push the next break forward
     _shortElapsed = Duration.zero;
+    _postponeCount = 0; // Reset postpone count when skipping
     _logger.info('Next short break skipped');
+    notifyListeners();
+  }
+
+  /// Postpone the current break by 2 minutes
+  /// Can be done up to 3 times per break
+  void postponeBreak() {
+    if (_state != TimerState.breakActive ||
+        _postponeCount >= maxPostponeCount) {
+      return;
+    }
+
+    _postponeCount++;
+    _countdownSeconds += postponeDurationSeconds;
+    _logger.info('Break postponed: $_postponeCount/$maxPostponeCount');
     notifyListeners();
   }
 
@@ -302,13 +357,27 @@ class TimerEngine extends ChangeNotifier {
     _shortElapsed = Duration.zero;
     _isBreakDelayed = false;
     _delaySeconds = 0;
+    _postponeCount = 0; // Reset postpone count for new break
+
+    // Use adaptive break duration if service is available
+    final adaptiveDuration =
+        _adaptiveBreakService?.getSuggestedBreakDuration() ??
+        _shortBreakDurationSeconds;
+    
     _triggerBreak(
       BreakModel(
         type: BreakType.short,
-        durationSeconds: _shortBreakDurationSeconds,
+        durationSeconds: adaptiveDuration,
         title: 'Short Break',
         tip: _randomTip(AppConstants.shortBreakTips),
       ),
+    );
+    
+    // Record work session for adaptive learning
+    _adaptiveBreakService?.recordWorkSession(
+      duration: shortBreakInterval,
+      hourOfDay: DateTime.now().hour,
+      activityLevel: 'medium', // Default until we have better detection
     );
   }
 
@@ -432,15 +501,105 @@ class TimerEngine extends ChangeNotifier {
   }
 
   String _randomTip(List<String> tips) {
-    tips.shuffle();
-    return tips.first;
+    // Create a copy of the list before shuffling to avoid modifying the original
+    final tipsCopy = List<String>.from(tips);
+    tipsCopy.shuffle();
+    return tipsCopy.first;
+  }
+
+  // ============ Persistence Methods ============
+
+  /// Save current timer state to storage
+  void saveState() {
+    _saveTimerState();
+  }
+
+  void _saveTimerState() {
+    try {
+      final storage = sl<StorageService>();
+      storage.setInt('timer_state', _state.index);
+      storage.setInt('short_elapsed_seconds', _shortElapsed.inSeconds);
+      storage.setInt('long_elapsed_seconds', _longElapsed.inSeconds);
+      storage.setInt('countdown_seconds', _countdownSeconds);
+      storage.setBool('is_completion_state', _isCompletionState);
+      storage.setBool('is_flashing', _isFlashing);
+      storage.setInt('postpone_count', _postponeCount);
+      storage.setString('last_save_time', DateTime.now().toIso8601String());
+
+      if (_activeBreak != null) {
+        storage.setString('active_break_type', _activeBreak!.type.name);
+        storage.setInt('active_break_duration', _activeBreak!.durationSeconds);
+        storage.setString('active_break_title', _activeBreak!.title);
+        storage.setString('active_break_tip', _activeBreak!.tip);
+      }
+    } catch (e) {
+      _logger.error('Failed to save timer state: $e');
+    }
+  }
+
+  void _loadTimerState() {
+    try {
+      final storage = sl<StorageService>();
+
+      // Load elapsed times
+      final shortElapsedSeconds = storage.getInt('short_elapsed_seconds');
+      _shortElapsed = Duration(seconds: shortElapsedSeconds);
+
+      final longElapsedSeconds = storage.getInt('long_elapsed_seconds');
+      _longElapsed = Duration(seconds: longElapsedSeconds);
+
+      // Load state
+      final stateIndex = storage.getInt('timer_state');
+      if (stateIndex >= 0 && stateIndex < TimerState.values.length) {
+        _state = TimerState.values[stateIndex];
+      }
+
+      // Load countdown
+      _countdownSeconds = storage.getInt('countdown_seconds');
+      _isCompletionState = storage.getBool('is_completion_state');
+      _isFlashing = storage.getBool('is_flashing');
+      _postponeCount = storage.getInt('postpone_count');
+
+      // Load active break if exists
+      final breakTypeStr = storage.getString('active_break_type');
+      if (breakTypeStr.isNotEmpty) {
+        final breakDuration = storage.getInt('active_break_duration');
+        final breakTitle = storage.getString('active_break_title');
+        final breakTip = storage.getString('active_break_tip');
+
+        BreakType breakType;
+        switch (breakTypeStr) {
+          case 'long':
+            breakType = BreakType.long;
+            break;
+          case 'short':
+          default:
+            breakType = BreakType.short;
+        }
+
+        _activeBreak = BreakModel(
+          type: breakType,
+          durationSeconds: breakDuration,
+          title: breakTitle,
+          tip: breakTip,
+        );
+      }
+
+      _logger.info(
+        'Timer state loaded: state=$_state, short=${_shortElapsed.inSeconds}s, long=${_longElapsed.inSeconds}s',
+      );
+    } catch (e) {
+      _logger.error('Failed to load timer state: $e');
+    }
   }
 
   @override
   void dispose() {
+    _saveTimerState();
     _shortBreakTimer?.cancel();
     _longBreakTimer?.cancel();
     _countdownTimer?.cancel();
+    _usageTrackerTimer?.cancel();
     super.dispose();
   }
 }

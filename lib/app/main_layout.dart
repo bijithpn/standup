@@ -13,7 +13,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _pageIndex = 0;
-  bool _sidebarCollapsed = false;
+  final bool _sidebarCollapsed = false;
 
   final List<({String label, IconData icon, String section})> _navItems = [
     (label: 'General', icon: CupertinoIcons.settings, section: 'General'),

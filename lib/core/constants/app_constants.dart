@@ -44,6 +44,15 @@ class AppConstants {
   static const String keyBreaksSkipped = 'breaks_skipped';
   static const String keyDailyUsageMinutes = 'daily_usage_minutes';
   static const String keyLastActiveDate = 'last_active_date';
+  static const String keyCurrentStreak = 'current_streak';
+  static const String keyLongestStreak = 'longest_streak';
+  static const String keyWeeklyStats = 'weekly_stats';
+  static const String keyTotalWorkSessions = 'total_work_sessions';
+  static const String keyPostponeCount = 'postpone_count';
+  static const String keyActivityPatterns = 'activity_patterns';
+
+  // Streak configuration
+  static const int breaksPerDayForStreak = 5;
 
   // Health tips shown during breaks
   static const List<String> shortBreakTips = [

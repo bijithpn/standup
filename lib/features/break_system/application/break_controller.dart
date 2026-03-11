@@ -27,6 +27,8 @@ class BreakController extends ChangeNotifier {
   void initialize() {
     _applySettings();
     _timerEngine.startTimers();
+    // Force reload stats to ensure they're current
+    _statsService.load();
   }
 
   void _applySettings() {
@@ -65,8 +67,16 @@ class BreakController extends ChangeNotifier {
     }
   }
 
+  void postponeCurrentBreak() {
+    if (_timerEngine.canPostpone && !_settingsRepo.currentSettings.strictMode) {
+      _timerEngine.postponeBreak();
+    }
+  }
+
   void onBreakCompleted() {
     _statsService.recordCompletedBreak();
+    // Force save timer state to persist the completed break
+    _timerEngine.saveState();
   }
 
   void refreshSettings() {
