@@ -55,7 +55,7 @@ class StatsService {
     }
     
     // Initialize weekly data if not exists
-    if (_storage.getString(AppConstants.keyWeeklyStats).isNotEmpty) {
+    if (_storage.getString(AppConstants.keyWeeklyStats).isEmpty) {
       _saveWeeklyData(_initializeWeeklyData());
     }
   }

@@ -598,6 +598,13 @@ class _SettingsPageState extends State<SettingsPage> {
       children: [
         _buildCard([
           _toggleRow(
+            'Enable Notifications',
+            'Receive system-level notifications for breaks and reminders',
+            _settings.notificationsEnabled,
+            (v) => _save(_settings.copyWith(notificationsEnabled: v)),
+          ),
+          _divider(),
+          _toggleRow(
             'Sound Effects',
             'Play a soft chime when break starts',
             _settings.soundEnabled,
@@ -1727,9 +1734,9 @@ class _SettingsPageState extends State<SettingsPage> {
       _divider(),
       _statRow('Breaks skipped', '${_stats.breaksSkipped}'),
       _divider(),
-      _statRow('Completion rate', '$rate%'),
+      _statRow('Break completion rate', '$rate%'),
       _divider(),
-      _statRow('Today usage', '${_stats.dailyUsageMinutes} min'),
+      _statRow('Today total usage', '${_stats.dailyUsageMinutes} min'),
     ]);
   }
 

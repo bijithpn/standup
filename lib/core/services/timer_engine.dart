@@ -12,6 +12,7 @@ import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/core/services/adaptive_break_service.dart';
+import 'package:standup/features/settings/settings_repository.dart';
 
 enum TimerState { running, paused, idle, breakActive }
 
@@ -19,6 +20,7 @@ class TimerEngine extends ChangeNotifier {
   final ActivityMonitor _activityMonitor;
   final NotificationService _notificationService;
   final AdaptiveBreakService? _adaptiveBreakService;
+  final SettingsRepository _settingsRepository;
   final ErrorHandler _errorHandler = ErrorHandler();
   final AppLogger _logger = AppLogger();
 
@@ -64,9 +66,11 @@ class TimerEngine extends ChangeNotifier {
     required ActivityMonitor activityMonitor,
     required NotificationService notificationService,
     AdaptiveBreakService? adaptiveBreakService,
+    required SettingsRepository settingsRepository,
   })  : _activityMonitor = activityMonitor,
        _notificationService = notificationService,
-       _adaptiveBreakService = adaptiveBreakService {
+       _adaptiveBreakService = adaptiveBreakService,
+       _settingsRepository = settingsRepository {
     _loadTimerState();
   }
 
@@ -400,14 +404,14 @@ class TimerEngine extends ChangeNotifier {
 
     // Posture reminder every 15 minutes
     _postureTimer = Timer.periodic(const Duration(minutes: 15), (_) {
-      if (_state == TimerState.running) {
+      if (_state == TimerState.running && _settingsRepository.currentSettings.notificationsEnabled) {
         _notificationService.showPostureReminder();
       }
     });
 
     // Blink reminder every 10 minutes
     _blinkTimer = Timer.periodic(const Duration(minutes: 10), (_) {
-      if (_state == TimerState.running) {
+      if (_state == TimerState.running && _settingsRepository.currentSettings.notificationsEnabled) {
         _notificationService.showBlinkReminder();
       }
     });
@@ -420,7 +424,9 @@ class TimerEngine extends ChangeNotifier {
 
     // Trigger flash instead of / in addition to notification
     _triggerFlash();
-    _notificationService.showBreakStarted(breakTitle: breakModel.title);
+    if (_settingsRepository.currentSettings.notificationsEnabled) {
+      _notificationService.showBreakStarted(breakTitle: breakModel.title);
+    }
     onBreakTriggered?.call();
 
     _countdownTimer?.cancel();
@@ -437,8 +443,13 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _triggerFlash() {
+void _triggerFlash() {
     _isFlashing = true;
+    if (_settingsRepository.currentSettings.notificationsEnabled) {
+      _notificationService.showReminder(
+        message: _settingsRepository.currentSettings.flashMessage,
+      );
+    }
     notifyListeners();
     Timer(const Duration(milliseconds: 1500), () {
       _isFlashing = false;

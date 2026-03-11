@@ -44,6 +44,17 @@ class NotificationService {
     _soundEnabled = enabled;
   }
 
+  Future<void> showReminder({required String message}) async {
+    await _errorHandler.guard(
+      action: () => _show(
+        id: 0,
+        title: 'BreakMate Reminder',
+        body: message,
+      ),
+      errorType: ErrorType.notification,
+    );
+  }
+
   Future<void> showBreakReminder({required bool isLong}) async {
     await _errorHandler.guard(
       action: () => _show(

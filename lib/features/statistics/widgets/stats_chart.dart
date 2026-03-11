@@ -10,52 +10,127 @@ class DailyStatsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the maximum value for any day to scale the chart correctly
+    double maxTotal = 10;
+    for (final day in stats.weeklyData) {
+      final total = (day.breaksCompleted + day.breaksSkipped).toDouble();
+      if (total > maxTotal) maxTotal = total;
+    }
+
     return Container(
-      height: 200,
+      height: 250,
       padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Daily Progress', style: AppTheme.sectionTitle),
+          const Text('Weekly Progress', style: AppTheme.sectionTitle),
           const SizedBox(height: 24),
           Expanded(
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: (stats.breaksCompleted + stats.breaksSkipped).toDouble() + 5,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: const FlTitlesData(show: false),
+                maxY: maxTotal + 2,
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final day = stats.weeklyData[groupIndex];
+                      return BarTooltipItem(
+                        '${day.dayName}\n',
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Completed: ${day.breaksCompleted}\n',
+                            style: const TextStyle(
+                              color: AppTheme.shortBreakColor,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                          ),
+                          TextSpan(
+                            text: 'Skipped: ${day.breaksSkipped}',
+                            style: const TextStyle(
+                              color: Colors.redAccent,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  show: true,
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        if (value.toInt() >= 0 &&
+                            value.toInt() < stats.weeklyData.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Text(
+                              stats.weeklyData[value.toInt()].dayName,
+                              style: const TextStyle(
+                                color: AppTheme.textMuted,
+                                fontSize: 10,
+                              ),
+                            ),
+                          );
+                        }
+                        return const SizedBox.shrink();
+                      },
+                    ),
+                  ),
+                  leftTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  rightTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
                 gridData: const FlGridData(show: false),
                 borderData: FlBorderData(show: false),
-                barGroups: [
-                  BarChartGroupData(
-                    x: 0,
+                barGroups: stats.weeklyData.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final day = entry.value;
+                  return BarChartGroupData(
+                    x: index,
                     barRods: [
                       BarChartRodData(
-                        toY: stats.breaksCompleted.toDouble(),
+                        toY: day.breaksCompleted.toDouble(),
                         color: AppTheme.shortBreakColor,
-                        width: 16,
-                        borderRadius: BorderRadius.circular(4),
+                        width: 12,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(4),
+                          bottomRight: Radius.circular(4),
+                        ),
                       ),
-                    ],
-                  ),
-                  BarChartGroupData(
-                    x: 1,
-                    barRods: [
                       BarChartRodData(
-                        toY: stats.breaksSkipped.toDouble(),
+                        fromY: day.breaksCompleted.toDouble(),
+                        toY: (day.breaksCompleted + day.breaksSkipped)
+                            .toDouble(),
                         color: Colors.redAccent.withValues(alpha: 0.6),
-                        width: 16,
-                        borderRadius: BorderRadius.circular(4),
+                        width: 12,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(4),
+                          topRight: Radius.circular(4),
+                        ),
                       ),
                     ],
-                  ),
-                ],
+                  );
+                }).toList(),
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

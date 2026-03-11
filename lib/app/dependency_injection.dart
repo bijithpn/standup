@@ -45,6 +45,7 @@ Future<void> initDependencies() async {
     activityMonitor: sl(),
     notificationService: sl(),
     adaptiveBreakService: sl(),
+    settingsRepository: sl(),
   );
   sl.registerSingleton<TimerEngine>(timerEngine);
 

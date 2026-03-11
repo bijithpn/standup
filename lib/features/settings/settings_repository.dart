@@ -36,6 +36,7 @@ class SettingsRepository {
       strictMode: _storage.getBool(AppConstants.keyStrictMode),
       selectedProfileId: _storage.getString('selected_profile_id', defaultValue: 'health'),
       menuBarStyle: _storage.getString('menu_bar_style', defaultValue: 'countdown'),
+      notificationsEnabled: _storage.getBool('notifications_enabled', defaultValue: true),
       
       flashColorHex: _storage.getInt(
         'flash_color_hex',
@@ -101,6 +102,7 @@ class SettingsRepository {
       _storage.setBool(AppConstants.keyStrictMode, settings.strictMode),
       _storage.setString('selected_profile_id', settings.selectedProfileId),
       _storage.setString('menu_bar_style', settings.menuBarStyle),
+      _storage.setBool('notifications_enabled', settings.notificationsEnabled),
       
       _storage.setInt('flash_color_hex', settings.flashColorHex),
       _storage.setString('flash_style', settings.flashStyle),

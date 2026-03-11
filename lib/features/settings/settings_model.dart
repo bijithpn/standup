@@ -10,6 +10,7 @@ class SettingsModel {
   final bool strictMode;
   final String selectedProfileId;
   final String menuBarStyle; // 'countdown', 'progress', 'icon'
+  final bool notificationsEnabled;
 
   // Flash settings
   final int flashColorHex;
@@ -49,6 +50,7 @@ class SettingsModel {
     this.strictMode = false,
     this.selectedProfileId = 'health',
     this.menuBarStyle = 'countdown',
+    this.notificationsEnabled = true,
     this.flashColorHex = 0xFFF87171,
     this.flashStyle = 'default',
     this.flashMessage = 'Take a deep breath',
@@ -78,6 +80,7 @@ class SettingsModel {
     bool? strictMode,
     String? selectedProfileId,
     String? menuBarStyle,
+    bool? notificationsEnabled,
     int? flashColorHex,
     String? flashStyle,
     String? flashMessage,
@@ -106,6 +109,7 @@ class SettingsModel {
       strictMode: strictMode ?? this.strictMode,
       selectedProfileId: selectedProfileId ?? this.selectedProfileId,
       menuBarStyle: menuBarStyle ?? this.menuBarStyle,
+      notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       flashColorHex: flashColorHex ?? this.flashColorHex,
       flashStyle: flashStyle ?? this.flashStyle,
       flashMessage: flashMessage ?? this.flashMessage,
