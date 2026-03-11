@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -7,54 +8,67 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
-  try {
-    WidgetsFlutterBinding.ensureInitialized();
-    
-    // Single instance check via Socket
+  runZonedGuarded(() async {
     try {
-      await ServerSocket.bind('127.0.0.1', 10425);
-    } catch (_) {
-      // Port already in use -> another instance running
-      exit(0);
-    }
-
-    // Initialize all dependencies first
-    await initDependencies();
-
-    // Initialize Window Manager
-    await windowManager.ensureInitialized();
-
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(500, 700),
-      center: true,
-      backgroundColor: Colors.black, // Opaque for stability
-      skipTaskbar: false,
-      titleBarStyle: TitleBarStyle.hidden,
-    );
-
-    await windowManager.waitUntilReadyToShow(windowOptions, () async {
-      await windowManager.setPreventClose(true);
-      await windowManager.hide();
-    });
-
-    // Setup Launch at Startup (optional, can fail if no info)
-    try {
-      PackageInfo packageInfo = await PackageInfo.fromPlatform();
-      if (packageInfo.appName.isNotEmpty) {
-        launchAtStartup.setup(
-          appName: packageInfo.appName,
-          appPath: Platform.resolvedExecutable,
-        );
+      WidgetsFlutterBinding.ensureInitialized();
+      debugPrint('Startup: Widgets initialized');
+      
+      // Single instance check via Socket
+      try {
+        await ServerSocket.bind(InternetAddress.loopbackIPv4, 10425);
+        debugPrint('Startup: Port 10425 bound (single instance check passed)');
+      } catch (e) {
+        debugPrint('Startup: Port 10425 already in use - another instance is running ($e)');
+        exit(0);
       }
-    } catch (e) {
-      debugPrint('Launch at startup setup failed: $e');
-    }
 
-    runApp(const BreakLoopApp());
-  } catch (e, stack) {
-    debugPrint('FATAL STARTUP ERROR: $e');
+      // Initialize all dependencies
+      debugPrint('Startup: Initializing dependencies...');
+      await initDependencies();
+      debugPrint('Startup: Dependencies initialized');
+
+      // Initialize Window Manager
+      await windowManager.ensureInitialized();
+      debugPrint('Startup: Window Manager initialized');
+
+      WindowOptions windowOptions = const WindowOptions(
+        size: Size(500, 700),
+        center: true,
+        backgroundColor: Colors.black,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.hidden,
+      );
+
+      await windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.setPreventClose(true);
+        // We start hidden as it's a tray app
+        await windowManager.hide();
+        debugPrint('Startup: Window ready and hidden');
+      });
+
+      // Setup Launch at Startup
+      try {
+        PackageInfo packageInfo = await PackageInfo.fromPlatform();
+        if (packageInfo.appName.isNotEmpty) {
+          launchAtStartup.setup(
+            appName: packageInfo.appName,
+            appPath: Platform.resolvedExecutable,
+          );
+          debugPrint('Startup: Launch at startup configured');
+        }
+      } catch (e) {
+        debugPrint('Launch at startup setup failed: $e');
+      }
+
+      runApp(const BreakLoopApp());
+      debugPrint('Startup: app running');
+    } catch (e, stack) {
+      debugPrint('FATAL STARTUP ERROR: $e');
+      debugPrint(stack.toString());
+      rethrow;
+    }
+  }, (error, stack) {
+    debugPrint('ZONED ERROR: $error');
     debugPrint(stack.toString());
-    // Fallback to minimal app if possible to show error? 
-    // For now, just crash safely.
-  }
+  });
 }

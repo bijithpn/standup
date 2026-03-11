@@ -72,6 +72,8 @@ class SettingsRepository {
         defaultValue: 5,
       ),
       workingHoursEnabled: _storage.getBool('working_hours_enabled'),
+      dailyWorkGoalHours: _storage.getInt('daily_work_goal_hours', defaultValue: 8),
+      remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
     );
   }
 
@@ -127,6 +129,12 @@ class SettingsRepository {
         settings.resetTimerAfterMinutes,
       ),
       _storage.setBool('working_hours_enabled', settings.workingHoursEnabled),
+      _storage.setBool('auto_suggest_exercises', settings.autoSuggestExercises),
+      _storage.setInt('daily_work_goal_hours', settings.dailyWorkGoalHours),
+      _storage.setBool(
+        'remind_clock_out_enabled',
+        settings.remindClockOutEnabled,
+      ),
     ]);
   }
 }

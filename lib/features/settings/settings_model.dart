@@ -34,16 +34,16 @@ class SettingsModel {
 
   // Working hours
   final bool workingHoursEnabled;
+  final bool autoSuggestExercises;
+
+  final int dailyWorkGoalHours;
+  final bool remindClockOutEnabled;
 
   const SettingsModel({
-    this.shortBreakIntervalMinutes =
-        AppConstants.defaultShortBreakIntervalMinutes,
-    this.shortBreakDurationSeconds =
-        AppConstants.defaultShortBreakDurationSeconds,
-    this.longBreakIntervalMinutes =
-        AppConstants.defaultLongBreakIntervalMinutes,
-    this.longBreakDurationMinutes =
-        AppConstants.defaultLongBreakDurationMinutes,
+    this.shortBreakIntervalMinutes = AppConstants.defaultShortBreakIntervalMinutes,
+    this.shortBreakDurationSeconds = AppConstants.defaultShortBreakDurationSeconds,
+    this.longBreakIntervalMinutes = AppConstants.defaultLongBreakIntervalMinutes,
+    this.longBreakDurationMinutes = AppConstants.defaultLongBreakDurationMinutes,
     this.soundEnabled = true,
     this.autoStart = false,
     this.strictMode = false,
@@ -63,6 +63,9 @@ class SettingsModel {
     this.pauseTimerAfterMinutes = 1,
     this.resetTimerAfterMinutes = 5,
     this.workingHoursEnabled = false,
+    this.autoSuggestExercises = true,
+    this.dailyWorkGoalHours = 8,
+    this.remindClockOutEnabled = true,
   });
 
   SettingsModel copyWith({
@@ -89,16 +92,15 @@ class SettingsModel {
     int? pauseTimerAfterMinutes,
     int? resetTimerAfterMinutes,
     bool? workingHoursEnabled,
+    bool? autoSuggestExercises,
+    int? dailyWorkGoalHours,
+    bool? remindClockOutEnabled,
   }) {
     return SettingsModel(
-      shortBreakIntervalMinutes:
-          shortBreakIntervalMinutes ?? this.shortBreakIntervalMinutes,
-      shortBreakDurationSeconds:
-          shortBreakDurationSeconds ?? this.shortBreakDurationSeconds,
-      longBreakIntervalMinutes:
-          longBreakIntervalMinutes ?? this.longBreakIntervalMinutes,
-      longBreakDurationMinutes:
-          longBreakDurationMinutes ?? this.longBreakDurationMinutes,
+      shortBreakIntervalMinutes: shortBreakIntervalMinutes ?? this.shortBreakIntervalMinutes,
+      shortBreakDurationSeconds: shortBreakDurationSeconds ?? this.shortBreakDurationSeconds,
+      longBreakIntervalMinutes: longBreakIntervalMinutes ?? this.longBreakIntervalMinutes,
+      longBreakDurationMinutes: longBreakDurationMinutes ?? this.longBreakDurationMinutes,
       soundEnabled: soundEnabled ?? this.soundEnabled,
       autoStart: autoStart ?? this.autoStart,
       strictMode: strictMode ?? this.strictMode,
@@ -112,15 +114,15 @@ class SettingsModel {
       flashDurationMs: flashDurationMs ?? this.flashDurationMs,
       focusModeEnabled: focusModeEnabled ?? this.focusModeEnabled,
       clockFaceStyle: clockFaceStyle ?? this.clockFaceStyle,
-      clockFaceTextColorHex:
-          clockFaceTextColorHex ?? this.clockFaceTextColorHex,
+      clockFaceTextColorHex: clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
       customImagePath: customImagePath ?? this.customImagePath,
-      pauseTimerAfterMinutes:
-          pauseTimerAfterMinutes ?? this.pauseTimerAfterMinutes,
-      resetTimerAfterMinutes:
-          resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
+      pauseTimerAfterMinutes: pauseTimerAfterMinutes ?? this.pauseTimerAfterMinutes,
+      resetTimerAfterMinutes: resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,
+      autoSuggestExercises: autoSuggestExercises ?? this.autoSuggestExercises,
+      dailyWorkGoalHours: dailyWorkGoalHours ?? this.dailyWorkGoalHours,
+      remindClockOutEnabled: remindClockOutEnabled ?? this.remindClockOutEnabled,
     );
   }
 }

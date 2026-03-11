@@ -5,10 +5,10 @@ class AppTheme {
   AppTheme._();
 
   static const Color accentColor = Color(0xFF0A84FF); // macOS Blue
-  static const Color sidebarBackground = Color(0xFF1E1E1E);
-  static const Color contentBackground = Color(0xFF161616);
-  static const Color cardBackground = Color(0xFF242424);
-  static const Color borderColor = Color(0xFF333333);
+  static const Color sidebarBackground = Color(0xFF141414);
+  static const Color contentBackground = Color(0xFF0D0D0D);
+  static const Color cardBackground = Color(0xFF1F1F1F);
+  static const Color borderColor = Color(0xFF2A2A2A);
 
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFC5C5C5);
@@ -29,13 +29,13 @@ class AppTheme {
   static BoxDecoration get cardDecoration {
     return BoxDecoration(
       color: cardBackground,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: borderColor, width: 1),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: borderColor, width: 1.5),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withOpacity(0.05),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
+          color: Colors.black.withValues(alpha: 0.2),
+          blurRadius: 15,
+          offset: const Offset(0, 6),
         ),
       ],
     );
@@ -48,10 +48,10 @@ class AppTheme {
   );
 
   static const TextStyle sectionTitle = TextStyle(
-    fontSize: 11,
-    fontWeight: FontWeight.w700,
+    fontSize: 12,
+    fontWeight: FontWeight.w800,
     color: textMuted,
-    letterSpacing: 1.2,
+    letterSpacing: 2.0,
   );
 
   static const TextStyle headerStyle = TextStyle(
@@ -73,7 +73,7 @@ class AppTheme {
     height: 1.5,
   );
 
-  static final overlayBackground = Colors.black.withOpacity(0.85);
+  static final overlayBackground = Colors.black.withValues(alpha: 0.85);
   static const skipButtonStyle = TextStyle(
     fontSize: 14,
     fontWeight: FontWeight.w500,

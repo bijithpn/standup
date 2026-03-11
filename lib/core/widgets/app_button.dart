@@ -34,10 +34,10 @@ class _AppButtonState extends State<AppButton> {
           duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            color: _hovering ? baseColor : baseColor.withOpacity(0.15),
+            color: _hovering ? baseColor : baseColor.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: baseColor.withOpacity(0.3),
+              color: baseColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),

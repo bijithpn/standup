@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/core/errors/app_exception.dart';
@@ -191,7 +191,7 @@ class TimerEngine extends ChangeNotifier {
 
   void _updateTrayCountdown() {
     if (_state == TimerState.paused) {
-      sl<TrayManagerService>().setTrayTitle('  [ PAUSED ]  ');
+      sl<TrayManagerService>().setTrayTitle('PAUSED');
       return;
     }
     
@@ -209,7 +209,7 @@ class TimerEngine extends ChangeNotifier {
 
     switch (_menuBarStyle) {
       case 'countdown':
-        sl<TrayManagerService>().setTrayTitle('  [ $mins:$secs ]  ');
+        sl<TrayManagerService>().setTrayTitle('$mins:$secs');
         break;
       case 'progress':
         final total = _state == TimerState.breakActive 
@@ -219,7 +219,7 @@ class TimerEngine extends ChangeNotifier {
         final progress = (done / total * 5).clamp(0, 5).round();
         // Use Pill-like characters for a high-end feel
         final bars = '▰' * progress + '▱' * (5 - progress);
-        sl<TrayManagerService>().setTrayTitle('  [ $bars ]  ');
+        sl<TrayManagerService>().setTrayTitle(bars);
         break;
       case 'icon':
         final total = _state == TimerState.breakActive 
@@ -227,17 +227,22 @@ class TimerEngine extends ChangeNotifier {
             : (_shortBreakIntervalMinutes * 60);
         final percent = (remaining.inSeconds / total);
         String icon = '○';
-        if (percent > 0.75) icon = '◔';
-        else if (percent > 0.5) icon = '◑';
-        else if (percent > 0.25) icon = '◕';
-        else icon = '●';
-        sl<TrayManagerService>().setTrayTitle('  [ $icon ${mins}m ]  ');
+        if (percent > 0.75) {
+          icon = '◔';
+        } else if (percent > 0.5) {
+          icon = '◑';
+        } else if (percent > 0.25) {
+          icon = '◕';
+        } else {
+          icon = '●';
+        }
+        sl<TrayManagerService>().setTrayTitle('$icon ${mins}m');
         break;
       case 'focusdot':
         if (_state == TimerState.breakActive) {
-          sl<TrayManagerService>().setTrayTitle('  [ ○ Break ]  ');
+          sl<TrayManagerService>().setTrayTitle('Break');
         } else {
-          sl<TrayManagerService>().setTrayTitle('  [ ● Focus ]  ');
+          sl<TrayManagerService>().setTrayTitle('Focus');
         }
         break;
       default:
@@ -405,6 +410,24 @@ class TimerEngine extends ChangeNotifier {
       } else {
         _consecutiveActivePolls = 0;
       }
+    });
+
+    // Start polling for activity
+    _activityMonitor.start();
+  }
+
+  void triggerFlashDemo({
+    required Color color,
+    required String style,
+    required String animation,
+    required double intensity,
+    required int durationMs,
+  }) {
+    _isFlashing = true;
+    notifyListeners();
+    Timer(Duration(milliseconds: durationMs), () {
+      _isFlashing = false;
+      notifyListeners();
     });
   }
 

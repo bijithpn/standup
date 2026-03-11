@@ -13,172 +13,264 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _pageIndex = 0;
+  bool _sidebarCollapsed = false;
+
+  final List<({String label, IconData icon, String section})> _navItems = [
+    (label: 'General', icon: CupertinoIcons.settings, section: 'General'),
+    (label: 'Flash', icon: CupertinoIcons.bolt_fill, section: 'Flash Reminder'),
+    (
+      label: 'Breaks',
+      icon: CupertinoIcons.pause_fill,
+      section: 'Breaks & Profiles',
+    ),
+    (label: 'Focus', icon: CupertinoIcons.timer, section: 'Focus Mode'),
+    (label: 'Alerts', icon: CupertinoIcons.bell_fill, section: 'Notifications'),
+    (
+      label: 'Exercise',
+      icon: CupertinoIcons.sportscourt_fill,
+      section: 'Exercises',
+    ),
+    (label: 'Clock', icon: CupertinoIcons.clock_fill, section: 'Clock Out'),
+    (
+      label: 'Stats',
+      icon: CupertinoIcons.chart_bar_fill,
+      section: 'Statistics',
+    ),
+    (label: 'About', icon: CupertinoIcons.info_circle_fill, section: 'About'),
+  ];
 
   @override
   Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 900 || constraints.maxHeight < 650) {
+          return _buildTopLayout();
+        }
+        return _buildSidebarLayout();
+      },
+    );
+  }
+
+  /*
+  -----------------------------------------
+  SIDEBAR LAYOUT (LARGE WINDOWS)
+  -----------------------------------------
+  */
+
+  Widget _buildSidebarLayout() {
     return MacosWindow(
       backgroundColor: AppTheme.contentBackground,
       sidebar: Sidebar(
-        minWidth: 200,
-        // backgroundColor: AppTheme.sidebarBackground,
+        minWidth: _sidebarCollapsed ? 80 : 240,
         top: Column(
           children: [
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [AppTheme.accentColor, AppTheme.accentColor.withOpacity(0.7)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.accentColor.withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: const Center(
-                      child: Icon(CupertinoIcons.infinite, color: Colors.white, size: 20),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                    const Text.rich(
-                      TextSpan(
-                        text: 'Break',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Mate',
-                            style: TextStyle(color: AppTheme.accentColor),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
+            _buildLogo(center: true),
+            const SizedBox(height: 24),
           ],
         ),
-        builder: (context, scrollController) {
+        builder: (context, controller) {
+          final sidebarItems = _navItems.take(_navItems.length - 1).toList();
+          final safeIndex = _pageIndex >= sidebarItems.length
+              ? sidebarItems.length - 1
+              : _pageIndex;
+
           return SidebarItems(
-            currentIndex: _pageIndex,
+            currentIndex: safeIndex,
             onChanged: (i) => setState(() => _pageIndex = i),
-            scrollController: scrollController,
-            items: const [
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.settings),
-                label: Text('General'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.pause),
-                label: Text('Breaks'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.person_crop_circle),
-                label: Text('Profiles'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.viewfinder),
-                label: Text('Focus Mode'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.bolt),
-                label: Text('Flash Reminder'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.bell),
-                label: Text('Notifications'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.sportscourt),
-                label: Text('Exercises'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.clock),
-                label: Text('Clock Out'),
-              ),
-              SidebarItem(
-                leading: MacosIcon(CupertinoIcons.graph_square),
-                label: Text('Statistics'),
-              ),
-            ],
+            scrollController: controller,
+            itemSize: SidebarItemSize.large,
+            items: sidebarItems.map((item) {
+              return SidebarItem(
+                leading: MacosIcon(item.icon),
+                label: _sidebarCollapsed
+                    ? const SizedBox.shrink()
+                    : Text(item.label, style: AppTheme.sidebarItemStyle),
+              );
+            }).toList(),
           );
         },
         bottom: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12),
+          child: MacosListTile(
+            leading: const MacosIcon(CupertinoIcons.info_circle_fill),
+            title: const Text("About"),
+            onClick: () => setState(() => _pageIndex = _navItems.length - 1),
+          ),
+        ),
+      ),
+      child: _buildMainContent(),
+    );
+  }
+
+  /*
+  -----------------------------------------
+  TOP NAV LAYOUT (SMALL WINDOWS)
+  -----------------------------------------
+  */
+
+  Widget _buildTopLayout() {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return MacosScaffold(
+      backgroundColor: AppTheme.contentBackground,
+      toolBar: ToolBar(
+        height: 110,
+        centerTitle: true,
+        title: SizedBox(
+          width: screenWidth,
           child: Column(
             children: [
-              _buildSidebarAction(CupertinoIcons.info, 'About', () => setState(() => _pageIndex = 9)),
+              _buildLogo(center: true),
+              const SizedBox(height: 10),
+              _buildScrollableNavigation(screenWidth),
             ],
           ),
         ),
       ),
-      child: IndexedStack(
-        index: _pageIndex,
-        children: const [
-          SettingsPage(section: 'General'),
-          SettingsPage(section: 'Breaks'),
-          SettingsPage(section: 'Profiles'),
-          SettingsPage(section: 'Focus Mode'),
-          SettingsPage(section: 'Flash Reminder'),
-          SettingsPage(section: 'Notifications'),
-          SettingsPage(section: 'Exercises'),
-          SettingsPage(section: 'Clock Out'),
-          SettingsPage(section: 'Statistics'),
-          SettingsPage(section: 'About'),
+      children: [ContentArea(builder: (context, _) => _buildMainContent())],
+    );
+  }
+
+  /*
+  -----------------------------------------
+  HORIZONTAL SCROLL NAVIGATION
+  -----------------------------------------
+  */
+
+  Widget _buildScrollableNavigation(double screenWidth) {
+    return SizedBox(
+      width: screenWidth,
+      height: 60,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          children: [
+            const SizedBox(width: 12),
+            ..._navItems.asMap().entries.map((entry) {
+              final i = entry.key;
+              final item = entry.value;
+              final selected = _pageIndex == i;
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
+                  onTap: () => setState(() => _pageIndex = i),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppTheme.accentColor
+                          : AppTheme.cardBackground,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: selected
+                            ? AppTheme.accentColor
+                            : AppTheme.borderColor,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          item.icon,
+                          size: 18,
+                          color: selected
+                              ? Colors.white
+                              : AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: selected
+                                ? Colors.white
+                                : AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+            const SizedBox(width: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /*
+  -----------------------------------------
+  LOGO
+  -----------------------------------------
+  */
+
+  Widget _buildLogo({bool center = false}) {
+    return SizedBox(
+      width: MediaQuery.of(context).size.width,
+      child: Row(
+        mainAxisAlignment: center
+            ? MainAxisAlignment.center
+            : MainAxisAlignment.start,
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accentColor,
+                  AppTheme.accentColor.withValues(alpha: 0.7),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              CupertinoIcons.infinite,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text.rich(
+            TextSpan(
+              text: "Break",
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              children: const [
+                TextSpan(
+                  text: "Mate",
+                  style: TextStyle(color: AppTheme.accentColor),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildSidebarAction(IconData icon, String label, VoidCallback onTap) {
-    return MacosListTile(
-      leading: MacosIcon(icon, size: 16),
-      title: Text(label, style: AppTheme.sidebarItemStyle),
-      onClick: onTap,
-    );
-  }
-}
+  /*
+  -----------------------------------------
+  MAIN CONTENT
+  -----------------------------------------
+  */
 
-class PlaceholderSection extends StatelessWidget {
-  final String title;
-  const PlaceholderSection({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return MacosScaffold(
-      toolBar: ToolBar(
-        title: Text(title),
-        titleWidth: 200,
-        // backgroundColor: AppTheme.contentBackground,
-      ),
-      children: [
-        ContentArea(
-          builder: (context, scrollController) {
-            return Center(
-              child: Text(
-                'Coming soon: $title',
-                style: AppTheme.tipStyle,
-              ),
-            );
-          },
-        ),
-      ],
+  Widget _buildMainContent() {
+    return IndexedStack(
+      index: _pageIndex,
+      children: _navItems
+          .map((item) => SettingsPage(section: item.section))
+          .toList(),
     );
   }
 }

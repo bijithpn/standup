@@ -11,6 +11,7 @@ import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/ui/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 
 class BreakLoopApp extends StatefulWidget {
   const BreakLoopApp({super.key});
@@ -54,6 +55,7 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
           await windowManager.focus();
           break;
         case 'quit':
+          await sl<OverlayWindowService>().reset();
           await windowManager.setPreventClose(false);
           await windowManager.close();
           break;
@@ -67,7 +69,10 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
   }
 
   void _handleWindowState(bool isBreakActive) async {
+    final overlayService = sl<OverlayWindowService>();
+    
     if (isBreakActive) {
+      // Let the overlay service handle the window state
       await windowManager.setAlwaysOnTop(true);
       if (sl<SettingsRepository>().currentSettings.strictMode) {
         await windowManager.setFullScreen(true);
@@ -75,8 +80,11 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
       await windowManager.show();
       await windowManager.focus();
     } else {
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setFullScreen(false);
+      // Only reset window state if no overlay is visible
+      if (!overlayService.isOverlayVisible) {
+        await windowManager.setAlwaysOnTop(false);
+        await windowManager.setFullScreen(false);
+      }
     }
   }
 
@@ -105,6 +113,18 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
 
   @override
   void onWindowClose() async {
+    await sl<OverlayWindowService>().reset();
     await windowManager.hide();
+  }
+
+  @override
+  void onWindowBlur() async {
+    final controller = sl<BreakController>();
+    final settings = sl<SettingsRepository>().currentSettings;
+
+    if (controller.isBreakActive && settings.strictMode) {
+      await windowManager.show();
+      await windowManager.focus();
+    }
   }
 }

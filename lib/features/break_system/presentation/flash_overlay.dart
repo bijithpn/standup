@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
+import 'package:standup/app/dependency_injection.dart';
 
 class FlashOverlay extends StatefulWidget {
   const FlashOverlay({super.key});
@@ -15,6 +17,7 @@ class FlashOverlay extends StatefulWidget {
 class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _isVisible = false;
+  final OverlayWindowService _overlayService = sl<OverlayWindowService>();
 
   @override
   void initState() {
@@ -30,10 +33,10 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
 
   void _triggerFlash(SettingsModel settings) {
     if (_isVisible) return;
-    
+
     _controller.duration = Duration(milliseconds: settings.flashDurationMs);
     setState(() => _isVisible = true);
-    
+
     _controller.forward(from: 0).then((_) {
       setState(() => _isVisible = false);
     });
@@ -47,7 +50,22 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
         final isFlashing = controller.timerEngine.isFlashing;
 
         if (isFlashing && !_isVisible) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _triggerFlash(settings));
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Show system-wide overlay for flash notification
+            if (!_overlayService.isOverlayVisible) {
+              _overlayService.showOverlay(
+                type: OverlayType.flashNotification,
+                builder: (context) => _FlashOverlayContent(
+                  settings: settings,
+                  controller: _controller,
+                  isVisible: _isVisible,
+                  onTrigger: _triggerFlash,
+                ),
+                strictMode: settings.strictMode,
+              );
+            }
+            _triggerFlash(settings);
+          });
         }
 
         if (!_isVisible) return const SizedBox.shrink();
@@ -56,7 +74,7 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
           children: [
             // Background Animation Overlay
             _buildAnimationOverlay(settings),
-            
+
             // Floating Notification Card
             _buildNotificationCard(settings),
           ],
@@ -70,12 +88,12 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
       animation: _controller,
       builder: (context, child) {
         final progress = _controller.value;
-        final opacity = (progress < 0.2) 
-            ? (progress / 0.2) 
-            : (progress > 0.8) 
-                ? (1 - (progress - 0.8) / 0.2) 
+        final opacity = (progress < 0.2)
+            ? (progress / 0.2)
+            : (progress > 0.8)
+                ? (1 - (progress - 0.8) / 0.2)
                 : 1.0;
-        
+
         final intensity = settings.flashIntensity * opacity;
 
         switch (settings.flashAnimationType) {
@@ -86,31 +104,41 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
                   center: Alignment.center,
                   radius: progress * 2,
                   colors: [
-                    Color(settings.flashColorHex).withOpacity(intensity),
+                    Color(settings.flashColorHex).withValues(alpha: intensity),
                     Colors.transparent,
                   ],
                 ).createShader(rect);
               },
               blendMode: BlendMode.srcOver,
-              child: Container(color: Colors.white.withOpacity(0.1 * intensity)),
+              child: Container(
+                color: Colors.white.withValues(alpha: 0.1 * intensity),
+              ),
             );
           case 'dim':
-            return Container(color: Colors.black.withOpacity(0.7 * intensity));
+            return Container(
+              color: Colors.black.withValues(alpha: 0.7 * intensity),
+            );
           case 'edge':
             return Container(
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: Color(settings.flashColorHex).withOpacity(intensity),
+                  color: Color(settings.flashColorHex).withValues(alpha:intensity),
                   width: 20 * progress,
                 ),
               ),
             );
           case 'fade':
-            return Container(color: Color(settings.flashColorHex).withOpacity(0.3 * intensity));
+            return Container(
+              color: Color(
+                settings.flashColorHex,
+              ).withValues(alpha: 0.3 * intensity),
+            );
           case 'pulse':
           default:
             return Container(
-              color: Color(settings.flashColorHex).withOpacity(0.15 * intensity),
+              color: Color(
+                settings.flashColorHex,
+              ).withValues(alpha: 0.15 * intensity),
             );
         }
       },
@@ -122,16 +150,16 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
       animation: _controller,
       builder: (context, child) {
         final progress = _controller.value;
-        final slide = (progress < 0.15) 
+        final slide = (progress < 0.15)
             ? (1 - progress / 0.15) * 50
-            : (progress > 0.85) 
+            : (progress > 0.85)
                 ? (progress - 0.85) / 0.15 * 50
                 : 0.0;
-        
-        final opacity = (progress < 0.1) 
-            ? (progress / 0.1) 
-            : (progress > 0.9) 
-                ? (1 - (progress - 0.9) / 0.1) 
+
+        final opacity = (progress < 0.1)
+            ? (progress / 0.1)
+            : (progress > 0.9)
+                ? (1 - (progress - 0.9) / 0.1)
                 : 1.0;
 
         return Positioned(
@@ -142,12 +170,12 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
             child: Container(
               width: 300,
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E).withOpacity(0.8),
+                color: const Color(0xFF1E1E1E).withValues(alpha:0.8),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withOpacity(0.1)),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -163,7 +191,9 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Color(settings.flashColorHex).withOpacity(0.2),
+                          color: Color(
+                            settings.flashColorHex,
+                          ).withValues(alpha: 0.2),
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
@@ -215,5 +245,28 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
         );
       },
     );
+  }
+}
+
+/// Standalone flash overlay content for system-wide display
+class _FlashOverlayContent extends StatelessWidget {
+  final SettingsModel settings;
+  final AnimationController controller;
+  final bool isVisible;
+  final void Function(SettingsModel) onTrigger;
+
+  const _FlashOverlayContent({
+    required this.settings,
+    required this.controller,
+    required this.isVisible,
+    required this.onTrigger,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (isVisible) {
+      onTrigger(settings);
+    }
+    return const SizedBox.shrink();
   }
 }

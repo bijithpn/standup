@@ -3,6 +3,7 @@ import 'package:standup/core/services/activity_monitor.dart';
 import 'package:standup/core/services/notification_service.dart';
 import 'package:standup/core/services/storage_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/statistics/stats_service.dart';
@@ -22,6 +23,10 @@ Future<void> initDependencies() async {
 
   final activityMonitor = ActivityMonitor();
   sl.registerSingleton<ActivityMonitor>(activityMonitor);
+
+  // Overlay Window Service for system-wide displays
+  final overlayService = OverlayWindowService();
+  sl.registerSingleton<OverlayWindowService>(overlayService);
 
   // Feature Services
   final settingsRepo = SettingsRepository(storage: sl());

@@ -35,7 +35,7 @@ class ProgressRing extends StatelessWidget {
               trackColor: AppTheme.borderColor,
             ),
           ),
-          if (child != null) child!,
+          ?child,
         ],
       ),
     );

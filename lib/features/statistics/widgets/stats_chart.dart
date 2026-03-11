@@ -45,7 +45,7 @@ class DailyStatsChart extends StatelessWidget {
                     barRods: [
                       BarChartRodData(
                         toY: stats.breaksSkipped.toDouble(),
-                        color: Colors.redAccent.withOpacity(0.6),
+                        color: Colors.redAccent.withValues(alpha: 0.6),
                         width: 16,
                         borderRadius: BorderRadius.circular(4),
                       ),
@@ -61,7 +61,7 @@ class DailyStatsChart extends StatelessWidget {
             children: [
               _buildLegend('Completed', AppTheme.shortBreakColor),
               const SizedBox(width: 16),
-              _buildLegend('Skipped', Colors.redAccent.withOpacity(0.6)),
+              _buildLegend('Skipped', Colors.redAccent.withValues(alpha: 0.6)),
             ],
           ),
         ],
