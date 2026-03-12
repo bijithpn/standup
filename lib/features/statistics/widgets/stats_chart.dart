@@ -20,7 +20,7 @@ class DailyStatsChart extends StatelessWidget {
     return Container(
       height: 250,
       padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration,
+      decoration: AppTheme.glassCardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

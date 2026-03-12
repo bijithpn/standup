@@ -5,14 +5,22 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:standup/app/app.dart';
 import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 void main() async {
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
       debugPrint('Startup: Widgets initialized');
-      
+
+      // Initialize flutter_acrylic for glassmorphic effect
+      if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+        await Window.initialize();
+        debugPrint('Startup: Acrylic window initialized');
+      }
+
       // Single instance check via Socket
       try {
         await ServerSocket.bind(InternetAddress.loopbackIPv4, 10425);
@@ -34,14 +42,14 @@ void main() async {
       WindowOptions windowOptions = const WindowOptions(
         size: Size(500, 700),
         center: true,
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
         skipTaskbar: false,
         titleBarStyle: TitleBarStyle.hidden,
       );
 
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.setPreventClose(true);
-        // We start hidden as it's a tray app
+        // We start hidden as it's a tray app - NOT always on top
         await windowManager.hide();
         debugPrint('Startup: Window ready and hidden');
       });
@@ -59,6 +67,11 @@ void main() async {
       } catch (e) {
         debugPrint('Launch at startup setup failed: $e');
       }
+
+      // Start flash overlay timer for periodic posture reminders
+      final flashOverlayService = sl<FlashOverlayService>();
+      flashOverlayService.startTimer();
+      debugPrint('Startup: Flash overlay timer started (20 min interval)');
 
       runApp(const BreakLoopApp());
       debugPrint('Startup: app running');

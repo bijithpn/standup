@@ -9,6 +9,7 @@ import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/statistics/stats_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
+import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 
 final sl = GetIt.instance;
 
@@ -61,4 +62,7 @@ Future<void> initDependencies() async {
   );
   breakController.initialize();
   sl.registerSingleton<BreakController>(breakController);
+
+  final flashOverlayService = FlashOverlayService();
+  sl.registerSingleton<FlashOverlayService>(flashOverlayService);
 }

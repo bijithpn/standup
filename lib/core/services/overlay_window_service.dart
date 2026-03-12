@@ -37,7 +37,7 @@ class OverlayWindowService {
         await windowManager.setFullScreen(false);
         await windowManager.setSkipTaskbar(true);
         await windowManager.setHasShadow(false);
-        
+
         // Position in top-right corner for floating mode
         final floatWidth = 350.0;
         final floatHeight = 100.0;
@@ -46,7 +46,8 @@ class OverlayWindowService {
           Offset(screenWidth - floatWidth - 20, 20),
         );
       } else {
-        // Full screen overlay mode
+        // Full screen overlay mode - ONLY for breaks/flash notifications
+        // This does NOT make the main app always-on-top
         await windowManager.setAlwaysOnTop(true);
         await windowManager.setFullScreen(strictMode);
 
@@ -71,6 +72,7 @@ class OverlayWindowService {
   }
 
   /// Hide the current overlay and return to normal window state
+  /// IMPORTANT: This ensures the app returns to background (not always-on-top)
   Future<void> hideOverlay() async {
     if (!_isOverlayVisible) {
       return;
@@ -82,11 +84,13 @@ class OverlayWindowService {
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
       await windowManager.setSkipTaskbar(false);
+      await windowManager.hide();
+      await windowManager.setBackgroundColor(Colors.transparent);
 
       _isOverlayVisible = false;
       _currentOverlayType = null;
 
-      _logger.info('Overlay hidden successfully');
+      _logger.info('Overlay hidden successfully - app now in background');
     } catch (e) {
       _logger.error('Failed to hide overlay: $e');
     }

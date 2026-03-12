@@ -12,6 +12,8 @@ import 'package:standup/ui/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
+import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
+import 'package:standup/features/flash_overlay/flash_overlay_screen.dart';
 
 class BreakLoopApp extends StatefulWidget {
   const BreakLoopApp({super.key});
@@ -21,22 +23,31 @@ class BreakLoopApp extends StatefulWidget {
 }
 
 class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
+  FlashOverlayService? _flashOverlayService;
+
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
     _setupTrayActions();
+    _initFlashOverlay();
+  }
+
+  void _initFlashOverlay() {
+    _flashOverlayService = sl<FlashOverlayService>();
   }
 
   @override
   void dispose() {
     windowManager.removeListener(this);
+    _flashOverlayService?.dispose();
     super.dispose();
   }
 
   void _setupTrayActions() {
     final tray = sl<TrayManagerService>();
     final controller = sl<BreakController>();
+    final flashOverlayService = sl<FlashOverlayService>();
 
     tray.onMenuAction = (action) async {
       switch (action) {
@@ -50,12 +61,16 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
         case 'skip_next':
           controller.skipNextBreak();
           break;
+        case 'posture_reminder':
+          await flashOverlayService.showOverlay();
+          break;
         case 'settings':
           await windowManager.show();
           await windowManager.focus();
           break;
         case 'quit':
           await sl<OverlayWindowService>().reset();
+          flashOverlayService.dispose();
           await windowManager.setPreventClose(false);
           await windowManager.close();
           break;
@@ -72,19 +87,20 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
     final overlayService = sl<OverlayWindowService>();
     
     if (isBreakActive) {
-      // Let the overlay service handle the window state
-      await windowManager.setAlwaysOnTop(true);
+      // Only set fullscreen for break overlay
       if (sl<SettingsRepository>().currentSettings.strictMode) {
         await windowManager.setFullScreen(true);
       }
       await windowManager.show();
       await windowManager.focus();
     } else {
-      // Only reset window state if no overlay is visible
-      if (!overlayService.isOverlayVisible) {
-        await windowManager.setAlwaysOnTop(false);
-        await windowManager.setFullScreen(false);
-      }
+      // Break ended - CRITICAL: Reset ALL window states and hide overlay
+      debugPrint('[App] Break ended - resetting window state');
+      await overlayService.hideOverlay();
+      await windowManager.setAlwaysOnTop(false);
+      await windowManager.setFullScreen(false);
+      await windowManager.setSkipTaskbar(false);
+      await windowManager.setBackgroundColor(Colors.transparent);
     }
   }
 
@@ -100,12 +116,20 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
         title: 'BreakMate',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.macosTheme,
-        home: const Stack(
-          children: [
-            MainLayout(),
-            BreakOverlay(),
-            FlashOverlay(),
-          ],
+        home: Builder(
+          builder: (context) {
+            final flashService = sl<FlashOverlayService>();
+            return Stack(
+              children: [
+                MainLayout(),
+                BreakOverlay(),
+                FlashOverlay(),
+                // Flash overlay screen for full-screen posture reminders
+                if (flashService.isOverlayVisible)
+                  FlashOverlayScreen(overlayService: flashService),
+              ],
+            );
+          },
         ),
       ),
     );

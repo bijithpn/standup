@@ -972,7 +972,7 @@ class _SettingsPageState extends State<SettingsPage> {
         
         return Container(
           margin: EdgeInsets.only(bottom: isSmallScreen ? 16 : 24),
-          decoration: AppTheme.cardDecoration.copyWith(
+          decoration: AppTheme.glassCardDecoration.copyWith(
             borderRadius: BorderRadius.circular(isSmallScreen ? 12 : 20),
           ),
           child: Padding(

@@ -24,8 +24,9 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
   late PageController _pageController;
   int _currentSlide = 0;
   Timer? _slideshowTimer;
+  Timer? _timeTimer;
   late AnimationController _breathingController;
-  late Stream<DateTime> _timeStream;
+  DateTime _currentTime = DateTime.now();
   final OverlayWindowService _overlayService = sl<OverlayWindowService>();
 
   @override
@@ -38,7 +39,14 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
 
-    _timeStream = Stream.periodic(const Duration(seconds: 1), (_) => DateTime.now());
+    // Update time every second using Timer instead of Stream
+    _timeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _currentTime = DateTime.now();
+        });
+      }
+    });
   }
 
   void _startSlideshow() {
@@ -60,6 +68,7 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
   @override
   void dispose() {
     _slideshowTimer?.cancel();
+    _timeTimer?.cancel();
     _pageController.dispose();
     _breathingController.dispose();
     super.dispose();
@@ -88,7 +97,6 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
                 pageController: _pageController,
                 currentSlide: _currentSlide,
                 breathingController: _breathingController,
-                timeStream: _timeStream,
               ),
               strictMode: settings.strictMode,
             );
@@ -212,36 +220,30 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
   }
 
   Widget _buildDesktopClock(TimerEngine timerEngine, SettingsModel settings) {
-    return StreamBuilder<DateTime>(
-      stream: _timeStream,
-      builder: (context, snapshot) {
-        final time = snapshot.data ?? DateTime.now();
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              DateFormat('hh:mm a').format(time),
-              style: TextStyle(
-                color: Color(settings.clockFaceTextColorHex),
-                fontSize: 120,
-                fontWeight: FontWeight.w200,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${_formatDuration(timerEngine.countdownSeconds)} remaining',
-                style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
-              ),
-            ),
-          ],
-        );
-      }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          DateFormat('hh:mm a').format(_currentTime),
+          style: TextStyle(
+            color: Color(settings.clockFaceTextColorHex),
+            fontSize: 120,
+            fontWeight: FontWeight.w200,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '${_formatDuration(timerEngine.countdownSeconds)} remaining',
+            style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
+          ),
+        ),
+      ],
     );
   }
 
@@ -261,28 +263,22 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
               backgroundColor: Colors.white10,
             ),
           ),
-          StreamBuilder<DateTime>(
-            stream: _timeStream,
-            builder: (context, snapshot) {
-              final time = snapshot.data ?? DateTime.now();
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    DateFormat('HH:mm').format(time),
-                    style: TextStyle(
-                      color: Color(settings.clockFaceTextColorHex),
-                      fontSize: 80,
-                      fontWeight: FontWeight.w100,
-                    ),
-                  ),
-                  Text(
-                    _formatDuration(timerEngine.countdownSeconds),
-                    style: const TextStyle(color: Colors.white38, fontSize: 24),
-                  ),
-                ],
-              );
-            }
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DateFormat('HH:mm').format(_currentTime),
+                style: TextStyle(
+                  color: Color(settings.clockFaceTextColorHex),
+                  fontSize: 80,
+                  fontWeight: FontWeight.w100,
+                ),
+              ),
+              Text(
+                _formatDuration(timerEngine.countdownSeconds),
+                style: const TextStyle(color: Colors.white38, fontSize: 24),
+              ),
+            ],
           ),
         ],
       ),
@@ -470,7 +466,7 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
 }
 
 /// Standalone break overlay content for system-wide display and demo preview
-class _BreakOverlayContent extends StatelessWidget {
+class _BreakOverlayContent extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final TimerEngine timerEngine;
@@ -478,7 +474,6 @@ class _BreakOverlayContent extends StatelessWidget {
   final PageController pageController;
   final int currentSlide;
   final AnimationController breathingController;
-  final Stream<DateTime> timeStream;
 
   const _BreakOverlayContent({
     required this.breakInfo,
@@ -488,8 +483,33 @@ class _BreakOverlayContent extends StatelessWidget {
     required this.pageController,
     required this.currentSlide,
     required this.breathingController,
-    required this.timeStream,
   });
+
+  @override
+  State<_BreakOverlayContent> createState() => _BreakOverlayContentState();
+}
+
+class _BreakOverlayContentState extends State<_BreakOverlayContent> {
+  DateTime _currentTime = DateTime.now();
+  Timer? _timeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {
+          _currentTime = DateTime.now();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timeTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -500,7 +520,7 @@ class _BreakOverlayContent extends StatelessWidget {
         children: [
           // Background Layer
           PageView.builder(
-            controller: pageController,
+            controller: widget.pageController,
             itemCount: AppConstants.wellnessSlideshow.length,
             physics: const NeverScrollableScrollPhysics(),
             itemBuilder: (context, index) {
@@ -518,8 +538,8 @@ class _BreakOverlayContent extends StatelessWidget {
           // UI Layer
           BackdropFilter(
             filter: ImageFilter.blur(
-              sigmaX: settings.clockFaceBlurEnabled ? 50 : 0,
-              sigmaY: settings.clockFaceBlurEnabled ? 50 : 0,
+              sigmaX: widget.settings.clockFaceBlurEnabled ? 50 : 0,
+              sigmaY: widget.settings.clockFaceBlurEnabled ? 50 : 0,
             ),
             child: Container(
               decoration: BoxDecoration(
@@ -536,7 +556,7 @@ class _BreakOverlayContent extends StatelessWidget {
                   child: Container(
                     constraints: const BoxConstraints(maxWidth: 1000),
                     padding: const EdgeInsets.all(40),
-                    child: timerEngine.isCompletionState
+                    child: widget.timerEngine.isCompletionState
                         ? _buildCompletionState()
                         : _buildClockFace(),
                   ),
@@ -550,7 +570,7 @@ class _BreakOverlayContent extends StatelessWidget {
   }
 
   Widget _buildClockFace() {
-    switch (settings.clockFaceStyle.toLowerCase()) {
+    switch (widget.settings.clockFaceStyle.toLowerCase()) {
       case 'desktop':
         return _buildDesktopClock();
       case 'personal':
@@ -569,7 +589,7 @@ class _BreakOverlayContent extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
-          breakInfo.title.toUpperCase(),
+          widget.breakInfo.title.toUpperCase(),
           style: const TextStyle(
             letterSpacing: 10,
             color: Colors.white38,
@@ -579,9 +599,9 @@ class _BreakOverlayContent extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         Text(
-          _formatDuration(timerEngine.countdownSeconds),
+          _formatDuration(widget.timerEngine.countdownSeconds),
           style: TextStyle(
-            color: Color(settings.clockFaceTextColorHex),
+            color: Color(widget.settings.clockFaceTextColorHex),
             fontSize: 200,
             fontWeight: FontWeight.w100,
             letterSpacing: -10,
@@ -595,36 +615,30 @@ class _BreakOverlayContent extends StatelessWidget {
   }
 
   Widget _buildDesktopClock() {
-    return StreamBuilder<DateTime>(
-      stream: timeStream,
-      builder: (context, snapshot) {
-        final time = snapshot.data ?? DateTime.now();
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              DateFormat('hh:mm a').format(time),
-              style: TextStyle(
-                color: Color(settings.clockFaceTextColorHex),
-                fontSize: 120,
-                fontWeight: FontWeight.w200,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '${_formatDuration(timerEngine.countdownSeconds)} remaining',
-                style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
-              ),
-            ),
-          ],
-        );
-      },
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          DateFormat('hh:mm a').format(_currentTime),
+          style: TextStyle(
+            color: Color(widget.settings.clockFaceTextColorHex),
+            fontSize: 120,
+            fontWeight: FontWeight.w200,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white10,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            '${_formatDuration(widget.timerEngine.countdownSeconds)} remaining',
+            style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
+          ),
+        ),
+      ],
     );
   }
 
@@ -637,34 +651,28 @@ class _BreakOverlayContent extends StatelessWidget {
             width: 400,
             height: 400,
             child: CircularProgressIndicator(
-              value: timerEngine.countdownSeconds / (breakInfo.durationSeconds),
+              value: widget.timerEngine.countdownSeconds / (widget.breakInfo.durationSeconds),
               strokeWidth: 4,
               color: AppTheme.accentColor.withValues(alpha: 0.3),
               backgroundColor: Colors.white10,
             ),
           ),
-          StreamBuilder<DateTime>(
-            stream: timeStream,
-            builder: (context, snapshot) {
-              final time = snapshot.data ?? DateTime.now();
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    DateFormat('HH:mm').format(time),
-                    style: TextStyle(
-                      color: Color(settings.clockFaceTextColorHex),
-                      fontSize: 80,
-                      fontWeight: FontWeight.w100,
-                    ),
-                  ),
-                  Text(
-                    _formatDuration(timerEngine.countdownSeconds),
-                    style: const TextStyle(color: Colors.white38, fontSize: 24),
-                  ),
-                ],
-              );
-            },
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DateFormat('HH:mm').format(_currentTime),
+                style: TextStyle(
+                  color: Color(widget.settings.clockFaceTextColorHex),
+                  fontSize: 80,
+                  fontWeight: FontWeight.w100,
+                ),
+              ),
+              Text(
+                _formatDuration(widget.timerEngine.countdownSeconds),
+                style: const TextStyle(color: Colors.white38, fontSize: 24),
+              ),
+            ],
           ),
         ],
       ),
@@ -676,10 +684,10 @@ class _BreakOverlayContent extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         AnimatedBuilder(
-          animation: breathingController,
+          animation: widget.breathingController,
           builder: (context, child) {
-            final size = 200 + (100 * breathingController.value);
-            final isInhale = breathingController.status == AnimationStatus.forward;
+            final size = 200 + (100 * widget.breathingController.value);
+            final isInhale = widget.breathingController.status == AnimationStatus.forward;
             return Column(
               children: [
                 Container(
@@ -693,9 +701,9 @@ class _BreakOverlayContent extends StatelessWidget {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.accentColor.withValues(alpha: 0.2 * breathingController.value),
+                        color: AppTheme.accentColor.withValues(alpha: 0.2 * widget.breathingController.value),
                         blurRadius: 40,
-                        spreadRadius: 20 * breathingController.value,
+                        spreadRadius: 20 * widget.breathingController.value,
                       ),
                     ],
                   ),
@@ -713,7 +721,7 @@ class _BreakOverlayContent extends StatelessWidget {
                 ),
                 const SizedBox(height: 60),
                 Text(
-                  _formatDuration(timerEngine.countdownSeconds),
+                  _formatDuration(widget.timerEngine.countdownSeconds),
                   style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w100),
                 ),
               ],
@@ -736,13 +744,13 @@ class _BreakOverlayContent extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            breakInfo.isLong ? CupertinoIcons.wind : CupertinoIcons.eye,
+            widget.breakInfo.isLong ? CupertinoIcons.wind : CupertinoIcons.eye,
             color: AppTheme.accentColor,
             size: 20,
           ),
           const SizedBox(width: 12),
           Text(
-            breakInfo.isLong ? 'Take deep breaths and stretch' : 'Look at something far away',
+            widget.breakInfo.isLong ? 'Take deep breaths and stretch' : 'Look at something far away',
             style: const TextStyle(
               color: Colors.white54,
               fontSize: 16,

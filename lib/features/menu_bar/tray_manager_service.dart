@@ -31,12 +31,11 @@ class TrayManagerService with TrayListener {
     final menu = Menu(items: [
         MenuItem(label: 'BreakLoop', disabled: true),
       MenuItem.separator(),
-      MenuItem(
-        key: 'toggle_pause',
-        label: _isPaused ? 'Resume reminders' : 'Pause reminders',
-      ),
+      MenuItem(key: 'toggle_pause', label: _isPaused ? 'Resume reminders' : 'Pause reminders'),
       MenuItem(key: 'take_break', label: 'Take break now'),
       MenuItem(key: 'skip_next', label: 'Skip next break'),
+      MenuItem.separator(),
+      MenuItem(key: 'posture_reminder', label: 'Show posture reminder'),
       MenuItem.separator(),
       MenuItem(key: 'settings', label: 'Settings...'),
       MenuItem.separator(),

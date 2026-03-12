@@ -26,18 +26,53 @@ class AppTheme {
     );
   }
 
-  static BoxDecoration get cardDecoration {
+  /// Glassmorphic card decoration with blur effect
+  static BoxDecoration get glassCardDecoration {
     return BoxDecoration(
-      color: cardBackground,
-      borderRadius: BorderRadius.circular(20),
-      border: Border.all(color: borderColor, width: 1.5),
+      color: const Color(0xFF2C2C2C).withValues(alpha: 0.6),
+      borderRadius: BorderRadius.circular(24),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: 0.1),
+        width: 1.5,
+      ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.2),
-          blurRadius: 15,
-          offset: const Offset(0, 6),
+          color: Colors.black.withValues(alpha: 0.3),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+        BoxShadow(
+          color: accentColor.withValues(alpha: 0.1),
+          blurRadius: 30,
+          offset: const Offset(0, 0),
         ),
       ],
+    );
+  }
+
+  /// Glassmorphic container widget using standard Flutter
+  static Widget glassContainer({
+    required Widget child,
+    double opacity = 0.6,
+    BorderRadius? borderRadius,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C).withValues(alpha: opacity),
+        borderRadius: borderRadius ?? BorderRadius.circular(24),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.1),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
     );
   }
 
