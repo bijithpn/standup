@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/constants/app_constants.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/adaptive_break_service.dart';
 import 'package:standup/core/services/activity_monitor.dart';
 import 'package:standup/core/services/notification_service.dart';
@@ -29,8 +30,10 @@ class TimerEngine extends ChangeNotifier {
   WorkMode _mode = WorkMode.flexible;
   BreakModel? _activeBreak;
   int _countdownSeconds = 0;
+  int _shortBreaksSinceLongBreak = 0;
   bool _isCompletionState = false;
   bool _isFlashing = false;
+  bool _isPreBreak = false;
 
   Duration _workElapsed = Duration.zero;
   Duration _totalWorkToday = Duration.zero;
@@ -54,6 +57,7 @@ class TimerEngine extends ChangeNotifier {
   int get countdownSeconds => _countdownSeconds;
   bool get isCompletionState => _isCompletionState;
   bool get isFlashing => _isFlashing;
+  bool get isPreBreak => _isPreBreak;
   Duration get totalWorkToday => _totalWorkToday;
 
   Duration get timeUntilNextShortBreak {
@@ -72,6 +76,7 @@ class TimerEngine extends ChangeNotifier {
 
   void startTimers() {
     _state = TimerState.running;
+    _isPreBreak = false;
     _workElapsed = Duration.zero;
     _lastTickTime = DateTime.now();
 
@@ -109,10 +114,55 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void _checkBreakConditions() {
+    // Clock Out Detection
+    if (_settingsRepository.currentSettings.enableClockOut) {
+      final clockOutTimeStr = _settingsRepository.currentSettings.clockOutTime;
+      final parts = clockOutTimeStr.split(':');
+      if (parts.length == 2) {
+        final clockOutHour = int.tryParse(parts[0]) ?? 17;
+        final clockOutMin = int.tryParse(parts[1]) ?? 0;
+        final now = DateTime.now();
+        
+        if (now.hour > clockOutHour || (now.hour == clockOutHour && now.minute >= clockOutMin)) {
+          if (_state == TimerState.running && !sl<OverlayWindowService>().isOverlayVisible) {
+             _triggerClockOut();
+             return;
+          }
+        }
+      }
+    }
+
     final interval = Duration(minutes: _settingsRepository.currentSettings.shortBreakIntervalMinutes);
+    final remaining = interval - _workElapsed;
+    
+    // 20 second warning
+    if (remaining <= const Duration(seconds: 20) && !_isPreBreak) {
+      _isPreBreak = true;
+      _logger.info('Pre-break warning triggered');
+      notifyListeners();
+    }
+    
     if (_workElapsed >= interval) {
+      _isPreBreak = false;
       _triggerBreak();
     }
+  }
+
+  void _triggerClockOut() {
+    _state = TimerState.breakActive;
+    _workElapsed = Duration.zero;
+    _countdownSeconds = 3600; // 1 hour break block basically
+    
+    _activeBreak = BreakModel(
+      type: BreakType.long,
+      durationSeconds: _countdownSeconds,
+      title: 'CLOCK OUT',
+      tip: 'Your workday is over. Time to step away and live your life. No more "just five more minutes".',
+    );
+
+    _notificationService.showBreakStarted(breakTitle: 'Time to Clock Out!');
+    _logger.info('Clock out triggered');
+    notifyListeners();
   }
 
   void setFocusMode(bool enabled) {
@@ -123,17 +173,33 @@ class TimerEngine extends ChangeNotifier {
     _state = TimerState.breakActive;
     _workElapsed = Duration.zero;
     
-    final suggestedDuration = _adaptiveBreakService?.getSuggestedBreakDuration() ?? 
-        _settingsRepository.currentSettings.shortBreakDurationSeconds;
-        
-    _countdownSeconds = suggestedDuration;
+    final settings = _settingsRepository.currentSettings;
     
-    _activeBreak = BreakModel(
-      type: BreakType.short,
-      durationSeconds: _countdownSeconds,
-      title: 'Rest Time',
-      tip: _randomTip(AppConstants.shortBreakTips),
-    );
+    // Every 4th break is a long break
+    bool isLongBreak = _shortBreaksSinceLongBreak >= 3;
+    
+    if (isLongBreak) {
+      _countdownSeconds = settings.longBreakDurationMinutes * 60;
+      _activeBreak = BreakModel(
+        type: BreakType.long,
+        durationSeconds: _countdownSeconds,
+        title: 'LONG BREAK',
+        tip: 'Time to stand, stretch, and mentally reset. Step away from your desk.',
+      );
+      _shortBreaksSinceLongBreak = 0;
+    } else {
+      final suggestedDuration = _adaptiveBreakService?.getSuggestedBreakDuration() ?? 
+          settings.shortBreakDurationSeconds;
+          
+      _countdownSeconds = suggestedDuration;
+      _activeBreak = BreakModel(
+        type: BreakType.short,
+        durationSeconds: _countdownSeconds,
+        title: 'Rest Time',
+        tip: _randomTip(AppConstants.shortBreakTips),
+      );
+      _shortBreaksSinceLongBreak++;
+    }
 
     _notificationService.showBreakStarted(breakTitle: _activeBreak!.title);
     _logger.info('Break triggered: ${_activeBreak!.title}');
@@ -149,6 +215,7 @@ class TimerEngine extends ChangeNotifier {
     _activeBreak = null;
     _isCompletionState = false;
     _state = TimerState.running;
+    _isPreBreak = false;
     _lastTickTime = DateTime.now();
     _workElapsed = Duration.zero;
 
@@ -199,6 +266,7 @@ class TimerEngine extends ChangeNotifier {
   void resumeTimers() {
     if (_state == TimerState.breakActive) return;
     _state = TimerState.running;
+    _isPreBreak = false;
     _lastTickTime = DateTime.now();
     notifyListeners();
   }

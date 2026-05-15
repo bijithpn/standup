@@ -35,19 +35,31 @@ class BreakController extends ChangeNotifier {
     _timerEngine.addListener(_handleGlobalOverlays);
   }
 
-  void _handleGlobalOverlays() {
+      void _handleGlobalOverlays() {
     final overlayService = sl<OverlayWindowService>();
     final settings = _settingsRepo.currentSettings;
 
-    if (_timerEngine.state == TimerState.breakActive && !overlayService.isOverlayVisible) {
-      // Trigger global break overlay
-      overlayService.showOverlay(
-        type: OverlayType.breakScreen,
-        builder: (context) => const SizedBox.shrink(), // Stack in app.dart handles content
-        strictMode: settings.strictMode,
-      );
-    } else if (_timerEngine.state != TimerState.breakActive && 
-               overlayService.currentOverlayType == OverlayType.breakScreen) {
+    bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
+    bool shouldShowWarning = _timerEngine.isPreBreak;
+
+    if (shouldShowBreak) {
+      if (overlayService.currentOverlayType != OverlayType.breakScreen) {
+        overlayService.showOverlay(
+          type: OverlayType.breakScreen,
+          builder: (context) => const SizedBox.shrink(),
+          strictMode: settings.strictMode,
+        );
+      }
+    } else if (shouldShowWarning) {
+      if (overlayService.currentOverlayType != OverlayType.preBreakWarning) {
+        overlayService.showOverlay(
+          type: OverlayType.preBreakWarning,
+          builder: (context) => const SizedBox.shrink(),
+        );
+      }
+    } else if (overlayService.isOverlayVisible && 
+               (overlayService.currentOverlayType == OverlayType.breakScreen ||
+                overlayService.currentOverlayType == OverlayType.preBreakWarning)) {
       overlayService.hideOverlay();
     }
 

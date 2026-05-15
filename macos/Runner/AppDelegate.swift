@@ -21,7 +21,23 @@ class AppDelegate: FlutterAppDelegate {
     let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: controller.engine.binaryMessenger)
 
     channel.setMethodCallHandler { (call, result) in
+      guard let window = self.mainFlutterWindow as? MainFlutterWindow else {
+        result(FlutterError(code: "WINDOW_NOT_FOUND", message: "MainFlutterWindow not found", details: nil))
+        return
+      }
+
       switch call.method {
+      case "showOverlay":
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
+        window.configureAsOverlay()
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        result(nil)
+      case "hideOverlay":
+        window.resetToNormal()
+        result(nil)
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
            let levelStr = args["level"] as? String {
@@ -41,6 +57,13 @@ class AppDelegate: FlutterAppDelegate {
       case "getAppearance":
         let isDark = NSAppearance.current?.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         result(isDark ? "dark" : "light")
+      case "focusApp":
+        if window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        result(nil)
       default:
         result(FlutterMethodNotImplemented)
       }

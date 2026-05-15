@@ -22,40 +22,34 @@ class OverlayWindowService extends ChangeNotifier {
     }
 
     try {
-      final displays = await ScreenRetriever.instance.getAllDisplays();
-      final primaryDisplay = displays.first;
-      
-      // Try to cover the primary display at minimum
-      double width = primaryDisplay.size.width;
-      double height = primaryDisplay.size.height;
-      double x = 0;
-      double y = 0;
-
-      _logger.info('Showing global overlay: $type (Size: ${width}x$height)');
+      _logger.info('Showing global overlay: ');
 
       await windowManager.setIgnoreMouseEvents(false);
 
-      if (floatingMode) {
+      if (type == OverlayType.breakScreen) {
+        await MacOSBridge.showOverlay();
+        if (strictMode) {
+          await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
+        }
+      } else if (type == OverlayType.preBreakWarning) {
+        await MacOSBridge.focusApp();
+        await MacOSBridge.setWindowLevel('floating');
+        // Let Flutter handle the size/position if needed
+      } else if (floatingMode) {
         await MacOSBridge.setWindowLevel('floating');
         await windowManager.setFullScreen(false);
         await windowManager.setSkipTaskbar(true);
         await windowManager.setHasShadow(false);
 
+        final displays = await ScreenRetriever.instance.getAllDisplays();
+        final primaryDisplay = displays.first;
+        final width = primaryDisplay.size.width;
         final floatWidth = 350.0;
         final floatHeight = 120.0;
         await windowManager.setSize(Size(floatWidth, floatHeight));
         await windowManager.setPosition(Offset(width - floatWidth - 20, 40));
       } else {
-        if (strictMode) {
-          await MacOSBridge.setWindowLevel('screenSaver');
-          await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
-          await windowManager.setBounds(Rect.fromLTWH(x, y, width, height));
-          await windowManager.setFullScreen(true);
-        } else {
-          await MacOSBridge.setWindowLevel('floating');
-          await windowManager.setFullScreen(false);
-          await windowManager.setBounds(Rect.fromLTWH(x, y, width, height));
-        }
+        await MacOSBridge.setWindowLevel('floating');
       }
 
       await windowManager.show();
@@ -65,7 +59,7 @@ class OverlayWindowService extends ChangeNotifier {
       _currentOverlayType = type;
       notifyListeners();
     } catch (e) {
-      _logger.error('Failed to show global overlay: $e');
+      _logger.error('Failed to show global overlay: ');
       rethrow;
     }
   }
@@ -79,7 +73,7 @@ class OverlayWindowService extends ChangeNotifier {
         await hideOverlay();
       }
 
-      await MacOSBridge.setWindowLevel('normal');
+      await MacOSBridge.hideOverlay();
       await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
       
       await windowManager.setFullScreen(false);
@@ -92,7 +86,7 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.focus();
       notifyListeners();
     } catch (e) {
-      _logger.error('Failed to show dashboard: $e');
+      _logger.error('Failed to show dashboard: ');
     }
   }
 
@@ -106,7 +100,7 @@ class OverlayWindowService extends ChangeNotifier {
       _logger.info('Hiding overlay and resetting window state');
 
       // Reset macOS native state
-      await MacOSBridge.setWindowLevel('normal');
+      await MacOSBridge.hideOverlay();
       await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
 
       await windowManager.setAlwaysOnTop(false);
@@ -121,7 +115,7 @@ class OverlayWindowService extends ChangeNotifier {
 
       _logger.info('Overlay hidden successfully');
     } catch (e) {
-      _logger.error('Failed to hide overlay: $e');
+      _logger.error('Failed to hide overlay: ');
     }
   }
 
@@ -135,7 +129,7 @@ class OverlayWindowService extends ChangeNotifier {
   Future<void> reset() async {
     _isOverlayVisible = false;
     _currentOverlayType = null;
-    await MacOSBridge.setWindowLevel('normal');
+    await MacOSBridge.hideOverlay();
     await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setFullScreen(false);
@@ -147,6 +141,9 @@ class OverlayWindowService extends ChangeNotifier {
 enum OverlayType {
   /// Flash notification overlay (short reminder)
   flashNotification,
+
+  /// Pre-break warning overlay
+  preBreakWarning,
 
   /// Break overlay (full break screen)
   breakScreen,

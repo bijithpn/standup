@@ -27,7 +27,7 @@ class MainFlutterWindow: NSWindow {
     super.awakeFromNib()
   }
 
-  /// Configure this window as a full-screen overlay (ONLY for flash notification)
+  /// Configure this window as a full-screen overlay
   func configureAsOverlay() {
     self.isOpaque = false
     self.hasShadow = false
@@ -37,6 +37,11 @@ class MainFlutterWindow: NSWindow {
     self.isMovableByWindowBackground = false
     self.ignoresMouseEvents = false
     self.backgroundColor = NSColor.black.withAlphaComponent(0.95)
+    
+    // Ensure the content view covers the entire window
+    if let screen = self.screen ?? NSScreen.main {
+        self.setFrame(screen.frame, display: true)
+    }
   }
 
   /// Configure this window to ignore mouse events (click-through)
@@ -52,5 +57,9 @@ class MainFlutterWindow: NSWindow {
     self.isMovableByWindowBackground = true
     self.ignoresMouseEvents = false
     self.hasShadow = true
+    self.backgroundColor = NSColor.windowBackgroundColor
+    
+    // Resize back to a reasonable size if it was full screen
+    // or just let Flutter handle resizing via window_manager
   }
 }

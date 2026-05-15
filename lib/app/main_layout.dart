@@ -19,7 +19,10 @@ class _MainLayoutState extends State<MainLayout> {
   final List<({String label, IconData icon, String section})> _navItems = [
     (label: 'Companion', icon: CupertinoIcons.sparkles, section: 'Companion'),
     (label: 'Wellness', icon: CupertinoIcons.heart_fill, section: 'Breaks & Profiles'),
+    (label: 'Smart Detect', icon: CupertinoIcons.eye_solid, section: 'Intelligent Detection'),
     (label: 'Reminders', icon: CupertinoIcons.bolt_fill, section: 'Flash Reminder'),
+    (label: 'Clock Out', icon: CupertinoIcons.moon_fill, section: 'Clock Out'),
+    (label: 'Exercises', icon: CupertinoIcons.person_crop_circle_badge_exclam, section: 'Exercises'),
     (label: 'Insights', icon: CupertinoIcons.chart_bar_fill, section: 'Statistics'),
     (label: 'Articles', icon: CupertinoIcons.news, section: 'Blog'),
     (label: 'Settings', icon: CupertinoIcons.settings_solid, section: 'General'),
@@ -27,83 +30,36 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 800;
-        final sidebarWidth = isNarrow ? 72.0 : 240.0;
-
-        return MacosWindow(
-          backgroundColor: AppTheme.contentBackground,
-          sidebar: Sidebar(
-            minWidth: sidebarWidth,
-            top: Column(
-              children: [
-                const SizedBox(height: 32),
-                _buildLogo(isNarrow),
-                const SizedBox(height: 32),
-              ],
-            ),
-            builder: (context, controller) {
-              return SidebarItems(
-                currentIndex: _pageIndex,
-                onChanged: (i) => setState(() => _pageIndex = i),
-                scrollController: controller,
-                itemSize: isNarrow ? SidebarItemSize.small : SidebarItemSize.large,
-                items: _navItems.map((item) {
-                  return SidebarItem(
-                    leading: MacosIcon(item.icon, size: 20),
-                    label: isNarrow ? const SizedBox.shrink() : Text(item.label, style: AppTheme.sidebarItemStyle),
-                  );
-                }).toList(),
+    return MacosWindow(
+      backgroundColor: AppTheme.contentBackground,
+      sidebar: Sidebar(
+        minWidth: 200,
+        bottom: const Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Icon(CupertinoIcons.infinite, color: AppTheme.accentColor, size: 16),
+              SizedBox(width: 8),
+              Text('BreakMate', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        builder: (context, controller) {
+          return SidebarItems(
+            currentIndex: _pageIndex,
+            onChanged: (i) => setState(() => _pageIndex = i),
+            scrollController: controller,
+            itemSize: SidebarItemSize.large,
+            items: _navItems.map((item) {
+              return SidebarItem(
+                leading: MacosIcon(item.icon, size: 20),
+                label: Text(item.label, style: AppTheme.sidebarItemStyle),
               );
-            },
-          ),
-          child: _buildMainContent(),
-        );
-      },
-    );
-  }
-
-  Widget _buildLogo(bool isNarrow) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 12 : 24),
-      child: Row(
-        mainAxisAlignment: isNarrow ? MainAxisAlignment.center : MainAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppTheme.accentColor, Color(0xFF0055FF)],
-              ),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentColor.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: const Icon(CupertinoIcons.infinite, color: Colors.white, size: 18),
-          ),
-          if (!isNarrow) ...[
-            const SizedBox(width: 12),
-            const Text(
-              "BreakMate",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ],
+            }).toList(),
+          );
+        },
       ),
+      child: _buildMainContent(),
     );
   }
 
@@ -112,11 +68,14 @@ class _MainLayoutState extends State<MainLayout> {
       index: _pageIndex,
       children: [
         const CompanionDashboard(),
-        SettingsPage(section: 'Breaks & Profiles'),
-        SettingsPage(section: 'Flash Reminder'),
-        SettingsPage(section: 'Statistics'),
+        const SettingsPage(section: 'Breaks & Profiles'),
+        const SettingsPage(section: 'Intelligent Detection'),
+        const SettingsPage(section: 'Flash Reminder'),
+        const SettingsPage(section: 'Clock Out'),
+        const SettingsPage(section: 'Exercises'),
+        const SettingsPage(section: 'Statistics'),
         const WellnessArticlesPage(),
-        SettingsPage(section: 'General'),
+        const SettingsPage(section: 'General'),
       ],
     );
   }

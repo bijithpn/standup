@@ -114,6 +114,8 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Breaks & Profiles':
       case 'Profiles':
         return _buildBreaks();
+      case 'Intelligent Detection':
+        return _buildIntelligentDetection();
       case 'Focus Mode':
         return _buildFocusMode();
       case 'Notifications':
@@ -638,38 +640,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildExercises() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('Wellness Exercises'),
-        const Text(
-          'Scientific routines to keep you fresh during work.',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-        ),
-        const SizedBox(height: 16),
-        _buildCard([
-          _exerciseItem('Eye Care', '20-20-20 rule to reduce strain', CupertinoIcons.eye),
-          _divider(),
-          _exerciseItem('Posture Correction', 'Spine alignment and neck stretch', CupertinoIcons.person),
-          _divider(),
-          _exerciseItem('Mindfulness', 'Brief breathing meditation', CupertinoIcons.wind),
-        ]),
-        const SizedBox(height: 32),
-        _sectionHeader('Smart Suggestions'),
-        const SizedBox(height: 16),
-        _buildCard([
-          _toggleRow(
-            'Auto-suggest exercises',
-            'Based on your break type',
-            _settings.autoSuggestExercises,
-            (v) => _save(_settings.copyWith(autoSuggestExercises: v)),
-          ),
-        ]),
-      ],
-    );
-  }
-
   Widget _exerciseItem(String title, String subtitle, IconData icon) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -704,50 +674,110 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  Widget _buildIntelligentDetection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Smart Pausing'),
+        const Text(
+          'DeskRest automatically pauses your breaks when you are busy.',
+          style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+        ),
+        const SizedBox(height: 24),
+        _buildCard([
+          _toggleRow(
+            'Video Calls Detection',
+            'Pause breaks during Zoom, Meet, Teams, etc.',
+            _settings.detectVideoCalls,
+            (v) => _save(_settings.copyWith(detectVideoCalls: v)),
+          ),
+          _divider(),
+          _toggleRow(
+            'Meeting Detection',
+            'Sync with calendar to pause during meetings',
+            _settings.detectMeetings,
+            (v) => _save(_settings.copyWith(detectMeetings: v)),
+          ),
+          _divider(),
+          _toggleRow(
+            'Focus Mode Detection',
+            'Respect macOS Do Not Disturb & Focus Modes',
+            _settings.respectFocusMode,
+            (v) => _save(_settings.copyWith(respectFocusMode: v)),
+          ),
+        ]),
+      ],
+    );
+  }
+
   Widget _buildClockOut() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Clock Out Goal'),
+        _sectionHeader('Clock Out Enforcement'),
         const Text(
-          'Set your target working time for the day and get reminded when you hit it.',
+          'Break the cycle of endless workdays. Set your ideal rest hours.',
           style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
         ),
         const SizedBox(height: 24),
         _buildCard([
-          _inputRow(
-            'Daily Work Goal',
-            '${_settings.dailyWorkGoalHours} hours',
-            onTap: () => _showPicker(
-              title: 'Daily Work Goal',
-              options: List.generate(12, (i) => (i + 1).toString()),
-              suffix: ' hours',
-              onSelected: (v) =>
-                  _save(_settings.copyWith(dailyWorkGoalHours: int.parse(v))),
+          _toggleRow(
+            'Enable Clock Out',
+            'Enforce end of workday',
+            _settings.enableClockOut,
+            (v) => _save(_settings.copyWith(enableClockOut: v)),
+          ),
+          if (_settings.enableClockOut) ...[
+            _divider(),
+            _inputRow(
+              'End of day at',
+              _settings.clockOutTime,
+              onTap: () => _showPicker(
+                title: 'End Workday',
+                options: ['16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'],
+                suffix: '',
+                onSelected: (v) => _save(_settings.copyWith(clockOutTime: v)),
+              ),
             ),
-          ),
-          _divider(),
-          _toggleRow(
-            'Remind to clock out',
-            'Push notification when goal is reached',
-            _settings.remindClockOutEnabled,
-            (v) => _save(_settings.copyWith(remindClockOutEnabled: v)),
-          ),
+          ]
         ]),
-        const SizedBox(height: 48),
-        _sectionHeader('After-Work Routine'),
+      ],
+    );
+  }
+
+  Widget _buildExercises() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Custom Exercises'),
         const Text(
-          'Prepare your mind for rest after the day is over.',
+          'Create unlimited custom break routines targeting your specific needs.',
           style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
         ),
         const SizedBox(height: 24),
         _buildCard([
-          _toggleRow(
-            'Digital Detox Mode',
-            'Disable computer notifications after work hours',
-            false,
-            (v) {},
-          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'No custom exercises yet.',
+                    style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
+                  ),
+                ),
+                CupertinoButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: AppTheme.accentColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  onPressed: () {
+                    Toast.showSuccess(context, 'Custom exercises coming in next update!');
+                  },
+                  child: const Text('Add Exercise', style: TextStyle(color: AppTheme.accentColor, fontSize: 13)),
+                ),
+              ],
+            ),
+          )
         ]),
       ],
     );

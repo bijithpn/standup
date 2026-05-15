@@ -3,6 +3,21 @@ import 'package:flutter/services.dart';
 class MacOSBridge {
   static const MethodChannel _channel = MethodChannel('com.breakmate.macos/bridge');
 
+  /// Show the full-screen break overlay
+  static Future<void> showOverlay() async {
+    await _channel.invokeMethod('showOverlay');
+  }
+
+  /// Hide the break overlay and return to normal window state
+  static Future<void> hideOverlay() async {
+    await _channel.invokeMethod('hideOverlay');
+  }
+
+  /// Focus the application and un-minimize if needed
+  static Future<void> focusApp() async {
+    await _channel.invokeMethod('focusApp');
+  }
+
   /// Set the window level (e.g., 'screenSaver', 'floating', 'normal')
   static Future<void> setWindowLevel(String level) async {
     await _channel.invokeMethod('setWindowLevel', {'level': level});

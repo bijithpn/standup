@@ -61,7 +61,7 @@ class CompanionDashboard extends StatelessWidget {
     return AppTheme.glassContainer(
       hasGradient: true,
       child: Padding(
-        padding: EdgeInsets.all(isNarrow ? 20.0 : 28.0),
+        padding: EdgeInsets.all(isNarrow ? 16.0 : 28.0),
         child: Row(
           children: [
             Expanded(
@@ -72,21 +72,26 @@ class CompanionDashboard extends StatelessWidget {
                     isPaused ? 'TIMER PAUSED' : 'DEEP FOCUS ACTIVE',
                     style: AppTheme.sectionTitle.copyWith(
                       color: isPaused ? AppTheme.upcomingBreakColor : AppTheme.accentColor,
-                      fontSize: isNarrow ? 10 : 11,
+                      fontSize: isNarrow ? 9 : 11,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    isPaused ? 'Resume for wellness' : 'Next break in $mins:$secs',
-                    style: AppTheme.headerStyle.copyWith(fontSize: isNarrow ? 20 : 26),
+                  const SizedBox(height: 4),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      isPaused ? 'Resume for wellness' : 'Next break in :',
+                      style: AppTheme.headerStyle.copyWith(fontSize: isNarrow ? 18 : 26),
+                    ),
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             _buildActionButton(
               icon: isPaused ? CupertinoIcons.play_fill : CupertinoIcons.pause_fill,
               onTap: () => controller.togglePause(),
-              size: isNarrow ? 44 : 56,
+              size: isNarrow ? 40 : 56,
             ),
           ],
         ),

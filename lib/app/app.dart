@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/break_system/presentation/break_overlay.dart';
+import 'package:standup/features/break_system/presentation/pre_break_warning_overlay.dart';
 import 'package:standup/features/break_system/presentation/flash_overlay.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/analytics/stats_service.dart';
@@ -114,6 +115,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                   children: [
                     if (!isOverlayVisible && !isBreakActive) const MainLayout(),
                     const BreakOverlay(),
+                    const PreBreakWarningOverlay(),
                     const FlashOverlay(),
                     // Flash overlay screen for full-screen posture reminders
                     if (flashService.isOverlayVisible)
