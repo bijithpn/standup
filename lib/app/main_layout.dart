@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:standup/ui/theme/app_theme.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/settings/settings_page.dart';
+import 'package:standup/features/wellness/presentation/wellness_articles_page.dart';
+import 'package:standup/features/companion/presentation/companion_dashboard.dart';
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -13,245 +15,81 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _pageIndex = 0;
-  final bool _sidebarCollapsed = false;
 
   final List<({String label, IconData icon, String section})> _navItems = [
-    (label: 'General', icon: CupertinoIcons.settings, section: 'General'),
-    (label: 'Flash', icon: CupertinoIcons.bolt_fill, section: 'Flash Reminder'),
-    (
-      label: 'Breaks',
-      icon: CupertinoIcons.pause_fill,
-      section: 'Breaks & Profiles',
-    ),
-    (label: 'Focus', icon: CupertinoIcons.timer, section: 'Focus Mode'),
-    (label: 'Alerts', icon: CupertinoIcons.bell_fill, section: 'Notifications'),
-    (
-      label: 'Exercise',
-      icon: CupertinoIcons.sportscourt_fill,
-      section: 'Exercises',
-    ),
-    (label: 'Clock', icon: CupertinoIcons.clock_fill, section: 'Clock Out'),
-    (
-      label: 'Stats',
-      icon: CupertinoIcons.chart_bar_fill,
-      section: 'Statistics',
-    ),
-    (label: 'About', icon: CupertinoIcons.info_circle_fill, section: 'About'),
+    (label: 'Companion', icon: CupertinoIcons.sparkles, section: 'Companion'),
+    (label: 'Wellness', icon: CupertinoIcons.heart_fill, section: 'Breaks & Profiles'),
+    (label: 'Reminders', icon: CupertinoIcons.bolt_fill, section: 'Flash Reminder'),
+    (label: 'Insights', icon: CupertinoIcons.chart_bar_fill, section: 'Statistics'),
+    (label: 'Articles', icon: CupertinoIcons.news, section: 'Blog'),
+    (label: 'Settings', icon: CupertinoIcons.settings_solid, section: 'General'),
   ];
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 900 || constraints.maxHeight < 650) {
-          return _buildTopLayout();
-        }
-        return _buildSidebarLayout();
-      },
-    );
-  }
-
-  /*
-  -----------------------------------------
-  SIDEBAR LAYOUT (LARGE WINDOWS)
-  -----------------------------------------
-  */
-
-  Widget _buildSidebarLayout() {
     return MacosWindow(
       backgroundColor: AppTheme.contentBackground,
       sidebar: Sidebar(
-        minWidth: _sidebarCollapsed ? 80 : 240,
+        minWidth: 220,
         top: Column(
           children: [
-            const SizedBox(height: 24),
-            _buildLogo(center: true),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
+            _buildLogo(),
+            const SizedBox(height: 32),
           ],
         ),
         builder: (context, controller) {
-          final sidebarItems = _navItems.take(_navItems.length - 1).toList();
-          final safeIndex = _pageIndex >= sidebarItems.length
-              ? sidebarItems.length - 1
-              : _pageIndex;
-
           return SidebarItems(
-            currentIndex: safeIndex,
+            currentIndex: _pageIndex,
             onChanged: (i) => setState(() => _pageIndex = i),
             scrollController: controller,
             itemSize: SidebarItemSize.large,
-            items: sidebarItems.map((item) {
+            items: _navItems.map((item) {
               return SidebarItem(
-                leading: MacosIcon(item.icon),
-                label: _sidebarCollapsed
-                    ? const SizedBox.shrink()
-                    : Text(item.label, style: AppTheme.sidebarItemStyle),
+                leading: MacosIcon(item.icon, size: 20),
+                label: Text(item.label, style: AppTheme.sidebarItemStyle),
               );
             }).toList(),
           );
         },
-        bottom: Padding(
-          padding: const EdgeInsets.all(12),
-          child: MacosListTile(
-            leading: const MacosIcon(CupertinoIcons.info_circle_fill),
-            title: const Text("About"),
-            onClick: () => setState(() => _pageIndex = _navItems.length - 1),
-          ),
-        ),
       ),
       child: _buildMainContent(),
     );
   }
 
-  /*
-  -----------------------------------------
-  TOP NAV LAYOUT (SMALL WINDOWS)
-  -----------------------------------------
-  */
-
-  Widget _buildTopLayout() {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return MacosScaffold(
-      backgroundColor: AppTheme.contentBackground,
-      toolBar: ToolBar(
-        height: 110,
-        centerTitle: true,
-        title: SizedBox(
-          width: screenWidth,
-          child: Column(
-            children: [
-              _buildLogo(center: true),
-              const SizedBox(height: 10),
-              _buildScrollableNavigation(screenWidth),
-            ],
-          ),
-        ),
-      ),
-      children: [ContentArea(builder: (context, _) => _buildMainContent())],
-    );
-  }
-
-  /*
-  -----------------------------------------
-  HORIZONTAL SCROLL NAVIGATION
-  -----------------------------------------
-  */
-
-  Widget _buildScrollableNavigation(double screenWidth) {
-    return SizedBox(
-      width: screenWidth,
-      height: 60,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(
-          children: [
-            const SizedBox(width: 12),
-            ..._navItems.asMap().entries.map((entry) {
-              final i = entry.key;
-              final item = entry.value;
-              final selected = _pageIndex == i;
-
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  onTap: () => setState(() => _pageIndex = i),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: selected
-                          ? AppTheme.accentColor
-                          : AppTheme.cardBackground,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: selected
-                            ? AppTheme.accentColor
-                            : AppTheme.borderColor,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          item.icon,
-                          size: 18,
-                          color: selected
-                              ? Colors.white
-                              : AppTheme.textSecondary,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          item.label,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: selected
-                                ? Colors.white
-                                : AppTheme.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(width: 12),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /*
-  -----------------------------------------
-  LOGO
-  -----------------------------------------
-  */
-
-  Widget _buildLogo({bool center = false}) {
-    return SizedBox(
-      width: MediaQuery.of(context).size.width,
+  Widget _buildLogo() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
-        mainAxisAlignment: center
-            ? MainAxisAlignment.center
-            : MainAxisAlignment.start,
         children: [
           Container(
-            width: 30,
-            height: 30,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.accentColor,
-                  AppTheme.accentColor.withValues(alpha: 0.7),
-                ],
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppTheme.accentColor, Color(0xFF0055FF)],
               ),
               borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              CupertinoIcons.infinite,
-              color: Colors.white,
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text.rich(
-            TextSpan(
-              text: "Break",
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              children: const [
-                TextSpan(
-                  text: "Mate",
-                  style: TextStyle(color: AppTheme.accentColor),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.accentColor.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
               ],
+            ),
+            child: const Icon(CupertinoIcons.infinite, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            "BreakMate",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              letterSpacing: -0.5,
             ),
           ),
         ],
@@ -259,18 +97,17 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  /*
-  -----------------------------------------
-  MAIN CONTENT
-  -----------------------------------------
-  */
-
   Widget _buildMainContent() {
     return IndexedStack(
       index: _pageIndex,
-      children: _navItems
-          .map((item) => SettingsPage(section: item.section))
-          .toList(),
+      children: [
+        const CompanionDashboard(),
+        SettingsPage(section: 'Breaks & Profiles'),
+        SettingsPage(section: 'Flash Reminder'),
+        SettingsPage(section: 'Statistics'),
+        const WellnessArticlesPage(),
+        SettingsPage(section: 'General'),
+      ],
     );
   }
 }

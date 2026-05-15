@@ -29,17 +29,17 @@ class TrayManagerService with TrayListener {
 
   Future<void> _buildMenu() async {
     final menu = Menu(items: [
-        MenuItem(label: 'BreakLoop', disabled: true),
+        MenuItem(label: 'BreakMate Companion', disabled: true),
       MenuItem.separator(),
-      MenuItem(key: 'toggle_pause', label: _isPaused ? 'Resume reminders' : 'Pause reminders'),
-      MenuItem(key: 'take_break', label: 'Take break now'),
-      MenuItem(key: 'skip_next', label: 'Skip next break'),
+      MenuItem(key: 'settings', label: 'Open Dashboard...'),
       MenuItem.separator(),
-      MenuItem(key: 'posture_reminder', label: 'Show posture reminder'),
+      MenuItem(key: 'toggle_pause', label: _isPaused ? 'Resume Companion' : 'Pause Companion'),
+      MenuItem(key: 'take_break', label: 'Start Break Now'),
+      MenuItem(key: 'skip_next', label: 'Skip Next Break'),
       MenuItem.separator(),
-      MenuItem(key: 'settings', label: 'Settings...'),
+      MenuItem(key: 'posture_reminder', label: 'Posture Reminder'),
       MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit'),
+      MenuItem(key: 'quit', label: 'Quit BreakMate'),
     ]);
     await trayManager.setContextMenu(menu);
   }

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/settings/break_profile.dart';
 import 'package:standup/features/settings/settings_repository.dart';
-import 'package:standup/features/statistics/stats_service.dart';
+import 'package:standup/features/analytics/stats_service.dart';
 
 class BreakController extends ChangeNotifier {
   final TimerEngine _timerEngine;

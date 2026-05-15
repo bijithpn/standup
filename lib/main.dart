@@ -73,7 +73,9 @@ void main() async {
       flashOverlayService.startTimer();
       debugPrint('Startup: Flash overlay timer started (20 min interval)');
 
-      runApp(const BreakLoopApp());
+      runApp(
+        const BreakMateApp(),
+      );
       debugPrint('Startup: app running');
     } catch (e, stack) {
       debugPrint('FATAL STARTUP ERROR: $e');

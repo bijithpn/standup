@@ -19,11 +19,18 @@ dependencies:
   shared_preferences: ^2.3.4
   get_it: ^8.0.3
   provider: ^6.1.2
+  flutter_riverpod: ^2.5.1
   screen_retriever: ^0.2.0
   fl_chart: ^0.66.0
   intl: ^0.19.0
   flutter_acrylic: ^1.0.4
   glassmorphism: ^3.0.0
+  http: ^1.2.0
+  flutter_markdown: ^0.6.18
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.2
+  audioplayers: ^6.1.0
+  animations: ^2.0.1
 
 dev_dependencies:
   flutter_test:

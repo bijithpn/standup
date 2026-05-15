@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:screen_retriever/screen_retriever.dart';
+import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/utils/logger.dart';
 
 /// Service to manage system-wide overlay windows that appear on top of all applications
@@ -29,11 +30,11 @@ class OverlayWindowService {
       final screenWidth = primaryDisplay.size.width;
       final screenHeight = primaryDisplay.size.height;
 
-      _logger.info('Showing overlay: $type on display ${screenWidth}x$screenHeight (floating: $floatingMode)');
+      _logger.info('Showing overlay: $type (strict: $strictMode)');
 
       if (floatingMode) {
         // Floating mode: smaller window that stays on top
-        await windowManager.setAlwaysOnTop(true);
+        await MacOSBridge.setWindowLevel('floating');
         await windowManager.setFullScreen(false);
         await windowManager.setSkipTaskbar(true);
         await windowManager.setHasShadow(false);
@@ -46,15 +47,18 @@ class OverlayWindowService {
           Offset(screenWidth - floatWidth - 20, 20),
         );
       } else {
-        // Full screen overlay mode - ONLY for breaks/flash notifications
-        // This does NOT make the main app always-on-top
-        await windowManager.setAlwaysOnTop(true);
-        await windowManager.setFullScreen(strictMode);
-
-        if (!strictMode) {
-          await windowManager.setSize(Size(screenWidth, screenHeight));
-          await windowManager.setPosition(Offset.zero);
+        // Full screen overlay mode
+        if (strictMode) {
+          // Native screenSaver level to bypass full-screen apps and system UI
+          await MacOSBridge.setWindowLevel('screenSaver');
+          await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
+        } else {
+          await MacOSBridge.setWindowLevel('floating');
         }
+
+        await windowManager.setFullScreen(strictMode);
+        await windowManager.setSize(Size(screenWidth, screenHeight));
+        await windowManager.setPosition(Offset.zero);
       }
 
       // Make window visible and focused
@@ -72,14 +76,17 @@ class OverlayWindowService {
   }
 
   /// Hide the current overlay and return to normal window state
-  /// IMPORTANT: This ensures the app returns to background (not always-on-top)
   Future<void> hideOverlay() async {
     if (!_isOverlayVisible) {
       return;
     }
 
     try {
-      _logger.info('Hiding overlay');
+      _logger.info('Hiding overlay and resetting window state');
+
+      // Reset macOS native state
+      await MacOSBridge.setWindowLevel('normal');
+      await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
 
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
@@ -90,7 +97,7 @@ class OverlayWindowService {
       _isOverlayVisible = false;
       _currentOverlayType = null;
 
-      _logger.info('Overlay hidden successfully - app now in background');
+      _logger.info('Overlay hidden successfully');
     } catch (e) {
       _logger.error('Failed to hide overlay: $e');
     }
@@ -106,6 +113,8 @@ class OverlayWindowService {
   Future<void> reset() async {
     _isOverlayVisible = false;
     _currentOverlayType = null;
+    await MacOSBridge.setWindowLevel('normal');
+    await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setFullScreen(false);
     await windowManager.setSkipTaskbar(false);

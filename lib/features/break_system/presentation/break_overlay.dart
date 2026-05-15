@@ -3,15 +3,15 @@ import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/ui/theme/app_theme.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/features/break_overlay/presentation/widgets/breathing_assistant.dart';
 
 class BreakOverlay extends StatefulWidget {
   const BreakOverlay({super.key});
@@ -20,13 +20,12 @@ class BreakOverlay extends StatefulWidget {
   State<BreakOverlay> createState() => _BreakOverlayState();
 }
 
-class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderStateMixin {
+class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMixin {
   late PageController _pageController;
   int _currentSlide = 0;
   Timer? _slideshowTimer;
-  Timer? _timeTimer;
   late AnimationController _breathingController;
-  DateTime _currentTime = DateTime.now();
+  late AnimationController _kenBurnsController;
   final OverlayWindowService _overlayService = sl<OverlayWindowService>();
 
   @override
@@ -34,31 +33,28 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
     super.initState();
     _pageController = PageController();
     _startSlideshow();
+    
     _breathingController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
     )..repeat(reverse: true);
 
-    // Update time every second using Timer instead of Stream
-    _timeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {
-          _currentTime = DateTime.now();
-        });
-      }
-    });
+    _kenBurnsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    )..repeat(reverse: true);
   }
 
   void _startSlideshow() {
-    _slideshowTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
+    _slideshowTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (!mounted) return;
       setState(() {
         _currentSlide = (_currentSlide + 1) % AppConstants.wellnessSlideshow.length;
         if (_pageController.hasClients) {
           _pageController.animateToPage(
             _currentSlide,
-            duration: const Duration(milliseconds: 1000),
-            curve: Curves.easeInOutCubic,
+            duration: const Duration(milliseconds: 2000),
+            curve: Curves.easeInOutQuart,
           );
         }
       });
@@ -68,9 +64,9 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
   @override
   void dispose() {
     _slideshowTimer?.cancel();
-    _timeTimer?.cancel();
     _pageController.dispose();
     _breathingController.dispose();
+    _kenBurnsController.dispose();
     super.dispose();
   }
 
@@ -95,7 +91,7 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
                 timerEngine: timerEngine,
                 controller: controller,
                 pageController: _pageController,
-                currentSlide: _currentSlide,
+                kenBurnsController: _kenBurnsController,
                 breathingController: _breathingController,
               ),
               strictMode: settings.strictMode,
@@ -103,376 +99,19 @@ class _BreakOverlayState extends State<BreakOverlay> with SingleTickerProviderSt
           });
         }
 
-        return Material(
-          color: Colors.black,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Background Layer
-              _buildBackground(settings),
-
-              // UI Layer
-              BackdropFilter(
-                filter: ImageFilter.blur(
-                  sigmaX: settings.clockFaceBlurEnabled ? 50 : 0,
-                  sigmaY: settings.clockFaceBlurEnabled ? 50 : 0
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      colors: [
-                        Colors.black.withValues(alpha: 0.2),
-                        Colors.black.withValues(alpha: 0.7),
-                      ],
-                      radius: 1.5,
-                    ),
-                  ),
-                  child: SafeArea(
-                    child: Center(
-                      child: Container(
-                        constraints: const BoxConstraints(maxWidth: 1000),
-                        padding: const EdgeInsets.all(40),
-                        child: timerEngine.isCompletionState
-                            ? _buildCompletionState()
-                            : _buildClockFace(settings, breakInfo, timerEngine, controller),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Skip Button at bottom
-              if (!timerEngine.isCompletionState)
-                Positioned(
-                  bottom: 60,
-                  left: 0,
-                  right: 0,
-                  child: Center(child: _buildSkipButton(context, controller, settings.strictMode)),
-                ),
-            ],
-          ),
-        );
+        return const SizedBox.shrink();
       },
-    );
-  }
-
-  Widget _buildBackground(SettingsModel settings) {
-    return PageView.builder(
-      controller: _pageController,
-      itemCount: AppConstants.wellnessSlideshow.length,
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (context, index) {
-        return AnimatedOpacity(
-          opacity: 0.4,
-          duration: const Duration(seconds: 2),
-          child: Image.asset(
-            AppConstants.wellnessSlideshow[index],
-            fit: BoxFit.cover,
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildClockFace(SettingsModel settings, BreakModel breakInfo, TimerEngine timerEngine, BreakController controller) {
-    switch (settings.clockFaceStyle.toLowerCase()) {
-      case 'desktop':
-        return _buildDesktopClock(timerEngine, settings);
-      case 'personal':
-      case 'ambient':
-        return _buildAmbientClock(timerEngine, settings);
-      case 'focus':
-        return _buildFocusClock(timerEngine, settings);
-      case 'breakloop':
-      default:
-        return _buildStandardBreakLoop(breakInfo, timerEngine, settings);
-    }
-  }
-
-  Widget _buildStandardBreakLoop(BreakModel breakInfo, TimerEngine timerEngine, SettingsModel settings) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          breakInfo.title.toUpperCase(),
-          style: TextStyle(
-            letterSpacing: 10,
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 20),
-        Text(
-          _formatDuration(timerEngine.countdownSeconds),
-          style: TextStyle(
-            color: Color(settings.clockFaceTextColorHex),
-            fontSize: 200,
-            fontWeight: FontWeight.w100,
-            letterSpacing: -10,
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-        const SizedBox(height: 20),
-        _buildInstructionCard(breakInfo),
-      ],
-    );
-  }
-
-  Widget _buildDesktopClock(TimerEngine timerEngine, SettingsModel settings) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          DateFormat('hh:mm a').format(_currentTime),
-          style: TextStyle(
-            color: Color(settings.clockFaceTextColorHex),
-            fontSize: 120,
-            fontWeight: FontWeight.w200,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Text(
-            '${_formatDuration(timerEngine.countdownSeconds)} remaining',
-            style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAmbientClock(TimerEngine timerEngine, SettingsModel settings) {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Background Ring
-          SizedBox(
-            width: 400,
-            height: 400,
-            child: CircularProgressIndicator(
-              value: timerEngine.countdownSeconds / (timerEngine.activeBreak?.durationSeconds ?? 60),
-              strokeWidth: 4,
-              color: AppTheme.accentColor.withValues(alpha: 0.3),
-              backgroundColor: Colors.white10,
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                DateFormat('HH:mm').format(_currentTime),
-                style: TextStyle(
-                  color: Color(settings.clockFaceTextColorHex),
-                  fontSize: 80,
-                  fontWeight: FontWeight.w100,
-                ),
-              ),
-              Text(
-                _formatDuration(timerEngine.countdownSeconds),
-                style: const TextStyle(color: Colors.white38, fontSize: 24),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFocusClock(TimerEngine timerEngine, SettingsModel settings) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        AnimatedBuilder(
-          animation: _breathingController,
-          builder: (context, child) {
-            final size = 200 + (100 * _breathingController.value);
-            final isInhale = _breathingController.status == AnimationStatus.forward;
-            return Column(
-              children: [
-                Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppTheme.accentColor.withValues(alpha: 0.5),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.accentColor.withValues(alpha:0.2 * _breathingController.value),
-                        blurRadius: 40,
-                        spreadRadius: 20 * _breathingController.value,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      isInhale ? 'INHALE' : 'EXHALE',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        letterSpacing: 4,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 60),
-                Text(
-                  _formatDuration(timerEngine.countdownSeconds),
-                  style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w100),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInstructionCard(BreakModel breakInfo) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            breakInfo.isLong ? CupertinoIcons.wind : CupertinoIcons.eye,
-            color: AppTheme.accentColor,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            breakInfo.isLong ? 'Take deep breaths and stretch' : 'Look at something far away',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha:0.8),
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompletionState() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(CupertinoIcons.checkmark_seal_fill, color: AppTheme.shortBreakColor, size: 100),
-        const SizedBox(height: 30),
-        const Text(
-          'WELL DONE',
-          style: TextStyle(
-            letterSpacing: 10,
-            color: Colors.white,
-            fontSize: 40,
-            fontWeight: FontWeight.w200,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'You\'re ready to continue.',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.4),
-            fontSize: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _formatDuration(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(1, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildSkipButton(BuildContext context, BreakController controller, bool strictMode) {
-    if (strictMode) return const SizedBox.shrink();
-
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Postpone button
-          if (controller.timerEngine.canPostpone)
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => controller.postponeCurrentBreak(),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(CupertinoIcons.clock_fill, size: 14, color: Colors.white54),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Postpone (${controller.timerEngine.postponeCount}/3)',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          if (controller.timerEngine.canPostpone) const SizedBox(width: 12),
-          // Skip button
-          GestureDetector(
-            onTap: () => controller.skipCurrentBreak(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-              ),
-              child: Text(
-                'Skip this break'.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 2,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
 
-/// Standalone break overlay content for system-wide display and demo preview
 class _BreakOverlayContent extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final TimerEngine timerEngine;
   final BreakController controller;
   final PageController pageController;
-  final int currentSlide;
+  final AnimationController kenBurnsController;
   final AnimationController breathingController;
 
   const _BreakOverlayContent({
@@ -481,7 +120,7 @@ class _BreakOverlayContent extends StatefulWidget {
     required this.timerEngine,
     required this.controller,
     required this.pageController,
-    required this.currentSlide,
+    required this.kenBurnsController,
     required this.breathingController,
   });
 
@@ -490,27 +129,6 @@ class _BreakOverlayContent extends StatefulWidget {
 }
 
 class _BreakOverlayContentState extends State<_BreakOverlayContent> {
-  DateTime _currentTime = DateTime.now();
-  Timer? _timeTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    _timeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {
-          _currentTime = DateTime.now();
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timeTimer?.cancel();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -518,246 +136,103 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Layer
-          PageView.builder(
-            controller: widget.pageController,
-            itemCount: AppConstants.wellnessSlideshow.length,
-            physics: const NeverScrollableScrollPhysics(),
-            itemBuilder: (context, index) {
-              return AnimatedOpacity(
-                opacity: 0.4,
-                duration: const Duration(seconds: 2),
-                child: Image.asset(
-                  AppConstants.wellnessSlideshow[index],
-                  fit: BoxFit.cover,
-                ),
+          // Background Layer with Ken Burns Effect
+          AnimatedBuilder(
+            animation: widget.kenBurnsController,
+            builder: (context, child) {
+              return PageView.builder(
+                controller: widget.pageController,
+                itemCount: AppConstants.wellnessSlideshow.length,
+                physics: const NeverScrollableScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return Transform.scale(
+                    scale: 1.1 + (0.1 * widget.kenBurnsController.value),
+                    child: Image.asset(
+                      AppConstants.wellnessSlideshow[index],
+                      fit: BoxFit.cover,
+                      color: Colors.black.withValues(alpha: 0.6),
+                      colorBlendMode: BlendMode.darken,
+                    ),
+                  );
+                },
               );
             },
           ),
 
           // UI Layer
           BackdropFilter(
-            filter: ImageFilter.blur(
-              sigmaX: widget.settings.clockFaceBlurEnabled ? 50 : 0,
-              sigmaY: widget.settings.clockFaceBlurEnabled ? 50 : 0,
-            ),
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
             child: Container(
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   colors: [
-                    Colors.black.withValues(alpha: 0.2),
+                    Colors.transparent,
                     Colors.black.withValues(alpha: 0.7),
                   ],
-                  radius: 1.5,
+                  radius: 1.2,
                 ),
               ),
               child: SafeArea(
                 child: Center(
-                  child: Container(
-                    constraints: const BoxConstraints(maxWidth: 1000),
-                    padding: const EdgeInsets.all(40),
-                    child: widget.timerEngine.isCompletionState
-                        ? _buildCompletionState()
-                        : _buildClockFace(),
-                  ),
+                  child: widget.timerEngine.isCompletionState
+                      ? _buildCompletionState()
+                      : _buildMainContent(),
                 ),
               ),
             ),
           ),
+
+          // Skip / Postpone UI
+          if (!widget.timerEngine.isCompletionState && !widget.settings.strictMode)
+            Positioned(
+              bottom: 60,
+              left: 0,
+              right: 0,
+              child: Center(child: _buildActionButtons()),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildClockFace() {
-    switch (widget.settings.clockFaceStyle.toLowerCase()) {
-      case 'desktop':
-        return _buildDesktopClock();
-      case 'personal':
-      case 'ambient':
-        return _buildAmbientClock();
-      case 'focus':
-        return _buildFocusClock();
-      case 'breakloop':
-      default:
-        return _buildStandardBreakLoop();
-    }
-  }
-
-  Widget _buildStandardBreakLoop() {
+  Widget _buildMainContent() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           widget.breakInfo.title.toUpperCase(),
-          style: const TextStyle(
-            letterSpacing: 10,
-            color: Colors.white38,
-            fontSize: 14,
-            fontWeight: FontWeight.w800,
+          style: AppTheme.sectionTitle.copyWith(
+            color: Colors.white.withValues(alpha: 0.4),
+            letterSpacing: 12,
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 16),
         Text(
           _formatDuration(widget.timerEngine.countdownSeconds),
-          style: TextStyle(
-            color: Color(widget.settings.clockFaceTextColorHex),
-            fontSize: 200,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 220,
             fontWeight: FontWeight.w100,
-            letterSpacing: -10,
-            fontFeatures: const [FontFeature.tabularFigures()],
+            letterSpacing: -14,
+            fontFeatures: [FontFeature.tabularFigures()],
           ),
         ),
-        const SizedBox(height: 20),
-        _buildInstructionCard(),
-      ],
-    );
-  }
-
-  Widget _buildDesktopClock() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          DateFormat('hh:mm a').format(_currentTime),
-          style: TextStyle(
-            color: Color(widget.settings.clockFaceTextColorHex),
-            fontSize: 120,
-            fontWeight: FontWeight.w200,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white10,
-            borderRadius: BorderRadius.circular(20),
-          ),
+        const SizedBox(height: 60),
+        BreathingAssistant(isShortBreak: widget.breakInfo.type == BreakType.short),
+        const SizedBox(height: 80),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 60),
           child: Text(
-            '${_formatDuration(widget.timerEngine.countdownSeconds)} remaining',
-            style: const TextStyle(color: Colors.white70, fontSize: 18, fontWeight: FontWeight.w300),
+            widget.breakInfo.tip,
+            textAlign: TextAlign.center,
+            style: AppTheme.tipStyle.copyWith(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 22,
+              fontWeight: FontWeight.w300,
+            ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildAmbientClock() {
-    return Center(
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          SizedBox(
-            width: 400,
-            height: 400,
-            child: CircularProgressIndicator(
-              value: widget.timerEngine.countdownSeconds / (widget.breakInfo.durationSeconds),
-              strokeWidth: 4,
-              color: AppTheme.accentColor.withValues(alpha: 0.3),
-              backgroundColor: Colors.white10,
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                DateFormat('HH:mm').format(_currentTime),
-                style: TextStyle(
-                  color: Color(widget.settings.clockFaceTextColorHex),
-                  fontSize: 80,
-                  fontWeight: FontWeight.w100,
-                ),
-              ),
-              Text(
-                _formatDuration(widget.timerEngine.countdownSeconds),
-                style: const TextStyle(color: Colors.white38, fontSize: 24),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFocusClock() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        AnimatedBuilder(
-          animation: widget.breathingController,
-          builder: (context, child) {
-            final size = 200 + (100 * widget.breathingController.value);
-            final isInhale = widget.breathingController.status == AnimationStatus.forward;
-            return Column(
-              children: [
-                Container(
-                  width: size,
-                  height: size,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppTheme.accentColor.withValues(alpha: 0.5),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.accentColor.withValues(alpha: 0.2 * widget.breathingController.value),
-                        blurRadius: 40,
-                        spreadRadius: 20 * widget.breathingController.value,
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      isInhale ? 'INHALE' : 'EXHALE',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        letterSpacing: 4,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 60),
-                Text(
-                  _formatDuration(widget.timerEngine.countdownSeconds),
-                  style: const TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.w100),
-                ),
-              ],
-            );
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInstructionCard() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white10,
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            widget.breakInfo.isLong ? CupertinoIcons.wind : CupertinoIcons.eye,
-            color: AppTheme.accentColor,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            widget.breakInfo.isLong ? 'Take deep breaths and stretch' : 'Look at something far away',
-            style: const TextStyle(
-              color: Colors.white54,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -765,26 +240,85 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        const Icon(CupertinoIcons.checkmark_seal_fill, color: AppTheme.shortBreakColor, size: 100),
-        const SizedBox(height: 30),
+        const Icon(CupertinoIcons.checkmark_seal_fill, color: AppTheme.shortBreakColor, size: 80),
+        const SizedBox(height: 32),
         const Text(
-          'WELL DONE',
+          'REFRESHED',
           style: TextStyle(
-            letterSpacing: 10,
+            letterSpacing: 12,
             color: Colors.white,
-            fontSize: 40,
+            fontSize: 32,
             fontWeight: FontWeight.w200,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Text(
-          'You\'re ready to continue.',
-          style: const TextStyle(
-            color: Colors.white38,
+          'You are ready to continue.',
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.5),
             fontSize: 16,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildPillButton(
+          icon: CupertinoIcons.arrow_right,
+          label: 'Skip',
+          onTap: () => widget.controller.skipCurrentBreak(),
+          muted: true,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPillButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool muted = false,
+  }) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(100),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: muted ? 0.05 : 0.1),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: muted ? 0.05 : 0.1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(icon, size: 16, color: Colors.white.withValues(alpha: muted ? 0.4 : 0.8)),
+                  const SizedBox(width: 8),
+                  Text(
+                    label.toUpperCase(),
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: muted ? 0.4 : 0.8),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

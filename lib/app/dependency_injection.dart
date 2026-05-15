@@ -7,7 +7,7 @@ import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/adaptive_break_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_repository.dart';
-import 'package:standup/features/statistics/stats_service.dart';
+import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 

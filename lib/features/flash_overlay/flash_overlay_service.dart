@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:standup/core/plugins/windows_overlay_plugin.dart';
+import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 
 /// Service to manage the full-screen flash overlay notification
 class FlashOverlayService extends ChangeNotifier {
@@ -9,6 +9,7 @@ class FlashOverlayService extends ChangeNotifier {
   bool _isOverlayVisible = false;
   final Duration _overlayInterval;
   final Duration _overlayDisplayDuration;
+  final OverlayWindowService _overlayService = sl<OverlayWindowService>();
 
   FlashOverlayService({
     Duration? overlayInterval,
@@ -42,14 +43,12 @@ class FlashOverlayService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Show overlay window temporarily
-      await windowManager.show();
-      await windowManager.setAlwaysOnTop(true);
-      await windowManager.setFullScreen(true);
-      await windowManager.setSkipTaskbar(true);
-      
-      // Platform-specific configurations
-      await _configurePlatformOverlay();
+      // Use the consolidated overlay service
+      await _overlayService.showOverlay(
+        type: OverlayType.flashNotification,
+        builder: (_) => const SizedBox.shrink(), // Content is handled in app.dart's Stack
+        strictMode: false,
+      );
 
       // Auto-hide after display duration
       await Future.delayed(_overlayDisplayDuration);
@@ -61,45 +60,20 @@ class FlashOverlayService extends ChangeNotifier {
     }
   }
 
-  /// Configure platform-specific overlay settings
-  Future<void> _configurePlatformOverlay() async {
-    // Windows: Use native plugin for better overlay support
-    await WindowsOverlayPlugin.configureAsOverlay();
-    await WindowsOverlayPlugin.setTransparency(0.95);
-  }
-
   /// Hide the flash overlay and return app to background
   Future<void> hideOverlay() async {
-    if (!_isOverlayVisible) {
-      debugPrint('[FlashOverlay] Overlay not visible');
-      return;
-    }
+    if (!_isOverlayVisible) return;
 
     debugPrint('[FlashOverlay] Hiding overlay');
     _isOverlayVisible = false;
     notifyListeners();
 
     try {
-      // Reset window state - return to background/tray
-      await windowManager.setFullScreen(false);
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.hide();
-      await windowManager.setBackgroundColor(Colors.transparent);
-      
-      // Platform-specific reset
-      await _resetPlatformOverlay();
-      
+      await _overlayService.hideOverlay();
       debugPrint('[FlashOverlay] App returned to background');
     } catch (e) {
       debugPrint('[FlashOverlay] Error hiding overlay: $e');
     }
-  }
-
-  /// Reset platform-specific overlay settings
-  Future<void> _resetPlatformOverlay() async {
-    // Windows: Reset to normal window state
-    await WindowsOverlayPlugin.resetToNormal();
   }
 
   /// Check if overlay is currently visible

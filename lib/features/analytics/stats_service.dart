@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/core/services/storage_service.dart';
-import 'package:standup/features/statistics/stats_model.dart';
+import 'package:standup/features/analytics/stats_model.dart';
 
 /// Enhanced statistics service with streak tracking, weekly data, and productivity insights
 class StatsService {

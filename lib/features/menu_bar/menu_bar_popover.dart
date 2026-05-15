@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/statistics/stats_service.dart';
-import 'package:standup/features/statistics/stats_model.dart';
-import 'package:standup/ui/theme/app_theme.dart';
+import 'package:standup/features/analytics/stats_service.dart';
+import 'package:standup/features/analytics/stats_model.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
 

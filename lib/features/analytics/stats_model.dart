@@ -1,4 +1,4 @@
-import 'package:standup/features/statistics/stats_service.dart';
+import 'package:standup/features/analytics/stats_service.dart';
 
 class StatsModel {
   final int breaksCompleted;

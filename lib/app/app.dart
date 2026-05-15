@@ -6,23 +6,23 @@ import 'package:standup/features/break_system/application/break_controller.dart'
 import 'package:standup/features/break_system/presentation/break_overlay.dart';
 import 'package:standup/features/break_system/presentation/flash_overlay.dart';
 import 'package:standup/features/settings/settings_repository.dart';
-import 'package:standup/features/statistics/stats_service.dart';
+import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
-import 'package:standup/ui/theme/app_theme.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_screen.dart';
 
-class BreakLoopApp extends StatefulWidget {
-  const BreakLoopApp({super.key});
+class BreakMateApp extends StatefulWidget {
+  const BreakMateApp({super.key});
 
   @override
-  State<BreakLoopApp> createState() => _BreakLoopAppState();
+  State<BreakMateApp> createState() => _BreakMateAppState();
 }
 
-class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
+class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
   FlashOverlayService? _flashOverlayService;
 
   @override
@@ -79,29 +79,7 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
 
     controller.addListener(() {
       tray.updatePauseState(controller.isPaused);
-      _handleWindowState(controller.isBreakActive);
     });
-  }
-
-  void _handleWindowState(bool isBreakActive) async {
-    final overlayService = sl<OverlayWindowService>();
-    
-    if (isBreakActive) {
-      // Only set fullscreen for break overlay
-      if (sl<SettingsRepository>().currentSettings.strictMode) {
-        await windowManager.setFullScreen(true);
-      }
-      await windowManager.show();
-      await windowManager.focus();
-    } else {
-      // Break ended - CRITICAL: Reset ALL window states and hide overlay
-      debugPrint('[App] Break ended - resetting window state');
-      await overlayService.hideOverlay();
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setFullScreen(false);
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.setBackgroundColor(Colors.transparent);
-    }
   }
 
   @override
@@ -121,9 +99,9 @@ class _BreakLoopAppState extends State<BreakLoopApp> with WindowListener {
             final flashService = sl<FlashOverlayService>();
             return Stack(
               children: [
-                MainLayout(),
-                BreakOverlay(),
-                FlashOverlay(),
+                const MainLayout(),
+                const BreakOverlay(),
+                const FlashOverlay(),
                 // Flash overlay screen for full-screen posture reminders
                 if (flashService.isOverlayVisible)
                   FlashOverlayScreen(overlayService: flashService),
