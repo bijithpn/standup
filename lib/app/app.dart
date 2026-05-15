@@ -50,6 +50,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     final flashOverlayService = sl<FlashOverlayService>();
 
     tray.onMenuAction = (action) async {
+      final overlayService = sl<OverlayWindowService>();
       switch (action) {
         case 'toggle_pause':
           controller.togglePause();
@@ -65,11 +66,10 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
           await flashOverlayService.showOverlay();
           break;
         case 'settings':
-          await windowManager.show();
-          await windowManager.focus();
+          await overlayService.showDashboard();
           break;
         case 'quit':
-          await sl<OverlayWindowService>().reset();
+          await overlayService.reset();
           flashOverlayService.dispose();
           await windowManager.setPreventClose(false);
           await windowManager.close();
@@ -79,6 +79,11 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
 
     controller.addListener(() {
       tray.updatePauseState(controller.isPaused);
+      
+      final overlayService = sl<OverlayWindowService>();
+      if (!controller.isBreakActive && overlayService.currentOverlayType == OverlayType.breakScreen) {
+        overlayService.hideOverlay();
+      }
     });
   }
 
@@ -97,15 +102,25 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         home: Builder(
           builder: (context) {
             final flashService = sl<FlashOverlayService>();
-            return Stack(
-              children: [
-                const MainLayout(),
-                const BreakOverlay(),
-                const FlashOverlay(),
-                // Flash overlay screen for full-screen posture reminders
-                if (flashService.isOverlayVisible)
-                  FlashOverlayScreen(overlayService: flashService),
-              ],
+            final overlayService = sl<OverlayWindowService>();
+            
+            return ListenableBuilder(
+              listenable: Listenable.merge([flashService, overlayService, sl<BreakController>()]),
+              builder: (context, _) {
+                final isBreakActive = sl<BreakController>().isBreakActive;
+                final isOverlayVisible = overlayService.isOverlayVisible;
+                
+                return Stack(
+                  children: [
+                    if (!isOverlayVisible && !isBreakActive) const MainLayout(),
+                    const BreakOverlay(),
+                    const FlashOverlay(),
+                    // Flash overlay screen for full-screen posture reminders
+                    if (flashService.isOverlayVisible)
+                      FlashOverlayScreen(overlayService: flashService),
+                  ],
+                );
+              },
             );
           },
         ),

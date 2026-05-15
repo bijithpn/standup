@@ -1,4 +1,6 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/settings/break_profile.dart';
 import 'package:standup/features/settings/settings_repository.dart';
@@ -27,8 +29,38 @@ class BreakController extends ChangeNotifier {
   void initialize() {
     _applySettings();
     _timerEngine.startTimers();
-    // Force reload stats to ensure they're current
     _statsService.load();
+    
+    // Listen for timer events to trigger global overlays
+    _timerEngine.addListener(_handleGlobalOverlays);
+  }
+
+  void _handleGlobalOverlays() {
+    final overlayService = sl<OverlayWindowService>();
+    final settings = _settingsRepo.currentSettings;
+
+    if (_timerEngine.state == TimerState.breakActive && !overlayService.isOverlayVisible) {
+      // Trigger global break overlay
+      overlayService.showOverlay(
+        type: OverlayType.breakScreen,
+        builder: (context) => const SizedBox.shrink(), // Stack in app.dart handles content
+        strictMode: settings.strictMode,
+      );
+    } else if (_timerEngine.state != TimerState.breakActive && 
+               overlayService.currentOverlayType == OverlayType.breakScreen) {
+      overlayService.hideOverlay();
+    }
+
+    if (_timerEngine.isFlashing && !overlayService.isOverlayVisible) {
+      // Trigger global flash reminder
+      overlayService.showOverlay(
+        type: OverlayType.flashNotification,
+        builder: (context) => const SizedBox.shrink(),
+        strictMode: false,
+      );
+    }
+
+    notifyListeners();
   }
 
   void _applySettings() {

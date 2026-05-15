@@ -55,7 +55,7 @@ class TrayManagerService with TrayListener {
 
   @override
   void onTrayIconMouseDown() {
-    trayManager.popUpContextMenu();
+    onMenuAction?.call('settings');
   }
 
   @override

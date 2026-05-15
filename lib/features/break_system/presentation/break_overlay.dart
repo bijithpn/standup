@@ -9,8 +9,6 @@ import 'package:standup/features/break_system/application/break_controller.dart'
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/breathing_assistant.dart';
 
 class BreakOverlay extends StatefulWidget {
@@ -26,7 +24,6 @@ class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMix
   Timer? _slideshowTimer;
   late AnimationController _breathingController;
   late AnimationController _kenBurnsController;
-  final OverlayWindowService _overlayService = sl<OverlayWindowService>();
 
   @override
   void initState() {
@@ -76,30 +73,20 @@ class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMix
       builder: (context, controller, _) {
         final timerEngine = controller.timerEngine;
         final breakInfo = timerEngine.activeBreak;
-        final settings = controller.settingsRepository.currentSettings;
 
-        if (breakInfo == null) return const SizedBox.shrink();
-
-        // Show system-wide overlay for break screen
-        if (!_overlayService.isOverlayVisible) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _overlayService.showOverlay(
-              type: OverlayType.breakScreen,
-              builder: (context) => _BreakOverlayContent(
-                breakInfo: breakInfo,
-                settings: settings,
-                timerEngine: timerEngine,
-                controller: controller,
-                pageController: _pageController,
-                kenBurnsController: _kenBurnsController,
-                breathingController: _breathingController,
-              ),
-              strictMode: settings.strictMode,
-            );
-          });
+        if (breakInfo == null || timerEngine.state != TimerState.breakActive) {
+          return const SizedBox.shrink();
         }
 
-        return const SizedBox.shrink();
+        return _BreakOverlayContent(
+          breakInfo: breakInfo,
+          settings: controller.settingsRepository.currentSettings,
+          timerEngine: timerEngine,
+          controller: controller,
+          pageController: _pageController,
+          kenBurnsController: _kenBurnsController,
+          breathingController: _breathingController,
+        );
       },
     );
   }

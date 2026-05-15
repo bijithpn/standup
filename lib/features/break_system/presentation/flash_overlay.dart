@@ -1,11 +1,8 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/app/dependency_injection.dart';
 
 class FlashOverlay extends StatefulWidget {
   const FlashOverlay({super.key});
@@ -17,7 +14,6 @@ class FlashOverlay extends StatefulWidget {
 class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   bool _isVisible = false;
-  final OverlayWindowService _overlayService = sl<OverlayWindowService>();
 
   @override
   void initState() {
@@ -51,19 +47,6 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
 
         if (isFlashing && !_isVisible) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            // Show system-wide overlay for flash notification
-            if (!_overlayService.isOverlayVisible) {
-              _overlayService.showOverlay(
-                type: OverlayType.flashNotification,
-                builder: (context) => _FlashOverlayContent(
-                  settings: settings,
-                  controller: _controller,
-                  isVisible: _isVisible,
-                  onTrigger: _triggerFlash,
-                ),
-                strictMode: settings.strictMode,
-              );
-            }
             _triggerFlash(settings);
           });
         }
@@ -71,19 +54,20 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
         if (!_isVisible) return const SizedBox.shrink();
 
         return Stack(
+          fit: StackFit.expand,
           children: [
-            // Background Animation Overlay
-            _buildAnimationOverlay(settings),
+            // Immersive Background Glow
+            _buildImmersiveGlow(settings),
 
-            // Floating Notification Card
-            _buildNotificationCard(settings),
+            // Centered Immersive Message
+            Center(child: _buildImmersiveMessage(settings)),
           ],
         );
       },
     );
   }
 
-  Widget _buildAnimationOverlay(SettingsModel settings) {
+  Widget _buildImmersiveGlow(SettingsModel settings) {
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {
@@ -94,179 +78,80 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
                 ? (1 - (progress - 0.8) / 0.2)
                 : 1.0;
 
+        final color = Color(settings.flashColorHex);
         final intensity = settings.flashIntensity * opacity;
 
-        switch (settings.flashAnimationType) {
-          case 'glow':
-            return ShaderMask(
-              shaderCallback: (rect) {
-                return RadialGradient(
-                  center: Alignment.center,
-                  radius: progress * 2,
-                  colors: [
-                    Color(settings.flashColorHex).withValues(alpha: intensity),
-                    Colors.transparent,
-                  ],
-                ).createShader(rect);
-              },
-              blendMode: BlendMode.srcOver,
-              child: Container(
-                color: Colors.white.withValues(alpha: 0.1 * intensity),
-              ),
-            );
-          case 'dim':
-            return Container(
-              color: Colors.black.withValues(alpha: 0.7 * intensity),
-            );
-          case 'edge':
-            return Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Color(settings.flashColorHex).withValues(alpha:intensity),
-                  width: 20 * progress,
-                ),
-              ),
-            );
-          case 'fade':
-            return Container(
-              color: Color(
-                settings.flashColorHex,
-              ).withValues(alpha: 0.3 * intensity),
-            );
-          case 'pulse':
-          default:
-            return Container(
-              color: Color(
-                settings.flashColorHex,
-              ).withValues(alpha: 0.15 * intensity),
-            );
-        }
-      },
-    );
-  }
-
-  Widget _buildNotificationCard(SettingsModel settings) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final progress = _controller.value;
-        final slide = (progress < 0.15)
-            ? (1 - progress / 0.15) * 50
-            : (progress > 0.85)
-                ? (progress - 0.85) / 0.15 * 50
-                : 0.0;
-
-        final opacity = (progress < 0.1)
-            ? (progress / 0.1)
-            : (progress > 0.9)
-                ? (1 - (progress - 0.9) / 0.1)
-                : 1.0;
-
-        return Positioned(
-          top: 60 + slide,
-          right: 30,
-          child: Opacity(
-            opacity: opacity.clamp(0, 1),
-            child: Container(
-              width: 300,
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E).withValues(alpha:0.8),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Color(
-                            settings.flashColorHex,
-                          ).withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          CupertinoIcons.timer,
-                          color: Color(settings.flashColorHex),
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text(
-                              'BreakMate',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              settings.flashMessage,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const Text(
-                              'Starting in 30 seconds',
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: color.withValues(alpha: 0.4 * intensity),
+              width: 40 * progress,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: color.withValues(alpha: 0.2 * intensity),
+                blurRadius: 100,
+                spreadRadius: 50 * progress,
+              ),
+            ],
           ),
         );
       },
     );
   }
-}
 
-/// Standalone flash overlay content for system-wide display
-class _FlashOverlayContent extends StatelessWidget {
-  final SettingsModel settings;
-  final AnimationController controller;
-  final bool isVisible;
-  final void Function(SettingsModel) onTrigger;
+  Widget _buildImmersiveMessage(SettingsModel settings) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final progress = _controller.value;
+        final opacity = (progress < 0.2)
+            ? (progress / 0.2)
+            : (progress > 0.8)
+                ? (1 - (progress - 0.8) / 0.2)
+                : 1.0;
 
-  const _FlashOverlayContent({
-    required this.settings,
-    required this.controller,
-    required this.isVisible,
-    required this.onTrigger,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (isVisible) {
-      onTrigger(settings);
-    }
-    return const SizedBox.shrink();
+        return Opacity(
+          opacity: opacity.clamp(0, 1),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                child: Icon(
+                  CupertinoIcons.wind,
+                  color: Color(settings.flashColorHex),
+                  size: 48,
+                ),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                settings.flashMessage.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w200,
+                  letterSpacing: 8,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Break starting in 30 seconds',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.4),
+                  fontSize: 14,
+                  letterSpacing: 2,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

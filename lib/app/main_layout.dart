@@ -27,40 +27,48 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return MacosWindow(
-      backgroundColor: AppTheme.contentBackground,
-      sidebar: Sidebar(
-        minWidth: 220,
-        top: Column(
-          children: [
-            const SizedBox(height: 32),
-            _buildLogo(),
-            const SizedBox(height: 32),
-          ],
-        ),
-        builder: (context, controller) {
-          return SidebarItems(
-            currentIndex: _pageIndex,
-            onChanged: (i) => setState(() => _pageIndex = i),
-            scrollController: controller,
-            itemSize: SidebarItemSize.large,
-            items: _navItems.map((item) {
-              return SidebarItem(
-                leading: MacosIcon(item.icon, size: 20),
-                label: Text(item.label, style: AppTheme.sidebarItemStyle),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 800;
+        final sidebarWidth = isNarrow ? 72.0 : 240.0;
+
+        return MacosWindow(
+          backgroundColor: AppTheme.contentBackground,
+          sidebar: Sidebar(
+            minWidth: sidebarWidth,
+            top: Column(
+              children: [
+                const SizedBox(height: 32),
+                _buildLogo(isNarrow),
+                const SizedBox(height: 32),
+              ],
+            ),
+            builder: (context, controller) {
+              return SidebarItems(
+                currentIndex: _pageIndex,
+                onChanged: (i) => setState(() => _pageIndex = i),
+                scrollController: controller,
+                itemSize: isNarrow ? SidebarItemSize.small : SidebarItemSize.large,
+                items: _navItems.map((item) {
+                  return SidebarItem(
+                    leading: MacosIcon(item.icon, size: 20),
+                    label: isNarrow ? const SizedBox.shrink() : Text(item.label, style: AppTheme.sidebarItemStyle),
+                  );
+                }).toList(),
               );
-            }).toList(),
-          );
-        },
-      ),
-      child: _buildMainContent(),
+            },
+          ),
+          child: _buildMainContent(),
+        );
+      },
     );
   }
 
-  Widget _buildLogo() {
+  Widget _buildLogo(bool isNarrow) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isNarrow ? 12 : 24),
       child: Row(
+        mainAxisAlignment: isNarrow ? MainAxisAlignment.center : MainAxisAlignment.start,
         children: [
           Container(
             width: 32,
@@ -82,16 +90,18 @@ class _MainLayoutState extends State<MainLayout> {
             ),
             child: const Icon(CupertinoIcons.infinite, color: Colors.white, size: 18),
           ),
-          const SizedBox(width: 12),
-          const Text(
-            "BreakMate",
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.5,
+          if (!isNarrow) ...[
+            const SizedBox(width: 12),
+            const Text(
+              "BreakMate",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
