@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
+import 'package:standup/features/settings/settings_repository.dart';
 import 'package:window_manager/window_manager.dart';
 
-/// Full-screen flash overlay widget that displays posture reminder
 class FlashOverlayWidget extends StatefulWidget {
   final FlashOverlayService overlayService;
   final VoidCallback? onClose;
@@ -17,15 +18,70 @@ class FlashOverlayWidget extends StatefulWidget {
   State<FlashOverlayWidget> createState() => _FlashOverlayWidgetState();
 }
 
-class _FlashOverlayWidgetState extends State<FlashOverlayWidget> {
+class _FlashOverlayWidgetState extends State<FlashOverlayWidget>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _animation;
+
   @override
   void initState() {
     super.initState();
     _configureWindow();
+
+    final settings = sl<SettingsRepository>().currentSettings;
+    final durationMs = settings.flashDurationMs;
+
+    _animController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: durationMs),
+    );
+
+    _animation = _buildAnimation(settings.flashAnimationType);
+    _animController.forward();
+
+    // Auto-close after duration
+    Future.delayed(Duration(milliseconds: durationMs), () {
+      if (mounted) _handleClose();
+    });
+  }
+
+  Animation<double> _buildAnimation(String type) {
+    switch (type) {
+      case 'pulse':
+        return Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _animController,
+            curve: Curves.easeInOut,
+          ),
+        )..addStatusListener((status) {
+            if (status == AnimationStatus.completed) {
+              _animController.reverse();
+            } else if (status == AnimationStatus.dismissed) {
+              _animController.forward();
+            }
+          });
+      case 'glow':
+        return Tween<double>(begin: 0.3, end: 1.0).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+        );
+      case 'fade':
+        return Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeIn),
+        );
+      case 'dim':
+        return Tween<double>(begin: 0.8, end: 0.3).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOut),
+        );
+      case 'edge':
+        return Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+        );
+      default:
+        return Tween<double>(begin: 0.0, end: 1.0).animate(_animController);
+    }
   }
 
   Future<void> _configureWindow() async {
-    // Configure window for overlay display - only for flash notification
     await windowManager.setAlwaysOnTop(true);
     await windowManager.setFullScreen(true);
     await windowManager.setSkipTaskbar(true);
@@ -37,145 +93,212 @@ class _FlashOverlayWidgetState extends State<FlashOverlayWidget> {
   }
 
   @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black.withValues(alpha: 0.92),
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Glassmorphic card container
-              Container(
-                width: 400,
-                padding: const EdgeInsets.all(48.0),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2C).withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(32),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    width: 2,
+    final settings = sl<SettingsRepository>().currentSettings;
+    final flashColor = Color(settings.flashColorHex);
+    final intensity = settings.flashIntensity;
+    final animType = settings.flashAnimationType;
+    final style = settings.flashStyle;
+    final message = settings.flashMessage;
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return _buildOverlay(
+          context,
+          flashColor: flashColor,
+          intensity: intensity,
+          animType: animType,
+          style: style,
+          message: message,
+          animValue: _animation.value,
+        );
+      },
+    );
+  }
+
+  Widget _buildOverlay(
+    BuildContext context, {
+    required Color flashColor,
+    required double intensity,
+    required String animType,
+    required String style,
+    required String message,
+    required double animValue,
+  }) {
+    if (style == 'cat') {
+      return _CatStretchFlash(
+        color: flashColor,
+        intensity: intensity,
+        animValue: animValue,
+        message: message,
+        onClose: _handleClose,
+      );
+    }
+
+    switch (animType) {
+      case 'edge':
+        return _EdgeFlash(
+          color: flashColor,
+          intensity: intensity,
+          animValue: animValue,
+          message: message,
+          onClose: _handleClose,
+        );
+      case 'dim':
+        return _DimFlash(
+          color: flashColor,
+          intensity: intensity * animValue,
+          message: message,
+          onClose: _handleClose,
+        );
+      default:
+        // pulse, glow, fade all use the full-screen overlay
+        return _FullScreenFlash(
+          color: flashColor,
+          intensity: intensity * animValue,
+          message: message,
+          onClose: _handleClose,
+          animType: animType,
+        );
+    }
+  }
+}
+
+class _CatStretchFlash extends StatelessWidget {
+  final Color color;
+  final double intensity;
+  final double animValue;
+  final String message;
+  final VoidCallback onClose;
+
+  const _CatStretchFlash({
+    required this.color,
+    required this.intensity,
+    required this.animValue,
+    required this.message,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = 0.94 + (animValue * 0.08);
+    return GestureDetector(
+      onTap: onClose,
+      child: Scaffold(
+        backgroundColor: Colors.black.withValues(alpha: (0.28 + intensity * 0.35).clamp(0.0, 0.75)),
+        body: Center(
+          child: Transform.scale(
+            scale: scale,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 132,
+                  height: 132,
+                  padding: const EdgeInsets.all(26),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color.withValues(alpha: 0.18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.45),
+                        blurRadius: 50 * intensity,
+                        spreadRadius: 10 * intensity,
+                      ),
+                    ],
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
-                      blurRadius: 30,
-                      offset: const Offset(0, 10),
-                    ),
-                    BoxShadow(
-                      color: Colors.blue.withValues(alpha: 0.2),
-                      blurRadius: 40,
-                      offset: const Offset(0, 0),
-                    ),
-                  ],
+                  child: Image.asset('assets/icons/cat/cat_stretch.png', fit: BoxFit.contain),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Posture icon with glow effect
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.blue.withValues(alpha: 0.3),
-                            Colors.transparent,
-                          ],
-                        ),
+                const SizedBox(height: 28),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 28,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FullScreenFlash extends StatelessWidget {
+  final Color color;
+  final double intensity;
+  final String message;
+  final VoidCallback onClose;
+  final String animType;
+
+  const _FullScreenFlash({
+    required this.color,
+    required this.intensity,
+    required this.message,
+    required this.onClose,
+    required this.animType,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onClose,
+      child: Scaffold(
+        backgroundColor: color.withValues(alpha: intensity.clamp(0.0, 0.95)),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (animType == 'glow')
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: color.withValues(alpha: 0.8),
+                        blurRadius: 60 * intensity,
+                        spreadRadius: 20 * intensity,
                       ),
-                      child: Icon(
-                        Icons.accessibility_new,
-                        size: 80,
-                        color: Colors.white.withValues(alpha: 0.95),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    
-                    // Main message
-                    Text(
-                      'Watch your posture!',
-                      style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white.withValues(alpha: 0.95),
-                        letterSpacing: 1.2,
-                        shadows: [
-                          Shadow(
-                            color: Colors.blue.withValues(alpha: 0.5),
-                            blurRadius: 20,
-                          ),
-                        ],
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 16),
-                    
-                    // Subtitle
-                    Text(
-                      'Take a moment to stretch and reset',
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w300,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 48),
-                    
-                    // Close button with glass effect
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 48,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.blue.withValues(alpha: 0.3),
-                              Colors.blue.withValues(alpha: 0.1),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.3),
-                            width: 1.5,
-                          ),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _handleClose,
-                            borderRadius: BorderRadius.circular(16),
-                            child: const Center(
-                              child: Text(
-                                'Close',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 32),
-                    
-                    // Timer hint
-                    Text(
-                      'Closing automatically in a few seconds...',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
+                    ],
+                    color: Colors.white.withValues(alpha: 0.9),
+                  ),
+                  child: const Icon(Icons.visibility, size: 60, color: Colors.black87),
+                )
+              else
+                Icon(
+                  Icons.visibility,
+                  size: 80,
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
+              const SizedBox(height: 32),
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white.withValues(alpha: 0.95),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tap anywhere to dismiss',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.white.withValues(alpha: 0.6),
                 ),
               ),
             ],
@@ -184,9 +307,91 @@ class _FlashOverlayWidgetState extends State<FlashOverlayWidget> {
       ),
     );
   }
+}
+
+class _DimFlash extends StatelessWidget {
+  final Color color;
+  final double intensity;
+  final String message;
+  final VoidCallback onClose;
+
+  const _DimFlash({
+    required this.color,
+    required this.intensity,
+    required this.message,
+    required this.onClose,
+  });
 
   @override
-  void dispose() {
-    super.dispose();
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onClose,
+      child: Scaffold(
+        backgroundColor: Colors.black.withValues(alpha: intensity.clamp(0.0, 0.7)),
+        body: Center(
+          child: Text(
+            message,
+            style: const TextStyle(
+              fontSize: 24,
+              color: Colors.white70,
+              fontWeight: FontWeight.w300,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EdgeFlash extends StatelessWidget {
+  final Color color;
+  final double intensity;
+  final double animValue;
+  final String message;
+  final VoidCallback onClose;
+
+  const _EdgeFlash({
+    required this.color,
+    required this.intensity,
+    required this.animValue,
+    required this.message,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderWidth = 12.0 * intensity * animValue;
+    return GestureDetector(
+      onTap: onClose,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: color.withValues(alpha: (intensity * animValue).clamp(0.0, 1.0)),
+              width: borderWidth,
+            ),
+          ),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                message,
+                style: TextStyle(
+                  fontSize: 20,
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

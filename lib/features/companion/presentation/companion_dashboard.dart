@@ -80,7 +80,7 @@ class CompanionDashboard extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      isPaused ? 'Resume for wellness' : 'Next break in :',
+                      isPaused ? 'Resume for wellness' : 'Next break in $mins:$secs',
                       style: AppTheme.headerStyle.copyWith(fontSize: isNarrow ? 18 : 26),
                     ),
                   ),

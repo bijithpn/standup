@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/features/settings/settings_repository.dart';
+import 'package:standup/features/settings/exercise_model.dart';
 import 'package:standup/features/analytics/stats_model.dart';
 import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/settings/break_profile.dart';
@@ -176,7 +177,7 @@ class _SettingsPageState extends State<SettingsPage> {
           _divider(),
           _buildListRow(
             'Menu Style',
-            'Custom tray look',
+            'Countdown display in the menu bar',
             null,
             CupertinoIcons.macwindow,
             null,
@@ -187,6 +188,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 final style = v ?? 'countdown';
                 _save(_settings.copyWith(menuBarStyle: style));
                 sl<TimerEngine>().updateMenuStyle(style);
+              },
+            ),
+          ),
+          _divider(),
+          _buildListRow(
+            'Menu Bar Icon',
+            'Choose default, cat, minimal, or countdown-only',
+            null,
+            CupertinoIcons.circle_grid_hex,
+            null,
+            trailing: _inlineDropdown(
+              _settings.trayIconStyle,
+              ['default', 'cat', 'minimal', 'countdown'],
+              (v) {
+                final style = v ?? 'cat';
+                _save(_settings.copyWith(trayIconStyle: style));
+                sl<TimerEngine>().updateMenuStyle(_settings.menuBarStyle);
               },
             ),
           ),
@@ -265,9 +283,9 @@ class _SettingsPageState extends State<SettingsPage> {
             _divider(),
             _buildDaysToggle(),
             _divider(),
-            _buildTimeSelector('Start Time', '09:00'),
+            _buildTimeSelector('Start Time', _settings.workStartTime),
             _divider(),
-            _buildTimeSelector('End Time', '18:00'),
+            _buildTimeSelector('End Time', _settings.workEndTime),
           ],
         ]),
       ],
@@ -281,26 +299,37 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: days.asMap().entries.map((e) {
-          final isWeekend = e.key > 4;
+          final day = e.key + 1;
+          final selected = _settings.workingDays.contains(day);
           return Column(
             children: [
               Text(e.value, style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
               const SizedBox(height: 4),
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: isWeekend
-                      ? AppTheme.contentBackground
-                      : AppTheme.accentColor.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: isWeekend ? AppTheme.borderColor : AppTheme.accentColor),
-                ),
-                child: Center(
-                  child: Icon(
-                    CupertinoIcons.checkmark,
-                    size: 14,
-                    color: isWeekend ? AppTheme.textMuted : AppTheme.accentColor,
+              GestureDetector(
+                onTap: () {
+                  final days = List<int>.from(_settings.workingDays);
+                  selected ? days.remove(day) : days.add(day);
+                  days.sort();
+                  _save(_settings.copyWith(workingDays: days));
+                },
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? AppTheme.accentColor.withValues(alpha: 0.2)
+                        : AppTheme.contentBackground,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: selected ? AppTheme.accentColor : AppTheme.borderColor,
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      selected ? CupertinoIcons.checkmark : CupertinoIcons.minus,
+                      size: 14,
+                      color: selected ? AppTheme.accentColor : AppTheme.textMuted,
+                    ),
                   ),
                 ),
               ),
@@ -320,12 +349,31 @@ class _SettingsPageState extends State<SettingsPage> {
           Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
           CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () {},
+            onPressed: () => _showPicker(
+              title: label,
+              options: _timeOptions(),
+              suffix: '',
+              onSelected: (v) {
+                if (label.startsWith('Start')) {
+                  _save(_settings.copyWith(workStartTime: v));
+                } else {
+                  _save(_settings.copyWith(workEndTime: v));
+                }
+              },
+            ),
             child: Text(time, style: const TextStyle(color: AppTheme.accentColor)),
           ),
         ],
       ),
     );
+  }
+
+  List<String> _timeOptions() {
+    return [
+      for (var hour = 0; hour < 24; hour++)
+        for (final minute in const [0, 30])
+          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+    ];
   }
 
   int _breaksSubTab = 0;
@@ -640,40 +688,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _exerciseItem(String title, String subtitle, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppTheme.accentColor, size: 20),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(color: AppTheme.textMuted, fontSize: 12)),
-              ],
-            ),
-          ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () {},
-            child: const Text('Try', style: TextStyle(fontSize: 13)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildIntelligentDetection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -746,6 +760,10 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildExercises() {
+    final exercises = _settings.exercises.isEmpty
+        ? ExerciseModel.defaults
+        : _settings.exercises;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -757,29 +775,198 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 24),
         _buildCard([
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    'No custom exercises yet.',
-                    style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
-                  ),
-                ),
+                const Expanded(child: Text('Exercise Library')),
                 CupertinoButton(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  color: AppTheme.accentColor.withOpacity(0.1),
+                  color: AppTheme.accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  onPressed: () {
-                    Toast.showSuccess(context, 'Custom exercises coming in next update!');
-                  },
+                  onPressed: () => _showExerciseEditor(),
                   child: const Text('Add Exercise', style: TextStyle(color: AppTheme.accentColor, fontSize: 13)),
                 ),
               ],
             ),
-          )
+          ),
+          for (final exercise in exercises) ...[
+            _divider(),
+            _exerciseSettingsItem(exercise),
+          ],
         ]),
       ],
+    );
+  }
+
+  Widget _exerciseSettingsItem(ExerciseModel exercise) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          Icon(_exerciseIcon(exercise.category), color: AppTheme.accentColor, size: 20),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(exercise.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const SizedBox(height: 3),
+                Text(
+                  '${exercise.durationSeconds}s • ${exercise.category.name} • ${exercise.instructions}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          CupertinoSwitch(
+            value: exercise.enabled,
+            activeTrackColor: AppTheme.accentColor,
+            onChanged: (enabled) => _upsertExercise(exercise.copyWith(enabled: enabled)),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () => _showExerciseEditor(existing: exercise),
+            child: const Icon(CupertinoIcons.pencil, size: 18),
+          ),
+          CupertinoButton(
+            padding: EdgeInsets.zero,
+            onPressed: () => _deleteExercise(exercise),
+            child: const Icon(CupertinoIcons.delete, size: 18, color: CupertinoColors.systemRed),
+          ),
+        ],
+      ),
+    );
+  }
+
+  IconData _exerciseIcon(ExerciseCategory category) {
+    switch (category) {
+      case ExerciseCategory.eyeRest:
+        return CupertinoIcons.eye;
+      case ExerciseCategory.posture:
+        return CupertinoIcons.person_crop_circle;
+      case ExerciseCategory.breathing:
+        return CupertinoIcons.wind;
+      case ExerciseCategory.movement:
+        return CupertinoIcons.arrow_2_circlepath;
+      case ExerciseCategory.stretch:
+        return CupertinoIcons.person_2;
+    }
+  }
+
+  void _upsertExercise(ExerciseModel exercise) {
+    final exercises = List<ExerciseModel>.from(
+      _settings.exercises.isEmpty ? ExerciseModel.defaults : _settings.exercises,
+    );
+    final index = exercises.indexWhere((e) => e.id == exercise.id);
+    if (index == -1) {
+      exercises.add(exercise);
+    } else {
+      exercises[index] = exercise;
+    }
+    _save(_settings.copyWith(exercises: exercises));
+  }
+
+  void _deleteExercise(ExerciseModel exercise) {
+    final exercises = List<ExerciseModel>.from(
+      _settings.exercises.isEmpty ? ExerciseModel.defaults : _settings.exercises,
+    )..removeWhere((e) => e.id == exercise.id);
+    _save(_settings.copyWith(exercises: exercises));
+  }
+
+  void _showExerciseEditor({ExerciseModel? existing}) {
+    final titleController = TextEditingController(text: existing?.title ?? '');
+    final durationController = TextEditingController(
+      text: (existing?.durationSeconds ?? 20).toString(),
+    );
+    final instructionsController = TextEditingController(
+      text: existing?.instructions ?? '',
+    );
+    var category = existing?.category ?? ExerciseCategory.stretch;
+
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return CupertinoAlertDialog(
+            title: Text(existing == null ? 'Add Exercise' : 'Edit Exercise'),
+            content: Column(
+              children: [
+                const SizedBox(height: 12),
+                CupertinoTextField(controller: titleController, placeholder: 'Title'),
+                const SizedBox(height: 8),
+                CupertinoTextField(
+                  controller: durationController,
+                  placeholder: 'Duration seconds',
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 8),
+                CupertinoTextField(
+                  controller: instructionsController,
+                  placeholder: 'Instructions',
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 8),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  onPressed: () {
+                    showCupertinoModalPopup(
+                      context: context,
+                      builder: (_) => CupertinoActionSheet(
+                        actions: ExerciseCategory.values
+                            .map(
+                              (c) => CupertinoActionSheetAction(
+                                onPressed: () {
+                                  setDialogState(() => category = c);
+                                  Navigator.pop(context);
+                                },
+                                child: Text(c.name),
+                              ),
+                            )
+                            .toList(),
+                        cancelButton: CupertinoActionSheetAction(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                    );
+                  },
+                  child: Text('Category: ${category.name}'),
+                ),
+              ],
+            ),
+            actions: [
+              CupertinoDialogAction(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              CupertinoDialogAction(
+                onPressed: () {
+                  final title = titleController.text.trim();
+                  final duration = int.tryParse(durationController.text.trim()) ?? 20;
+                  final instructions = instructionsController.text.trim();
+                  if (title.isEmpty || instructions.isEmpty) return;
+                  _upsertExercise(
+                    ExerciseModel(
+                      id: existing?.id ??
+                          'custom_${DateTime.now().millisecondsSinceEpoch}',
+                      title: title,
+                      durationSeconds: duration.clamp(5, 600),
+                      category: category,
+                      instructions: instructions,
+                      enabled: existing?.enabled ?? true,
+                    ),
+                  );
+                  Navigator.pop(context);
+                },
+                isDefaultAction: true,
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -875,6 +1062,12 @@ class _SettingsPageState extends State<SettingsPage> {
               'Photo Flash',
               _settings.flashStyle == 'photo',
               () => _save(_settings.copyWith(flashStyle: 'photo')),
+            ),
+            const SizedBox(width: 24),
+            _stylePreview(
+              'Stretch Cat',
+              _settings.flashStyle == 'cat',
+              () => _save(_settings.copyWith(flashStyle: 'cat')),
             ),
           ],
         ),

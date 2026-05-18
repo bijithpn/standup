@@ -7,6 +7,7 @@ import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
+import 'package:standup/features/settings/exercise_model.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/breathing_assistant.dart';
@@ -183,6 +184,7 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
   }
 
   Widget _buildMainContent() {
+    final exercise = _selectedExercise();
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -206,7 +208,9 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
         ),
         const SizedBox(height: 60),
         BreathingAssistant(isShortBreak: widget.breakInfo.type == BreakType.short),
-        const SizedBox(height: 80),
+        const SizedBox(height: 36),
+        if (exercise != null) _buildExercise(exercise),
+        const SizedBox(height: 44),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 60),
           child: Text(
@@ -220,6 +224,54 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
           ),
         ),
       ],
+    );
+  }
+
+  ExerciseModel? _selectedExercise() {
+    final exercises = (widget.settings.exercises.isEmpty
+            ? ExerciseModel.defaults
+            : widget.settings.exercises)
+        .where((exercise) => exercise.enabled)
+        .toList();
+    if (exercises.isEmpty) return null;
+    if (widget.breakInfo.type == BreakType.short) {
+      return exercises.firstWhere(
+        (exercise) => exercise.category == ExerciseCategory.eyeRest,
+        orElse: () => exercises.first,
+      );
+    }
+    return exercises.firstWhere(
+      (exercise) => exercise.category != ExerciseCategory.eyeRest,
+      orElse: () => exercises.first,
+    );
+  }
+
+  Widget _buildExercise(ExerciseModel exercise) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 620),
+      child: Column(
+        children: [
+          Text(
+            exercise.title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            exercise.instructions,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.72),
+              fontSize: 17,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

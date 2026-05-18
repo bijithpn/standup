@@ -68,25 +68,33 @@ class OverlayWindowService extends ChangeNotifier {
   Future<void> showDashboard() async {
     try {
       _logger.info('Restoring dashboard window');
-      
+
       if (_isOverlayVisible) {
         await hideOverlay();
       }
 
       await MacOSBridge.hideOverlay();
       await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
-      
+      await MacOSBridge.setWindowLevel('normal');
+
+      _isOverlayVisible = false;
+      _currentOverlayType = null;
+
+      await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
       await windowManager.setSize(const Size(500, 750));
       await windowManager.setSkipTaskbar(false);
       await windowManager.setHasShadow(true);
+      await windowManager.setIgnoreMouseEvents(false);
+      await windowManager.setBackgroundColor(Colors.transparent);
       await windowManager.center();
-      
+
       await windowManager.show();
       await windowManager.focus();
+      await MacOSBridge.focusApp();
       notifyListeners();
     } catch (e) {
-      _logger.error('Failed to show dashboard: ');
+      _logger.error('Failed to show dashboard: $e');
     }
   }
 
@@ -134,6 +142,7 @@ class OverlayWindowService extends ChangeNotifier {
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setFullScreen(false);
     await windowManager.setSkipTaskbar(false);
+    await windowManager.setIgnoreMouseEvents(false);
   }
 }
 

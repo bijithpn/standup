@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/settings/settings_page.dart';
 import 'package:standup/features/wellness/presentation/wellness_articles_page.dart';
@@ -15,6 +16,7 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _pageIndex = 0;
+  late final AppNavigationService _navigationService;
 
   final List<({String label, IconData icon, String section})> _navItems = [
     (label: 'Companion', icon: CupertinoIcons.sparkles, section: 'Companion'),
@@ -27,6 +29,27 @@ class _MainLayoutState extends State<MainLayout> {
     (label: 'Articles', icon: CupertinoIcons.news, section: 'Blog'),
     (label: 'Settings', icon: CupertinoIcons.settings_solid, section: 'General'),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _navigationService = sl<AppNavigationService>();
+    _navigationService.selectedSection.addListener(_handleExternalNavigation);
+  }
+
+  @override
+  void dispose() {
+    _navigationService.selectedSection.removeListener(_handleExternalNavigation);
+    super.dispose();
+  }
+
+  void _handleExternalNavigation() {
+    final section = _navigationService.selectedSection.value;
+    final index = _navItems.indexWhere((item) => item.section == section);
+    if (index != -1 && index != _pageIndex && mounted) {
+      setState(() => _pageIndex = index);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

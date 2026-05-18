@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:standup/core/services/activity_monitor.dart';
+import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/services/notification_service.dart';
+import 'package:standup/core/services/smart_detection_service.dart';
 import 'package:standup/core/services/storage_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
@@ -26,6 +28,8 @@ Future<void> initDependencies() async {
   final activityMonitor = ActivityMonitor();
   sl.registerSingleton<ActivityMonitor>(activityMonitor);
 
+  sl.registerSingleton<AppNavigationService>(AppNavigationService());
+
   // Overlay Window Service for system-wide displays
   final overlayService = OverlayWindowService();
   sl.registerSingleton<OverlayWindowService>(overlayService);
@@ -39,6 +43,13 @@ Future<void> initDependencies() async {
   settingsRepo.load();
   sl.registerSingleton<SettingsRepository>(settingsRepo);
 
+  notifications.setNotificationsEnabled(settingsRepo.currentSettings.notificationsEnabled);
+  notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
+
+  final smartDetectionService = SmartDetectionService();
+  smartDetectionService.start();
+  sl.registerSingleton<SmartDetectionService>(smartDetectionService);
+
   final statsService = StatsService(storage: sl());
   sl.registerSingleton<StatsService>(statsService);
 
@@ -47,6 +58,7 @@ Future<void> initDependencies() async {
     notificationService: sl(),
     adaptiveBreakService: sl(),
     settingsRepository: sl(),
+    smartDetectionService: sl(),
   );
   sl.registerSingleton<TimerEngine>(timerEngine);
 

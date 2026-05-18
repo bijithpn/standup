@@ -13,6 +13,7 @@ import 'package:standup/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
+import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_screen.dart';
 
@@ -52,7 +53,30 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
 
     tray.onMenuAction = (action) async {
       final overlayService = sl<OverlayWindowService>();
+      final navigation = sl<AppNavigationService>();
+
+      Future<void> openSection(String section) async {
+        navigation.openSection(section);
+        await overlayService.showDashboard();
+      }
+
       switch (action) {
+        case 'open_dashboard':
+        case 'settings':
+          await openSection('Companion');
+          break;
+        case 'open_settings':
+          await openSection('General');
+          break;
+        case 'open_flash':
+          await openSection('Flash Reminder');
+          break;
+        case 'open_exercises':
+          await openSection('Exercises');
+          break;
+        case 'open_stats':
+          await openSection('Statistics');
+          break;
         case 'toggle_pause':
           controller.togglePause();
           tray.updatePauseState(controller.isPaused);
@@ -65,9 +89,6 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
           break;
         case 'posture_reminder':
           await flashOverlayService.showOverlay();
-          break;
-        case 'settings':
-          await overlayService.showDashboard();
           break;
         case 'quit':
           await overlayService.reset();

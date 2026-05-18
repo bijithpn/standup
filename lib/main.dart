@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:standup/app/app.dart';
 import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/core/services/app_navigation_service.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
@@ -21,12 +24,28 @@ void main() async {
         debugPrint('Startup: Acrylic window initialized');
       }
 
-      // Single instance check via Socket
+      ServerSocket? singleInstanceServer;
+
+      // Single instance check via Socket. A second launch opens the existing
+      // hidden dashboard instead of silently exiting.
       try {
-        await ServerSocket.bind(InternetAddress.loopbackIPv4, 10425);
+        singleInstanceServer =
+            await ServerSocket.bind(InternetAddress.loopbackIPv4, 10425);
         debugPrint('Startup: Port 10425 bound (single instance check passed)');
       } catch (e) {
         debugPrint('Startup: Port 10425 already in use - another instance is running ($e)');
+        try {
+          final socket = await Socket.connect(
+            InternetAddress.loopbackIPv4,
+            10425,
+            timeout: const Duration(milliseconds: 500),
+          );
+          socket.write('showDashboard\n');
+          await socket.flush();
+          await socket.close();
+        } catch (signalError) {
+          debugPrint('Startup: Could not signal existing instance ($signalError)');
+        }
         exit(0);
       }
 
@@ -52,6 +71,16 @@ void main() async {
         // We start hidden as it's a tray app - NOT always on top
         await windowManager.hide();
         debugPrint('Startup: Window ready and hidden');
+      });
+
+      singleInstanceServer.listen((client) {
+        utf8.decoder.bind(client).join().then((message) async {
+          if (message.trim() == 'showDashboard') {
+            sl<AppNavigationService>().openSection('Companion');
+            await sl<OverlayWindowService>().showDashboard();
+          }
+          client.destroy();
+        });
       });
 
       // Setup Launch at Startup

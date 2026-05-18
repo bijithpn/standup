@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:standup/core/services/storage_service.dart';
+import 'package:standup/features/settings/exercise_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/core/constants/app_constants.dart';
 
@@ -66,13 +69,31 @@ class SettingsRepository {
       customImagePath: _storage.getString('custom_image_path'),
       pauseTimerAfterMinutes: _storage.getInt(
         'pause_timer_after_minutes',
-        defaultValue: 1,
+        defaultValue: 5,
       ),
       resetTimerAfterMinutes: _storage.getInt(
         'reset_timer_after_minutes',
-        defaultValue: 5,
+        defaultValue: 15,
       ),
       workingHoursEnabled: _storage.getBool('working_hours_enabled'),
+      workingDays: _decodeIntList(
+        _storage.getString('working_days'),
+        fallback: const [1, 2, 3, 4, 5],
+      ),
+      workStartTime: _storage.getString('work_start_time', defaultValue: '09:00'),
+      workEndTime: _storage.getString('work_end_time', defaultValue: '18:00'),
+      detectVideoCalls: _storage.getBool('detect_video_calls', defaultValue: true),
+      detectMeetings: _storage.getBool('detect_meetings', defaultValue: true),
+      respectFocusMode: _storage.getBool('respect_focus_mode', defaultValue: true),
+      enableClockOut: _storage.getBool('enable_clock_out', defaultValue: false),
+      clockOutTime: _storage.getString('clock_out_time', defaultValue: '17:00'),
+      exercises: _loadExercises(),
+      autoSuggestExercises: _storage.getBool(
+        'auto_suggest_exercises',
+        defaultValue: true,
+      ),
+      useCursorCountdown: _storage.getBool('use_cursor_countdown', defaultValue: true),
+      trayIconStyle: _storage.getString('tray_icon_style', defaultValue: 'cat'),
       dailyWorkGoalHours: _storage.getInt('daily_work_goal_hours', defaultValue: 8),
       remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
     );
@@ -131,12 +152,53 @@ class SettingsRepository {
         settings.resetTimerAfterMinutes,
       ),
       _storage.setBool('working_hours_enabled', settings.workingHoursEnabled),
+      _storage.setString('working_days', jsonEncode(settings.workingDays)),
+      _storage.setString('work_start_time', settings.workStartTime),
+      _storage.setString('work_end_time', settings.workEndTime),
+      _storage.setBool('detect_video_calls', settings.detectVideoCalls),
+      _storage.setBool('detect_meetings', settings.detectMeetings),
+      _storage.setBool('respect_focus_mode', settings.respectFocusMode),
+      _storage.setBool('enable_clock_out', settings.enableClockOut),
+      _storage.setString('clock_out_time', settings.clockOutTime),
+      _storage.setString(
+        'exercises',
+        jsonEncode(settings.exercises.map((e) => e.toMap()).toList()),
+      ),
       _storage.setBool('auto_suggest_exercises', settings.autoSuggestExercises),
+      _storage.setBool('use_cursor_countdown', settings.useCursorCountdown),
+      _storage.setString('tray_icon_style', settings.trayIconStyle),
       _storage.setInt('daily_work_goal_hours', settings.dailyWorkGoalHours),
       _storage.setBool(
         'remind_clock_out_enabled',
         settings.remindClockOutEnabled,
       ),
     ]);
+  }
+
+  List<int> _decodeIntList(String raw, {required List<int> fallback}) {
+    if (raw.isEmpty) return fallback;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return fallback;
+      return decoded.whereType<num>().map((e) => e.toInt()).toList();
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  List<ExerciseModel> _loadExercises() {
+    final raw = _storage.getString('exercises');
+    if (raw.isEmpty) return ExerciseModel.defaults;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return ExerciseModel.defaults;
+      final exercises = decoded
+          .whereType<Map<String, dynamic>>()
+          .map(ExerciseModel.fromMap)
+          .toList();
+      return exercises.isEmpty ? ExerciseModel.defaults : exercises;
+    } catch (_) {
+      return ExerciseModel.defaults;
+    }
   }
 }

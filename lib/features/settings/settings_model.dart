@@ -1,3 +1,5 @@
+import 'package:standup/features/settings/exercise_model.dart';
+
 class SettingsModel {
   final bool autoStart;
   final String clockFaceStyle;
@@ -23,24 +25,40 @@ class SettingsModel {
   final double flashIntensity;
   final int flashDurationMs;
 
-  // Missing Original Features
+  // Notifications
   final bool soundEnabled;
   final bool notificationsEnabled;
+
+  // Clock face
   final int clockFaceTextColorHex;
   final bool clockFaceBlurEnabled;
   final String? customImagePath;
-  final int resetTimerAfterMinutes;
-  final bool workingHoursEnabled;
-  final bool autoSuggestExercises;
 
-  // New Features
+  // Idle/reset
+  final int resetTimerAfterMinutes;
+
+  // Working hours
+  final bool workingHoursEnabled;
+  final List<int> workingDays; // 1=Mon … 7=Sun
+  final String workStartTime; // "HH:mm"
+  final String workEndTime;   // "HH:mm"
+
+  // Smart detection
   final bool detectVideoCalls;
   final bool detectMeetings;
   final bool respectFocusMode;
-  final List<String> customExercises;
+
+  // Clock out
   final bool enableClockOut;
-  final String clockOutTime;
+  final String clockOutTime; // "HH:mm"
+
+  // Exercises
+  final List<ExerciseModel> exercises;
+
+  // Misc
+  final bool autoSuggestExercises;
   final bool useCursorCountdown;
+  final String trayIconStyle; // 'default', 'cat', 'minimal', 'countdown'
 
   const SettingsModel({
     this.autoStart = true,
@@ -58,11 +76,10 @@ class SettingsModel {
     this.longBreakDurationMinutes = 3,
     this.flashColorHex = 0xFFF87171,
     this.flashStyle = 'default',
-    this.flashMessage = 'Take a deep breath',
+    this.flashMessage = 'Look 20 feet away for 20 seconds',
     this.flashAnimationType = 'pulse',
     this.flashIntensity = 0.5,
     this.flashDurationMs = 2500,
-    
     this.soundEnabled = true,
     this.notificationsEnabled = true,
     this.clockFaceTextColorHex = 0xFFFFFFFF,
@@ -70,15 +87,18 @@ class SettingsModel {
     this.customImagePath,
     this.resetTimerAfterMinutes = 15,
     this.workingHoursEnabled = false,
-    this.autoSuggestExercises = false,
-
+    this.workingDays = const [1, 2, 3, 4, 5],
+    this.workStartTime = '09:00',
+    this.workEndTime = '18:00',
     this.detectVideoCalls = true,
     this.detectMeetings = true,
     this.respectFocusMode = true,
-    this.customExercises = const [],
     this.enableClockOut = false,
     this.clockOutTime = '17:00',
+    this.exercises = const [],
+    this.autoSuggestExercises = true,
     this.useCursorCountdown = true,
+    this.trayIconStyle = 'cat',
   });
 
   SettingsModel copyWith({
@@ -101,7 +121,6 @@ class SettingsModel {
     String? flashAnimationType,
     double? flashIntensity,
     int? flashDurationMs,
-    
     bool? soundEnabled,
     bool? notificationsEnabled,
     int? clockFaceTextColorHex,
@@ -109,15 +128,18 @@ class SettingsModel {
     String? customImagePath,
     int? resetTimerAfterMinutes,
     bool? workingHoursEnabled,
-    bool? autoSuggestExercises,
-
+    List<int>? workingDays,
+    String? workStartTime,
+    String? workEndTime,
     bool? detectVideoCalls,
     bool? detectMeetings,
     bool? respectFocusMode,
-    List<String>? customExercises,
     bool? enableClockOut,
     String? clockOutTime,
+    List<ExerciseModel>? exercises,
+    bool? autoSuggestExercises,
     bool? useCursorCountdown,
+    String? trayIconStyle,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -139,7 +161,6 @@ class SettingsModel {
       flashAnimationType: flashAnimationType ?? this.flashAnimationType,
       flashIntensity: flashIntensity ?? this.flashIntensity,
       flashDurationMs: flashDurationMs ?? this.flashDurationMs,
-      
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       clockFaceTextColorHex: clockFaceTextColorHex ?? this.clockFaceTextColorHex,
@@ -147,60 +168,72 @@ class SettingsModel {
       customImagePath: customImagePath ?? this.customImagePath,
       resetTimerAfterMinutes: resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,
-      autoSuggestExercises: autoSuggestExercises ?? this.autoSuggestExercises,
-
+      workingDays: workingDays ?? this.workingDays,
+      workStartTime: workStartTime ?? this.workStartTime,
+      workEndTime: workEndTime ?? this.workEndTime,
       detectVideoCalls: detectVideoCalls ?? this.detectVideoCalls,
       detectMeetings: detectMeetings ?? this.detectMeetings,
       respectFocusMode: respectFocusMode ?? this.respectFocusMode,
-      customExercises: customExercises ?? this.customExercises,
       enableClockOut: enableClockOut ?? this.enableClockOut,
       clockOutTime: clockOutTime ?? this.clockOutTime,
+      exercises: exercises ?? this.exercises,
+      autoSuggestExercises: autoSuggestExercises ?? this.autoSuggestExercises,
       useCursorCountdown: useCursorCountdown ?? this.useCursorCountdown,
+      trayIconStyle: trayIconStyle ?? this.trayIconStyle,
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'autoStart': autoStart,
-      'clockFaceStyle': clockFaceStyle,
-      'selectedProfileId': selectedProfileId,
-      'strictMode': strictMode,
-      'remindClockOutEnabled': remindClockOutEnabled,
-      'dailyWorkGoalHours': dailyWorkGoalHours,
-      'pauseTimerAfterMinutes': pauseTimerAfterMinutes,
-      'menuBarStyle': menuBarStyle,
-      'focusModeEnabled': focusModeEnabled,
-      'shortBreakIntervalMinutes': shortBreakIntervalMinutes,
-      'shortBreakDurationSeconds': shortBreakDurationSeconds,
-      'longBreakIntervalMinutes': longBreakIntervalMinutes,
-      'longBreakDurationMinutes': longBreakDurationMinutes,
-      'flashColorHex': flashColorHex,
-      'flashStyle': flashStyle,
-      'flashMessage': flashMessage,
-      'flashAnimationType': flashAnimationType,
-      'flashIntensity': flashIntensity,
-      'flashDurationMs': flashDurationMs,
-      
-      'soundEnabled': soundEnabled,
-      'notificationsEnabled': notificationsEnabled,
-      'clockFaceTextColorHex': clockFaceTextColorHex,
-      'clockFaceBlurEnabled': clockFaceBlurEnabled,
-      'customImagePath': customImagePath,
-      'resetTimerAfterMinutes': resetTimerAfterMinutes,
-      'workingHoursEnabled': workingHoursEnabled,
-      'autoSuggestExercises': autoSuggestExercises,
-
-      'detectVideoCalls': detectVideoCalls,
-      'detectMeetings': detectMeetings,
-      'respectFocusMode': respectFocusMode,
-      'customExercises': customExercises,
-      'enableClockOut': enableClockOut,
-      'clockOutTime': clockOutTime,
-      'useCursorCountdown': useCursorCountdown,
-    };
-  }
+  Map<String, dynamic> toMap() => {
+        'autoStart': autoStart,
+        'clockFaceStyle': clockFaceStyle,
+        'selectedProfileId': selectedProfileId,
+        'strictMode': strictMode,
+        'remindClockOutEnabled': remindClockOutEnabled,
+        'dailyWorkGoalHours': dailyWorkGoalHours,
+        'pauseTimerAfterMinutes': pauseTimerAfterMinutes,
+        'menuBarStyle': menuBarStyle,
+        'focusModeEnabled': focusModeEnabled,
+        'shortBreakIntervalMinutes': shortBreakIntervalMinutes,
+        'shortBreakDurationSeconds': shortBreakDurationSeconds,
+        'longBreakIntervalMinutes': longBreakIntervalMinutes,
+        'longBreakDurationMinutes': longBreakDurationMinutes,
+        'flashColorHex': flashColorHex,
+        'flashStyle': flashStyle,
+        'flashMessage': flashMessage,
+        'flashAnimationType': flashAnimationType,
+        'flashIntensity': flashIntensity,
+        'flashDurationMs': flashDurationMs,
+        'soundEnabled': soundEnabled,
+        'notificationsEnabled': notificationsEnabled,
+        'clockFaceTextColorHex': clockFaceTextColorHex,
+        'clockFaceBlurEnabled': clockFaceBlurEnabled,
+        'customImagePath': customImagePath,
+        'resetTimerAfterMinutes': resetTimerAfterMinutes,
+        'workingHoursEnabled': workingHoursEnabled,
+        'workingDays': workingDays,
+        'workStartTime': workStartTime,
+        'workEndTime': workEndTime,
+        'detectVideoCalls': detectVideoCalls,
+        'detectMeetings': detectMeetings,
+        'respectFocusMode': respectFocusMode,
+        'enableClockOut': enableClockOut,
+        'clockOutTime': clockOutTime,
+        'exercises': exercises.map((e) => e.toMap()).toList(),
+        'autoSuggestExercises': autoSuggestExercises,
+        'useCursorCountdown': useCursorCountdown,
+        'trayIconStyle': trayIconStyle,
+      };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
+    List<ExerciseModel> exercises = [];
+    final rawExercises = map['exercises'];
+    if (rawExercises is List) {
+      exercises = rawExercises
+          .whereType<Map<String, dynamic>>()
+          .map(ExerciseModel.fromMap)
+          .toList();
+    }
+
     return SettingsModel(
       autoStart: map['autoStart'] as bool? ?? true,
       clockFaceStyle: map['clockFaceStyle'] as String? ?? 'breakloop',
@@ -217,11 +250,10 @@ class SettingsModel {
       longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 3,
       flashColorHex: map['flashColorHex'] as int? ?? 0xFFF87171,
       flashStyle: map['flashStyle'] as String? ?? 'default',
-      flashMessage: map['flashMessage'] as String? ?? 'Take a deep breath',
+      flashMessage: map['flashMessage'] as String? ?? 'Look 20 feet away for 20 seconds',
       flashAnimationType: map['flashAnimationType'] as String? ?? 'pulse',
       flashIntensity: (map['flashIntensity'] as num?)?.toDouble() ?? 0.5,
       flashDurationMs: map['flashDurationMs'] as int? ?? 2500,
-      
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       clockFaceTextColorHex: map['clockFaceTextColorHex'] as int? ?? 0xFFFFFFFF,
@@ -229,15 +261,21 @@ class SettingsModel {
       customImagePath: map['customImagePath'] as String?,
       resetTimerAfterMinutes: map['resetTimerAfterMinutes'] as int? ?? 15,
       workingHoursEnabled: map['workingHoursEnabled'] as bool? ?? false,
-      autoSuggestExercises: map['autoSuggestExercises'] as bool? ?? false,
-
+      workingDays: (map['workingDays'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList() ??
+          [1, 2, 3, 4, 5],
+      workStartTime: map['workStartTime'] as String? ?? '09:00',
+      workEndTime: map['workEndTime'] as String? ?? '18:00',
       detectVideoCalls: map['detectVideoCalls'] as bool? ?? true,
       detectMeetings: map['detectMeetings'] as bool? ?? true,
       respectFocusMode: map['respectFocusMode'] as bool? ?? true,
-      customExercises: (map['customExercises'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       enableClockOut: map['enableClockOut'] as bool? ?? false,
       clockOutTime: map['clockOutTime'] as String? ?? '17:00',
+      exercises: exercises,
+      autoSuggestExercises: map['autoSuggestExercises'] as bool? ?? true,
       useCursorCountdown: map['useCursorCountdown'] as bool? ?? true,
+      trayIconStyle: map['trayIconStyle'] as String? ?? 'cat',
     );
   }
 }

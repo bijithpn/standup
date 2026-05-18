@@ -23,6 +23,7 @@ class ActivityMonitor {
   }
 
   void start() {
+    _pollTimer?.cancel();
     _isIdle = false;
 
     // Poll for idle time every 5 seconds for more responsive tracking

@@ -7,101 +7,21 @@ class AppDelegate: FlutterAppDelegate {
     return false
   }
 
+  override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    if let window = mainFlutterWindow as? MainFlutterWindow {
+      window.resetToNormal()
+      if window.isMiniaturized { window.deminiaturize(nil) }
+      NSApp.activate(ignoringOtherApps: true)
+      window.makeKeyAndOrderFront(nil)
+    }
+    return true
+  }
+
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
     return true
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    guard let window = mainFlutterWindow,
-          let controller = window.contentViewController as? FlutterViewController else {
-      super.applicationDidFinishLaunching(notification)
-      return
-    }
-    
-    let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: controller.engine.binaryMessenger)
-
-    channel.setMethodCallHandler { (call, result) in
-      guard let window = self.mainFlutterWindow as? MainFlutterWindow else {
-        result(FlutterError(code: "WINDOW_NOT_FOUND", message: "MainFlutterWindow not found", details: nil))
-        return
-      }
-
-      switch call.method {
-      case "showOverlay":
-        if window.isMiniaturized {
-            window.deminiaturize(nil)
-        }
-        window.configureAsOverlay()
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        result(nil)
-      case "hideOverlay":
-        window.resetToNormal()
-        result(nil)
-      case "setWindowLevel":
-        if let args = call.arguments as? [String: Any],
-           let levelStr = args["level"] as? String {
-          self.setWindowLevel(levelStr)
-          result(nil)
-        }
-      case "setPresentationOptions":
-        if let args = call.arguments as? [String: Any],
-           let hideDock = args["hideDock"] as? Bool,
-           let hideMenu = args["hideMenu"] as? Bool {
-          self.setPresentationOptions(hideDock: hideDock, hideMenu: hideMenu)
-          result(nil)
-        }
-      case "getIdleTime":
-        let idleTime = self.getIdleTime()
-        result(idleTime)
-      case "getAppearance":
-        let isDark = NSAppearance.current?.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        result(isDark ? "dark" : "light")
-      case "focusApp":
-        if window.isMiniaturized {
-            window.deminiaturize(nil)
-        }
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        result(nil)
-      default:
-        result(FlutterMethodNotImplemented)
-      }
-    }
     super.applicationDidFinishLaunching(notification)
-  }
-
-  private func setWindowLevel(_ level: String) {
-    guard let window = mainFlutterWindow else { return }
-    switch level {
-    case "screenSaver":
-      window.level = .screenSaver
-      window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-    case "floating":
-      window.level = .floating
-      window.collectionBehavior = [.canJoinAllSpaces]
-    default:
-      window.level = .normal
-      window.collectionBehavior = [.moveToActiveSpace, .managed]
-    }
-  }
-
-  private func setPresentationOptions(hideDock: Bool, hideMenu: Bool) {
-    var options: NSApplication.PresentationOptions = []
-    if hideDock { options.insert(.hideDock); options.insert(.autoHideDock) }
-    if hideMenu { options.insert(.hideMenuBar); options.insert(.autoHideMenuBar) }
-    
-    if options.isEmpty {
-      NSApp.presentationOptions = []
-    } else {
-      NSApp.presentationOptions = options
-    }
-  }
-
-  private func getIdleTime() -> Double {
-    // kCGAnyInputEventType is ((CGEventType)(~0))
-    let anyEvent = CGEventType(rawValue: ~0)!
-    let idleTime = CGEventSource.secondsSinceLastEventType(CGEventSourceStateID.combinedSessionState, eventType: anyEvent)
-    return idleTime
   }
 }
