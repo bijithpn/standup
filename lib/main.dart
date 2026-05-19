@@ -59,7 +59,8 @@ void main() async {
       debugPrint('Startup: Window Manager initialized');
 
       WindowOptions windowOptions = const WindowOptions(
-        size: Size(500, 700),
+        size: Size(1100, 750),
+        minimumSize: Size(400, 600),
         center: true,
         backgroundColor: Colors.transparent,
         skipTaskbar: false,

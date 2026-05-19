@@ -82,7 +82,7 @@ class OverlayWindowService extends ChangeNotifier {
 
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
-      await windowManager.setSize(const Size(500, 750));
+      await windowManager.setSize(const Size(1100, 750));
       await windowManager.setSkipTaskbar(false);
       await windowManager.setHasShadow(true);
       await windowManager.setIgnoreMouseEvents(false);

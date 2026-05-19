@@ -15,26 +15,26 @@ class ProductivityTrendChart extends StatelessWidget {
         lineBarsData: [
           LineChartBarData(
             spots: [
-              const FlSpot(0, 3),
-              const FlSpot(1, 4),
-              const FlSpot(2, 3.5),
-              const FlSpot(3, 5),
-              const FlSpot(4, 4.2),
-              const FlSpot(5, 6),
-              const FlSpot(6, 5.5),
+              const FlSpot(0, 3.2),
+              const FlSpot(1, 4.5),
+              const FlSpot(2, 3.8),
+              const FlSpot(3, 5.2),
+              const FlSpot(4, 4.0),
+              const FlSpot(5, 5.8),
+              const FlSpot(6, 4.5),
             ],
             isCurved: true,
             color: AppTheme.accentColor,
-            barWidth: 4,
+            barWidth: 3,
             isStrokeCapRound: true,
-            dotData: FlDotData(show: false),
+            dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  AppTheme.accentColor.withValues(alpha: 0.2),
+                  AppTheme.accentColor.withValues(alpha: 0.15),
                   AppTheme.accentColor.withValues(alpha: 0.0),
                 ],
               ),

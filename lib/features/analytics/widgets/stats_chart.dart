@@ -154,7 +154,7 @@ class DailyStatsChart extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
       ],
     );
   }

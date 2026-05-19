@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 
 class FlashOverlay extends StatefulWidget {
   const FlashOverlay({super.key});
@@ -121,7 +122,7 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
                 decoration: BoxDecoration(
                   color: Colors.black.withValues(alpha: 0.4),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  border: Border.all(color: AppTheme.textPrimary.withValues(alpha: 0.1)),
                 ),
                 child: Icon(
                   CupertinoIcons.wind,
@@ -132,20 +133,22 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
               const SizedBox(height: 32),
               Text(
                 settings.flashMessage.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w200,
-                  letterSpacing: 8,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w300,
+                  letterSpacing: 4,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 'Break starting in 30 seconds',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.4),
-                  fontSize: 14,
-                  letterSpacing: 2,
+                  color: AppTheme.textPrimary.withValues(alpha: 0.5),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 1,
                 ),
               ),
             ],

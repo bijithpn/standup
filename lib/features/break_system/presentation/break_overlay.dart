@@ -185,45 +185,61 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
 
   Widget _buildMainContent() {
     final exercise = _selectedExercise();
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          widget.breakInfo.title.toUpperCase(),
-          style: AppTheme.sectionTitle.copyWith(
-            color: Colors.white.withValues(alpha: 0.4),
-            letterSpacing: 12,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmall = constraints.maxHeight < 600 || constraints.maxWidth < 600;
+        final timerFontSize = isSmall ? 100.0 : 220.0;
+        final horizontalPadding = isSmall ? 24.0 : 60.0;
+
+        return SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 40),
+              Text(
+                widget.breakInfo.title.toUpperCase(),
+                style: AppTheme.sectionTitle.copyWith(
+                  color: Colors.white.withValues(alpha: 0.5),
+                  letterSpacing: isSmall ? 4 : 8,
+                  fontSize: isSmall ? 12 : 14,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _formatDuration(widget.timerEngine.countdownSeconds),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: timerFontSize,
+                    fontWeight: FontWeight.w200,
+                    letterSpacing: isSmall ? -2 : -8,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 60),
+              BreathingAssistant(isShortBreak: widget.breakInfo.type == BreakType.short),
+              const SizedBox(height: 36),
+              if (exercise != null) _buildExercise(exercise),
+              const SizedBox(height: 44),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: Text(
+                  widget.breakInfo.tip,
+                  textAlign: TextAlign.center,
+                  style: AppTheme.tipStyle.copyWith(
+                    color: Colors.white.withValues(alpha: 0.7),
+                    fontSize: isSmall ? 16 : 22,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 100), // Space for action buttons
+            ],
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _formatDuration(widget.timerEngine.countdownSeconds),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 220,
-            fontWeight: FontWeight.w100,
-            letterSpacing: -14,
-            fontFeatures: [FontFeature.tabularFigures()],
-          ),
-        ),
-        const SizedBox(height: 60),
-        BreathingAssistant(isShortBreak: widget.breakInfo.type == BreakType.short),
-        const SizedBox(height: 36),
-        if (exercise != null) _buildExercise(exercise),
-        const SizedBox(height: 44),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 60),
-          child: Text(
-            widget.breakInfo.tip,
-            textAlign: TextAlign.center,
-            style: AppTheme.tipStyle.copyWith(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 22,
-              fontWeight: FontWeight.w300,
-            ),
-          ),
-        ),
-      ],
+        );
+      }
     );
   }
 
@@ -256,18 +272,23 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 24,
+              fontSize: 28,
               fontWeight: FontWeight.w600,
+              letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 10),
-          Text(
-            exercise.instructions,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.72),
-              fontSize: 17,
-              height: 1.35,
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              exercise.instructions,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 18,
+                height: 1.5,
+                fontWeight: FontWeight.w400,
+              ),
             ),
           ),
         ],

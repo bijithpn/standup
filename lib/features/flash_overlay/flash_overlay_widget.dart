@@ -193,42 +193,53 @@ class _CatStretchFlash extends StatelessWidget {
       onTap: onClose,
       child: Scaffold(
         backgroundColor: Colors.black.withValues(alpha: (0.28 + intensity * 0.35).clamp(0.0, 0.75)),
-        body: Center(
-          child: Transform.scale(
-            scale: scale,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 132,
-                  height: 132,
-                  padding: const EdgeInsets.all(26),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withValues(alpha: 0.18),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.45),
-                        blurRadius: 50 * intensity,
-                        spreadRadius: 10 * intensity,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmall = constraints.maxWidth < 600;
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Transform.scale(
+                  scale: scale,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: isSmall ? 100 : 132,
+                        height: isSmall ? 100 : 132,
+                        padding: EdgeInsets.all(isSmall ? 20 : 26),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: color.withValues(alpha: 0.18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.45),
+                              blurRadius: 50 * intensity,
+                              spreadRadius: 10 * intensity,
+                            ),
+                          ],
+                        ),
+                        child: Image.asset('assets/icons/cat/cat_stretch.png', fit: BoxFit.contain),
+                      ),
+                      SizedBox(height: isSmall ? 20 : 28),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: isSmall ? 20 : 28,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
-                  child: Image.asset('assets/icons/cat/cat_stretch.png', fit: BoxFit.contain),
                 ),
-                const SizedBox(height: 28),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
+            );
+          }
         ),
       ),
     );
@@ -256,53 +267,64 @@ class _FullScreenFlash extends StatelessWidget {
       onTap: onClose,
       child: Scaffold(
         backgroundColor: color.withValues(alpha: intensity.clamp(0.0, 0.95)),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (animType == 'glow')
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withValues(alpha: 0.8),
-                        blurRadius: 60 * intensity,
-                        spreadRadius: 20 * intensity,
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmall = constraints.maxWidth < 600;
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (animType == 'glow')
+                      Container(
+                        width: isSmall ? 100 : 120,
+                        height: isSmall ? 100 : 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.8),
+                              blurRadius: 60 * intensity,
+                              spreadRadius: 20 * intensity,
+                            ),
+                          ],
+                          color: Colors.white.withValues(alpha: 0.9),
+                        ),
+                        child: Icon(Icons.visibility, size: isSmall ? 50 : 60, color: Colors.black87),
+                      )
+                    else
+                      Icon(
+                        Icons.visibility,
+                        size: isSmall ? 60 : 80,
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
-                    ],
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                  child: const Icon(Icons.visibility, size: 60, color: Colors.black87),
-                )
-              else
-                Icon(
-                  Icons.visibility,
-                  size: 80,
-                  color: Colors.white.withValues(alpha: 0.9),
-                ),
-              const SizedBox(height: 32),
-              Text(
-                message,
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.95),
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Tap anywhere to dismiss',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white.withValues(alpha: 0.6),
+                    SizedBox(height: isSmall ? 24 : 32),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        message,
+                        style: TextStyle(
+                          fontSize: isSmall ? 22 : 28,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white.withValues(alpha: 0.95),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Tap anywhere to dismiss',
+                      style: TextStyle(
+                        fontSize: isSmall ? 12 : 14,
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          }
         ),
       ),
     );
@@ -329,14 +351,20 @@ class _DimFlash extends StatelessWidget {
       child: Scaffold(
         backgroundColor: Colors.black.withValues(alpha: intensity.clamp(0.0, 0.7)),
         body: Center(
-          child: Text(
-            message,
-            style: const TextStyle(
-              fontSize: 24,
-              color: Colors.white70,
-              fontWeight: FontWeight.w300,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                message,
+                style: const TextStyle(
+                  fontSize: 24,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w300,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
-            textAlign: TextAlign.center,
           ),
         ),
       ),
@@ -374,18 +402,24 @@ class _EdgeFlash extends StatelessWidget {
             ),
           ),
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                message,
-                style: TextStyle(
-                  fontSize: 20,
-                  color: color,
-                  fontWeight: FontWeight.w600,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ),
             ),

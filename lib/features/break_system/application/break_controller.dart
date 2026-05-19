@@ -100,11 +100,13 @@ class BreakController extends ChangeNotifier {
     } else {
       _timerEngine.pauseTimers();
     }
+    sl<TrayManagerService>().updatePauseState(isPaused);
     notifyListeners();
   }
 
   void takeBreakNow() {
     _timerEngine.triggerBreakNow();
+    sl<TrayManagerService>().setBreakActive(true);
   }
 
   void skipNextBreak() {
@@ -114,6 +116,7 @@ class BreakController extends ChangeNotifier {
   void skipCurrentBreak() {
     if (!_settingsRepo.currentSettings.strictMode) {
       _timerEngine.finishBreak(skipped: true);
+      sl<TrayManagerService>().setBreakActive(false);
     }
   }
 
@@ -126,6 +129,7 @@ class BreakController extends ChangeNotifier {
   void onBreakCompleted() {
     // Force save timer state to persist the completed break
     _timerEngine.saveState();
+    sl<TrayManagerService>().setBreakActive(false);
   }
 
   void refreshSettings() {
@@ -146,6 +150,9 @@ class BreakController extends ChangeNotifier {
   }
 
   void _onTimerChanged() {
+    // Sync tray pause state if it changed externally (e.g. idle detection)
+    sl<TrayManagerService>().updatePauseState(isPaused);
+
     // Track completed breaks when countdown reaches zero naturally
     if (_timerEngine.state == TimerState.running &&
         _timerEngine.activeBreak == null) {

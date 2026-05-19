@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
@@ -53,36 +54,166 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return MacosWindow(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 750;
+        
+        if (isNarrow) {
+          return _buildNarrowLayout();
+        }
+        
+        return MacosWindow(
+          backgroundColor: AppTheme.contentBackground,
+          titleBar: const TitleBar(
+            height: 52,
+            dividerColor: Colors.transparent,
+            centerTitle: true,
+          ),
+          sidebar: Sidebar(
+            minWidth: 210,
+            maxWidth: 250,
+            bottom: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(CupertinoIcons.infinite, color: AppTheme.accentColor, size: 14),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    'BreakMate',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            builder: (context, controller) {
+              return SidebarItems(
+                currentIndex: _pageIndex,
+                onChanged: (i) => setState(() => _pageIndex = i),
+                scrollController: controller,
+                itemSize: SidebarItemSize.large,
+                items: _navItems.map((item) {
+                  return SidebarItem(
+                    leading: MacosIcon(item.icon, size: 18),
+                    label: Text(item.label, style: AppTheme.sidebarItemStyle),
+                  );
+                }).toList(),
+              );
+            },
+          ),
+          child: _buildMainContent(),
+        );
+      },
+    );
+  }
+
+  Widget _buildNarrowLayout() {
+    return Scaffold(
       backgroundColor: AppTheme.contentBackground,
-      sidebar: Sidebar(
-        minWidth: 200,
-        bottom: const Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Icon(CupertinoIcons.infinite, color: AppTheme.accentColor, size: 16),
-              SizedBox(width: 8),
-              Text('BreakMate', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-            ],
+      appBar: AppBar(
+        backgroundColor: AppTheme.sidebarBackground,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          _navItems[_pageIndex].label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: -0.2,
           ),
         ),
-        builder: (context, controller) {
-          return SidebarItems(
-            currentIndex: _pageIndex,
-            onChanged: (i) => setState(() => _pageIndex = i),
-            scrollController: controller,
-            itemSize: SidebarItemSize.large,
-            items: _navItems.map((item) {
-              return SidebarItem(
-                leading: MacosIcon(item.icon, size: 20),
-                label: Text(item.label, style: AppTheme.sidebarItemStyle),
-              );
-            }).toList(),
-          );
-        },
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu_rounded, color: AppTheme.accentColor),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
       ),
-      child: _buildMainContent(),
+      drawer: Drawer(
+        backgroundColor: AppTheme.sidebarBackground,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        child: Column(
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(
+                border: Border(bottom: BorderSide(color: AppTheme.borderColor, width: 0.5)),
+              ),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(CupertinoIcons.infinite, color: AppTheme.accentColor, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'BreakMate',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: _navItems.length,
+                itemBuilder: (context, index) {
+                  final item = _navItems[index];
+                  final isSelected = _pageIndex == index;
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
+                    leading: Icon(
+                      item.icon,
+                      size: 20,
+                      color: isSelected ? AppTheme.accentColor : AppTheme.textSecondary,
+                    ),
+                    title: Text(
+                      item.label,
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : AppTheme.textSecondary,
+                        fontSize: 14,
+                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                    selected: isSelected,
+                    selectedTileColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                    onTap: () {
+                      setState(() => _pageIndex = index);
+                      Navigator.pop(context);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: _buildMainContent(),
     );
   }
 

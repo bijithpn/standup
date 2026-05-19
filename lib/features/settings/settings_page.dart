@@ -54,20 +54,43 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 700;
+        final isSmallScreen = constraints.maxWidth < 600;
         final horizontalPadding = isSmallScreen ? 16.0 : 48.0;
-        final verticalPadding = isSmallScreen ? 24.0 : 40.0;
+        final verticalPadding = isSmallScreen ? 20.0 : 40.0;
+
+        final content = SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isSmallScreen ? double.infinity : 800,
+              ),
+              child: _buildContent(),
+            ),
+          ),
+        );
+
+        if (isSmallScreen) {
+          return Scaffold(
+            backgroundColor: AppTheme.contentBackground,
+            body: content,
+          );
+        }
+
         return MacosScaffold(
           backgroundColor: AppTheme.contentBackground,
           toolBar: ToolBar(
             title: Text(widget.section),
-            titleWidth: isSmallScreen ? 120 : 200,
+            titleWidth: 200,
             actions: [
               if (widget.section == 'Flash Reminder')
                 ToolBarIconButton(
                   icon: const MacosIcon(CupertinoIcons.play_fill, size: 14),
-                  label: isSmallScreen ? '' : 'Play demo',
-                  showLabel: !isSmallScreen,
+                  label: 'Play demo',
+                  showLabel: true,
                   onPressed: () {
                     final settings = sl<SettingsRepository>().currentSettings;
                     sl<TimerEngine>().triggerFlashDemo(
@@ -84,19 +107,7 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             ContentArea(
               builder: (context, scrollController) {
-                return SingleChildScrollView(
-                  controller: scrollController,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: verticalPadding,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isSmallScreen ? double.infinity : 800,
-                    ),
-                    child: _buildContent(),
-                  ),
-                );
+                return content;
               },
             ),
           ],
@@ -143,10 +154,11 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _sectionHeader('Application'),
         _buildCard([
           _buildListRow(
-            'Startup',
-            'Run at login',
+            'Launch at Startup',
+            'Start BreakMate automatically when you log in',
             _settings.autoStart,
             CupertinoIcons.rocket,
             (v) async {
@@ -296,46 +308,63 @@ class _SettingsPageState extends State<SettingsPage> {
     final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: days.asMap().entries.map((e) {
-          final day = e.key + 1;
-          final selected = _settings.workingDays.contains(day);
-          return Column(
-            children: [
-              Text(e.value, style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: () {
-                  final days = List<int>.from(_settings.workingDays);
-                  selected ? days.remove(day) : days.add(day);
-                  days.sort();
-                  _save(_settings.copyWith(workingDays: days));
-                },
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppTheme.accentColor.withValues(alpha: 0.2)
-                        : AppTheme.contentBackground,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: selected ? AppTheme.accentColor : AppTheme.borderColor,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isSmall = constraints.maxWidth < 400;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: days.asMap().entries.map((e) {
+              final day = e.key + 1;
+              final selected = _settings.workingDays.contains(day);
+              return Column(
+                children: [
+                  Text(
+                    e.value,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: AppTheme.textMuted,
                     ),
                   ),
-                  child: Center(
-                    child: Icon(
-                      selected ? CupertinoIcons.checkmark : CupertinoIcons.minus,
-                      size: 14,
-                      color: selected ? AppTheme.accentColor : AppTheme.textMuted,
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: () {
+                      final days = List<int>.from(_settings.workingDays);
+                      selected ? days.remove(day) : days.add(day);
+                      days.sort();
+                      _save(_settings.copyWith(workingDays: days));
+                    },
+                    child: Container(
+                      width: isSmall ? 24 : 28,
+                      height: isSmall ? 24 : 28,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? AppTheme.accentColor.withValues(alpha: 0.2)
+                            : AppTheme.contentBackground,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: selected
+                              ? AppTheme.accentColor
+                              : AppTheme.borderColor,
+                        ),
+                      ),
+                      child: Center(
+                        child: Icon(
+                          selected
+                              ? CupertinoIcons.checkmark
+                              : CupertinoIcons.minus,
+                          size: isSmall ? 12 : 14,
+                          color: selected
+                              ? AppTheme.accentColor
+                              : AppTheme.textMuted,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            }).toList(),
           );
-        }).toList(),
+        }
       ),
     );
   }
@@ -387,15 +416,15 @@ class _SettingsPageState extends State<SettingsPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionHeader('Break Configuration'),
-            SizedBox(height: isSmallScreen ? 16 : 24),
+            const SizedBox(height: 8),
             // Tab-like segmented control for sub-sections
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppTheme.cardBackground,
-                borderRadius: BorderRadius.circular(isSmallScreen ? 8 : 12),
-                border: Border.all(color: AppTheme.borderColor),
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: isSmallScreen
                   ? Column(
@@ -424,7 +453,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       ],
                     ),
             ),
-            SizedBox(height: isSmallScreen ? 20 : 32),
+            SizedBox(height: isSmallScreen ? 24 : 32),
             if (_breaksSubTab == 0) _buildProfileSelector(),
             if (_breaksSubTab == 1) _buildCustomIntervals(),
             if (_breaksSubTab == 2) _buildAppearanceSettings(),
@@ -441,18 +470,28 @@ class _SettingsPageState extends State<SettingsPage> {
       child: GestureDetector(
         onTap: () => setState(() => _breaksSubTab = index),
         child: Container(
-          padding: EdgeInsets.symmetric(vertical: isSmall ? 6 : 8),
+          padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 10),
           decoration: BoxDecoration(
             color: isSelected ? AppTheme.accentColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.accentColor.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
           ),
           child: Center(
             child: Text(
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : AppTheme.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                 fontSize: isSmall ? 11 : 13,
+                letterSpacing: -0.1,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -464,57 +503,65 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildCustomIntervals() {
-    return _buildCard([
-      _inputRow(
-        'Short Break Every',
-        '${_settings.shortBreakIntervalMinutes} min',
-        onTap: () => _showPicker(
-          title: 'Short Break Every',
-          options: List.generate(60, (i) => (i + 1).toString()),
-          suffix: ' min',
-          onSelected: (v) => _save(
-            _settings.copyWith(shortBreakIntervalMinutes: int.parse(v)),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Duration & Frequency'),
+        _buildCard([
+          _inputRow(
+            'Short Break Every',
+            '${_settings.shortBreakIntervalMinutes} min',
+            onTap: () => _showPicker(
+              title: 'Short Break Every',
+              options: List.generate(60, (i) => (i + 1).toString()),
+              suffix: ' min',
+              onSelected: (v) => _save(
+                _settings.copyWith(shortBreakIntervalMinutes: int.parse(v)),
+              ),
+            ),
           ),
-        ),
-      ),
-      _divider(),
-      _inputRow(
-        'Short Break Duration',
-        '${_settings.shortBreakDurationSeconds} sec',
-        onTap: () => _showPicker(
-          title: 'Short Break Duration',
-          options: ['15', '20', '30', '45', '60', '90', '120'],
-          suffix: ' sec',
-          onSelected: (v) => _save(
-            _settings.copyWith(shortBreakDurationSeconds: int.parse(v)),
+          _divider(),
+          _inputRow(
+            'Short Break Duration',
+            '${_settings.shortBreakDurationSeconds} sec',
+            onTap: () => _showPicker(
+              title: 'Short Break Duration',
+              options: ['15', '20', '30', '45', '60', '90', '120'],
+              suffix: ' sec',
+              onSelected: (v) => _save(
+                _settings.copyWith(shortBreakDurationSeconds: int.parse(v)),
+              ),
+            ),
           ),
-        ),
-      ),
-      _divider(),
-      _inputRow(
-        'Long Break Every',
-        '${_settings.longBreakIntervalMinutes} min',
-        onTap: () => _showPicker(
-          title: 'Long Break Every',
-          options: ['30', '45', '60', '90', '120', '150', '180'],
-          suffix: ' min',
-          onSelected: (v) =>
-              _save(_settings.copyWith(longBreakIntervalMinutes: int.parse(v))),
-        ),
-      ),
-      _divider(),
-      _inputRow(
-        'Long Break Duration',
-        '${_settings.longBreakDurationMinutes} min',
-        onTap: () => _showPicker(
-          title: 'Long Break Duration',
-          options: ['5', '10', '15', '20', '30'],
-          suffix: ' min',
-          onSelected: (v) =>
-              _save(_settings.copyWith(longBreakDurationMinutes: int.parse(v))),
-        ),
-      ),
-    ]);
+          _divider(),
+          _inputRow(
+            'Long Break Every',
+            '${_settings.longBreakIntervalMinutes} min',
+            onTap: () => _showPicker(
+              title: 'Long Break Every',
+              options: ['30', '45', '60', '90', '120', '150', '180'],
+              suffix: ' min',
+              onSelected: (v) => _save(
+                _settings.copyWith(longBreakIntervalMinutes: int.parse(v)),
+              ),
+            ),
+          ),
+          _divider(),
+          _inputRow(
+            'Long Break Duration',
+            '${_settings.longBreakDurationMinutes} min',
+            onTap: () => _showPicker(
+              title: 'Long Break Duration',
+              options: ['5', '10', '15', '20', '30'],
+              suffix: ' min',
+              onSelected: (v) => _save(
+                _settings.copyWith(longBreakDurationMinutes: int.parse(v)),
+              ),
+            ),
+          ),
+        ]),
+      ],
+    );
   }
 
   Widget _buildAppearanceSettings() {
@@ -528,24 +575,37 @@ class _SettingsPageState extends State<SettingsPage> {
         // Preview Button
         Center(
           child: CupertinoButton(
-            color: AppTheme.accentColor,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            borderRadius: BorderRadius.circular(12),
+            padding: EdgeInsets.zero,
             onPressed: () => _showClockPreview(),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(CupertinoIcons.play_fill, size: 16),
-                SizedBox(width: 8),
-                Text(
-                  'Preview Current Clock Style',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.accentColor.withValues(alpha: 0.2),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    CupertinoIcons.play_circle_fill,
+                    size: 18,
+                    color: AppTheme.accentColor,
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Preview Current Style',
+                    style: TextStyle(
+                      color: AppTheme.accentColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -692,12 +752,14 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Smart Pausing'),
-        const Text(
-          'DeskRest automatically pauses your breaks when you are busy.',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+        _sectionHeader('Smart Detection'),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 24),
+          child: Text(
+            'Automatically pauses your breaks when you are busy.',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+          ),
         ),
-        const SizedBox(height: 24),
         _buildCard([
           _toggleRow(
             'Video Calls Detection',
@@ -728,23 +790,25 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Clock Out Enforcement'),
-        const Text(
-          'Break the cycle of endless workdays. Set your ideal rest hours.',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+        _sectionHeader('Balance'),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 24),
+          child: Text(
+            'Establish healthy boundaries with fixed rest hours.',
+            style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
+          ),
         ),
-        const SizedBox(height: 24),
         _buildCard([
           _toggleRow(
-            'Enable Clock Out',
-            'Enforce end of workday',
+            'Workday Enforcement',
+            'Remind me to clock out at end of day',
             _settings.enableClockOut,
             (v) => _save(_settings.copyWith(enableClockOut: v)),
           ),
           if (_settings.enableClockOut) ...[
             _divider(),
             _inputRow(
-              'End of day at',
+              'End Workday At',
               _settings.clockOutTime,
               onTap: () => _showPicker(
                 title: 'End Workday',
@@ -974,50 +1038,98 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 40),
+        const SizedBox(height: 60),
         Container(
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppTheme.accentColor,
-                AppTheme.accentColor.withValues(alpha: 0.7),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppTheme.accentColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppTheme.accentColor.withValues(alpha: 0.2),
+            ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.accentColor.withValues(alpha: 0.4),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
+                color: AppTheme.accentColor.withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: const Center(child: Icon(CupertinoIcons.infinite, color: Colors.white, size: 40)),
+          child: const Center(
+            child: Icon(
+              CupertinoIcons.infinite,
+              color: AppTheme.accentColor,
+              size: 40,
+            ),
+          ),
         ),
         const SizedBox(height: 24),
         const Text(
           'BreakMate',
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.5,
+          ),
         ),
-        const Text(
-          'Version 1.2.0',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
+        const SizedBox(height: 4),
+        Text(
+          'Version 1.2.0 (Premium)',
+          style: TextStyle(
+            color: AppTheme.textMuted,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 48),
         _buildCard([
-          _listTile('Website', CupertinoIcons.globe, () {}),
+          _buildListRow(
+            'Official Website',
+            'Visit for more information',
+            null,
+            CupertinoIcons.globe,
+            null,
+            trailing: const Icon(
+              CupertinoIcons.arrow_up_right,
+              size: 14,
+              color: Colors.white24,
+            ),
+          ),
           _divider(),
-          _listTile('Support', CupertinoIcons.question_circle, () {}),
+          _buildListRow(
+            'Twitter / X',
+            'Follow us for latest updates',
+            null,
+            CupertinoIcons.chat_bubble_2,
+            null,
+            trailing: const Icon(
+              CupertinoIcons.arrow_up_right,
+              size: 14,
+              color: Colors.white24,
+            ),
+          ),
+          _divider(),
+          _buildListRow(
+            'Privacy Policy',
+            'How we protect your data',
+            null,
+            CupertinoIcons.lock_shield,
+            null,
+            trailing: const Icon(
+              CupertinoIcons.arrow_up_right,
+              size: 14,
+              color: Colors.white24,
+            ),
+          ),
         ]),
-        const SizedBox(height: 40),
+        const SizedBox(height: 32),
         const Text(
-          'Made with ❤️ by Bijith for a healthier workspace',
+          'Crafted with precision for macOS.',
           style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
         ),
+        const SizedBox(height: 60),
       ],
     );
   }
@@ -1032,7 +1144,15 @@ class _SettingsPageState extends State<SettingsPage> {
           children: [
             Icon(icon, size: 18, color: Colors.white70),
             const SizedBox(width: 12),
-            Expanded(child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 14))),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 14,
+                ),
+              ),
+            ),
             const Icon(CupertinoIcons.chevron_right, size: 14, color: Colors.white24),
           ],
         ),
@@ -1050,20 +1170,20 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 48),
         _sectionHeader('Choose Your Flash Style'),
         const SizedBox(height: 24),
-        Row(
+        Wrap(
+          spacing: 24,
+          runSpacing: 24,
           children: [
             _stylePreview(
               'Default',
               _settings.flashStyle == 'default',
               () => _save(_settings.copyWith(flashStyle: 'default')),
             ),
-            const SizedBox(width: 24),
             _stylePreview(
               'Photo Flash',
               _settings.flashStyle == 'photo',
               () => _save(_settings.copyWith(flashStyle: 'photo')),
             ),
-            const SizedBox(width: 24),
             _stylePreview(
               'Stretch Cat',
               _settings.flashStyle == 'cat',
@@ -1117,7 +1237,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: const Text(
                 'Play Demo Flash',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppTheme.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.bold,
                 ),
@@ -1171,17 +1291,21 @@ class _SettingsPageState extends State<SettingsPage> {
   // Helper Widgets
   Widget _sectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16, left: 4),
+      padding: const EdgeInsets.only(bottom: 12, left: 2, top: 8),
       child: Text(
         title.toUpperCase(),
-        style: AppTheme.sectionTitle,
+        style: AppTheme.sectionTitle.copyWith(
+          color: AppTheme.textMuted,
+          fontSize: 11,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }
 
   Widget _buildCard(List<Widget> children) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
+      margin: const EdgeInsets.only(bottom: 32),
       decoration: AppTheme.glassCardDecoration,
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),
@@ -1198,7 +1322,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 500;
-        final padding = isSmallScreen ? 12.0 : 16.0;
+        final padding = isSmallScreen ? 16.0 : 20.0;
 
         return Padding(
           padding: EdgeInsets.all(padding),
@@ -1214,11 +1338,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       style: TextStyle(
                         fontWeight: FontWeight.w500,
                         fontSize: isSmallScreen ? 13 : 14,
+                        color: Colors.white.withValues(alpha: 0.9),
                       ),
                     ),
                   ),
                   SizedBox(
-                    width: isSmallScreen ? 120 : 200,
+                    width: isSmallScreen ? 120 : 180,
                     child: CupertinoSlider(
                       value: value.clamp(min, max),
                       min: min,
@@ -1240,10 +1365,10 @@ class _SettingsPageState extends State<SettingsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 500;
-        final padding = isSmallScreen ? 12.0 : 16.0;
+        final padding = isSmallScreen ? 16.0 : 20.0;
         
         return Padding(
-          padding: EdgeInsets.all(padding),
+          padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1253,16 +1378,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w500,
                     fontSize: isSmallScreen ? 13 : 14,
+                    color: Colors.white.withValues(alpha: 0.9),
                   ),
                 ),
               ),
               CupertinoButton(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallScreen ? 10 : 12,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
                   vertical: 6,
                 ),
-                color: AppTheme.contentBackground,
-                borderRadius: BorderRadius.circular(6),
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
                 onPressed: () {
                   showCupertinoModalPopup(
                     context: context,
@@ -1274,7 +1400,13 @@ class _SettingsPageState extends State<SettingsPage> {
                                 onChanged(o);
                                 Navigator.pop(context);
                               },
-                              child: Text(o),
+                              child: Text(
+                                o,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: AppTheme.accentColor,
+                                ),
+                              ),
                             ),
                           )
                           .toList(),
@@ -1286,12 +1418,24 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   );
                 },
-                child: Text(
-                  value.toUpperCase(),
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: isSmallScreen ? 11 : 13,
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value.toUpperCase(),
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: isSmallScreen ? 11 : 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      CupertinoIcons.chevron_up,
+                      size: 12,
+                      color: Colors.white54,
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -1308,7 +1452,7 @@ class _SettingsPageState extends State<SettingsPage> {
     ValueChanged<bool> onChanged,
   ) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
           Expanded(
@@ -1320,15 +1464,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: TextStyle(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                    color: AppTheme.textSecondary,
                     fontSize: 12,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ],
@@ -1346,7 +1491,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _inputRow(String label, String value, {VoidCallback? onTap}) {
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1356,7 +1501,7 @@ class _SettingsPageState extends State<SettingsPage> {
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
-                color: Colors.white,
+                color: AppTheme.textPrimary,
               ),
             ),
           ),
@@ -1364,21 +1509,18 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: EdgeInsets.zero,
             onPressed: onTap,
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
               ),
               child: Text(
-                value,
+                value.toUpperCase(),
                 style: const TextStyle(
-                  color: AppTheme.accentColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
+                  color: AppTheme.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -1431,16 +1573,15 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               color: AppTheme.accentColor,
-              size: 20,
+              size: 18,
             ),
           ),
           const SizedBox(width: 16),
@@ -1452,23 +1593,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 Text(
                   label,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w600,
                     fontSize: 15,
-                    color: Colors.white,
+                    color: AppTheme.textPrimary,
                     letterSpacing: -0.2,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
                     fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 8),
           if (value != null)
             CupertinoSwitch(
               value: value,
@@ -1488,13 +1630,23 @@ class _SettingsPageState extends State<SettingsPage> {
         showCupertinoModalPopup(
           context: context,
           builder: (BuildContext context) => CupertinoActionSheet(
-            actions: options.map((o) => CupertinoActionSheetAction(
-              onPressed: () {
-                onChanged(o);
-                Navigator.pop(context);
-              },
-              child: Text(o),
-            )).toList(),
+            actions: options
+                .map(
+                  (o) => CupertinoActionSheetAction(
+                    onPressed: () {
+                      onChanged(o);
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      o,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.accentColor,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
             cancelButton: CupertinoActionSheetAction(
               onPressed: () => Navigator.pop(context),
               isDefaultAction: true,
@@ -1503,31 +1655,61 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
       },
-      child: Text(
-        value.toUpperCase(),
-        style: const TextStyle(color: AppTheme.accentColor, fontSize: 11, fontWeight: FontWeight.bold),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value.toUpperCase(),
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(CupertinoIcons.chevron_down, size: 10, color: Colors.white54),
+          ],
+        ),
       ),
     );
   }
 
   Widget _textFieldRow(String label, String value, ValueChanged<String> onChanged) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          const SizedBox(width: 20),
+          Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(width: 24),
           Expanded(
             child: CupertinoTextField(
               placeholder: value,
-              placeholderStyle: const TextStyle(color: AppTheme.textMuted, fontSize: 13),
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: BoxDecoration(
-                color: AppTheme.contentBackground,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: AppTheme.borderColor),
+              placeholderStyle: TextStyle(
+                color: Colors.white.withValues(alpha: 0.3),
+                fontSize: 13,
               ),
+              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               onSubmitted: onChanged,
             ),
           ),
@@ -1601,7 +1783,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ? const Icon(
                       CupertinoIcons.checkmark,
                       size: 16,
-                      color: Colors.white,
+                      color: AppTheme.textPrimary,
                     )
                   : null,
             ),
@@ -1847,9 +2029,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? AppTheme.accentColor.withValues(alpha: 0.08)
+                      ? AppTheme.accentColor.withValues(alpha: 0.1)
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppTheme.accentColor.withValues(alpha: 0.2)
+                        : Colors.transparent,
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -1860,7 +2047,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       color: isSelected
                           ? AppTheme.accentColor
                           : AppTheme.textMuted,
-                      size: 22,
+                      size: 20,
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -1871,7 +2058,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           Text(
                             p.name,
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w600,
                               fontSize: 15,
                               color: isSelected
                                   ? Colors.white
@@ -1880,8 +2067,8 @@ class _SettingsPageState extends State<SettingsPage> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${p.shortIntervalMinutes}m / ${p.shortDurationSeconds}s',
-                            style: TextStyle(
+                            '${p.shortIntervalMinutes}m interval • ${p.shortDurationSeconds}s duration',
+                            style: const TextStyle(
                               color: AppTheme.textMuted,
                               fontSize: 12,
                             ),
@@ -1893,7 +2080,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       const Icon(
                         CupertinoIcons.chevron_right,
                         size: 14,
-                        color: AppTheme.accentColor,
+                        color: Colors.white24,
                       ),
                   ],
                 ),
@@ -1906,34 +2093,48 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _divider() =>
-      Divider(height: 1, thickness: 1, color: AppTheme.borderColor);
+  Widget _divider() {
+    return Divider(
+      height: 1,
+      thickness: 0.5,
+      color: Colors.white.withValues(alpha: 0.05),
+      indent: 20,
+    );
+  }
 
   Widget _buildStatsCard() {
     final rate = (_stats.completionRate * 100).toStringAsFixed(0);
     return _buildCard([
-      _statRow('Breaks completed', '${_stats.breaksCompleted}'),
+      _statRow('Breaks Completed', '${_stats.breaksCompleted}'),
       _divider(),
-      _statRow('Breaks skipped', '${_stats.breaksSkipped}'),
+      _statRow('Breaks Skipped', '${_stats.breaksSkipped}'),
       _divider(),
-      _statRow('Break completion rate', '$rate%'),
+      _statRow('Break Rate', '$rate%'),
       _divider(),
-      _statRow('Today total usage', '${_stats.dailyUsageMinutes} min'),
+      _statRow('Usage Today', '${_stats.dailyUsageMinutes} min'),
     ]);
   }
 
   Widget _statRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppTheme.textSecondary)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
           Text(
             value,
             style: const TextStyle(
               color: AppTheme.textPrimary,
-              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

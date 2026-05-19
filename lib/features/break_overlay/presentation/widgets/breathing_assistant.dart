@@ -76,22 +76,29 @@ class _BreathingAssistantState extends State<BreathingAssistant> with SingleTick
                 ),
                 // Core dot
                 Container(
-                  width: 12,
-                  height: 12,
-                  decoration: const BoxDecoration(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 48),
             Text(
               isInhaling ? 'INHALE' : 'EXHALE',
               style: AppTheme.sectionTitle.copyWith(
-                color: AppTheme.accentColor,
-                letterSpacing: 4,
-                fontSize: 12,
+                color: Colors.white.withValues(alpha: 0.9),
+                letterSpacing: 6,
+                fontSize: 10,
+                fontWeight: FontWeight.w300,
               ),
             ),
           ],
