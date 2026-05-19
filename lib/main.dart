@@ -9,7 +9,7 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/break_system/presentation/standalone_break_overlay.dart';
-import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
+
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
@@ -107,9 +107,7 @@ void main() async {
         debugPrint('Launch at startup setup failed: $e');
       }
 
-      // Start flash overlay timer
-      final flashOverlayService = sl<FlashOverlayService>();
-      flashOverlayService.startTimer();
+
 
       runApp(
         const BreakMateApp(),

@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/utils/logger.dart';
+import 'dart:io';
+import 'package:flutter/services.dart';
 
 /// Service to manage system-wide overlay windows that appear on top of all applications
 class OverlayWindowService extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
   bool _isOverlayVisible = false;
   OverlayType? _currentOverlayType;
+  static const MethodChannel _windowsChannel = MethodChannel('com.standup/overlay_window');
 
   /// Show a system-wide overlay window
   Future<void> showOverlay({
@@ -26,16 +29,28 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.setIgnoreMouseEvents(false);
 
       if (type != OverlayType.clockPreview) {
-        // Use native multi-monitor overlay for all real overlays
-        await MacOSBridge.showOverlay({'type': type.name});
-        if (strictMode && type == OverlayType.breakScreen) {
-          await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
+        if (Platform.isWindows) {
+          await _windowsChannel.invokeMethod('configureAsOverlay');
+          await windowManager.setFullScreen(true);
+          await windowManager.setAlwaysOnTop(true);
+          await windowManager.show();
+          if (strictMode && type == OverlayType.breakScreen) {
+            await windowManager.focus();
+          }
+        } else {
+          // Use native multi-monitor overlay for all real overlays
+          await MacOSBridge.showOverlay({'type': type.name});
+          if (strictMode && type == OverlayType.breakScreen) {
+            await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
+          }
+          // Always hide the main window when showing a system-level overlay
+          await windowManager.hide();
         }
-        // Always hide the main window when showing a system-level overlay
-        await windowManager.hide();
       } else {
         // Clock preview still uses main window for simplicity
-        await MacOSBridge.setWindowLevel('floating');
+        if (Platform.isMacOS) {
+          await MacOSBridge.setWindowLevel('floating');
+        }
         await windowManager.show();
         await windowManager.focus();
       }
@@ -58,9 +73,13 @@ class OverlayWindowService extends ChangeNotifier {
         await hideOverlay();
       }
 
-      await MacOSBridge.hideOverlay();
-      await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
-      await MacOSBridge.setWindowLevel('normal');
+      if (Platform.isWindows) {
+        await _windowsChannel.invokeMethod('resetToNormal');
+      } else {
+        await MacOSBridge.hideOverlay();
+        await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+        await MacOSBridge.setWindowLevel('normal');
+      }
 
       _isOverlayVisible = false;
       _currentOverlayType = null;
@@ -92,9 +111,13 @@ class OverlayWindowService extends ChangeNotifier {
     try {
       _logger.info('Hiding overlay and resetting window state');
 
-      // Reset macOS native state
-      await MacOSBridge.hideOverlay();
-      await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+      // Reset native state
+      if (Platform.isWindows) {
+        await _windowsChannel.invokeMethod('resetToNormal');
+      } else {
+        await MacOSBridge.hideOverlay();
+        await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+      }
 
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
@@ -122,8 +145,12 @@ class OverlayWindowService extends ChangeNotifier {
   Future<void> reset() async {
     _isOverlayVisible = false;
     _currentOverlayType = null;
-    await MacOSBridge.hideOverlay();
-    await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+    if (Platform.isWindows) {
+      await _windowsChannel.invokeMethod('resetToNormal');
+    } else {
+      await MacOSBridge.hideOverlay();
+      await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+    }
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setFullScreen(false);
     await windowManager.setSkipTaskbar(false);

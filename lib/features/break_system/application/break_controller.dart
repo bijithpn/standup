@@ -8,6 +8,7 @@ import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/break_profile.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/analytics/stats_service.dart';
+import 'package:standup/features/break_system/application/strict_mode_controller.dart';
 
 class BreakController extends ChangeNotifier {
   final TimerEngine _timerEngine;
@@ -38,8 +39,9 @@ class BreakController extends ChangeNotifier {
     _timerEngine.addListener(_handleGlobalOverlays);
   }
 
-      void _handleGlobalOverlays() {
+  void _handleGlobalOverlays() {
     final overlayService = sl<OverlayWindowService>();
+    final strictModeController = sl<StrictModeController>();
     final settings = _settingsRepo.currentSettings;
 
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
@@ -47,7 +49,18 @@ class BreakController extends ChangeNotifier {
 
     if (shouldShowBreak) {
       final breakInfo = _timerEngine.activeBreak;
+      
+      // Attempt to enable native strict mode if requested
+      if (settings.strictMode && !strictModeController.isStrictModeActive) {
+        strictModeController.enableStrictMode();
+      }
+
       if (overlayService.currentOverlayType != OverlayType.breakScreen) {
+        if (strictModeController.isInMeeting) {
+          debugPrint('Auto-postponing break due to active meeting.');
+          _timerEngine.postponeBreak();
+          return;
+        }
         overlayService.showOverlay(
           type: OverlayType.breakScreen,
           builder: (context) => const SizedBox.shrink(),
@@ -74,16 +87,10 @@ class BreakController extends ChangeNotifier {
     } else if (overlayService.isOverlayVisible && 
                (overlayService.currentOverlayType == OverlayType.breakScreen ||
                 overlayService.currentOverlayType == OverlayType.preBreakWarning)) {
+      if (strictModeController.isStrictModeActive) {
+        strictModeController.disableStrictMode();
+      }
       overlayService.hideOverlay();
-    }
-
-    if (_timerEngine.isFlashing && !overlayService.isOverlayVisible) {
-      // Trigger global flash reminder
-      overlayService.showOverlay(
-        type: OverlayType.flashNotification,
-        builder: (context) => const SizedBox.shrink(),
-        strictMode: false,
-      );
     }
 
     notifyListeners();

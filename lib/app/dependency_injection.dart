@@ -11,7 +11,9 @@ import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
+import 'package:standup/core/native/meeting_detection_service.dart';
+import 'package:standup/core/native/focus_mode_service.dart';
+import 'package:standup/features/break_system/application/strict_mode_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -67,6 +69,18 @@ Future<void> initDependencies() async {
   sl.registerSingleton<TrayManagerService>(trayManager);
 
   // Application Controllers
+  final meetingDetectionService = MeetingDetectionService();
+  sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
+
+  final focusModeService = FocusModeService();
+  sl.registerSingleton<FocusModeService>(focusModeService);
+
+  final strictModeController = StrictModeController(
+    meetingDetectionService,
+    focusModeService,
+  );
+  sl.registerSingleton<StrictModeController>(strictModeController);
+
   final breakController = BreakController(
     timerEngine: sl(),
     settingsRepo: sl(),
@@ -75,6 +89,4 @@ Future<void> initDependencies() async {
   breakController.initialize();
   sl.registerSingleton<BreakController>(breakController);
 
-  final flashOverlayService = FlashOverlayService();
-  sl.registerSingleton<FlashOverlayService>(flashOverlayService);
 }

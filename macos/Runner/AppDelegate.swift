@@ -3,6 +3,10 @@ import FlutterMacOS
 
 @main
 class AppDelegate: FlutterAppDelegate {
+  var meetingBridge: MeetingDetectionBridge?
+  var focusBridge: FocusModeBridge?
+  var overlayBridge: OverlayWindowBridge?
+
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return false
   }
@@ -19,6 +23,7 @@ class AppDelegate: FlutterAppDelegate {
   override func applicationWillTerminate(_ notification: Notification) {
     OverlayWindowManager.shared.hideOverlay()
     super.applicationWillTerminate(notification)
+
   }
 
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -26,6 +31,14 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
+    if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
+      let registrar = controller.registrar(forPlugin: "AppBridges")
+      
+      meetingBridge = MeetingDetectionBridge(registrar: registrar)
+      focusBridge = FocusModeBridge(registrar: registrar)
+      overlayBridge = OverlayWindowBridge(registrar: registrar)
+    }
+    
     super.applicationDidFinishLaunching(notification)
   }
 }
