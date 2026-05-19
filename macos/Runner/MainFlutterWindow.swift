@@ -9,111 +9,94 @@ class OverlayPanel: NSPanel {
 class OverlayWindowManager: NSObject {
     static let shared = OverlayWindowManager()
     
-    private var overlayPanels: [NSScreen: OverlayPanel] = [:]
-    private var flutterVC: FlutterViewController?
-    private var originalWindow: NSWindow?
-    private var originalWindowWasVisible: Bool = false
-    private var mouseMonitor: Any?
+    private var overlayInstances: [NSScreen: OverlayInstance] = [:]
+    
+    struct OverlayInstance {
+        let window: OverlayPanel
+        let engine: FlutterEngine
+        let controller: FlutterViewController
+    }
     
     func showOverlay(args: [String: Any]? = nil) {
-        if !overlayPanels.isEmpty { return }
+        if !overlayInstances.isEmpty { return }
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,
-              let mainWindow = appDelegate.mainFlutterWindow,
-              let vc = mainWindow.contentViewController as? FlutterViewController else {
+              let mainWindow = appDelegate.mainFlutterWindow else {
             return
         }
         
-        self.originalWindow = mainWindow
-        self.flutterVC = vc
-        self.originalWindowWasVisible = mainWindow.isVisible
-        
-        // Remove from main window and hide it
-        mainWindow.contentViewController = nil
+        // Hide main window
         mainWindow.orderOut(nil)
         
         let screens = NSScreen.screens
         for screen in screens {
-            let panel = createOverlayPanel(for: screen)
-            overlayPanels[screen] = panel
-            panel.alphaValue = 0.0
-            panel.makeKeyAndOrderFront(nil)
-        }
-        
-        updateActiveScreen()
-        
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.4
-            for panel in overlayPanels.values {
-                panel.animator().alphaValue = 1.0
+            let instance = createOverlayInstance(for: screen, args: args)
+            overlayInstances[screen] = instance
+            
+            instance.window.alphaValue = 0.0
+            instance.window.makeKeyAndOrderFront(nil)
+            
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.4
+                instance.window.animator().alphaValue = 1.0
             }
-        }
-        
-        // Monitor mouse movement to switch interactive UI between screens
-        mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
-            self?.updateActiveScreen()
-            return event
         }
         
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
     }
     
     func hideOverlay() {
-        if overlayPanels.isEmpty { return }
+        if overlayInstances.isEmpty { return }
         
-        if let monitor = mouseMonitor {
-            NSEvent.removeMonitor(monitor)
-            mouseMonitor = nil
-        }
-        
-        let panels = Array(overlayPanels.values)
-        overlayPanels.removeAll()
+        let instances = Array(overlayInstances.values)
+        overlayInstances.removeAll()
         
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
-            for panel in panels {
-                panel.animator().alphaValue = 0.0
+            for instance in instances {
+                instance.window.animator().alphaValue = 0.0
             }
         }, completionHandler: {
-            // Restore flutter VC to original window
-            if let vc = self.flutterVC, let original = self.originalWindow {
-                vc.view.removeFromSuperview()
-                original.contentViewController = vc
-                if self.originalWindowWasVisible {
-                    original.makeKeyAndOrderFront(nil)
-                }
+            // Restore main window visibility
+            if let appDelegate = NSApp.delegate as? AppDelegate,
+               let mainWindow = appDelegate.mainFlutterWindow {
+                mainWindow.makeKeyAndOrderFront(nil)
             }
             
-            for panel in panels {
-                panel.orderOut(nil)
+            for instance in instances {
+                instance.window.orderOut(nil)
+                instance.engine.shutDownEngine()
             }
-            self.flutterVC = nil
-            self.originalWindow = nil
         })
         
         NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
     }
     
-    private func updateActiveScreen() {
-        let mouseLocation = NSEvent.mouseLocation
-        guard let activeScreen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }),
-              let activePanel = overlayPanels[activeScreen],
-              let vc = flutterVC else {
-            return
-        }
-        
-        if vc.view.window != activePanel {
-            vc.view.removeFromSuperview()
-            activePanel.contentView?.addSubview(vc.view)
-            vc.view.frame = activePanel.contentView?.bounds ?? .zero
-            vc.view.autoresizingMask = [.width, .height]
-            activePanel.makeKey()
+    func setClickThrough(_ enabled: Bool) {
+        for instance in overlayInstances.values {
+            instance.window.ignoresMouseEvents = enabled
         }
     }
     
-    func setClickThrough(_ enabled: Bool) {
-        for panel in overlayPanels.values {
-            panel.ignoresMouseEvents = enabled
+    func updateData(_ data: [String: Any]) {
+        for instance in overlayInstances.values {
+            let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: instance.engine.binaryMessenger)
+            channel.invokeMethod("updateOverlayData", arguments: data)
+        }
+    }
+    
+    func updateVisualEffect(materialName: String) {
+        for instance in overlayInstances.values {
+            guard let visualEffectView = instance.window.contentView as? NSVisualEffectView else { continue }
+            
+            switch materialName {
+            case "hud": visualEffectView.material = .hudWindow
+            case "dark": visualEffectView.material = .hudWindow
+            case "light": visualEffectView.material = .popover
+            case "ultraDark": visualEffectView.material = .fullScreenUI
+            case "fullScreenUI": visualEffectView.material = .fullScreenUI
+            default: visualEffectView.material = .hudWindow
+            }
         }
     }
     
@@ -124,20 +107,23 @@ class OverlayWindowManager: NSObject {
         }
     }
     
-    private func createOverlayPanel(for screen: NSScreen) -> OverlayPanel {
-        let panel = OverlayPanel(
+    private func createOverlayInstance(for screen: NSScreen, args: [String: Any]?) -> OverlayInstance {
+        let window = OverlayPanel(
             contentRect: screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
         
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
-        panel.hasShadow = false
-        panel.level = .screenSaver
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-        panel.ignoresMouseEvents = false
+        window.backgroundColor = .clear
+        window.isOpaque = false
+        window.hasShadow = false
+        window.level = .screenSaver
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        window.ignoresMouseEvents = false
+        
+        // Ensure the window frame is exactly the screen frame
+        window.setFrame(screen.frame, display: true)
         
         let visualEffectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: screen.frame.size))
         visualEffectView.material = .hudWindow
@@ -145,10 +131,48 @@ class OverlayWindowManager: NSObject {
         visualEffectView.state = .active
         visualEffectView.autoresizingMask = [.width, .height]
         
-        panel.contentView = visualEffectView
-        panel.setFrame(screen.frame, display: true)
+        // Spawn a fresh engine for each monitor to ensure simultaneous UI
+        let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
+        engine.run(withEntrypoint: "overlayMain")
+        RegisterGeneratedPlugins(registry: engine)
         
-        return panel
+        let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
+        controller.view.wantsLayer = true
+        controller.view.layer?.backgroundColor = NSColor.clear.cgColor
+        
+        // CRITICAL: Ensure the Flutter view stretches to fill the visual effect view
+        controller.view.autoresizingMask = [.width, .height]
+        controller.view.frame = visualEffectView.bounds
+        
+        // Setup MethodChannel for this overlay
+        let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: engine.binaryMessenger)
+        
+        // Pass initial data if available
+        if let args = args {
+            channel.invokeMethod("updateOverlayData", arguments: args)
+        }
+        
+        channel.setMethodCallHandler { call, result in
+            switch call.method {
+            case "hideOverlay":
+                OverlayWindowManager.shared.hideOverlay()
+                result(nil)
+            case "setIgnoreMouseEvents":
+                if let args = call.arguments as? [String: Any], let ignore = args["ignore"] as? Bool {
+                    OverlayWindowManager.shared.setClickThrough(ignore)
+                    result(nil)
+                } else {
+                    result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
+                }
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+        
+        visualEffectView.addSubview(controller.view)
+        window.contentView = visualEffectView
+        
+        return OverlayInstance(window: window, engine: engine, controller: controller)
     }
 }
 
@@ -207,12 +231,28 @@ class MainFlutterWindow: NSWindow {
         NSApp.activate(ignoringOtherApps: true)
         result(nil)
 
+      case "setVisualEffect":
+        if let args = call.arguments as? [String: Any], let materialName = args["material"] as? String {
+          OverlayWindowManager.shared.updateVisualEffect(materialName: materialName)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing material", details: nil))
+        }
+
       case "setIgnoreMouseEvents":
         if let args = call.arguments as? [String: Any], let ignore = args["ignore"] as? Bool {
           OverlayWindowManager.shared.setClickThrough(ignore)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
+        }
+
+      case "updateOverlayData":
+        if let args = call.arguments as? [String: Any] {
+          OverlayWindowManager.shared.updateData(args)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing data", details: nil))
         }
 
       default:

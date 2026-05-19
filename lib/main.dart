@@ -14,6 +14,14 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 void main() async {
+  // If we are in an overlay engine, we should NOT run the main application logic
+  // This is a safety check because sometimes Flutter engines fall back to main()
+  if (Platform.environment.containsKey('FLUTTER_ENTRYPOINT') && 
+      Platform.environment['FLUTTER_ENTRYPOINT'] == 'overlayMain') {
+    overlayMain();
+    return;
+  }
+
   runZonedGuarded(() async {
     try {
       WidgetsFlutterBinding.ensureInitialized();
@@ -31,9 +39,12 @@ void main() async {
       try {
         singleInstanceServer =
             await ServerSocket.bind(InternetAddress.loopbackIPv4, 10425);
-        debugPrint('Startup: Port 10425 bound');
+        debugPrint('Startup: Port 10425 bound (Main Instance)');
       } catch (e) {
-        debugPrint('Startup: Port 10425 already in use - another instance is running');
+        debugPrint('Startup: Port 10425 already in use');
+        
+        // This might be the main instance restarting or an overlay engine misfiring.
+        // We attempt to signal the existing instance.
         try {
           final socket = await Socket.connect(
             InternetAddress.loopbackIPv4,
@@ -43,10 +54,14 @@ void main() async {
           socket.write('showDashboard\n');
           await socket.flush();
           await socket.close();
+          debugPrint('Startup: Signaled existing instance. Exiting.');
+          exit(0);
         } catch (signalError) {
-          debugPrint('Startup: Could not signal existing instance');
+          // If we can't connect, maybe the port is stuck. 
+          // In a production app, we might want to handle this differently.
+          debugPrint('Startup: Could not signal existing instance (Port might be stuck)');
+          exit(1);
         }
-        exit(0);
       }
 
       // Initialize all dependencies

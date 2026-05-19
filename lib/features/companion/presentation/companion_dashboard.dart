@@ -6,6 +6,7 @@ import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/analytics/stats_model.dart';
 import 'package:standup/features/analytics/presentation/widgets/productivity_trend_chart.dart';
 import 'package:standup/shared/theme/app_theme.dart';
+import 'package:standup/shared/widgets/animated_number.dart';
 
 class CompanionDashboard extends StatelessWidget {
 
@@ -69,9 +70,9 @@ class CompanionDashboard extends StatelessWidget {
 
     return AppTheme.glassContainer(
       hasGradient: true,
-      opacity: 0.5,
+      opacity: 0.4,
       child: Padding(
-        padding: EdgeInsets.all(isNarrow ? 20.0 : 32.0),
+        padding: EdgeInsets.all(isNarrow ? 20.0 : 24.0),
         child: Row(
           children: [
             Expanded(
@@ -88,16 +89,16 @@ class CompanionDashboard extends StatelessWidget {
                       isPaused ? 'TIMER PAUSED' : 'DEEP FOCUS ACTIVE',
                       style: AppTheme.sectionTitle.copyWith(
                         color: isPaused ? AppTheme.upcomingBreakColor : AppTheme.accentColor,
-                        fontSize: 10,
-                        letterSpacing: 1.0,
+                        fontSize: 9,
+                        letterSpacing: 1.2,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Text(
                     isPaused ? 'Resume Session' : 'Next break in $mins:$secs',
                     style: AppTheme.headerStyle.copyWith(
-                      fontSize: isNarrow ? 24 : 32,
+                      fontSize: isNarrow ? 22 : 28,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -108,7 +109,7 @@ class CompanionDashboard extends StatelessWidget {
             _buildActionButton(
               icon: isPaused ? CupertinoIcons.play_fill : CupertinoIcons.pause_fill,
               onTap: () => controller.togglePause(),
-              size: isNarrow ? 48 : 64,
+              size: isNarrow ? 44 : 56,
             ),
           ],
         ),
@@ -120,7 +121,7 @@ class CompanionDashboard extends StatelessWidget {
     final children = [
       Expanded(
         flex: isNarrow ? 0 : 2,
-        child: AppTheme.glassContainer(
+        child: _buildHoverGlass(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -133,34 +134,36 @@ class CompanionDashboard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.baseline,
                   textBaseline: TextBaseline.alphabetic,
                   children: [
-                    Text(
-                      '${stats.productivityScore}',
+                    AnimatedNumber(
+                      value: stats.productivityScore.toDouble(),
                       style: AppTheme.headerStyle.copyWith(
-                        fontSize: isNarrow ? 48 : 64,
+                        fontSize: isNarrow ? 40 : 56,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       'points',
-                      style: AppTheme.subHeaderStyle.copyWith(color: AppTheme.textMuted),
+                      style: AppTheme.subHeaderStyle.copyWith(color: AppTheme.textMuted, fontSize: 14),
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                _buildScoreBreakdown(stats),
                 const SizedBox(height: 20),
                 Stack(
                   children: [
                     Container(
-                      height: 8,
+                      height: 6,
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.03),
+                        color: Colors.white.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                     FractionallySizedBox(
                       widthFactor: stats.productivityScore / 100,
                       child: Container(
-                        height: 8,
+                        height: 6,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
                             colors: [AppTheme.accentColor, Color(0xFF64D2FF)],
@@ -169,7 +172,7 @@ class CompanionDashboard extends StatelessWidget {
                           boxShadow: [
                             BoxShadow(
                               color: AppTheme.accentColor.withValues(alpha: 0.3),
-                              blurRadius: 8,
+                              blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
                           ],
@@ -190,7 +193,7 @@ class CompanionDashboard extends StatelessWidget {
       ),
     ];
 
-    return isNarrow 
+    return isNarrow
         ? Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: children.map((e) => e is Expanded ? e.child : e).toList(),
@@ -198,8 +201,37 @@ class CompanionDashboard extends StatelessWidget {
         : Row(children: children);
   }
 
+  Widget _buildScoreBreakdown(StatsModel stats) {
+    return Row(
+      children: [
+        _buildBreakdownItem('Completion', 'High', AppTheme.accentColor),
+        const SizedBox(width: 12),
+        _buildBreakdownItem('Consistency', 'Good', const Color(0xFF32D74B)),
+        const SizedBox(width: 12),
+        _buildBreakdownItem('Focus', 'Stable', const Color(0xFFB8B8B8)),
+      ],
+    );
+  }
+
+  Widget _buildBreakdownItem(String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.2), width: 0.5),
+      ),
+      child: Row(
+        children: [
+          Text('$label: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
+          Text(value, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMiniStat(String label, String value, IconData icon, Color color) {
-    return AppTheme.glassContainer(
+    return _buildHoverGlass(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
         child: Column(
@@ -230,7 +262,7 @@ class CompanionDashboard extends StatelessWidget {
   }
 
   Widget _buildTrendSection(bool isNarrow) {
-    return AppTheme.glassContainer(
+    return _buildHoverGlass(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -292,7 +324,7 @@ class CompanionDashboard extends StatelessWidget {
   }
 
   Widget _buildWellnessCard(String title, String status, IconData icon, Color color) {
-    return AppTheme.glassContainer(
+    return _buildHoverGlass(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Row(
@@ -315,21 +347,49 @@ class CompanionDashboard extends StatelessWidget {
     );
   }
 
+  Widget _buildHoverGlass({required Widget child}) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 200),
+        builder: (context, value, animChild) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            transform: Matrix4.identity()..scale(1.0 + (0.01 * value)), // Subtle scale
+            child: AppTheme.glassContainer(
+              child: animChild!,
+            ),
+          );
+        },
+        child: child,
+      ),
+    );
+  }
+
   Widget _buildActionButton({required IconData icon, required VoidCallback onTap, double size = 56}) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        child: TweenAnimationBuilder(
+          tween: Tween<double>(begin: 1.0, end: 1.0),
+          duration: const Duration(milliseconds: 100),
+          builder: (context, value, child) => Transform.scale(
+            scale: value,
+            child: child,
           ),
-          child: Center(
-            child: Icon(icon, color: Colors.white, size: size * 0.4),
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            child: Center(
+              child: Icon(icon, color: Colors.white, size: size * 0.4),
+            ),
           ),
         ),
       ),

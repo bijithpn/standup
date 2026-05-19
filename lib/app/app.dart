@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +95,8 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
           await overlayService.reset();
           flashOverlayService.dispose();
           await windowManager.setPreventClose(false);
-          await windowManager.close();
+          await windowManager.destroy();
+          exit(0);
           break;
       }
     };

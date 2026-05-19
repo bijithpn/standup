@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/shared/theme/app_theme.dart';
@@ -35,7 +37,11 @@ class _FlashOverlayState extends State<FlashOverlay> with SingleTickerProviderSt
     setState(() => _isVisible = true);
 
     _controller.forward(from: 0).then((_) {
-      setState(() => _isVisible = false);
+      if (mounted) {
+        setState(() => _isVisible = false);
+        // Also hide the global overlay window
+        sl<OverlayWindowService>().hideOverlay();
+      }
     });
   }
 

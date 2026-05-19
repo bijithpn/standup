@@ -121,24 +121,35 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildNarrowLayout() {
     return Scaffold(
       backgroundColor: AppTheme.contentBackground,
-      appBar: AppBar(
-        backgroundColor: AppTheme.sidebarBackground,
-        surfaceTintColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          _navItems[_pageIndex].label,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(52),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.sidebarBackground.withOpacity(0.8),
+            border: const Border(bottom: BorderSide(color: AppTheme.borderColor, width: 0.5)),
           ),
-        ),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu_rounded, color: AppTheme.accentColor),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Builder(
+                    builder: (context) => IconButton(
+                      icon: const Icon(Icons.menu_rounded, color: AppTheme.accentColor, size: 20),
+                      onPressed: () => Scaffold.of(context).openDrawer(),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _navItems[_pageIndex].label,
+                    style: AppTheme.headerStyle.copyWith(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -148,64 +159,69 @@ class _MainLayoutState extends State<MainLayout> {
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
         child: Column(
           children: [
-            DrawerHeader(
+            Container(
+              padding: const EdgeInsets.only(top: 60, bottom: 20),
               decoration: const BoxDecoration(
                 border: Border(bottom: BorderSide(color: AppTheme.borderColor, width: 0.5)),
               ),
-              child: Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(CupertinoIcons.infinite, color: AppTheme.accentColor, size: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'BreakMate',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -0.5,
-                      ),
+                    child: const Icon(CupertinoIcons.infinite, color: AppTheme.accentColor, size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'BreakMate',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: -0.5,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 12),
                 itemCount: _navItems.length,
                 itemBuilder: (context, index) {
                   final item = _navItems[index];
                   final isSelected = _pageIndex == index;
-                  return ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
-                    leading: Icon(
-                      item.icon,
-                      size: 20,
-                      color: isSelected ? AppTheme.accentColor : AppTheme.textSecondary,
-                    ),
-                    title: Text(
-                      item.label,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : AppTheme.textSecondary,
-                        fontSize: 14,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      leading: Icon(
+                        item.icon,
+                        size: 20,
+                        color: isSelected ? AppTheme.accentColor : AppTheme.textSecondary,
                       ),
+                      title: Text(
+                        item.label,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : AppTheme.textSecondary,
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      selected: isSelected,
+                      selectedTileColor: AppTheme.accentColor.withValues(alpha: 0.15),
+                      onTap: () {
+                        setState(() => _pageIndex = index);
+                        Navigator.pop(context);
+                      },
                     ),
-                    selected: isSelected,
-                    selectedTileColor: AppTheme.accentColor.withValues(alpha: 0.1),
-                    onTap: () {
-                      setState(() => _pageIndex = index);
-                      Navigator.pop(context);
-                    },
                   );
                 },
               ),
@@ -218,19 +234,32 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _buildMainContent() {
-    return IndexedStack(
-      index: _pageIndex,
-      children: [
-        const CompanionDashboard(),
-        const SettingsPage(section: 'Breaks & Profiles'),
-        const SettingsPage(section: 'Intelligent Detection'),
-        const SettingsPage(section: 'Flash Reminder'),
-        const SettingsPage(section: 'Clock Out'),
-        const SettingsPage(section: 'Exercises'),
-        const SettingsPage(section: 'Statistics'),
-        const WellnessArticlesPage(),
-        const SettingsPage(section: 'General'),
-      ],
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 0.02), end: Offset.zero).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: IndexedStack(
+        key: ValueKey(_pageIndex),
+        index: _pageIndex,
+        children: [
+          const CompanionDashboard(),
+          const SettingsPage(section: 'Breaks & Profiles'),
+          const SettingsPage(section: 'Intelligent Detection'),
+          const SettingsPage(section: 'Flash Reminder'),
+          const SettingsPage(section: 'Clock Out'),
+          const SettingsPage(section: 'Exercises'),
+          const SettingsPage(section: 'Statistics'),
+          const WellnessArticlesPage(),
+          const SettingsPage(section: 'General'),
+        ],
+      ),
     );
   }
 }

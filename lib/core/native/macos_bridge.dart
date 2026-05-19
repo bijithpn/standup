@@ -6,14 +6,19 @@ class MacOSBridge {
   static const MethodChannel _channel = MethodChannel('com.breakmate.macos/bridge');
   static final Set<String> _loggedMissingMethods = {};
 
-  /// Show the full-screen break overlay
-  static Future<void> showOverlay() async {
-    await _invokeSafely('showOverlay');
+  /// Show the native multi-monitor overlay
+  static Future<void> showOverlay([Map<String, dynamic>? args]) async {
+    await _invokeSafely('showOverlay', args);
   }
 
-  /// Hide the break overlay and return to normal window state
+  /// Hide the native multi-monitor overlay
   static Future<void> hideOverlay() async {
     await _invokeSafely('hideOverlay');
+  }
+
+  /// Set the visual effect (vibrancy) of the overlays
+  static Future<void> setVisualEffect(String material) async {
+    await _invokeSafely('setVisualEffect', {'material': material});
   }
 
   /// Focus the application and un-minimize if needed
@@ -49,6 +54,11 @@ class MacOSBridge {
   /// Set the overlay to ignore mouse events (click-through)
   static Future<void> setIgnoreMouseEvents(bool ignore) async {
     await _invokeSafely('setIgnoreMouseEvents', {'ignore': ignore});
+  }
+
+  /// Update data in all active overlay engines
+  static Future<void> updateOverlayData(Map<String, dynamic> data) async {
+    await _invokeSafely('updateOverlayData', data);
   }
 
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {

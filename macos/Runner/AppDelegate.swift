@@ -16,6 +16,11 @@ class AppDelegate: FlutterAppDelegate {
     return true
   }
 
+  override func applicationWillTerminate(_ notification: Notification) {
+    OverlayWindowManager.shared.hideOverlay()
+    super.applicationWillTerminate(notification)
+  }
+
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
     return true
   }

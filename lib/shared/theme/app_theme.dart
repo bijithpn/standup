@@ -60,17 +60,17 @@ class AppTheme {
   /// Premium Glassmorphic card decoration
   static BoxDecoration get glassCardDecoration {
     return BoxDecoration(
-      color: const Color(0xFF2A2A2A).withValues(alpha: 0.6),
+      color: const Color(0xFF2A2A2A).withValues(alpha: 0.4),
       borderRadius: BorderRadius.circular(cardRadius),
       border: Border.all(
-        color: Colors.white.withValues(alpha: 0.08),
+        color: Colors.white.withValues(alpha: 0.05),
         width: 0.5,
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.4),
-          blurRadius: 24,
-          offset: const Offset(0, 12),
+          color: Colors.black.withValues(alpha: 0.3),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
         ),
       ],
     );
@@ -79,7 +79,7 @@ class AppTheme {
   /// Premium Glassmorphic container with optional gradient
   static Widget glassContainer({
     required Widget child,
-    double opacity = 0.4,
+    double opacity = 0.3,
     BorderRadius? borderRadius,
     bool hasGradient = false,
   }) {
@@ -88,14 +88,14 @@ class AppTheme {
         color: const Color(0xFF2C2C2C).withValues(alpha: opacity),
         borderRadius: borderRadius ?? BorderRadius.circular(cardRadius),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
+          color: Colors.white.withValues(alpha: 0.05),
           width: 0.5,
         ),
         gradient: hasGradient ? LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withValues(alpha: 0.05),
+            Colors.white.withValues(alpha: 0.03),
             Colors.transparent,
           ],
         ) : null,
@@ -106,28 +106,28 @@ class AppTheme {
 
   static const TextStyle sidebarItemStyle = TextStyle(
     fontSize: 13,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w400,
     color: textPrimary,
     letterSpacing: -0.1,
   );
 
   static const TextStyle sectionTitle = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
     color: textSecondary,
-    letterSpacing: 0.2,
+    letterSpacing: 0.1,
   );
 
   static const TextStyle headerStyle = TextStyle(
     fontSize: 24,
-    fontWeight: FontWeight.w700,
+    fontWeight: FontWeight.w600,
     color: textPrimary,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
   );
 
   static const TextStyle subHeaderStyle = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontSize: 15,
+    fontWeight: FontWeight.w400,
     color: textSecondary,
     letterSpacing: -0.2,
   );

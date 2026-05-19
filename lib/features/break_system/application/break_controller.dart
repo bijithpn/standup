@@ -3,6 +3,7 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/notification_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
+import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/break_profile.dart';
 import 'package:standup/features/settings/settings_repository.dart';
@@ -45,12 +46,22 @@ class BreakController extends ChangeNotifier {
     bool shouldShowWarning = _timerEngine.isPreBreak;
 
     if (shouldShowBreak) {
+      final breakInfo = _timerEngine.activeBreak;
       if (overlayService.currentOverlayType != OverlayType.breakScreen) {
         overlayService.showOverlay(
           type: OverlayType.breakScreen,
           builder: (context) => const SizedBox.shrink(),
           strictMode: settings.strictMode,
         );
+      }
+      
+      // Update all overlay engines with the current timer state
+      if (breakInfo != null) {
+        MacOSBridge.updateOverlayData({
+          'title': breakInfo.title,
+          'durationSeconds': breakInfo.durationSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+        });
       }
     } else if (shouldShowWarning) {
       if (overlayService.currentOverlayType != OverlayType.preBreakWarning) {

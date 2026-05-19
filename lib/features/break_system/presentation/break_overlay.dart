@@ -120,11 +120,11 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black,
+      color: Colors.transparent,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Layer with Ken Burns Effect
+          // Background Layer with Ken Burns Effect (Subtle)
           AnimatedBuilder(
             animation: widget.kenBurnsController,
             builder: (context, child) {
@@ -138,7 +138,7 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
                     child: Image.asset(
                       AppConstants.wellnessSlideshow[index],
                       fit: BoxFit.cover,
-                      color: Colors.black.withValues(alpha: 0.6),
+                      color: Colors.black.withValues(alpha: 0.3), // More transparent
                       colorBlendMode: BlendMode.darken,
                     ),
                   );
@@ -148,24 +148,21 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
           ),
 
           // UI Layer
-          BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.7),
-                  ],
-                  radius: 1.2,
-                ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: RadialGradient(
+                colors: [
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.4), // More transparent
+                ],
+                radius: 1.2,
               ),
-              child: SafeArea(
-                child: Center(
-                  child: widget.timerEngine.isCompletionState
-                      ? _buildCompletionState()
-                      : _buildMainContent(),
-                ),
+            ),
+            child: SafeArea(
+              child: Center(
+                child: widget.timerEngine.isCompletionState
+                    ? _buildCompletionState()
+                    : _buildMainContent(),
               ),
             ),
           ),

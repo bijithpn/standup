@@ -1134,31 +1134,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _listTile(String title, IconData icon, VoidCallback onTap) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(icon, size: 18, color: Colors.white70),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-            const Icon(CupertinoIcons.chevron_right, size: 14, color: Colors.white24),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildFlashReminder() {
     return Column(

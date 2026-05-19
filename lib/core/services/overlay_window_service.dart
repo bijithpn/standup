@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:screen_retriever/screen_retriever.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/utils/logger.dart';
 
@@ -22,38 +21,24 @@ class OverlayWindowService extends ChangeNotifier {
     }
 
     try {
-      _logger.info('Showing global overlay: ');
+      _logger.info('Showing global overlay: $type');
 
       await windowManager.setIgnoreMouseEvents(false);
 
-      if (type == OverlayType.breakScreen) {
-        await MacOSBridge.showOverlay();
-        if (strictMode) {
+      if (type != OverlayType.clockPreview) {
+        // Use native multi-monitor overlay for all real overlays
+        await MacOSBridge.showOverlay({'type': type.name});
+        if (strictMode && type == OverlayType.breakScreen) {
           await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
         }
-      } else if (type == OverlayType.preBreakWarning) {
-        await MacOSBridge.focusApp();
-        await MacOSBridge.setWindowLevel('floating');
-        // Let Flutter handle the size/position if needed
-      } else if (floatingMode) {
-        await MacOSBridge.setWindowLevel('floating');
-        await windowManager.setFullScreen(false);
-        await windowManager.setSkipTaskbar(true);
-        await windowManager.setHasShadow(false);
-
-        final displays = await ScreenRetriever.instance.getAllDisplays();
-        final primaryDisplay = displays.first;
-        final width = primaryDisplay.size.width;
-        final floatWidth = 350.0;
-        final floatHeight = 120.0;
-        await windowManager.setSize(Size(floatWidth, floatHeight));
-        await windowManager.setPosition(Offset(width - floatWidth - 20, 40));
+        // Always hide the main window when showing a system-level overlay
+        await windowManager.hide();
       } else {
+        // Clock preview still uses main window for simplicity
         await MacOSBridge.setWindowLevel('floating');
+        await windowManager.show();
+        await windowManager.focus();
       }
-
-      await windowManager.show();
-      await windowManager.focus();
 
       _isOverlayVisible = true;
       _currentOverlayType = type;

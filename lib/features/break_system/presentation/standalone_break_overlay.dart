@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 
@@ -7,14 +8,12 @@ class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
   final int durationSeconds;
-  final int remainingSeconds;
 
   const StandaloneBreakOverlay({
     super.key,
     this.title = "Time for a Break",
     this.message = "Take a moment to stretch and breathe",
     this.durationSeconds = 300,
-    this.remainingSeconds = 300,
   });
 
   @override
@@ -22,15 +21,27 @@ class StandaloneBreakOverlay extends StatefulWidget {
 }
 
 class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with TickerProviderStateMixin {
+  static const MethodChannel _bridge = MethodChannel('com.breakmate.macos/bridge');
+  
   late PageController _pageController;
   int _currentSlide = 0;
   Timer? _slideshowTimer;
   late AnimationController _breathingController;
   late AnimationController _kenBurnsController;
+  
+  String _title = "Time for a Break";
+  int _durationSeconds = 300;
+  int _remainingSeconds = 300;
+  String _overlayType = 'breakScreen';
+  int _screenId = 0;
 
   @override
   void initState() {
     super.initState();
+    _title = widget.title;
+    _durationSeconds = widget.durationSeconds;
+    _remainingSeconds = widget.durationSeconds;
+    
     _pageController = PageController();
     _startSlideshow();
     
@@ -43,6 +54,31 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
       vsync: this,
       duration: const Duration(seconds: 15),
     )..repeat(reverse: true);
+
+    _setupBridge();
+  }
+
+  void _setupBridge() {
+    _bridge.setMethodCallHandler((call) async {
+      if (call.method == 'updateOverlayData') {
+        final args = call.arguments as Map;
+        if (mounted) {
+          setState(() {
+            _title = args['title'] ?? _title;
+            _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
+            _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
+            _overlayType = args['type'] ?? _overlayType;
+          });
+        }
+      } else if (call.method == 'setScreenInfo') {
+        final args = call.arguments as Map;
+        if (mounted) {
+          setState(() {
+            _screenId = args['id'] ?? _screenId;
+          });
+        }
+      }
+    });
   }
 
   void _startSlideshow() {
@@ -72,12 +108,52 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
 
   @override
   Widget build(BuildContext context) {
+    if (_overlayType == 'flashNotification') {
+      return _buildFlashNotification();
+    }
+    
+    return _buildBreakScreen();
+  }
+
+  Widget _buildFlashNotification() {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: Container(
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: Colors.black.withValues(alpha: 0.7),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.accessibility_new, color: Colors.blueAccent, size: 64),
+              const SizedBox(height: 24),
+              Text(
+                "Posture Reminder",
+                style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Sit up straight and take a deep breath",
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 18),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBreakScreen() {
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Layer with Ken Burns Effect
+          // Background Layer
           AnimatedBuilder(
             animation: _kenBurnsController,
             builder: (context, child) {
@@ -91,7 +167,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
                     child: Image.asset(
                       AppConstants.wellnessSlideshow[index],
                       fit: BoxFit.cover,
-                      color: Colors.black.withValues(alpha: 0.6),
+                      color: Colors.black.withValues(alpha: 0.5),
                       colorBlendMode: BlendMode.darken,
                     ),
                   );
@@ -106,7 +182,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
               children: [
                 const Spacer(),
                 Text(
-                  widget.title,
+                  _title,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: Colors.white,
@@ -116,70 +192,55 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  widget.message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 20,
+                if (_screenId != 0)
+                   Text(
+                    "Display $_screenId",
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 14),
                   ),
-                ),
                 const Spacer(),
                 
                 // Breathing Assistant
-                SizedBox(
-                  height: 300,
-                  child: Center(
-                    child: AnimatedBuilder(
-                      animation: _breathingController,
-                      builder: (context, child) {
-                        return Container(
-                          width: 200 + (50 * _breathingController.value),
-                          height: 200 + (50 * _breathingController.value),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.blue.withValues(alpha: 0.2 + (0.3 * _breathingController.value)),
-                            border: Border.all(
-                              color: Colors.blue.withValues(alpha: 0.5),
-                              width: 2,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withValues(alpha: 0.3 * _breathingController.value),
-                                blurRadius: 40,
-                                spreadRadius: 10,
-                              ),
-                            ],
+                Center(
+                  child: AnimatedBuilder(
+                    animation: _breathingController,
+                    builder: (context, child) {
+                      return Container(
+                        width: 220 + (60 * _breathingController.value),
+                        height: 220 + (60 * _breathingController.value),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.blueAccent.withValues(alpha: 0.1 + (0.2 * _breathingController.value)),
+                          border: Border.all(
+                            color: Colors.blueAccent.withValues(alpha: 0.4),
+                            width: 2,
                           ),
-                          child: Center(
-                            child: Text(
-                              _breathingController.value < 0.5 ? "Inhale" : "Exhale",
-                              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w300),
-                            ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _breathingController.value < 0.5 ? "Inhale" : "Exhale",
+                            style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w200),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 
                 const Spacer(),
                 
-                // Timer / Action area
+                // Action area
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 60),
+                  padding: const EdgeInsets.only(bottom: 80),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       _ActionButton(
                         label: "Skip",
-                        onPressed: () async {
-                          await MacOSBridge.hideOverlay();
-                        },
+                        onPressed: () => MacOSBridge.hideOverlay(),
                       ),
                       const SizedBox(width: 40),
                       CircularProgressIndicator(
-                        value: widget.remainingSeconds / widget.durationSeconds,
+                        value: _durationSeconds > 0 ? _remainingSeconds / _durationSeconds : 0.0,
                         strokeWidth: 8,
                         backgroundColor: Colors.white10,
                         color: Colors.blueAccent,
@@ -188,9 +249,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
                       _ActionButton(
                         label: "Done",
                         primary: true,
-                        onPressed: () async {
-                          await MacOSBridge.hideOverlay();
-                        },
+                        onPressed: () => MacOSBridge.hideOverlay(),
                       ),
                     ],
                   ),
@@ -222,11 +281,11 @@ class _ActionButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onPressed,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
           decoration: BoxDecoration(
-            color: primary ? Colors.blueAccent : Colors.white12,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white24),
+            color: primary ? Colors.blueAccent : Colors.white.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
           ),
           child: Text(
             label,
