@@ -298,6 +298,7 @@ class TimerEngine extends ChangeNotifier {
       MacOSBridge.updateOverlayData({
         'title': 'Well Done!',
         'remainingSeconds': 0,
+        'durationSeconds': _activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
         'strictMode': false, // Allow closing now
       });
 

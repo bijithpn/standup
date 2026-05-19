@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:standup/core/utils/logger.dart';
+import 'package:standup/core/services/timer_engine.dart';
+import 'package:standup/features/break_system/application/break_controller.dart';
 
 typedef TrayMenuAction = void Function(String action);
 
@@ -19,6 +21,10 @@ class TrayManagerService with TrayListener {
   Timer? _animTimer;
   _CatFrame _catFrame = _CatFrame.idle;
   bool _isBreakActive = false;
+
+  // Dependencies for dynamic menu
+  TimerEngine? _timerEngine;
+  BreakController? _breakController;
 
   // Cached temp file paths
   final Map<_CatFrame, String> _catIconPaths = {};
@@ -146,8 +152,32 @@ class TrayManagerService with TrayListener {
   }
 
   Future<void> _buildMenu() async {
+    String statusLabel = 'BreakMate';
+    String nextBreakLabel = 'Next: --';
+    
+    if (_timerEngine != null) {
+      final remaining = _timerEngine!.timeUntilNextShortBreak;
+      final mins = remaining.inMinutes;
+      final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+      
+      if (_isBreakActive) {
+        statusLabel = 'On Break!';
+        final breakRemaining = _timerEngine!.countdownSeconds;
+        final breakMins = breakRemaining ~/ 60;
+        final breakSecs = (breakRemaining % 60).toString().padLeft(2, '0');
+        nextBreakLabel = 'Break: $breakMins:$breakSecs remaining';
+      } else if (_isPaused) {
+        statusLabel = 'Paused';
+        nextBreakLabel = 'Reminders paused';
+      } else {
+        final breakType = 'Short'; // Simplified - would need TimerEngine to expose this
+        nextBreakLabel = 'Next: $mins:$secs ($breakType)';
+      }
+    }
+
     final menu = Menu(items: [
-      MenuItem(label: 'BreakMate', disabled: true),
+      MenuItem(label: statusLabel, disabled: true),
+      MenuItem(label: nextBreakLabel, disabled: true),
       MenuItem.separator(),
       MenuItem(key: 'open_dashboard', label: 'Open Dashboard…'),
       MenuItem(key: 'open_settings', label: 'Settings…'),
@@ -167,6 +197,18 @@ class TrayManagerService with TrayListener {
       MenuItem(key: 'quit', label: 'Quit BreakMate'),
     ]);
     await trayManager.setContextMenu(menu);
+  }
+
+  void setDependencies(TimerEngine timerEngine, BreakController breakController) {
+    _timerEngine = timerEngine;
+    _breakController = breakController;
+    timerEngine.addListener(_onTimerChanged);
+    breakController.addListener(_onTimerChanged);
+    _buildMenu();
+  }
+
+  void _onTimerChanged() {
+    _buildMenu();
   }
 
   void updatePauseState(bool isPaused) {
@@ -213,6 +255,8 @@ class TrayManagerService with TrayListener {
 
   void dispose() {
     _animTimer?.cancel();
+    _timerEngine?.removeListener(_onTimerChanged);
+    _breakController?.removeListener(_onTimerChanged);
     trayManager.removeListener(this);
   }
 }

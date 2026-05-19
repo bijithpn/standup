@@ -51,6 +51,10 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     final tray = sl<TrayManagerService>();
     final controller = sl<BreakController>();
     final flashOverlayService = sl<FlashOverlayService>();
+    final timerEngine = controller.timerEngine;
+
+    // Connect tray to timer engine for dynamic menu updates
+    tray.setDependencies(timerEngine, controller);
 
     tray.onMenuAction = (action) async {
       final overlayService = sl<OverlayWindowService>();
