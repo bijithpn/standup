@@ -28,12 +28,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
   Timer? _slideshowTimer;
   late AnimationController _breathingController;
   late AnimationController _kenBurnsController;
+  late AnimationController _fadeController;
   
   String _title = "Time for a Break";
   int _durationSeconds = 300;
   int _remainingSeconds = 300;
   String _overlayType = 'breakScreen';
   int _screenId = 0;
+  bool _strictMode = false;
 
   @override
   void initState() {
@@ -55,6 +57,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
       duration: const Duration(seconds: 15),
     )..repeat(reverse: true);
 
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..forward();
+
     _setupBridge();
   }
 
@@ -68,6 +75,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
             _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
             _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
             _overlayType = args['type'] ?? _overlayType;
+            _strictMode = args['strictMode'] ?? _strictMode;
           });
         }
       } else if (call.method == 'setScreenInfo') {
@@ -103,16 +111,24 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
     _pageController.dispose();
     _breathingController.dispose();
     _kenBurnsController.dispose();
+    _fadeController.dispose();
     super.dispose();
+  }
+
+  String _formatTime(int seconds) {
+    final mins = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '$mins:${secs.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_overlayType == 'flashNotification') {
-      return _buildFlashNotification();
-    }
-    
-    return _buildBreakScreen();
+    return FadeTransition(
+      opacity: _fadeController,
+      child: _overlayType == 'flashNotification'
+          ? _buildFlashNotification()
+          : _buildBreakScreen(),
+    );
   }
 
   Widget _buildFlashNotification() {
@@ -191,6 +207,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
                     letterSpacing: -1,
                   ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  _formatTime(_remainingSeconds),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 32,
+                    fontWeight: FontWeight.w300,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 if (_screenId != 0)
                    Text(
@@ -234,23 +260,35 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _ActionButton(
-                        label: "Skip",
-                        onPressed: () => MacOSBridge.hideOverlay(),
+                      if (!_strictMode)
+                        _ActionButton(
+                          label: "Skip",
+                          onPressed: () => MacOSBridge.hideOverlay(),
+                        ),
+                      if (!_strictMode)
+                        const SizedBox(width: 40),
+                      
+                      SizedBox(
+                        width: 80,
+                        height: 80,
+                        child: CircularProgressIndicator(
+                          value: _durationSeconds > 0
+                              ? _remainingSeconds / _durationSeconds
+                              : 0.0,
+                          strokeWidth: 8,
+                          backgroundColor: Colors.white10,
+                          color: Colors.blueAccent,
+                        ),
                       ),
-                      const SizedBox(width: 40),
-                      CircularProgressIndicator(
-                        value: _durationSeconds > 0 ? _remainingSeconds / _durationSeconds : 0.0,
-                        strokeWidth: 8,
-                        backgroundColor: Colors.white10,
-                        color: Colors.blueAccent,
-                      ),
-                      const SizedBox(width: 40),
-                      _ActionButton(
-                        label: "Done",
-                        primary: true,
-                        onPressed: () => MacOSBridge.hideOverlay(),
-                      ),
+
+                      if (!_strictMode)
+                        const SizedBox(width: 40),
+                      if (!_strictMode)
+                        _ActionButton(
+                          label: "Done",
+                          primary: true,
+                          onPressed: () => MacOSBridge.hideOverlay(),
+                        ),
                     ],
                   ),
                 ),

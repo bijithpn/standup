@@ -61,6 +61,7 @@ class BreakController extends ChangeNotifier {
           'title': breakInfo.title,
           'durationSeconds': breakInfo.durationSeconds,
           'remainingSeconds': _timerEngine.countdownSeconds,
+          'strictMode': settings.strictMode,
         });
       }
     } else if (shouldShowWarning) {

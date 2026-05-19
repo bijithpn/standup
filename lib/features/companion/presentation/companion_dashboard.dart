@@ -7,6 +7,8 @@ import 'package:standup/features/analytics/stats_model.dart';
 import 'package:standup/features/analytics/presentation/widgets/productivity_trend_chart.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/shared/widgets/animated_number.dart';
+import 'package:standup/shared/widgets/pressable_button.dart';
+import 'package:standup/shared/widgets/staggered_fade_in.dart';
 
 class CompanionDashboard extends StatelessWidget {
   const CompanionDashboard({super.key});
@@ -44,13 +46,25 @@ class CompanionDashboard extends StatelessWidget {
                   ),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate([
-                      _buildMainStatus(breakController, nextBreak, isNarrow),
+                      StaggeredFadeIn(
+                        index: 0,
+                        child: _buildMainStatus(breakController, nextBreak, isNarrow),
+                      ),
                       const SizedBox(height: 32),
-                      _buildAnalyticsGrid(stats, isNarrow),
+                      StaggeredFadeIn(
+                        index: 1,
+                        child: _buildAnalyticsGrid(stats, isNarrow),
+                      ),
                       const SizedBox(height: 32),
-                      _buildTrendSection(isNarrow),
+                      StaggeredFadeIn(
+                        index: 2,
+                        child: _buildTrendSection(stats, isNarrow),
+                      ),
                       const SizedBox(height: 32),
-                      _buildWellnessSection(breakController, isNarrow),
+                      StaggeredFadeIn(
+                        index: 3,
+                        child: _buildWellnessSection(breakController, isNarrow),
+                      ),
                     ]),
                   ),
                 ),
@@ -210,7 +224,7 @@ class CompanionDashboard extends StatelessWidget {
         flex: isNarrow ? 0 : 1,
         child: _buildMiniStat(
           'STREAK',
-          '${stats.currentStreak}d',
+          stats.currentStreak,
           CupertinoIcons.flame_fill,
           const Color(0xFFFF9F0A),
         ),
@@ -266,7 +280,7 @@ class CompanionDashboard extends StatelessWidget {
 
   Widget _buildMiniStat(
     String label,
-    String value,
+    int value,
     IconData icon,
     Color color,
   ) {
@@ -285,7 +299,22 @@ class CompanionDashboard extends StatelessWidget {
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 16),
-            Text(value, style: AppTheme.headerStyle.copyWith(fontSize: 28)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                AnimatedNumber(
+                  value: value.toDouble(),
+                  style: AppTheme.headerStyle.copyWith(fontSize: 28),
+                ),
+                const SizedBox(width: 2),
+                Text(
+                  'd',
+                  style: AppTheme.headerStyle.copyWith(fontSize: 28),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
             Text(
               label,
@@ -300,7 +329,7 @@ class CompanionDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildTrendSection(bool isNarrow) {
+  Widget _buildTrendSection(StatsModel stats, bool isNarrow) {
     return _buildHoverGlass(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -322,7 +351,7 @@ class CompanionDashboard extends StatelessWidget {
             const SizedBox(height: 32),
             ConstrainedBox(
               constraints: BoxConstraints(maxHeight: isNarrow ? 140 : 180),
-              child: const ProductivityTrendChart(),
+              child: ProductivityTrendChart(weeklyData: stats.weeklyData),
             ),
           ],
         ),
@@ -441,26 +470,20 @@ class CompanionDashboard extends StatelessWidget {
     required VoidCallback onTap,
     double size = 56,
   }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: TweenAnimationBuilder(
-          tween: Tween<double>(begin: 1.0, end: 1.0),
-          duration: const Duration(milliseconds: 100),
-          builder: (context, value, child) =>
-              Transform.scale(scale: value, child: child),
-          child: Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            ),
-            child: Center(
-              child: Icon(icon, color: Colors.white, size: size * 0.4),
-            ),
+    return PressableButton(
+      onPressed: onTap,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Center(
+            child: Icon(icon, color: Colors.white, size: size * 0.4),
           ),
         ),
       ),

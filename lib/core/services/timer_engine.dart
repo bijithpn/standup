@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/constants/app_constants.dart';
+import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/services/adaptive_break_service.dart';
 import 'package:standup/core/services/activity_monitor.dart';
 import 'package:standup/core/services/notification_service.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/smart_detection_service.dart';
 import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
@@ -273,7 +275,12 @@ class TimerEngine extends ChangeNotifier {
     }
 
     sl<TrayManagerService>().setBreakActive(true);
-    _notificationService.showBreakStarted(breakTitle: _activeBreak!.title);
+    
+    // Only show system notification if overlay isn't already taking over the screen
+    if (!sl<OverlayWindowService>().isOverlayVisible) {
+      _notificationService.showBreakStarted(breakTitle: _activeBreak!.title);
+    }
+    
     _logger.info('Break triggered: ${_activeBreak!.title}');
     notifyListeners();
   }
@@ -286,10 +293,20 @@ class TimerEngine extends ChangeNotifier {
     } else {
       _isCompletionState = true;
       notifyListeners();
+      
+      // Update overlay to show completion state if needed
+      MacOSBridge.updateOverlayData({
+        'title': 'Well Done!',
+        'remainingSeconds': 0,
+        'strictMode': false, // Allow closing now
+      });
+
       await Future.delayed(const Duration(seconds: 2));
-      // Record completed break only once here
       sl<StatsService>().recordCompletedBreak();
-      await _notificationService.showBreakFinished();
+      
+      if (!sl<OverlayWindowService>().isOverlayVisible) {
+        await _notificationService.showBreakFinished();
+      }
     }
 
     _activeBreak = null;
