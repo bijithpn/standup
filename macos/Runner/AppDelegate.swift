@@ -9,7 +9,6 @@ class AppDelegate: FlutterAppDelegate {
 
   override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
     if let window = mainFlutterWindow as? MainFlutterWindow {
-      window.resetToNormal()
       if window.isMiniaturized { window.deminiaturize(nil) }
       NSApp.activate(ignoringOtherApps: true)
       window.makeKeyAndOrderFront(nil)

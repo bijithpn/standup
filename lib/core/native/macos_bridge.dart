@@ -46,6 +46,11 @@ class MacOSBridge {
     return appearance ?? 'light';
   }
 
+  /// Set the overlay to ignore mouse events (click-through)
+  static Future<void> setIgnoreMouseEvents(bool ignore) async {
+    await _invokeSafely('setIgnoreMouseEvents', {'ignore': ignore});
+  }
+
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

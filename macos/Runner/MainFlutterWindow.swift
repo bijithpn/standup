@@ -1,6 +1,157 @@
 import Cocoa
 import FlutterMacOS
 
+class OverlayPanel: NSPanel {
+    override var canBecomeKey: Bool { return true }
+    override var canBecomeMain: Bool { return true }
+}
+
+class OverlayWindowManager: NSObject {
+    static let shared = OverlayWindowManager()
+    
+    private var overlayPanels: [NSScreen: OverlayPanel] = [:]
+    private var flutterVC: FlutterViewController?
+    private var originalWindow: NSWindow?
+    private var originalWindowWasVisible: Bool = false
+    private var mouseMonitor: Any?
+    
+    func showOverlay(args: [String: Any]? = nil) {
+        if !overlayPanels.isEmpty { return }
+        
+        guard let appDelegate = NSApp.delegate as? AppDelegate,
+              let mainWindow = appDelegate.mainFlutterWindow,
+              let vc = mainWindow.contentViewController as? FlutterViewController else {
+            return
+        }
+        
+        self.originalWindow = mainWindow
+        self.flutterVC = vc
+        self.originalWindowWasVisible = mainWindow.isVisible
+        
+        // Remove from main window and hide it
+        mainWindow.contentViewController = nil
+        mainWindow.orderOut(nil)
+        
+        let screens = NSScreen.screens
+        for screen in screens {
+            let panel = createOverlayPanel(for: screen)
+            overlayPanels[screen] = panel
+            panel.alphaValue = 0.0
+            panel.makeKeyAndOrderFront(nil)
+        }
+        
+        updateActiveScreen()
+        
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.4
+            for panel in overlayPanels.values {
+                panel.animator().alphaValue = 1.0
+            }
+        }
+        
+        // Monitor mouse movement to switch interactive UI between screens
+        mouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved]) { [weak self] event in
+            self?.updateActiveScreen()
+            return event
+        }
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+    }
+    
+    func hideOverlay() {
+        if overlayPanels.isEmpty { return }
+        
+        if let monitor = mouseMonitor {
+            NSEvent.removeMonitor(monitor)
+            mouseMonitor = nil
+        }
+        
+        let panels = Array(overlayPanels.values)
+        overlayPanels.removeAll()
+        
+        NSAnimationContext.runAnimationGroup({ context in
+            context.duration = 0.3
+            for panel in panels {
+                panel.animator().alphaValue = 0.0
+            }
+        }, completionHandler: {
+            // Restore flutter VC to original window
+            if let vc = self.flutterVC, let original = self.originalWindow {
+                vc.view.removeFromSuperview()
+                original.contentViewController = vc
+                if self.originalWindowWasVisible {
+                    original.makeKeyAndOrderFront(nil)
+                }
+            }
+            
+            for panel in panels {
+                panel.orderOut(nil)
+            }
+            self.flutterVC = nil
+            self.originalWindow = nil
+        })
+        
+        NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+    }
+    
+    private func updateActiveScreen() {
+        let mouseLocation = NSEvent.mouseLocation
+        guard let activeScreen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }),
+              let activePanel = overlayPanels[activeScreen],
+              let vc = flutterVC else {
+            return
+        }
+        
+        if vc.view.window != activePanel {
+            vc.view.removeFromSuperview()
+            activePanel.contentView?.addSubview(vc.view)
+            vc.view.frame = activePanel.contentView?.bounds ?? .zero
+            vc.view.autoresizingMask = [.width, .height]
+            activePanel.makeKey()
+        }
+    }
+    
+    func setClickThrough(_ enabled: Bool) {
+        for panel in overlayPanels.values {
+            panel.ignoresMouseEvents = enabled
+        }
+    }
+    
+    @objc private func screenParametersChanged() {
+        hideOverlay()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.showOverlay()
+        }
+    }
+    
+    private func createOverlayPanel(for screen: NSScreen) -> OverlayPanel {
+        let panel = OverlayPanel(
+            contentRect: screen.frame,
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        
+        panel.backgroundColor = .clear
+        panel.isOpaque = false
+        panel.hasShadow = false
+        panel.level = .screenSaver
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        panel.ignoresMouseEvents = false
+        
+        let visualEffectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: screen.frame.size))
+        visualEffectView.material = .hudWindow
+        visualEffectView.blendingMode = .behindWindow
+        visualEffectView.state = .active
+        visualEffectView.autoresizingMask = [.width, .height]
+        
+        panel.contentView = visualEffectView
+        panel.setFrame(screen.frame, display: true)
+        
+        return panel
+    }
+}
+
 class MainFlutterWindow: NSWindow {
   private var bridgeChannel: FlutterMethodChannel?
 
@@ -13,20 +164,12 @@ class MainFlutterWindow: NSWindow {
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
 
-    // Configure window to stay in background - NOT on all desktops
     self.isOpaque = false
     self.hasShadow = true
-    self.level = .normal  // Normal window level (not floating)
-    self.collectionBehavior = [.managed, .moveToActiveSpace]  // Only show in current space
-    self.isMovableByWindowBackground = false
+    self.backgroundColor = .clear
+    self.titleVisibility = .hidden
+    self.titlebarAppearsTransparent = true
     
-    // Enable vibrancy (macOS acrylic-like effect)
-    self.backgroundColor = NSColor.clear
-    self.contentViewController?.view.wantsLayer = true
-    
-    // Set window to be transparent
-    self.alphaValue = 1.0
-
     super.awakeFromNib()
   }
 
@@ -36,61 +179,41 @@ class MainFlutterWindow: NSWindow {
       binaryMessenger: binaryMessenger
     )
 
-    bridgeChannel?.setMethodCallHandler { [weak self] call, result in
-      guard let self = self else {
-        result(FlutterError(code: "WINDOW_NOT_FOUND", message: "MainFlutterWindow not found", details: nil))
-        return
-      }
-
+    bridgeChannel?.setMethodCallHandler { call, result in
       switch call.method {
       case "showOverlay":
-        if self.isMiniaturized { self.deminiaturize(nil) }
-        self.configureAsOverlay()
-        NSApp.activate(ignoringOtherApps: true)
-        self.makeKeyAndOrderFront(nil)
+        OverlayWindowManager.shared.showOverlay(args: call.arguments as? [String: Any])
         result(nil)
 
       case "hideOverlay":
-        self.resetToNormal()
+        OverlayWindowManager.shared.hideOverlay()
         result(nil)
 
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
            let level = args["level"] as? String {
-          self.setWindowLevel(level)
+          self.setNativeWindowLevel(level)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing level", details: nil))
         }
 
-      case "setPresentationOptions":
-        if let args = call.arguments as? [String: Any],
-           let hideDock = args["hideDock"] as? Bool,
-           let hideMenu = args["hideMenu"] as? Bool {
-          self.setPresentationOptions(hideDock: hideDock, hideMenu: hideMenu)
-          result(nil)
-        } else {
-          result(FlutterError(code: "INVALID_ARGS", message: "Missing args", details: nil))
-        }
-
       case "getIdleTime":
-        result(self.getIdleTime())
-
-      case "getAppearance":
-        let isDark = NSAppearance.current.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        result(isDark ? "dark" : "light")
+        let anyEvent = CGEventType(rawValue: ~0)!
+        let idle = CGEventSource.secondsSinceLastEventType(CGEventSourceStateID.combinedSessionState, eventType: anyEvent)
+        result(idle)
 
       case "focusApp":
-        if self.isMiniaturized { self.deminiaturize(nil) }
         NSApp.activate(ignoringOtherApps: true)
-        self.makeKeyAndOrderFront(nil)
         result(nil)
 
-      case "getFrontmostApp":
-        result(NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
-
-      case "isFocusModeActive":
-        result(self.checkFocusModeActive())
+      case "setIgnoreMouseEvents":
+        if let args = call.arguments as? [String: Any], let ignore = args["ignore"] as? Bool {
+          OverlayWindowManager.shared.setClickThrough(ignore)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
+        }
 
       default:
         result(FlutterMethodNotImplemented)
@@ -98,83 +221,11 @@ class MainFlutterWindow: NSWindow {
     }
   }
 
-  private func setWindowLevel(_ level: String) {
+  private func setNativeWindowLevel(_ level: String) {
     switch level {
-    case "screenSaver":
-      self.level = .screenSaver
-      self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-    case "floating":
-      self.level = .floating
-      self.collectionBehavior = [.canJoinAllSpaces]
-    default:
-      self.level = .normal
-      self.collectionBehavior = [.moveToActiveSpace, .managed]
+    case "screenSaver": self.level = .screenSaver
+    case "floating": self.level = .floating
+    default: self.level = .normal
     }
-  }
-
-  private func setPresentationOptions(hideDock: Bool, hideMenu: Bool) {
-    var options: NSApplication.PresentationOptions = []
-    if hideDock {
-      options.insert(.hideDock)
-      options.insert(.autoHideDock)
-    }
-    if hideMenu {
-      options.insert(.hideMenuBar)
-      options.insert(.autoHideMenuBar)
-    }
-    NSApp.presentationOptions = options
-  }
-
-  private func getIdleTime() -> Double {
-    let anyEvent = CGEventType(rawValue: ~0)!
-    return CGEventSource.secondsSinceLastEventType(
-      CGEventSourceStateID.combinedSessionState,
-      eventType: anyEvent
-    )
-  }
-
-  private func checkFocusModeActive() -> Bool {
-    let path = NSString(string: "~/Library/Preferences/com.apple.notificationcenterui.plist").expandingTildeInPath
-    if let prefs = NSDictionary(contentsOfFile: path),
-       let dndEnabled = prefs["doNotDisturb"] as? Bool {
-      return dndEnabled
-    }
-    return false
-  }
-
-  /// Configure this window as a full-screen overlay
-  func configureAsOverlay() {
-    self.isOpaque = false
-    self.hasShadow = false
-    self.level = .screenSaver  // Higher level for overlay only
-    self.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
-    self.styleMask = [.borderless]
-    self.isMovableByWindowBackground = false
-    self.ignoresMouseEvents = false
-    self.backgroundColor = NSColor.black.withAlphaComponent(0.95)
-    
-    // Ensure the content view covers the entire window
-    if let screen = self.screen ?? NSScreen.main {
-        self.setFrame(screen.frame, display: true)
-    }
-  }
-
-  /// Configure this window to ignore mouse events (click-through)
-  func setIgnoreMouseEvents(_ ignore: Bool) {
-    self.ignoresMouseEvents = ignore
-  }
-  
-  /// Reset window to normal state (background, not on top)
-  func resetToNormal() {
-    self.level = .normal  // Normal level - not on top
-    self.collectionBehavior = [.managed, .moveToActiveSpace]  // Only current space
-    self.styleMask = [.titled, .closable, .miniaturizable, .resizable]
-    self.isMovableByWindowBackground = true
-    self.ignoresMouseEvents = false
-    self.hasShadow = true
-    self.backgroundColor = NSColor.windowBackgroundColor
-    
-    // Resize back to a reasonable size if it was full screen
-    // or just let Flutter handle resizing via window_manager
   }
 }

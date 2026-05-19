@@ -8,6 +8,7 @@ import 'package:standup/app/app.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
+import 'package:standup/features/break_system/presentation/standalone_break_overlay.dart';
 import 'package:standup/features/flash_overlay/flash_overlay_service.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
@@ -26,14 +27,13 @@ void main() async {
 
       ServerSocket? singleInstanceServer;
 
-      // Single instance check via Socket. A second launch opens the existing
-      // hidden dashboard instead of silently exiting.
+      // Single instance check via Socket.
       try {
         singleInstanceServer =
             await ServerSocket.bind(InternetAddress.loopbackIPv4, 10425);
-        debugPrint('Startup: Port 10425 bound (single instance check passed)');
+        debugPrint('Startup: Port 10425 bound');
       } catch (e) {
-        debugPrint('Startup: Port 10425 already in use - another instance is running ($e)');
+        debugPrint('Startup: Port 10425 already in use - another instance is running');
         try {
           final socket = await Socket.connect(
             InternetAddress.loopbackIPv4,
@@ -44,19 +44,16 @@ void main() async {
           await socket.flush();
           await socket.close();
         } catch (signalError) {
-          debugPrint('Startup: Could not signal existing instance ($signalError)');
+          debugPrint('Startup: Could not signal existing instance');
         }
         exit(0);
       }
 
       // Initialize all dependencies
-      debugPrint('Startup: Initializing dependencies...');
       await initDependencies();
-      debugPrint('Startup: Dependencies initialized');
 
       // Initialize Window Manager
       await windowManager.ensureInitialized();
-      debugPrint('Startup: Window Manager initialized');
 
       WindowOptions windowOptions = const WindowOptions(
         size: Size(1100, 750),
@@ -69,9 +66,7 @@ void main() async {
 
       await windowManager.waitUntilReadyToShow(windowOptions, () async {
         await windowManager.setPreventClose(true);
-        // We start hidden as it's a tray app - NOT always on top
         await windowManager.hide();
-        debugPrint('Startup: Window ready and hidden');
       });
 
       singleInstanceServer.listen((client) {
@@ -92,21 +87,18 @@ void main() async {
             appName: packageInfo.appName,
             appPath: Platform.resolvedExecutable,
           );
-          debugPrint('Startup: Launch at startup configured');
         }
       } catch (e) {
         debugPrint('Launch at startup setup failed: $e');
       }
 
-      // Start flash overlay timer for periodic posture reminders
+      // Start flash overlay timer
       final flashOverlayService = sl<FlashOverlayService>();
       flashOverlayService.startTimer();
-      debugPrint('Startup: Flash overlay timer started (20 min interval)');
 
       runApp(
         const BreakMateApp(),
       );
-      debugPrint('Startup: app running');
     } catch (e, stack) {
       debugPrint('FATAL STARTUP ERROR: $e');
       debugPrint(stack.toString());
@@ -116,4 +108,15 @@ void main() async {
     debugPrint('ZONED ERROR: $error');
     debugPrint(stack.toString());
   });
+}
+
+@pragma('vm:entry-point')
+void overlayMain() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: StandaloneBreakOverlay(),
+    ),
+  );
 }
