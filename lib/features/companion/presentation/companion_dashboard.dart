@@ -9,7 +9,6 @@ import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/shared/widgets/animated_number.dart';
 
 class CompanionDashboard extends StatelessWidget {
-
   const CompanionDashboard({super.key});
 
   @override
@@ -18,7 +17,7 @@ class CompanionDashboard extends StatelessWidget {
       builder: (context, breakController, statsService, _) {
         final stats = statsService.load();
         final nextBreak = breakController.timerEngine.timeUntilNextShortBreak;
-        
+
         return LayoutBuilder(
           builder: (context, constraints) {
             final isNarrow = constraints.maxWidth < 750;
@@ -63,7 +62,11 @@ class CompanionDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildMainStatus(BreakController controller, Duration nextBreak, bool isNarrow) {
+  Widget _buildMainStatus(
+    BreakController controller,
+    Duration nextBreak,
+    bool isNarrow,
+  ) {
     final isPaused = controller.isPaused;
     final mins = nextBreak.inMinutes;
     final secs = (nextBreak.inSeconds % 60).toString().padLeft(2, '0');
@@ -80,15 +83,24 @@ class CompanionDashboard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: (isPaused ? AppTheme.upcomingBreakColor : AppTheme.accentColor).withValues(alpha: 0.1),
+                      color:
+                          (isPaused
+                                  ? AppTheme.upcomingBreakColor
+                                  : AppTheme.accentColor)
+                              .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
                       isPaused ? 'TIMER PAUSED' : 'DEEP FOCUS ACTIVE',
                       style: AppTheme.sectionTitle.copyWith(
-                        color: isPaused ? AppTheme.upcomingBreakColor : AppTheme.accentColor,
+                        color: isPaused
+                            ? AppTheme.upcomingBreakColor
+                            : AppTheme.accentColor,
                         fontSize: 9,
                         letterSpacing: 1.2,
                       ),
@@ -107,7 +119,9 @@ class CompanionDashboard extends StatelessWidget {
             ),
             const SizedBox(width: 16),
             _buildActionButton(
-              icon: isPaused ? CupertinoIcons.play_fill : CupertinoIcons.pause_fill,
+              icon: isPaused
+                  ? CupertinoIcons.play_fill
+                  : CupertinoIcons.pause_fill,
               onTap: () => controller.togglePause(),
               size: isNarrow ? 44 : 56,
             ),
@@ -144,7 +158,10 @@ class CompanionDashboard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       'points',
-                      style: AppTheme.subHeaderStyle.copyWith(color: AppTheme.textMuted, fontSize: 14),
+                      style: AppTheme.subHeaderStyle.copyWith(
+                        color: AppTheme.textMuted,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
@@ -171,7 +188,9 @@ class CompanionDashboard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(4),
                           boxShadow: [
                             BoxShadow(
-                              color: AppTheme.accentColor.withValues(alpha: 0.3),
+                              color: AppTheme.accentColor.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -189,7 +208,12 @@ class CompanionDashboard extends StatelessWidget {
       SizedBox(width: isNarrow ? 0 : 20, height: isNarrow ? 20 : 0),
       Expanded(
         flex: isNarrow ? 0 : 1,
-        child: _buildMiniStat('STREAK', '${stats.currentStreak}d', CupertinoIcons.flame_fill, const Color(0xFFFF9F0A)),
+        child: _buildMiniStat(
+          'STREAK',
+          '${stats.currentStreak}d',
+          CupertinoIcons.flame_fill,
+          const Color(0xFFFF9F0A),
+        ),
       ),
     ];
 
@@ -223,14 +247,29 @@ class CompanionDashboard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text('$label: ', style: TextStyle(color: AppTheme.textMuted, fontSize: 10)),
-          Text(value, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w600)),
+          Text(
+            '$label: ',
+            style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMiniStat(String label, String value, IconData icon, Color color) {
+  Widget _buildMiniStat(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return _buildHoverGlass(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
@@ -246,14 +285,14 @@ class CompanionDashboard extends StatelessWidget {
               child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 16),
-            Text(
-              value,
-              style: AppTheme.headerStyle.copyWith(fontSize: 28),
-            ),
+            Text(value, style: AppTheme.headerStyle.copyWith(fontSize: 28)),
             const SizedBox(height: 4),
             Text(
               label,
-              style: AppTheme.sectionTitle.copyWith(fontSize: 10, color: AppTheme.textMuted),
+              style: AppTheme.sectionTitle.copyWith(
+                fontSize: 10,
+                color: AppTheme.textMuted,
+              ),
             ),
           ],
         ),
@@ -273,14 +312,16 @@ class CompanionDashboard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('PRODUCTIVITY TREND', style: AppTheme.sectionTitle),
-                Icon(CupertinoIcons.ellipsis_vertical, size: 14, color: AppTheme.textMuted),
+                Icon(
+                  CupertinoIcons.ellipsis_vertical,
+                  size: 14,
+                  color: AppTheme.textMuted,
+                ),
               ],
             ),
             const SizedBox(height: 32),
             ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: isNarrow ? 140 : 180,
-              ),
+              constraints: BoxConstraints(maxHeight: isNarrow ? 140 : 180),
               child: const ProductivityTrendChart(),
             ),
           ],
@@ -313,9 +354,19 @@ class CompanionDashboard extends StatelessWidget {
     if (isNarrow) {
       return Column(
         children: [
-          _buildWellnessCard('Hydration', '4/8 cups', CupertinoIcons.drop_fill, const Color(0xFF64D2FF)),
+          _buildWellnessCard(
+            'Hydration',
+            '4/8 cups',
+            CupertinoIcons.drop_fill,
+            const Color(0xFF64D2FF),
+          ),
           const SizedBox(height: 16),
-          _buildWellnessCard('Eye Care', 'Good', CupertinoIcons.eye_fill, const Color(0xFF32D74B)),
+          _buildWellnessCard(
+            'Eye Care',
+            'Good',
+            CupertinoIcons.eye_fill,
+            const Color(0xFF32D74B),
+          ),
         ],
       );
     }
@@ -323,7 +374,12 @@ class CompanionDashboard extends StatelessWidget {
     return Row(children: children);
   }
 
-  Widget _buildWellnessCard(String title, String status, IconData icon, Color color) {
+  Widget _buildWellnessCard(
+    String title,
+    String status,
+    IconData icon,
+    Color color,
+  ) {
     return _buildHoverGlass(
       child: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -335,9 +391,22 @@ class CompanionDashboard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTheme.sectionTitle.copyWith(fontSize: 10, color: AppTheme.textMuted)),
+                  Text(
+                    title,
+                    style: AppTheme.sectionTitle.copyWith(
+                      fontSize: 10,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text(status, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 15)),
+                  Text(
+                    status,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      fontSize: 15,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -354,12 +423,12 @@ class CompanionDashboard extends StatelessWidget {
         tween: Tween<double>(begin: 0, end: 1),
         duration: const Duration(milliseconds: 200),
         builder: (context, value, animChild) {
+          final scale = 1.0 + (0.01 * value);
           return AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            transform: Matrix4.identity()..scale(1.0 + (0.01 * value)), // Subtle scale
-            child: AppTheme.glassContainer(
-              child: animChild!,
-            ),
+            transform: Matrix4.identity()
+              ..scaleByDouble(scale, scale, 1.0, 1.0),
+            child: AppTheme.glassContainer(child: animChild!),
           );
         },
         child: child,
@@ -367,7 +436,11 @@ class CompanionDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton({required IconData icon, required VoidCallback onTap, double size = 56}) {
+  Widget _buildActionButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    double size = 56,
+  }) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
@@ -375,10 +448,8 @@ class CompanionDashboard extends StatelessWidget {
         child: TweenAnimationBuilder(
           tween: Tween<double>(begin: 1.0, end: 1.0),
           duration: const Duration(milliseconds: 100),
-          builder: (context, value, child) => Transform.scale(
-            scale: value,
-            child: child,
-          ),
+          builder: (context, value, child) =>
+              Transform.scale(scale: value, child: child),
           child: Container(
             width: size,
             height: size,

@@ -125,7 +125,7 @@ class _MainLayoutState extends State<MainLayout> {
         preferredSize: const Size.fromHeight(52),
         child: Container(
           decoration: BoxDecoration(
-            color: AppTheme.sidebarBackground.withOpacity(0.8),
+            color: AppTheme.sidebarBackground.withValues(alpha: 0.8),
             border: const Border(bottom: BorderSide(color: AppTheme.borderColor, width: 0.5)),
           ),
           child: SafeArea(

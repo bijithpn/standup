@@ -97,7 +97,6 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
           await windowManager.setPreventClose(false);
           await windowManager.destroy();
           exit(0);
-          break;
       }
     };
 
