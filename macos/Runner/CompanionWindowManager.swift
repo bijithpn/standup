@@ -3,19 +3,11 @@ import FlutterMacOS
 
 class CompanionPanel: NSPanel {
     override var canBecomeKey: Bool {
-        return false // Floating companion never steals keyboard focus
+        return false
     }
     
     override var canBecomeMain: Bool {
         return false
-    }
-}
-
-class CompanionViewController: FlutterViewController {
-    override func mouseDown(with event: NSEvent) {
-        // Allow the user to drag the floating window from anywhere within the Flutter view
-        self.view.window?.performDrag(with: event)
-        super.mouseDown(with: event)
     }
 }
 
@@ -37,7 +29,6 @@ class CompanionWindowManager: NSObject {
     /// Spawns the transparent, borderless floating companion panel on screen.
     func showCompanion(args: [String: Any]?) {
         guard instance == nil else {
-            // Already active, just update parameters
             if let args = args {
                 updateCompanionParams(args: args)
             }
@@ -66,38 +57,91 @@ class CompanionWindowManager: NSObject {
         window.backgroundColor = .clear
         window.isOpaque = false
         window.hasShadow = false
-        window.level = .floating // Float persistently above regular windows
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        window.level = .floating
+        window.collectionBehavior = [
+            .canJoinAllSpaces,
+            .fullScreenAuxiliary,
+            .ignoresCycle,
+            .stationary
+        ]
         
-        // CRITICAL: Enables standard native click-to-drag anywhere on non-transparent elements of the pet!
-        window.isMovableByWindowBackground = true
+        // CRITICAL: Do NOT ignore mouse events — we need them for drag & cat interaction
+        window.ignoresMouseEvents = false
         
-        // Spawn a fresh, dedicated engine for the Flame rendering thread
-        let engine = FlutterEngine(name: "CompanionEngine", project: nil, allowHeadlessExecution: true)
+        // Spawn a fresh, dedicated Flutter engine with its own Dart isolate.
+        let engine = FlutterEngine(
+            name: "CompanionEngine",
+            project: nil,
+            allowHeadlessExecution: true
+        )
         engine.run(withEntrypoint: "companionMain")
-        
-        // Register standard plugins (allows MethodChannels, shared preferences, etc.)
         RegisterGeneratedPlugins(registry: engine)
         
-        let controller = CompanionViewController(engine: engine, nibName: nil, bundle: nil)
+        finishCompanionSetup(
+            engine: engine,
+            window: window,
+            frame: frame,
+            args: args
+        )
+    }
+    
+    private func finishCompanionSetup(
+        engine: FlutterEngine,
+        window: CompanionPanel,
+        frame: NSRect,
+        args: [String: Any]?
+    ) {
+        let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
         controller.backgroundColor = .clear
         controller.view.wantsLayer = true
         controller.view.layer?.backgroundColor = NSColor.clear.cgColor
         
-        // Make the Flutter content stretch fully
         controller.view.autoresizingMask = [.width, .height]
-        controller.view.frame = NSRect(origin: .zero, size: frame.size)
+        controller.view.frame = frame
         
         window.contentView = controller.view
         
         instance = CompanionInstance(window: window, engine: engine, controller: controller)
         
-        // Parse arguments for initial state mapping
+        // Setup MethodChannel for native drag tracking and overlay synchronization
+        let channel = FlutterMethodChannel(
+            name: "com.breakmate.macos/companion_data",
+            binaryMessenger: engine.binaryMessenger
+        )
+        channel.setMethodCallHandler { [weak self] (call, result) in
+            guard let self = self else {
+                result(FlutterMethodNotImplemented)
+                return
+            }
+            if call.method == "syncCompanionSettings" {
+                if let args = call.arguments as? [String: Any],
+                   let positionDelta = args["positionDelta"] as? [String: Any] {
+                    let dx = (positionDelta["dx"] as? NSNumber)?.doubleValue ?? 0.0
+                    let dy = (positionDelta["dy"] as? NSNumber)?.doubleValue ?? 0.0
+                    DispatchQueue.main.async {
+                        self.moveCompanionWindow(dx: dx, dy: dy)
+                    }
+                }
+                result(nil)
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
+        }
+        
         if let args = args {
             updateCompanionParams(args: args)
         }
         
         window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+    
+    private func moveCompanionWindow(dx: Double, dy: Double) {
+        guard let inst = instance else { return }
+        var frame = inst.window.frame
+        frame.origin.x += CGFloat(dx)
+        frame.origin.y -= CGFloat(dy)
+        inst.window.setFrame(frame, display: true)
     }
     
     /// Dynamic companion updater. Passes changes down to the companion Flutter engine.
@@ -167,5 +211,28 @@ class CompanionWindowManager: NSObject {
             binaryMessenger: inst.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["wanderingEnabled": enabled])
+    }
+    
+    /// Updates window level for always-on-top behavior
+    func setAlwaysOnTop(_ enabled: Bool) {
+        instance?.window.level = enabled ? .floating : .normal
+    }
+    
+    /// Moves the companion window to a specific position
+    func setPosition(x: Double, y: Double) {
+        guard let inst = instance else { return }
+        var frame = inst.window.frame
+        frame.origin.x = x
+        frame.origin.y = y
+        inst.window.setFrame(frame, display: true)
+    }
+    
+    /// Resizes the companion window
+    func setSize(width: Double, height: Double) {
+        guard let inst = instance else { return }
+        var frame = inst.window.frame
+        frame.size.width = width
+        frame.size.height = height
+        inst.window.setFrame(frame, display: true)
     }
 }

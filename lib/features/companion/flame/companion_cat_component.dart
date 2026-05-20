@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/flame/companion_game.dart';
 
-class CompanionCatComponent extends SpriteAnimationGroupComponent<CatAnimationState> with HasGameReference {
+class CompanionCatComponent extends SpriteAnimationGroupComponent<CatAnimationState>
+    with HasGameReference<CompanionGame>, TapCallbacks, HoverCallbacks {
   // Movement velocities
   double _direction = 1.0; // 1.0 = Right, -1.0 = Left
   double _speed = 0.0;
@@ -16,6 +19,9 @@ class CompanionCatComponent extends SpriteAnimationGroupComponent<CatAnimationSt
   final Random _random = Random();
   double _behaviorTimer = 0.0;
   bool _isWanderingEnabled = true;
+
+  // Interaction state
+  CatAnimationState? _interactionRevertState;
 
   CompanionCatComponent({
     required Map<CatAnimationState, SpriteAnimation> animations,
@@ -183,5 +189,54 @@ class CompanionCatComponent extends SpriteAnimationGroupComponent<CatAnimationSt
     paint.filterQuality = FilterQuality.medium;
     super.render(canvas);
     canvas.restore();
+  }
+
+  // --- TapCallbacks (click interaction) ---
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    final currentState = current;
+    if (currentState != null && !_isNonLoopingState(currentState)) {
+      _interactionRevertState = currentState;
+    }
+    game.onUserInteraction('tap');
+    changeState(CatAnimationState.excited);
+  }
+
+  @override
+  void onTapUp(TapUpEvent event) {
+    game.onUserInteraction('doubleTap');
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (_interactionRevertState != null) {
+        changeState(_interactionRevertState!);
+        _interactionRevertState = null;
+      } else {
+        changeState(CatAnimationState.idle);
+      }
+    });
+  }
+
+  @override
+  void onHoverEnter() {
+    game.onUserInteraction('hover');
+    final currentState = current;
+    if (currentState == CatAnimationState.idle || currentState == CatAnimationState.walk) {
+      _interactionRevertState = currentState;
+      changeState(CatAnimationState.notification);
+    }
+  }
+
+  @override
+  void onHoverExit() {
+    if (_interactionRevertState != null) {
+      changeState(_interactionRevertState!);
+      _interactionRevertState = null;
+    }
+  }
+
+  bool _isNonLoopingState(CatAnimationState state) {
+    return state == CatAnimationState.celebrate ||
+           state == CatAnimationState.excited ||
+           state == CatAnimationState.notification;
   }
 }

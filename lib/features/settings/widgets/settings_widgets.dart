@@ -1,0 +1,479 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:standup/shared/theme/app_theme.dart';
+
+Widget sectionHeader(String title, {String? subtitle}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12, left: 0, top: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+            letterSpacing: -0.2,
+            fontFamily: 'Satoshi',
+          ),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+              fontFamily: 'Satoshi',
+            ),
+          ),
+        ],
+      ],
+    ),
+  );
+}
+
+Widget buildCard(List<Widget> children) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 24),
+    decoration: AppTheme.cleanCardDecoration.copyWith(
+      color: AppTheme.cardBackground.withValues(alpha: 0.4),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+    ),
+    clipBehavior: Clip.antiAlias,
+    child: Column(children: children),
+  );
+}
+
+Widget divider() {
+  return Divider(
+    height: 1,
+    thickness: 0.5,
+    color: AppTheme.separatorColor,
+    indent: 16,
+    endIndent: 16,
+  );
+}
+
+Widget toggleRow(
+  String label,
+  String subtitle,
+  bool value,
+  ValueChanged<bool> onChanged,
+) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    child: Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppTheme.textPrimary,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                  letterSpacing: 0,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        CupertinoSwitch(
+          value: value,
+          activeTrackColor: AppTheme.accentColor,
+          onChanged: onChanged,
+        ),
+      ],
+    ),
+  );
+}
+
+Widget inputRow(String label, String value, {VoidCallback? onTap}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: AppTheme.textPrimary,
+              fontFamily: 'Satoshi',
+            ),
+          ),
+        ),
+        CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.1),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: AppTheme.accentColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  CupertinoIcons.chevron_up_chevron_down,
+                  size: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget sliderRow(
+  String label,
+  double value,
+  ValueChanged<double> onChanged, {
+  double min = 0.0,
+  double max = 1.0,
+}) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final isSmallScreen = constraints.maxWidth < 500;
+      final padding = isSmallScreen ? 16.0 : 20.0;
+
+      return Padding(
+        padding: EdgeInsets.all(padding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: isSmallScreen ? 13 : 14,
+                      color: Colors.white.withValues(alpha: 0.9),
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: isSmallScreen ? 120 : 180,
+                  child: CupertinoSlider(
+                    value: value.clamp(min, max),
+                    min: min,
+                    max: max,
+                    onChanged: onChanged,
+                    activeColor: AppTheme.accentColor,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget dropdownRow(
+  String label,
+  String value,
+  List<String> options,
+  ValueChanged<String?> onChanged,
+) {
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      final isSmallScreen = constraints.maxWidth < 500;
+      final padding = isSmallScreen ? 16.0 : 20.0;
+
+      return Padding(
+        padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: isSmallScreen ? 13 : 14,
+                  color: Colors.white.withValues(alpha: 0.9),
+                ),
+              ),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: options.contains(value)
+                        ? value
+                        : (options.isNotEmpty ? options.first : null),
+                    dropdownColor: const Color(0xFF1E1E1E),
+                    icon: const Icon(
+                      CupertinoIcons.chevron_down,
+                      size: 14,
+                      color: AppTheme.accentColor,
+                    ),
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: isSmallScreen ? 11 : 12,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Satoshi',
+                    ),
+                    onChanged: onChanged,
+                    items: options.map<DropdownMenuItem<String>>((
+                      String option,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: option,
+                        child: Text(option.toUpperCase()),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget textFieldRow(
+  String label,
+  String value,
+  ValueChanged<String> onChanged,
+) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(width: 24),
+        Expanded(
+          child: CupertinoTextField(
+            placeholder: value,
+            placeholderStyle: TextStyle(
+              color: Colors.white.withValues(alpha: 0.3),
+              fontSize: 13,
+            ),
+            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            onSubmitted: onChanged,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget buildListRow(
+  String label,
+  String subtitle,
+  bool? value,
+  IconData icon,
+  ValueChanged<bool>? onChanged, {
+  VoidCallback? onTap,
+  Widget? trailing,
+}) {
+  final content = Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    child: Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: AppTheme.accentColor, size: 18),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        if (value != null)
+          CupertinoSwitch(
+            value: value,
+            onChanged: onChanged,
+            activeTrackColor: AppTheme.accentColor,
+          ),
+        // ignore: use_null_aware_elements
+        if (trailing != null) trailing,
+      ],
+    ),
+  );
+
+  if (onTap != null) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: onTap,
+      child: content,
+    );
+  }
+
+  return content;
+}
+
+Widget inlineDropdown(
+  String value,
+  List<String> options,
+  ValueChanged<String?> onChanged,
+) {
+  return Material(
+    type: MaterialType.transparency,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: options.contains(value)
+              ? value
+              : (options.isNotEmpty ? options.first : null),
+          dropdownColor: const Color(0xFF1E1E1E),
+          icon: const Icon(
+            CupertinoIcons.chevron_down,
+            size: 12,
+            color: Colors.white54,
+          ),
+          style: const TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Satoshi',
+          ),
+          onChanged: onChanged,
+          items: options.map<DropdownMenuItem<String>>((String option) {
+            return DropdownMenuItem<String>(
+              value: option,
+              child: Text(option.toUpperCase()),
+            );
+          }).toList(),
+        ),
+      ),
+    ),
+  );
+}
+
+void showPicker({
+  required BuildContext context,
+  required String title,
+  required List<String> options,
+  required String suffix,
+  required ValueChanged<String> onSelected,
+}) {
+  showCupertinoModalPopup(
+    context: context,
+    builder: (context) => CupertinoActionSheet(
+      title: Text(title),
+      actions: options
+          .map(
+            (opt) => CupertinoActionSheetAction(
+              onPressed: () {
+                onSelected(opt);
+                Navigator.pop(context);
+              },
+              child: Text('$opt$suffix'),
+            ),
+          )
+          .toList(),
+      cancelButton: CupertinoActionSheetAction(
+        onPressed: () => Navigator.pop(context),
+        isDefaultAction: true,
+        child: const Text('Cancel'),
+      ),
+    ),
+  );
+}
+
+List<String> timeOptions() {
+  return [
+    for (var hour = 0; hour < 24; hour++)
+      for (final minute in const [0, 30])
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+  ];
+}
