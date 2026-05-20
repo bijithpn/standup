@@ -136,12 +136,45 @@ class CompanionWindowManager: NSObject {
         NSApp.activate(ignoringOtherApps: true)
     }
     
+    private func clampFrameToScreen(_ frame: NSRect, for window: NSWindow) -> NSRect {
+        var clampedFrame = frame
+        let centerPoint = CGPoint(x: frame.midX, y: frame.midY)
+        var targetScreen = window.screen
+        for s in NSScreen.screens {
+            if s.frame.contains(centerPoint) {
+                targetScreen = s
+                break
+            }
+        }
+        
+        if let screen = targetScreen ?? NSScreen.main ?? NSScreen.screens.first {
+            let visibleFrame = screen.visibleFrame
+            
+            // Keep window horizontally within visible screen bounds
+            if clampedFrame.origin.x < visibleFrame.minX {
+                clampedFrame.origin.x = visibleFrame.minX
+            } else if clampedFrame.origin.x + clampedFrame.size.width > visibleFrame.maxX {
+                clampedFrame.origin.x = visibleFrame.maxX - clampedFrame.size.width
+            }
+            
+            // Keep window vertically within visible screen bounds (below Menu Bar, above Dock)
+            if clampedFrame.origin.y < visibleFrame.minY {
+                clampedFrame.origin.y = visibleFrame.minY
+            } else if clampedFrame.origin.y + clampedFrame.size.height > visibleFrame.maxY {
+                clampedFrame.origin.y = visibleFrame.maxY - clampedFrame.size.height
+            }
+        }
+        return clampedFrame
+    }
+    
     private func moveCompanionWindow(dx: Double, dy: Double) {
         guard let inst = instance else { return }
         var frame = inst.window.frame
         frame.origin.x += CGFloat(dx)
         frame.origin.y -= CGFloat(dy)
-        inst.window.setFrame(frame, display: true)
+        
+        let clampedFrame = clampFrameToScreen(frame, for: inst.window)
+        inst.window.setFrame(clampedFrame, display: true)
     }
     
     /// Dynamic companion updater. Passes changes down to the companion Flutter engine.
@@ -224,7 +257,8 @@ class CompanionWindowManager: NSObject {
         var frame = inst.window.frame
         frame.origin.x = x
         frame.origin.y = y
-        inst.window.setFrame(frame, display: true)
+        let clampedFrame = clampFrameToScreen(frame, for: inst.window)
+        inst.window.setFrame(clampedFrame, display: true)
     }
     
     /// Resizes the companion window
@@ -233,6 +267,7 @@ class CompanionWindowManager: NSObject {
         var frame = inst.window.frame
         frame.size.width = width
         frame.size.height = height
-        inst.window.setFrame(frame, display: true)
+        let clampedFrame = clampFrameToScreen(frame, for: inst.window)
+        inst.window.setFrame(clampedFrame, display: true)
     }
 }
