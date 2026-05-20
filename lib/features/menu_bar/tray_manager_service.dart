@@ -126,6 +126,22 @@ class TrayManagerService with TrayListener {
     }
   }
 
+  void triggerActionAnimation() {
+    if (_iconMode != TrayIconMode.cat) return;
+    
+    // Briefly show stretch or blink on action
+    final originalFrame = _catFrame;
+    _catFrame = _CatFrame.stretch;
+    _applyIcon();
+    
+    Timer(const Duration(milliseconds: 1200), () {
+      if (!_isBreakActive && !_isPaused) {
+        _catFrame = originalFrame;
+        _applyIcon();
+      }
+    });
+  }
+
   void setIconMode(TrayIconMode mode) {
     _iconMode = mode;
     _animTimer?.cancel();

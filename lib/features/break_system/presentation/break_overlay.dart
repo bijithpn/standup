@@ -2,15 +2,16 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/settings/exercise_model.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/break_overlay/presentation/widgets/breathing_assistant.dart';
+import 'package:standup/features/analytics/stats_service.dart';
+import 'package:standup/features/break_system/presentation/widgets/break_activity_graph.dart';
 
 class BreakOverlay extends StatefulWidget {
   const BreakOverlay({super.key});
@@ -23,7 +24,6 @@ class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMix
   late PageController _pageController;
   int _currentSlide = 0;
   Timer? _slideshowTimer;
-  late AnimationController _breathingController;
   late AnimationController _kenBurnsController;
 
   @override
@@ -32,11 +32,6 @@ class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMix
     _pageController = PageController();
     _startSlideshow();
     
-    _breathingController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat(reverse: true);
-
     _kenBurnsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
@@ -63,7 +58,6 @@ class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMix
   void dispose() {
     _slideshowTimer?.cancel();
     _pageController.dispose();
-    _breathingController.dispose();
     _kenBurnsController.dispose();
     super.dispose();
   }
@@ -86,7 +80,6 @@ class _BreakOverlayState extends State<BreakOverlay> with TickerProviderStateMix
           controller: controller,
           pageController: _pageController,
           kenBurnsController: _kenBurnsController,
-          breathingController: _breathingController,
         );
       },
     );
@@ -100,7 +93,6 @@ class _BreakOverlayContent extends StatefulWidget {
   final BreakController controller;
   final PageController pageController;
   final AnimationController kenBurnsController;
-  final AnimationController breathingController;
 
   const _BreakOverlayContent({
     required this.breakInfo,
@@ -109,7 +101,6 @@ class _BreakOverlayContent extends StatefulWidget {
     required this.controller,
     required this.pageController,
     required this.kenBurnsController,
-    required this.breathingController,
   });
 
   @override
@@ -119,261 +110,190 @@ class _BreakOverlayContent extends StatefulWidget {
 class _BreakOverlayContentState extends State<_BreakOverlayContent> {
   @override
   Widget build(BuildContext context) {
+    final stats = Provider.of<StatsService>(context, listen: false).load();
+    final weeklyData = stats.weeklyData.map((d) => d.breaksCompleted).toList();
+    
     return Material(
-      color: Colors.transparent,
+      color: Colors.black,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Layer with Ken Burns Effect (Subtle)
+          // Background Layer with Blur
           AnimatedBuilder(
             animation: widget.kenBurnsController,
             builder: (context, child) {
-              return PageView.builder(
-                controller: widget.pageController,
-                itemCount: AppConstants.wellnessSlideshow.length,
-                physics: const NeverScrollableScrollPhysics(),
-                itemBuilder: (context, index) {
-                  return Transform.scale(
-                    scale: 1.1 + (0.1 * widget.kenBurnsController.value),
-                    child: Image.asset(
-                      AppConstants.wellnessSlideshow[index],
-                      fit: BoxFit.cover,
-                      color: Colors.black.withValues(alpha: 0.3), // More transparent
-                      colorBlendMode: BlendMode.darken,
-                    ),
-                  );
-                },
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  PageView.builder(
+                    controller: widget.pageController,
+                    itemCount: AppConstants.wellnessSlideshow.length,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      return Transform.scale(
+                        scale: 1.1 + (0.1 * widget.kenBurnsController.value),
+                        child: Image.asset(
+                          AppConstants.wellnessSlideshow[index],
+                          fit: BoxFit.cover,
+                        ),
+                      );
+                    },
+                  ),
+                  BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+                    child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                  ),
+                ],
               );
             },
           ),
 
-          // UI Layer
-          Container(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                colors: [
-                  Colors.transparent,
-                  Colors.black.withValues(alpha: 0.4), // More transparent
-                ],
-                radius: 1.2,
-              ),
-            ),
-            child: SafeArea(
-              child: Center(
-                child: widget.timerEngine.isCompletionState
-                    ? _buildCompletionState()
-                    : _buildMainContent(),
-              ),
-            ),
-          ),
-
-          // Skip / Postpone UI
-          if (!widget.timerEngine.isCompletionState && !widget.settings.strictMode)
-            Positioned(
-              bottom: 60,
-              left: 0,
-              right: 0,
-              child: Center(child: _buildActionButtons()),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMainContent() {
-    final exercise = _selectedExercise();
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmall = constraints.maxHeight < 600 || constraints.maxWidth < 600;
-        final timerFontSize = isSmall ? 100.0 : 220.0;
-        final horizontalPadding = isSmall ? 24.0 : 60.0;
-
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(height: 40),
-              Text(
-                widget.breakInfo.title.toUpperCase(),
-                style: AppTheme.sectionTitle.copyWith(
-                  color: Colors.white.withValues(alpha: 0.5),
-                  letterSpacing: isSmall ? 4 : 8,
-                  fontSize: isSmall ? 12 : 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  _formatDuration(widget.timerEngine.countdownSeconds),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: timerFontSize,
-                    fontWeight: FontWeight.w200,
-                    letterSpacing: isSmall ? -2 : -8,
-                    fontFeatures: const [FontFeature.tabularFigures()],
+          // Content Layer
+          SafeArea(
+            child: Column(
+              children: [
+                const Spacer(flex: 2),
+                
+                // Timer and Title Row
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 60),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _formatDuration(widget.timerEngine.countdownSeconds),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 100,
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: -2,
+                          fontFamily: 'Satoshi',
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      const SizedBox(width: 40),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.breakInfo.type == BreakType.short 
+                                ? 'Rest Your Eyes, Refresh Your Mind'
+                                : 'Step Away, Recharge Completely',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.5,
+                                fontFamily: 'Satoshi',
+                                height: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              widget.breakInfo.tip,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.6),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: 'Satoshi',
+                                height: 1.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 60),
-              BreathingAssistant(isShortBreak: widget.breakInfo.type == BreakType.short),
-              const SizedBox(height: 36),
-              if (exercise != null) _buildExercise(exercise),
-              const SizedBox(height: 44),
-              Padding(
-                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: Text(
-                  widget.breakInfo.tip,
-                  textAlign: TextAlign.center,
-                  style: AppTheme.tipStyle.copyWith(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: isSmall ? 16 : 22,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 100), // Space for action buttons
-            ],
-          ),
-        );
-      }
-    );
-  }
-
-  ExerciseModel? _selectedExercise() {
-    final exercises = (widget.settings.exercises.isEmpty
-            ? ExerciseModel.defaults
-            : widget.settings.exercises)
-        .where((exercise) => exercise.enabled)
-        .toList();
-    if (exercises.isEmpty) return null;
-    if (widget.breakInfo.type == BreakType.short) {
-      return exercises.firstWhere(
-        (exercise) => exercise.category == ExerciseCategory.eyeRest,
-        orElse: () => exercises.first,
-      );
-    }
-    return exercises.firstWhere(
-      (exercise) => exercise.category != ExerciseCategory.eyeRest,
-      orElse: () => exercises.first,
-    );
-  }
-
-  Widget _buildExercise(ExerciseModel exercise) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 620),
-      child: Column(
-        children: [
-          Text(
-            exercise.title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              exercise.instructions,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 18,
-                height: 1.5,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompletionState() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(CupertinoIcons.checkmark_seal_fill, color: AppTheme.shortBreakColor, size: 80),
-        const SizedBox(height: 32),
-        const Text(
-          'REFRESHED',
-          style: TextStyle(
-            letterSpacing: 12,
-            color: Colors.white,
-            fontSize: 32,
-            fontWeight: FontWeight.w200,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'You are ready to continue.',
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
-            fontSize: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildPillButton(
-          icon: CupertinoIcons.arrow_right,
-          label: 'Skip',
-          onTap: () => widget.controller.skipCurrentBreak(),
-          muted: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPillButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool muted = false,
-  }) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onTap,
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(100),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: muted ? 0.05 : 0.1),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: muted ? 0.05 : 0.1),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(icon, size: 16, color: Colors.white.withValues(alpha: muted ? 0.4 : 0.8)),
-                  const SizedBox(width: 8),
-                  Text(
-                    label.toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: muted ? 0.4 : 0.8),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
+                
+                const Spacer(),
+                
+                // Graph Area
+                Column(
+                  children: [
+                    BreakActivityGraph(
+                      dataPoints: weeklyData.isEmpty ? [1, 3, 2, 4, 3, 5, 4] : weeklyData,
+                      color: AppTheme.accentColor,
                     ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Break alert!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Satoshi',
+                      ),
+                    ),
+                    Text(
+                      "Let's keep that streak going.",
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Satoshi',
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const Spacer(flex: 2),
+                
+                // Footer
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+                  child: Row(
+                    children: [
+                      const Spacer(),
+                      Text(
+                        DateFormat('HH:mm').format(DateTime.now()),
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      if (!widget.settings.strictMode)
+                        _buildSkipButton(),
+                      const Spacer(),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkipButton() {
+    return GestureDetector(
+      onTap: () => widget.controller.skipCurrentBreak(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Skip',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(CupertinoIcons.arrow_right, size: 12, color: Colors.white.withValues(alpha: 0.8)),
+          ],
         ),
       ),
     );
@@ -382,6 +302,6 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
   String _formatDuration(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
-    return '${m.toString().padLeft(1, '0')}:${s.toString().padLeft(2, '0')}';
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 }

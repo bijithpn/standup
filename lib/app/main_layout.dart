@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
+import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/features/settings/settings_page.dart';
 
@@ -38,19 +39,51 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Primary nav items (shown in the main list)
   static const List<_NavItem> _mainNavItems = [
-    _NavItem(label: 'General', icon: CupertinoIcons.settings, section: 'General'),
-    _NavItem(label: 'Breaks', icon: CupertinoIcons.timer, section: 'Breaks & Profiles'),
-    _NavItem(label: 'Focus mode', icon: CupertinoIcons.eye, section: 'Intelligent Detection'),
-    _NavItem(label: 'Flash Reminder', icon: CupertinoIcons.bolt, section: 'Flash Reminder'),
-    _NavItem(label: 'Exercises', icon: CupertinoIcons.person_crop_circle, section: 'Exercises'),
-    _NavItem(label: 'Clock Out', icon: CupertinoIcons.moon, section: 'Clock Out'),
-    _NavItem(label: 'Statistics', icon: CupertinoIcons.chart_bar, section: 'Statistics'),
+    _NavItem(
+      label: 'General',
+      icon: CupertinoIcons.settings,
+      section: 'General',
+    ),
+    _NavItem(
+      label: 'Breaks',
+      icon: CupertinoIcons.timer,
+      section: 'Breaks & Profiles',
+    ),
+    _NavItem(
+      label: 'Focus mode',
+      icon: CupertinoIcons.eye,
+      section: 'Intelligent Detection',
+    ),
+    _NavItem(
+      label: 'Flash Reminder',
+      icon: CupertinoIcons.bolt,
+      section: 'Flash Reminder',
+    ),
+    _NavItem(
+      label: 'Exercises',
+      icon: CupertinoIcons.person_crop_circle,
+      section: 'Exercises',
+    ),
+    _NavItem(
+      label: 'Clock Out',
+      icon: CupertinoIcons.moon,
+      section: 'Clock Out',
+    ),
+    _NavItem(
+      label: 'Statistics',
+      icon: CupertinoIcons.chart_bar,
+      section: 'Statistics',
+    ),
   ];
 
   // Bottom nav items (shown at the footer of the sidebar)
   static const List<_NavItem> _bottomNavItems = [
-    _NavItem(label: 'Manage License', icon: CupertinoIcons.checkmark_circle, section: 'License', isBottom: true),
-    _NavItem(label: 'About', icon: CupertinoIcons.info_circle, section: 'About', isBottom: true),
+    _NavItem(
+      label: 'About',
+      icon: CupertinoIcons.info_circle,
+      section: 'About',
+      isBottom: true,
+    ),
   ];
 
   // Combined for index mapping
@@ -65,7 +98,9 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   void dispose() {
-    _navigationService.selectedSection.removeListener(_handleExternalNavigation);
+    _navigationService.selectedSection.removeListener(
+      _handleExternalNavigation,
+    );
     super.dispose();
   }
 
@@ -85,10 +120,8 @@ class _MainLayoutState extends State<MainLayout> {
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) => FadeTransition(
-            opacity: animation,
-            child: child,
-          ),
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
           child: isNarrow
               ? _buildNarrowLayout(key: const ValueKey('narrow'))
               : _buildWideLayout(key: const ValueKey('wide')),
@@ -218,10 +251,8 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildMainContent() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 220),
-      transitionBuilder: (child, animation) => FadeTransition(
-        opacity: animation,
-        child: child,
-      ),
+      transitionBuilder: (child, animation) =>
+          FadeTransition(opacity: animation, child: child),
       child: IndexedStack(
         key: ValueKey(_pageIndex),
         index: _pageIndex,
@@ -234,7 +265,6 @@ class _MainLayoutState extends State<MainLayout> {
           SettingsPage(section: 'Clock Out'),
           SettingsPage(section: 'Statistics'),
           // Bottom nav
-          SettingsPage(section: 'License'),
           SettingsPage(section: 'About'),
         ],
       ),
@@ -276,7 +306,10 @@ class _SidebarContent extends StatelessWidget {
               return _SidebarNavItem(
                 item: mainItems[i],
                 isSelected: selectedIndex == globalIndex,
-                onTap: () => onItemSelected(globalIndex),
+                onTap: () {
+                  onItemSelected(globalIndex);
+                  sl<TrayManagerService>().triggerActionAnimation();
+                },
               );
             },
           ),
@@ -284,30 +317,31 @@ class _SidebarContent extends StatelessWidget {
 
         // ── Separator ─────────────────────────────────────────
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Divider(
             height: 1,
             thickness: 0.5,
             color: AppTheme.separatorColor,
           ),
         ),
-        const SizedBox(height: 4),
 
         // ── Bottom nav items ──────────────────────────────────
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
           child: Column(
             children: bottomItems.asMap().entries.map((entry) {
               final globalIndex = mainItems.length + entry.key;
               return _SidebarNavItem(
                 item: entry.value,
                 isSelected: selectedIndex == globalIndex,
-                onTap: () => onItemSelected(globalIndex),
+                onTap: () {
+                  onItemSelected(globalIndex);
+                  sl<TrayManagerService>().triggerActionAnimation();
+                },
               );
             }).toList(),
           ),
         ),
-        const SizedBox(height: 12),
       ],
     );
   }
@@ -406,32 +440,42 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          margin: const EdgeInsets.symmetric(vertical: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFFFF453A).withValues(alpha: 0.12)
-                : _isHovered
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            color: _isHovered && !isSelected
+                ? Colors.white.withValues(alpha: 0.04)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
+              // Custom selection indicator
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 3,
+                height: isSelected ? 18 : 0,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              SizedBox(width: isSelected ? 12 : 0),
+
               Icon(
                 widget.item.icon,
                 size: 16,
                 color: isSelected
-                    ? const Color(0xFFFF453A)
-                    : AppTheme.textSecondary,
+                    ? AppTheme.accentColor
+                    : AppTheme.textSecondary.withValues(alpha: 0.8),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               Text(
                 widget.item.label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected
                       ? AppTheme.textPrimary
                       : AppTheme.textSecondary,

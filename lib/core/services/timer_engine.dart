@@ -276,11 +276,6 @@ class TimerEngine extends ChangeNotifier {
 
     sl<TrayManagerService>().setBreakActive(true);
     
-    // Only show system notification if overlay isn't already taking over the screen
-    if (!sl<OverlayWindowService>().isOverlayVisible) {
-      _notificationService.showBreakStarted(breakTitle: _activeBreak!.title);
-    }
-    
     _logger.info('Break triggered: ${_activeBreak!.title}');
     notifyListeners();
   }

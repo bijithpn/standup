@@ -146,7 +146,6 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                     if (!isOverlayVisible && !isBreakActive) const MainLayout(),
                     const BreakOverlay(),
                     const PreBreakWarningOverlay(),
-
                   ],
                 );
               },

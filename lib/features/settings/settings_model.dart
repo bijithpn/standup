@@ -58,6 +58,7 @@ class SettingsModel {
   // Misc
   final bool autoSuggestExercises;
   final bool useCursorCountdown;
+  final bool enableAnimations;
   final String trayIconStyle; // 'default', 'cat', 'minimal', 'countdown'
 
   const SettingsModel({
@@ -98,6 +99,7 @@ class SettingsModel {
     this.exercises = const [],
     this.autoSuggestExercises = true,
     this.useCursorCountdown = true,
+    this.enableAnimations = true,
     this.trayIconStyle = 'cat',
   });
 
@@ -139,6 +141,7 @@ class SettingsModel {
     List<ExerciseModel>? exercises,
     bool? autoSuggestExercises,
     bool? useCursorCountdown,
+    bool? enableAnimations,
     String? trayIconStyle,
   }) {
     return SettingsModel(
@@ -179,6 +182,7 @@ class SettingsModel {
       exercises: exercises ?? this.exercises,
       autoSuggestExercises: autoSuggestExercises ?? this.autoSuggestExercises,
       useCursorCountdown: useCursorCountdown ?? this.useCursorCountdown,
+      enableAnimations: enableAnimations ?? this.enableAnimations,
       trayIconStyle: trayIconStyle ?? this.trayIconStyle,
     );
   }
@@ -221,6 +225,7 @@ class SettingsModel {
         'exercises': exercises.map((e) => e.toMap()).toList(),
         'autoSuggestExercises': autoSuggestExercises,
         'useCursorCountdown': useCursorCountdown,
+        'enableAnimations': enableAnimations,
         'trayIconStyle': trayIconStyle,
       };
 
@@ -275,6 +280,7 @@ class SettingsModel {
       exercises: exercises,
       autoSuggestExercises: map['autoSuggestExercises'] as bool? ?? true,
       useCursorCountdown: map['useCursorCountdown'] as bool? ?? true,
+      enableAnimations: map['enableAnimations'] as bool? ?? true,
       trayIconStyle: map['trayIconStyle'] as String? ?? 'cat',
     );
   }

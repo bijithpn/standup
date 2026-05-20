@@ -72,6 +72,7 @@ class BreakController extends ChangeNotifier {
       if (breakInfo != null) {
         MacOSBridge.updateOverlayData({
           'title': breakInfo.title,
+          'tip': breakInfo.tip,
           'durationSeconds': breakInfo.durationSeconds,
           'remainingSeconds': _timerEngine.countdownSeconds,
           'strictMode': settings.strictMode,

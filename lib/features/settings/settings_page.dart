@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
+import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
+import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/settings/exercise_model.dart';
@@ -237,10 +239,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 final style = v ?? 'cat';
                 _save(_settings.copyWith(trayIconStyle: style));
                 sl<TimerEngine>().updateMenuStyle(_settings.menuBarStyle);
+                sl<TrayManagerService>().triggerActionAnimation();
               },
             ),
           ),
-          _divider(),
           _divider(),
           _buildListRow(
             'Flash Highlight',
@@ -248,6 +250,9 @@ class _SettingsPageState extends State<SettingsPage> {
             null,
             CupertinoIcons.bolt_fill,
             null,
+            onTap: () {
+              sl<AppNavigationService>().openSection('Flash Reminder');
+            },
             trailing: const Icon(
               CupertinoIcons.chevron_right,
               size: 14,
@@ -260,7 +265,10 @@ class _SettingsPageState extends State<SettingsPage> {
             'No skipping breaks',
             _settings.strictMode,
             CupertinoIcons.lock_shield,
-            (v) => _save(_settings.copyWith(strictMode: v)),
+            (v) {
+              _save(_settings.copyWith(strictMode: v));
+              sl<TrayManagerService>().triggerActionAnimation();
+            },
           ),
           _divider(),
           _buildListRow(
@@ -268,7 +276,7 @@ class _SettingsPageState extends State<SettingsPage> {
             'All screens coverage',
             true,
             CupertinoIcons.tv,
-            (v) {},
+            (v) => sl<TrayManagerService>().triggerActionAnimation(),
           ),
         ]),
         const SizedBox(height: 48),
@@ -282,9 +290,10 @@ class _SettingsPageState extends State<SettingsPage> {
               title: 'Pause timer after',
               options: ['1', '2', '3', '5', '10'],
               suffix: ' min',
-              onSelected: (v) => _save(
-                _settings.copyWith(pauseTimerAfterMinutes: int.parse(v)),
-              ),
+              onSelected: (v) {
+                _save(_settings.copyWith(pauseTimerAfterMinutes: int.parse(v)));
+                sl<TrayManagerService>().triggerActionAnimation();
+              },
             ),
           ),
           _divider(),
@@ -295,9 +304,10 @@ class _SettingsPageState extends State<SettingsPage> {
               title: 'Reset timer after',
               options: ['5', '10', '15', '30', '60'],
               suffix: ' min',
-              onSelected: (v) => _save(
-                _settings.copyWith(resetTimerAfterMinutes: int.parse(v)),
-              ),
+              onSelected: (v) {
+                _save(_settings.copyWith(resetTimerAfterMinutes: int.parse(v)));
+                sl<TrayManagerService>().triggerActionAnimation();
+              },
             ),
           ),
         ]),
@@ -1204,23 +1214,29 @@ class _SettingsPageState extends State<SettingsPage> {
               const SizedBox(height: 24),
               Row(
                 children: [
-                  Expanded(child: _buildAboutCard(
-                    CupertinoIcons.globe,
-                    'Website',
-                    'Visit our home',
-                  )),
+                  Expanded(
+                    child: _buildAboutCard(
+                      CupertinoIcons.globe,
+                      'Website',
+                      'Visit our home',
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildAboutCard(
-                    CupertinoIcons.lock_shield,
-                    'Privacy',
-                    'Your data',
-                  )),
+                  Expanded(
+                    child: _buildAboutCard(
+                      CupertinoIcons.lock_shield,
+                      'Privacy',
+                      'Your data',
+                    ),
+                  ),
                   const SizedBox(width: 12),
-                  Expanded(child: _buildAboutCard(
-                    CupertinoIcons.doc_text,
-                    'Terms',
-                    'Legal details',
-                  )),
+                  Expanded(
+                    child: _buildAboutCard(
+                      CupertinoIcons.doc_text,
+                      'Terms',
+                      'Legal details',
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -1237,7 +1253,10 @@ class _SettingsPageState extends State<SettingsPage> {
       decoration: BoxDecoration(
         color: AppTheme.cardBackgroundElevated.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.05),
+          width: 0.5,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1426,22 +1445,44 @@ class _SettingsPageState extends State<SettingsPage> {
                 children: [
                   Row(
                     children: [
-                      const Text('Less', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontFamily: 'Satoshi')),
+                      const Text(
+                        'Less',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
                       const SizedBox(width: 4),
                       _heatSquare(AppTheme.cardBackgroundElevated),
                       const SizedBox(width: 3),
-                      _heatSquare(AppTheme.shortBreakColor.withValues(alpha: 0.3)),
+                      _heatSquare(
+                        AppTheme.shortBreakColor.withValues(alpha: 0.3),
+                      ),
                       const SizedBox(width: 3),
-                      _heatSquare(AppTheme.shortBreakColor.withValues(alpha: 0.6)),
+                      _heatSquare(
+                        AppTheme.shortBreakColor.withValues(alpha: 0.6),
+                      ),
                       const SizedBox(width: 3),
                       _heatSquare(AppTheme.shortBreakColor),
                       const SizedBox(width: 4),
-                      const Text('More', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontFamily: 'Satoshi')),
+                      const Text(
+                        'More',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
                     ],
                   ),
                   Text(
                     '${_stats.breaksCompleted} breaks completed',
-                    style: const TextStyle(fontSize: 11, color: AppTheme.textMuted, fontFamily: 'Satoshi'),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textMuted,
+                      fontFamily: 'Satoshi',
+                    ),
                   ),
                 ],
               ),
@@ -1457,21 +1498,52 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildHeatmapMonthLabels() {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: months.map((m) => Text(m, style: const TextStyle(fontSize: 9, color: AppTheme.textMuted, fontFamily: 'Satoshi'))).toList(),
+      children: months
+          .map(
+            (m) => Text(
+              m,
+              style: const TextStyle(
+                fontSize: 9,
+                color: AppTheme.textMuted,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+          )
+          .toList(),
     );
   }
 
   Widget _buildHeatmapGrid() {
+    // 5 rows × 52 columns
+    final weeklyStats = _stats.weeklyData;
     return Column(
       children: List.generate(5, (row) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 3),
           child: Row(
             children: List.generate(52, (col) {
-              final hasActivity = (col * 5 + row) % 7 < 3;
+              // Map index to real daily stats if available
+              final dayIndex = (col * 5 + row) % weeklyStats.length;
+              final dayStats = weeklyStats[dayIndex];
+              final hasActivity = dayStats.breaksCompleted > 0;
+              final intensity = (dayStats.breaksCompleted / 8).clamp(0.2, 1.0);
+
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.only(right: 2),
@@ -1479,8 +1551,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     height: 9,
                     decoration: BoxDecoration(
                       color: hasActivity
-                          ? AppTheme.shortBreakColor.withValues(alpha: 0.4 + (col % 4) * 0.1)
-                          : AppTheme.cardBackgroundElevated,
+                          ? AppTheme.shortBreakColor.withValues(
+                              alpha: intensity,
+                            )
+                          : AppTheme.cardBackgroundElevated.withValues(
+                              alpha: 0.3,
+                            ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1509,7 +1585,10 @@ class _SettingsPageState extends State<SettingsPage> {
       builder: (context, setState) {
         int selectedTab = 3;
         return Container(
-          decoration: AppTheme.cleanCardDecoration,
+          decoration: AppTheme.cleanCardDecoration.copyWith(
+            color: Colors.transparent,
+            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1518,27 +1597,58 @@ class _SettingsPageState extends State<SettingsPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Break Statistics',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                        fontFamily: 'Satoshi',
+                    const Flexible(
+                      child: Text(
+                        'Performance Metrics',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                          fontFamily: 'Satoshi',
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    _buildSegmentedFilter(['Today', 'Week', 'Month', 'All'], selectedTab, (i) => setState(() => selectedTab = i)),
+                    const SizedBox(width: 8),
+                    _buildSegmentedFilter(
+                      ['Today', 'Week', 'Month', 'All'],
+                      selectedTab,
+                      (i) => setState(() => selectedTab = i),
+                    ),
                   ],
                 ),
               ),
+              _statsMetricRow(
+                CupertinoIcons.check_mark_circled,
+                AppTheme.accentColor,
+                'Total Breaks',
+                'Completed rest sessions',
+                '${_stats.breaksCompleted}',
+              ),
               _divider(),
-              _statsMetricRow(CupertinoIcons.check_mark_circled, AppTheme.accentColor, 'Total Breaks', 'Completed rest sessions', '${_stats.breaksCompleted}'),
+              _statsMetricRow(
+                CupertinoIcons.clock,
+                AppTheme.shortBreakColor,
+                'Short Breaks',
+                'Quick micro-breaks',
+                '${(_stats.breaksCompleted * 0.8).round()}',
+              ),
               _divider(),
-              _statsMetricRow(CupertinoIcons.clock, AppTheme.shortBreakColor, 'Short Breaks', 'Quick micro-breaks', '${(_stats.breaksCompleted * 0.8).round()}'),
+              _statsMetricRow(
+                CupertinoIcons.pause_circle,
+                AppTheme.longBreakColor,
+                'Long Breaks',
+                'Extended recovery rest',
+                '${(_stats.breaksCompleted * 0.2).round()}',
+              ),
               _divider(),
-              _statsMetricRow(CupertinoIcons.pause_circle, AppTheme.longBreakColor, 'Long Breaks', 'Extended recovery rest', '${(_stats.breaksCompleted * 0.2).round()}'),
-              _divider(),
-              _statsMetricRow(CupertinoIcons.chart_pie, AppTheme.upcomingBreakColor, 'Completion Rate', 'Success frequency', '${(_stats.completionRate * 100).toInt()}%'),
+              _statsMetricRow(
+                CupertinoIcons.chart_pie,
+                AppTheme.upcomingBreakColor,
+                'Completion Rate',
+                'Success frequency',
+                '${(_stats.completionRate * 100).toInt()}%',
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -1547,11 +1657,15 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildSegmentedFilter(List<String> options, int selected, ValueChanged<int> onSelected) {
+  Widget _buildSegmentedFilter(
+    List<String> options,
+    int selected,
+    ValueChanged<int> onSelected,
+  ) {
     return Container(
       padding: const EdgeInsets.all(2),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
+        color: Colors.white.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -1559,19 +1673,23 @@ class _SettingsPageState extends State<SettingsPage> {
           final isSelected = e.key == selected;
           return GestureDetector(
             onTap: () => onSelected(e.key),
-            child: Container(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: isSelected ? AppTheme.cardBackgroundElevated : Colors.transparent,
+                color: isSelected
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(6),
-                boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4)] : null,
               ),
               child: Text(
                 e.value,
                 style: TextStyle(
                   fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected
+                      ? AppTheme.textPrimary
+                      : AppTheme.textSecondary,
                   fontFamily: 'Satoshi',
                 ),
               ),
@@ -1582,37 +1700,51 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _statsMetricRow(IconData icon, Color color, String label, String subtitle, String value) {
+  Widget _statsMetricRow(
+    IconData icon,
+    Color color,
+    String label,
+    String subtitle,
+    String value,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 14),
+          Icon(icon, size: 16, color: color.withValues(alpha: 0.7)),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary, fontFamily: 'Satoshi')),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontFamily: 'Satoshi')),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.textSecondary,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
               ],
             ),
           ),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
               color: AppTheme.textPrimary,
               fontFamily: 'Satoshi',
-              letterSpacing: -0.5,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -1624,17 +1756,17 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _sectionHeader(String title, {String? subtitle}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 4, top: 8),
+      padding: const EdgeInsets.only(bottom: 12, left: 0, top: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
             style: const TextStyle(
-              fontSize: 17,
+              fontSize: 15,
               fontWeight: FontWeight.w700,
               color: AppTheme.textPrimary,
-              letterSpacing: -0.4,
+              letterSpacing: -0.2,
               fontFamily: 'Satoshi',
             ),
           ),
@@ -1642,10 +1774,9 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppTheme.textSecondary,
-                letterSpacing: -0.1,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.textSecondary.withValues(alpha: 0.7),
                 fontFamily: 'Satoshi',
               ),
             ),
@@ -1657,8 +1788,11 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _buildCard(List<Widget> children) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 28),
-      decoration: AppTheme.cleanCardDecoration,
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: AppTheme.cleanCardDecoration.copyWith(
+        color: AppTheme.cardBackground.withValues(alpha: 0.4),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),
     );
@@ -1874,7 +2008,10 @@ class _SettingsPageState extends State<SettingsPage> {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  width: 0.5,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1939,9 +2076,10 @@ class _SettingsPageState extends State<SettingsPage> {
     bool? value,
     IconData icon,
     ValueChanged<bool>? onChanged, {
+    VoidCallback? onTap,
     Widget? trailing,
   }) {
-    return Padding(
+    final content = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
@@ -1986,10 +2124,20 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: onChanged,
               activeTrackColor: AppTheme.accentColor,
             ),
-          ?trailing,
+          if (trailing != null) trailing,
         ],
       ),
     );
+
+    if (onTap != null) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   Widget _inlineDropdown(
