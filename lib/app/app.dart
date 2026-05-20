@@ -40,19 +40,10 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
   }
 
   void _setupTrayActions() {
-    final tray = sl<TrayManagerService>();
     final controller = sl<BreakController>();
-
-    final timerEngine = controller.timerEngine;
-
-    // Connect tray to timer engine for dynamic menu updates
-    tray.setDependencies(timerEngine, controller);
-
-    // tray.onMenuAction is no longer strictly needed for default actions 
-    // as TrayManagerService handles them internally now.
     
     controller.addListener(() {
-      tray.updatePauseState(controller.isPaused);
+      sl<TrayManagerService>().updatePauseState(controller.isPaused);
       
       final overlayService = sl<OverlayWindowService>();
       if (!controller.isBreakActive && overlayService.currentOverlayType == OverlayType.breakScreen) {

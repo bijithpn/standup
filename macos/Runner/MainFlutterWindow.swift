@@ -245,6 +245,14 @@ class MainFlutterWindow: NSWindow {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing themeId", details: nil))
         }
 
+      case "updateCompanionName":
+        if let args = call.arguments as? [String: Any], let petName = args["petName"] as? String {
+          CompanionWindowManager.shared.updatePetName(petName)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing petName", details: nil))
+        }
+
       case "triggerCompanionState":
         if let args = call.arguments as? [String: Any], let state = args["state"] as? String {
           CompanionWindowManager.shared.triggerState(state)

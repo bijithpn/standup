@@ -62,6 +62,7 @@ class SettingsModel {
   final String trayIconStyle; // 'default', 'cat', 'minimal', 'countdown'
   final bool companionEnabled;
   final String companionCatTheme;
+  final String companionPetName;
   final double companionScale;
   final bool companionClickThrough;
 
@@ -107,6 +108,7 @@ class SettingsModel {
     this.trayIconStyle = 'cat',
     this.companionEnabled = false,
     this.companionCatTheme = 'grey_cat',
+    this.companionPetName = 'Mochi',
     this.companionScale = 6.0,
     this.companionClickThrough = false,
   });
@@ -153,6 +155,7 @@ class SettingsModel {
     String? trayIconStyle,
     bool? companionEnabled,
     String? companionCatTheme,
+    String? companionPetName,
     double? companionScale,
     bool? companionClickThrough,
   }) {
@@ -198,6 +201,7 @@ class SettingsModel {
       trayIconStyle: trayIconStyle ?? this.trayIconStyle,
       companionEnabled: companionEnabled ?? this.companionEnabled,
       companionCatTheme: companionCatTheme ?? this.companionCatTheme,
+      companionPetName: companionPetName ?? this.companionPetName,
       companionScale: companionScale ?? this.companionScale,
       companionClickThrough: companionClickThrough ?? this.companionClickThrough,
     );
@@ -245,6 +249,7 @@ class SettingsModel {
         'trayIconStyle': trayIconStyle,
         'companionEnabled': companionEnabled,
         'companionCatTheme': companionCatTheme,
+        'companionPetName': companionPetName,
         'companionScale': companionScale,
         'companionClickThrough': companionClickThrough,
       };
@@ -304,6 +309,7 @@ class SettingsModel {
       trayIconStyle: map['trayIconStyle'] as String? ?? 'cat',
       companionEnabled: map['companionEnabled'] as bool? ?? false,
       companionCatTheme: map['companionCatTheme'] as String? ?? 'grey_cat',
+      companionPetName: map['companionPetName'] as String? ?? 'Mochi',
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
     );

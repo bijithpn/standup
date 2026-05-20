@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -17,6 +19,7 @@ import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/utils/toast.dart';
 import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/features/settings/widgets/general_section.dart';
 import 'package:standup/features/settings/widgets/focus_section.dart';
@@ -2723,6 +2726,20 @@ class _SettingsPageState extends State<SettingsPage> {
             ]),
             if (controller.companionEnabled) ...[
               const SizedBox(height: 32),
+              _sectionHeader(controller.companionPetName),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 16),
+                child: Text(
+                  'Personalize your companion name and keep it synced with the desktop pet overlay.',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                    fontSize: 13,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+              ),
+              _buildCompanionNameField(controller),
+              const SizedBox(height: 32),
               _sectionHeader('Companion Breed'),
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 16),
@@ -2838,21 +2855,6 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildCompanionThemeDropdown(CompanionOverlayController controller) {
-    final themes = [
-      {'id': 'grey_cat', 'name': 'Classic Grey (Grey Tabby)', 'emoji': '🐱'},
-      {
-        'id': 'orange_cat',
-        'name': 'Playful Ginger (Orange Tabby)',
-        'emoji': '🐈',
-      },
-      {
-        'id': 'black_cat',
-        'name': 'Sleek Shadow (Black Panther)',
-        'emoji': '🐈‍⬛',
-      },
-      {'id': 'large_cat', 'name': 'Fluffy Calico (Maine Coon)', 'emoji': '🦁'},
-    ];
-
     return _buildCard([
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -2898,19 +2900,101 @@ class _SettingsPageState extends State<SettingsPage> {
                         controller.changeTheme(newValue);
                       }
                     },
-                    items: themes.map<DropdownMenuItem<String>>((theme) {
+                    items: CatTheme.themes.map<DropdownMenuItem<String>>((theme) {
                       return DropdownMenuItem<String>(
-                        value: theme['id']!,
+                        value: theme.id,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(theme['emoji']!),
+                            Text(_petSymbol(theme.id)),
                             const SizedBox(width: 8),
-                            Text(theme['name']!),
+                            Text(theme.name),
                           ],
                         ),
                       );
                     }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  String _petSymbol(String themeId) {
+    return {
+      CatTheme.keyCollie,
+      CatTheme.keyCorgi,
+      CatTheme.keyDalmatian,
+      CatTheme.keyHusky,
+      CatTheme.keyLabrador,
+      CatTheme.keyGoldie,
+      CatTheme.keyRealisticGoldie,
+    }.contains(themeId)
+        ? '🐕'
+        : '🐱';
+  }
+
+  Widget _buildCompanionNameField(CompanionOverlayController controller) {
+    return _buildCard([
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Pet Name',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 3),
+                  Text(
+                    'Used in companion state and future pet messages',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 16),
+            SizedBox(
+              width: 220,
+              child: TextFormField(
+                initialValue: controller.companionPetName,
+                onChanged: controller.changePetName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontFamily: 'Satoshi',
+                ),
+                cursorColor: AppTheme.accentColor,
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: AppTheme.accentColor),
                   ),
                 ),
               ),
@@ -2944,7 +3028,9 @@ class _SettingsPageState extends State<SettingsPage> {
         return CupertinoButton(
           padding: EdgeInsets.zero,
           onPressed: () async {
-            await MacOSBridge.triggerCompanionState(inter['state'] as String);
+            if (Platform.isMacOS) {
+              await MacOSBridge.triggerCompanionState(inter['state'] as String);
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

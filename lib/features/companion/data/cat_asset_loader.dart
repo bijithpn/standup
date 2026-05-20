@@ -151,63 +151,69 @@ class CatAssetLoader {
 
   /// Slices and returns all animation state mappings for the given CatTheme.
   static Future<Map<CatAnimationState, SpriteAnimation>> loadAnimations(CatTheme theme) async {
-    final Map<CatAnimationState, SpriteAnimation> loaded = {};
+    try {
+      final Map<CatAnimationState, SpriteAnimation> loaded = {};
 
-    if (theme.type == CatType.composite) {
-      // Composite: All animations live on a single sheet
-      final ui.Image sheetImage = await _loadImage(theme.basePath);
-      final double size = theme.spriteSize.toDouble();
+      if (theme.type == CatType.composite) {
+        // Composite: All animations live on a single sheet
+        final ui.Image sheetImage = await _loadImage(theme.basePath);
+        final double size = theme.spriteSize.toDouble();
 
-      for (final state in CatAnimationState.values) {
-        // Fallback to idle if animation isn't registered
-        final config = theme.animations[state] ?? theme.animations[CatAnimationState.idle];
-        if (config is AnimationRowConfig) {
-          final data = SpriteAnimationData.sequenced(
-            amount: config.frameCount,
-            stepTime: config.stepTime,
-            textureSize: Vector2(size, size),
-            texturePosition: Vector2(0.0, config.row * size),
-            loop: config.loop,
-          );
-          loaded[state] = SpriteAnimation.fromFrameData(sheetImage, data);
-        }
-      }
-    } else if (theme.type == CatType.separate) {
-      // Separate: Each animation state points to a unique image file
-      final double size = theme.spriteSize.toDouble();
-
-      for (final state in CatAnimationState.values) {
-        final config = theme.animations[state] ?? theme.animations[CatAnimationState.idle];
-        if (config is SeparateAnimationConfig) {
-          final String fullPath = '${theme.basePath}${config.fileName}';
-          try {
-            final ui.Image stateImage = await _loadImage(fullPath);
+        for (final state in CatAnimationState.values) {
+          // Fallback to idle if animation isn't registered
+          final config = theme.animations[state] ?? theme.animations[CatAnimationState.idle];
+          if (config is AnimationRowConfig) {
             final data = SpriteAnimationData.sequenced(
               amount: config.frameCount,
               stepTime: config.stepTime,
               textureSize: Vector2(size, size),
-              texturePosition: Vector2.zero(),
+              texturePosition: Vector2(0.0, config.row * size),
               loop: config.loop,
             );
-            loaded[state] = SpriteAnimation.fromFrameData(stateImage, data);
-          } catch (e) {
-            // Safe fallback to idle state sheet if image loading fails
-            final fallbackConfig = theme.animations[CatAnimationState.idle] as SeparateAnimationConfig;
-            final String fallbackPath = '${theme.basePath}${fallbackConfig.fileName}';
-            final ui.Image fallbackImage = await _loadImage(fallbackPath);
-            final data = SpriteAnimationData.sequenced(
-              amount: fallbackConfig.frameCount,
-              stepTime: fallbackConfig.stepTime,
-              textureSize: Vector2(size, size),
-              texturePosition: Vector2.zero(),
-              loop: fallbackConfig.loop,
-            );
-            loaded[state] = SpriteAnimation.fromFrameData(fallbackImage, data);
+            loaded[state] = SpriteAnimation.fromFrameData(sheetImage, data);
+          }
+        }
+      } else if (theme.type == CatType.separate) {
+        // Separate: Each animation state points to a unique image file
+        final double size = theme.spriteSize.toDouble();
+
+        for (final state in CatAnimationState.values) {
+          final config = theme.animations[state] ?? theme.animations[CatAnimationState.idle];
+          if (config is SeparateAnimationConfig) {
+            final String fullPath = '${theme.basePath}${config.fileName}';
+            try {
+              final ui.Image stateImage = await _loadImage(fullPath);
+              final data = SpriteAnimationData.sequenced(
+                amount: config.frameCount,
+                stepTime: config.stepTime,
+                textureSize: Vector2(size, size),
+                texturePosition: Vector2.zero(),
+                loop: config.loop,
+              );
+              loaded[state] = SpriteAnimation.fromFrameData(stateImage, data);
+            } catch (e) {
+              final fallbackConfig = theme.animations[CatAnimationState.idle] as SeparateAnimationConfig;
+              final String fallbackPath = '${theme.basePath}${fallbackConfig.fileName}';
+              final ui.Image fallbackImage = await _loadImage(fallbackPath);
+              final data = SpriteAnimationData.sequenced(
+                amount: fallbackConfig.frameCount,
+                stepTime: fallbackConfig.stepTime,
+                textureSize: Vector2(size, size),
+                texturePosition: Vector2.zero(),
+                loop: fallbackConfig.loop,
+              );
+              loaded[state] = SpriteAnimation.fromFrameData(fallbackImage, data);
+            }
           }
         }
       }
-    }
 
-    return loaded;
+      return loaded;
+    } catch (_) {
+      if (theme.id == CatTheme.keyGreyCat) {
+        return {};
+      }
+      return loadAnimations(CatTheme.getTheme(CatTheme.keyGreyCat));
+    }
   }
 }

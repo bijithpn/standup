@@ -86,6 +86,11 @@ class MacOSBridge {
     await _invokeSafely('updateCompanionTheme', {'themeId': themeId});
   }
 
+  /// Updates companion display metadata.
+  static Future<void> updateCompanionName(String petName) async {
+    await _invokeSafely('updateCompanionName', {'petName': petName});
+  }
+
   /// Triggers a dynamic behavioral animation state in the companion overlay
   static Future<void> triggerCompanionState(String stateName) async {
     await _invokeSafely('triggerCompanionState', {'state': stateName});

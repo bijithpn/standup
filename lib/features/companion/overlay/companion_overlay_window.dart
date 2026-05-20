@@ -19,6 +19,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
 
   late CompanionGame _game;
   String _themeId = 'grey_cat';
+  String _petName = 'Mochi';
   bool _isDragging = false;
 
   @override
@@ -37,7 +38,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   void _emitInitialEvents() {
     EventBus.instance.emit(CompanionInteractionEvent(
       interactionType: 'init',
-      metadata: {'themeId': _themeId},
+      metadata: {'themeId': _themeId, 'petName': _petName},
     ));
   }
 
@@ -59,6 +60,13 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
               final double? newScale = (args['scale'] as num?)?.toDouble();
               if (newScale != null) {
                 _game.updateScale(newScale);
+              }
+            }
+
+            if (args.containsKey('petName')) {
+              final String? newPetName = args['petName'] as String?;
+              if (newPetName != null && newPetName.trim().isNotEmpty) {
+                _petName = newPetName.trim();
               }
             }
 
