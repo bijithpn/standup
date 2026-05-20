@@ -13,6 +13,7 @@ class AppDelegate: FlutterAppDelegate {
 
   override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
     if let window = mainFlutterWindow as? MainFlutterWindow {
+      window.triggerReopen()
       if window.isMiniaturized { window.deminiaturize(nil) }
       NSApp.activate(ignoringOtherApps: true)
       window.makeKeyAndOrderFront(nil)
@@ -22,8 +23,8 @@ class AppDelegate: FlutterAppDelegate {
 
   override func applicationWillTerminate(_ notification: Notification) {
     OverlayWindowManager.shared.hideOverlay()
+    CompanionWindowManager.shared.hideCompanion()
     super.applicationWillTerminate(notification)
-
   }
 
   override func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {

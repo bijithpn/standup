@@ -213,6 +213,54 @@ class MainFlutterWindow: NSWindow {
         OverlayWindowManager.shared.hideOverlay()
         result(nil)
 
+      case "showCompanion":
+        CompanionWindowManager.shared.showCompanion(args: call.arguments as? [String: Any])
+        result(nil)
+
+      case "hideCompanion":
+        CompanionWindowManager.shared.hideCompanion()
+        result(nil)
+
+      case "setCompanionClickThrough":
+        if let args = call.arguments as? [String: Any], let ignore = args["ignore"] as? Bool {
+          CompanionWindowManager.shared.setClickThrough(ignore)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
+        }
+
+      case "updateCompanionScale":
+        if let args = call.arguments as? [String: Any], let scale = args["scale"] as? Double {
+          CompanionWindowManager.shared.updateScale(scale)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing scale", details: nil))
+        }
+
+      case "updateCompanionTheme":
+        if let args = call.arguments as? [String: Any], let themeId = args["themeId"] as? String {
+          CompanionWindowManager.shared.updateTheme(themeId)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing themeId", details: nil))
+        }
+
+      case "triggerCompanionState":
+        if let args = call.arguments as? [String: Any], let state = args["state"] as? String {
+          CompanionWindowManager.shared.triggerState(state)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing state", details: nil))
+        }
+
+      case "setCompanionWandering":
+        if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
+          CompanionWindowManager.shared.setWanderingEnabled(enabled)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
+        }
+
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
            let level = args["level"] as? String {
@@ -267,5 +315,9 @@ class MainFlutterWindow: NSWindow {
     case "floating": self.level = .floating
     default: self.level = .normal
     }
+  }
+
+  func triggerReopen() {
+    bridgeChannel?.invokeMethod("handleReopen", arguments: nil)
   }
 }

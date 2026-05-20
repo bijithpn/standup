@@ -208,8 +208,20 @@ class StatsService {
         breaksSkipped: todayStats.breaksSkipped + breaksSkipped,
         usageMinutes: todayStats.usageMinutes + usageMinutes,
       );
-      _saveWeeklyData(weeklyData);
+    } else {
+      // Add new day if it doesn't exist
+      weeklyData.add(DailyStats(
+        date: today,
+        breaksCompleted: breaksCompleted,
+        breaksSkipped: breaksSkipped,
+        usageMinutes: usageMinutes,
+      ));
+      // Keep only the last 365 days
+      if (weeklyData.length > 365) {
+        weeklyData.removeAt(0);
+      }
     }
+    _saveWeeklyData(weeklyData);
   }
 
   void _saveWeeklyData(List<DailyStats> weeklyData) {

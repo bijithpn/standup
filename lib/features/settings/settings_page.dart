@@ -16,6 +16,8 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/utils/toast.dart';
+import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:standup/core/native/macos_bridge.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -28,6 +30,49 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   late SettingsModel _settings;
   late StatsModel _stats;
+  int _selectedStatsTab = 3;
+
+  int get _calculatedBreaks {
+    switch (_selectedStatsTab) {
+      case 0: // Today
+        if (_stats.weeklyData.isNotEmpty) {
+          final now = DateTime.now();
+          final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+          return _stats.weeklyData.firstWhere((d) => d.date == today, orElse: () => _stats.weeklyData.last).breaksCompleted;
+        }
+        return 0;
+      case 1: // Week
+        return _stats.weeklyData.fold<int>(0, (sum, day) => sum + day.breaksCompleted);
+      case 2: // Month
+      case 3: // All
+      default:
+        return _stats.breaksCompleted;
+    }
+  }
+
+  int get _calculatedSkipped {
+    switch (_selectedStatsTab) {
+      case 0: // Today
+        if (_stats.weeklyData.isNotEmpty) {
+          final now = DateTime.now();
+          final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+          return _stats.weeklyData.firstWhere((d) => d.date == today, orElse: () => _stats.weeklyData.last).breaksSkipped;
+        }
+        return 0;
+      case 1: // Week
+        return _stats.weeklyData.fold<int>(0, (sum, day) => sum + day.breaksSkipped);
+      case 2: // Month
+      case 3: // All
+      default:
+        return _stats.breaksSkipped;
+    }
+  }
+
+  double get _calculatedCompletionRate {
+    final total = _calculatedBreaks + _calculatedSkipped;
+    if (total == 0) return 0.0;
+    return _calculatedBreaks / total;
+  }
 
   @override
   void initState() {
@@ -127,6 +172,8 @@ class _SettingsPageState extends State<SettingsPage> {
         return 'Breaks';
       case 'Intelligent Detection':
         return 'Focus mode';
+      case 'Companion':
+        return 'Desktop Companion';
       default:
         return section;
     }
@@ -156,6 +203,8 @@ class _SettingsPageState extends State<SettingsPage> {
         return _buildAbout();
       case 'Statistics':
         return _buildStatistics();
+      case 'Companion':
+        return _buildCompanion();
       default:
         return Center(
           child: Text(
@@ -1477,7 +1526,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ],
                   ),
                   Text(
-                    '${_stats.breaksCompleted} breaks completed',
+                    '$_calculatedBreaks breaks completed',
                     style: const TextStyle(
                       fontSize: 11,
                       color: AppTheme.textMuted,
@@ -1532,17 +1581,20 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildHeatmapGrid() {
     // 5 rows × 52 columns
     final weeklyStats = _stats.weeklyData;
+    final now = DateTime.now();
     return Column(
       children: List.generate(5, (row) {
         return Padding(
           padding: const EdgeInsets.only(bottom: 3),
           child: Row(
             children: List.generate(52, (col) {
-              // Map index to real daily stats if available
-              final dayIndex = (col * 5 + row) % weeklyStats.length;
-              final dayStats = weeklyStats[dayIndex];
-              final hasActivity = dayStats.breaksCompleted > 0;
-              final intensity = (dayStats.breaksCompleted / 8).clamp(0.2, 1.0);
+              final dayOffset = (51 - col) * 5 + (4 - row);
+              final cellDate = now.subtract(Duration(days: dayOffset));
+              final dateStr = '${cellDate.year}-${cellDate.month.toString().padLeft(2, '0')}-${cellDate.day.toString().padLeft(2, '0')}';
+              
+              final dayStats = weeklyStats.where((d) => d.date == dateStr).firstOrNull;
+              final hasActivity = dayStats != null && dayStats.breaksCompleted > 0;
+              final intensity = dayStats != null ? (dayStats.breaksCompleted / 8).clamp(0.2, 1.0) : 0.0;
 
               return Expanded(
                 child: Padding(
@@ -1581,79 +1633,74 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Widget _buildBreakStatisticsCard() {
-    return StatefulBuilder(
-      builder: (context, setState) {
-        int selectedTab = 3;
-        return Container(
-          decoration: AppTheme.cleanCardDecoration.copyWith(
-            color: Colors.transparent,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Flexible(
-                      child: Text(
-                        'Performance Metrics',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                          fontFamily: 'Satoshi',
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+    return Container(
+      decoration: AppTheme.cleanCardDecoration.copyWith(
+        color: Colors.transparent,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Flexible(
+                  child: Text(
+                    'Performance Metrics',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                      fontFamily: 'Satoshi',
                     ),
-                    const SizedBox(width: 8),
-                    _buildSegmentedFilter(
-                      ['Today', 'Week', 'Month', 'All'],
-                      selectedTab,
-                      (i) => setState(() => selectedTab = i),
-                    ),
-                  ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-              ),
-              _statsMetricRow(
-                CupertinoIcons.check_mark_circled,
-                AppTheme.accentColor,
-                'Total Breaks',
-                'Completed rest sessions',
-                '${_stats.breaksCompleted}',
-              ),
-              _divider(),
-              _statsMetricRow(
-                CupertinoIcons.clock,
-                AppTheme.shortBreakColor,
-                'Short Breaks',
-                'Quick micro-breaks',
-                '${(_stats.breaksCompleted * 0.8).round()}',
-              ),
-              _divider(),
-              _statsMetricRow(
-                CupertinoIcons.pause_circle,
-                AppTheme.longBreakColor,
-                'Long Breaks',
-                'Extended recovery rest',
-                '${(_stats.breaksCompleted * 0.2).round()}',
-              ),
-              _divider(),
-              _statsMetricRow(
-                CupertinoIcons.chart_pie,
-                AppTheme.upcomingBreakColor,
-                'Completion Rate',
-                'Success frequency',
-                '${(_stats.completionRate * 100).toInt()}%',
-              ),
-              const SizedBox(height: 8),
-            ],
+                const SizedBox(width: 8),
+                _buildSegmentedFilter(
+                  ['Today', 'Week', 'Month', 'All'],
+                  _selectedStatsTab,
+                  (i) => setState(() => _selectedStatsTab = i),
+                ),
+              ],
+            ),
           ),
-        );
-      },
+          _statsMetricRow(
+            CupertinoIcons.check_mark_circled,
+            AppTheme.accentColor,
+            'Total Breaks',
+            'Completed rest sessions',
+            '$_calculatedBreaks',
+          ),
+          _divider(),
+          _statsMetricRow(
+            CupertinoIcons.clock,
+            AppTheme.shortBreakColor,
+            'Short Breaks',
+            'Quick micro-breaks',
+            '${(_calculatedBreaks * 0.8).round()}',
+          ),
+          _divider(),
+          _statsMetricRow(
+            CupertinoIcons.pause_circle,
+            AppTheme.longBreakColor,
+            'Long Breaks',
+            'Extended recovery rest',
+            '${(_calculatedBreaks * 0.2).round()}',
+          ),
+          _divider(),
+          _statsMetricRow(
+            CupertinoIcons.chart_pie,
+            AppTheme.upcomingBreakColor,
+            'Completion Rate',
+            'Success frequency',
+            '${(_calculatedCompletionRate * 100).toInt()}%',
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
     );
   }
 
@@ -1873,60 +1920,35 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               ),
-              CupertinoButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-                onPressed: () {
-                  showCupertinoModalPopup(
-                    context: context,
-                    builder: (BuildContext context) => CupertinoActionSheet(
-                      actions: options
-                          .map(
-                            (o) => CupertinoActionSheetAction(
-                              onPressed: () {
-                                onChanged(o);
-                                Navigator.pop(context);
-                              },
-                              child: Text(
-                                o,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: AppTheme.accentColor,
-                                ),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      cancelButton: CupertinoActionSheetAction(
-                        onPressed: () => Navigator.pop(context),
-                        isDefaultAction: true,
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                  );
-                },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      value.toUpperCase(),
+              Material(
+                type: MaterialType.transparency,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: options.contains(value) ? value : (options.isNotEmpty ? options.first : null),
+                      dropdownColor: const Color(0xFF1E1E1E),
+                      icon: const Icon(CupertinoIcons.chevron_down, size: 14, color: AppTheme.accentColor),
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: isSmallScreen ? 11 : 12,
                         fontWeight: FontWeight.w600,
+                        fontFamily: 'Satoshi',
                       ),
+                      onChanged: onChanged,
+                      items: options.map<DropdownMenuItem<String>>((String option) {
+                        return DropdownMenuItem<String>(
+                          value: option,
+                          child: Text(option.toUpperCase()),
+                        );
+                      }).toList(),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      CupertinoIcons.chevron_up,
-                      size: 12,
-                      color: Colors.white54,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ],
@@ -2124,6 +2146,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: onChanged,
               activeTrackColor: AppTheme.accentColor,
             ),
+          // ignore: use_null_aware_elements
           if (trailing != null) trailing,
         ],
       ),
@@ -2145,58 +2168,34 @@ class _SettingsPageState extends State<SettingsPage> {
     List<String> options,
     ValueChanged<String?> onChanged,
   ) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: () {
-        showCupertinoModalPopup(
-          context: context,
-          builder: (BuildContext context) => CupertinoActionSheet(
-            actions: options
-                .map(
-                  (o) => CupertinoActionSheetAction(
-                    onPressed: () {
-                      onChanged(o);
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      o,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: AppTheme.accentColor,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-            cancelButton: CupertinoActionSheetAction(
-              onPressed: () => Navigator.pop(context),
-              isDefaultAction: true,
-              child: const Text('Cancel'),
-            ),
-          ),
-        );
-      },
+    return Material(
+      type: MaterialType.transparency,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(6),
           border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value.toUpperCase(),
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: options.contains(value) ? value : (options.isNotEmpty ? options.first : null),
+            dropdownColor: const Color(0xFF1E1E1E),
+            icon: const Icon(CupertinoIcons.chevron_down, size: 12, color: Colors.white54),
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Satoshi',
             ),
-            const SizedBox(width: 4),
-            Icon(CupertinoIcons.chevron_down, size: 10, color: Colors.white54),
-          ],
+            onChanged: onChanged,
+            items: options.map<DropdownMenuItem<String>>((String option) {
+              return DropdownMenuItem<String>(
+                value: option,
+                child: Text(option.toUpperCase()),
+              );
+            }).toList(),
+          ),
         ),
       ),
     );
@@ -2646,6 +2645,211 @@ class _SettingsPageState extends State<SettingsPage> {
       color: AppTheme.separatorColor,
       indent: 16,
       endIndent: 16,
+    );
+  }
+
+  Widget _buildCompanion() {
+    final controller = sl<CompanionOverlayController>();
+
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionHeader('Desktop Companion'),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 24),
+              child: Text(
+                'Spawn a cute virtual pet that sits on your desktop, wanders around, and reacts to your focus and break sessions.',
+                style: TextStyle(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                  fontSize: 13,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+            ),
+            _buildCard([
+              _toggleRow(
+                'Enable Desktop Companion',
+                'Show or hide your desktop pet companion overlay',
+                controller.companionEnabled,
+                (v) => controller.toggleCompanion(v),
+              ),
+            ]),
+            if (controller.companionEnabled) ...[
+              const SizedBox(height: 32),
+              _sectionHeader('Companion Breed'),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 16),
+                child: Text(
+                  'Choose the theme and look of your animated pet companion.',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                    fontSize: 13,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+              ),
+              _buildCompanionThemeDropdown(controller),
+              const SizedBox(height: 32),
+              _sectionHeader('Overlay Settings'),
+              _buildCard([
+                _sliderRow(
+                  'Scale Factor (${controller.companionScale.toStringAsFixed(1)}x)',
+                  controller.companionScale,
+                  (v) {
+                    final snapped = (v * 2.0).roundToDouble() / 2.0;
+                    controller.changeScale(snapped);
+                  },
+                  min: 2.0,
+                  max: 8.0,
+                ),
+                _divider(),
+                _toggleRow(
+                  'Ignore Mouse Clicks',
+                  'Enable click-through mode so you can interact with windows behind the pet',
+                  controller.companionClickThrough,
+                  (v) => controller.changeClickThrough(v),
+                ),
+              ]),
+              const SizedBox(height: 32),
+              _sectionHeader('Test Interactions'),
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 16),
+                child: Text(
+                  'Trigger instant animations to see how your pet reacts to different app states.',
+                  style: TextStyle(
+                    color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                    fontSize: 13,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+              ),
+              _buildCompanionTestInteractions(),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCompanionThemeDropdown(CompanionOverlayController controller) {
+    final themes = [
+      {'id': 'grey_cat', 'name': 'Classic Grey (Grey Tabby)', 'emoji': '🐱'},
+      {'id': 'orange_cat', 'name': 'Playful Ginger (Orange Tabby)', 'emoji': '🐈'},
+      {'id': 'black_cat', 'name': 'Sleek Shadow (Black Panther)', 'emoji': '🐈‍⬛'},
+      {'id': 'large_cat', 'name': 'Fluffy Calico (Maine Coon)', 'emoji': '🦁'},
+    ];
+
+    return _buildCard([
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            const Text(
+              'Selected Breed',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
+            const Spacer(),
+            Material(
+              type: MaterialType.transparency,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: controller.companionCatTheme,
+                    dropdownColor: const Color(0xFF1E1E1E),
+                    icon: const Icon(CupertinoIcons.chevron_down, size: 14, color: AppTheme.accentColor),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontFamily: 'Satoshi',
+                      fontWeight: FontWeight.w500,
+                    ),
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        controller.changeTheme(newValue);
+                      }
+                    },
+                    items: themes.map<DropdownMenuItem<String>>((theme) {
+                      return DropdownMenuItem<String>(
+                        value: theme['id']!,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(theme['emoji']!),
+                            const SizedBox(width: 8),
+                            Text(theme['name']!),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ]);
+  }
+
+  Widget _buildCompanionTestInteractions() {
+    final interactions = [
+      {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+      {'label': 'Take Nap', 'icon': CupertinoIcons.moon_zzz_fill, 'state': 'sleep'},
+      {'label': 'Jump', 'icon': CupertinoIcons.arrow_up_circle_fill, 'state': 'notification'},
+      {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+    ];
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: interactions.map((inter) {
+        return CupertinoButton(
+          padding: EdgeInsets.zero,
+          onPressed: () async {
+            await MacOSBridge.triggerCompanionState(inter['state'] as String);
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  inter['icon'] as IconData,
+                  size: 13,
+                  color: AppTheme.accentColor,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  inter['label'] as String,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }

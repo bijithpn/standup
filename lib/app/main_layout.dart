@@ -70,6 +70,11 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Clock Out',
     ),
     _NavItem(
+      label: 'Companion',
+      icon: CupertinoIcons.paw,
+      section: 'Companion',
+    ),
+    _NavItem(
       label: 'Statistics',
       icon: CupertinoIcons.chart_bar,
       section: 'Statistics',
@@ -263,6 +268,7 @@ class _MainLayoutState extends State<MainLayout> {
           SettingsPage(section: 'Flash Reminder'),
           SettingsPage(section: 'Exercises'),
           SettingsPage(section: 'Clock Out'),
+          SettingsPage(section: 'Companion'),
           SettingsPage(section: 'Statistics'),
           // Bottom nav
           SettingsPage(section: 'About'),

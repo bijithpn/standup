@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
@@ -14,8 +13,6 @@ import 'package:standup/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
-import 'package:standup/core/services/notification_service.dart';
 
 
 class BreakMateApp extends StatefulWidget {
@@ -51,63 +48,9 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     // Connect tray to timer engine for dynamic menu updates
     tray.setDependencies(timerEngine, controller);
 
-    tray.onMenuAction = (action) async {
-      final overlayService = sl<OverlayWindowService>();
-      final navigation = sl<AppNavigationService>();
-
-      Future<void> openSection(String section) async {
-        navigation.openSection(section);
-        await overlayService.showDashboard();
-      }
-
-      switch (action) {
-        case 'open_dashboard':
-        case 'settings':
-          await openSection('General');
-          break;
-        case 'open_settings':
-          await openSection('General');
-          break;
-        case 'open_flash':
-          await openSection('Flash Reminder');
-          break;
-        case 'open_exercises':
-          await openSection('Exercises');
-          break;
-        case 'open_stats':
-          await openSection('Statistics');
-          break;
-        case 'toggle_pause':
-          controller.togglePause();
-          tray.updatePauseState(controller.isPaused);
-          break;
-        case 'take_break':
-          controller.takeBreakNow();
-          break;
-        case 'skip_next':
-          controller.skipNextBreak();
-          break;
-        case 'complete_break':
-          controller.completeCurrentBreak();
-          break;
-        case 'skip_current_break':
-          controller.skipCurrentBreak();
-          break;
-        case 'postpone_break':
-          controller.postponeCurrentBreak();
-          break;
-        case 'posture_reminder':
-          await sl<NotificationService>().showPostureReminder();
-          break;
-        case 'quit':
-          await overlayService.reset();
-
-          await windowManager.setPreventClose(false);
-          await windowManager.destroy();
-          exit(0);
-      }
-    };
-
+    // tray.onMenuAction is no longer strictly needed for default actions 
+    // as TrayManagerService handles them internally now.
+    
     controller.addListener(() {
       tray.updatePauseState(controller.isPaused);
       

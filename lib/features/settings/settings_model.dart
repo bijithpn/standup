@@ -60,6 +60,10 @@ class SettingsModel {
   final bool useCursorCountdown;
   final bool enableAnimations;
   final String trayIconStyle; // 'default', 'cat', 'minimal', 'countdown'
+  final bool companionEnabled;
+  final String companionCatTheme;
+  final double companionScale;
+  final bool companionClickThrough;
 
   const SettingsModel({
     this.autoStart = true,
@@ -101,6 +105,10 @@ class SettingsModel {
     this.useCursorCountdown = true,
     this.enableAnimations = true,
     this.trayIconStyle = 'cat',
+    this.companionEnabled = false,
+    this.companionCatTheme = 'grey_cat',
+    this.companionScale = 6.0,
+    this.companionClickThrough = false,
   });
 
   SettingsModel copyWith({
@@ -143,6 +151,10 @@ class SettingsModel {
     bool? useCursorCountdown,
     bool? enableAnimations,
     String? trayIconStyle,
+    bool? companionEnabled,
+    String? companionCatTheme,
+    double? companionScale,
+    bool? companionClickThrough,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -184,6 +196,10 @@ class SettingsModel {
       useCursorCountdown: useCursorCountdown ?? this.useCursorCountdown,
       enableAnimations: enableAnimations ?? this.enableAnimations,
       trayIconStyle: trayIconStyle ?? this.trayIconStyle,
+      companionEnabled: companionEnabled ?? this.companionEnabled,
+      companionCatTheme: companionCatTheme ?? this.companionCatTheme,
+      companionScale: companionScale ?? this.companionScale,
+      companionClickThrough: companionClickThrough ?? this.companionClickThrough,
     );
   }
 
@@ -227,6 +243,10 @@ class SettingsModel {
         'useCursorCountdown': useCursorCountdown,
         'enableAnimations': enableAnimations,
         'trayIconStyle': trayIconStyle,
+        'companionEnabled': companionEnabled,
+        'companionCatTheme': companionCatTheme,
+        'companionScale': companionScale,
+        'companionClickThrough': companionClickThrough,
       };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -282,6 +302,10 @@ class SettingsModel {
       useCursorCountdown: map['useCursorCountdown'] as bool? ?? true,
       enableAnimations: map['enableAnimations'] as bool? ?? true,
       trayIconStyle: map['trayIconStyle'] as String? ?? 'cat',
+      companionEnabled: map['companionEnabled'] as bool? ?? false,
+      companionCatTheme: map['companionCatTheme'] as String? ?? 'grey_cat',
+      companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
+      companionClickThrough: map['companionClickThrough'] as bool? ?? false,
     );
   }
 }

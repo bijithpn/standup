@@ -61,6 +61,41 @@ class MacOSBridge {
     await _invokeSafely('updateOverlayData', data);
   }
 
+  /// Spawns the native floating desktop companion window
+  static Future<void> showCompanion(Map<String, dynamic> args) async {
+    await _invokeSafely('showCompanion', args);
+  }
+
+  /// Closes the native floating desktop companion window
+  static Future<void> hideCompanion() async {
+    await _invokeSafely('hideCompanion');
+  }
+
+  /// Sets companion window click-through mode
+  static Future<void> setCompanionClickThrough(bool ignore) async {
+    await _invokeSafely('setCompanionClickThrough', {'ignore': ignore});
+  }
+
+  /// Updates companion scale and native dimensions
+  static Future<void> updateCompanionScale(double scale) async {
+    await _invokeSafely('updateCompanionScale', {'scale': scale});
+  }
+
+  /// Swaps companion theme dynamically
+  static Future<void> updateCompanionTheme(String themeId) async {
+    await _invokeSafely('updateCompanionTheme', {'themeId': themeId});
+  }
+
+  /// Triggers a dynamic behavioral animation state in the companion overlay
+  static Future<void> triggerCompanionState(String stateName) async {
+    await _invokeSafely('triggerCompanionState', {'state': stateName});
+  }
+
+  /// Sets wandering AI state in the companion overlay
+  static Future<void> setCompanionWandering(bool enabled) async {
+    await _invokeSafely('setCompanionWandering', {'enabled': enabled});
+  }
+
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

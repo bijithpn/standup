@@ -14,6 +14,8 @@ import 'package:standup/features/break_system/application/break_controller.dart'
 import 'package:standup/core/native/meeting_detection_service.dart';
 import 'package:standup/core/native/focus_mode_service.dart';
 import 'package:standup/features/break_system/application/strict_mode_controller.dart';
+import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:standup/features/companion/controllers/cat_behavior_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -88,5 +90,16 @@ Future<void> initDependencies() async {
   );
   breakController.initialize();
   sl.registerSingleton<BreakController>(breakController);
+
+  final companionOverlayController = CompanionOverlayController(
+    settingsRepo: sl(),
+  );
+  await companionOverlayController.init();
+  sl.registerSingleton<CompanionOverlayController>(companionOverlayController);
+
+  final catBehaviorController = CatBehaviorController(
+    timerEngine: sl(),
+  );
+  sl.registerSingleton<CatBehaviorController>(catBehaviorController);
 
 }

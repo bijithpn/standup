@@ -96,6 +96,10 @@ class SettingsRepository {
       trayIconStyle: _storage.getString('tray_icon_style', defaultValue: 'cat'),
       dailyWorkGoalHours: _storage.getInt('daily_work_goal_hours', defaultValue: 8),
       remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
+      companionEnabled: _storage.getBool('companion_enabled', defaultValue: true),
+      companionCatTheme: _storage.getString('companion_cat_theme', defaultValue: 'grey_cat'),
+      companionScale: _storage.getDouble('companion_scale', defaultValue: 1.5),
+      companionClickThrough: _storage.getBool('companion_click_through', defaultValue: false),
     );
   }
 
@@ -172,6 +176,10 @@ class SettingsRepository {
         'remind_clock_out_enabled',
         settings.remindClockOutEnabled,
       ),
+      _storage.setBool('companion_enabled', settings.companionEnabled),
+      _storage.setString('companion_cat_theme', settings.companionCatTheme),
+      _storage.setDouble('companion_scale', settings.companionScale),
+      _storage.setBool('companion_click_through', settings.companionClickThrough),
     ]);
   }
 

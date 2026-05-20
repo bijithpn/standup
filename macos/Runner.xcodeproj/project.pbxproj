@@ -32,6 +32,7 @@
 		33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0022044BFA00003C045 /* FocusModeBridge.swift */; };
 		33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */; };
 		33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */; };
+		33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -94,6 +95,7 @@
 		33CCB0022044BFA00003C045 /* FocusModeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeBridge.swift; sourceTree = "<group>"; };
 		33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetectionBridge.swift; sourceTree = "<group>"; };
 		33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowBridge.swift; sourceTree = "<group>"; };
+		33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWindowManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -207,6 +209,7 @@
 			children = (
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
+				33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -460,6 +463,7 @@
 				33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */,
 				33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */,
 				33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */,
+				33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

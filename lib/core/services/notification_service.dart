@@ -1,7 +1,11 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/errors/app_exception.dart';
 import 'package:standup/core/errors/error_handler.dart';
 import 'package:standup/core/utils/logger.dart';
+import 'package:standup/features/companion/data/cat_asset_loader.dart';
+import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/settings/settings_repository.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =
@@ -113,9 +117,20 @@ class NotificationService {
 
     await _errorHandler.guard(
       action: () async {
+        // Retrieve selected companion theme
+        final settingsRepo = sl<SettingsRepository>();
+        final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
+        final theme = CatTheme.getTheme(selectedThemeId);
+        
+        // Extract the icon for the selected companion theme
+        final iconPath = await CatAssetLoader.extractCatIconPath(theme);
+
         final macOS = DarwinNotificationDetails(
           presentAlert: true,
           presentSound: _soundEnabled,
+          attachments: iconPath.isNotEmpty
+              ? [DarwinNotificationAttachment(iconPath)]
+              : null,
         );
         await _plugin.show(id, title, body, NotificationDetails(macOS: macOS));
       },
