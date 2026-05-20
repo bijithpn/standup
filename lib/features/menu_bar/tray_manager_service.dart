@@ -161,41 +161,61 @@ class TrayManagerService with TrayListener {
       final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
       
       if (_isBreakActive) {
-        statusLabel = 'On Break!';
+        statusLabel = 'On Break';
         final breakRemaining = _timerEngine!.countdownSeconds;
         final breakMins = breakRemaining ~/ 60;
         final breakSecs = (breakRemaining % 60).toString().padLeft(2, '0');
-        nextBreakLabel = 'Break: $breakMins:$breakSecs remaining';
+        nextBreakLabel = 'Time Remaining: $breakMins:$breakSecs';
       } else if (_isPaused) {
-        statusLabel = 'Paused';
-        nextBreakLabel = 'Reminders paused';
+        statusLabel = 'Reminders Paused';
+        nextBreakLabel = 'Timer is inactive';
       } else {
-        final breakType = 'Short'; // Simplified - would need TimerEngine to expose this
-        nextBreakLabel = 'Next: $mins:$secs ($breakType)';
+        statusLabel = 'Reminders Active';
+        nextBreakLabel = 'Next Break: $mins:$secs';
       }
     }
 
-    final menu = Menu(items: [
-      MenuItem(label: statusLabel, disabled: true),
-      MenuItem(label: nextBreakLabel, disabled: true),
-      MenuItem.separator(),
-      MenuItem(key: 'open_dashboard', label: 'Open Dashboard…'),
-      MenuItem(key: 'open_settings', label: 'Settings…'),
-      MenuItem(key: 'open_flash', label: 'Flash Reminder…'),
-      MenuItem(key: 'open_exercises', label: 'Exercises…'),
-      MenuItem(key: 'open_stats', label: 'Statistics…'),
-      MenuItem.separator(),
-      MenuItem(
-        key: 'toggle_pause',
-        label: _isPaused ? 'Resume Reminders' : 'Pause Reminders',
-      ),
-      MenuItem(key: 'take_break', label: 'Start Break Now'),
-      MenuItem(key: 'skip_next', label: 'Skip Next Break'),
+    final List<MenuItem> items = [];
+
+    // Header info (disabled items)
+    items.add(MenuItem(label: statusLabel, disabled: true));
+    items.add(MenuItem(label: nextBreakLabel, disabled: true));
+    items.add(MenuItem.separator());
+
+    // Contextual actions
+    if (_isBreakActive) {
+      items.addAll([
+        MenuItem(key: 'complete_break', label: 'Complete Break'),
+        MenuItem(key: 'skip_current_break', label: 'Skip Break'),
+        MenuItem(key: 'postpone_break', label: 'Postpone Break (2 min)'),
+        MenuItem.separator(),
+      ]);
+    } else {
+      items.addAll([
+        MenuItem(
+          key: 'toggle_pause',
+          label: _isPaused ? 'Resume Reminders' : 'Pause Reminders',
+        ),
+        MenuItem(key: 'take_break', label: 'Start Break Now'),
+        MenuItem(key: 'skip_next', label: 'Skip Next Break'),
+        MenuItem.separator(),
+      ]);
+    }
+
+    // App Navigation & Extras
+    items.addAll([
+      MenuItem(key: 'open_dashboard', label: 'Open Dashboard'),
+      MenuItem(key: 'open_settings', label: 'Settings'),
+      MenuItem(key: 'open_flash', label: 'Flash Reminder'),
+      MenuItem(key: 'open_exercises', label: 'Exercises'),
+      MenuItem(key: 'open_stats', label: 'Statistics'),
       MenuItem.separator(),
       MenuItem(key: 'posture_reminder', label: 'Posture Reminder'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Quit BreakMate'),
     ]);
+
+    final menu = Menu(items: items);
     await trayManager.setContextMenu(menu);
   }
 
@@ -234,12 +254,12 @@ class TrayManagerService with TrayListener {
 
   @override
   void onTrayIconMouseDown() {
-    onMenuAction?.call('open_dashboard');
+    trayManager.popUpContextMenu();
   }
 
   @override
   void onTrayIconMouseUp() {
-    onMenuAction?.call('open_dashboard');
+    // No-op to prevent double popup / dashboard redirect
   }
 
   @override

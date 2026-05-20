@@ -15,6 +15,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
+import 'package:standup/core/services/notification_service.dart';
 
 
 class BreakMateApp extends StatefulWidget {
@@ -85,6 +86,18 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
           break;
         case 'skip_next':
           controller.skipNextBreak();
+          break;
+        case 'complete_break':
+          controller.completeCurrentBreak();
+          break;
+        case 'skip_current_break':
+          controller.skipCurrentBreak();
+          break;
+        case 'postpone_break':
+          controller.postponeCurrentBreak();
+          break;
+        case 'posture_reminder':
+          await sl<NotificationService>().showPostureReminder();
           break;
         case 'quit':
           await overlayService.reset();

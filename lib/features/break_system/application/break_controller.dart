@@ -145,6 +145,11 @@ class BreakController extends ChangeNotifier {
     }
   }
 
+  void completeCurrentBreak() {
+    _timerEngine.finishBreak(skipped: false);
+    sl<TrayManagerService>().setBreakActive(false);
+  }
+
   void onBreakCompleted() {
     // Force save timer state to persist the completed break
     _timerEngine.saveState();

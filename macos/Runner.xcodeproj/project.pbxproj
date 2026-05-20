@@ -29,6 +29,9 @@
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		4FD228EB5507191C2365CC9C /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A69135DD4AF97FEDD36BE63A /* Pods_RunnerTests.framework */; };
 		6B276CDF8F02F3FEA8C1E1AC /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C3722FF03BB13E607FBCA37A /* Pods_Runner.framework */; };
+		33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0022044BFA00003C045 /* FocusModeBridge.swift */; };
+		33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */; };
+		33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -88,6 +91,9 @@
 		C0A48AFE920976EE02ABC252 /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		C3722FF03BB13E607FBCA37A /* Pods_Runner.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Runner.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDA53F23B17F28E83E943EB6 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
+		33CCB0022044BFA00003C045 /* FocusModeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeBridge.swift; sourceTree = "<group>"; };
+		33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetectionBridge.swift; sourceTree = "<group>"; };
+		33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -143,6 +149,16 @@
 			path = Configs;
 			sourceTree = "<group>";
 		};
+		33CCB0002044BFA00003C045 /* Bridges */ = {
+			isa = PBXGroup;
+			children = (
+				33CCB0022044BFA00003C045 /* FocusModeBridge.swift */,
+				33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */,
+				33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */,
+			);
+			path = Bridges;
+			sourceTree = "<group>";
+		};
 		33CC10E42044A3C60003C045 = {
 			isa = PBXGroup;
 			children = (
@@ -195,6 +211,7 @@
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
 				33BA886A226E78AF003329D5 /* Configs */,
+				33CCB0002044BFA00003C045 /* Bridges */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -440,6 +457,9 @@
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
+				33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */,
+				33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */,
+				33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

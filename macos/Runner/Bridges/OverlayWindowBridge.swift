@@ -27,7 +27,7 @@ class OverlayWindowBridge: NSObject {
             window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle, .stationary]
         } else {
             window.level = .normal
-            window.collectionBehavior = [.default]
+            window.collectionBehavior = []
         }
     }
 }
