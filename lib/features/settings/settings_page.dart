@@ -18,6 +18,10 @@ import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/utils/toast.dart';
 import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:standup/core/native/macos_bridge.dart';
+import 'package:standup/features/settings/widgets/general_section.dart';
+import 'package:standup/features/settings/widgets/focus_section.dart';
+import 'package:standup/features/settings/widgets/notifications_section.dart';
+import 'package:standup/features/settings/widgets/about_section.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -37,12 +41,21 @@ class _SettingsPageState extends State<SettingsPage> {
       case 0: // Today
         if (_stats.weeklyData.isNotEmpty) {
           final now = DateTime.now();
-          final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-          return _stats.weeklyData.firstWhere((d) => d.date == today, orElse: () => _stats.weeklyData.last).breaksCompleted;
+          final today =
+              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+          return _stats.weeklyData
+              .firstWhere(
+                (d) => d.date == today,
+                orElse: () => _stats.weeklyData.last,
+              )
+              .breaksCompleted;
         }
         return 0;
       case 1: // Week
-        return _stats.weeklyData.fold<int>(0, (sum, day) => sum + day.breaksCompleted);
+        return _stats.weeklyData.fold<int>(
+          0,
+          (sum, day) => sum + day.breaksCompleted,
+        );
       case 2: // Month
       case 3: // All
       default:
@@ -55,12 +68,21 @@ class _SettingsPageState extends State<SettingsPage> {
       case 0: // Today
         if (_stats.weeklyData.isNotEmpty) {
           final now = DateTime.now();
-          final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-          return _stats.weeklyData.firstWhere((d) => d.date == today, orElse: () => _stats.weeklyData.last).breaksSkipped;
+          final today =
+              '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+          return _stats.weeklyData
+              .firstWhere(
+                (d) => d.date == today,
+                orElse: () => _stats.weeklyData.last,
+              )
+              .breaksSkipped;
         }
         return 0;
       case 1: // Week
-        return _stats.weeklyData.fold<int>(0, (sum, day) => sum + day.breaksSkipped);
+        return _stats.weeklyData.fold<int>(
+          0,
+          (sum, day) => sum + day.breaksSkipped,
+        );
       case 2: // Month
       case 3: // All
       default:
@@ -182,7 +204,7 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildContent() {
     switch (widget.section) {
       case 'General':
-        return _buildGeneral();
+        return GeneralSection(settings: _settings, onSave: _save);
       case 'Flash Reminder':
         return _buildFlashReminder();
       case 'Breaks':
@@ -192,15 +214,15 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Intelligent Detection':
         return _buildIntelligentDetection();
       case 'Focus Mode':
-        return _buildFocusMode();
+        return FocusSection(settings: _settings, onSave: _save);
       case 'Notifications':
-        return _buildNotifications();
+        return NotificationsSection(settings: _settings, onSave: _save);
       case 'Exercises':
         return _buildExercises();
       case 'Clock Out':
         return _buildClockOut();
       case 'About':
-        return _buildAbout();
+        return AboutSection(settings: _settings, onSave: _save);
       case 'Statistics':
         return _buildStatistics();
       case 'Companion':
@@ -1590,11 +1612,17 @@ class _SettingsPageState extends State<SettingsPage> {
             children: List.generate(52, (col) {
               final dayOffset = (51 - col) * 5 + (4 - row);
               final cellDate = now.subtract(Duration(days: dayOffset));
-              final dateStr = '${cellDate.year}-${cellDate.month.toString().padLeft(2, '0')}-${cellDate.day.toString().padLeft(2, '0')}';
-              
-              final dayStats = weeklyStats.where((d) => d.date == dateStr).firstOrNull;
-              final hasActivity = dayStats != null && dayStats.breaksCompleted > 0;
-              final intensity = dayStats != null ? (dayStats.breaksCompleted / 8).clamp(0.2, 1.0) : 0.0;
+              final dateStr =
+                  '${cellDate.year}-${cellDate.month.toString().padLeft(2, '0')}-${cellDate.day.toString().padLeft(2, '0')}';
+
+              final dayStats = weeklyStats
+                  .where((d) => d.date == dateStr)
+                  .firstOrNull;
+              final hasActivity =
+                  dayStats != null && dayStats.breaksCompleted > 0;
+              final intensity = dayStats != null
+                  ? (dayStats.breaksCompleted / 8).clamp(0.2, 1.0)
+                  : 0.0;
 
               return Expanded(
                 child: Padding(
@@ -1926,14 +1954,22 @@ class _SettingsPageState extends State<SettingsPage> {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.05),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
-                      value: options.contains(value) ? value : (options.isNotEmpty ? options.first : null),
+                      value: options.contains(value)
+                          ? value
+                          : (options.isNotEmpty ? options.first : null),
                       dropdownColor: const Color(0xFF1E1E1E),
-                      icon: const Icon(CupertinoIcons.chevron_down, size: 14, color: AppTheme.accentColor),
+                      icon: const Icon(
+                        CupertinoIcons.chevron_down,
+                        size: 14,
+                        color: AppTheme.accentColor,
+                      ),
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: isSmallScreen ? 11 : 12,
@@ -1941,7 +1977,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         fontFamily: 'Satoshi',
                       ),
                       onChanged: onChanged,
-                      items: options.map<DropdownMenuItem<String>>((String option) {
+                      items: options.map<DropdownMenuItem<String>>((
+                        String option,
+                      ) {
                         return DropdownMenuItem<String>(
                           value: option,
                           child: Text(option.toUpperCase()),
@@ -2179,9 +2217,15 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
-            value: options.contains(value) ? value : (options.isNotEmpty ? options.first : null),
+            value: options.contains(value)
+                ? value
+                : (options.isNotEmpty ? options.first : null),
             dropdownColor: const Color(0xFF1E1E1E),
-            icon: const Icon(CupertinoIcons.chevron_down, size: 12, color: Colors.white54),
+            icon: const Icon(
+              CupertinoIcons.chevron_down,
+              size: 12,
+              color: Colors.white54,
+            ),
             style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 11,
@@ -2713,6 +2757,65 @@ class _SettingsPageState extends State<SettingsPage> {
                   (v) => controller.changeClickThrough(v),
                 ),
               ]),
+              const SizedBox(height: 16),
+              // Instant refresh button — forces a clean re-spawn with all current settings
+              _buildCard([
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.sync,
+                        size: 18,
+                        color: AppTheme.accentColor,
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Refresh Companion',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                            Text(
+                              'Re-spawn companion with all current settings applied instantly',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      SizedBox(
+                        height: 32,
+                        child: ElevatedButton.icon(
+                          onPressed: () => controller.refreshCompanion(),
+                          icon: const Icon(Icons.refresh, size: 16),
+                          label: const Text('Update'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.accentColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ]),
               const SizedBox(height: 32),
               _sectionHeader('Test Interactions'),
               Padding(
@@ -2737,8 +2840,16 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildCompanionThemeDropdown(CompanionOverlayController controller) {
     final themes = [
       {'id': 'grey_cat', 'name': 'Classic Grey (Grey Tabby)', 'emoji': '🐱'},
-      {'id': 'orange_cat', 'name': 'Playful Ginger (Orange Tabby)', 'emoji': '🐈'},
-      {'id': 'black_cat', 'name': 'Sleek Shadow (Black Panther)', 'emoji': '🐈‍⬛'},
+      {
+        'id': 'orange_cat',
+        'name': 'Playful Ginger (Orange Tabby)',
+        'emoji': '🐈',
+      },
+      {
+        'id': 'black_cat',
+        'name': 'Sleek Shadow (Black Panther)',
+        'emoji': '🐈‍⬛',
+      },
       {'id': 'large_cat', 'name': 'Fluffy Calico (Maine Coon)', 'emoji': '🦁'},
     ];
 
@@ -2762,14 +2873,20 @@ class _SettingsPageState extends State<SettingsPage> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                  ),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: controller.companionCatTheme,
                     dropdownColor: const Color(0xFF1E1E1E),
-                    icon: const Icon(CupertinoIcons.chevron_down, size: 14, color: AppTheme.accentColor),
+                    icon: const Icon(
+                      CupertinoIcons.chevron_down,
+                      size: 14,
+                      color: AppTheme.accentColor,
+                    ),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 13,
@@ -2807,8 +2924,16 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildCompanionTestInteractions() {
     final interactions = [
       {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-      {'label': 'Take Nap', 'icon': CupertinoIcons.moon_zzz_fill, 'state': 'sleep'},
-      {'label': 'Jump', 'icon': CupertinoIcons.arrow_up_circle_fill, 'state': 'notification'},
+      {
+        'label': 'Take Nap',
+        'icon': CupertinoIcons.moon_zzz_fill,
+        'state': 'sleep',
+      },
+      {
+        'label': 'Jump',
+        'icon': CupertinoIcons.arrow_up_circle_fill,
+        'state': 'notification',
+      },
       {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
     ];
 

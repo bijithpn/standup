@@ -116,4 +116,16 @@ class CompanionOverlayController extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Forces an immediate full sync of all companion settings to the native window.
+  /// Use this when changes aren't rendering instantly — sends everything in one shot.
+  Future<void> refreshCompanion() async {
+    if (!_companionEnabled) return;
+
+    // Hide and re-spawn for a clean render
+    await MacOSBridge.hideCompanion();
+    // Small delay to ensure the window is fully torn down
+    await Future.delayed(const Duration(milliseconds: 300));
+    await _syncToNativeSpawn();
+  }
 }

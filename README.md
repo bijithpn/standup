@@ -4,10 +4,10 @@
 >
 > **Created by Bijith P N**
 
-BreakMate is a desktop productivity application that reminds you to take regular breaks from computer work. It runs discreetly in your macOS menu bar, providing intelligent break scheduling, smart meeting detection, a desktop cat companion, flash notifications, exercise suggestions, and productivity analytics — all designed to help you maintain healthy work habits.
+BreakMate is a desktop productivity application that reminds you to take regular breaks from computer work. It runs discreetly in your macOS menu bar, providing intelligent break scheduling, smart meeting detection, an interactive desktop cat companion, flash notifications, exercise suggestions, and productivity analytics — all designed to help you maintain healthy work habits.
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Platform](https://img.shields.io/badge/platform-macos%20%7C%20windows-lightgrey)
+![Platform](https://img.shields.io/badge/platform-macos-lightgrey)
 ![Flutter](https://img.shields.io/badge/Flutter-3.10.4-blue)
 ![Dart](https://img.shields.io/badge/Dart-3.10.4-blue)
 
@@ -26,101 +26,145 @@ BreakMate is a desktop productivity application that reminds you to take regular
 - [Adding New Features](#adding-new-features)
 - [Code Conventions](#code-conventions)
 - [Roadmap](#roadmap)
+- [Technical Debt](#technical-debt)
+- [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Features
 
-### Core
-- **Break Timer Engine** — Configurable short/long break intervals with countdown tracking
-- **Menu Bar Integration** — System tray with animated cat icons showing real-time countdown
-- **Break Profiles** — Pre-configured and custom profiles (Pomodoro, Deep Work, Flexible, Strict)
-- **Working Hours** — Timer only runs during configured work days and time ranges
-- **Strict Mode** — Prevents skipping breaks; keeps overlay always-on-top
+### Core Break System
+- **Timer Engine** — State machine with running/paused/idle/breakActive states
+- **Work Modes** — Pomodoro, Deep Work, Flexible, and Strict profiles
+- **Short & Long Breaks** — Configurable intervals (default: 20min short, 60min long)
+- **Break Profiles** — Pre-configured and custom profiles with health/productivity presets
+- **Working Hours** — Day-of-week selection, start/end time configuration
+- **Strict Mode** — Unskippable breaks, screenSaver-level overlay, meeting suppression
 - **Clock Out** — End-of-workday reminder for work-life boundaries
+- **Break Postponement** — 2-minute postpone option
+- **Pre-Break Warning** — 20-second countdown warning before break triggers
 
-### Smart Detection
-- **Meeting Detection** — Auto-pauses during Zoom, Teams, Google Meet, FaceTime calls
-- **Focus Mode** — Respects macOS Focus/Do Not Disturb settings
-- **Activity Monitoring** — Detects user idle time; auto-pauses and resets timer
+### Smart Detection & Automation
+- **Meeting Detection** — Auto-pauses during Zoom, Teams, Google Meet, FaceTime, Slack, Webex, Loom (native EventChannel)
+- **Focus Mode** — Respects macOS Focus/Do Not Disturb settings (native EventChannel)
+- **Activity Monitoring** — Detects user idle time via native bridge; auto-pauses and resets timer
+- **Adaptive Break Service** — Learns user activity patterns, suggests optimal intervals, focus quality scoring
 
 ### Notifications & Overlays
-- **Flash Notifications** — Full-screen flash alerts with customizable:
+- **Multi-Display Overlay** — Full-screen break screen across all monitors (separate Flutter engine)
+- **Break Overlay** — Ken Burns slideshow, countdown timer, wellness tips, break activity graph
+- **Pre-Break Warning** — Countdown warning overlay before break starts
+- **Flash Notifications** — Full-screen flash with customizable:
   - Color schemes (default, photo, cat themes)
   - Animations (pulse, glow, fade, dim, edge)
   - Intensity levels and duration
   - Custom messages
-- **Multi-Display Support** — Full-screen overlay across all monitors
-- **Break Activities** — Breathing assistant, exercise suggestions, wellness slideshow
+- **System Notifications** — Cat-themed attachments, eye rest reminders, posture checks, clock-out reminders
 
-### Desktop Companion
-- **Animated Cat Pet** — Floating desktop companion using Flame game engine
-- **Multiple Themes** — Grey, orange, black, and large cat variants
-- **Behavior States** — Idle, blink, stretch, sleeping, alert animations
-- **Sprite Sheet Animations** — Smooth frame-by-frame rendering
+### Desktop Companion (Interactive Pet)
+- **Flame Game Engine** — Sprite-based game with low-CPU idle mode (<2% CPU)
+- **Cat State Machine (FSM)** — 10 states (idle, blink, stretch, walk, sleep, alert, happy, drag, breakReminder, meetingPaused, focusMode) with 15 event types and timed transitions
+- **Event-Driven Behavior** — Companion reacts to all app events (timer changes, breaks, meetings, focus mode, idle) via EventBus
+- **4 Cat Themes** — Grey, Orange, Black (composite sprite sheets), Large (separate files)
+- **Ambient Behaviors** — Random blink, stretch, look around, yawn, happy animations
+- **Draggable Window** — Native `NSPanel` with drag support and interaction handling
+- **Click-Through Toggle** — Enable/disable mouse passthrough mode
+- **Dynamic Theme/Scale** — Runtime theme switching and scaling without restart
 
-### Analytics
+### Tray Menu & Menu Bar
+- **MenuBarController** — Centralized action routing for all tray menu items
+- **Dynamic Tray Menu** — Contextual menu with real-time timer/break state
+- **Animated Cat Icons** — Tray icon changes based on app state (idle, blink, stretch, sleeping, alert)
+- **Countdown Tooltip** — Live countdown timer in tray tooltip
+- **Display Modes** — Countdown, progress, icon, focusdot display modes
+
+### Analytics & Statistics
 - **Break Tracking** — Completed, skipped, and total breaks
-- **Streaks** — Current and best streak tracking
-- **Weekly Heatmap** — Visual representation of break activity
+- **Streaks** — Current and longest streak tracking
+- **Weekly Heatmap** — Visual representation of break activity (365-day rolling)
 - **Productivity Score** — Computed 0-100 score based on break compliance
 - **Insights** — Auto-generated productivity recommendations
+- **Break Activity Graph** — Visual graph shown on break overlay
 
-### Settings
+### Settings & Configuration
+- **9 Settings Sections** — General, Breaks & Profiles, Focus Mode, Flash Reminder, Exercises, Clock Out, Companion, Statistics, About
+- **40+ Configurable Settings** — All persisted via SharedPreferences
+- **Custom Exercise Library** — CRUD for 5 categories (eye rest, posture, breathing, movement, stretch)
 - **Launch at Startup** — Auto-start on login
-- **Single Instance** — Port-based check prevents multiple app instances
-- **Appearance** — Dark theme matching macOS native aesthetics
-- **Custom Exercises** — CRUD operations for exercise library (eye rest, posture, breathing, movement, stretch)
+- **Single Instance** — Port-based check (port 10425) prevents multiple app instances
+
+### Wellness
+- **Wellness Articles** — 20-20-20 rule, posture, hydration, micro-breaks
+- **Wellness Slideshow** — Background images on break overlay with Ken Burns effect
+- **Break Activities** — Breathing assistant, exercise suggestions
+
+### Native macOS Integration
+- **17 Native Methods** — Overlay show/hide, visual effects, window level, presentation options, idle time, appearance, companion management
+- **EventChannel Streams** — Meeting detection and focus mode state streaming
+- **Glassmorphic Effects** — flutter_acrylic vibrancy integration
+- **`NSPanel` Companion** — Proper floating window with transparency, drag, and always-on-top
 
 ---
 
 ## Architecture
 
-### Pattern: Feature-First + Service Layer with GetIt DI
+### Pattern: Feature-First Layered Architecture with Event Bus & Multi-Engine
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      UI Layer                           │
 │  (Features → Presentation → Widgets/Pages)             │
-│         Uses Provider for reactive state                │
+│         Uses Provider + ChangeNotifier                  │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
 │                   Application Layer                     │
-│  (Controllers: BreakController, StrictModeController)   │
+│  (Controllers: BreakController, MenuBarController,      │
+│   StrictModeController, CompanionStateManager)          │
+└────────────────────────┬────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│                    Event Bus Layer                       │
+│  (StreamController pub/sub — 13 typed AppEvent classes) │
+│  TimerStateChanged, BreakStarted, MeetingDetected, etc. │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
 │                    Service Layer                        │
 │  (TimerEngine, NotificationService, SmartDetection,     │
-│   OverlayWindowService, TrayManagerService, etc.)       │
+│   OverlayWindowService, TrayManagerService,             │
+│   CompanionBehaviorEngine, WindowService, etc.)         │
 └────────────────────────┬────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────┐
 │                  Infrastructure Layer                   │
-│  (StorageService, MacOSBridge, Native Method Channels)  │
+│  (StorageService, MacOSBridge, Native Method Channels,  │
+│   IPC Bridge, CompanionWindowManager Swift)             │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### State Flow
 
 ```
-SettingsRepository → TimerEngine → BreakController → UI (via Provider)
-                        │                    │
-                        ▼                    ▼
-                   TrayManager         OverlayWindowService
+SettingsRepository → TimerEngine → EventBus → Companion FSM → Flame Game
+                         │              │
+                         ▼              ▼
+                   TrayManager    BreakController → OverlayWindowService
 ```
 
 ### Key Architectural Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| **GetIt DI** | Service locator pattern for singleton services; simple and explicit |
-| **Provider** | Reactive state management for UI; ChangeNotifier-based |
-| **Multi-Engine** | Three Flutter engines: dashboard, overlay, companion pet — isolated rendering |
-| **MethodChannel** | Native macOS bridge for overlay windows, companion window, appearance detection |
-| **SharedPreferences** | Lightweight persistent storage for settings (40+ fields) |
-| **Feature-First** | Each feature is self-contained with its own models, controllers, and UI |
+| **GetIt DI** | Service locator for 20+ singleton services; simple and explicit |
+| **Provider** | Reactive UI state via ChangeNotifier (BreakController, TimerEngine) |
+| **Event Bus** | Decoupled cross-layer communication — 13 typed event classes, no polling |
+| **Multi-Engine** | Three Flutter engines: `main()` dashboard, `overlayMain()` break screen, `companionMain()` desktop pet |
+| **FSM Companion** | Cat behavior driven by finite state machine with min-duration guards and event mapping |
+| **MethodChannel** | Native macOS bridge for overlays, companion window, idle time, appearance |
+| **SharedPreferences** | Lightweight persistent storage for 40+ settings fields |
+| **Feature-First** | Each feature is self-contained with domain/application/presentation layers |
+| **MenuBarController** | Centralized tray action routing — single source of truth for menu behavior |
 
 ---
 
@@ -136,7 +180,7 @@ standup/
 │   │
 │   ├── app/
 │   │   ├── app.dart                       # BreakMateApp widget (root)
-│   │   ├── dependency_injection.dart      # GetIt DI setup (all services registered)
+│   │   ├── dependency_injection.dart      # GetIt DI setup (20+ services)
 │   │   └── main_layout.dart              # Main window with sidebar navigation
 │   │
 │   ├── core/
@@ -145,48 +189,37 @@ standup/
 │   │   ├── errors/
 │   │   │   ├── app_exception.dart        # Custom exception class
 │   │   │   └── error_handler.dart        # Centralized error handling with guard()
+│   │   ├── events/                        # Event bus system
+│   │   │   ├── app_events.dart           # 13 typed AppEvent subclasses
+│   │   │   ├── event_bus.dart            # StreamController pub/sub singleton
+│   │   │   └── events.dart               # Barrel export
+│   │   ├── ipc/
+│   │   │   └── ipc_bridge.dart           # Inter-process communication
 │   │   ├── native/
-│   │   │   ├── macos_bridge.dart         # macOS MethodChannel wrapper
-│   │   │   ├── meeting_detection_service.dart
-│   │   │   └── focus_mode_service.dart
-│   │   ├── plugins/
-│   │   │   └── windows_overlay_plugin.dart
-│   │   ├── services/                     # 14 core services
-│   │   │   ├── activity_monitor.dart     # User idle detection
-│   │   │   ├── adaptive_break_service.dart
-│   │   │   ├── app_navigation_service.dart
-│   │   │   ├── flash_controller.dart     # Flash notification state
-│   │   │   ├── flash_overlay.dart
-│   │   │   ├── flash_service.dart
-│   │   │   ├── flash_test_widget.dart
-│   │   │   ├── flash.dart
-│   │   │   ├── floating_window_service.dart
-│   │   │   ├── notification_service.dart # System notifications
+│   │   │   ├── macos_bridge.dart         # macOS MethodChannel wrapper (17 methods)
+│   │   │   ├── meeting_detection_service.dart  # Native EventChannel stream
+│   │   │   └── focus_mode_service.dart   # Native EventChannel stream
+│   │   ├── services/                      # 15+ core services
+│   │   │   ├── activity_monitor.dart     # User idle detection via native bridge
+│   │   │   ├── adaptive_break_service.dart # AI-driven break optimization
+│   │   │   ├── app_navigation_service.dart # Section-based navigation
+│   │   │   ├── flash_service.dart        # Overlay-based flash notifications
+│   │   │   ├── notification_service.dart # macOS local notifications
 │   │   │   ├── overlay_window_service.dart # Multi-monitor overlay management
-│   │   │   ├── smart_detection_service.dart # Meeting/focus detection
+│   │   │   ├── smart_detection_service.dart # Meeting/focus polling fallback
 │   │   │   ├── storage_service.dart      # SharedPreferences wrapper
-│   │   │   └── timer_engine.dart         # Core timer logic (~495 lines)
-│   │   ├── utils/
-│   │   │   ├── logger.dart               # AppLogger service
-│   │   │   ├── retry_policy.dart
-│   │   │   └── toast.dart
-│   │   └── widgets/
-│   │       └── app_button.dart
+│   │   │   ├── timer_engine.dart         # Core timer + EventBus broadcast
+│   │   │   └── window_service.dart       # Native macOS window operations
+│   │   └── utils/
+│   │       ├── logger.dart               # Structured logging
+│   │       └── toast.dart                # Success/error toast notifications
 │   │
-│   ├── features/                         # 12 feature modules
-│   │   ├── analytics/                    # Stats & productivity tracking
+│   ├── features/                          # Feature modules
+│   │   ├── analytics/                     # Stats & productivity tracking
 │   │   │   ├── stats_model.dart
 │   │   │   ├── stats_service.dart
 │   │   │   └── presentation/widgets/
-│   │   │       ├── productivity_trend_chart.dart
-│   │   │       └── stats_chart.dart
-│   │   ├── blog/                         # Blog/articles feature
-│   │   │   ├── data/
-│   │   │   └── presentation/
-│   │   ├── break_overlay/                # Break screen overlay
-│   │   │   └── presentation/widgets/
-│   │   │       └── breathing_assistant.dart
-│   │   ├── break_system/                 # Core break functionality (DDD structure)
+│   │   ├── break_system/                  # Core break functionality (DDD)
 │   │   │   ├── application/
 │   │   │   │   ├── break_controller.dart
 │   │   │   │   └── strict_mode_controller.dart
@@ -194,51 +227,46 @@ standup/
 │   │   │   │   └── break_model.dart
 │   │   │   └── presentation/
 │   │   │       ├── break_overlay.dart
-│   │   │       ├── flash_overlay.dart
 │   │   │       ├── pre_break_warning_overlay.dart
 │   │   │       ├── standalone_break_overlay.dart
 │   │   │       └── widgets/
 │   │   │           └── break_activity_graph.dart
-│   │   ├── companion/                    # Desktop cat pet companion
+│   │   ├── companion/                     # Desktop cat pet (FSM-driven)
 │   │   │   ├── controllers/
-│   │   │   │   ├── cat_behavior_controller.dart
 │   │   │   │   └── companion_overlay_controller.dart
 │   │   │   ├── data/
-│   │   │   │   └── cat_asset_loader.dart
+│   │   │   │   └── cat_asset_loader.dart  # Sprite sheet loading + caching
 │   │   │   ├── domain/
-│   │   │   │   ├── animation_row_config.dart
+│   │   │   │   ├── cat_state_machine.dart # FSM: 10 states, 15 events
 │   │   │   │   ├── cat_animation_state.dart
-│   │   │   │   └── cat_theme.dart
-│   │   │   ├── flame/                    # Flame game engine integration
-│   │   │   │   ├── companion_cat_component.dart
-│   │   │   │   └── companion_game.dart
+│   │   │   │   ├── cat_theme.dart         # 4 themes with animation configs
+│   │   │   │   └── animation_row_config.dart
+│   │   │   ├── flame/
+│   │   │   │   ├── companion_game.dart    # Flame game + FSM + low-CPU idle
+│   │   │   │   └── companion_cat_component.dart # Sprite + interaction routing
 │   │   │   ├── overlay/
-│   │   │   │   └── companion_overlay_window.dart
-│   │   │   └── presentation/
-│   │   │       └── companion_dashboard.dart
-│   │   ├── flash_overlay/                # Flash notification system
-│   │   │   ├── flash_overlay_screen.dart
-│   │   │   ├── flash_overlay_service.dart
-│   │   │   └── flash_overlay_widget.dart
-│   │   ├── menu_bar/                     # System tray/menu bar
-│   │   │   ├── menu_bar_popover.dart
-│   │   │   └── tray_manager_service.dart # ~498 lines
-│   │   ├── notifications/                # (empty — uses core service)
-│   │   ├── settings/                     # Settings & configuration
+│   │   │   │   └── companion_overlay_window.dart # GestureDetector + method channel
+│   │   │   └── services/
+│   │   │       ├── companion_state_manager.dart   # Event-reactive state
+│   │   │       ├── companion_window_controller.dart # Window positioning/opacity
+│   │   │       └── companion_behavior_engine.dart # Ambient random behaviors
+│   │   ├── menu_bar/                      # System tray/menu bar
+│   │   │   ├── controllers/
+│   │   │   │   └── menu_bar_controller.dart # Centralized action routing
+│   │   │   └── tray_manager_service.dart  # Dynamic menu + animated cat icons
+│   │   ├── settings/                      # Settings & configuration
 │   │   │   ├── break_profile.dart
 │   │   │   ├── exercise_model.dart
-│   │   │   ├── settings_model.dart       # 40+ configuration fields
-│   │   │   ├── settings_page.dart        # Unified settings UI (~2500+ lines)
-│   │   │   └── settings_repository.dart
-│   │   ├── themes/                       # (empty)
-│   │   ├── tracking/                     # (empty)
-│   │   └── wellness/                     # Wellness articles/slideshows
+│   │   │   ├── settings_model.dart        # 40+ configurable fields
+│   │   │   ├── settings_page.dart         # 9-section unified settings UI
+│   │   │   └── settings_repository.dart   # SharedPreferences persistence
+│   │   └── wellness/                      # Wellness articles/slideshows
 │   │       └── presentation/
 │   │           └── wellness_articles_page.dart
 │   │
 │   └── shared/
 │       ├── theme/
-│       │   └── app_theme.dart            # Dark theme with macOS styling
+│       │   └── app_theme.dart            # Dark theme, Satoshi font, glassmorphic
 │       └── widgets/
 │           ├── animated_number.dart
 │           ├── countdown_timer.dart
@@ -247,18 +275,22 @@ standup/
 │           └── staggered_fade_in.dart
 │
 ├── assets/
-│   ├── animations/cats/                  # Cat sprite sheets (grey, orange, black, large)
-│   ├── fonts/Satoshi/                    # Custom font family
-│   ├── icons/                            # Tray icons + cat icons
-│   └── slideshow/                        # Wellness slideshow images
+│   ├── animations/cats/                   # Grey, orange, black, large sprite sheets
+│   ├── fonts/Satoshi/                     # Custom font family
+│   ├── icons/                             # Tray icons + cat icons
+│   └── slideshow/                         # Wellness slideshow images
 │
-├── macos/                                # macOS native platform code (Swift/Obj-C)
-├── windows/                              # Windows platform code (partial)
-├── test/                                 # (empty — no tests yet)
+├── macos/                                 # macOS native platform (Swift)
+│   └── Runner/
+│       ├── AppDelegate.swift              # 4 method channel registrations
+│       ├── CompanionWindowManager.swift   # NSPanel lifecycle, drag, transparency
+│       └── Bridges/
+│           ├── OverlayWindowBridge.swift  # Strict mode window level
+│           ├── MeetingDetectionBridge.swift # Frontmost app detection
+│           └── FocusModeBridge.swift      # DND/Focus state
 │
-├── pubspec.yaml                          # Dependencies & asset declarations
-├── analysis_options.yaml                 # Lint configuration
-├── devtools_options.yaml                 # DevTools config
+├── pubspec.yaml                           # Dependencies & assets
+├── analysis_options.yaml                  # Lint configuration
 └── README.md
 ```
 
@@ -272,50 +304,59 @@ The heart of the application. A state machine that manages:
 
 - **States**: `running`, `paused`, `idle`, `breakActive`
 - **Work Modes**: Pomodoro, Deep Work, Flexible, Strict
-- **Break Types**: Short breaks (configurable duration), Long breaks (after N short breaks)
+- **Break Types**: Short breaks (configurable), Long breaks (after N short breaks)
 - **Activity Monitoring**: Pauses timer when user is idle
-- **Event Stream**: Broadcasts state changes to all listeners via `ChangeNotifier`
+- **EventBus Broadcast**: Emits `TimerStateChangedEvent`, `BreakStartedEvent`, `BreakCompletedEvent`, etc.
+
+### EventBus (`core/events/event_bus.dart`)
+
+StreamController-based pub/sub system:
+
+- **13 Typed Events**: `TimerStateChangedEvent`, `BreakStartedEvent`, `BreakCompletedEvent`, `MeetingDetectedEvent`, `FocusModeEvent`, `CompanionInteractionEvent`, `TrayActionEvent`, `IdleDetectedEvent`, `ActivityResumedEvent`, `SettingsChangedEvent`, `NavigationEvent`, `NotificationEvent`, `ErrorEvent`
+- **Cross-Layer Communication**: Services emit events; consumers (Companion FSM, Tray, Overlay) listen reactively
+- **No Polling**: Event-driven architecture eliminates unnecessary CPU usage
+
+### CatStateMachine (`features/companion/domain/cat_state_machine.dart`)
+
+Finite state machine for companion behavior:
+
+- **10 States**: `idle`, `blink`, `stretch`, `walk`, `sleep`, `alert`, `happy`, `drag`, `breakReminder`, `meetingPaused`, `focusMode`
+- **15 Events**: `timerTick`, `breakStart`, `breakEnd`, `meetingStart`, `meetingEnd`, `focusStart`, `focusEnd`, `userInteraction`, `idleDetected`, `activityResumed`, `dragStart`, `dragEnd`, `notification`, `celebrate`, `tick`
+- **Min-Duration Guards**: Prevents rapid state changes (e.g., blink must last at least 1s)
+- **Time-Based Transitions**: `tick` event drives idle-to-sleep transitions after inactivity
+
+### CompanionGame (`features/companion/flame/companion_game.dart`)
+
+Flame game engine integration:
+
+- **FSM Integration**: Maps `CatState` → `CatAnimationState` for sprite rendering
+- **Low-CPU Idle Mode**: Frame skipping when cat is in static states (idle, sleep, meetingPaused) to maintain <2% CPU
+- **Event Mapping**: Listens to EventBus and routes app events to `CatEvent`s
+- **Dynamic Theme**: Runtime theme switching without engine restart
+
+### MenuBarController (`features/menu_bar/controllers/menu_bar_controller.dart`)
+
+Centralized tray action routing:
+
+- **Single Source of Truth**: All tray menu items delegate to this controller
+- **Action Types**: Open dashboard/settings/flash/exercises/stats, toggle pause, take break, skip/postpone/complete break, posture reminder, quit
+- **Event Emission**: Emits `TrayActionEvent` for cross-component awareness
 
 ### OverlayWindowService (`core/services/overlay_window_service.dart`)
 
 Manages system-wide overlay windows:
 
-- Break screen overlay (full-screen, all displays)
-- Pre-break warning overlay (countdown warning)
-- Flash notification overlay (customizable styles)
-- Uses native MethodChannel for macOS window creation
-
-### TrayManagerService (`features/menu_bar/tray_manager_service.dart`)
-
-System tray integration:
-
-- Animated cat icons that change based on app state
-- Dynamic tooltip with countdown timer
-- Contextual menu (Start/Pause/Skip/Settings/Quit)
-- Icon animation states: idle, sleeping (paused), alert (break active)
-
-### SmartDetectionService (`core/services/smart_detection_service.dart`)
-
-Polls every 10 seconds for:
-
-- Running video call apps (Zoom, Teams, Google Meet, FaceTime)
-- macOS Focus/Do Not Disturb mode
-- Auto-pauses timer during meetings/focus mode
-
-### SettingsRepository (`features/settings/settings_repository.dart`)
-
-Abstracts storage operations:
-
-- Loads/saves `SettingsModel` (40+ fields)
-- Uses `StorageService` (SharedPreferences wrapper)
-- Repository pattern allows easy migration to other storage backends
+- **4 Overlay Types**: `breakScreen`, `preBreakWarning`, `flashNotification`, `companion`
+- **Multi-Monitor**: Spans all displays via native MethodChannel
+- **State-Driven**: Triggered by BreakController based on timer state
 
 ### MacOSBridge (`core/native/macos_bridge.dart`)
 
-Native platform channel wrapper:
+Native platform channel wrapper (17 methods):
 
-- Multi-monitor overlay creation
-- Companion cat window management
+- Overlay show/hide with visual effects
+- Window level management (normal, floating, screenSaver)
+- Companion show/hide/scale/theme/state/wandering
 - System appearance detection (light/dark)
 - Idle time detection
 - Presentation mode control
@@ -341,12 +382,12 @@ Native platform channel wrapper:
 | `flame` ^1.37.0 | Game engine (cat companion) |
 | `audioplayers` ^6.1.0 | Sound effects |
 | `flutter_acrylic` ^1.0.4 | macOS vibrancy effects |
-| `http` ^1.2.0 | HTTP client |
-| `flutter_markdown` ^0.6.18 | Markdown rendering |
 | `intl` ^0.19.0 | Date formatting |
-| `animations` ^2.0.1 | Animation transitions |
 | `flutter_riverpod` ^2.5.1 | Declared but unused |
 | `hive_flutter` ^1.1.0 | Declared but unused |
+| `http` ^1.2.0 | Declared but unused |
+| `flutter_markdown` ^0.6.18 | Declared but unused |
+| `animations` ^2.0.1 | Declared but unused |
 
 ### Dev Dependencies
 
@@ -389,10 +430,9 @@ flutter run -d macos
 
 # The app supports three entry points:
 # 1. main()          → Dashboard window
-#    - runZonedGuarded error handling
 #    - flutter_acrylic window initialization
 #    - Single instance check (port 10425)
-#    - initDependencies() — registers all 16 services
+#    - initDependencies() — registers 20+ services
 #    - WindowManager config (1100x750, hidden titlebar)
 #    - MethodChannel handler for macOS dock click reopen
 # 2. overlayMain()   → Break overlay window (launched programmatically)
@@ -461,6 +501,8 @@ lib/features/your_feature/
 │   └── your_model.dart
 ├── domain/            # Business logic entities
 │   └── your_entity.dart
+├── application/       # Controllers, use cases
+│   └── your_controller.dart
 └── presentation/      # UI components
     ├── your_page.dart
     └── widgets/
@@ -484,35 +526,38 @@ Future<void> initDependencies() async {
 
 Services are accessed via `sl<YourService>()` throughout the codebase.
 
-### 3. Add Settings (if applicable)
+### 3. Add a New Event Type
+
+Add to `lib/core/events/app_events.dart`:
+
+```dart
+class YourEvent extends AppEvent {
+  final String data;
+  YourEvent({required this.data});
+  
+  @override
+  List<Object?> get props => [data];
+}
+```
+
+Emit via `EventBus.instance.emit(YourEvent(data: 'value'))`.
+
+### 4. Add Settings (if applicable)
 
 1. Add fields to `SettingsModel` (`features/settings/settings_model.dart`)
 2. Update `toMap()` and `fromMap()` methods
 3. Add UI in `SettingsPage` (`features/settings/settings_page.dart`)
 4. Use `SettingsRepository` to save/load
 
-### 4. Add a New Sidebar Page
-
-1. Create your page in `lib/features/your_feature/presentation/`
-2. Add navigation in `MainLayout` (`lib/app/main_layout.dart`)
-3. Use `AppNavigationService` for programmatic navigation
-
 ### 5. Add Native Functionality (macOS)
 
-1. Define method channel in `MacOSBridge` (`core/native/macos_bridge.dart`)
-2. Implement Swift/Objective-C code in `macos/Runner/`
+1. Define method in `MacOSBridge` (`core/native/macos_bridge.dart`)
+2. Implement Swift code in `macos/Runner/`
 3. Register the method handler in `macos/Runner/AppDelegate.swift`
 
 ### 6. Add a New Tray Menu Item
 
-Modify `TrayManagerService` (`features/menu_bar/tray_manager_service.dart`):
-
-```dart
-await _trayManager.setContextMenu(Menu(items: [
-  // ... existing items ...
-  MenuItem(label: 'Your Action'),
-]));
-```
+Add action to `MenuBarController.handleAction()` and update `TrayManagerService._buildMenu()`.
 
 ---
 
@@ -533,7 +578,8 @@ await _trayManager.setContextMenu(Menu(items: [
 4. **Native code** is abstracted through `MacOSBridge`
 5. **Storage** is accessed through `StorageService` or `SettingsRepository`
 6. **State** is managed via `Provider` (ChangeNotifier)
-7. **Errors** use `AppException` and `ErrorHandler.guard()`
+7. **Cross-layer communication** uses `EventBus` — no direct service coupling
+8. **Errors** use `AppException` and `ErrorHandler.guard()`
 
 ### State Management Pattern
 
@@ -561,60 +607,112 @@ Consumer<YourService>(
 
 ## Roadmap
 
-### Planned
-- [ ] Windows full support (currently partial)
-- [ ] Unit and widget tests
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Auto-update mechanism
-- [ ] Custom break sounds
-- [ ] Sync settings across devices
-- [ ] Widget for macOS Sonoma+
-- [ ] Apple Watch companion app
-- [ ] **Companion cat drag & mouse interaction** (see Known Issues)
-- [ ] **Menu bar click action handlers** (see Known Issues)
+### High Priority
+- [ ] **Wire CompanionStateManager.startListening()** — Registered in DI but never activated; the entire event-reactive companion system is inactive
+- [ ] **Implement IpcBridge.setEventHandler()** — IPC system fully built but never wired up for cross-engine messaging
+- [ ] **Connect AdaptiveBreakService.recordWorkSession()** — Adaptive learning system collects no data; never called anywhere
+- [ ] **Implement TimerEngine.saveState()** — Empty method; timer state persistence is a no-op
+- [ ] **Register WindowService MethodChannel** — Uses `com.breakmate/window` channel not registered in `AppDelegate.swift`; all 11 operations silently fail
+- [ ] **Remove unused dependencies** — `flutter_riverpod`, `hive_flutter`, `http`, `flutter_markdown`, `animations` declared but never imported
+
+### Medium Priority
+- [ ] **Split monolithic settings_page.dart** — 2200+ lines in one file; should be split into section widgets
+- [ ] **Implement Focus Mode settings** — DND toggle, daily goal, session length have empty `onChanged` handlers
+- [ ] **Implement Notification settings** — Repeated alerts, dock bounce toggles non-functional
+- [ ] **Custom wallpaper file picker** — Saves literal string `'default_path'` instead of actual file
+- [ ] **About page navigation** — Website, Privacy, Terms cards have no `onTap` handlers
+- [ ] **Implement CompanionStateManager._idleTimer** — Field declared but never used
+- [ ] **Add polling fallback to MeetingDetectionService** — EventChannel only; silently fails if native bridge unavailable
+- [ ] **Add polling fallback to FocusModeService** — Same issue as meeting detection
+- [ ] **Implement CompanionBehaviorEngine._triggerBlink()** — Only logs, does not emit event
+- [ ] **Fix StandaloneBreakOverlay hardcoded graph data** — Uses `[2, 4, 3, 6, 5, 8, 7]` with comment acknowledging "Real stats not easily accessible"
+
+### Low Priority / Future Features
+- [ ] **Blog feature** — Complete scaffold exists (`lib/features/blog/`) with no implementation
+- [ ] **Tracking feature** — Empty directory, no implementation
+- [ ] **Windows full support** — Platform code exists but incomplete
+- [ ] **Unit and widget tests** — No test coverage
+- [ ] **CI/CD pipeline** — GitHub Actions for build/test/release
+- [ ] **Auto-update mechanism** — Sparkle or similar for macOS
+- [ ] **Custom break sounds** — User-selectable audio notifications
+- [ ] **Sync settings across devices** — Cloud backup/sync
+- [ ] **macOS Sonoma+ widget** — Desktop widget for break status
+- [ ] **Apple Watch companion app** — Remote break control and notifications
+- [ ] **Export statistics** — CSV/PDF export of break history
+- [ ] **Keyboard shortcuts** — Global hotkeys for pause/skip/take break
+- [ ] **Break activity suggestions** — AI-powered personalized break activities
+- [ ] **Team/enterprise mode** — Shared break schedules, admin dashboard
+- [ ] **Integration with calendar apps** — Auto-detect meetings from Calendar.app
+- [ ] **HealthKit integration** — Sync break data with Apple Health
+- [ ] **Multi-language support** — i18n for non-English users
 
 ### Completed
-- [x] Break timer with configurable intervals
-- [x] Menu bar integration with animated cat
-- [x] Smart meeting detection
-- [x] Flash notifications
-- [x] Analytics and productivity scoring
-- [x] Custom exercise library
+- [x] Break timer with configurable intervals and work modes
+- [x] Menu bar integration with animated cat icons
+- [x] Smart meeting detection (native EventChannel)
+- [x] Focus Mode / DND detection (native EventChannel)
+- [x] Flash notifications with customizable styles
+- [x] Analytics and productivity scoring with heatmap
+- [x] Custom exercise library (5 categories)
 - [x] Working hours scheduling
-- [x] Strict mode
+- [x] Strict mode with unskippable breaks
 - [x] Clock out reminders
 - [x] Multi-display overlay support
+- [x] Desktop companion with Flame game engine
+- [x] Cat state machine (FSM) with 10 states
+- [x] Event bus for cross-layer communication
+- [x] Centralized menu bar controller
+- [x] Draggable companion window (NSPanel)
+- [x] Low-CPU idle mode (<2% CPU)
+- [x] Dynamic theme switching and scaling
+- [x] Single instance enforcement
+- [x] Pre-break warning overlay
+- [x] Adaptive break service (scaffolded)
+- [x] Wellness articles and slideshow
 
 ---
 
-## Known Issues
+## Technical Debt
 
-### Companion Cat — Not Draggable / No Mouse Interaction
-The desktop cat companion currently renders as a static overlay. It cannot be dragged with the mouse cursor and does not respond to click or hover interactions. The companion window is passive — it displays animations but ignores all mouse events.
+### Critical
+1. **Unregistered MethodChannel** — `WindowService` uses `com.breakmate/window` which is never registered in `AppDelegate.swift`. All 11 window operations throw `MissingPluginException` silently.
+2. **Dead Code: CompanionStateManager** — Registered in DI but `startListening()` never called. The event-reactive companion state system is completely inactive.
+3. **Dead Code: IpcBridge** — Fully implemented but `setEventHandler()` never invoked. Cross-engine IPC is non-functional.
+4. **AdaptiveBreakService receives no data** — `recordWorkSession()` is never called. The adaptive learning system cannot function.
+5. **TimerEngine.saveState() is a no-op** — Empty method body. Timer state is never persisted across restarts.
 
-**What needs to be implemented:**
-- Mouse event passthrough or capture on the companion overlay window
-- Drag-and-drop logic to reposition the cat on the desktop
-- Click/hover interaction handlers for cat behavior triggers
-- Native macOS window level configuration to allow mouse interaction while keeping the window always-on-top
+### Moderate
+6. **Duplicate overlay systems** — `BreakOverlay` (in-app) and `StandaloneBreakOverlay` (separate engine) have nearly identical UI code.
+7. **Settings page is monolithic** — `settings_page.dart` is 2200+ lines; should be split into section widgets.
+8. **Empty `onChanged` handlers** — Focus mode DND toggle, repeated alerts, dock bounce — all non-functional.
+9. **No polling fallback** — `MeetingDetectionService` and `FocusModeService` rely solely on EventChannel; no graceful degradation.
+10. **Cat animation frame extraction** — Writes to `/tmp/` without cleanup; potential disk accumulation.
 
-**Files to modify:**
-- `lib/features/companion/overlay/companion_overlay_window.dart` — window creation and mouse event handling
-- `lib/features/companion/flame/companion_cat_component.dart` — Flame component click/touch detection
-- `macos/Runner/` — native window configuration for mouse passthrough or interaction flags
+### Minor
+11. **5 unused dependencies** — `flutter_riverpod`, `hive_flutter`, `http`, `flutter_markdown`, `animations` in pubspec.yaml but never imported.
+12. **No test coverage** — `test/` directory exists but no meaningful tests.
+13. **Windows platform code** — Exists but incomplete; may cause confusion.
+14. **`fix_timer.py`** — Unknown purpose script in `macos/Runner/`.
 
-### Menu Bar — Click Actions Not Working
-Clicking menu items in the system tray (Start, Pause, Skip, Settings, etc.) produces no visible change. The `TrayManagerService` registers the context menu but the action handlers are not wired to the corresponding service methods.
+---
 
-**What needs to be fixed:**
-- Wire `TrayManagerService` menu item callbacks to `TimerEngine` methods (`start()`, `pause()`, `skip()`)
-- Connect Settings menu item to `AppNavigationService` to open the settings page
-- Ensure `notifyListeners()` is called after state changes so the UI and tray icon update
-- Verify the `tray_manager` package event listener is properly subscribed in `init()`
+## Recent Changes
 
-**Files to modify:**
-- `lib/features/menu_bar/tray_manager_service.dart` — add `onMenuItemClicked` handler logic
-- `lib/app/dependency_injection.dart` — ensure `TrayManagerService` has access to `TimerEngine` and `AppNavigationService`
+| Date | Change |
+|------|--------|
+| May 2026 | **Refactor companion architecture** — FSM-driven cat behavior, EventBus integration, low-CPU idle mode |
+| May 2026 | **Implement MenuBarController** — Centralized tray action routing |
+| May 2026 | **Refactor TrayManagerService** — Delegates to MenuBarController, instant sync with TimerEngine |
+| May 2026 | **Fix native macOS companion window** — Proper `NSPanel` lifecycle, drag support, transparency |
+| May 2026 | **Update dependency injection** — Wire all new services, remove dead code |
+| May 2026 | **Clean up dead files** — Remove `cat_behavior_controller.dart`, `companion_dashboard.dart`, unused barrel |
+| May 2026 | **Fix Swift build error** — Remove invalid `acceptsFirstMouse` override |
+| Earlier | Desktop companion pet with animated sprite support |
+| Earlier | Native macOS integration (focus mode, meeting detection, strict mode overlays) |
+| Earlier | Settings UI redesign with Satoshi font, unified theme, sidebar navigation |
+| Earlier | Multi-monitor overlay with standalone Flutter engine |
+| Earlier | Single-instance socket messaging |
+| Earlier | Pre-break warning system |
 
 ---
 
@@ -626,7 +724,7 @@ Clicking menu items in the system tray (Start, Pause, Skip, Settings, etc.) prod
 
 ### Overlay doesn't show
 - Verify macOS screen recording permissions (System Settings → Privacy & Security)
-- Check `MacOSBridge` method channel is properly registered
+- Check `MacOSBridge` method channel is properly registered in `AppDelegate.swift`
 
 ### Cat companion not visible
 - Ensure companion window is enabled in Settings → Companion
@@ -634,7 +732,15 @@ Clicking menu items in the system tray (Start, Pause, Skip, Settings, etc.) prod
 
 ### Timer doesn't pause during meetings
 - Verify Smart Detection is enabled in Settings → Focus Mode
-- Check that the meeting app is in the detected list
+- Check that the meeting app is in the detected list (Zoom, Teams, Meet, FaceTime, Slack, Webex, Loom)
+
+### Tray menu actions not working
+- Check that `MenuBarController` is properly wired in `dependency_injection.dart`
+- Verify `TrayManagerService.setMenuBarController()` is called
+
+### Build fails with Swift errors
+- `CompanionWindowManager.swift` may show "No such module 'FlutterMacOS'" — this is an LSP artifact and does not affect builds
+- Run `flutter clean && flutter build macos --debug` to verify
 
 ---
 

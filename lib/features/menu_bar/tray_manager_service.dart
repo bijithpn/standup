@@ -2,21 +2,15 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'package:standup/core/services/timer_engine.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/notification_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
-
 import 'package:standup/features/companion/data/cat_asset_loader.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/settings/settings_repository.dart';
-
-typedef TrayMenuAction = void Function(String action);
+import 'controllers/menu_bar_controller.dart';
 
 enum TrayIconMode { defaultIcon, cat, minimal, countdownOnly }
 
@@ -24,7 +18,6 @@ enum _CatFrame { idle, blink, stretch, sleeping, alert }
 
 class TrayManagerService with TrayListener {
   final AppLogger _logger = AppLogger();
-  TrayMenuAction? onMenuAction;
   bool _isPaused = false;
   TrayIconMode _iconMode = TrayIconMode.cat;
 
@@ -32,11 +25,10 @@ class TrayManagerService with TrayListener {
   _CatFrame _catFrame = _CatFrame.idle;
   bool _isBreakActive = false;
 
-  // Dependencies for dynamic menu
   TimerEngine? _timerEngine;
   BreakController? _breakController;
+  MenuBarController? _menuBarController;
 
-  // Cached temp file paths
   final Map<_CatFrame, String> _catIconPaths = {};
   String? _defaultIconPath;
 
@@ -49,6 +41,10 @@ class TrayManagerService with TrayListener {
     _logger.info('Tray manager initialized (mode: $_iconMode)');
   }
 
+  void setMenuBarController(MenuBarController controller) {
+    _menuBarController = controller;
+  }
+
   Future<void> updateSelectedBreed(String themeId) async {
     _logger.info('Updating tray icons to selected breed: $themeId');
     await _extractIcons();
@@ -58,18 +54,15 @@ class TrayManagerService with TrayListener {
   Future<void> _extractIcons() async {
     final tempDir = Directory.systemTemp;
 
-    // Extract default icon
     final defaultBytes = await rootBundle.load('assets/icons/tray_icon.png');
     final defaultFile = File('${tempDir.path}/bm_tray_default.png');
     await defaultFile.writeAsBytes(defaultBytes.buffer.asUint8List());
     _defaultIconPath = defaultFile.path;
 
-    // Retrieve currently selected breed theme
     final settingsRepo = sl<SettingsRepository>();
     final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
     final theme = CatTheme.getTheme(selectedThemeId);
 
-    // Extract dynamic cat frames matching the selected theme!
     for (final frame in _CatFrame.values) {
       try {
         CatAnimationState state;
@@ -78,23 +71,18 @@ class TrayManagerService with TrayListener {
           case _CatFrame.idle:
             state = CatAnimationState.idle;
             frameIndex = 0;
-            break;
           case _CatFrame.blink:
             state = CatAnimationState.idle;
             frameIndex = 1;
-            break;
           case _CatFrame.stretch:
             state = CatAnimationState.excited;
             frameIndex = 0;
-            break;
           case _CatFrame.sleeping:
             state = CatAnimationState.sleep;
             frameIndex = 0;
-            break;
           case _CatFrame.alert:
             state = CatAnimationState.notification;
             frameIndex = 0;
-            break;
         }
 
         final path = await CatAssetLoader.extractCatFramePath(
@@ -106,7 +94,6 @@ class TrayManagerService with TrayListener {
         if (path.isNotEmpty) {
           _catIconPaths[frame] = path;
         } else {
-          // Fallback to static asset if frame extraction fails
           final bytes = await rootBundle.load('assets/icons/cat/cat_${frame.name}.png');
           final file = File('${tempDir.path}/bm_cat_${frame.name}.png');
           await file.writeAsBytes(bytes.buffer.asUint8List());
@@ -152,10 +139,8 @@ class TrayManagerService with TrayListener {
     } else if (_isPaused) {
       _catFrame = _CatFrame.sleeping;
     } else {
-      // Idle animation: mostly idle, occasional blink
       switch (_catFrame) {
         case _CatFrame.idle:
-          // 20% chance to blink
           _catFrame = (DateTime.now().millisecond % 5 == 0)
               ? _CatFrame.blink
               : _CatFrame.idle;
@@ -186,7 +171,6 @@ class TrayManagerService with TrayListener {
   void triggerActionAnimation() {
     if (_iconMode != TrayIconMode.cat) return;
     
-    // Briefly show stretch or blink on action
     final originalFrame = _catFrame;
     _catFrame = _CatFrame.stretch;
     _applyIcon();
@@ -250,34 +234,26 @@ class TrayManagerService with TrayListener {
 
     final List<MenuItem> items = [];
 
-    // Header info (disabled items)
     items.add(MenuItem(label: statusLabel, disabled: true));
     items.add(MenuItem(label: nextBreakLabel, disabled: true));
     items.add(MenuItem.separator());
 
-    // Contextual actions
     if (_isBreakActive) {
       items.addAll([
         MenuItem(
           key: 'complete_break',
           label: 'Complete Break',
           onClick: _onMenuItemClick,
-          onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-          onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
         ),
         MenuItem(
           key: 'skip_current_break',
           label: 'Skip Break',
           onClick: _onMenuItemClick,
-          onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-          onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
         ),
         MenuItem(
           key: 'postpone_break',
           label: 'Postpone Break (2 min)',
           onClick: _onMenuItemClick,
-          onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-          onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
         ),
         MenuItem.separator(),
       ]);
@@ -287,80 +263,55 @@ class TrayManagerService with TrayListener {
           key: 'toggle_pause',
           label: _isPaused ? 'Resume Reminders' : 'Pause Reminders',
           onClick: _onMenuItemClick,
-          onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-          onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
         ),
         MenuItem(
           key: 'take_break',
           label: 'Start Break Now',
           onClick: _onMenuItemClick,
-          onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-          onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
         ),
         MenuItem(
           key: 'skip_next',
           label: 'Skip Next Break',
           onClick: _onMenuItemClick,
-          onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-          onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
         ),
         MenuItem.separator(),
       ]);
     }
 
-    // App Navigation & Extras
     items.addAll([
       MenuItem(
         key: 'open_dashboard',
         label: 'Open Dashboard',
         onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
       ),
       MenuItem(
         key: 'open_settings',
         label: 'Settings',
         onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
       ),
       MenuItem(
         key: 'open_flash',
         label: 'Flash Reminder',
         onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
       ),
       MenuItem(
         key: 'open_exercises',
         label: 'Exercises',
         onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
       ),
       MenuItem(
         key: 'open_stats',
         label: 'Statistics',
         onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
       ),
       MenuItem.separator(),
       MenuItem(
         key: 'posture_reminder',
         label: 'Posture Reminder',
         onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
       ),
       MenuItem.separator(),
-      MenuItem(
-        key: 'quit',
-        label: 'Quit BreakMate',
-        onClick: _onMenuItemClick,
-        onHighlight: (item) => _logger.info('Highlight: ${item.label}'),
-        onLoseHighlight: (item) => _logger.info('Lose Highlight: ${item.label}'),
-      ),
+      MenuItem(key: 'quit', label: 'Quit BreakMate', onClick: _onMenuItemClick),
     ]);
 
     final menu = Menu(items: items);
@@ -373,63 +324,10 @@ class TrayManagerService with TrayListener {
     }
   }
 
-  Future<void> _handleAction(String action) async {
-    _logger.info('Handling tray action: $action');
-    
-    // First, call external handler if set
-    onMenuAction?.call(action);
-
-    final overlayService = sl<OverlayWindowService>();
-    final navigation = sl<AppNavigationService>();
-
-    Future<void> openSection(String section) async {
-      navigation.openSection(section);
-      await overlayService.showDashboard();
-    }
-
-    switch (action) {
-      case 'open_dashboard':
-        await openSection('General');
-        break;
-      case 'open_settings':
-        await openSection('General');
-        break;
-      case 'open_flash':
-        await openSection('Flash Reminder');
-        break;
-      case 'open_exercises':
-        await openSection('Exercises');
-        break;
-      case 'open_stats':
-        await openSection('Statistics');
-        break;
-      case 'toggle_pause':
-        _breakController?.togglePause();
-        break;
-      case 'take_break':
-        _breakController?.takeBreakNow();
-        break;
-      case 'skip_next':
-        _breakController?.skipNextBreak();
-        break;
-      case 'complete_break':
-        _breakController?.completeCurrentBreak();
-        break;
-      case 'skip_current_break':
-        _breakController?.skipCurrentBreak();
-        break;
-      case 'postpone_break':
-        _breakController?.postponeCurrentBreak();
-        break;
-      case 'posture_reminder':
-        await sl<NotificationService>().showPostureReminder();
-        break;
-      case 'quit':
-        await overlayService.reset();
-        await windowManager.setPreventClose(false);
-        await windowManager.destroy();
-        exit(0);
-    }
+  void _handleAction(String action) {
+    _logger.info('Tray action: $action');
+    triggerActionAnimation();
+    _menuBarController?.handleAction(action);
   }
 
   void setDependencies(TimerEngine timerEngine, BreakController breakController) {
@@ -471,9 +369,7 @@ class TrayManagerService with TrayListener {
   }
 
   @override
-  void onTrayIconMouseUp() {
-    // No-op to prevent double popup / dashboard redirect
-  }
+  void onTrayIconMouseUp() {}
 
   @override
   void onTrayIconRightMouseDown() {
@@ -482,9 +378,8 @@ class TrayManagerService with TrayListener {
 
   @override
   void onTrayMenuItemClick(MenuItem menuItem) {
-    // Already handled via onClick in MenuItem, but keeping for compatibility
     final key = menuItem.key;
-    if (key != null && menuItem.onClick == null) {
+    if (key != null) {
       _handleAction(key);
     }
   }

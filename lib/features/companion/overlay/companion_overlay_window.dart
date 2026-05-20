@@ -1,10 +1,11 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:standup/core/events/app_events.dart';
+import 'package:standup/core/events/event_bus.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/companion/flame/companion_game.dart';
-import 'package:window_manager/window_manager.dart';
 
 class CompanionOverlayWindow extends StatefulWidget {
   const CompanionOverlayWindow({super.key});
@@ -18,68 +19,71 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
 
   late CompanionGame _game;
   String _themeId = 'grey_cat';
+  bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
 
-    // 1. Initialize Flame CompanionGame — auto-scale enabled (scaleOverride=0)
     _game = CompanionGame(
-      currentTheme: CatTheme.getTheme(_themeId),
-      scaleOverride: 0.0, // 0 = auto-scale to fill window
-      initialAnimationState: CatAnimationState.idle,
+      initialTheme: CatTheme.getTheme(_themeId),
+      scaleOverride: 0.0,
     );
 
-    // 2. Set up native method channel listener to receive state and setting updates.
     _setupMethodChannel();
+    _emitInitialEvents();
+  }
+
+  void _emitInitialEvents() {
+    EventBus.instance.emit(CompanionInteractionEvent(
+      interactionType: 'init',
+      metadata: {'themeId': _themeId},
+    ));
   }
 
   void _setupMethodChannel() {
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'syncCompanionSettings') {
-        final Map<dynamic, dynamic>? args = call.arguments as Map<dynamic, dynamic>?;
-        if (args == null) return;
+      switch (call.method) {
+        case 'syncCompanionSettings':
+          final Map<dynamic, dynamic>? args = call.arguments as Map<dynamic, dynamic>?;
+          if (args == null) return;
 
-        setState(() {
-          // Parse theme changes
-          if (args.containsKey('themeId')) {
-            final String newThemeId = args['themeId'] as String;
-            _themeId = newThemeId;
-            _game.updateTheme(CatTheme.getTheme(newThemeId));
-          }
-
-          // Parse scale factor adjustments (0 = auto)
-          if (args.containsKey('scale')) {
-            final double? newScale = (args['scale'] as num?)?.toDouble();
-            if (newScale != null) {
-              _game.updateScale(newScale);
+          setState(() {
+            if (args.containsKey('themeId')) {
+              final String newThemeId = args['themeId'] as String;
+              _themeId = newThemeId;
+              _game.updateTheme(CatTheme.getTheme(newThemeId));
             }
-          }
 
-          // Parse AI wandering toggles
-          if (args.containsKey('wanderingEnabled')) {
-            final bool? enabled = args['wanderingEnabled'] as bool?;
-            if (enabled != null) {
-              _game.setWanderingEnabled(enabled);
-            }
-          }
-
-          // Parse dynamic behavior or alert state triggers
-          if (args.containsKey('state')) {
-            final String? stateStr = args['state'] as String?;
-            if (stateStr != null) {
-              final CatAnimationState? matchingState = _parseAnimationState(stateStr);
-              if (matchingState != null) {
-                _game.triggerState(matchingState);
+            if (args.containsKey('scale')) {
+              final double? newScale = (args['scale'] as num?)?.toDouble();
+              if (newScale != null) {
+                _game.updateScale(newScale);
               }
             }
-          }
-        });
+
+            if (args.containsKey('wanderingEnabled')) {
+              final bool? enabled = args['wanderingEnabled'] as bool?;
+              if (enabled != null) {
+                _game.setWanderingEnabled(enabled);
+              }
+            }
+
+            if (args.containsKey('state')) {
+              final String? stateStr = args['state'] as String?;
+              if (stateStr != null) {
+                final CatAnimationState? matchingState = _parseAnimationState(stateStr);
+                if (matchingState != null) {
+                  _game.triggerState(matchingState);
+                }
+              }
+            }
+          });
+          break;
       }
     });
   }
 
-  /// Safe parser mapping string values to companion animation states.
   CatAnimationState? _parseAnimationState(String stateStr) {
     for (final state in CatAnimationState.values) {
       if (state.name == stateStr) {
@@ -95,19 +99,43 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     super.dispose();
   }
 
+  void _onPanStart(DragStartDetails details) {
+    _isDragging = true;
+    _game.onUserInteraction('dragStart');
+    EventBus.instance.emit(CompanionInteractionEvent(
+      interactionType: 'dragStart',
+      metadata: {'x': details.globalPosition.dx, 'y': details.globalPosition.dy},
+    ));
+  }
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (!_isDragging) return;
+    _channel.invokeMethod('syncCompanionSettings', {
+      'positionDelta': {
+        'dx': details.delta.dx,
+        'dy': details.delta.dy,
+      },
+    });
+  }
+
+  void _onPanEnd(DragEndDetails details) {
+    _isDragging = false;
+    _game.onUserInteraction('dragEnd');
+    EventBus.instance.emit(CompanionInteractionEvent(
+      interactionType: 'dragEnd',
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Ensures a fully transparent overlay framework without standard background cards.
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanStart: (details) {
-          windowManager.startDragging();
-        },
-        child: GameWidget(
-          game: _game,
-        ),
+    return GestureDetector(
+      onPanStart: _onPanStart,
+      onPanUpdate: _onPanUpdate,
+      onPanEnd: _onPanEnd,
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: GameWidget(game: _game),
       ),
     );
   }

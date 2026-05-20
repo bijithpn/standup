@@ -1,0 +1,110 @@
+import 'dart:async';
+import 'dart:math';
+import 'package:standup/core/events/app_events.dart';
+import 'package:standup/core/events/event_bus.dart';
+import 'package:standup/core/utils/logger.dart';
+
+class CompanionBehaviorEngine {
+  CompanionBehaviorEngine({EventBus? eventBus})
+      : _eventBus = eventBus ?? EventBus.instance,
+        _logger = AppLogger();
+
+  final EventBus _eventBus;
+  final AppLogger _logger;
+  final Random _random = Random();
+
+  Timer? _behaviorTimer;
+  Timer? _wanderTimer;
+  bool _isEnabled = true;
+  int _idleCycles = 0;
+  static const _maxIdleCyclesBeforeAction = 12;
+
+  void start() {
+    stop();
+    _behaviorTimer = Timer.periodic(const Duration(seconds: 5), _onTick);
+    _logger.info('Companion behavior engine started');
+  }
+
+  void stop() {
+    _behaviorTimer?.cancel();
+    _behaviorTimer = null;
+    _wanderTimer?.cancel();
+    _wanderTimer = null;
+  }
+
+  void setEnabled(bool enabled) {
+    _isEnabled = enabled;
+    if (!enabled) stop();
+  }
+
+  void _onTick(Timer timer) {
+    if (!_isEnabled) return;
+
+    _idleCycles++;
+
+    if (_idleCycles >= _maxIdleCyclesBeforeAction) {
+      _idleCycles = 0;
+      _triggerRandomBehavior();
+    }
+  }
+
+  void _triggerRandomBehavior() {
+    final behavior = _random.nextDouble();
+
+    if (behavior < 0.3) {
+      _triggerBlink();
+    } else if (behavior < 0.5) {
+      _triggerStretch();
+    } else if (behavior < 0.7) {
+      _triggerLookAround();
+    } else if (behavior < 0.85) {
+      _triggerYawn();
+    } else {
+      _triggerHappy();
+    }
+  }
+
+  void _triggerBlink() {
+    _logger.info('Companion: blink');
+  }
+
+  void _triggerStretch() {
+    _eventBus.emit(CompanionInteractionEvent(
+      interactionType: 'stretch',
+      metadata: {'source': 'behavior_engine'},
+    ));
+    _logger.info('Companion: stretch behavior');
+  }
+
+  void _triggerLookAround() {
+    _eventBus.emit(CompanionInteractionEvent(
+      interactionType: 'lookAround',
+      metadata: {'source': 'behavior_engine'},
+    ));
+    _logger.info('Companion: look around behavior');
+  }
+
+  void _triggerYawn() {
+    _eventBus.emit(CompanionInteractionEvent(
+      interactionType: 'yawn',
+      metadata: {'source': 'behavior_engine'},
+    ));
+    _logger.info('Companion: yawn behavior');
+  }
+
+  void _triggerHappy() {
+    _eventBus.emit(CompanionInteractionEvent(
+      interactionType: 'happy',
+      metadata: {'source': 'behavior_engine'},
+    ));
+    _logger.info('Companion: happy behavior');
+  }
+
+  void onUserInteraction() {
+    _idleCycles = 0;
+  }
+
+  void dispose() {
+    stop();
+  }
+}
