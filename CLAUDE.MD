@@ -1,4 +1,9 @@
 # Claude Project Context
+
+This is a Flutter project.
+
+## Structure
+
 Folder PATH listing for volume Windows
 Volume serial number is 242B-F71E
 C:.
@@ -3900,3 +3905,14 @@ C:.
         \---resources
                 app_icon.ico
                 
+
+
+## Coding Guidelines
+
+- Keep files modular
+- Follow Dart naming conventions
+- Use const constructors where possible
+- Optimize rebuilds
+- Avoid deeply nested widgets
+- Use extension methods when appropriate
+- Maintain scalable folder architecture
