@@ -4,7 +4,6 @@ Flutter application project structure.
 
 ## Folder Structure
 
-[
 Folder PATH listing for volume Windows
 Volume serial number is 242B-F71E
 C:.
@@ -3905,8 +3904,6 @@ C:.
         |   
         \---resources
                 app_icon.ico
-                
-]
 
 ## Rules
 
