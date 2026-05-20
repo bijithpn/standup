@@ -10,7 +10,6 @@ import 'package:standup/features/settings/exercise_model.dart';
 import 'package:standup/features/analytics/stats_model.dart';
 import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/settings/break_profile.dart';
-import 'package:standup/features/analytics/widgets/stats_chart.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/shared/theme/app_theme.dart';
@@ -55,8 +54,8 @@ class _SettingsPageState extends State<SettingsPage> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 600;
-        final horizontalPadding = isSmallScreen ? 16.0 : 48.0;
-        final verticalPadding = isSmallScreen ? 20.0 : 40.0;
+        final horizontalPadding = isSmallScreen ? 16.0 : 40.0;
+        final verticalPadding = isSmallScreen ? 20.0 : 32.0;
 
         final content = SingleChildScrollView(
           padding: EdgeInsets.symmetric(
@@ -66,7 +65,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: isSmallScreen ? double.infinity : 800,
+                maxWidth: isSmallScreen ? double.infinity : 760,
               ),
               child: _buildContent(),
             ),
@@ -83,12 +82,20 @@ class _SettingsPageState extends State<SettingsPage> {
         return MacosScaffold(
           backgroundColor: AppTheme.contentBackground,
           toolBar: ToolBar(
-            title: Text(widget.section),
-            titleWidth: 200,
+            title: Text(
+              _sectionDisplayName(widget.section),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+                letterSpacing: -0.2,
+              ),
+            ),
+            titleWidth: 260,
             actions: [
               if (widget.section == 'Flash Reminder')
                 ToolBarIconButton(
-                  icon: const MacosIcon(CupertinoIcons.play_fill, size: 14),
+                  icon: const MacosIcon(CupertinoIcons.play_fill, size: 13),
                   label: 'Play demo',
                   showLabel: true,
                   onPressed: () {
@@ -105,15 +112,22 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           ),
           children: [
-            ContentArea(
-              builder: (context, scrollController) {
-                return content;
-              },
-            ),
+            ContentArea(builder: (context, scrollController) => content),
           ],
         );
       },
     );
+  }
+
+  String _sectionDisplayName(String section) {
+    switch (section) {
+      case 'Breaks & Profiles':
+        return 'Breaks';
+      case 'Intelligent Detection':
+        return 'Focus mode';
+      default:
+        return section;
+    }
   }
 
   Widget _buildContent() {
@@ -176,12 +190,18 @@ class _SettingsPageState extends State<SettingsPage> {
                   if (result && mounted) {
                     Toast.showSuccess(context, 'Startup launch disabled');
                   } else if (mounted) {
-                    Toast.showError(context, 'Could not disable startup launch');
+                    Toast.showError(
+                      context,
+                      'Could not disable startup launch',
+                    );
                   }
                 }
               } catch (e) {
                 if (mounted) {
-                  Toast.showError(context, 'Launch at startup requires macOS 10.10+');
+                  Toast.showError(
+                    context,
+                    'Launch at startup requires macOS 10.10+',
+                  );
                 }
               }
             },
@@ -364,7 +384,7 @@ class _SettingsPageState extends State<SettingsPage> {
               );
             }).toList(),
           );
-        }
+        },
       ),
     );
   }
@@ -390,7 +410,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 }
               },
             ),
-            child: Text(time, style: const TextStyle(color: AppTheme.accentColor)),
+            child: Text(
+              time,
+              style: const TextStyle(color: AppTheme.accentColor),
+            ),
           ),
         ],
       ),
@@ -701,7 +724,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-
   Widget _buildNotifications() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -812,12 +834,20 @@ class _SettingsPageState extends State<SettingsPage> {
               _settings.clockOutTime,
               onTap: () => _showPicker(
                 title: 'End Workday',
-                options: ['16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'],
+                options: [
+                  '16:00',
+                  '16:30',
+                  '17:00',
+                  '17:30',
+                  '18:00',
+                  '18:30',
+                  '19:00',
+                ],
                 suffix: '',
                 onSelected: (v) => _save(_settings.copyWith(clockOutTime: v)),
               ),
             ),
-          ]
+          ],
         ]),
       ],
     );
@@ -844,11 +874,17 @@ class _SettingsPageState extends State<SettingsPage> {
               children: [
                 const Expanded(child: Text('Exercise Library')),
                 CupertinoButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   color: AppTheme.accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   onPressed: () => _showExerciseEditor(),
-                  child: const Text('Add Exercise', style: TextStyle(color: AppTheme.accentColor, fontSize: 13)),
+                  child: const Text(
+                    'Add Exercise',
+                    style: TextStyle(color: AppTheme.accentColor, fontSize: 13),
+                  ),
                 ),
               ],
             ),
@@ -867,19 +903,32 @@ class _SettingsPageState extends State<SettingsPage> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          Icon(_exerciseIcon(exercise.category), color: AppTheme.accentColor, size: 20),
+          Icon(
+            _exerciseIcon(exercise.category),
+            color: AppTheme.accentColor,
+            size: 20,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(exercise.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  exercise.title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 3),
                 Text(
                   '${exercise.durationSeconds}s • ${exercise.category.name} • ${exercise.instructions}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 12,
+                  ),
                 ),
               ],
             ),
@@ -887,7 +936,8 @@ class _SettingsPageState extends State<SettingsPage> {
           CupertinoSwitch(
             value: exercise.enabled,
             activeTrackColor: AppTheme.accentColor,
-            onChanged: (enabled) => _upsertExercise(exercise.copyWith(enabled: enabled)),
+            onChanged: (enabled) =>
+                _upsertExercise(exercise.copyWith(enabled: enabled)),
           ),
           CupertinoButton(
             padding: EdgeInsets.zero,
@@ -897,7 +947,11 @@ class _SettingsPageState extends State<SettingsPage> {
           CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: () => _deleteExercise(exercise),
-            child: const Icon(CupertinoIcons.delete, size: 18, color: CupertinoColors.systemRed),
+            child: const Icon(
+              CupertinoIcons.delete,
+              size: 18,
+              color: CupertinoColors.systemRed,
+            ),
           ),
         ],
       ),
@@ -921,7 +975,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _upsertExercise(ExerciseModel exercise) {
     final exercises = List<ExerciseModel>.from(
-      _settings.exercises.isEmpty ? ExerciseModel.defaults : _settings.exercises,
+      _settings.exercises.isEmpty
+          ? ExerciseModel.defaults
+          : _settings.exercises,
     );
     final index = exercises.indexWhere((e) => e.id == exercise.id);
     if (index == -1) {
@@ -934,7 +990,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _deleteExercise(ExerciseModel exercise) {
     final exercises = List<ExerciseModel>.from(
-      _settings.exercises.isEmpty ? ExerciseModel.defaults : _settings.exercises,
+      _settings.exercises.isEmpty
+          ? ExerciseModel.defaults
+          : _settings.exercises,
     )..removeWhere((e) => e.id == exercise.id);
     _save(_settings.copyWith(exercises: exercises));
   }
@@ -958,7 +1016,10 @@ class _SettingsPageState extends State<SettingsPage> {
             content: Column(
               children: [
                 const SizedBox(height: 12),
-                CupertinoTextField(controller: titleController, placeholder: 'Title'),
+                CupertinoTextField(
+                  controller: titleController,
+                  placeholder: 'Title',
+                ),
                 const SizedBox(height: 8),
                 CupertinoTextField(
                   controller: durationController,
@@ -1008,12 +1069,14 @@ class _SettingsPageState extends State<SettingsPage> {
               CupertinoDialogAction(
                 onPressed: () {
                   final title = titleController.text.trim();
-                  final duration = int.tryParse(durationController.text.trim()) ?? 20;
+                  final duration =
+                      int.tryParse(durationController.text.trim()) ?? 20;
                   final instructions = instructionsController.text.trim();
                   if (title.isEmpty || instructions.isEmpty) return;
                   _upsertExercise(
                     ExerciseModel(
-                      id: existing?.id ??
+                      id:
+                          existing?.id ??
                           'custom_${DateTime.now().millisecondsSinceEpoch}',
                       title: title,
                       durationSeconds: duration.clamp(5, 600),
@@ -1038,102 +1101,171 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 60),
+        const SizedBox(height: 52),
+        // ── App icon ──────────────────────────────────────────
         Container(
-          width: 80,
-          height: 80,
+          width: 96,
+          height: 96,
           decoration: BoxDecoration(
-            color: AppTheme.accentColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: AppTheme.accentColor.withValues(alpha: 0.2),
-            ),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.accentColor.withValues(alpha: 0.2),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.4),
+                blurRadius: 32,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
           child: const Center(
             child: Icon(
               CupertinoIcons.infinite,
-              color: AppTheme.accentColor,
-              size: 40,
+              color: Color(0xFF1C1C1E),
+              size: 48,
             ),
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'BreakMate',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-            letterSpacing: -0.5,
+        // ── Two-toned app name ────────────────────────────────
+        RichText(
+          text: const TextSpan(
+            children: [
+              TextSpan(
+                text: 'Break',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.6,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              TextSpan(
+                text: 'Mate',
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.accentColor,
+                  letterSpacing: -0.6,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Version 1.2.0 (Premium)',
-          style: TextStyle(
-            color: AppTheme.textMuted,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
+        const SizedBox(height: 12),
+        // ── Version badge ─────────────────────────────────────
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppTheme.cardBackgroundElevated.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppTheme.borderColor, width: 0.5),
+          ),
+          child: const Text(
+            'Version 1.0.0 (1)',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
+              fontFamily: 'Satoshi',
+            ),
           ),
         ),
-        const SizedBox(height: 48),
-        _buildCard([
-          _buildListRow(
-            'Official Website',
-            'Visit for more information',
-            null,
-            CupertinoIcons.globe,
-            null,
-            trailing: const Icon(
-              CupertinoIcons.arrow_up_right,
-              size: 14,
-              color: Colors.white24,
-            ),
+        const SizedBox(height: 52),
+        // ── "Crafted with Care" section ───────────────────────
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: AppTheme.cleanCardDecoration,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Crafted with Care',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.3,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Healthy work habits for everyone.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(child: _buildAboutCard(
+                    CupertinoIcons.globe,
+                    'Website',
+                    'Visit our home',
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildAboutCard(
+                    CupertinoIcons.lock_shield,
+                    'Privacy',
+                    'Your data',
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildAboutCard(
+                    CupertinoIcons.doc_text,
+                    'Terms',
+                    'Legal details',
+                  )),
+                ],
+              ),
+            ],
           ),
-          _divider(),
-          _buildListRow(
-            'Twitter / X',
-            'Follow us for latest updates',
-            null,
-            CupertinoIcons.chat_bubble_2,
-            null,
-            trailing: const Icon(
-              CupertinoIcons.arrow_up_right,
-              size: 14,
-              color: Colors.white24,
-            ),
-          ),
-          _divider(),
-          _buildListRow(
-            'Privacy Policy',
-            'How we protect your data',
-            null,
-            CupertinoIcons.lock_shield,
-            null,
-            trailing: const Icon(
-              CupertinoIcons.arrow_up_right,
-              size: 14,
-              color: Colors.white24,
-            ),
-          ),
-        ]),
-        const SizedBox(height: 32),
-        const Text(
-          'Crafted with precision for macOS.',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
         ),
         const SizedBox(height: 60),
       ],
     );
   }
 
+  Widget _buildAboutCard(IconData icon, String title, String subtitle) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.cardBackgroundElevated.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05), width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: AppTheme.accentColor),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+              fontFamily: 'Satoshi',
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textSecondary,
+              fontFamily: 'Satoshi',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildFlashReminder() {
     return Column(
@@ -1170,9 +1302,14 @@ class _SettingsPageState extends State<SettingsPage> {
         _sectionHeader('Flash Animation'),
         const SizedBox(height: 24),
         _buildCard([
-          _dropdownRow('Animation Type', _settings.flashAnimationType, ['pulse', 'glow', 'fade', 'dim', 'edge'], (v) {
-            if (v != null) _save(_settings.copyWith(flashAnimationType: v));
-          }),
+          _dropdownRow(
+            'Animation Type',
+            _settings.flashAnimationType,
+            ['pulse', 'glow', 'fade', 'dim', 'edge'],
+            (v) {
+              if (v != null) _save(_settings.copyWith(flashAnimationType: v));
+            },
+          ),
           _divider(),
           _sliderRow(
             'Intensity',
@@ -1191,7 +1328,11 @@ class _SettingsPageState extends State<SettingsPage> {
             max: 10.0,
           ),
           _divider(),
-          _textFieldRow('Custom Message', _settings.flashMessage, (v) => _save(_settings.copyWith(flashMessage: v))),
+          _textFieldRow(
+            'Custom Message',
+            _settings.flashMessage,
+            (v) => _save(_settings.copyWith(flashMessage: v)),
+          ),
         ]),
         const SizedBox(height: 48),
         Row(
@@ -1254,34 +1395,270 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Daily Progress'),
-        const SizedBox(height: 16),
-        DailyStatsChart(stats: _stats),
-        const SizedBox(height: 32),
-        _buildStatsCard(),
+        _sectionHeader(
+          'Statistics',
+          subtitle: 'Detailed insights into your rest and work balance.',
+        ),
+        // ── Break Activity heatmap ─────────────────────────────
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: AppTheme.cleanCardDecoration,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Break Activity',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildHeatmapMonthLabels(),
+              const SizedBox(height: 6),
+              _buildHeatmapGrid(),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Text('Less', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontFamily: 'Satoshi')),
+                      const SizedBox(width: 4),
+                      _heatSquare(AppTheme.cardBackgroundElevated),
+                      const SizedBox(width: 3),
+                      _heatSquare(AppTheme.shortBreakColor.withValues(alpha: 0.3)),
+                      const SizedBox(width: 3),
+                      _heatSquare(AppTheme.shortBreakColor.withValues(alpha: 0.6)),
+                      const SizedBox(width: 3),
+                      _heatSquare(AppTheme.shortBreakColor),
+                      const SizedBox(width: 4),
+                      const Text('More', style: TextStyle(fontSize: 10, color: AppTheme.textMuted, fontFamily: 'Satoshi')),
+                    ],
+                  ),
+                  Text(
+                    '${_stats.breaksCompleted} breaks completed',
+                    style: const TextStyle(fontSize: 11, color: AppTheme.textMuted, fontFamily: 'Satoshi'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        // ── Break Statistics card ──────────────────────────────
+        _buildBreakStatisticsCard(),
+        const SizedBox(height: 40),
       ],
     );
   }
 
-  // Helper Widgets
-  Widget _sectionHeader(String title) {
+  Widget _buildHeatmapMonthLabels() {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: months.map((m) => Text(m, style: const TextStyle(fontSize: 9, color: AppTheme.textMuted, fontFamily: 'Satoshi'))).toList(),
+    );
+  }
+
+  Widget _buildHeatmapGrid() {
+    return Column(
+      children: List.generate(5, (row) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 3),
+          child: Row(
+            children: List.generate(52, (col) {
+              final hasActivity = (col * 5 + row) % 7 < 3;
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 2),
+                  child: Container(
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: hasActivity
+                          ? AppTheme.shortBreakColor.withValues(alpha: 0.4 + (col % 4) * 0.1)
+                          : AppTheme.cardBackgroundElevated,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _heatSquare(Color color) {
+    return Container(
+      width: 9,
+      height: 9,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
+  }
+
+  Widget _buildBreakStatisticsCard() {
+    return StatefulBuilder(
+      builder: (context, setState) {
+        int selectedTab = 3;
+        return Container(
+          decoration: AppTheme.cleanCardDecoration,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Break Statistics',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                        fontFamily: 'Satoshi',
+                      ),
+                    ),
+                    _buildSegmentedFilter(['Today', 'Week', 'Month', 'All'], selectedTab, (i) => setState(() => selectedTab = i)),
+                  ],
+                ),
+              ),
+              _divider(),
+              _statsMetricRow(CupertinoIcons.check_mark_circled, AppTheme.accentColor, 'Total Breaks', 'Completed rest sessions', '${_stats.breaksCompleted}'),
+              _divider(),
+              _statsMetricRow(CupertinoIcons.clock, AppTheme.shortBreakColor, 'Short Breaks', 'Quick micro-breaks', '${(_stats.breaksCompleted * 0.8).round()}'),
+              _divider(),
+              _statsMetricRow(CupertinoIcons.pause_circle, AppTheme.longBreakColor, 'Long Breaks', 'Extended recovery rest', '${(_stats.breaksCompleted * 0.2).round()}'),
+              _divider(),
+              _statsMetricRow(CupertinoIcons.chart_pie, AppTheme.upcomingBreakColor, 'Completion Rate', 'Success frequency', '${(_stats.completionRate * 100).toInt()}%'),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSegmentedFilter(List<String> options, int selected, ValueChanged<int> onSelected) {
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: options.asMap().entries.map((e) {
+          final isSelected = e.key == selected;
+          return GestureDetector(
+            onTap: () => onSelected(e.key),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: isSelected ? AppTheme.cardBackgroundElevated : Colors.transparent,
+                borderRadius: BorderRadius.circular(6),
+                boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4)] : null,
+              ),
+              child: Text(
+                e.value,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _statsMetricRow(IconData icon, Color color, String label, String subtitle, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12, left: 2, top: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: AppTheme.sectionTitle.copyWith(
-          color: AppTheme.textMuted,
-          fontSize: 11,
-          letterSpacing: 0.8,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary, fontFamily: 'Satoshi')),
+                Text(subtitle, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary, fontFamily: 'Satoshi')),
+              ],
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textPrimary,
+              fontFamily: 'Satoshi',
+              letterSpacing: -0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Helper Widgets ──────────────────────────────────────────────────────
+
+  Widget _sectionHeader(String title, {String? subtitle}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, left: 4, top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.4,
+              fontFamily: 'Satoshi',
+            ),
+          ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.textSecondary,
+                letterSpacing: -0.1,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
 
   Widget _buildCard(List<Widget> children) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 32),
-      decoration: AppTheme.glassCardDecoration,
+      margin: const EdgeInsets.only(bottom: 28),
+      decoration: AppTheme.cleanCardDecoration,
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),
     );
@@ -1336,12 +1713,17 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _dropdownRow(String label, String value, List<String> options, ValueChanged<String?> onChanged) {
+  Widget _dropdownRow(
+    String label,
+    String value,
+    List<String> options,
+    ValueChanged<String?> onChanged,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 500;
         final padding = isSmallScreen ? 16.0 : 20.0;
-        
+
         return Padding(
           padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
           child: Row(
@@ -1427,7 +1809,7 @@ class _SettingsPageState extends State<SettingsPage> {
     ValueChanged<bool> onChanged,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         children: [
           Expanded(
@@ -1438,22 +1820,25 @@ class _SettingsPageState extends State<SettingsPage> {
                   label,
                   style: const TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 15,
+                    fontSize: 14,
                     color: AppTheme.textPrimary,
+                    fontFamily: 'Satoshi',
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: AppTheme.textSecondary,
                     fontSize: 12,
-                    letterSpacing: -0.1,
+                    letterSpacing: 0,
+                    fontFamily: 'Satoshi',
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(width: 16),
           CupertinoSwitch(
             value: value,
             activeTrackColor: AppTheme.accentColor,
@@ -1466,7 +1851,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Widget _inputRow(String label, String value, {VoidCallback? onTap}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -1474,9 +1859,10 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Text(
               label,
               style: const TextStyle(
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: AppTheme.textPrimary,
+                fontFamily: 'Satoshi',
               ),
             ),
           ),
@@ -1486,17 +1872,29 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                color: Colors.white.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1), width: 0.5),
               ),
-              child: Text(
-                value.toUpperCase(),
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      color: AppTheme.accentColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Satoshi',
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    CupertinoIcons.chevron_up_chevron_down,
+                    size: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ],
               ),
             ),
           ),
@@ -1553,11 +1951,7 @@ class _SettingsPageState extends State<SettingsPage> {
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              color: AppTheme.accentColor,
-              size: 18,
-            ),
+            child: Icon(icon, color: AppTheme.accentColor, size: 18),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -1598,7 +1992,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _inlineDropdown(String value, List<String> options, ValueChanged<String?> onChanged) {
+  Widget _inlineDropdown(
+    String value,
+    List<String> options,
+    ValueChanged<String?> onChanged,
+  ) {
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: () {
@@ -1656,7 +2054,11 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _textFieldRow(String label, String value, ValueChanged<String> onChanged) {
+  Widget _textFieldRow(
+    String label,
+    String value,
+    ValueChanged<String> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
@@ -1776,7 +2178,7 @@ class _SettingsPageState extends State<SettingsPage> {
         final height = isSmallScreen ? 70.0 : 90.0;
         final iconSize = isSmallScreen ? 20.0 : 28.0;
         final fontSize = isSmallScreen ? 11.0 : 12.0;
-        
+
         return GestureDetector(
           onTap: onTap,
           child: Column(
@@ -1844,7 +2246,14 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text('00:20', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white70)),
+              const Text(
+                '00:20',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white70,
+                ),
+              ),
             ],
           ),
         );
@@ -1852,7 +2261,14 @@ class _SettingsPageState extends State<SettingsPage> {
         return Column(
           children: [
             const Spacer(),
-            Container(width: 60, height: 20, decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(4))),
+            Container(
+              width: 60,
+              height: 20,
+              decoration: BoxDecoration(
+                color: Colors.white10,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             const Spacer(),
             Container(height: 10, color: Colors.white.withValues(alpha: 0.05)),
           ],
@@ -1869,7 +2285,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 width: 3,
               ),
             ),
-            child: const Center(child: Text('12:00', style: TextStyle(fontSize: 10, color: Colors.white30))),
+            child: const Center(
+              child: Text(
+                '12:00',
+                style: TextStyle(fontSize: 10, color: Colors.white30),
+              ),
+            ),
           ),
         );
       case 'Focus':
@@ -1897,7 +2318,9 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
       case 'Photo Flash':
-        return const Center(child: Icon(CupertinoIcons.photo, color: Colors.white12, size: 30));
+        return const Center(
+          child: Icon(CupertinoIcons.photo, color: Colors.white12, size: 30),
+        );
       default:
         return const SizedBox();
     }
@@ -1941,7 +2364,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           );
         }
-        
+
         return Row(
           children: [
             _stylePreview(
@@ -2072,48 +2495,9 @@ class _SettingsPageState extends State<SettingsPage> {
     return Divider(
       height: 1,
       thickness: 0.5,
-      color: Colors.white.withValues(alpha: 0.05),
-      indent: 20,
-    );
-  }
-
-  Widget _buildStatsCard() {
-    final rate = (_stats.completionRate * 100).toStringAsFixed(0);
-    return _buildCard([
-      _statRow('Breaks Completed', '${_stats.breaksCompleted}'),
-      _divider(),
-      _statRow('Breaks Skipped', '${_stats.breaksSkipped}'),
-      _divider(),
-      _statRow('Break Rate', '$rate%'),
-      _divider(),
-      _statRow('Usage Today', '${_stats.dailyUsageMinutes} min'),
-    ]);
-  }
-
-  Widget _statRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+      color: AppTheme.separatorColor,
+      indent: 16,
+      endIndent: 16,
     );
   }
 }

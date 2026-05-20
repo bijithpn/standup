@@ -63,7 +63,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
       switch (action) {
         case 'open_dashboard':
         case 'settings':
-          await openSection('Companion');
+          await openSection('General');
           break;
         case 'open_settings':
           await openSection('General');

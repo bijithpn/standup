@@ -87,7 +87,7 @@ void main() async {
       singleInstanceServer.listen((client) {
         utf8.decoder.bind(client).join().then((message) async {
           if (message.trim() == 'showDashboard') {
-            sl<AppNavigationService>().openSection('Companion');
+            sl<AppNavigationService>().openSection('General');
             await sl<OverlayWindowService>().showDashboard();
           }
           client.destroy();
