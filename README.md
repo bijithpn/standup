@@ -1,6 +1,8 @@
 # BreakMate (standup)
 
 > A macOS menu bar break reminder app for healthy work habits.
+>
+> **Created by Bijith P N**
 
 BreakMate is a desktop productivity application that reminds you to take regular breaks from computer work. It runs discreetly in your macOS menu bar, providing intelligent break scheduling, smart meeting detection, a desktop cat companion, flash notifications, exercise suggestions, and productivity analytics — all designed to help you maintain healthy work habits.
 
@@ -210,8 +212,10 @@ standup/
 │   │   │   ├── flame/                    # Flame game engine integration
 │   │   │   │   ├── companion_cat_component.dart
 │   │   │   │   └── companion_game.dart
-│   │   │   └── overlay/
-│   │   │       └── companion_overlay_window.dart
+│   │   │   ├── overlay/
+│   │   │   │   └── companion_overlay_window.dart
+│   │   │   └── presentation/
+│   │   │       └── companion_dashboard.dart
 │   │   ├── flash_overlay/                # Flash notification system
 │   │   │   ├── flash_overlay_screen.dart
 │   │   │   ├── flash_overlay_service.dart
@@ -385,8 +389,16 @@ flutter run -d macos
 
 # The app supports three entry points:
 # 1. main()          → Dashboard window
+#    - runZonedGuarded error handling
+#    - flutter_acrylic window initialization
+#    - Single instance check (port 10425)
+#    - initDependencies() — registers all 16 services
+#    - WindowManager config (1100x750, hidden titlebar)
+#    - MethodChannel handler for macOS dock click reopen
 # 2. overlayMain()   → Break overlay window (launched programmatically)
+#    - StandaloneBreakOverlay widget, @pragma('vm:entry-point')
 # 3. companionMain() → Desktop cat pet (launched programmatically)
+#    - CompanionOverlayWindow widget, @pragma('vm:entry-point')
 ```
 
 ### Development
@@ -460,13 +472,17 @@ lib/features/your_feature/
 Add to `lib/app/dependency_injection.dart`:
 
 ```dart
-void setupDependencyInjection() {
+final sl = GetIt.instance;
+
+Future<void> initDependencies() async {
   // ... existing registrations ...
   
   // Add your service
-  GetIt.I.registerLazySingleton<YourService>(() => YourService());
+  sl.registerLazySingleton<YourService>(() => YourService());
 }
 ```
+
+Services are accessed via `sl<YourService>()` throughout the codebase.
 
 ### 3. Add Settings (if applicable)
 
@@ -554,19 +570,51 @@ Consumer<YourService>(
 - [ ] Sync settings across devices
 - [ ] Widget for macOS Sonoma+
 - [ ] Apple Watch companion app
+- [ ] **Companion cat drag & mouse interaction** (see Known Issues)
+- [ ] **Menu bar click action handlers** (see Known Issues)
 
 ### Completed
 - [x] Break timer with configurable intervals
 - [x] Menu bar integration with animated cat
 - [x] Smart meeting detection
 - [x] Flash notifications
-- [x] Desktop cat companion
 - [x] Analytics and productivity scoring
 - [x] Custom exercise library
 - [x] Working hours scheduling
 - [x] Strict mode
 - [x] Clock out reminders
 - [x] Multi-display overlay support
+
+---
+
+## Known Issues
+
+### Companion Cat — Not Draggable / No Mouse Interaction
+The desktop cat companion currently renders as a static overlay. It cannot be dragged with the mouse cursor and does not respond to click or hover interactions. The companion window is passive — it displays animations but ignores all mouse events.
+
+**What needs to be implemented:**
+- Mouse event passthrough or capture on the companion overlay window
+- Drag-and-drop logic to reposition the cat on the desktop
+- Click/hover interaction handlers for cat behavior triggers
+- Native macOS window level configuration to allow mouse interaction while keeping the window always-on-top
+
+**Files to modify:**
+- `lib/features/companion/overlay/companion_overlay_window.dart` — window creation and mouse event handling
+- `lib/features/companion/flame/companion_cat_component.dart` — Flame component click/touch detection
+- `macos/Runner/` — native window configuration for mouse passthrough or interaction flags
+
+### Menu Bar — Click Actions Not Working
+Clicking menu items in the system tray (Start, Pause, Skip, Settings, etc.) produces no visible change. The `TrayManagerService` registers the context menu but the action handlers are not wired to the corresponding service methods.
+
+**What needs to be fixed:**
+- Wire `TrayManagerService` menu item callbacks to `TimerEngine` methods (`start()`, `pause()`, `skip()`)
+- Connect Settings menu item to `AppNavigationService` to open the settings page
+- Ensure `notifyListeners()` is called after state changes so the UI and tray icon update
+- Verify the `tray_manager` package event listener is properly subscribed in `init()`
+
+**Files to modify:**
+- `lib/features/menu_bar/tray_manager_service.dart` — add `onMenuItemClicked` handler logic
+- `lib/app/dependency_injection.dart` — ensure `TrayManagerService` has access to `TimerEngine` and `AppNavigationService`
 
 ---
 
@@ -592,13 +640,7 @@ Consumer<YourService>(
 
 ## License
 
-This project is proprietary. All rights reserved.
-
----
-
-## Contributing
-
-This is a personal project. For questions or suggestions, please open an issue.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
