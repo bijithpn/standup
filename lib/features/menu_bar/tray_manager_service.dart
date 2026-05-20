@@ -327,10 +327,17 @@ class TrayManagerService with TrayListener {
   void _handleAction(String action) {
     _logger.info('Tray action: $action');
     triggerActionAnimation();
-    _menuBarController?.handleAction(action);
+    final controller = _menuBarController;
+    if (controller == null) {
+      _logger.error('No MenuBarController registered for action: $action');
+      return;
+    }
+    controller.handleAction(action);
   }
 
   void setDependencies(TimerEngine timerEngine, BreakController breakController) {
+    _timerEngine?.removeListener(_onTimerChanged);
+    _breakController?.removeListener(_onTimerChanged);
     _timerEngine = timerEngine;
     _breakController = breakController;
     timerEngine.addListener(_onTimerChanged);

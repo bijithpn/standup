@@ -62,6 +62,8 @@ class MenuBarController {
         await sl<NotificationService>().showPostureReminder();
       case 'quit':
         await _quitApp();
+      default:
+        _logger.error('Unhandled menu action: $action');
     }
   }
 

@@ -98,6 +98,7 @@ class SettingsRepository {
       remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
       companionEnabled: _storage.getBool('companion_enabled', defaultValue: true),
       companionCatTheme: _storage.getString('companion_cat_theme', defaultValue: 'grey_cat'),
+      companionPetName: _storage.getString('companion_pet_name', defaultValue: 'Mochi'),
       companionScale: _storage.getDouble('companion_scale', defaultValue: 1.5),
       companionClickThrough: _storage.getBool('companion_click_through', defaultValue: false),
     );
@@ -178,6 +179,7 @@ class SettingsRepository {
       ),
       _storage.setBool('companion_enabled', settings.companionEnabled),
       _storage.setString('companion_cat_theme', settings.companionCatTheme),
+      _storage.setString('companion_pet_name', settings.companionPetName),
       _storage.setDouble('companion_scale', settings.companionScale),
       _storage.setBool('companion_click_through', settings.companionClickThrough),
     ]);

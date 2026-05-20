@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/native/macos_bridge.dart';
@@ -9,6 +11,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   bool _companionEnabled = false;
   String _companionCatTheme = 'grey_cat';
+  String _companionPetName = 'Mochi';
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
 
@@ -18,6 +21,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   bool get companionEnabled => _companionEnabled;
   String get companionCatTheme => _companionCatTheme;
+  String get companionPetName => _companionPetName;
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
 
@@ -28,18 +32,21 @@ class CompanionOverlayController extends ChangeNotifier {
     // Read persisted settings (using dynamically added parameters on SettingsModel)
     _companionEnabled = settings.companionEnabled;
     _companionCatTheme = settings.companionCatTheme;
+    _companionPetName = settings.companionPetName;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
 
-    if (_companionEnabled) {
+    if (_companionEnabled && Platform.isMacOS) {
       await _syncToNativeSpawn();
     }
   }
 
   /// Helper to invoke native show panel with initialized config.
   Future<void> _syncToNativeSpawn() async {
+    if (!Platform.isMacOS) return;
     await MacOSBridge.showCompanion({
       'themeId': _companionCatTheme,
+      'petName': _companionPetName,
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
     });
@@ -55,9 +62,9 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (enabled) {
+    if (enabled && Platform.isMacOS) {
       await _syncToNativeSpawn();
-    } else {
+    } else if (Platform.isMacOS) {
       await MacOSBridge.hideCompanion();
     }
     notifyListeners();
@@ -73,7 +80,7 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled) {
+    if (_companionEnabled && Platform.isMacOS) {
       await MacOSBridge.updateCompanionTheme(themeId);
     }
 
@@ -81,6 +88,24 @@ class CompanionOverlayController extends ChangeNotifier {
     try {
       await sl<TrayManagerService>().updateSelectedBreed(themeId);
     } catch (_) {}
+
+    notifyListeners();
+  }
+
+  Future<void> changePetName(String petName) async {
+    final trimmedName = petName.trim();
+    final nextName = trimmedName.isEmpty ? 'Mochi' : trimmedName;
+    if (_companionPetName == nextName) return;
+    _companionPetName = nextName;
+
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionPetName: nextName,
+    );
+    await _settingsRepo.save(updated);
+
+    if (_companionEnabled && Platform.isMacOS) {
+      await MacOSBridge.updateCompanionName(nextName);
+    }
 
     notifyListeners();
   }
@@ -95,7 +120,7 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled) {
+    if (_companionEnabled && Platform.isMacOS) {
       await MacOSBridge.updateCompanionScale(scale);
     }
     notifyListeners();
@@ -111,7 +136,7 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled) {
+    if (_companionEnabled && Platform.isMacOS) {
       await MacOSBridge.setCompanionClickThrough(enabled);
     }
     notifyListeners();
@@ -120,7 +145,7 @@ class CompanionOverlayController extends ChangeNotifier {
   /// Forces an immediate full sync of all companion settings to the native window.
   /// Use this when changes aren't rendering instantly — sends everything in one shot.
   Future<void> refreshCompanion() async {
-    if (!_companionEnabled) return;
+    if (!_companionEnabled || !Platform.isMacOS) return;
 
     // Hide and re-spawn for a clean render
     await MacOSBridge.hideCompanion();

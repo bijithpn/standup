@@ -57,6 +57,10 @@ flutter:
     - assets/animations/cats/pixel_cat/
     - assets/animations/cats/cat_1/
     - assets/animations/cats/cat_2/
+    - assets/animations/cats/cat_3/
+    - assets/animations/cats/cat_4/
+    - assets/animations/cats/cat_5/
+    - assets/animations/cats/cat_6/
     # New cat — composite sheet
     - assets/animations/cats/cat_50/cat_sheet.png
     # Dog sprite sheets
@@ -65,6 +69,7 @@ flutter:
     - assets/animations/dogs/dalmatian.png
     - assets/animations/dogs/husky.png
     - assets/animations/dogs/labrador.png
+    - assets/animations/dogs/goldie/
 
   fonts:
     - family: Satoshi

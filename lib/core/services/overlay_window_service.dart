@@ -37,7 +37,7 @@ class OverlayWindowService extends ChangeNotifier {
           if (strictMode && type == OverlayType.breakScreen) {
             await windowManager.focus();
           }
-        } else {
+        } else if (Platform.isMacOS) {
           // Use native multi-monitor overlay for all real overlays
           await MacOSBridge.showOverlay({'type': type.name});
           if (strictMode && type == OverlayType.breakScreen) {
@@ -75,7 +75,7 @@ class OverlayWindowService extends ChangeNotifier {
 
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
-      } else {
+      } else if (Platform.isMacOS) {
         await MacOSBridge.hideOverlay();
         await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
         await MacOSBridge.setWindowLevel('normal');
@@ -95,7 +95,9 @@ class OverlayWindowService extends ChangeNotifier {
 
       await windowManager.show();
       await windowManager.focus();
-      await MacOSBridge.focusApp();
+      if (Platform.isMacOS) {
+        await MacOSBridge.focusApp();
+      }
       notifyListeners();
     } catch (e) {
       _logger.error('Failed to show dashboard: $e');
@@ -114,7 +116,7 @@ class OverlayWindowService extends ChangeNotifier {
       // Reset native state
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
-      } else {
+      } else if (Platform.isMacOS) {
         await MacOSBridge.hideOverlay();
         await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
       }
@@ -147,7 +149,7 @@ class OverlayWindowService extends ChangeNotifier {
     _currentOverlayType = null;
     if (Platform.isWindows) {
       await _windowsChannel.invokeMethod('resetToNormal');
-    } else {
+    } else if (Platform.isMacOS) {
       await MacOSBridge.hideOverlay();
       await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
     }

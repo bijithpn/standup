@@ -215,6 +215,16 @@ class CompanionWindowManager: NSObject {
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["themeId": themeId])
     }
+
+    /// Updates companion metadata shown by the Flutter companion isolate.
+    func updatePetName(_ petName: String) {
+        guard let inst = instance else { return }
+        let channel = FlutterMethodChannel(
+            name: "com.breakmate.macos/companion_data",
+            binaryMessenger: inst.engine.binaryMessenger
+        )
+        channel.invokeMethod("syncCompanionSettings", arguments: ["petName": petName])
+    }
     
     /// Modifies companion scaling factor and adjusts container bounds accordingly.
     func updateScale(_ scale: Double) {
