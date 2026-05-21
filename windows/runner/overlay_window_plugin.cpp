@@ -1,3 +1,5 @@
+#include "overlay_window_plugin.h"
+
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
 #include <flutter/standard_method_codec.h>
@@ -7,6 +9,7 @@
 #include <sstream>
 
 #include "flutter_window.h"
+#include "win32_window.h"
 
 namespace {
 
@@ -19,7 +22,6 @@ class OverlayWindowPlugin : public flutter::Plugin {
   virtual ~OverlayWindowPlugin();
 
  private:
-  // Called when a method is called on this plugin's channel from Dart.
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& method_call,
       std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
@@ -55,90 +57,78 @@ void OverlayWindowPlugin::HandleMethodCall(
   
   const auto& method_name = method_call.method_name();
 
-  // Get the main Flutter window handle
+  // Get the Flutter view's native HWND
   HWND hwnd = registrar_->GetView()->GetNativeWindow();
   if (!hwnd) {
     result->Error("Window Error", "Could not get window handle");
     return;
   }
 
+  // Retrieve the FlutterWindow pointer stored as GWLP_USERDATA
+  auto* flutter_window = reinterpret_cast<FlutterWindow*>(
+      ::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+
   if (method_name == "configureAsOverlay") {
-    // Get the FlutterWindow from the registrar
-    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->ConfigureAsOverlay();
       result->Success();
     } else {
-      result->Error("Cast Error", "Could not cast to FlutterWindow");
+      result->Error("Cast Error", "Could not get FlutterWindow pointer");
     }
-  } 
-  else if (method_name == "resetToNormal") {
-    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
+  } else if (method_name == "resetToNormal") {
     if (flutter_window) {
       flutter_window->ResetToNormal();
       result->Success();
     } else {
-      result->Error("Cast Error", "Could not cast to FlutterWindow");
+      result->Error("Cast Error", "Could not get FlutterWindow pointer");
     }
-  }
-  else if (method_name == "setTransparency") {
+  } else if (method_name == "setTransparency") {
     const auto* args = std::get_if<flutter::EncodableMap>(method_call.arguments());
     if (!args) {
       result->Error("Argument Error", "Invalid arguments");
       return;
     }
-    
     auto opacity_it = args->find(flutter::EncodableValue("opacity"));
     if (opacity_it == args->end()) {
       result->Error("Argument Error", "Missing opacity argument");
       return;
     }
-    
     double opacity = std::get<double>(opacity_it->second);
-    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->SetWindowTransparency(opacity);
       result->Success();
     } else {
-      result->Error("Cast Error", "Could not cast to FlutterWindow");
+      result->Error("Cast Error", "Could not get FlutterWindow pointer");
     }
-  }
-  else if (method_name == "setIgnoreMouseEvents") {
+  } else if (method_name == "setIgnoreMouseEvents") {
     const auto* args = std::get_if<flutter::EncodableMap>(method_call.arguments());
     if (!args) {
       result->Error("Argument Error", "Invalid arguments");
       return;
     }
-    
     auto ignore_it = args->find(flutter::EncodableValue("ignore"));
     if (ignore_it == args->end()) {
       result->Error("Argument Error", "Missing ignore argument");
       return;
     }
-    
     bool ignore = std::get<bool>(ignore_it->second);
-    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
-    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->SetIgnoreMouseEvents(ignore);
       result->Success();
     } else {
-      result->Error("Cast Error", "Could not cast to FlutterWindow");
+      result->Error("Cast Error", "Could not get FlutterWindow pointer");
     }
-  }
-  else {
+  } else {
     result->NotImplemented();
   }
 }
 
 }  // namespace
 
-void OverlayWindowPluginRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar) {
+// Free function wrapper — called from FlutterWindow::OnCreate() via the header.
+void RegisterOverlayWindowPlugin(flutter::PluginRegistry* registry) {
   OverlayWindowPlugin::RegisterWithRegistrar(
       flutter::PluginRegistrarManager::GetInstance()
-          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
+          ->GetRegistrar<flutter::PluginRegistrarWindows>(
+              registry->GetRegistrarForPlugin("OverlayWindowPlugin")));
 }

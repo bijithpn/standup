@@ -10,6 +10,7 @@ import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/companion/domain/pet_personality.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
 import 'package:standup/features/companion/domain/pet_state_machine.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 import 'package:standup/features/companion/flame/companion_component.dart';
 import 'package:standup/features/companion/ai/pet_behavior_brain.dart';
 import 'package:standup/features/companion/services/pet_companion_service.dart';
@@ -23,9 +24,25 @@ class CompanionGame extends FlameGame {
         stateMachine: PetStateMachine(personality: PetPersonality()),
         brain: PetBehaviorBrain(),
         navigation: PetNavigationService(),
-        profile: PetProfile.orangeCat,
+        profile: getProfileFromTheme(initialTheme),
       ),
       _theme = initialTheme;
+
+  static PetProfile getProfileFromTheme(CatTheme theme) {
+    final species = theme.isDog ? PetSpecies.dog : PetSpecies.cat;
+    final variant = PetVariant(
+      id: theme.id,
+      name: theme.name,
+      assetPath: theme.basePath,
+      isSpriteSheet: theme.type == CatType.composite,
+    );
+    return PetProfile(
+      id: theme.id,
+      name: theme.name,
+      species: species,
+      variant: variant,
+    );
+  }
 
   final EventBus _eventBus;
   final CatStateMachine _stateMachine;
@@ -274,6 +291,7 @@ class CompanionGame extends FlameGame {
   Future<void> updateTheme(CatTheme newTheme) async {
     if (_theme.id == newTheme.id && catComponent != null) return;
     _theme = newTheme;
+    _petService.updateProfile(getProfileFromTheme(newTheme));
     await _loadAndAttachCat();
   }
 
@@ -342,9 +360,26 @@ class CompanionGame extends FlameGame {
     _petService.update(dt);
   }
 
+  Size? _lastInitializedSize;
+
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
+    if (size.x > 0 && size.y > 0) {
+      final newSize = Size(size.x, size.y);
+      if (_lastInitializedSize != newSize) {
+        _lastInitializedSize = newSize;
+        final double spriteSize = _theme.spriteSize.toDouble();
+        final double scale = _effectiveScale(spriteSize);
+        final double scaledHalfH = (spriteSize * scale) / 2;
+        
+        _petService.initialize(
+          screenSize: newSize,
+          startPosition: Offset(size.x / 2, size.y - scaledHalfH - 4.0),
+        );
+      }
+    }
+
     if (catComponent != null) {
       final double spriteSize = _theme.spriteSize.toDouble();
       final double scale = _effectiveScale(spriteSize);

@@ -31,7 +31,8 @@ class OverlayWindowService extends ChangeNotifier {
 
       if (type != OverlayType.clockPreview) {
         if (Platform.isWindows) {
-          await _windowsChannel.invokeMethod('configureAsOverlay');
+          // Use unified bridge for Windows overlay configuration
+          await MacOSBridge.showOverlay({'type': type.name});
           await windowManager.setFullScreen(true);
           await windowManager.setAlwaysOnTop(true);
           await windowManager.show();

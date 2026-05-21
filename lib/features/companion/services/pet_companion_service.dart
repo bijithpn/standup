@@ -12,7 +12,7 @@ class PetCompanionService extends ChangeNotifier {
   final PetStateMachine _stateMachine;
   final PetBehaviorBrain _brain;
   final PetNavigationService _navigation;
-  final PetProfile _profile;
+  PetProfile _profile;
 
   PetMoodState _mood;
   PetBehaviorContext _context;
@@ -50,6 +50,20 @@ class PetCompanionService extends ChangeNotifier {
   PetBehaviorContext get context => _context;
   PetProfile get profile => _profile;
   Offset get position => _navigation.currentPosition;
+
+  /// Update active pet profile dynamically (e.g. on theme/breed switches).
+  void updateProfile(PetProfile newProfile) {
+    _profile = newProfile;
+    _mood = PetMoodState(
+      mood: newProfile.initialMood ?? PetMood.relaxed,
+      since: DateTime.now(),
+    );
+    _context = _context.copyWith(
+      profile: newProfile,
+      currentMood: _mood,
+    );
+    notifyListeners();
+  }
 
   /// Initialize the service with screen size and starting position.
   void initialize({required Size screenSize, Offset? startPosition}) {
