@@ -154,21 +154,33 @@ class CompanionCatComponent extends SpriteAnimationGroupComponent<CatAnimationSt
     }
 
     // 2. Horizontal physics/movement & boundary rebound checks
-    if (_speed > 0) {
-      position.x += _direction * _speed * dt;
+    final double scaledWidth = size.x * scale.x.abs();
+    if (scaledWidth < game.size.x) {
+      if (_speed > 0) {
+        position.x += _direction * _speed * dt;
 
-      final double halfWidth = (size.x * scale.x.abs()) / 2;
-      // Rebound left edge
-      if (position.x < halfWidth) {
-        position.x = halfWidth;
-        _direction = 1.0;
-        _updateFlip();
+        final double halfWidth = scaledWidth / 2;
+        // Rebound left edge
+        if (position.x < halfWidth) {
+          position.x = halfWidth;
+          _direction = 1.0;
+          _updateFlip();
+        }
+        // Rebound right edge
+        else if (position.x > game.size.x - halfWidth) {
+          position.x = game.size.x - halfWidth;
+          _direction = -1.0;
+          _updateFlip();
+        }
       }
-      // Rebound right edge
-      else if (position.x > game.size.x - halfWidth) {
-        position.x = game.size.x - halfWidth;
-        _direction = -1.0;
-        _updateFlip();
+    } else {
+      // If the cat is wider or equal to the window, center it and don't walk or oscillate
+      position.x = game.size.x / 2;
+      if (current == CatAnimationState.walk ||
+          current == CatAnimationState.excited ||
+          current == CatAnimationState.breakMode ||
+          current == CatAnimationState.celebrate) {
+        changeState(CatAnimationState.idle);
       }
     }
 

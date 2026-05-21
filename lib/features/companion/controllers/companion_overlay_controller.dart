@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:standup/app/dependency_injection.dart';
@@ -14,6 +15,18 @@ class CompanionOverlayController extends ChangeNotifier {
   String _companionPetName = 'Mochi';
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
+
+  static const List<String> catNames = [
+    'Mochi', 'Luna', 'Milo', 'Bella', 'Oliver', 'Simba', 'Chloe', 'Cleo', 'Loki',
+    'Lily', 'Oreo', 'Nala', 'Coco', 'Ziggy', 'Biscuit', 'Peanut', 'Pumpkin', 'Mocha',
+    'Pip', 'Mimi', 'Cookie', 'Teddy', 'Penny', 'Ruby', 'Lucky'
+  ];
+
+  static const List<String> dogNames = [
+    'Buster', 'Buddy', 'Max', 'Daisy', 'Charlie', 'Cooper', 'Lola', 'Bailey', 'Teddy',
+    'Sadie', 'Rocky', 'Tucker', 'Bear', 'Bentley', 'Toby', 'Winston', 'Rosie', 'Bella',
+    'Oliver', 'Coco', 'Duke', 'Jax', 'Milo', 'Ruby', 'Harley'
+  ];
 
   CompanionOverlayController({
     required SettingsRepository settingsRepo,
@@ -75,13 +88,32 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_companionCatTheme == themeId) return;
     _companionCatTheme = themeId;
 
+    // Determine if the selected theme is a dog
+    final isDog = {
+      'collie',
+      'corgi',
+      'dalmatian',
+      'husky',
+      'labrador',
+      'goldie',
+      'realistic_goldie',
+    }.contains(themeId);
+
+    // Pick a random cute name matching the type of pet
+    final random = Random();
+    final names = isDog ? dogNames : catNames;
+    final randomName = names[random.nextInt(names.length)];
+    _companionPetName = randomName;
+
     final updated = _settingsRepo.currentSettings.copyWith(
       companionCatTheme: themeId,
+      companionPetName: randomName,
     );
     await _settingsRepo.save(updated);
 
     if (_companionEnabled && Platform.isMacOS) {
       await MacOSBridge.updateCompanionTheme(themeId);
+      await MacOSBridge.updateCompanionName(randomName);
     }
 
     // Dynamically update the status bar tray icons matching the selected breed

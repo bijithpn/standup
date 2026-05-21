@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -2726,20 +2727,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ]),
             if (controller.companionEnabled) ...[
               const SizedBox(height: 32),
-              _sectionHeader(controller.companionPetName),
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 16),
-                child: Text(
-                  'Personalize your companion name and keep it synced with the desktop pet overlay.',
-                  style: TextStyle(
-                    color: AppTheme.textSecondary.withValues(alpha: 0.8),
-                    fontSize: 13,
-                    fontFamily: 'Satoshi',
-                  ),
-                ),
-              ),
-              _buildCompanionNameField(controller),
-              const SizedBox(height: 32),
               _sectionHeader('Companion Breed'),
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 16),
@@ -2860,13 +2847,29 @@ class _SettingsPageState extends State<SettingsPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            const Text(
-              'Selected Breed',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Companion Breed',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Active Pet: ${controller.companionPetName}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.accentColor,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+              ],
             ),
             const Spacer(),
             Material(
@@ -2901,12 +2904,33 @@ class _SettingsPageState extends State<SettingsPage> {
                       }
                     },
                     items: CatTheme.themes.map<DropdownMenuItem<String>>((theme) {
+                      final itemIsDog = _isDog(theme.id);
                       return DropdownMenuItem<String>(
                         value: theme.id,
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(_petSymbol(theme.id)),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: itemIsDog
+                                    ? Colors.blue.withValues(alpha: 0.15)
+                                    : Colors.orange.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                itemIsDog ? 'DOG' : 'CAT',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                  color: itemIsDog ? Colors.blue : Colors.orange,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
                             const SizedBox(width: 8),
                             Text(theme.name),
                           ],
@@ -2917,13 +2941,30 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
             ),
+            const SizedBox(width: 10),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              minSize: 0,
+              onPressed: () {
+                final isCurrentDog = _isDog(controller.companionCatTheme);
+                final random = Random();
+                final names = isCurrentDog ? CompanionOverlayController.dogNames : CompanionOverlayController.catNames;
+                final randomName = names[random.nextInt(names.length)];
+                controller.changePetName(randomName);
+              },
+              child: const Icon(
+                CupertinoIcons.refresh_bold,
+                size: 14,
+                color: AppTheme.accentColor,
+              ),
+            ),
           ],
         ),
       ),
     ]);
   }
 
-  String _petSymbol(String themeId) {
+  bool _isDog(String themeId) {
     return {
       CatTheme.keyCollie,
       CatTheme.keyCorgi,
@@ -2932,77 +2973,7 @@ class _SettingsPageState extends State<SettingsPage> {
       CatTheme.keyLabrador,
       CatTheme.keyGoldie,
       CatTheme.keyRealisticGoldie,
-    }.contains(themeId)
-        ? '🐕'
-        : '🐱';
-  }
-
-  Widget _buildCompanionNameField(CompanionOverlayController controller) {
-    return _buildCard([
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            const Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Pet Name',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    'Used in companion state and future pet messages',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 16),
-            SizedBox(
-              width: 220,
-              child: TextFormField(
-                initialValue: controller.companionPetName,
-                onChanged: controller.changePetName,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontFamily: 'Satoshi',
-                ),
-                cursorColor: AppTheme.accentColor,
-                decoration: InputDecoration(
-                  isDense: true,
-                  filled: true,
-                  fillColor: Colors.white.withValues(alpha: 0.05),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: AppTheme.accentColor),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    ]);
+    }.contains(themeId);
   }
 
   Widget _buildCompanionTestInteractions() {

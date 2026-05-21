@@ -234,10 +234,13 @@ class CompanionGame extends FlameGame {
       final double scale = _effectiveScale(spriteSize);
       catComponent!.scale = Vector2.all(scale);
 
-      double newX = catComponent!.position.x.clamp(
-        (spriteSize * scale) / 2,
-        size.x - (spriteSize * scale) / 2,
-      );
+      final double scaledHalfW = (spriteSize * scale) / 2;
+      double newX;
+      if (spriteSize * scale < size.x) {
+        newX = catComponent!.position.x.clamp(scaledHalfW, size.x - scaledHalfW);
+      } else {
+        newX = size.x / 2;
+      }
 
       final double scaledHalfH = (spriteSize * scale) / 2;
       catComponent!.position = Vector2(newX, size.y - scaledHalfH - 4.0);
