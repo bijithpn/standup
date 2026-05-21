@@ -3,7 +3,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/features/companion/data/cat_asset_loader.dart';
+import 'package:standup/features/companion/assets/pet_asset_loader.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/domain/cat_state_machine.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
@@ -40,6 +40,7 @@ class CompanionGame extends FlameGame {
 
   CatTheme get currentTheme => _theme;
   CatState get companionState => _stateMachine.currentState;
+  PetCompanionService get petService => _petService;
 
   @override
   Color backgroundColor() => Colors.transparent;
@@ -53,7 +54,7 @@ class CompanionGame extends FlameGame {
     ) {
       _applyPetStateToComponent(state);
     });
-    _petService.initialize(screenSize: null);
+    _petService.initialize(screenSize: Size(size.x, size.y));
     await _loadAndAttachCat();
   }
 
@@ -63,6 +64,36 @@ class CompanionGame extends FlameGame {
     _petStateSubscription.cancel();
     _petService.dispose();
     super.onRemove();
+  }
+
+  CatEvent? _mapAppEventToCatEvent(AppEvent event) {
+    if (event is TimerStateChangedEvent) {
+      return CatEvent.tick;
+    } else if (event is BreakStartedEvent) {
+      return CatEvent.breakStarted;
+    } else if (event is BreakEndedEvent) {
+      return CatEvent.breakEnded;
+    } else if (event is MeetingDetectedEvent) {
+      return event.isActive ? CatEvent.meetingDetected : CatEvent.meetingEnded;
+    } else if (event is FocusModeEvent) {
+      return event.isActive ? CatEvent.focusModeOn : CatEvent.focusModeOff;
+    } else if (event is IdleDetectedEvent) {
+      return event.isIdle ? CatEvent.idleTimeout : CatEvent.activityDetected;
+    } else if (event is CompanionInteractionEvent) {
+      switch (event.interactionType) {
+        case 'tap':
+          return CatEvent.userClick;
+        case 'doubleTap':
+          return CatEvent.userDoubleClick;
+        case 'hover':
+          return CatEvent.userHover;
+        case 'dragStart':
+          return CatEvent.userDragStart;
+        case 'dragEnd':
+          return CatEvent.userDragEnd;
+      }
+    }
+    return null;
   }
 
   void _handleAppEvent(AppEvent event) {
@@ -80,8 +111,6 @@ class CompanionGame extends FlameGame {
       petEvent = PetEvent.tick;
     } else if (event is BreakStartedEvent) {
       petEvent = PetEvent.breakStarted;
-    } else if (event is BreakCompletedEvent) {
-      petEvent = PetEvent.breakCompleted;
     } else if (event is BreakEndedEvent) {
       petEvent = PetEvent.breakEnded;
     } else if (event is MeetingDetectedEvent) {
@@ -112,10 +141,10 @@ class CompanionGame extends FlameGame {
           petEvent = PetEvent.userDragEnd;
           break;
       }
-    } else if (event is NotificationEvent) {
-      petEvent = PetEvent.notificationReceived;
     }
-    _petService.handleEvent(petEvent);
+    if (petEvent != null) {
+      _petService.handleEvent(petEvent);
+    }
   }
 
   void _applyStateToComponent() {
@@ -205,6 +234,8 @@ class CompanionGame extends FlameGame {
         return CatAnimationState.idle;
       case PetState.drag:
         return CatAnimationState.idle;
+      case PetState.turning:
+        return CatAnimationState.walk;
     }
   }
 
@@ -216,7 +247,7 @@ class CompanionGame extends FlameGame {
   }
 
   Future<void> _loadAndAttachCat() async {
-    final animations = await CatAssetLoader.loadAnimations(_theme);
+    final animations = await PetAssetLoader.loadAnimations(_petService.profile);
     if (animations.isEmpty) return;
 
     children.whereType<CompanionComponent>().toList().forEach(

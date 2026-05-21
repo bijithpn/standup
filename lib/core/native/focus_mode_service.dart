@@ -5,6 +5,9 @@ class FocusModeService {
   final _channel = const EventChannel('com.standup/focus_mode');
 
   Stream<bool> get isFocusModeActiveStream {
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
+      return const Stream<bool>.empty();
+    }
     return _channel.receiveBroadcastStream().map((event) {
       final isFocus = event as bool;
       debugPrint('Focus Mode / DND state changed: $isFocus');

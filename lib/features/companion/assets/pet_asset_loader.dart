@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
+import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/animation_row_config.dart';
 
 class PetAssetLoader {
   static final Map<String, ui.Image> _imageCache = {};
@@ -41,7 +43,7 @@ class PetAssetLoader {
 
   static String buildAssetPath(PetProfile profile, {String? stateName}) {
     final basePath =
-        'assets/animations/pets/${profile.species.name}/${profile.variant}/';
+        'assets/animations/pets/${profile.species.name}/${profile.variant.id}/';
     if (stateName != null) {
       return '$basePath$stateName.png';
     }
@@ -65,18 +67,14 @@ class PetAssetLoader {
         orElse: () => null,
       );
 
-      final variantConfig = petConfig?['variants']?.firstWhere(
-        (v) => v['name'] == profile.variant,
-        orElse: () => null,
-      );
-
+      final variantConfig = petConfig?['variant'];
       final isSpriteSheet = variantConfig?['isSpriteSheet'] ?? false;
 
       if (isSpriteSheet) {
-        final sheetPath = '$basePath${profile.variant}_sheet.png';
+        final sheetPath = variantConfig?['assetPath'] ?? '$basePath${profile.variant.id}_sheet.png';
         sourceImage = await loadImage(sheetPath);
         final rowCount = variantConfig?['rowCount'] ?? 0;
-        final spriteSize = variantConfig?['spriteSize'] ?? 16.0;
+        final spriteSize = (variantConfig?['spriteSize'] ?? 16.0).toDouble();
         final sourceY = rowCount * spriteSize;
         const double targetSize = 128.0;
         final recorder = ui.PictureRecorder();
@@ -142,7 +140,7 @@ class PetAssetLoader {
   static Future<Map<CatAnimationState, SpriteAnimation>> loadAnimations(
     PetProfile profile,
   ) async {
-    final cacheKey = '${profile.species.name}_${profile.variant}';
+    final cacheKey = '${profile.species.name}_${profile.variant.id}';
     if (_animationCache.containsKey(cacheKey)) {
       return _animationCache[cacheKey]!;
     }
@@ -156,35 +154,41 @@ class PetAssetLoader {
         orElse: () => null,
       );
 
-      final variantConfig = petConfig?['variants']?.firstWhere(
-        (v) => v['name'] == profile.variant,
-        orElse: () => null,
+      final variantConfig = petConfig?['variant'];
+
+      // Find matching legacy CatTheme to use as a fallback/config provider
+      final matchingTheme = CatTheme.themes.firstWhere(
+        (t) => t.id == profile.variant.id,
+        orElse: () => CatTheme.themes.first,
       );
 
-      final isSpriteSheet = variantConfig?['isSpriteSheet'] ?? false;
+      final isSpriteSheet = variantConfig?['isSpriteSheet'] ?? (matchingTheme.type == CatType.composite);
+      final spriteSize = (variantConfig?['spriteSize'] ?? matchingTheme.spriteSize).toDouble();
 
       if (isSpriteSheet) {
-        final sheetPath = '$basePath${profile.variant}_sheet.png';
+        final sheetPath = variantConfig?['assetPath'] ?? matchingTheme.basePath;
         final ui.Image sheetImage = await loadImage(sheetPath);
-        final spriteSize = (variantConfig?['spriteSize'] ?? 16).toDouble();
-        final rowCountMap = <String, int>{};
-        final frameCountMap = <String, int>{};
-        final stepTimeMap = <String, double>{};
 
         for (final state in CatAnimationState.values) {
           final stateName = state.name;
-          rowCountMap[stateName] = variantConfig?['rows']?[stateName] ?? 0;
-          frameCountMap[stateName] =
-              variantConfig?['frameCounts']?[stateName] ?? 1;
-          stepTimeMap[stateName] =
-              (variantConfig?['stepTimes']?[stateName] ?? 0.1).toDouble();
-        }
+          
+          int row = 0;
+          int frameCount = 1;
+          double stepTime = 0.1;
+          bool loop = true;
 
-        for (final state in CatAnimationState.values) {
-          final stateName = state.name;
-          final row = rowCountMap[stateName] ?? 0;
-          final frameCount = frameCountMap[stateName] ?? 1;
-          final stepTime = stepTimeMap[stateName] ?? 0.1;
+          final themeAnim = matchingTheme.animations[state];
+          if (themeAnim is AnimationRowConfig) {
+            row = themeAnim.row;
+            frameCount = themeAnim.frameCount;
+            stepTime = themeAnim.stepTime;
+            loop = themeAnim.loop;
+          } else if (variantConfig?['rows']?[stateName] != null) {
+            row = (variantConfig['rows'][stateName] as num).toInt();
+            frameCount = (variantConfig['frameCounts']?[stateName] as num?)?.toInt() ?? 1;
+            stepTime = (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ?? 0.1;
+          }
+
           final maxFrames = sheetImage.width ~/ spriteSize;
           final amount = frameCount > maxFrames ? maxFrames : frameCount;
 
@@ -193,20 +197,34 @@ class PetAssetLoader {
             stepTime: stepTime,
             textureSize: Vector2(spriteSize, spriteSize),
             texturePosition: Vector2(0.0, (row * spriteSize).toDouble()),
-            loop: true,
+            loop: loop,
           );
           loaded[state] = SpriteAnimation.fromFrameData(sheetImage, data);
         }
       } else {
         for (final state in CatAnimationState.values) {
           final stateName = state.name;
-          final filePath = '$basePath$stateName.png';
+          
+          String fileName = '$stateName.png';
+          int frameCount = 1;
+          double stepTime = 0.1;
+          bool loop = true;
+
+          final themeAnim = matchingTheme.animations[state];
+          if (themeAnim is SeparateAnimationConfig) {
+            fileName = themeAnim.fileName;
+            frameCount = themeAnim.frameCount;
+            stepTime = themeAnim.stepTime;
+            loop = themeAnim.loop;
+          } else if (variantConfig?['fileNames']?[stateName] != null) {
+            fileName = variantConfig['fileNames'][stateName] as String;
+            frameCount = (variantConfig['frameCounts']?[stateName] as num?)?.toInt() ?? 1;
+            stepTime = (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ?? 0.1;
+          }
+
+          final filePath = '$basePath$fileName';
           try {
             final ui.Image stateImage = await loadImage(filePath);
-            final frameCount = (variantConfig?['frameCounts']?[stateName] ?? 1)
-                .toInt();
-            final stepTime = (variantConfig?['stepTimes']?[stateName] ?? 0.1)
-                .toDouble();
             final frameWidth = stateImage.width / frameCount;
             final frameHeight = stateImage.height.toDouble();
 
@@ -215,27 +233,40 @@ class PetAssetLoader {
               stepTime: stepTime,
               textureSize: Vector2(frameWidth, frameHeight),
               texturePosition: Vector2.zero(),
-              loop: true,
+              loop: loop,
             );
             loaded[state] = SpriteAnimation.fromFrameData(stateImage, data);
           } catch (e) {
-            final fallbackPath = '${basePath}idle.png';
-            final ui.Image fallbackImage = await loadImage(fallbackPath);
-            final fallbackFrameCount =
-                (variantConfig?['frameCounts']?['idle'] ?? 1).toInt();
-            final fallbackStepTime =
-                (variantConfig?['stepTimes']?['idle'] ?? 0.1).toDouble();
-            final fallbackFrameWidth = fallbackImage.width / fallbackFrameCount;
-            final fallbackFrameHeight = fallbackImage.height.toDouble();
+            String fallbackFileName = 'idle.png';
+            int fallbackFrameCount = 1;
+            double fallbackStepTime = 0.1;
+            bool fallbackLoop = true;
 
-            final data = SpriteAnimationData.sequenced(
-              amount: fallbackFrameCount,
-              stepTime: fallbackStepTime,
-              textureSize: Vector2(fallbackFrameWidth, fallbackFrameHeight),
-              texturePosition: Vector2.zero(),
-              loop: true,
-            );
-            loaded[state] = SpriteAnimation.fromFrameData(fallbackImage, data);
+            final idleAnim = matchingTheme.animations[CatAnimationState.idle];
+            if (idleAnim is SeparateAnimationConfig) {
+              fallbackFileName = idleAnim.fileName;
+              fallbackFrameCount = idleAnim.frameCount;
+              fallbackStepTime = idleAnim.stepTime;
+              fallbackLoop = idleAnim.loop;
+            }
+
+            final fallbackPath = '$basePath$fallbackFileName';
+            try {
+              final ui.Image fallbackImage = await loadImage(fallbackPath);
+              final fallbackFrameWidth = fallbackImage.width / fallbackFrameCount;
+              final fallbackFrameHeight = fallbackImage.height.toDouble();
+
+              final data = SpriteAnimationData.sequenced(
+                amount: fallbackFrameCount,
+                stepTime: fallbackStepTime,
+                textureSize: Vector2(fallbackFrameWidth, fallbackFrameHeight),
+                texturePosition: Vector2.zero(),
+                loop: fallbackLoop,
+              );
+              loaded[state] = SpriteAnimation.fromFrameData(fallbackImage, data);
+            } catch (fallbackError) {
+              // Silently ignore or fallback to empty
+            }
           }
         }
       }
