@@ -4,17 +4,12 @@ import 'package:standup/features/settings/widgets/settings_widgets.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
 
 class AboutSection extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
 
-  const AboutSection({
-    super.key,
-    required this.settings,
-    required this.onSave,
-  });
+  const AboutSection({super.key, required this.settings, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -32,18 +27,6 @@ class AboutSection extends StatelessWidget {
           _buildDocumentation(),
           divider(),
           _buildReportIssue(),
-        ]),
-        const SizedBox(height: 48),
-        sectionHeader('Companion'),
-        const SizedBox(height: 24),
-        buildCard([
-          _buildCompanionToggle(),
-          divider(),
-          _buildCompanionCatTheme(),
-          divider(),
-          _buildCompanionScale(),
-          divider(),
-          _buildCompanionClickThrough(),
         ]),
       ],
     );
@@ -128,58 +111,6 @@ class AboutSection extends StatelessWidget {
         size: 14,
         color: AppTheme.accentColor,
       ),
-    );
-  }
-
-  Widget _buildCompanionToggle() {
-    return toggleRow(
-      'Desktop Companion',
-      'Show a draggable pet companion on your desktop',
-      settings.companionEnabled,
-      (v) {
-        onSave(settings.copyWith(companionEnabled: v));
-        sl<TrayManagerService>().triggerActionAnimation();
-      },
-    );
-  }
-
-  Widget _buildCompanionCatTheme() {
-    return buildListRow(
-      'Companion Theme',
-      'Choose your companion appearance',
-      null,
-      CupertinoIcons.paintbrush,
-      null,
-      trailing: inlineDropdown(
-        settings.companionCatTheme,
-        ['grey_cat', 'orange_cat', 'black_cat', 'white_cat'],
-        (v) {
-          onSave(settings.copyWith(companionCatTheme: v ?? 'grey_cat'));
-          sl<TrayManagerService>().triggerActionAnimation();
-        },
-      ),
-    );
-  }
-
-  Widget _buildCompanionScale() {
-    return sliderRow(
-      'Companion Size',
-      settings.companionScale,
-      (v) => onSave(settings.copyWith(companionScale: v)),
-      min: 3.0,
-      max: 10.0,
-    );
-  }
-
-  Widget _buildCompanionClickThrough() {
-    return toggleRow(
-      'Click-Through Mode',
-      'Allow clicks to pass through the companion',
-      settings.companionClickThrough,
-      (v) {
-        onSave(settings.copyWith(companionClickThrough: v));
-        sl<TrayManagerService>().triggerActionAnimation();
-      },
     );
   }
 }

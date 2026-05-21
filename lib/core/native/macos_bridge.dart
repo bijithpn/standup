@@ -101,6 +101,11 @@ class MacOSBridge {
     await _invokeSafely('setCompanionWandering', {'enabled': enabled});
   }
 
+  /// Sets follow mouse cursor state in the companion overlay
+  static Future<void> setCompanionFollowMouse(bool enabled) async {
+    await _invokeSafely('setCompanionFollowMouse', {'enabled': enabled});
+  }
+
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

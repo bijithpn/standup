@@ -20,6 +20,16 @@ class CatTheme {
     required this.animations,
   });
 
+  bool get isDog {
+    return id == keyCollie ||
+        id == keyCorgi ||
+        id == keyDalmatian ||
+        id == keyHusky ||
+        id == keyLabrador ||
+        id == keyGoldie ||
+        id == keyRealisticGoldie;
+  }
+
   static const String keyGreyCat = 'grey_cat';
   static const String keyOrangeCat = 'orange_cat';
   static const String keyBlackCat = 'black_cat';
@@ -52,6 +62,8 @@ class CatTheme {
     CatAnimationState.angry: SeparateAnimationConfig(fileName: 'itch.png', frameCount: 2, stepTime: 0.16, loop: false),
     CatAnimationState.notification: SeparateAnimationConfig(fileName: 'meow.png', frameCount: 4, stepTime: 0.14, loop: false),
     CatAnimationState.celebrate: SeparateAnimationConfig(fileName: 'stretching.png', frameCount: 13, stepTime: 0.08, loop: false),
+    CatAnimationState.lick1: SeparateAnimationConfig(fileName: 'lick_1.png', frameCount: 5, stepTime: 0.16, loop: false),
+    CatAnimationState.lick2: SeparateAnimationConfig(fileName: 'lick_2.png', frameCount: 5, stepTime: 0.16, loop: false),
   };
 
   static const Map<CatAnimationState, SeparateAnimationConfig> _catPackAnimationsNoItch = {
@@ -66,6 +78,8 @@ class CatTheme {
     CatAnimationState.angry: SeparateAnimationConfig(fileName: 'meow.png', frameCount: 4, stepTime: 0.16, loop: false),
     CatAnimationState.notification: SeparateAnimationConfig(fileName: 'meow.png', frameCount: 4, stepTime: 0.14, loop: false),
     CatAnimationState.celebrate: SeparateAnimationConfig(fileName: 'stretching.png', frameCount: 13, stepTime: 0.08, loop: false),
+    CatAnimationState.lick1: SeparateAnimationConfig(fileName: 'lick_1.png', frameCount: 5, stepTime: 0.16, loop: false),
+    CatAnimationState.lick2: SeparateAnimationConfig(fileName: 'lick_2.png', frameCount: 5, stepTime: 0.16, loop: false),
   };
 
   static const Map<CatAnimationState, AnimationRowConfig> _dogSheetAnimations = {

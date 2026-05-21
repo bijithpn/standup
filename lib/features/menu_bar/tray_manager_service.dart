@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/utils/logger.dart';
@@ -9,31 +8,37 @@ import 'package:standup/features/break_system/application/break_controller.dart'
 import 'package:standup/features/companion/data/cat_asset_loader.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/animation_row_config.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'controllers/menu_bar_controller.dart';
 
-enum TrayIconMode { defaultIcon, cat, minimal, countdownOnly }
-
-enum _CatFrame { idle, blink, stretch, sleeping, alert }
+enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
 
 class TrayManagerService with TrayListener {
   final AppLogger _logger = AppLogger();
   bool _isPaused = false;
-  TrayIconMode _iconMode = TrayIconMode.cat;
+  TrayIconMode _iconMode = TrayIconMode.companion;
 
   Timer? _animTimer;
-  _CatFrame _catFrame = _CatFrame.idle;
   bool _isBreakActive = false;
+  bool _isActionActive = false;
+  Timer? _actionAnimTimer;
+  int _currentFrameIndex = 0;
 
   TimerEngine? _timerEngine;
   BreakController? _breakController;
   MenuBarController? _menuBarController;
 
-  final Map<_CatFrame, String> _catIconPaths = {};
+  final Map<CatAnimationState, List<String>> _stateFramePaths = {};
   String? _defaultIconPath;
 
   Future<void> init() async {
     trayManager.addListener(this);
+    
+    // Eagerly sync style from SettingsRepository before icon extraction/load
+    final settingsRepo = sl<SettingsRepository>();
+    setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
+    
     await _extractIcons();
     await _applyIcon();
     await _buildMenu();
@@ -48,76 +53,128 @@ class TrayManagerService with TrayListener {
   Future<void> updateSelectedBreed(String themeId) async {
     _logger.info('Updating tray icons to selected breed: $themeId');
     await _extractIcons();
+    _currentFrameIndex = 0;
+    _updateTimerSpeed();
     await _applyIcon();
   }
 
   Future<void> _extractIcons() async {
     final tempDir = Directory.systemTemp;
 
-    final defaultBytes = await rootBundle.load('assets/icons/tray_icon.png');
-    final defaultFile = File('${tempDir.path}/bm_tray_default.png');
-    await defaultFile.writeAsBytes(defaultBytes.buffer.asUint8List());
-    _defaultIconPath = defaultFile.path;
+    final defaultFile = '${tempDir.path}/bm_ctray_defaultTemplate@2x.png';
+    _defaultIconPath = await CatAssetLoader.extractAndWhitenAsset(
+      'assets/icons/tray_icon.png',
+      defaultFile,
+    );
+    if (_defaultIconPath == null || _defaultIconPath!.isEmpty) {
+      _defaultIconPath = defaultFile;
+    }
 
     final settingsRepo = sl<SettingsRepository>();
     final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
     final theme = CatTheme.getTheme(selectedThemeId);
 
-    for (final frame in _CatFrame.values) {
+    _stateFramePaths.clear();
+
+    for (final state in [
+      CatAnimationState.idle,
+      CatAnimationState.sleep,
+      CatAnimationState.excited,
+      CatAnimationState.notification,
+    ]) {
       try {
-        CatAnimationState state;
-        int frameIndex = 0;
-        switch (frame) {
-          case _CatFrame.idle:
-            state = CatAnimationState.idle;
-            frameIndex = 0;
-          case _CatFrame.blink:
-            state = CatAnimationState.idle;
-            frameIndex = 1;
-          case _CatFrame.stretch:
-            state = CatAnimationState.excited;
-            frameIndex = 0;
-          case _CatFrame.sleeping:
-            state = CatAnimationState.sleep;
-            frameIndex = 0;
-          case _CatFrame.alert:
-            state = CatAnimationState.notification;
-            frameIndex = 0;
+        final config = theme.animations[state];
+        int frameCount = 1;
+        if (config is AnimationRowConfig) {
+          frameCount = config.frameCount;
+        } else if (config is SeparateAnimationConfig) {
+          frameCount = config.frameCount;
         }
 
-        final path = await CatAssetLoader.extractCatFramePath(
-          theme: theme,
-          state: state,
-          frameIndex: frameIndex,
-        );
+        final List<String> paths = [];
+        for (int i = 0; i < frameCount; i++) {
+          final path = await CatAssetLoader.extractCatFramePath(
+            theme: theme,
+            state: state,
+            frameIndex: i,
+          );
+          if (path.isNotEmpty) {
+            paths.add(path);
+          }
+        }
 
-        if (path.isNotEmpty) {
-          _catIconPaths[frame] = path;
+        if (paths.isNotEmpty) {
+          _stateFramePaths[state] = paths;
         } else {
-          final bytes = await rootBundle.load('assets/icons/cat/cat_${frame.name}.png');
-          final file = File('${tempDir.path}/bm_cat_${frame.name}.png');
-          await file.writeAsBytes(bytes.buffer.asUint8List());
-          _catIconPaths[frame] = file.path;
+          // Fallback to static asset if frame extraction yielded nothing
+          String iconName;
+          switch (state) {
+            case CatAnimationState.sleep:
+              iconName = 'sleeping';
+              break;
+            case CatAnimationState.excited:
+              iconName = 'stretch';
+              break;
+            case CatAnimationState.notification:
+              iconName = 'alert';
+              break;
+            case CatAnimationState.idle:
+            default:
+              iconName = 'idle';
+              break;
+          }
+          final fallbackFile = '${tempDir.path}/bm_ccat_${state.name}Template@2x.png';
+          final fallbackPath = await CatAssetLoader.extractAndWhitenAsset(
+            'assets/icons/cat/cat_$iconName.png',
+            fallbackFile,
+          );
+          if (fallbackPath.isNotEmpty) {
+            _stateFramePaths[state] = [fallbackPath];
+          } else {
+            _stateFramePaths[state] = [_defaultIconPath!];
+          }
         }
       } catch (e) {
-        _logger.error('Failed to extract cat frame ${frame.name}: $e');
-        _catIconPaths[frame] = _defaultIconPath!;
+        _logger.error('Failed to extract companion state ${state.name}: $e');
+        _stateFramePaths[state] = [_defaultIconPath!];
       }
+    }
+  }
+
+  CatAnimationState _determineActiveState() {
+    if (_isBreakActive) {
+      return CatAnimationState.notification;
+    } else if (_isPaused) {
+      return CatAnimationState.sleep;
+    } else if (_isActionActive) {
+      return CatAnimationState.excited;
+    } else {
+      return CatAnimationState.idle;
     }
   }
 
   Future<void> _applyIcon() async {
     try {
       switch (_iconMode) {
-        case TrayIconMode.cat:
-          final path = _catIconPaths[_catFrame] ?? _defaultIconPath;
+        case TrayIconMode.companion:
+          final activeState = _determineActiveState();
+          final paths = _stateFramePaths[activeState] ?? [];
+          String? path;
+          if (paths.isNotEmpty) {
+            final safeIndex = _currentFrameIndex % paths.length;
+            path = paths[safeIndex];
+          } else {
+            path = _defaultIconPath;
+          }
           if (path != null) await trayManager.setIcon(path);
+          break;
         case TrayIconMode.defaultIcon:
         case TrayIconMode.minimal:
         case TrayIconMode.countdownOnly:
           if (_defaultIconPath != null) {
             await trayManager.setIcon(_defaultIconPath!);
           }
+          break;
       }
     } catch (e) {
       _logger.error('Failed to set tray icon: $e');
@@ -125,69 +182,74 @@ class TrayManagerService with TrayListener {
   }
 
   void _startCatAnimation() {
-    _animTimer?.cancel();
-    if (_iconMode != TrayIconMode.cat) return;
+    _currentFrameIndex = 0;
+    _updateTimerSpeed();
+  }
 
-    _animTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
-      _advanceCatFrame();
+  void _updateTimerSpeed() {
+    _animTimer?.cancel();
+    if (_iconMode != TrayIconMode.companion) return;
+
+    final settingsRepo = sl<SettingsRepository>();
+    final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
+    final theme = CatTheme.getTheme(selectedThemeId);
+    final activeState = _determineActiveState();
+    final config = theme.animations[activeState];
+    double stepTime = 0.2;
+    if (config is AnimationRowConfig) {
+      stepTime = config.stepTime;
+    } else if (config is SeparateAnimationConfig) {
+      stepTime = config.stepTime;
+    }
+    
+    // Clamp to a safe minimum of 120ms to protect macOS system tray resource consumption
+    final ms = (stepTime * 1000).toInt().clamp(120, 1000);
+    _animTimer = Timer.periodic(Duration(milliseconds: ms), (_) {
+      _advanceFrame();
     });
   }
 
-  void _advanceCatFrame() {
-    if (_isBreakActive) {
-      _catFrame = _CatFrame.alert;
-    } else if (_isPaused) {
-      _catFrame = _CatFrame.sleeping;
-    } else {
-      switch (_catFrame) {
-        case _CatFrame.idle:
-          _catFrame = (DateTime.now().millisecond % 5 == 0)
-              ? _CatFrame.blink
-              : _CatFrame.idle;
-        case _CatFrame.blink:
-          _catFrame = _CatFrame.idle;
-        case _CatFrame.stretch:
-          _catFrame = _CatFrame.idle;
-        case _CatFrame.sleeping:
-          _catFrame = _CatFrame.sleeping;
-        case _CatFrame.alert:
-          _catFrame = _CatFrame.idle;
-      }
+  void _advanceFrame() {
+    final activeState = _determineActiveState();
+    final paths = _stateFramePaths[activeState] ?? [];
+    if (paths.isEmpty) {
+      _applyIcon();
+      return;
     }
+    _currentFrameIndex = (_currentFrameIndex + 1) % paths.length;
     _applyIcon();
   }
 
   void setBreakActive(bool active) {
     _isBreakActive = active;
-    if (active) {
-      _catFrame = _CatFrame.alert;
-      _applyIcon();
-    } else if (_iconMode == TrayIconMode.cat) {
-      _catFrame = _isPaused ? _CatFrame.sleeping : _CatFrame.idle;
-      _applyIcon();
-    }
+    _currentFrameIndex = 0;
+    _updateTimerSpeed();
+    _applyIcon();
   }
 
   void triggerActionAnimation() {
-    if (_iconMode != TrayIconMode.cat) return;
+    if (_iconMode != TrayIconMode.companion) return;
     
-    final originalFrame = _catFrame;
-    _catFrame = _CatFrame.stretch;
+    _actionAnimTimer?.cancel();
+    _isActionActive = true;
+    _currentFrameIndex = 0;
+    _updateTimerSpeed();
     _applyIcon();
     
-    Timer(const Duration(milliseconds: 1200), () {
-      if (!_isBreakActive && !_isPaused) {
-        _catFrame = originalFrame;
-        _applyIcon();
-      }
+    _actionAnimTimer = Timer(const Duration(milliseconds: 1200), () {
+      _isActionActive = false;
+      _currentFrameIndex = 0;
+      _updateTimerSpeed();
+      _applyIcon();
     });
   }
 
   void setIconMode(TrayIconMode mode) {
     _iconMode = mode;
     _animTimer?.cancel();
-    if (mode == TrayIconMode.cat) {
-      _startCatAnimation();
+    if (mode == TrayIconMode.companion) {
+      _currentFrameIndex = 0;
+      _updateTimerSpeed();
     } else {
       _applyIcon();
     }
@@ -195,8 +257,9 @@ class TrayManagerService with TrayListener {
 
   void setIconModeFromStyle(String style) {
     switch (style) {
+      case 'companion':
       case 'cat':
-        setIconMode(TrayIconMode.cat);
+        setIconMode(TrayIconMode.companion);
       case 'minimal':
         setIconMode(TrayIconMode.minimal);
       case 'countdown':
@@ -351,8 +414,9 @@ class TrayManagerService with TrayListener {
 
   void updatePauseState(bool isPaused) {
     _isPaused = isPaused;
-    if (_iconMode == TrayIconMode.cat) {
-      _catFrame = isPaused ? _CatFrame.sleeping : _CatFrame.idle;
+    if (_iconMode == TrayIconMode.companion) {
+      _currentFrameIndex = 0;
+      _updateTimerSpeed();
       _applyIcon();
     }
     _buildMenu();

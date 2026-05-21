@@ -243,7 +243,7 @@ standup/
 │   │   │   │   └── animation_row_config.dart
 │   │   │   ├── flame/
 │   │   │   │   ├── companion_game.dart    # Flame game + FSM + low-CPU idle
-│   │   │   │   └── companion_cat_component.dart # Sprite + interaction routing
+│   │   │   │   └── companion_component.dart     # Sprite + interaction routing
 │   │   │   ├── overlay/
 │   │   │   │   └── companion_overlay_window.dart # GestureDetector + method channel
 │   │   │   └── services/

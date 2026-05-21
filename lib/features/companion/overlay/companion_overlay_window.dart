@@ -18,21 +18,66 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   static const MethodChannel _channel = MethodChannel('com.breakmate.macos/companion_data');
 
   late CompanionGame _game;
-  String _themeId = 'grey_cat';
+  String _themeId = 'grey_cat'; // default; will be overwritten by _fetchAndApplyInitialSettings
   String _petName = 'Mochi';
   bool _isDragging = false;
+  bool _gameInitialized = false;
 
   @override
   void initState() {
     super.initState();
-
-    _game = CompanionGame(
-      initialTheme: CatTheme.getTheme(_themeId),
-      scaleOverride: 0.0,
-    );
-
     _setupMethodChannel();
-    _emitInitialEvents();
+    // Pull the correct initial settings from native *after* registering the handler.
+    // This avoids the race condition where native pushes the theme before Flutter
+    // has set up its method call handler.
+    _fetchAndApplyInitialSettings();
+  }
+
+  /// Pulls the initial companion configuration from the native side.
+  /// Native stored the spawn args in `pendingInitialArgs` and returns them here.
+  Future<void> _fetchAndApplyInitialSettings() async {
+    try {
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>('getInitialSettings');
+      if (result != null) {
+        final String newThemeId = (result['themeId'] as String?) ?? _themeId;
+        final String? newPetName = result['petName'] as String?;
+        final double? newScale = (result['scale'] as num?)?.toDouble();
+
+        _themeId = newThemeId;
+        if (newPetName != null && newPetName.trim().isNotEmpty) {
+          _petName = newPetName.trim();
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _game = CompanionGame(
+            initialTheme: CatTheme.getTheme(_themeId),
+            scaleOverride: newScale ?? 0.0,
+          );
+          _gameInitialized = true;
+        });
+
+        EventBus.instance.emit(CompanionInteractionEvent(
+          interactionType: 'init',
+          metadata: {'themeId': _themeId, 'petName': _petName},
+        ));
+        return;
+      }
+    } catch (_) {
+      // Native method not available or returned error; fall through to default init
+    }
+
+    // Fallback: initialize with the default theme if pull failed
+    if (mounted) {
+      setState(() {
+        _game = CompanionGame(
+          initialTheme: CatTheme.getTheme(_themeId),
+          scaleOverride: 0.0,
+        );
+        _gameInitialized = true;
+      });
+      _emitInitialEvents();
+    }
   }
 
   void _emitInitialEvents() {
@@ -86,6 +131,13 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
                 }
               }
             }
+
+            if (args.containsKey('mouseFollow')) {
+              final Map<dynamic, dynamic>? mouseFollowData = args['mouseFollow'] as Map<dynamic, dynamic>?;
+              if (mouseFollowData != null) {
+                _game.updateMouseFollow(mouseFollowData);
+              }
+            }
           });
           break;
       }
@@ -136,6 +188,11 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_gameInitialized) {
+      // Show nothing while we wait for the initial settings pull.
+      // This is nearly instant (one method channel round-trip).
+      return const SizedBox.shrink();
+    }
     return GestureDetector(
       onPanStart: _onPanStart,
       onPanUpdate: _onPanUpdate,

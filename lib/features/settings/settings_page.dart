@@ -3,12 +3,9 @@ import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/settings/exercise_model.dart';
@@ -239,278 +236,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
     }
-  }
-
-  Widget _buildGeneral() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('Application'),
-        _buildCard([
-          _buildListRow(
-            'Launch at Startup',
-            'Start BreakMate automatically when you log in',
-            _settings.autoStart,
-            CupertinoIcons.rocket,
-            (v) async {
-              _save(_settings.copyWith(autoStart: v));
-              try {
-                if (v) {
-                  final result = await launchAtStartup.enable();
-                  if (result && mounted) {
-                    Toast.showSuccess(context, 'Will launch at startup');
-                  } else if (mounted) {
-                    Toast.showError(context, 'Launch at startup not available');
-                  }
-                } else {
-                  final result = await launchAtStartup.disable();
-                  if (result && mounted) {
-                    Toast.showSuccess(context, 'Startup launch disabled');
-                  } else if (mounted) {
-                    Toast.showError(
-                      context,
-                      'Could not disable startup launch',
-                    );
-                  }
-                }
-              } catch (e) {
-                if (mounted) {
-                  Toast.showError(
-                    context,
-                    'Launch at startup requires macOS 10.10+',
-                  );
-                }
-              }
-            },
-          ),
-          _divider(),
-          _buildListRow(
-            'Menu Style',
-            'Countdown display in the menu bar',
-            null,
-            CupertinoIcons.macwindow,
-            null,
-            trailing: _inlineDropdown(
-              _settings.menuBarStyle,
-              ['countdown', 'progress', 'icon', 'focusdot'],
-              (v) {
-                final style = v ?? 'countdown';
-                _save(_settings.copyWith(menuBarStyle: style));
-                sl<TimerEngine>().updateMenuStyle(style);
-              },
-            ),
-          ),
-          _divider(),
-          _buildListRow(
-            'Menu Bar Icon',
-            'Choose default, cat, minimal, or countdown-only',
-            null,
-            CupertinoIcons.circle_grid_hex,
-            null,
-            trailing: _inlineDropdown(
-              _settings.trayIconStyle,
-              ['default', 'cat', 'minimal', 'countdown'],
-              (v) {
-                final style = v ?? 'cat';
-                _save(_settings.copyWith(trayIconStyle: style));
-                sl<TimerEngine>().updateMenuStyle(_settings.menuBarStyle);
-                sl<TrayManagerService>().triggerActionAnimation();
-              },
-            ),
-          ),
-          _divider(),
-          _buildListRow(
-            'Flash Highlight',
-            'Customize visual break reminder',
-            null,
-            CupertinoIcons.bolt_fill,
-            null,
-            onTap: () {
-              sl<AppNavigationService>().openSection('Flash Reminder');
-            },
-            trailing: const Icon(
-              CupertinoIcons.chevron_right,
-              size: 14,
-              color: AppTheme.accentColor,
-            ),
-          ),
-          _divider(),
-          _buildListRow(
-            'Strict Mode',
-            'No skipping breaks',
-            _settings.strictMode,
-            CupertinoIcons.lock_shield,
-            (v) {
-              _save(_settings.copyWith(strictMode: v));
-              sl<TrayManagerService>().triggerActionAnimation();
-            },
-          ),
-          _divider(),
-          _buildListRow(
-            'Multi-Display',
-            'All screens coverage',
-            true,
-            CupertinoIcons.tv,
-            (v) => sl<TrayManagerService>().triggerActionAnimation(),
-          ),
-        ]),
-        const SizedBox(height: 48),
-        _sectionHeader('Idle & Inactivity'),
-        const SizedBox(height: 24),
-        _buildCard([
-          _inputRow(
-            'Pause timer after',
-            '${_settings.pauseTimerAfterMinutes} min',
-            onTap: () => _showPicker(
-              title: 'Pause timer after',
-              options: ['1', '2', '3', '5', '10'],
-              suffix: ' min',
-              onSelected: (v) {
-                _save(_settings.copyWith(pauseTimerAfterMinutes: int.parse(v)));
-                sl<TrayManagerService>().triggerActionAnimation();
-              },
-            ),
-          ),
-          _divider(),
-          _inputRow(
-            'Reset timer after',
-            '${_settings.resetTimerAfterMinutes} min',
-            onTap: () => _showPicker(
-              title: 'Reset timer after',
-              options: ['5', '10', '15', '30', '60'],
-              suffix: ' min',
-              onSelected: (v) {
-                _save(_settings.copyWith(resetTimerAfterMinutes: int.parse(v)));
-                sl<TrayManagerService>().triggerActionAnimation();
-              },
-            ),
-          ),
-        ]),
-        const SizedBox(height: 48),
-        _sectionHeader('Working Hours'),
-        const SizedBox(height: 24),
-        _buildCard([
-          _toggleRow(
-            'Working Hours',
-            'Specify on which days and at what time you want to use the app.',
-            _settings.workingHoursEnabled,
-            (v) => _save(_settings.copyWith(workingHoursEnabled: v)),
-          ),
-          if (_settings.workingHoursEnabled) ...[
-            _divider(),
-            _buildDaysToggle(),
-            _divider(),
-            _buildTimeSelector('Start Time', _settings.workStartTime),
-            _divider(),
-            _buildTimeSelector('End Time', _settings.workEndTime),
-          ],
-        ]),
-      ],
-    );
-  }
-
-  Widget _buildDaysToggle() {
-    final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final isSmall = constraints.maxWidth < 400;
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: days.asMap().entries.map((e) {
-              final day = e.key + 1;
-              final selected = _settings.workingDays.contains(day);
-              return Column(
-                children: [
-                  Text(
-                    e.value,
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: () {
-                      final days = List<int>.from(_settings.workingDays);
-                      selected ? days.remove(day) : days.add(day);
-                      days.sort();
-                      _save(_settings.copyWith(workingDays: days));
-                    },
-                    child: Container(
-                      width: isSmall ? 24 : 28,
-                      height: isSmall ? 24 : 28,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppTheme.accentColor.withValues(alpha: 0.2)
-                            : AppTheme.contentBackground,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selected
-                              ? AppTheme.accentColor
-                              : AppTheme.borderColor,
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          selected
-                              ? CupertinoIcons.checkmark
-                              : CupertinoIcons.minus,
-                          size: isSmall ? 12 : 14,
-                          color: selected
-                              ? AppTheme.accentColor
-                              : AppTheme.textMuted,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildTimeSelector(String label, String time) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () => _showPicker(
-              title: label,
-              options: _timeOptions(),
-              suffix: '',
-              onSelected: (v) {
-                if (label.startsWith('Start')) {
-                  _save(_settings.copyWith(workStartTime: v));
-                } else {
-                  _save(_settings.copyWith(workEndTime: v));
-                }
-              },
-            ),
-            child: Text(
-              time,
-              style: const TextStyle(color: AppTheme.accentColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<String> _timeOptions() {
-    return [
-      for (var hour = 0; hour < 24; hour++)
-        for (final minute in const [0, 30])
-          '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
-    ];
   }
 
   int _breaksSubTab = 0;
@@ -772,87 +497,6 @@ class _SettingsPageState extends State<SettingsPage> {
         Toast.showError(context, 'Failed to start preview: ${e.toString()}');
       }
     }
-  }
-
-  Widget _buildFocusMode() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildCard([
-          _toggleRow(
-            'Enable Focus Mode',
-            'Automatically block notifications during work',
-            _settings.focusModeEnabled,
-            (v) => _save(_settings.copyWith(focusModeEnabled: v)),
-          ),
-          _divider(),
-          _toggleRow(
-            'DND Integration',
-            'Sync with macOS Do Not Disturb',
-            false,
-            (v) {},
-          ),
-        ]),
-        const SizedBox(height: 32),
-        _sectionHeader('Focus Goals'),
-        const Text(
-          'Set a daily target for focused deep work.',
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
-        ),
-        const SizedBox(height: 16),
-        _buildCard([
-          _inputRow('Daily Goal', '4 hours'),
-          _divider(),
-          _inputRow('Session Length', '25 min'),
-        ]),
-      ],
-    );
-  }
-
-  Widget _buildNotifications() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildCard([
-          _toggleRow(
-            'Enable Notifications',
-            'Receive system-level notifications for breaks and reminders',
-            _settings.notificationsEnabled,
-            (v) => _save(_settings.copyWith(notificationsEnabled: v)),
-          ),
-          _divider(),
-          _toggleRow(
-            'Sound Effects',
-            'Play a soft chime when break starts',
-            _settings.soundEnabled,
-            (v) => _save(_settings.copyWith(soundEnabled: v)),
-          ),
-          _divider(),
-          _toggleRow(
-            'Repeated Alerts',
-            'Notify every 30 seconds if break is ignored',
-            true,
-            (v) {},
-          ),
-          _divider(),
-          _toggleRow(
-            'Dock Bounce',
-            'Bounce the app icon on break start',
-            false,
-            (v) {},
-          ),
-          _divider(),
-          _buildListRow(
-            'Flash Notifications',
-            'Full customization of visual alerts',
-            null,
-            CupertinoIcons.bolt,
-            null,
-            trailing: const MacosIcon(CupertinoIcons.chevron_right, size: 14),
-          ),
-        ]),
-      ],
-    );
   }
 
   Widget _buildIntelligentDetection() {
@@ -1178,185 +822,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildAbout() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 52),
-        // ── App icon ──────────────────────────────────────────
-        Container(
-          width: 96,
-          height: 96,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: const Center(
-            child: Icon(
-              CupertinoIcons.infinite,
-              color: Color(0xFF1C1C1E),
-              size: 48,
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        // ── Two-toned app name ────────────────────────────────
-        RichText(
-          text: const TextSpan(
-            children: [
-              TextSpan(
-                text: 'Break',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.6,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-              TextSpan(
-                text: 'Mate',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppTheme.accentColor,
-                  letterSpacing: -0.6,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        // ── Version badge ─────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBackgroundElevated.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.borderColor, width: 0.5),
-          ),
-          child: const Text(
-            'Version 1.0.0 (1)',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0,
-              fontFamily: 'Satoshi',
-            ),
-          ),
-        ),
-        const SizedBox(height: 52),
-        // ── "Crafted with Care" section ───────────────────────
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: AppTheme.cleanCardDecoration,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Crafted with Care',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.3,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-              const SizedBox(height: 2),
-              const Text(
-                'Healthy work habits for everyone.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildAboutCard(
-                      CupertinoIcons.globe,
-                      'Website',
-                      'Visit our home',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildAboutCard(
-                      CupertinoIcons.lock_shield,
-                      'Privacy',
-                      'Your data',
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildAboutCard(
-                      CupertinoIcons.doc_text,
-                      'Terms',
-                      'Legal details',
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 60),
-      ],
-    );
-  }
-
-  Widget _buildAboutCard(IconData icon, String title, String subtitle) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.cardBackgroundElevated.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.05),
-          width: 0.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: AppTheme.accentColor),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textPrimary,
-              fontFamily: 'Satoshi',
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppTheme.textSecondary,
-              fontFamily: 'Satoshi',
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -2134,121 +1599,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildListRow(
-    String label,
-    String subtitle,
-    bool? value,
-    IconData icon,
-    ValueChanged<bool>? onChanged, {
-    VoidCallback? onTap,
-    Widget? trailing,
-  }) {
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: AppTheme.accentColor, size: 18),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                    color: AppTheme.textPrimary,
-                    letterSpacing: -0.2,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          if (value != null)
-            CupertinoSwitch(
-              value: value,
-              onChanged: onChanged,
-              activeTrackColor: AppTheme.accentColor,
-            ),
-          // ignore: use_null_aware_elements
-          if (trailing != null) trailing,
-        ],
-      ),
-    );
-
-    if (onTap != null) {
-      return CupertinoButton(
-        padding: EdgeInsets.zero,
-        onPressed: onTap,
-        child: content,
-      );
-    }
-
-    return content;
-  }
-
-  Widget _inlineDropdown(
-    String value,
-    List<String> options,
-    ValueChanged<String?> onChanged,
-  ) {
-    return Material(
-      type: MaterialType.transparency,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: options.contains(value)
-                ? value
-                : (options.isNotEmpty ? options.first : null),
-            dropdownColor: const Color(0xFF1E1E1E),
-            icon: const Icon(
-              CupertinoIcons.chevron_down,
-              size: 12,
-              color: Colors.white54,
-            ),
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              fontFamily: 'Satoshi',
-            ),
-            onChanged: onChanged,
-            items: options.map<DropdownMenuItem<String>>((String option) {
-              return DropdownMenuItem<String>(
-                value: option,
-                child: Text(option.toUpperCase()),
-              );
-            }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _textFieldRow(
     String label,
     String value,
@@ -2760,6 +2110,13 @@ class _SettingsPageState extends State<SettingsPage> {
                   controller.companionClickThrough,
                   (v) => controller.changeClickThrough(v),
                 ),
+                _divider(),
+                _toggleRow(
+                  'Follow Mouse Cursor',
+                  'Let the pet companion follow and chase your mouse cursor dynamically',
+                  controller.companionFollowMouse,
+                  (v) => controller.changeFollowMouse(v),
+                ),
               ]),
               const SizedBox(height: 16),
               // Instant refresh button — forces a clean re-spawn with all current settings
@@ -2833,7 +2190,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
               ),
-              _buildCompanionTestInteractions(),
+              _buildCompanionTestInteractions(controller),
             ],
           ],
         );
@@ -2903,7 +2260,9 @@ class _SettingsPageState extends State<SettingsPage> {
                         controller.changeTheme(newValue);
                       }
                     },
-                    items: CatTheme.themes.map<DropdownMenuItem<String>>((theme) {
+                    items: CatTheme.themes.map<DropdownMenuItem<String>>((
+                      theme,
+                    ) {
                       final itemIsDog = _isDog(theme.id);
                       return DropdownMenuItem<String>(
                         value: theme.id,
@@ -2926,7 +2285,9 @@ class _SettingsPageState extends State<SettingsPage> {
                                 style: TextStyle(
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
-                                  color: itemIsDog ? Colors.blue : Colors.orange,
+                                  color: itemIsDog
+                                      ? Colors.blue
+                                      : Colors.orange,
                                   letterSpacing: 0.5,
                                 ),
                               ),
@@ -2944,11 +2305,13 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(width: 10),
             CupertinoButton(
               padding: EdgeInsets.zero,
-              minSize: 0,
+              minimumSize: Size.zero,
               onPressed: () {
                 final isCurrentDog = _isDog(controller.companionCatTheme);
                 final random = Random();
-                final names = isCurrentDog ? CompanionOverlayController.dogNames : CompanionOverlayController.catNames;
+                final names = isCurrentDog
+                    ? CompanionOverlayController.dogNames
+                    : CompanionOverlayController.catNames;
                 final randomName = names[random.nextInt(names.length)];
                 controller.changePetName(randomName);
               },
@@ -2976,62 +2339,297 @@ class _SettingsPageState extends State<SettingsPage> {
     }.contains(themeId);
   }
 
-  Widget _buildCompanionTestInteractions() {
-    final interactions = [
-      {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-      {
-        'label': 'Take Nap',
-        'icon': CupertinoIcons.moon_zzz_fill,
-        'state': 'sleep',
-      },
-      {
-        'label': 'Jump',
-        'icon': CupertinoIcons.arrow_up_circle_fill,
-        'state': 'notification',
-      },
-      {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
-    ];
+  Widget _buildCompanionTestInteractions(
+    CompanionOverlayController controller,
+  ) {
+    final themeId = controller.companionCatTheme;
+    final isDog = _isDog(themeId);
 
-    return Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: interactions.map((inter) {
-        return CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () async {
-            if (Platform.isMacOS) {
-              await MacOSBridge.triggerCompanionState(inter['state'] as String);
-            }
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    if (themeId == CatTheme.keyRealisticGoldie) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _buildInteractionButton('Idle', CupertinoIcons.hourglass, 'idle'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
+              color: AppTheme.accentColor.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              border: Border.all(
+                color: AppTheme.accentColor.withValues(alpha: 0.15),
+              ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            child: const Row(
               children: [
                 Icon(
-                  inter['icon'] as IconData,
-                  size: 13,
+                  CupertinoIcons.info_circle_fill,
+                  size: 16,
                   color: AppTheme.accentColor,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  inter['label'] as String,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w500,
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Static Breed: This premium high-fidelity breed displays as a static companion.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textPrimary,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Satoshi',
+                    ),
                   ),
                 ),
               ],
             ),
           ),
+        ],
+      );
+    }
+
+    final List<Map<String, dynamic>> interactions;
+
+    if (themeId == CatTheme.keyPixelCat) {
+      interactions = [
+        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': 'Excited Run',
+          'icon': CupertinoIcons.wind,
+          'state': 'excited',
+        },
+        {
+          'label': 'Attack Mode',
+          'icon': CupertinoIcons.shield_fill,
+          'state': 'angry',
+        },
+        {
+          'label': 'Alert Jump',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
+        {
+          'label': 'Sad Hurt',
+          'icon': CupertinoIcons.bandage_fill,
+          'state': 'sad',
+        },
+        {
+          'label': 'Celebrate Jump',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'celebrate',
+        },
+        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+      ];
+    } else if (themeId == CatTheme.keyLargeCat) {
+      interactions = [
+        {'label': 'Run Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': 'Sad Fall',
+          'icon': CupertinoIcons.cloud_rain_fill,
+          'state': 'sad',
+        },
+        {
+          'label': 'Jump Alert',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
+        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+      ];
+    } else if (themeId == CatTheme.keyCat1 ||
+        themeId == CatTheme.keyCat2 ||
+        themeId == CatTheme.keyCat4 ||
+        themeId == CatTheme.keyCat5 ||
+        themeId == CatTheme.keyCat6) {
+      interactions = [
+        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': 'Take Nap',
+          'icon': CupertinoIcons.moon_zzz_fill,
+          'state': 'sleep',
+        },
+        {
+          'label': 'Celebrate Stretch',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'celebrate',
+        },
+        {
+          'label': 'Angry Itch',
+          'icon': CupertinoIcons.ant_fill,
+          'state': 'angry',
+        },
+        {
+          'label': 'Meow Alert',
+          'icon': CupertinoIcons.chat_bubble_2_fill,
+          'state': 'notification',
+        },
+        {
+          'label': 'Lick Paw',
+          'icon': CupertinoIcons.heart_fill,
+          'state': 'lick1',
+        },
+        {
+          'label': 'Lick Fur',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'lick2',
+        },
+        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+      ];
+    } else if (themeId == CatTheme.keyCat3) {
+      interactions = [
+        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': 'Take Nap',
+          'icon': CupertinoIcons.moon_zzz_fill,
+          'state': 'sleep',
+        },
+        {
+          'label': 'Celebrate Stretch',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'celebrate',
+        },
+        {
+          'label': 'Angry Meow',
+          'icon': CupertinoIcons.chat_bubble_2_fill,
+          'state': 'angry',
+        },
+        {
+          'label': 'Meow Alert',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
+        {
+          'label': 'Lick Paw',
+          'icon': CupertinoIcons.heart_fill,
+          'state': 'lick1',
+        },
+        {
+          'label': 'Lick Fur',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'lick2',
+        },
+        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+      ];
+    } else if (isDog) {
+      interactions = [
+        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': 'Take Nap',
+          'icon': CupertinoIcons.moon_zzz_fill,
+          'state': 'sleep',
+        },
+        {
+          'label': 'Excited Run',
+          'icon': CupertinoIcons.wind,
+          'state': 'excited',
+        },
+        {
+          'label': 'Sad Whimper',
+          'icon': CupertinoIcons.cloud_rain_fill,
+          'state': 'sad',
+        },
+        {
+          'label': 'Celebrate Jump',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'celebrate',
+        },
+        {
+          'label': 'Bark Alert',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
+        {
+          'label': 'Angry Growl',
+          'icon': CupertinoIcons.flame_fill,
+          'state': 'angry',
+        },
+        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+      ];
+    } else {
+      interactions = [
+        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': 'Take Nap',
+          'icon': CupertinoIcons.moon_zzz_fill,
+          'state': 'sleep',
+        },
+        {
+          'label': 'Excited Run',
+          'icon': CupertinoIcons.wind,
+          'state': 'excited',
+        },
+        {
+          'label': 'Sad Pout',
+          'icon': CupertinoIcons.cloud_rain_fill,
+          'state': 'sad',
+        },
+        {
+          'label': 'Celebrate',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'celebrate',
+        },
+        {
+          'label': 'Hiss / Angry',
+          'icon': CupertinoIcons.flame_fill,
+          'state': 'angry',
+        },
+        {
+          'label': 'Jump Alert',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
+        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
+      ];
+    }
+
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: interactions.map((inter) {
+        return _buildInteractionButton(
+          inter['label'] as String,
+          inter['icon'] as IconData,
+          inter['state'] as String,
         );
       }).toList(),
+    );
+  }
+
+  Widget _buildInteractionButton(String label, IconData icon, String state) {
+    return CupertinoButton(
+      padding: EdgeInsets.zero,
+      onPressed: () async {
+        if (Platform.isMacOS) {
+          await MacOSBridge.triggerCompanionState(state);
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: AppTheme.accentColor),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
