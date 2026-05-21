@@ -318,7 +318,7 @@ class CatTheme {
     ),
     CatTheme(
       id: keyRealisticGoldie,
-      name: 'Realistic Goldie',
+      name: 'Realistic Goldie Dog',
       basePath: 'assets/animations/dogs/goldie/',
       type: CatType.separate,
       spriteSize: 64,
