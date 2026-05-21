@@ -5,6 +5,9 @@ class MeetingDetectionService {
   final _channel = const EventChannel('com.standup/meeting_detection');
 
   Stream<bool> get isMeetingActiveStream {
+    if (defaultTargetPlatform != TargetPlatform.macOS) {
+      return const Stream<bool>.empty();
+    }
     return _channel.receiveBroadcastStream().map((event) {
       final data = Map<String, dynamic>.from(event);
       final isMeeting = data['isMeetingAppFrontmost'] as bool? ?? false;

@@ -43,6 +43,8 @@ class PetCompanionService extends ChangeNotifier {
        );
 
   // Getters
+  PetStateMachine get stateMachine => _stateMachine;
+  PetNavigationService get navigation => _navigation;
   PetState get currentState => _stateMachine.currentState;
   PetMoodState get mood => _mood;
   PetBehaviorContext get context => _context;
@@ -92,13 +94,18 @@ class PetCompanionService extends ChangeNotifier {
   }
 
   /// Update cursor position for attraction behavior.
-  void updateCursorPosition(Offset cursorPos) {
-    _navigation.updateCursorPosition(cursorPos);
+  void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
+    _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
     final distance = (cursorPos - _navigation.currentPosition).distance;
     _context = _context.copyWith(
       cursorPosition: cursorPos,
       isCursorNearby: distance < 300.0,
     );
+  }
+
+  /// Explicitly set whether the pet is currently following the cursor.
+  void setCursorFollowing(bool following) {
+    _navigation.setCursorFollowing(following);
   }
 
   /// Trigger an event in the state machine.

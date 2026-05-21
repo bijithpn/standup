@@ -14,6 +14,7 @@ import 'package:standup/features/companion/overlay/companion_overlay_window.dart
 
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 
 void main() async {
   // If we are in an overlay engine, we should NOT run the main application logic
@@ -77,13 +78,13 @@ void main() async {
         // Initialize Window Manager
         await windowManager.ensureInitialized();
 
-        WindowOptions windowOptions = const WindowOptions(
-          size: Size(1100, 750),
-          minimumSize: Size(400, 600),
+        WindowOptions windowOptions = WindowOptions(
+          size: const Size(1100, 750),
+          minimumSize: const Size(400, 600),
           center: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
           skipTaskbar: false,
-          titleBarStyle: TitleBarStyle.hidden,
+          titleBarStyle: Platform.isWindows ? TitleBarStyle.normal : TitleBarStyle.hidden,
         );
 
         await windowManager.waitUntilReadyToShow(windowOptions, () async {

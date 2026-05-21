@@ -29,10 +29,13 @@ class PetNavigationService {
   DateTime? _lastWanderTargetTime;
   final Duration _wanderCooldown = const Duration(seconds: 3);
 
+  bool _isWanderingEnabled = true;
+
   // Getters
   Offset get currentPosition => _currentPosition;
   Offset get velocity => _velocity;
   bool get isCursorFollowing => _isCursorFollowing;
+  bool get isWanderingEnabled => _isWanderingEnabled;
 
   /// Initialize navigation with screen boundaries and starting position.
   void initialize({required Size screenSize, Offset? startPosition}) {
@@ -65,10 +68,27 @@ class PetNavigationService {
   }
 
   /// Update cursor position for attraction/following behavior.
-  void updateCursorPosition(Offset cursorPos) {
+  void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
     _cursorPosition = cursorPos;
-    final distance = (_cursorPosition - _currentPosition).distance;
-    _isCursorFollowing = distance < _cursorAttractionRadius;
+    if (forceFollowing != null) {
+      _isCursorFollowing = forceFollowing;
+    } else {
+      final distance = (_cursorPosition - _currentPosition).distance;
+      _isCursorFollowing = distance < _cursorAttractionRadius;
+    }
+  }
+
+  /// Explicitly set whether the pet is currently following the cursor.
+  void setCursorFollowing(bool following) {
+    _isCursorFollowing = following;
+  }
+
+  /// Sets whether the companion is allowed to wander randomly.
+  void setWanderingEnabled(bool enabled) {
+    _isWanderingEnabled = enabled;
+    if (!enabled) {
+      _velocity = Offset.zero;
+    }
   }
 
   /// Main update loop - call every frame with delta time.
@@ -137,6 +157,10 @@ class PetNavigationService {
   }
 
   void _applyWandering(double dt) {
+    if (!_isWanderingEnabled) {
+      _velocity = Offset.zero;
+      return;
+    }
     final direction = _targetPosition - _currentPosition;
     final distance = direction.distance;
 

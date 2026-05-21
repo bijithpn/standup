@@ -64,7 +64,8 @@ void OverlayWindowPlugin::HandleMethodCall(
 
   if (method_name == "configureAsOverlay") {
     // Get the FlutterWindow from the registrar
-    auto flutter_window = static_cast<FlutterWindow*>(registrar_->GetView()->GetNativeWindow());
+    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->ConfigureAsOverlay();
       result->Success();
@@ -73,7 +74,8 @@ void OverlayWindowPlugin::HandleMethodCall(
     }
   } 
   else if (method_name == "resetToNormal") {
-    auto flutter_window = static_cast<FlutterWindow*>(registrar_->GetView()->GetNativeWindow());
+    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->ResetToNormal();
       result->Success();
@@ -95,7 +97,8 @@ void OverlayWindowPlugin::HandleMethodCall(
     }
     
     double opacity = std::get<double>(opacity_it->second);
-    auto flutter_window = static_cast<FlutterWindow*>(registrar_->GetView()->GetNativeWindow());
+    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->SetWindowTransparency(opacity);
       result->Success();
@@ -117,7 +120,8 @@ void OverlayWindowPlugin::HandleMethodCall(
     }
     
     bool ignore = std::get<bool>(ignore_it->second);
-    auto flutter_window = static_cast<FlutterWindow*>(registrar_->GetView()->GetNativeWindow());
+    auto* win32_window = reinterpret_cast<Win32Window*>(::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    auto* flutter_window = static_cast<FlutterWindow*>(win32_window);
     if (flutter_window) {
       flutter_window->SetIgnoreMouseEvents(ignore);
       result->Success();

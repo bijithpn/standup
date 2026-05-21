@@ -4,6 +4,7 @@ import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:standup/shared/theme/app_theme.dart';
 
 /// Service to manage system-wide overlay windows that appear on top of all applications
 class OverlayWindowService extends ChangeNotifier {
@@ -90,7 +91,7 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.setSkipTaskbar(false);
       await windowManager.setHasShadow(true);
       await windowManager.setIgnoreMouseEvents(false);
-      await windowManager.setBackgroundColor(Colors.transparent);
+      await windowManager.setBackgroundColor(Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent);
       await windowManager.center();
 
       await windowManager.show();
@@ -125,7 +126,7 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.setFullScreen(false);
       await windowManager.setSkipTaskbar(false);
       await windowManager.hide();
-      await windowManager.setBackgroundColor(Colors.transparent);
+      await windowManager.setBackgroundColor(Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent);
 
       _isOverlayVisible = false;
       _currentOverlayType = null;
