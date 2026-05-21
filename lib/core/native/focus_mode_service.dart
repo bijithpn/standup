@@ -5,7 +5,7 @@ class FocusModeService {
   final _channel = const EventChannel('com.standup/focus_mode');
 
   Stream<bool> get isFocusModeActiveStream {
-    if (defaultTargetPlatform != TargetPlatform.macOS) {
+    if (defaultTargetPlatform != TargetPlatform.macOS && defaultTargetPlatform != TargetPlatform.windows) {
       return const Stream<bool>.empty();
     }
     return _channel.receiveBroadcastStream().map((event) {

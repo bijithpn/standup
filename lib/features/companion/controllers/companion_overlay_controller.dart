@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +7,13 @@ import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/companion/services/companion_behavior_engine.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 
+/// Controls the desktop companion pet window.
+///
+/// On both macOS and Windows, all companion management is routed through
+/// [MacOSBridge] which talks to the native `com.breakmate.macos/bridge`
+/// MethodChannel. On Windows, [FlutterWindow::SetupBridge()] handles these
+/// calls and delegates to [CompanionWindowManager] (an in-process second
+/// Flutter window running `companionMain`).
 class CompanionOverlayController extends ChangeNotifier {
   final SettingsRepository _settingsRepo;
 
@@ -19,20 +25,19 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _companionFollowMouse = false;
 
   static const List<String> catNames = [
-    'Mochi', 'Luna', 'Milo', 'Bella', 'Oliver', 'Simba', 'Chloe', 'Cleo', 'Loki',
-    'Lily', 'Oreo', 'Nala', 'Coco', 'Ziggy', 'Biscuit', 'Peanut', 'Pumpkin', 'Mocha',
-    'Pip', 'Mimi', 'Cookie', 'Teddy', 'Penny', 'Ruby', 'Lucky'
+    'Mochi', 'Luna', 'Milo', 'Bella', 'Oliver', 'Simba', 'Chloe', 'Cleo',
+    'Loki', 'Lily', 'Oreo', 'Nala', 'Coco', 'Ziggy', 'Biscuit', 'Peanut',
+    'Pumpkin', 'Mocha', 'Pip', 'Mimi', 'Cookie', 'Teddy', 'Penny', 'Ruby', 'Lucky',
   ];
 
   static const List<String> dogNames = [
-    'Buster', 'Buddy', 'Max', 'Daisy', 'Charlie', 'Cooper', 'Lola', 'Bailey', 'Teddy',
-    'Sadie', 'Rocky', 'Tucker', 'Bear', 'Bentley', 'Toby', 'Winston', 'Rosie', 'Bella',
-    'Oliver', 'Coco', 'Duke', 'Jax', 'Milo', 'Ruby', 'Harley'
+    'Buster', 'Buddy', 'Max', 'Daisy', 'Charlie', 'Cooper', 'Lola', 'Bailey',
+    'Teddy', 'Sadie', 'Rocky', 'Tucker', 'Bear', 'Bentley', 'Toby', 'Winston',
+    'Rosie', 'Bella', 'Oliver', 'Coco', 'Duke', 'Jax', 'Milo', 'Ruby', 'Harley',
   ];
 
-  CompanionOverlayController({
-    required SettingsRepository settingsRepo,
-  }) : _settingsRepo = settingsRepo;
+  CompanionOverlayController({required SettingsRepository settingsRepo})
+    : _settingsRepo = settingsRepo;
 
   bool get companionEnabled => _companionEnabled;
   String get companionCatTheme => _companionCatTheme;
@@ -41,11 +46,9 @@ class CompanionOverlayController extends ChangeNotifier {
   bool get companionClickThrough => _companionClickThrough;
   bool get companionFollowMouse => _companionFollowMouse;
 
-  /// Initializes the controller and synchronizes initial native window state if enabled.
   Future<void> init() async {
     final settings = _settingsRepo.currentSettings;
-    
-    // Read persisted settings (using dynamically added parameters on SettingsModel)
+
     _companionEnabled = settings.companionEnabled;
     _companionCatTheme = settings.companionCatTheme;
     _companionPetName = settings.companionPetName;
@@ -53,14 +56,13 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
 
-    if (_companionEnabled && Platform.isMacOS) {
-      await _syncToNativeSpawn();
+    if (_companionEnabled) {
+      await _showNativeCompanion();
     }
   }
 
-  /// Helper to invoke native show panel with initialized config.
-  Future<void> _syncToNativeSpawn() async {
-    if (!Platform.isMacOS) return;
+  /// Shows the companion via the native bridge (works on macOS + Windows).
+  Future<void> _showNativeCompanion() async {
     await MacOSBridge.showCompanion({
       'themeId': _companionCatTheme,
       'petName': _companionPetName,
@@ -84,31 +86,24 @@ class CompanionOverlayController extends ChangeNotifier {
       sl<CompanionBehaviorEngine>().setEnabled(enabled);
     } catch (_) {}
 
-    if (enabled && Platform.isMacOS) {
-      await _syncToNativeSpawn();
-    } else if (Platform.isMacOS) {
+    if (enabled) {
+      await _showNativeCompanion();
+    } else {
       await MacOSBridge.hideCompanion();
     }
     notifyListeners();
   }
 
-  /// Dynamic updater for switching cat themes.
+  /// Dynamic updater for switching cat/dog themes.
   Future<void> changeTheme(String themeId) async {
     if (_companionCatTheme == themeId) return;
     _companionCatTheme = themeId;
 
-    // Determine if the selected theme is a dog
     final isDog = {
-      'collie',
-      'corgi',
-      'dalmatian',
-      'husky',
-      'labrador',
-      'goldie',
-      'realistic_goldie',
+      'collie', 'corgi', 'dalmatian', 'husky', 'labrador',
+      'goldie', 'realistic_goldie',
     }.contains(themeId);
 
-    // Pick a random cute name matching the type of pet
     final random = Random();
     final names = isDog ? dogNames : catNames;
     final randomName = names[random.nextInt(names.length)];
@@ -120,12 +115,11 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled && Platform.isMacOS) {
+    if (_companionEnabled) {
       await MacOSBridge.updateCompanionTheme(themeId);
       await MacOSBridge.updateCompanionName(randomName);
     }
 
-    // Dynamically update the status bar tray icons matching the selected breed
     try {
       await sl<TrayManagerService>().updateSelectedBreed(themeId);
     } catch (_) {}
@@ -144,14 +138,13 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled && Platform.isMacOS) {
+    if (_companionEnabled) {
       await MacOSBridge.updateCompanionName(nextName);
     }
 
     notifyListeners();
   }
 
-  /// Dynamic updater for altering window dimensions & pixel scaling.
   Future<void> changeScale(double scale) async {
     if (_companionScale == scale) return;
     _companionScale = scale;
@@ -161,13 +154,12 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled && Platform.isMacOS) {
+    if (_companionEnabled) {
       await MacOSBridge.updateCompanionScale(scale);
     }
     notifyListeners();
   }
 
-  /// Toggles click-through mode natively.
   Future<void> changeClickThrough(bool enabled) async {
     if (_companionClickThrough == enabled) return;
     _companionClickThrough = enabled;
@@ -177,13 +169,12 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled && Platform.isMacOS) {
+    if (_companionEnabled) {
       await MacOSBridge.setCompanionClickThrough(enabled);
     }
     notifyListeners();
   }
 
-  /// Toggles follow mouse cursor mode.
   Future<void> changeFollowMouse(bool enabled) async {
     if (_companionFollowMouse == enabled) return;
     _companionFollowMouse = enabled;
@@ -193,21 +184,24 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled && Platform.isMacOS) {
+    if (_companionEnabled) {
       await MacOSBridge.setCompanionFollowMouse(enabled);
     }
     notifyListeners();
   }
 
-  /// Forces an immediate full sync of all companion settings to the native window.
-  /// Use this when changes aren't rendering instantly — sends everything in one shot.
   Future<void> refreshCompanion() async {
-    if (!_companionEnabled || !Platform.isMacOS) return;
-
-    // Hide and re-spawn for a clean render
+    if (!_companionEnabled) return;
     await MacOSBridge.hideCompanion();
-    // Small delay to ensure the window is fully torn down
     await Future.delayed(const Duration(milliseconds: 300));
-    await _syncToNativeSpawn();
+    await _showNativeCompanion();
+  }
+
+  @override
+  void dispose() {
+    if (_companionEnabled) {
+      MacOSBridge.hideCompanion();
+    }
+    super.dispose();
   }
 }

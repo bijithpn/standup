@@ -150,8 +150,14 @@ void overlayMain() {
 }
 
 @pragma('vm:entry-point')
-void companionMain() {
+Future<void> companionMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // On macOS, initialize flutter_acrylic for the companion panel.
+  // On Windows, the C++ CompanionWindowManager already configured the Win32
+  // window — calling Window.initialize() again would conflict.
+  if (Platform.isMacOS) {
+    await Window.initialize();
+  }
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -159,3 +165,4 @@ void companionMain() {
     ),
   );
 }
+
