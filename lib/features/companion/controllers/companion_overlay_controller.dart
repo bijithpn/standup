@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
+import 'package:standup/features/companion/services/companion_behavior_engine.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 
 class CompanionOverlayController extends ChangeNotifier {
@@ -15,6 +16,7 @@ class CompanionOverlayController extends ChangeNotifier {
   String _companionPetName = 'Mochi';
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
+  bool _companionFollowMouse = false;
 
   static const List<String> catNames = [
     'Mochi', 'Luna', 'Milo', 'Bella', 'Oliver', 'Simba', 'Chloe', 'Cleo', 'Loki',
@@ -37,6 +39,7 @@ class CompanionOverlayController extends ChangeNotifier {
   String get companionPetName => _companionPetName;
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
+  bool get companionFollowMouse => _companionFollowMouse;
 
   /// Initializes the controller and synchronizes initial native window state if enabled.
   Future<void> init() async {
@@ -48,6 +51,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionPetName = settings.companionPetName;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
+    _companionFollowMouse = settings.companionFollowMouse;
 
     if (_companionEnabled && Platform.isMacOS) {
       await _syncToNativeSpawn();
@@ -62,6 +66,7 @@ class CompanionOverlayController extends ChangeNotifier {
       'petName': _companionPetName,
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
+      'followMouse': _companionFollowMouse,
     });
   }
 
@@ -74,6 +79,10 @@ class CompanionOverlayController extends ChangeNotifier {
       companionEnabled: enabled,
     );
     await _settingsRepo.save(updated);
+
+    try {
+      sl<CompanionBehaviorEngine>().setEnabled(enabled);
+    } catch (_) {}
 
     if (enabled && Platform.isMacOS) {
       await _syncToNativeSpawn();
@@ -170,6 +179,22 @@ class CompanionOverlayController extends ChangeNotifier {
 
     if (_companionEnabled && Platform.isMacOS) {
       await MacOSBridge.setCompanionClickThrough(enabled);
+    }
+    notifyListeners();
+  }
+
+  /// Toggles follow mouse cursor mode.
+  Future<void> changeFollowMouse(bool enabled) async {
+    if (_companionFollowMouse == enabled) return;
+    _companionFollowMouse = enabled;
+
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionFollowMouse: enabled,
+    );
+    await _settingsRepo.save(updated);
+
+    if (_companionEnabled && Platform.isMacOS) {
+      await MacOSBridge.setCompanionFollowMouse(enabled);
     }
     notifyListeners();
   }

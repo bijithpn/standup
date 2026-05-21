@@ -7,7 +7,7 @@ import 'package:standup/features/companion/data/cat_asset_loader.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/domain/cat_state_machine.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/flame/companion_cat_component.dart';
+import 'package:standup/features/companion/flame/companion_component.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({
@@ -24,7 +24,7 @@ class CompanionGame extends FlameGame {
   CatTheme _theme;
   double scaleOverride; // 0.0 = auto-scale
 
-  CompanionCatComponent? catComponent;
+  CompanionComponent? catComponent;
 
 
   CatTheme get currentTheme => _theme;
@@ -87,17 +87,14 @@ class CompanionGame extends FlameGame {
   }
 
   void _applyStateToComponent() {
-    final animState = _mapCatStateToAnimationState(_stateMachine.currentState);
+    // FIX: When the FSM is in CatState.idle, the companion component is managing
+    // its own autonomous wandering behavior. We must NOT override it every frame
+    // or we will cause rapid state oscillation (the "shaking" bug).
+    // Only push external states when the FSM is actually in a non-idle driven state.
     if (_stateMachine.currentState == CatState.idle) {
-      // If the state machine is idle, let the cat component manage its own wandering/idle states smoothly
-      final currentComponentState = catComponent?.current;
-      if (currentComponentState == CatAnimationState.idle ||
-          currentComponentState == CatAnimationState.walk ||
-          currentComponentState == CatAnimationState.typing ||
-          currentComponentState == CatAnimationState.sleep) {
-        return;
-      }
+      return;
     }
+    final animState = _mapCatStateToAnimationState(_stateMachine.currentState);
     catComponent?.changeState(animState);
   }
 
@@ -131,7 +128,10 @@ class CompanionGame extends FlameGame {
   /// Auto-scales so the cat occupies ~45% of the window height.
   double _effectiveScale(double spriteSize) {
     if (scaleOverride > 0.0) return scaleOverride;
-    final double target = size.y * 0.45;
+    // When stationary fullscreen overlay is active, size.y represents screen height.
+    // We use a baseline reference height of 300.0 to keep the pet beautifully sized and pixel-crisp.
+    final double baselineHeight = size.y > 400.0 ? 300.0 : size.y;
+    final double target = baselineHeight * 0.45;
     return (target / spriteSize).clamp(3.0, 10.0);
   }
 
@@ -139,13 +139,13 @@ class CompanionGame extends FlameGame {
     final animations = await CatAssetLoader.loadAnimations(_theme);
     if (animations.isEmpty) return;
 
-    // Remove any existing CompanionCatComponent to prevent multiple overlapping cats safely
-    children.whereType<CompanionCatComponent>().toList().forEach((c) => c.removeFromParent());
+    // Remove any existing CompanionComponent to prevent multiple overlapping sprites
+    children.whereType<CompanionComponent>().toList().forEach((c) => c.removeFromParent());
 
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
 
-    catComponent = CompanionCatComponent(
+    catComponent = CompanionComponent(
       animations: animations,
       initialState: _mapCatStateToAnimationState(_stateMachine.currentState),
     );
@@ -195,6 +195,10 @@ class CompanionGame extends FlameGame {
     catComponent?.setWanderingEnabled(enabled);
   }
 
+  void updateMouseFollow(Map<dynamic, dynamic> data) {
+    catComponent?.updateMouseFollow(data);
+  }
+
   /// Handle user interactions from the component
   void onUserInteraction(String type) {
     switch (type) {
@@ -221,9 +225,12 @@ class CompanionGame extends FlameGame {
   void update(double dt) {
     super.update(dt);
 
-    // Periodically tick the state machine for time-based transitions
+    // Tick the FSM for time-based transitions (e.g. sleep, break timers).
+    // _applyStateToComponent() is intentionally NOT called here every frame:
+    // it is only called when an actual event changes state (in _handleAppEvent
+    // and onUserInteraction), preventing the FSM from fighting the companion's
+    // autonomous wandering animations and causing the "shaking" bug.
     _stateMachine.handleEvent(CatEvent.tick);
-    _applyStateToComponent();
   }
 
   @override

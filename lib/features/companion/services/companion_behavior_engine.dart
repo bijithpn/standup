@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
 import 'package:standup/core/utils/logger.dart';
+import 'package:standup/app/dependency_injection.dart';
+import 'package:standup/features/settings/settings_repository.dart';
 
 class CompanionBehaviorEngine {
   CompanionBehaviorEngine({EventBus? eventBus})
@@ -15,12 +17,23 @@ class CompanionBehaviorEngine {
 
   Timer? _behaviorTimer;
   Timer? _wanderTimer;
-  bool _isEnabled = true;
+  bool _isEnabled = false;
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
   void start() {
     stop();
+    if (!_isEnabled) return;
+    try {
+      final settingsRepo = sl<SettingsRepository>();
+      if (!settingsRepo.currentSettings.companionEnabled) {
+        return;
+      }
+    } catch (_) {
+      // If DI fails (e.g. background isolate), do not start
+      return;
+    }
+
     _behaviorTimer = Timer.periodic(const Duration(seconds: 5), _onTick);
     _logger.info('Companion behavior engine started');
   }
@@ -34,11 +47,27 @@ class CompanionBehaviorEngine {
 
   void setEnabled(bool enabled) {
     _isEnabled = enabled;
-    if (!enabled) stop();
+    if (enabled) {
+      start();
+    } else {
+      stop();
+    }
   }
 
   void _onTick(Timer timer) {
-    if (!_isEnabled) return;
+    if (!_isEnabled) {
+      stop();
+      return;
+    }
+    try {
+      final settingsRepo = sl<SettingsRepository>();
+      if (!settingsRepo.currentSettings.companionEnabled) {
+        stop();
+        return;
+      }
+    } catch (_) {
+      // Safe fallback
+    }
 
     _idleCycles++;
 

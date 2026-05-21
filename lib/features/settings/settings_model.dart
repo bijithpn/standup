@@ -59,12 +59,13 @@ class SettingsModel {
   final bool autoSuggestExercises;
   final bool useCursorCountdown;
   final bool enableAnimations;
-  final String trayIconStyle; // 'default', 'cat', 'minimal', 'countdown'
+  final String trayIconStyle; // 'default', 'companion', 'minimal', 'countdown'
   final bool companionEnabled;
   final String companionCatTheme;
   final String companionPetName;
   final double companionScale;
   final bool companionClickThrough;
+  final bool companionFollowMouse;
 
   const SettingsModel({
     this.autoStart = true,
@@ -105,12 +106,13 @@ class SettingsModel {
     this.autoSuggestExercises = true,
     this.useCursorCountdown = true,
     this.enableAnimations = true,
-    this.trayIconStyle = 'cat',
+    this.trayIconStyle = 'companion',
     this.companionEnabled = false,
     this.companionCatTheme = 'grey_cat',
     this.companionPetName = 'Mochi',
     this.companionScale = 6.0,
     this.companionClickThrough = false,
+    this.companionFollowMouse = false,
   });
 
   SettingsModel copyWith({
@@ -158,6 +160,7 @@ class SettingsModel {
     String? companionPetName,
     double? companionScale,
     bool? companionClickThrough,
+    bool? companionFollowMouse,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -204,6 +207,7 @@ class SettingsModel {
       companionPetName: companionPetName ?? this.companionPetName,
       companionScale: companionScale ?? this.companionScale,
       companionClickThrough: companionClickThrough ?? this.companionClickThrough,
+      companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
     );
   }
 
@@ -252,6 +256,7 @@ class SettingsModel {
         'companionPetName': companionPetName,
         'companionScale': companionScale,
         'companionClickThrough': companionClickThrough,
+        'companionFollowMouse': companionFollowMouse,
       };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -306,12 +311,13 @@ class SettingsModel {
       autoSuggestExercises: map['autoSuggestExercises'] as bool? ?? true,
       useCursorCountdown: map['useCursorCountdown'] as bool? ?? true,
       enableAnimations: map['enableAnimations'] as bool? ?? true,
-      trayIconStyle: map['trayIconStyle'] as String? ?? 'cat',
+      trayIconStyle: (map['trayIconStyle'] as String? ?? 'companion') == 'cat' ? 'companion' : (map['trayIconStyle'] as String? ?? 'companion'),
       companionEnabled: map['companionEnabled'] as bool? ?? false,
       companionCatTheme: map['companionCatTheme'] as String? ?? 'grey_cat',
       companionPetName: map['companionPetName'] as String? ?? 'Mochi',
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
+      companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
     );
   }
 }

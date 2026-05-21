@@ -131,7 +131,7 @@ Future<void> initDependencies() async {
   final companionBehaviorEngine = CompanionBehaviorEngine(
     eventBus: sl(),
   );
-  companionBehaviorEngine.start();
+  companionBehaviorEngine.setEnabled(settingsRepo.currentSettings.companionEnabled);
   sl.registerSingleton<CompanionBehaviorEngine>(companionBehaviorEngine);
 
   // Companion Overlay Controller (for settings UI)

@@ -1802,7 +1802,7 @@ C:.
 |   |   |   |       cat_theme.dart
 |   |   |   |       
 |   |   |   +---flame
-|   |   |   |       companion_cat_component.dart
+|   |   |   |       companion_component.dart
 |   |   |   |       companion_game.dart
 |   |   |   |       
 |   |   |   +---overlay

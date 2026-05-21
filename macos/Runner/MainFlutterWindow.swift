@@ -269,6 +269,14 @@ class MainFlutterWindow: NSWindow {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
         }
 
+      case "setCompanionFollowMouse":
+        if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
+          CompanionWindowManager.shared.setFollowMouseEnabled(enabled)
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
+        }
+
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
            let level = args["level"] as? String {

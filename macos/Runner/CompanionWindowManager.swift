@@ -16,6 +16,18 @@ class CompanionWindowManager: NSObject {
     
     private var instance: CompanionInstance?
     
+    private var userClickThrough = false
+    private var followMouseEnabled = false
+    private var followMouseTimer: Timer?
+    
+    // Stores the initial spawn args so Flutter can pull them after its method handler registers
+    private var pendingInitialArgs: [String: Any]?
+    
+    private var catOffsetFromBottom: CGFloat = 40.0
+    private var catOffsetFromLeft: CGFloat = 175.0
+    private var mouseChaseActive = false
+    private var mouseChaseSpeed: Double = 300.0
+    
     struct CompanionInstance {
         let window: CompanionPanel
         let engine: FlutterEngine
@@ -38,14 +50,8 @@ class CompanionWindowManager: NSObject {
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.visibleFrame
         
-        // Companion container window size
-        let width: CGFloat = 350
-        let height: CGFloat = 300
-        
-        // Position at bottom-right corner with margins
-        let x = screenFrame.maxX - width - 40
-        let y = screenFrame.minY + 40
-        let frame = NSRect(x: x, y: y, width: width, height: height)
+        // Fullscreen overlay frame spanning the screen's visible area
+        let frame = screenFrame
         
         let window = CompanionPanel(
             contentRect: frame,
@@ -65,8 +71,8 @@ class CompanionWindowManager: NSObject {
             .stationary
         ]
         
-        // CRITICAL: Do NOT ignore mouse events — we need them for drag & cat interaction
-        window.ignoresMouseEvents = false
+        // Unconditional click-through for zero user work disruption
+        window.ignoresMouseEvents = true
         
         // Spawn a fresh, dedicated Flutter engine with its own Dart isolate.
         let engine = FlutterEngine(
@@ -97,11 +103,15 @@ class CompanionWindowManager: NSObject {
         controller.view.layer?.backgroundColor = NSColor.clear.cgColor
         
         controller.view.autoresizingMask = [.width, .height]
-        controller.view.frame = frame
+        controller.view.frame = NSRect(origin: .zero, size: frame.size)
         
         window.contentView = controller.view
         
         instance = CompanionInstance(window: window, engine: engine, controller: controller)
+        
+        // Store initial args so Flutter can pull them via getInitialSettings after its
+        // method handler registers (avoids race condition where push arrives too early)
+        pendingInitialArgs = args
         
         // Setup MethodChannel for native drag tracking and overlay synchronization
         let channel = FlutterMethodChannel(
@@ -109,25 +119,18 @@ class CompanionWindowManager: NSObject {
             binaryMessenger: engine.binaryMessenger
         )
         channel.setMethodCallHandler { [weak self] (call, result) in
-            guard let self = self else {
-                result(FlutterMethodNotImplemented)
-                return
-            }
             if call.method == "syncCompanionSettings" {
-                if let args = call.arguments as? [String: Any],
-                   let positionDelta = args["positionDelta"] as? [String: Any] {
-                    let dx = (positionDelta["dx"] as? NSNumber)?.doubleValue ?? 0.0
-                    let dy = (positionDelta["dy"] as? NSNumber)?.doubleValue ?? 0.0
-                    DispatchQueue.main.async {
-                        self.moveCompanionWindow(dx: dx, dy: dy)
-                    }
-                }
+                // With stationary fullscreen window, we ignore frame adjustments from Flutter
                 result(nil)
+            } else if call.method == "getInitialSettings" {
+                // Flutter pulls its initial configuration on startup to avoid the push-race
+                result(self?.pendingInitialArgs ?? [:])
             } else {
                 result(FlutterMethodNotImplemented)
             }
         }
         
+        // Also attempt an immediate push; Flutter may already be ready if it initialized fast
         if let args = args {
             updateCompanionParams(args: args)
         }
@@ -148,33 +151,27 @@ class CompanionWindowManager: NSObject {
         }
         
         if let screen = targetScreen ?? NSScreen.main ?? NSScreen.screens.first {
-            let visibleFrame = screen.visibleFrame
+            let screenFrame = screen.frame // Allow moving around the entire display (Menu Bar & Dock included)
             
-            // Keep window horizontally within visible screen bounds
-            if clampedFrame.origin.x < visibleFrame.minX {
-                clampedFrame.origin.x = visibleFrame.minX
-            } else if clampedFrame.origin.x + clampedFrame.size.width > visibleFrame.maxX {
-                clampedFrame.origin.x = visibleFrame.maxX - clampedFrame.size.width
+            // Keep window horizontally within screen bounds
+            if clampedFrame.origin.x < screenFrame.minX {
+                clampedFrame.origin.x = screenFrame.minX
+            } else if clampedFrame.origin.x + clampedFrame.size.width > screenFrame.maxX {
+                clampedFrame.origin.x = screenFrame.maxX - clampedFrame.size.width
             }
             
-            // Keep window vertically within visible screen bounds (below Menu Bar, above Dock)
-            if clampedFrame.origin.y < visibleFrame.minY {
-                clampedFrame.origin.y = visibleFrame.minY
-            } else if clampedFrame.origin.y + clampedFrame.size.height > visibleFrame.maxY {
-                clampedFrame.origin.y = visibleFrame.maxY - clampedFrame.size.height
+            // Keep window vertically within screen bounds
+            if clampedFrame.origin.y < screenFrame.minY {
+                clampedFrame.origin.y = screenFrame.minY
+            } else if clampedFrame.origin.y + clampedFrame.size.height > screenFrame.maxY {
+                clampedFrame.origin.y = screenFrame.maxY - clampedFrame.size.height
             }
         }
         return clampedFrame
     }
     
     private func moveCompanionWindow(dx: Double, dy: Double) {
-        guard let inst = instance else { return }
-        var frame = inst.window.frame
-        frame.origin.x += CGFloat(dx)
-        frame.origin.y -= CGFloat(dy)
-        
-        let clampedFrame = clampFrameToScreen(frame, for: inst.window)
-        inst.window.setFrame(clampedFrame, display: true)
+        // Fullscreen overlay window is stationary, so we do not shift the native frame.
     }
     
     /// Dynamic companion updater. Passes changes down to the companion Flutter engine.
@@ -182,7 +179,12 @@ class CompanionWindowManager: NSObject {
         guard let instance = instance else { return }
         
         if let clickThrough = args["clickThrough"] as? Bool {
-            instance.window.ignoresMouseEvents = clickThrough
+            userClickThrough = clickThrough
+        }
+        instance.window.ignoresMouseEvents = true
+        
+        if let followMouse = args["followMouse"] as? Bool {
+            setFollowMouseEnabled(followMouse)
         }
         
         let channel = FlutterMethodChannel(
@@ -199,11 +201,18 @@ class CompanionWindowManager: NSObject {
         inst.window.orderOut(nil)
         inst.engine.shutDownEngine()
         instance = nil
+        
+        // Reset mouse follow states cleanly to prevent stuck timers/flags when re-created
+        followMouseTimer?.invalidate()
+        followMouseTimer = nil
+        followMouseEnabled = false
+        mouseChaseActive = false
     }
     
     /// Dynamic click-through modifier.
     func setClickThrough(_ enabled: Bool) {
-        instance?.window.ignoresMouseEvents = enabled
+        userClickThrough = enabled
+        instance?.window.ignoresMouseEvents = true
     }
     
     /// Swaps themes dynamically at runtime.
@@ -261,23 +270,90 @@ class CompanionWindowManager: NSObject {
         instance?.window.level = enabled ? .floating : .normal
     }
     
-    /// Moves the companion window to a specific position
+    /// Moves the companion window to a specific position (disabled for fullscreen)
     func setPosition(x: Double, y: Double) {
-        guard let inst = instance else { return }
-        var frame = inst.window.frame
-        frame.origin.x = x
-        frame.origin.y = y
-        let clampedFrame = clampFrameToScreen(frame, for: inst.window)
-        inst.window.setFrame(clampedFrame, display: true)
+        // Fullscreen overlay window is stationary
     }
     
-    /// Resizes the companion window
+    /// Resizes the companion window (disabled for fullscreen)
     func setSize(width: Double, height: Double) {
+        // Fullscreen overlay window matches visible frame
+    }
+    
+    /// Enables or disables cursor tracking mode
+    func setFollowMouseEnabled(_ enabled: Bool) {
+        guard followMouseEnabled != enabled else { return }
+        followMouseEnabled = enabled
+        
+        if enabled {
+            instance?.window.ignoresMouseEvents = true
+            
+            followMouseTimer?.invalidate()
+            followMouseTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] _ in
+                self?.updateMouseFollowing()
+            }
+        } else {
+            followMouseTimer?.invalidate()
+            followMouseTimer = nil
+            mouseChaseActive = false
+            
+            if let inst = instance {
+                inst.window.ignoresMouseEvents = true
+            }
+            
+            // Notify Flame that cursor chase mode is inactive
+            if let inst = instance {
+                let channel = FlutterMethodChannel(
+                    name: "com.breakmate.macos/companion_data",
+                    binaryMessenger: inst.engine.binaryMessenger
+                )
+                channel.invokeMethod("syncCompanionSettings", arguments: [
+                    "mouseFollow": [
+                        "enabled": false
+                    ]
+                ])
+            }
+        }
+    }
+    
+    private func updateMouseFollowing() {
         guard let inst = instance else { return }
-        var frame = inst.window.frame
-        frame.size.width = width
-        frame.size.height = height
-        let clampedFrame = clampFrameToScreen(frame, for: inst.window)
-        inst.window.setFrame(clampedFrame, display: true)
+        
+        let mousePos = NSEvent.mouseLocation
+        
+        // Find screen that currently holds the mouse cursor
+        var targetScreen: NSScreen?
+        for s in NSScreen.screens {
+            if s.frame.contains(mousePos) {
+                targetScreen = s
+                break
+            }
+        }
+        
+        let screen = targetScreen ?? inst.window.screen ?? NSScreen.main ?? NSScreen.screens.first
+        guard let screen = screen else { return }
+        
+        let screenFrame = screen.visibleFrame
+        
+        // Calculate coordinates relative to the visible workspace area
+        let relativeMouseX = mousePos.x - screenFrame.minX
+        let relativeMouseY = mousePos.y - screenFrame.minY
+        
+        let localMouseX = relativeMouseX
+        let localMouseY = screenFrame.height - relativeMouseY
+        
+        let channel = FlutterMethodChannel(
+            name: "com.breakmate.macos/companion_data",
+            binaryMessenger: inst.engine.binaryMessenger
+        )
+        
+        // Consistently update Flutter with current tracking info so Flutter's FSM can make decisions
+        channel.invokeMethod("syncCompanionSettings", arguments: [
+            "mouseFollow": [
+                "enabled": true,
+                "mouseX": Double(localMouseX),
+                "mouseY": Double(localMouseY)
+            ]
+        ])
     }
 }

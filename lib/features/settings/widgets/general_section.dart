@@ -117,17 +117,18 @@ class GeneralSection extends StatelessWidget {
   }
 
   Widget _buildMenuBarIcon() {
+    final currentStyle = settings.trayIconStyle == 'cat' ? 'companion' : settings.trayIconStyle;
     return buildListRow(
       'Menu Bar Icon',
-      'Choose default, cat, minimal, or countdown-only',
+      'Choose default, companion, minimal, or countdown-only',
       null,
       CupertinoIcons.circle_grid_hex,
       null,
       trailing: inlineDropdown(
-        settings.trayIconStyle,
-        ['default', 'cat', 'minimal', 'countdown'],
+        currentStyle,
+        ['default', 'companion', 'minimal', 'countdown'],
         (v) {
-          final style = v ?? 'cat';
+          final style = v ?? 'companion';
           onSave(settings.copyWith(trayIconStyle: style));
           sl<TimerEngine>().updateMenuStyle(settings.menuBarStyle);
           sl<TrayManagerService>().triggerActionAnimation();

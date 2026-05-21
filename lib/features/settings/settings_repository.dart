@@ -93,7 +93,7 @@ class SettingsRepository {
         defaultValue: true,
       ),
       useCursorCountdown: _storage.getBool('use_cursor_countdown', defaultValue: true),
-      trayIconStyle: _storage.getString('tray_icon_style', defaultValue: 'cat'),
+      trayIconStyle: _storage.getString('tray_icon_style', defaultValue: 'companion') == 'cat' ? 'companion' : _storage.getString('tray_icon_style', defaultValue: 'companion'),
       dailyWorkGoalHours: _storage.getInt('daily_work_goal_hours', defaultValue: 8),
       remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
       companionEnabled: _storage.getBool('companion_enabled', defaultValue: true),
@@ -101,6 +101,7 @@ class SettingsRepository {
       companionPetName: _storage.getString('companion_pet_name', defaultValue: 'Mochi'),
       companionScale: _storage.getDouble('companion_scale', defaultValue: 1.5),
       companionClickThrough: _storage.getBool('companion_click_through', defaultValue: false),
+      companionFollowMouse: _storage.getBool('companion_follow_mouse', defaultValue: false),
     );
   }
 
@@ -182,6 +183,7 @@ class SettingsRepository {
       _storage.setString('companion_pet_name', settings.companionPetName),
       _storage.setDouble('companion_scale', settings.companionScale),
       _storage.setBool('companion_click_through', settings.companionClickThrough),
+      _storage.setBool('companion_follow_mouse', settings.companionFollowMouse),
     ]);
   }
 

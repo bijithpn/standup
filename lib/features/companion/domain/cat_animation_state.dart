@@ -10,4 +10,7 @@ enum CatAnimationState {
   angry,
   notification,
   celebrate,
+  lick1,
+  lick2,
 }
+
