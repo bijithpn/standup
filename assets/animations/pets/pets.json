@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "pets": [
+    {
+      "id": "orange_cat_01",
+      "name": "Ginger",
+      "species": "cat",
+      "variant": {
+        "id": "orange_cat",
+        "name": "Orange Cat",
+        "assetPath": "assets/animations/pets/cat/orange_cat/sprite_sheet.png",
+        "isSpriteSheet": true,
+        "rowCount": 4,
+        "frameCount": 8
+      },
+      "personality": "lazy",
+      "initialMood": "relaxed",
+      "primaryColor": 4294965248,
+      "secondaryColor": 4286151816,
+      "baseScale": 1.0,
+      "movementSpeed": 1.0,
+      "isEnabled": true
+    },
+    {
+      "id": "golden_dog_01",
+      "name": "Goldie",
+      "species": "dog",
+      "variant": {
+        "id": "goldie",
+        "name": "Golden Retriever",
+        "assetPath": "assets/animations/pets/dog/goldie/goldie_v02.png",
+        "isSpriteSheet": false,
+        "rowCount": 1,
+        "frameCount": 1
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "primaryColor": 4294951247,
+      "secondaryColor": 4294946560,
+      "baseScale": 1.0,
+      "movementSpeed": 1.2,
+      "isEnabled": true
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 enum CatAnimationState {
   idle,
   walk,
+  run,
   sleep,
   typing,
   excited,
