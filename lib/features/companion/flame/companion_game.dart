@@ -7,25 +7,36 @@ import 'package:standup/features/companion/data/cat_asset_loader.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/domain/cat_state_machine.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/pet_personality.dart';
+import 'package:standup/features/companion/domain/pet_profile.dart';
+import 'package:standup/features/companion/domain/pet_state_machine.dart';
 import 'package:standup/features/companion/flame/companion_component.dart';
+import 'package:standup/features/companion/ai/pet_behavior_brain.dart';
+import 'package:standup/features/companion/services/pet_companion_service.dart';
+import 'package:standup/features/companion/services/pet_navigation_service.dart';
 
 class CompanionGame extends FlameGame {
-  CompanionGame({
-    required CatTheme initialTheme,
-    this.scaleOverride = 0.0,
-  })  : _eventBus = EventBus.instance,
-        _stateMachine = CatStateMachine(),
-        _theme = initialTheme;
+  CompanionGame({required CatTheme initialTheme, this.scaleOverride = 0.0})
+    : _eventBus = EventBus.instance,
+      _stateMachine = CatStateMachine(),
+      _petService = PetCompanionService(
+        stateMachine: PetStateMachine(personality: PetPersonality()),
+        brain: PetBehaviorBrain(),
+        navigation: PetNavigationService(),
+        profile: PetProfile.orangeCat,
+      ),
+      _theme = initialTheme;
 
   final EventBus _eventBus;
   final CatStateMachine _stateMachine;
+  final PetCompanionService _petService;
   late StreamSubscription<AppEvent> _eventSubscription;
+  late StreamSubscription<PetState> _petStateSubscription;
 
   CatTheme _theme;
   double scaleOverride; // 0.0 = auto-scale
 
   CompanionComponent? catComponent;
-
 
   CatTheme get currentTheme => _theme;
   CatState get companionState => _stateMachine.currentState;
@@ -37,12 +48,20 @@ class CompanionGame extends FlameGame {
   Future<void> onLoad() async {
     await super.onLoad();
     _eventSubscription = _eventBus.stream.listen(_handleAppEvent);
+    _petStateSubscription = _petService.stateMachine.stateStream.listen((
+      state,
+    ) {
+      _applyPetStateToComponent(state);
+    });
+    _petService.initialize(screenSize: null);
     await _loadAndAttachCat();
   }
 
   @override
   void onRemove() {
     _eventSubscription.cancel();
+    _petStateSubscription.cancel();
+    _petService.dispose();
     super.onRemove();
   }
 
@@ -52,49 +71,63 @@ class CompanionGame extends FlameGame {
       _stateMachine.handleEvent(catEvent);
       _applyStateToComponent();
     }
+    _mapAppEventToPetEvent(event);
   }
 
-  CatEvent? _mapAppEventToCatEvent(AppEvent event) {
+  void _mapAppEventToPetEvent(AppEvent event) {
+    PetEvent? petEvent;
     if (event is TimerStateChangedEvent) {
-      return CatEvent.tick;
+      petEvent = PetEvent.tick;
     } else if (event is BreakStartedEvent) {
-      return CatEvent.breakStarted;
+      petEvent = PetEvent.breakStarted;
+    } else if (event is BreakCompletedEvent) {
+      petEvent = PetEvent.breakCompleted;
     } else if (event is BreakEndedEvent) {
-      return CatEvent.breakEnded;
+      petEvent = PetEvent.breakEnded;
     } else if (event is MeetingDetectedEvent) {
-      return event.isActive ? CatEvent.meetingDetected : CatEvent.meetingEnded;
+      petEvent = event.isActive
+          ? PetEvent.meetingDetected
+          : PetEvent.meetingEnded;
     } else if (event is FocusModeEvent) {
-      return event.isActive ? CatEvent.focusModeOn : CatEvent.focusModeOff;
+      petEvent = event.isActive ? PetEvent.focusModeOn : PetEvent.focusModeOff;
     } else if (event is IdleDetectedEvent) {
-      return event.isIdle ? CatEvent.idleTimeout : CatEvent.activityDetected;
+      petEvent = event.isIdle
+          ? PetEvent.idleTimeout
+          : PetEvent.activityDetected;
     } else if (event is CompanionInteractionEvent) {
       switch (event.interactionType) {
         case 'tap':
-          return CatEvent.userClick;
+          petEvent = PetEvent.userClick;
+          break;
         case 'doubleTap':
-          return CatEvent.userDoubleClick;
+          petEvent = PetEvent.userDoubleClick;
+          break;
         case 'hover':
-          return CatEvent.userHover;
+          petEvent = PetEvent.userHover;
+          break;
         case 'dragStart':
-          return CatEvent.userDragStart;
+          petEvent = PetEvent.userDragStart;
+          break;
         case 'dragEnd':
-          return CatEvent.userDragEnd;
-        default:
-          return null;
+          petEvent = PetEvent.userDragEnd;
+          break;
       }
+    } else if (event is NotificationEvent) {
+      petEvent = PetEvent.notificationReceived;
     }
-    return null;
+    _petService.handleEvent(petEvent);
   }
 
   void _applyStateToComponent() {
-    // FIX: When the FSM is in CatState.idle, the companion component is managing
-    // its own autonomous wandering behavior. We must NOT override it every frame
-    // or we will cause rapid state oscillation (the "shaking" bug).
-    // Only push external states when the FSM is actually in a non-idle driven state.
     if (_stateMachine.currentState == CatState.idle) {
       return;
     }
     final animState = _mapCatStateToAnimationState(_stateMachine.currentState);
+    catComponent?.changeState(animState);
+  }
+
+  void _applyPetStateToComponent(PetState state) {
+    final animState = _mapPetStateToAnimationState(state);
     catComponent?.changeState(animState);
   }
 
@@ -103,9 +136,9 @@ class CompanionGame extends FlameGame {
       case CatState.idle:
         return CatAnimationState.idle;
       case CatState.blink:
-        return CatAnimationState.idle; // blink is a short idle variant
+        return CatAnimationState.idle;
       case CatState.stretch:
-        return CatAnimationState.celebrate; // stretch animation
+        return CatAnimationState.celebrate;
       case CatState.walk:
         return CatAnimationState.walk;
       case CatState.sleep:
@@ -115,7 +148,7 @@ class CompanionGame extends FlameGame {
       case CatState.happy:
         return CatAnimationState.excited;
       case CatState.drag:
-        return CatAnimationState.idle; // no special drag anim
+        return CatAnimationState.idle;
       case CatState.breakReminder:
         return CatAnimationState.breakMode;
       case CatState.meetingPaused:
@@ -125,11 +158,58 @@ class CompanionGame extends FlameGame {
     }
   }
 
-  /// Auto-scales so the cat occupies ~45% of the window height.
+  CatAnimationState _mapPetStateToAnimationState(PetState state) {
+    switch (state) {
+      case PetState.idle:
+      case PetState.blink:
+      case PetState.resting:
+        return CatAnimationState.idle;
+      case PetState.stretch:
+      case PetState.celebrating:
+      case PetState.dancing:
+        return CatAnimationState.celebrate;
+      case PetState.walk:
+      case PetState.following:
+      case PetState.exploring:
+        return CatAnimationState.walk;
+      case PetState.run:
+      case PetState.jumping:
+        return CatAnimationState.run;
+      case PetState.sleep:
+      case PetState.quiet:
+        return CatAnimationState.sleep;
+      case PetState.alert:
+      case PetState.scared:
+      case PetState.hiding:
+        return CatAnimationState.notification;
+      case PetState.happy:
+      case PetState.excited:
+      case PetState.affectionate:
+        return CatAnimationState.excited;
+      case PetState.breakReminder:
+        return CatAnimationState.breakMode;
+      case PetState.meetingPaused:
+      case PetState.sad:
+        return CatAnimationState.sad;
+      case PetState.focusMode:
+        return CatAnimationState.focusMode;
+      case PetState.curious:
+      case PetState.interacting:
+        return CatAnimationState.notification;
+      case PetState.playing:
+        return CatAnimationState.run;
+      case PetState.eating:
+      case PetState.grooming:
+        return CatAnimationState.idle;
+      case PetState.bored:
+        return CatAnimationState.idle;
+      case PetState.drag:
+        return CatAnimationState.idle;
+    }
+  }
+
   double _effectiveScale(double spriteSize) {
     if (scaleOverride > 0.0) return scaleOverride;
-    // When stationary fullscreen overlay is active, size.y represents screen height.
-    // We use a baseline reference height of 300.0 to keep the pet beautifully sized and pixel-crisp.
     final double baselineHeight = size.y > 400.0 ? 300.0 : size.y;
     final double target = baselineHeight * 0.45;
     return (target / spriteSize).clamp(3.0, 10.0);
@@ -139,8 +219,9 @@ class CompanionGame extends FlameGame {
     final animations = await CatAssetLoader.loadAnimations(_theme);
     if (animations.isEmpty) return;
 
-    // Remove any existing CompanionComponent to prevent multiple overlapping sprites
-    children.whereType<CompanionComponent>().toList().forEach((c) => c.removeFromParent());
+    children.whereType<CompanionComponent>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
 
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
@@ -154,10 +235,7 @@ class CompanionGame extends FlameGame {
     catComponent!.scale = Vector2.all(scale);
 
     final double scaledHalfH = (spriteSize * scale) / 2;
-    catComponent!.position = Vector2(
-      size.x / 2,
-      size.y - scaledHalfH - 4.0,
-    );
+    catComponent!.position = Vector2(size.x / 2, size.y - scaledHalfH - 4.0);
 
     add(catComponent!);
   }
@@ -199,23 +277,27 @@ class CompanionGame extends FlameGame {
     catComponent?.updateMouseFollow(data);
   }
 
-  /// Handle user interactions from the component
   void onUserInteraction(String type) {
     switch (type) {
       case 'tap':
         _stateMachine.handleEvent(CatEvent.userClick);
+        _petService.handleEvent(PetEvent.userClick);
         break;
       case 'doubleTap':
         _stateMachine.handleEvent(CatEvent.userDoubleClick);
+        _petService.handleEvent(PetEvent.userDoubleClick);
         break;
       case 'hover':
         _stateMachine.handleEvent(CatEvent.userHover);
+        _petService.handleEvent(PetEvent.userHover);
         break;
       case 'dragStart':
         _stateMachine.handleEvent(CatEvent.userDragStart);
+        _petService.handleEvent(PetEvent.userDragStart);
         break;
       case 'dragEnd':
         _stateMachine.handleEvent(CatEvent.userDragEnd);
+        _petService.handleEvent(PetEvent.userDragEnd);
         break;
     }
     _applyStateToComponent();
@@ -225,12 +307,8 @@ class CompanionGame extends FlameGame {
   void update(double dt) {
     super.update(dt);
 
-    // Tick the FSM for time-based transitions (e.g. sleep, break timers).
-    // _applyStateToComponent() is intentionally NOT called here every frame:
-    // it is only called when an actual event changes state (in _handleAppEvent
-    // and onUserInteraction), preventing the FSM from fighting the companion's
-    // autonomous wandering animations and causing the "shaking" bug.
     _stateMachine.handleEvent(CatEvent.tick);
+    _petService.update(dt);
   }
 
   @override
@@ -244,7 +322,10 @@ class CompanionGame extends FlameGame {
       final double scaledHalfW = (spriteSize * scale) / 2;
       double newX;
       if (spriteSize * scale < size.x) {
-        newX = catComponent!.position.x.clamp(scaledHalfW, size.x - scaledHalfW);
+        newX = catComponent!.position.x.clamp(
+          scaledHalfW,
+          size.x - scaledHalfW,
+        );
       } else {
         newX = size.x / 2;
       }
