@@ -38,7 +38,7 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
   void onMount() {
     super.onMount();
     // Set filter quality once — no need to set it every render call
-    paint.filterQuality = FilterQuality.medium;
+    paint.filterQuality = FilterQuality.none;
     _updateFlip();
   }
 

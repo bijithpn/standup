@@ -496,7 +496,7 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
             fontFamily: 'Satoshi',
           ),
         ),
-        if (!widget.settings.strictMode && widget.onSkip != null)
+        if (widget.onSkip != null)
           GestureDetector(
             onTap: widget.onSkip,
             child: MouseRegion(

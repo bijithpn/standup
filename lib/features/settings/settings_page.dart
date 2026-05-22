@@ -1791,242 +1791,42 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _stylePreview(String name, bool isSelected, VoidCallback onTap) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 150;
-        final width = isSmallScreen ? 100.0 : 140.0;
-        final height = isSmallScreen ? 70.0 : 90.0;
-        final iconSize = isSmallScreen ? 20.0 : 28.0;
-        final fontSize = isSmallScreen ? 11.0 : 12.0;
-
-        return GestureDetector(
-          onTap: onTap,
-          child: Column(
-            children: [
-              Container(
-                width: width,
-                height: height,
-                decoration: BoxDecoration(
-                  color: AppTheme.contentBackground,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppTheme.accentColor
-                        : AppTheme.borderColor,
-                    width: 2,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    _buildStyleMock(name),
-                    if (isSelected)
-                      Center(
-                        child: Icon(
-                          Icons.check_circle,
-                          color: AppTheme.accentColor,
-                          size: iconSize,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(height: isSmallScreen ? 6 : 8),
-              Text(
-                name,
-                style: TextStyle(
-                  color: isSelected
-                      ? AppTheme.accentColor
-                      : AppTheme.textSecondary,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  fontSize: fontSize,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStyleMock(String name) {
-    switch (name) {
-      case 'BreakLoop':
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.shortBreakColor.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '00:20',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        );
-      case 'Desktop':
-        return Column(
-          children: [
-            const Spacer(),
-            Container(
-              width: 60,
-              height: 20,
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const Spacer(),
-            Container(height: 10, color: Colors.white.withValues(alpha: 0.05)),
-          ],
-        );
-      case 'Ambient':
-        return Center(
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.accentColor.withValues(alpha: 0.3),
-                width: 3,
-              ),
-            ),
-            child: const Center(
-              child: Text(
-                '12:00',
-                style: TextStyle(fontSize: 10, color: Colors.white30),
-              ),
-            ),
-          ),
-        );
-      case 'Focus':
-        return Center(
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentColor.withValues(alpha: 0.5),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-        );
-
-      default:
-        return const SizedBox();
-    }
-  }
-
-  Widget _buildStyleGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 700;
-
-        if (isSmallScreen) {
-          return Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _stylePreview(
-                'BreakLoop',
-                _settings.clockFaceStyle == 'breakloop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'breakloop')),
-              ),
-              _stylePreview(
-                'Desktop',
-                _settings.clockFaceStyle == 'desktop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'desktop')),
-              ),
-              _stylePreview(
-                'Personal',
-                _settings.clockFaceStyle == 'personal',
-                () => _save(_settings.copyWith(clockFaceStyle: 'personal')),
-              ),
-              _stylePreview(
-                'Ambient',
-                _settings.clockFaceStyle == 'ambient',
-                () => _save(_settings.copyWith(clockFaceStyle: 'ambient')),
-              ),
-              _stylePreview(
-                'Focus',
-                _settings.clockFaceStyle == 'focus',
-                () => _save(_settings.copyWith(clockFaceStyle: 'focus')),
-              ),
-            ],
-          );
-        }
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _stylePreview(
-                'BreakLoop',
-                _settings.clockFaceStyle == 'breakloop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'breakloop')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Desktop',
-                _settings.clockFaceStyle == 'desktop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'desktop')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Personal',
-                _settings.clockFaceStyle == 'personal',
-                () => _save(_settings.copyWith(clockFaceStyle: 'personal')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Ambient',
-                _settings.clockFaceStyle == 'ambient',
-                () => _save(_settings.copyWith(clockFaceStyle: 'ambient')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Focus',
-                _settings.clockFaceStyle == 'focus',
-                () => _save(_settings.copyWith(clockFaceStyle: 'focus')),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildBreakTemplateGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isSmallScreen = constraints.maxWidth < 700;
 
         final templates = [
-          (id: 'classic', name: 'Classic Slideshow', desc: 'Calming slideshow with weekly completed rest streak graph.'),
-          (id: 'minimal', name: 'Minimal Focus', desc: 'Concentric ring timer with clean outline styling.'),
-          (id: 'companion', name: 'Interactive Pet', desc: 'Snappable pet companion with live dialogue bubbles.'),
-          (id: 'zen', name: 'Zen Breath', desc: 'Japanese morning sun gradient with box breathing guide.'),
-          (id: 'hud', name: 'Productivity HUD', desc: 'Neon stats panels and custom glow activity graph.'),
-          (id: 'floating', name: 'Floating Pill', desc: 'Corner-snapped draggable capsule with warm alerts.'),
+          (
+            id: 'classic',
+            name: 'Classic Slideshow',
+            desc: 'Calming slideshow with weekly completed rest streak graph.',
+          ),
+          (
+            id: 'minimal',
+            name: 'Minimal Focus',
+            desc: 'Concentric ring timer with clean outline styling.',
+          ),
+          (
+            id: 'companion',
+            name: 'Interactive Pet',
+            desc: 'Snappable pet companion with live dialogue bubbles.',
+          ),
+          (
+            id: 'zen',
+            name: 'Zen Breath',
+            desc: 'Japanese morning sun gradient with box breathing guide.',
+          ),
+          (
+            id: 'hud',
+            name: 'Productivity HUD',
+            desc: 'Neon stats panels and custom glow activity graph.',
+          ),
+          (
+            id: 'floating',
+            name: 'Floating Pill',
+            desc: 'Corner-snapped draggable capsule with warm alerts.',
+          ),
         ];
 
         if (isSmallScreen) {
@@ -2100,7 +1900,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: AppTheme.accentColor.withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ]
                     : [],
               ),
@@ -2164,10 +1964,7 @@ class _SettingsPageState extends State<SettingsPage> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white24,
-                width: 1.5,
-              ),
+              border: Border.all(color: Colors.white24, width: 1.5),
             ),
             child: Center(
               child: Container(
@@ -2197,11 +1994,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'companion':
         return Stack(
           children: [
-            Positioned.fill(
-              child: Container(
-                color: Colors.black38,
-              ),
-            ),
+            Positioned.fill(child: Container(color: Colors.black38)),
             Positioned(
               top: 20,
               left: 15,
@@ -2238,10 +2031,7 @@ class _SettingsPageState extends State<SettingsPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFE0C3FC),
-                Color(0xFF8EC5FC),
-              ],
+              colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC)],
             ),
           ),
           child: Center(
@@ -2375,11 +2165,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'floating':
         return Stack(
           children: [
-            Positioned.fill(
-              child: Container(
-                color: Colors.black26,
-              ),
-            ),
+            Positioned.fill(child: Container(color: Colors.black26)),
             Positioned(
               bottom: 8,
               right: 8,
@@ -2397,7 +2183,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     BoxShadow(
                       color: AppTheme.accentColor.withValues(alpha: 0.3),
                       blurRadius: 4,
-                    )
+                    ),
                   ],
                 ),
                 child: Row(
@@ -2721,6 +2507,7 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               items: CatTheme.themes.map((theme) {
                 final itemIsDog = _isDog(theme.id);
+                final isSelected = controller.companionCatTheme == theme.id;
                 return AppDropdownItem<String>(
                   value: theme.id,
                   label: theme.name,
@@ -2751,10 +2538,15 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(width: 8),
                       Text(
                         theme.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                           fontFamily: 'Satoshi',
+                          color: isSelected
+                              ? AppTheme.accentColor
+                              : AppTheme.textPrimary,
                         ),
                       ),
                     ],
