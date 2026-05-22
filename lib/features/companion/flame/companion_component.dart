@@ -17,9 +17,6 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
   double _stateElapsed = 0.0;
   CatAnimationState? _previousState;
 
-  // Interaction state
-  CatAnimationState? _interactionRevertState;
-
   CompanionComponent({
     required Map<CatAnimationState, SpriteAnimation> animations,
     CatAnimationState initialState = CatAnimationState.idle,
@@ -151,43 +148,22 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
 
   @override
   void onTapDown(TapDownEvent event) {
-    final currentState = current;
-    if (currentState != null && !_isNonLoopingState(currentState)) {
-      _interactionRevertState = currentState;
-    }
     game.onUserInteraction('tap');
-    changeState(CatAnimationState.excited);
   }
 
   @override
   void onTapUp(TapUpEvent event) {
     game.onUserInteraction('doubleTap');
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (_interactionRevertState != null) {
-        changeState(_interactionRevertState!);
-        _interactionRevertState = null;
-      } else {
-        changeState(CatAnimationState.idle);
-      }
-    });
   }
 
   @override
   void onHoverEnter() {
     game.onUserInteraction('hover');
-    final currentState = current;
-    if (currentState == CatAnimationState.idle || currentState == CatAnimationState.walk) {
-      _interactionRevertState = currentState;
-      changeState(CatAnimationState.notification);
-    }
   }
 
   @override
   void onHoverExit() {
-    if (_interactionRevertState != null) {
-      changeState(_interactionRevertState!);
-      _interactionRevertState = null;
-    }
+    // Optional: we can add an interaction or just let the state machine revert naturally
   }
 
   void updateMouseFollow(Map<dynamic, dynamic> data) {
@@ -206,11 +182,5 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
       scale.y = scale.x.abs();
       changeState(CatAnimationState.idle);
     }
-  }
-
-  bool _isNonLoopingState(CatAnimationState state) {
-    return state == CatAnimationState.celebrate ||
-           state == CatAnimationState.excited ||
-           state == CatAnimationState.notification;
   }
 }

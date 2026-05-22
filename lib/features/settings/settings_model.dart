@@ -17,13 +17,7 @@ class SettingsModel {
   final int longBreakIntervalMinutes;
   final int longBreakDurationMinutes;
 
-  // Flash settings
-  final int flashColorHex;
-  final String flashStyle;
-  final String flashMessage;
-  final String flashAnimationType;
-  final double flashIntensity;
-  final int flashDurationMs;
+
 
   // Notifications
   final bool soundEnabled;
@@ -81,12 +75,7 @@ class SettingsModel {
     this.shortBreakDurationSeconds = 20,
     this.longBreakIntervalMinutes = 60,
     this.longBreakDurationMinutes = 3,
-    this.flashColorHex = 0xFFF87171,
-    this.flashStyle = 'default',
-    this.flashMessage = 'Look 20 feet away for 20 seconds',
-    this.flashAnimationType = 'pulse',
-    this.flashIntensity = 0.5,
-    this.flashDurationMs = 2500,
+
     this.soundEnabled = true,
     this.notificationsEnabled = true,
     this.clockFaceTextColorHex = 0xFFFFFFFF,
@@ -129,12 +118,7 @@ class SettingsModel {
     int? shortBreakDurationSeconds,
     int? longBreakIntervalMinutes,
     int? longBreakDurationMinutes,
-    int? flashColorHex,
-    String? flashStyle,
-    String? flashMessage,
-    String? flashAnimationType,
-    double? flashIntensity,
-    int? flashDurationMs,
+
     bool? soundEnabled,
     bool? notificationsEnabled,
     int? clockFaceTextColorHex,
@@ -176,12 +160,7 @@ class SettingsModel {
       shortBreakDurationSeconds: shortBreakDurationSeconds ?? this.shortBreakDurationSeconds,
       longBreakIntervalMinutes: longBreakIntervalMinutes ?? this.longBreakIntervalMinutes,
       longBreakDurationMinutes: longBreakDurationMinutes ?? this.longBreakDurationMinutes,
-      flashColorHex: flashColorHex ?? this.flashColorHex,
-      flashStyle: flashStyle ?? this.flashStyle,
-      flashMessage: flashMessage ?? this.flashMessage,
-      flashAnimationType: flashAnimationType ?? this.flashAnimationType,
-      flashIntensity: flashIntensity ?? this.flashIntensity,
-      flashDurationMs: flashDurationMs ?? this.flashDurationMs,
+
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       clockFaceTextColorHex: clockFaceTextColorHex ?? this.clockFaceTextColorHex,
@@ -225,12 +204,7 @@ class SettingsModel {
         'shortBreakDurationSeconds': shortBreakDurationSeconds,
         'longBreakIntervalMinutes': longBreakIntervalMinutes,
         'longBreakDurationMinutes': longBreakDurationMinutes,
-        'flashColorHex': flashColorHex,
-        'flashStyle': flashStyle,
-        'flashMessage': flashMessage,
-        'flashAnimationType': flashAnimationType,
-        'flashIntensity': flashIntensity,
-        'flashDurationMs': flashDurationMs,
+
         'soundEnabled': soundEnabled,
         'notificationsEnabled': notificationsEnabled,
         'clockFaceTextColorHex': clockFaceTextColorHex,
@@ -283,12 +257,7 @@ class SettingsModel {
       shortBreakDurationSeconds: map['shortBreakDurationSeconds'] as int? ?? 20,
       longBreakIntervalMinutes: map['longBreakIntervalMinutes'] as int? ?? 60,
       longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 3,
-      flashColorHex: map['flashColorHex'] as int? ?? 0xFFF87171,
-      flashStyle: map['flashStyle'] as String? ?? 'default',
-      flashMessage: map['flashMessage'] as String? ?? 'Look 20 feet away for 20 seconds',
-      flashAnimationType: map['flashAnimationType'] as String? ?? 'pulse',
-      flashIntensity: (map['flashIntensity'] as num?)?.toDouble() ?? 0.5,
-      flashDurationMs: map['flashDurationMs'] as int? ?? 2500,
+
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       clockFaceTextColorHex: map['clockFaceTextColorHex'] as int? ?? 0xFFFFFFFF,

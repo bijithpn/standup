@@ -21,6 +21,7 @@ class CompanionWindowManager {
   void ShowCompanion(const std::string& theme_id, const std::string& pet_name, double scale, bool click_through);
   void HideCompanion();
   void UpdateParams(const std::map<std::string, flutter::EncodableValue>& params);
+  void UpdateMousePosition();
 
  private:
   static CompanionWindowManager* instance_;

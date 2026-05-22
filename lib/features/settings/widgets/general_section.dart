@@ -5,7 +5,6 @@ import 'package:standup/features/settings/widgets/settings_widgets.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/utils/toast.dart';
 import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 
@@ -31,9 +30,6 @@ class GeneralSection extends StatelessWidget {
           _buildMenuStyle(),
           divider(),
           _buildMenuBarIcon(),
-          divider(),
-          _buildFlashHighlight(context),
-          divider(),
           _buildStrictMode(),
           divider(),
           _buildMultiDisplay(),
@@ -117,7 +113,9 @@ class GeneralSection extends StatelessWidget {
   }
 
   Widget _buildMenuBarIcon() {
-    final currentStyle = settings.trayIconStyle == 'cat' ? 'companion' : settings.trayIconStyle;
+    final currentStyle = settings.trayIconStyle == 'cat'
+        ? 'companion'
+        : settings.trayIconStyle;
     return buildListRow(
       'Menu Bar Icon',
       'Choose default, companion, minimal, or countdown-only',
@@ -133,24 +131,6 @@ class GeneralSection extends StatelessWidget {
           sl<TimerEngine>().updateMenuStyle(settings.menuBarStyle);
           sl<TrayManagerService>().triggerActionAnimation();
         },
-      ),
-    );
-  }
-
-  Widget _buildFlashHighlight(BuildContext context) {
-    return buildListRow(
-      'Flash Highlight',
-      'Customize visual break reminder',
-      null,
-      CupertinoIcons.bolt_fill,
-      null,
-      onTap: () {
-        sl<AppNavigationService>().openSection('Flash Reminder');
-      },
-      trailing: const Icon(
-        CupertinoIcons.chevron_right,
-        size: 14,
-        color: AppTheme.accentColor,
       ),
     );
   }

@@ -137,8 +137,7 @@ enum FloatingWindowType {
   /// Timer countdown display
   timer,
 
-  /// Flash notification (brief alert)
-  flashNotification,
+
 
   /// Break countdown display
   breakCountdown,

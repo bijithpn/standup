@@ -335,6 +335,13 @@ class CompanionWindowManager: NSObject {
         
         let screenFrame = screen.visibleFrame
         
+        // --- Multi-display Support: Move window to the screen where the mouse is ---
+        if inst.window.screen != screen {
+            inst.window.setFrame(screenFrame, display: true, animate: false)
+            // Ensure the view within the controller also matches new bounds
+            inst.controller.view.frame = NSRect(origin: .zero, size: screenFrame.size)
+        }
+        
         // Calculate coordinates relative to the visible workspace area
         let relativeMouseX = mousePos.x - screenFrame.minX
         let relativeMouseY = mousePos.y - screenFrame.minY

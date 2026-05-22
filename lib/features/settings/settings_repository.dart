@@ -41,18 +41,7 @@ class SettingsRepository {
       menuBarStyle: _storage.getString('menu_bar_style', defaultValue: 'countdown'),
       notificationsEnabled: _storage.getBool('notifications_enabled', defaultValue: true),
       
-      flashColorHex: _storage.getInt(
-        'flash_color_hex',
-        defaultValue: 0xFFF87171,
-      ),
-      flashStyle: _storage.getString('flash_style', defaultValue: 'default'),
-      flashMessage: _storage.getString(
-        'flash_message',
-        defaultValue: 'Take a deep breath',
-      ),
-      flashAnimationType: _storage.getString('flash_animation_type', defaultValue: 'pulse'),
-      flashIntensity: _storage.getDouble('flash_intensity', defaultValue: 0.5),
-      flashDurationMs: _storage.getInt('flash_duration_ms', defaultValue: 2500),
+
       focusModeEnabled: _storage.getBool('focus_mode_enabled'),
       clockFaceStyle: _storage.getString(
         'clock_face_style',
@@ -131,12 +120,7 @@ class SettingsRepository {
       _storage.setString('menu_bar_style', settings.menuBarStyle),
       _storage.setBool('notifications_enabled', settings.notificationsEnabled),
       
-      _storage.setInt('flash_color_hex', settings.flashColorHex),
-      _storage.setString('flash_style', settings.flashStyle),
-      _storage.setString('flash_message', settings.flashMessage),
-      _storage.setString('flash_animation_type', settings.flashAnimationType),
-      _storage.setDouble('flash_intensity', settings.flashIntensity),
-      _storage.setInt('flash_duration_ms', settings.flashDurationMs),
+
       _storage.setBool('focus_mode_enabled', settings.focusModeEnabled),
       _storage.setString('clock_face_style', settings.clockFaceStyle),
       _storage.setInt(

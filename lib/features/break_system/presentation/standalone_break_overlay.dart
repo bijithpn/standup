@@ -121,41 +121,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay> with Ti
       color: Colors.black,
       child: FadeTransition(
         opacity: _fadeController,
-        child: _overlayType == 'flashNotification'
-            ? _buildFlashNotification()
-            : _buildBreakScreen(),
+        child: _buildBreakScreen(),
       ),
     );
   }
 
-  Widget _buildFlashNotification() {
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.all(40),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white10),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(CupertinoIcons.bolt_fill, color: Colors.blueAccent, size: 64),
-            const SizedBox(height: 24),
-            const Text(
-              "Posture Reminder",
-              style: TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.bold, fontFamily: 'Satoshi'),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Sit up straight and take a deep breath",
-              style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 18, fontFamily: 'Satoshi'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildBreakScreen() {
     return Stack(

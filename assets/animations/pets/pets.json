@@ -2,43 +2,276 @@
   "version": "1.0.0",
   "pets": [
     {
-      "id": "orange_cat_01",
-      "name": "Ginger",
+      "id": "grey_cat",
+      "name": "Classic Grey Cat",
       "species": "cat",
       "variant": {
-        "id": "orange_cat",
-        "name": "Orange Cat",
-        "assetPath": "assets/animations/pets/cat/orange_cat/sprite_sheet.png",
+        "id": "grey_cat",
+        "name": "Classic Grey Cat",
+        "assetPath": "assets/animations/cats/grey_cat/sprite_sheet.png",
         "isSpriteSheet": true,
-        "rowCount": 4,
-        "frameCount": 8
+        "rowCount": 12,
+        "frameCount": 8,
+        "spriteSize": 32
       },
-      "personality": "lazy",
+      "personality": "balanced",
       "initialMood": "relaxed",
-      "primaryColor": 4294965248,
-      "secondaryColor": 4286151816,
-      "baseScale": 1.0,
-      "movementSpeed": 1.0,
       "isEnabled": true
     },
     {
-      "id": "golden_dog_01",
-      "name": "Goldie",
-      "species": "dog",
+      "id": "orange_cat",
+      "name": "Playful Orange Cat",
+      "species": "cat",
       "variant": {
-        "id": "goldie",
-        "name": "Golden Retriever",
-        "assetPath": "assets/animations/pets/dog/goldie/goldie_v02.png",
+        "id": "orange_cat",
+        "name": "Playful Orange Cat",
+        "assetPath": "assets/animations/cats/orange_cat/sprite_sheet.png",
+        "isSpriteSheet": true,
+        "rowCount": 12,
+        "frameCount": 8,
+        "spriteSize": 32
+      },
+      "personality": "playful",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "black_cat",
+      "name": "Sleek Black Cat",
+      "species": "cat",
+      "variant": {
+        "id": "black_cat",
+        "name": "Sleek Black Cat",
+        "assetPath": "assets/animations/cats/black_cat/sprite_sheet.png",
+        "isSpriteSheet": true,
+        "rowCount": 12,
+        "frameCount": 8,
+        "spriteSize": 32
+      },
+      "personality": "cool",
+      "initialMood": "relaxed",
+      "isEnabled": true
+    },
+    {
+      "id": "large_cat",
+      "name": "Fluffy Large Cat",
+      "species": "cat",
+      "variant": {
+        "id": "large_cat",
+        "name": "Fluffy Large Cat",
+        "assetPath": "assets/animations/cats/large_cat/",
         "isSpriteSheet": false,
-        "rowCount": 1,
-        "frameCount": 1
+        "spriteSize": 32
+      },
+      "personality": "lazy",
+      "initialMood": "relaxed",
+      "isEnabled": true
+    },
+    {
+      "id": "pixel_cat",
+      "name": "Pixel Explorer Cat",
+      "species": "cat",
+      "variant": {
+        "id": "pixel_cat",
+        "name": "Pixel Explorer Cat",
+        "assetPath": "assets/animations/cats/pixel_cat/",
+        "isSpriteSheet": false,
+        "spriteSize": 64
+      },
+      "personality": "adventurous",
+      "initialMood": "curious",
+      "isEnabled": true
+    },
+    {
+      "id": "cat_1",
+      "name": "Cream Studio Cat",
+      "species": "cat",
+      "variant": {
+        "id": "cat_1",
+        "name": "Cream Studio Cat",
+        "assetPath": "assets/animations/cats/cat_1/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
       },
       "personality": "friendly",
       "initialMood": "happy",
-      "primaryColor": 4294951247,
-      "secondaryColor": 4294946560,
-      "baseScale": 1.0,
-      "movementSpeed": 1.2,
+      "isEnabled": true
+    },
+    {
+      "id": "cat_2",
+      "name": "Silver Studio Cat",
+      "species": "cat",
+      "variant": {
+        "id": "cat_2",
+        "name": "Silver Studio Cat",
+        "assetPath": "assets/animations/cats/cat_2/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "cat_3",
+      "name": "Amber Studio Cat",
+      "species": "cat",
+      "variant": {
+        "id": "cat_3",
+        "name": "Amber Studio Cat",
+        "assetPath": "assets/animations/cats/cat_3/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "cat_4",
+      "name": "Midnight Studio Cat",
+      "species": "cat",
+      "variant": {
+        "id": "cat_4",
+        "name": "Midnight Studio Cat",
+        "assetPath": "assets/animations/cats/cat_4/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "cat_5",
+      "name": "Snow Studio Cat",
+      "species": "cat",
+      "variant": {
+        "id": "cat_5",
+        "name": "Snow Studio Cat",
+        "assetPath": "assets/animations/cats/cat_5/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "cat_6",
+      "name": "Tuxedo Studio Cat",
+      "species": "cat",
+      "variant": {
+        "id": "cat_6",
+        "name": "Tuxedo Studio Cat",
+        "assetPath": "assets/animations/cats/cat_6/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "collie",
+      "name": "Collie Dog",
+      "species": "dog",
+      "variant": {
+        "id": "collie",
+        "name": "Collie Dog",
+        "assetPath": "assets/animations/dogs/collie.png",
+        "isSpriteSheet": true,
+        "rowCount": 3,
+        "frameCount": 8,
+        "spriteSize": 64
+      },
+      "personality": "loyal",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "corgi",
+      "name": "Corgi Dog",
+      "species": "dog",
+      "variant": {
+        "id": "corgi",
+        "name": "Corgi Dog",
+        "assetPath": "assets/animations/dogs/corgi.png",
+        "isSpriteSheet": true,
+        "rowCount": 3,
+        "frameCount": 8,
+        "spriteSize": 64
+      },
+      "personality": "energetic",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "dalmatian",
+      "name": "Dalmatian Dog",
+      "species": "dog",
+      "variant": {
+        "id": "dalmatian",
+        "name": "Dalmatian Dog",
+        "assetPath": "assets/animations/dogs/dalmatian.png",
+        "isSpriteSheet": true,
+        "rowCount": 3,
+        "frameCount": 8,
+        "spriteSize": 64
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "husky",
+      "name": "Husky Dog",
+      "species": "dog",
+      "variant": {
+        "id": "husky",
+        "name": "Husky Dog",
+        "assetPath": "assets/animations/dogs/husky.png",
+        "isSpriteSheet": true,
+        "rowCount": 3,
+        "frameCount": 8,
+        "spriteSize": 64
+      },
+      "personality": "vocal",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "labrador",
+      "name": "Labrador Dog",
+      "species": "dog",
+      "variant": {
+        "id": "labrador",
+        "name": "Labrador Dog",
+        "assetPath": "assets/animations/dogs/labrador.png",
+        "isSpriteSheet": true,
+        "rowCount": 3,
+        "frameCount": 8,
+        "spriteSize": 64
+      },
+      "personality": "loyal",
+      "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "goldie",
+      "name": "Goldie Dog",
+      "species": "dog",
+      "variant": {
+        "id": "goldie",
+        "name": "Goldie Dog",
+        "assetPath": "assets/animations/dogs/goldie/goldie_v02.png",
+        "isSpriteSheet": true,
+        "rowCount": 5,
+        "frameCount": 2,
+        "spriteSize": 64
+      },
+      "personality": "friendly",
+      "initialMood": "happy",
       "isEnabled": true
     }
   ]

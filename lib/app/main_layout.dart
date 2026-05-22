@@ -54,11 +54,7 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.eye,
       section: 'Intelligent Detection',
     ),
-    _NavItem(
-      label: 'Flash Reminder',
-      icon: CupertinoIcons.bolt,
-      section: 'Flash Reminder',
-    ),
+
     _NavItem(
       label: 'Exercises',
       icon: CupertinoIcons.person_crop_circle,
@@ -265,7 +261,7 @@ class _MainLayoutState extends State<MainLayout> {
           SettingsPage(section: 'General'),
           SettingsPage(section: 'Breaks & Profiles'),
           SettingsPage(section: 'Intelligent Detection'),
-          SettingsPage(section: 'Flash Reminder'),
+
           SettingsPage(section: 'Exercises'),
           SettingsPage(section: 'Clock Out'),
           SettingsPage(section: 'Companion'),

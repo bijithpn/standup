@@ -352,11 +352,7 @@ class TrayManagerService with TrayListener {
         label: 'Settings',
         onClick: _onMenuItemClick,
       ),
-      MenuItem(
-        key: 'open_flash',
-        label: 'Flash Reminder',
-        onClick: _onMenuItemClick,
-      ),
+
       MenuItem(
         key: 'open_exercises',
         label: 'Exercises',
