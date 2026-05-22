@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -139,9 +138,16 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
                       );
                     },
                   ),
-                  BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
-                    child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        colors: [
+                          Colors.black.withValues(alpha: 0.5),
+                          Colors.black.withValues(alpha: 0.85),
+                        ],
+                        radius: 1.2,
+                      ),
+                    ),
                   ),
                 ],
               );

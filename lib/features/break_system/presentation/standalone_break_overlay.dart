@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +6,17 @@ import 'package:intl/intl.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 
-enum BreakTheme { image, ocean, forest, minimal }
+enum BreakTheme { 
+  image, 
+  ocean, 
+  forest, 
+  minimal,
+  sunset,    // Warm orange and purple gradients
+  nebula,    // Deep space purple and blue
+  midnight,  // Pure deep dark navy
+  cyberpunk, // Neon pink and blue
+  zen        // Soft earth tones and cream
+}
 
 class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
@@ -83,6 +92,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (call.method == 'updateOverlayData') {
         final args = call.arguments as Map;
         if (mounted) {
+          // If we are transitioning to zero remaining seconds (auto-close),
+          // or explicitly told to close, trigger fade out.
+          final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
+          if (newRemaining == 0 && _remainingSeconds > 0) {
+            _fadeController.reverse();
+          }
+          
           setState(() {
             _title = args['title'] ?? _title;
             _tip = args['tip'] ?? _tip;
@@ -334,25 +350,39 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     final screenW = _displayWidth > 0 ? _displayWidth : 1920.0;
     final screenH = _displayHeight > 0 ? _displayHeight : 1080.0;
     
+    // Using a RepaintBoundary here ensures background animations don't trigger UI rebuilds
+    return RepaintBoundary(
+      child: _buildThemeContent(screenW, screenH),
+    );
+  }
+
+  Widget _buildThemeContent(double screenW, double screenH) {
     switch (_currentTheme) {
       case BreakTheme.image:
         return Stack(
           fit: StackFit.expand,
           children: [
-            // Optimized image loading with cache sizing
-            Transform.scale(
-              scale: _isInternalPreview ? 1.0 : (1.05 + (0.1 * _kenBurnsController.value)),
-              child: Image.asset(
-                _currentTemplate, 
-                fit: BoxFit.cover,
-                cacheWidth: screenW.toInt(),
-                cacheHeight: screenH.toInt(),
-                filterQuality: _isInternalPreview ? FilterQuality.none : FilterQuality.low, 
-              ),
-            ),
+            // Optimized image loading
+            // Only use transform if NOT in preview to save 100% of that CPU cost
+            _isInternalPreview 
+              ? Image.asset(
+                  _currentTemplate, 
+                  fit: BoxFit.cover,
+                  cacheWidth: screenW.toInt(),
+                  cacheHeight: screenH.toInt(),
+                )
+              : Transform.scale(
+                  scale: 1.05 + (0.1 * _kenBurnsController.value),
+                  child: Image.asset(
+                    _currentTemplate, 
+                    fit: BoxFit.cover,
+                    cacheWidth: screenW.toInt(),
+                    cacheHeight: screenH.toInt(),
+                    filterQuality: FilterQuality.low,
+                  ),
+                ),
             
-            // Simulating blur/depth with a complex gradient instead of BackdropFilter
-            // This is SIGNIFICANTLY faster than BackdropFilter on high-res displays
+            // Speed optimization: Use simpler solid color with opacity instead of multi-stop gradient when possible
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -369,13 +399,71 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             ),
           ],
         );
+
+      case BreakTheme.sunset:
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: const [Color(0xFFFF512F), Color(0xFFDD2476)],
+              stops: [0.0, 0.5 + (0.1 * (_isInternalPreview ? 0 : _kenBurnsController.value))],
+            ),
+          ),
+        );
+
+      case BreakTheme.nebula:
+        return Container(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              center: Alignment.center,
+              radius: 1.2 + (0.3 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
+              colors: const [Color(0xFF6441A5), Color(0xFF2a0845)],
+            ),
+          ),
+        );
+
+      case BreakTheme.midnight:
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: const [Color(0xFF000428), Color(0xFF004e92)],
+            ),
+          ),
+        );
+
+      case BreakTheme.cyberpunk:
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: const [Color(0xFF00F260), Color(0xFF0575E6)],
+              stops: [0.0, 0.6 + (0.1 * (_isInternalPreview ? 0 : _kenBurnsController.value))],
+            ),
+          ),
+        );
+
+      case BreakTheme.zen:
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.bottomLeft,
+              end: Alignment.topRight,
+              colors: [Color(0xFFe6e9f0), Color(0xFFeef1f5)],
+            ),
+          ),
+        );
+
       case BreakTheme.ocean:
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              stops: [0.0, 0.5 + (0.05 * _kenBurnsController.value), 1.0],
+              stops: [0.0, 0.5 + (0.05 * (_isInternalPreview ? 0 : _kenBurnsController.value)), 1.0],
               colors: const [
                 Color(0xFF0F2027),
                 Color(0xFF203A43),
@@ -390,7 +478,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             gradient: LinearGradient(
               begin: Alignment.bottomLeft,
               end: Alignment.topRight,
-              stops: [0.0, 0.5 + (0.05 * _kenBurnsController.value), 1.0],
+              stops: [0.0, 0.5 + (0.05 * (_isInternalPreview ? 0 : _kenBurnsController.value)), 1.0],
               colors: const [
                 Color(0xFF134E5E),
                 Color(0xFF71B280),
@@ -404,7 +492,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center,
-              radius: 0.8 + (0.2 * _kenBurnsController.value),
+              radius: 0.8 + (0.2 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
               colors: const [Color(0xFF1A1A1A), Color(0xFF050505)],
             ),
           ),

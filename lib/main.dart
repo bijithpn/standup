@@ -48,8 +48,19 @@ void main() async {
 
         ServerSocket? singleInstanceServer;
 
+        bool isActualMain = true;
+        if (Platform.isMacOS) {
+          try {
+            final res = await const MethodChannel('com.breakmate.macos/bridge')
+                .invokeMethod<bool>('checkIsMainEngine');
+            isActualMain = res ?? true;
+          } catch (_) {
+            isActualMain = false;
+          }
+        }
+
         // ONLY the main isolate should perform the port check and potentially call exit().
-        if (isMainIsolate) {
+        if (isMainIsolate && isActualMain) {
           try {
             singleInstanceServer = await ServerSocket.bind(
               InternetAddress.loopbackIPv4,

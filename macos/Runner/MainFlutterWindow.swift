@@ -124,7 +124,6 @@ class OverlayWindowManager: NSObject {
         window.level = .screenSaver
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = false
-        
         // Spawn a fresh engine for each monitor
         let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
         engine.run(withEntrypoint: "overlayMain")
@@ -155,6 +154,8 @@ class OverlayWindowManager: NSObject {
         
         channel.setMethodCallHandler { call, result in
             switch call.method {
+            case "checkIsMainEngine":
+                result(false)
             case "hideOverlay":
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)
@@ -339,6 +340,9 @@ class MainFlutterWindow: NSWindow {
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing data", details: nil))
         }
+
+      case "checkIsMainEngine":
+        result(true)
 
       default:
         result(FlutterMethodNotImplemented)
