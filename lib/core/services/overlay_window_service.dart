@@ -164,8 +164,7 @@ class OverlayWindowService extends ChangeNotifier {
 
 /// Types of overlays supported
 enum OverlayType {
-  /// Flash notification overlay (short reminder)
-  flashNotification,
+
 
   /// Pre-break warning overlay
   preBreakWarning,

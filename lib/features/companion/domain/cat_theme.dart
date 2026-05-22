@@ -55,6 +55,7 @@ class CatTheme {
     CatAnimationState.idle: SeparateAnimationConfig(fileName: 'idle.png', frameCount: 10, stepTime: 0.18),
     CatAnimationState.typing: SeparateAnimationConfig(fileName: 'sitting.png', frameCount: 1, stepTime: 0.5),
     CatAnimationState.walk: SeparateAnimationConfig(fileName: 'walk.png', frameCount: 8, stepTime: 0.12),
+    CatAnimationState.run: SeparateAnimationConfig(fileName: 'run.png', frameCount: 8, stepTime: 0.08),
     CatAnimationState.excited: SeparateAnimationConfig(fileName: 'run.png', frameCount: 8, stepTime: 0.1),
     CatAnimationState.sad: SeparateAnimationConfig(fileName: 'laying.png', frameCount: 8, stepTime: 0.18),
     CatAnimationState.breakMode: SeparateAnimationConfig(fileName: 'stretching.png', frameCount: 13, stepTime: 0.09),
@@ -71,6 +72,7 @@ class CatTheme {
     CatAnimationState.idle: SeparateAnimationConfig(fileName: 'idle.png', frameCount: 10, stepTime: 0.18),
     CatAnimationState.typing: SeparateAnimationConfig(fileName: 'sitting.png', frameCount: 1, stepTime: 0.5),
     CatAnimationState.walk: SeparateAnimationConfig(fileName: 'walk.png', frameCount: 8, stepTime: 0.12),
+    CatAnimationState.run: SeparateAnimationConfig(fileName: 'run.png', frameCount: 8, stepTime: 0.08),
     CatAnimationState.excited: SeparateAnimationConfig(fileName: 'run.png', frameCount: 8, stepTime: 0.1),
     CatAnimationState.sad: SeparateAnimationConfig(fileName: 'laying.png', frameCount: 8, stepTime: 0.18),
     CatAnimationState.breakMode: SeparateAnimationConfig(fileName: 'stretching.png', frameCount: 13, stepTime: 0.09),
@@ -83,17 +85,16 @@ class CatTheme {
   };
 
   static const Map<CatAnimationState, AnimationRowConfig> _dogSheetAnimations = {
-    CatAnimationState.sleep: AnimationRowConfig(row: 0, frameCount: 8, stepTime: 0.4),
-    CatAnimationState.idle: AnimationRowConfig(row: 0, frameCount: 8, stepTime: 0.25),
-    CatAnimationState.typing: AnimationRowConfig(row: 1, frameCount: 8, stepTime: 0.16),
-    CatAnimationState.walk: AnimationRowConfig(row: 1, frameCount: 8, stepTime: 0.16),
-    CatAnimationState.excited: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.12),
+    CatAnimationState.idle: AnimationRowConfig(row: 0, frameCount: 1, stepTime: 1.0),
+    CatAnimationState.walk: AnimationRowConfig(row: 0, frameCount: 8, stepTime: 0.15),
+    CatAnimationState.run: AnimationRowConfig(row: 1, frameCount: 8, stepTime: 0.1),
+    CatAnimationState.excited: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.1),
+    CatAnimationState.celebrate: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.08),
+    CatAnimationState.notification: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.12, loop: false),
     CatAnimationState.sad: AnimationRowConfig(row: 0, frameCount: 8, stepTime: 0.4),
     CatAnimationState.breakMode: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.12),
     CatAnimationState.focusMode: AnimationRowConfig(row: 0, frameCount: 8, stepTime: 0.25),
     CatAnimationState.angry: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.12, loop: false),
-    CatAnimationState.notification: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.12, loop: false),
-    CatAnimationState.celebrate: AnimationRowConfig(row: 2, frameCount: 8, stepTime: 0.1),
   };
 
   static const List<CatTheme> themes = [

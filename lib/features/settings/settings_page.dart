@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as dart_math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +13,6 @@ import 'package:standup/features/analytics/stats_model.dart';
 import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/settings/break_profile.dart';
 import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/utils/toast.dart';
 import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
@@ -162,24 +161,7 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
             titleWidth: 260,
-            actions: [
-              if (widget.section == 'Flash Reminder')
-                ToolBarIconButton(
-                  icon: const MacosIcon(CupertinoIcons.play_fill, size: 13),
-                  label: 'Play demo',
-                  showLabel: true,
-                  onPressed: () {
-                    final settings = sl<SettingsRepository>().currentSettings;
-                    sl<TimerEngine>().triggerFlashDemo(
-                      color: Color(settings.flashColorHex),
-                      style: settings.flashStyle,
-                      animation: settings.flashAnimationType,
-                      intensity: settings.flashIntensity,
-                      durationMs: settings.flashDurationMs,
-                    );
-                  },
-                ),
-            ],
+            actions: [],
           ),
           children: [
             ContentArea(builder: (context, scrollController) => content),
@@ -206,8 +188,7 @@ class _SettingsPageState extends State<SettingsPage> {
     switch (widget.section) {
       case 'General':
         return GeneralSection(settings: _settings, onSave: _save);
-      case 'Flash Reminder':
-        return _buildFlashReminder();
+
       case 'Breaks':
       case 'Breaks & Profiles':
       case 'Profiles':
@@ -271,8 +252,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         const SizedBox(height: 4),
                         Row(
                           children: [
+                            _subTabButton('Controls', 4, isSmall: true),
                             _subTabButton('Appearance', 2, isSmall: true),
-                            _subTabButton('Flash', 3, isSmall: true),
                           ],
                         ),
                       ],
@@ -281,8 +262,8 @@ class _SettingsPageState extends State<SettingsPage> {
                       children: [
                         _subTabButton('Profiles', 0),
                         _subTabButton('Intervals', 1),
+                        _subTabButton('Controls', 4),
                         _subTabButton('Appearance', 2),
-                        _subTabButton('Flash', 3),
                       ],
                     ),
             ),
@@ -290,10 +271,123 @@ class _SettingsPageState extends State<SettingsPage> {
             if (_breaksSubTab == 0) _buildProfileSelector(),
             if (_breaksSubTab == 1) _buildCustomIntervals(),
             if (_breaksSubTab == 2) _buildAppearanceSettings(),
-            if (_breaksSubTab == 3) _buildFlashReminder(),
+
+            if (_breaksSubTab == 4) _buildBreakManualControls(),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildBreakManualControls() {
+    final controller = Provider.of<BreakController>(context);
+    final isPaused = controller.isPaused;
+    final isBreak = controller.isBreakActive;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Manual Controls'),
+        _buildCard([
+          _actionRow(
+            label: isPaused ? 'Timer is Paused' : 'Timer is Running',
+            subtitle: isPaused
+                ? 'Resume to continue your focus session.'
+                : 'Pause if you need to step away for a moment.',
+            buttonText: isPaused ? 'Resume' : 'Pause',
+            buttonColor: isPaused
+                ? AppTheme.accentColor
+                : AppTheme.longBreakColor,
+            onPressed: () => controller.togglePause(),
+          ),
+          _divider(),
+          _actionRow(
+            label: 'Take Break Now',
+            subtitle: 'Manually trigger a rest session immediately.',
+            buttonText: 'Start Break',
+            buttonColor: AppTheme.accentColor,
+            onPressed: isBreak ? null : () => controller.takeBreakNow(),
+          ),
+          _divider(),
+          _actionRow(
+            label: isBreak ? 'Skip Current Break' : 'Skip Next Break',
+            subtitle: isBreak
+                ? 'End the active break session early.'
+                : 'Bypass the upcoming scheduled rest.',
+            buttonText: 'Skip',
+            buttonColor: Colors.white.withValues(alpha: 0.1),
+            textColor: Colors.white,
+            onPressed: () {
+              if (isBreak) {
+                controller.skipCurrentBreak();
+              } else {
+                controller.skipNextBreak();
+              }
+            },
+          ),
+        ]),
+      ],
+    );
+  }
+
+  Widget _actionRow({
+    required String label,
+    required String subtitle,
+    required String buttonText,
+    required Color buttonColor,
+    Color? textColor,
+    VoidCallback? onPressed,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    letterSpacing: 0,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          CupertinoButton(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: buttonColor,
+            disabledColor: buttonColor.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8),
+            onPressed: onPressed,
+            minimumSize: Size(0, 0),
+            child: Text(
+              buttonText,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: textColor ?? Colors.white,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -323,7 +417,7 @@ class _SettingsPageState extends State<SettingsPage> {
               style: TextStyle(
                 color: isSelected ? Colors.white : AppTheme.textSecondary,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: isSmall ? 11 : 13,
+                fontSize: isSmall ? 10 : 12,
                 letterSpacing: -0.1,
               ),
               overflow: TextOverflow.ellipsis,
@@ -826,130 +920,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildFlashReminder() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('Flash Color'),
-        const SizedBox(height: 24),
-        _buildCard([_flashColorPicker()]),
-        const SizedBox(height: 48),
-        _sectionHeader('Choose Your Flash Style'),
-        const SizedBox(height: 24),
-        Wrap(
-          spacing: 24,
-          runSpacing: 24,
-          children: [
-            _stylePreview(
-              'Default',
-              _settings.flashStyle == 'default',
-              () => _save(_settings.copyWith(flashStyle: 'default')),
-            ),
-            _stylePreview(
-              'Photo Flash',
-              _settings.flashStyle == 'photo',
-              () => _save(_settings.copyWith(flashStyle: 'photo')),
-            ),
-            _stylePreview(
-              'Stretch Cat',
-              _settings.flashStyle == 'cat',
-              () => _save(_settings.copyWith(flashStyle: 'cat')),
-            ),
-          ],
-        ),
-        const SizedBox(height: 48),
-        _sectionHeader('Flash Animation'),
-        const SizedBox(height: 24),
-        _buildCard([
-          _dropdownRow(
-            'Animation Type',
-            _settings.flashAnimationType,
-            ['pulse', 'glow', 'fade', 'dim', 'edge'],
-            (v) {
-              if (v != null) _save(_settings.copyWith(flashAnimationType: v));
-            },
-          ),
-          _divider(),
-          _sliderRow(
-            'Intensity',
-            _settings.flashIntensity,
-            (v) => _save(_settings.copyWith(flashIntensity: v)),
-            min: 0.0,
-            max: 1.0,
-          ),
-          _divider(),
-          _sliderRow(
-            'Duration (s)',
-            _settings.flashDurationMs / 1000,
-            (v) =>
-                _save(_settings.copyWith(flashDurationMs: (v * 1000).toInt())),
-            min: 0.5,
-            max: 10.0,
-          ),
-          _divider(),
-          _textFieldRow(
-            'Custom Message',
-            _settings.flashMessage,
-            (v) => _save(_settings.copyWith(flashMessage: v)),
-          ),
-        ]),
-        const SizedBox(height: 48),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CupertinoButton(
-              color: AppTheme.accentColor,
-              borderRadius: BorderRadius.circular(12),
-              onPressed: () {
-                sl<TimerEngine>().triggerFlashDemo(
-                  color: Color(_settings.flashColorHex),
-                  style: _settings.flashStyle,
-                  animation: _settings.flashAnimationType,
-                  intensity: _settings.flashIntensity,
-                  durationMs: _settings.flashDurationMs,
-                );
-              },
-              child: const Text(
-                'Play Demo Flash',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            CupertinoButton(
-              color: AppTheme.borderColor,
-              borderRadius: BorderRadius.circular(12),
-              onPressed: () {
-                _save(
-                  _settings.copyWith(
-                    flashColorHex: 0xFFF87171,
-                    flashStyle: 'default',
-                    flashMessage: 'Take a deep breath',
-                    flashAnimationType: 'pulse',
-                    flashIntensity: 0.5,
-                    flashDurationMs: 2500,
-                  ),
-                );
-              },
-              child: const Text(
-                'Reset to Defaults',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 64),
-      ],
-    );
-  }
-
   Widget _buildStatistics() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1391,80 +1361,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _dropdownRow(
-    String label,
-    String value,
-    List<String> options,
-    ValueChanged<String?> onChanged,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 500;
-        final padding = isSmallScreen ? 16.0 : 20.0;
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: padding, vertical: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: isSmallScreen ? 13 : 14,
-                    color: Colors.white.withValues(alpha: 0.9),
-                  ),
-                ),
-              ),
-              Material(
-                type: MaterialType.transparency,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: options.contains(value)
-                          ? value
-                          : (options.isNotEmpty ? options.first : null),
-                      dropdownColor: const Color(0xFF1E1E1E),
-                      icon: const Icon(
-                        CupertinoIcons.chevron_down,
-                        size: 14,
-                        color: AppTheme.accentColor,
-                      ),
-                      style: TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: isSmallScreen ? 11 : 12,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Satoshi',
-                      ),
-                      onChanged: onChanged,
-                      items: options.map<DropdownMenuItem<String>>((
-                        String option,
-                      ) {
-                        return DropdownMenuItem<String>(
-                          value: option,
-                          child: Text(option.toUpperCase()),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _toggleRow(
     String label,
     String subtitle,
@@ -1599,47 +1495,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _textFieldRow(
-    String label,
-    String value,
-    ValueChanged<String> onChanged,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(width: 24),
-          Expanded(
-            child: CupertinoTextField(
-              placeholder: value,
-              placeholderStyle: TextStyle(
-                color: Colors.white.withValues(alpha: 0.3),
-                fontSize: 13,
-              ),
-              style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              onSubmitted: onChanged,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _colorRow(String label, Color color) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -1657,60 +1512,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _flashColorPicker() {
-    final colors = [
-      0xFFEF4444,
-      0xFFF59E0B,
-      0xFFEAB308,
-      0xFF22C55E,
-      0xFF3B82F6,
-      0xFF8B5CF6,
-      0xFFEC4899,
-      0xFF6B7280,
-      0xFF000000,
-    ];
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: colors.map((c) {
-          final isSelected = _settings.flashColorHex == c;
-          return GestureDetector(
-            onTap: () => _save(_settings.copyWith(flashColorHex: c)),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Color(c),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isSelected ? Colors.white : Colors.white24,
-                  width: isSelected ? 3 : 1,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: Color(c).withValues(alpha: 0.4),
-                          blurRadius: 8,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: isSelected
-                  ? const Icon(
-                      CupertinoIcons.checkmark,
-                      size: 16,
-                      color: AppTheme.textPrimary,
-                    )
-                  : null,
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -1854,18 +1655,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         );
-      case 'Default': // Flash Style
-        return Center(
-          child: Container(
-            width: 100,
-            height: 60,
-            color: Colors.red.withValues(alpha: 0.1),
-          ),
-        );
-      case 'Photo Flash':
-        return const Center(
-          child: Icon(CupertinoIcons.photo, color: Colors.white12, size: 30),
-        );
+
       default:
         return const SizedBox();
     }
@@ -1910,38 +1700,41 @@ class _SettingsPageState extends State<SettingsPage> {
           );
         }
 
-        return Row(
-          children: [
-            _stylePreview(
-              'BreakLoop',
-              _settings.clockFaceStyle == 'breakloop',
-              () => _save(_settings.copyWith(clockFaceStyle: 'breakloop')),
-            ),
-            const SizedBox(width: 16),
-            _stylePreview(
-              'Desktop',
-              _settings.clockFaceStyle == 'desktop',
-              () => _save(_settings.copyWith(clockFaceStyle: 'desktop')),
-            ),
-            const SizedBox(width: 16),
-            _stylePreview(
-              'Personal',
-              _settings.clockFaceStyle == 'personal',
-              () => _save(_settings.copyWith(clockFaceStyle: 'personal')),
-            ),
-            const SizedBox(width: 16),
-            _stylePreview(
-              'Ambient',
-              _settings.clockFaceStyle == 'ambient',
-              () => _save(_settings.copyWith(clockFaceStyle: 'ambient')),
-            ),
-            const SizedBox(width: 16),
-            _stylePreview(
-              'Focus',
-              _settings.clockFaceStyle == 'focus',
-              () => _save(_settings.copyWith(clockFaceStyle: 'focus')),
-            ),
-          ],
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _stylePreview(
+                'BreakLoop',
+                _settings.clockFaceStyle == 'breakloop',
+                () => _save(_settings.copyWith(clockFaceStyle: 'breakloop')),
+              ),
+              const SizedBox(width: 16),
+              _stylePreview(
+                'Desktop',
+                _settings.clockFaceStyle == 'desktop',
+                () => _save(_settings.copyWith(clockFaceStyle: 'desktop')),
+              ),
+              const SizedBox(width: 16),
+              _stylePreview(
+                'Personal',
+                _settings.clockFaceStyle == 'personal',
+                () => _save(_settings.copyWith(clockFaceStyle: 'personal')),
+              ),
+              const SizedBox(width: 16),
+              _stylePreview(
+                'Ambient',
+                _settings.clockFaceStyle == 'ambient',
+                () => _save(_settings.copyWith(clockFaceStyle: 'ambient')),
+              ),
+              const SizedBox(width: 16),
+              _stylePreview(
+                'Focus',
+                _settings.clockFaceStyle == 'focus',
+                () => _save(_settings.copyWith(clockFaceStyle: 'focus')),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -1977,7 +1770,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: isSelected
-                        ? AppTheme.accentColor.withValues(alpha: 0.2)
+                        ? AppTheme.accentColor
                         : Colors.transparent,
                   ),
                 ),
@@ -2308,7 +2101,7 @@ class _SettingsPageState extends State<SettingsPage> {
               minimumSize: Size.zero,
               onPressed: () {
                 final isCurrentDog = _isDog(controller.companionCatTheme);
-                final random = Random();
+                final random = dart_math.Random();
                 final names = isCurrentDog
                     ? CompanionOverlayController.dogNames
                     : CompanionOverlayController.catNames;

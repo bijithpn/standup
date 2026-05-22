@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/companion/domain/animation_row_config.dart';
 
@@ -42,8 +43,9 @@ class PetAssetLoader {
   }
 
   static String buildAssetPath(PetProfile profile, {String? stateName}) {
+    final speciesPath = profile.species == PetSpecies.dog ? 'dogs' : 'cats';
     final basePath =
-        'assets/animations/pets/${profile.species.name}/${profile.variant.id}/';
+        'assets/animations/$speciesPath/${profile.variant.id}/';
     if (stateName != null) {
       return '$basePath$stateName.png';
     }
@@ -272,6 +274,17 @@ class PetAssetLoader {
       }
 
       _animationCache[cacheKey] = loaded;
+
+      // Ensure every state has an animation, fallback to idle if missing
+      if (loaded.containsKey(CatAnimationState.idle)) {
+        final idleAnim = loaded[CatAnimationState.idle]!;
+        for (final state in CatAnimationState.values) {
+          if (!loaded.containsKey(state)) {
+            loaded[state] = idleAnim;
+          }
+        }
+      }
+
       return loaded;
     } catch (e) {
       return {};

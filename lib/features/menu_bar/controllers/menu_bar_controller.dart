@@ -40,8 +40,7 @@ class MenuBarController {
         await openSection('General');
       case 'open_settings':
         await openSection('General');
-      case 'open_flash':
-        await openSection('Flash Reminder');
+
       case 'open_exercises':
         await openSection('Exercises');
       case 'open_stats':

@@ -42,7 +42,7 @@ class TimerEngine extends ChangeNotifier {
   BreakModel? _activeBreak;
   int _countdownSeconds = 0;
   bool _isCompletionState = false;
-  bool _isFlashing = false;
+
   bool _isPreBreak = false;
   bool _clockOutTriggered = false;
 
@@ -93,7 +93,7 @@ class TimerEngine extends ChangeNotifier {
   BreakModel? get activeBreak => _activeBreak;
   int get countdownSeconds => _countdownSeconds;
   bool get isCompletionState => _isCompletionState;
-  bool get isFlashing => _isFlashing;
+
   bool get isPreBreak => _isPreBreak;
   Duration get totalWorkToday => _totalWorkToday;
 
@@ -531,7 +531,7 @@ class TimerEngine extends ChangeNotifier {
       _storageService.setInt('timer_pause_after', _pauseTimerAfterMinutes);
       _storageService.setInt('timer_reset_after', _resetTimerAfterMinutes);
       _storageService.setBool('timer_is_completion', _isCompletionState);
-      _storageService.setBool('timer_is_flashing', _isFlashing);
+
       _storageService.setBool('timer_is_pre_break', _isPreBreak);
       _storageService.setBool('timer_clock_out_triggered', _clockOutTriggered);
       if (_longBreakWindowStartedAt != null) {
@@ -561,7 +561,7 @@ class TimerEngine extends ChangeNotifier {
       _pauseTimerAfterMinutes = _storageService.getInt('timer_pause_after', defaultValue: _pauseTimerAfterMinutes);
       _resetTimerAfterMinutes = _storageService.getInt('timer_reset_after', defaultValue: _resetTimerAfterMinutes);
       _isCompletionState = _storageService.getBool('timer_is_completion');
-      _isFlashing = _storageService.getBool('timer_is_flashing');
+
       _isPreBreak = _storageService.getBool('timer_is_pre_break');
       _clockOutTriggered = _storageService.getBool('timer_clock_out_triggered');
 
@@ -585,20 +585,7 @@ class TimerEngine extends ChangeNotifier {
     });
   }
 
-  void triggerFlashDemo({
-    required Color color,
-    required String style,
-    required String animation,
-    required double intensity,
-    required int durationMs,
-  }) {
-    _isFlashing = true;
-    notifyListeners();
-    Timer(Duration(milliseconds: durationMs), () {
-      _isFlashing = false;
-      notifyListeners();
-    });
-  }
+
 
   String _randomTip(List<String> tips) {
     final copy = List<String>.from(tips)..shuffle();

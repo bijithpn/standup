@@ -38,8 +38,12 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id, const st
   // Mark as companion and store initial settings (accessed via getInitialSettings channel)
   companion_window_->SetInitialSettings(settings);
 
-  Win32Window::Point origin(100, 100);
-  Win32Window::Size size(200, 200);
+  // Get primary monitor size for initial window
+  int screen_width = GetSystemMetrics(SM_CXSCREEN);
+  int screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+  Win32Window::Point origin(0, 0);
+  Win32Window::Size size(screen_width, screen_height);
   
   if (!companion_window_->Create(L"StandupCompanion", origin, size)) {
     companion_window_ = nullptr;
@@ -49,11 +53,63 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id, const st
   companion_window_->SetQuitOnClose(false);
   companion_window_->ConfigureAsOverlay();
   companion_window_->Show();
+
+  // Set a timer to track mouse position for cursor following
+  SetTimer(companion_window_->GetHandle(), 2, 16, [](HWND hwnd, UINT msg, UINT_PTR id, DWORD time) {
+      CompanionWindowManager::GetInstance()->UpdateMousePosition();
+  });
 }
 
+void CompanionWindowManager::UpdateMousePosition() {
+    if (!companion_window_) return;
+
+    POINT mouse_pos;
+    if (GetCursorPos(&mouse_pos)) {
+        // Find which monitor the mouse is on
+        HMONITOR hMonitor = MonitorFromPoint(mouse_pos, MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi = { sizeof(mi) };
+        if (GetMonitorInfo(hMonitor, &mi)) {
+            // Check if we need to move the window to a different monitor
+            RECT current_rect;
+            GetWindowRect(companion_window_->GetHandle(), &current_rect);
+
+            if (current_rect.left != mi.rcMonitor.left || current_rect.top != mi.rcMonitor.top ||
+                (current_rect.right - current_rect.left) != (mi.rcMonitor.right - mi.rcMonitor.left)) {
+                
+                SetWindowPos(companion_window_->GetHandle(), HWND_TOPMOST,
+                    mi.rcMonitor.left, mi.rcMonitor.top,
+                    mi.rcMonitor.right - mi.rcMonitor.left,
+                    mi.rcMonitor.bottom - mi.rcMonitor.top,
+                    SWP_NOACTIVATE | SWP_SHOWWINDOW);
+            }
+
+            // Calculate local coordinates relative to the monitor
+            double local_x = static_cast<double>(mouse_pos.x - mi.rcMonitor.left);
+            double local_y = static_cast<double>(mouse_pos.y - mi.rcMonitor.top);
+
+            auto engine = companion_window_->GetEngine();
+            if (engine) {
+                auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+                    engine->messenger(), "com.breakmate.macos/companion_data",
+                    &flutter::StandardMethodCodec::GetInstance());
+
+                flutter::EncodableMap mouse_follow;
+                mouse_follow[flutter::EncodableValue("enabled")] = flutter::EncodableValue(true);
+                mouse_follow[flutter::EncodableValue("mouseX")] = flutter::EncodableValue(local_x);
+                mouse_follow[flutter::EncodableValue("mouseY")] = flutter::EncodableValue(local_y);
+
+                flutter::EncodableMap args;
+                args[flutter::EncodableValue("mouseFollow")] = flutter::EncodableValue(mouse_follow);
+
+                channel->InvokeMethod("syncCompanionSettings", std::make_unique<flutter::EncodableValue>(args));
+            }
+        }
+    }
+}
 
 void CompanionWindowManager::HideCompanion() {
   if (companion_window_) {
+    KillTimer(companion_window_->GetHandle(), 2);
     companion_window_->Destroy();
     companion_window_ = nullptr;
   }

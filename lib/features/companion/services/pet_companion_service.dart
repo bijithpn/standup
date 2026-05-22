@@ -132,60 +132,31 @@ class PetCompanionService extends ChangeNotifier {
     final nextState = _brain.decideNextState(_context);
     _brain.recordStateSelection(nextState);
 
-    // Map state decision to appropriate event
-    final event = _mapStateToEvent(nextState);
-    if (event != null) {
-      _stateMachine.handleEvent(event);
-    }
+    // AI directly commands the state transition
+    _stateMachine.transitionTo(nextState);
   }
 
   /// Apply state-specific navigation behavior.
   void _applyStateBehavior() {
     switch (_stateMachine.currentState) {
       case PetState.walk:
+      case PetState.exploring:
+      case PetState.curious:
         _navigation.updateConfig(wanderSpeed: 60.0);
         break;
       case PetState.run:
+      case PetState.jumping:
         _navigation.updateConfig(wanderSpeed: 180.0);
-        break;
-      case PetState.sleep:
-      case PetState.resting:
-        // Stationary states - minimal movement
-        _navigation.updateConfig(wanderSpeed: 0.0);
         break;
       case PetState.following:
       case PetState.playing:
         // These states are driven by cursor attraction
+        _navigation.updateConfig(wanderSpeed: 120.0);
         break;
       default:
-        _navigation.updateConfig(wanderSpeed: 60.0);
+        // All other states (idle, sleep, alert, happy, sad, etc) are stationary
+        _navigation.updateConfig(wanderSpeed: 0.0);
         break;
-    }
-  }
-
-  /// Map a state decision to a triggering event.
-  PetEvent? _mapStateToEvent(PetState state) {
-    switch (state) {
-      case PetState.walk:
-      case PetState.run:
-        return PetEvent.activityDetected;
-      case PetState.sleep:
-      case PetState.resting:
-        return PetEvent.idleTimeout;
-      case PetState.playing:
-      case PetState.interacting:
-        return PetEvent.cursorNearby;
-      case PetState.curious:
-      case PetState.exploring:
-        return PetEvent.randomBehavior;
-      case PetState.hiding:
-      case PetState.quiet:
-        return PetEvent.meetingDetected;
-      case PetState.celebrating:
-      case PetState.dancing:
-        return PetEvent.breakStarted;
-      default:
-        return PetEvent.randomBehavior;
     }
   }
 }

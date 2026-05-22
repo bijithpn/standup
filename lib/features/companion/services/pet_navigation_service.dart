@@ -146,14 +146,26 @@ class PetNavigationService {
     final direction = _cursorPosition - _currentPosition;
     final distance = direction.distance;
 
-    if (distance < 5.0) return;
+    if (distance < 10.0) {
+      // Damping when very close to stop jitter
+      _velocity = _velocity * 0.8;
+      if (_velocity.distance < 1.0) _velocity = Offset.zero;
+      return;
+    }
 
     final normalizedDirection = direction / distance;
-    final speed =
-        _cursorFollowSpeed *
-        (1.0 - (distance / _cursorAttractionRadius)).clamp(0.2, 1.0);
-
-    _velocity = normalizedDirection * speed;
+    
+    // Smooth acceleration
+    final targetSpeed = _cursorFollowSpeed *
+        (distance / _cursorAttractionRadius).clamp(0.2, 1.5);
+    
+    final targetVelocity = normalizedDirection * targetSpeed;
+    
+    // Interpolate velocity for smoothness (acceleration/deceleration)
+    _velocity = Offset(
+      _velocity.dx + (targetVelocity.dx - _velocity.dx) * 5.0 * dt,
+      _velocity.dy + (targetVelocity.dy - _velocity.dy) * 5.0 * dt,
+    );
   }
 
   void _applyWandering(double dt) {
@@ -165,6 +177,7 @@ class PetNavigationService {
     final distance = direction.distance;
 
     if (distance < 10.0) {
+      _velocity = Offset.zero;
       generateWanderTarget();
       return;
     }

@@ -5,7 +5,6 @@ import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
 import 'package:standup/features/companion/assets/pet_asset_loader.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
-import 'package:standup/features/companion/domain/cat_state_machine.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/companion/domain/pet_personality.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
@@ -19,7 +18,6 @@ import 'package:standup/features/companion/services/pet_navigation_service.dart'
 class CompanionGame extends FlameGame {
   CompanionGame({required CatTheme initialTheme, this.scaleOverride = 0.0})
     : _eventBus = EventBus.instance,
-      _stateMachine = CatStateMachine(),
       _petService = PetCompanionService(
         stateMachine: PetStateMachine(personality: PetPersonality()),
         brain: PetBehaviorBrain(),
@@ -45,7 +43,6 @@ class CompanionGame extends FlameGame {
   }
 
   final EventBus _eventBus;
-  final CatStateMachine _stateMachine;
   final PetCompanionService _petService;
   late StreamSubscription<AppEvent> _eventSubscription;
   late StreamSubscription<PetState> _petStateSubscription;
@@ -56,7 +53,7 @@ class CompanionGame extends FlameGame {
   CompanionComponent? catComponent;
 
   CatTheme get currentTheme => _theme;
-  CatState get companionState => _stateMachine.currentState;
+  PetState get companionState => _petService.currentState;
   PetCompanionService get petService => _petService;
 
   @override
@@ -83,42 +80,7 @@ class CompanionGame extends FlameGame {
     super.onRemove();
   }
 
-  CatEvent? _mapAppEventToCatEvent(AppEvent event) {
-    if (event is TimerStateChangedEvent) {
-      return CatEvent.tick;
-    } else if (event is BreakStartedEvent) {
-      return CatEvent.breakStarted;
-    } else if (event is BreakEndedEvent) {
-      return CatEvent.breakEnded;
-    } else if (event is MeetingDetectedEvent) {
-      return event.isActive ? CatEvent.meetingDetected : CatEvent.meetingEnded;
-    } else if (event is FocusModeEvent) {
-      return event.isActive ? CatEvent.focusModeOn : CatEvent.focusModeOff;
-    } else if (event is IdleDetectedEvent) {
-      return event.isIdle ? CatEvent.idleTimeout : CatEvent.activityDetected;
-    } else if (event is CompanionInteractionEvent) {
-      switch (event.interactionType) {
-        case 'tap':
-          return CatEvent.userClick;
-        case 'doubleTap':
-          return CatEvent.userDoubleClick;
-        case 'hover':
-          return CatEvent.userHover;
-        case 'dragStart':
-          return CatEvent.userDragStart;
-        case 'dragEnd':
-          return CatEvent.userDragEnd;
-      }
-    }
-    return null;
-  }
-
   void _handleAppEvent(AppEvent event) {
-    final CatEvent? catEvent = _mapAppEventToCatEvent(event);
-    if (catEvent != null) {
-      _stateMachine.handleEvent(catEvent);
-      _applyStateToComponent();
-    }
     _mapAppEventToPetEvent(event);
   }
 
@@ -164,44 +126,9 @@ class CompanionGame extends FlameGame {
     }
   }
 
-  void _applyStateToComponent() {
-    if (_stateMachine.currentState == CatState.idle) {
-      return;
-    }
-    final animState = _mapCatStateToAnimationState(_stateMachine.currentState);
-    catComponent?.changeState(animState);
-  }
-
   void _applyPetStateToComponent(PetState state) {
     final animState = _mapPetStateToAnimationState(state);
     catComponent?.changeState(animState);
-  }
-
-  CatAnimationState _mapCatStateToAnimationState(CatState state) {
-    switch (state) {
-      case CatState.idle:
-        return CatAnimationState.idle;
-      case CatState.blink:
-        return CatAnimationState.idle;
-      case CatState.stretch:
-        return CatAnimationState.celebrate;
-      case CatState.walk:
-        return CatAnimationState.walk;
-      case CatState.sleep:
-        return CatAnimationState.sleep;
-      case CatState.alert:
-        return CatAnimationState.notification;
-      case CatState.happy:
-        return CatAnimationState.excited;
-      case CatState.drag:
-        return CatAnimationState.idle;
-      case CatState.breakReminder:
-        return CatAnimationState.breakMode;
-      case CatState.meetingPaused:
-        return CatAnimationState.sad;
-      case CatState.focusMode:
-        return CatAnimationState.focusMode;
-    }
   }
 
   CatAnimationState _mapPetStateToAnimationState(PetState state) {
@@ -209,22 +136,27 @@ class CompanionGame extends FlameGame {
       case PetState.idle:
       case PetState.blink:
       case PetState.resting:
+      case PetState.bored:
+      case PetState.quiet:
         return CatAnimationState.idle;
       case PetState.stretch:
       case PetState.celebrating:
       case PetState.dancing:
         return CatAnimationState.celebrate;
       case PetState.walk:
-      case PetState.following:
       case PetState.exploring:
+      case PetState.following:
+      case PetState.turning:
         return CatAnimationState.walk;
       case PetState.run:
       case PetState.jumping:
+      case PetState.playing:
         return CatAnimationState.run;
       case PetState.sleep:
-      case PetState.quiet:
         return CatAnimationState.sleep;
       case PetState.alert:
+      case PetState.curious:
+      case PetState.interacting:
       case PetState.scared:
       case PetState.hiding:
         return CatAnimationState.notification;
@@ -239,20 +171,15 @@ class CompanionGame extends FlameGame {
         return CatAnimationState.sad;
       case PetState.focusMode:
         return CatAnimationState.focusMode;
-      case PetState.curious:
-      case PetState.interacting:
-        return CatAnimationState.notification;
-      case PetState.playing:
-        return CatAnimationState.run;
-      case PetState.eating:
       case PetState.grooming:
-        return CatAnimationState.idle;
-      case PetState.bored:
+        // Studio cats have lick animations, others fallback to idle
+        return _theme.animations.containsKey(CatAnimationState.lick1)
+            ? CatAnimationState.lick1
+            : CatAnimationState.idle;
+      case PetState.eating:
         return CatAnimationState.idle;
       case PetState.drag:
         return CatAnimationState.idle;
-      case PetState.turning:
-        return CatAnimationState.walk;
     }
   }
 
@@ -276,7 +203,7 @@ class CompanionGame extends FlameGame {
 
     catComponent = CompanionComponent(
       animations: animations,
-      initialState: _mapCatStateToAnimationState(_stateMachine.currentState),
+      initialState: _mapPetStateToAnimationState(_petService.currentState),
     );
 
     catComponent!.size = Vector2(spriteSize, spriteSize);
@@ -329,34 +256,27 @@ class CompanionGame extends FlameGame {
   void onUserInteraction(String type) {
     switch (type) {
       case 'tap':
-        _stateMachine.handleEvent(CatEvent.userClick);
         _petService.handleEvent(PetEvent.userClick);
         break;
       case 'doubleTap':
-        _stateMachine.handleEvent(CatEvent.userDoubleClick);
         _petService.handleEvent(PetEvent.userDoubleClick);
         break;
       case 'hover':
-        _stateMachine.handleEvent(CatEvent.userHover);
         _petService.handleEvent(PetEvent.userHover);
         break;
       case 'dragStart':
-        _stateMachine.handleEvent(CatEvent.userDragStart);
         _petService.handleEvent(PetEvent.userDragStart);
         break;
       case 'dragEnd':
-        _stateMachine.handleEvent(CatEvent.userDragEnd);
         _petService.handleEvent(PetEvent.userDragEnd);
         break;
     }
-    _applyStateToComponent();
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-
-    _stateMachine.handleEvent(CatEvent.tick);
+    _petService.handleEvent(PetEvent.tick);
     _petService.update(dt);
   }
 
