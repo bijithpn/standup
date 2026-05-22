@@ -68,6 +68,7 @@ class PetNavigationService {
   // Getters
   Offset get currentPosition => _pos;
   Offset get velocity => _vel;
+  double get speed => _vel.distance; // px/s — used by component to pick walk/run anim
   bool get isCursorFollowing => _isCursorFollowing;
   bool get isWanderingEnabled => _isWanderingEnabled;
 

@@ -49,6 +49,7 @@ class CompanionGame extends FlameGame {
 
   CatTheme _theme;
   double scaleOverride; // 0.0 = auto-scale
+  bool _lastGroomWasLick1 = false; // alternates lick1 → lick2 → lick1 …
 
   CompanionComponent? catComponent;
 
@@ -238,10 +239,13 @@ class CompanionGame extends FlameGame {
       case PetState.focusMode:
         return CatAnimationState.focusMode;
       case PetState.grooming:
-        // Studio cats have lick animations, others fallback to idle
-        return _theme.animations.containsKey(CatAnimationState.lick1)
-            ? CatAnimationState.lick1
-            : CatAnimationState.idle;
+        // Alternate lick1 → lick2 → lick1 … for a natural grooming sequence.
+        // Falls back to idle if the theme has no lick animations.
+        if (_theme.animations.containsKey(CatAnimationState.lick1)) {
+          _lastGroomWasLick1 = !_lastGroomWasLick1;
+          return _lastGroomWasLick1 ? CatAnimationState.lick1 : CatAnimationState.lick2;
+        }
+        return CatAnimationState.idle;
       case PetState.eating:
         return CatAnimationState.idle;
       case PetState.drag:
