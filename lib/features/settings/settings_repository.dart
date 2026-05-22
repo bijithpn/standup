@@ -40,6 +40,8 @@ class SettingsRepository {
       selectedProfileId: _storage.getString('selected_profile_id', defaultValue: 'health'),
       menuBarStyle: _storage.getString('menu_bar_style', defaultValue: 'countdown'),
       notificationsEnabled: _storage.getBool('notifications_enabled', defaultValue: true),
+      showOnAllDisplays: _storage.getBool('show_on_all_displays', defaultValue: true),
+      breakTheme: _storage.getString('break_theme', defaultValue: 'random'),
       
 
       focusModeEnabled: _storage.getBool('focus_mode_enabled'),
@@ -119,6 +121,8 @@ class SettingsRepository {
       _storage.setString('selected_profile_id', settings.selectedProfileId),
       _storage.setString('menu_bar_style', settings.menuBarStyle),
       _storage.setBool('notifications_enabled', settings.notificationsEnabled),
+      _storage.setBool('show_on_all_displays', settings.showOnAllDisplays),
+      _storage.setString('break_theme', settings.breakTheme),
       
 
       _storage.setBool('focus_mode_enabled', settings.focusModeEnabled),

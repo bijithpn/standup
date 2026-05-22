@@ -11,6 +11,7 @@
 #include "bridge_utils.h"
 #include "companion_window_manager.h"
 #include "overlay_window_plugin.h"
+#include "display_bridge.h"
 
 // ... rest of stream handlers ...
 
@@ -85,6 +86,7 @@ class MeetingDetectionStreamHandler : public flutter::StreamHandler<flutter::Enc
 
 static FocusModeStreamHandler* g_focus_mode_handler = nullptr;
 static MeetingDetectionStreamHandler* g_meeting_detection_handler = nullptr;
+static DisplayStreamHandler* g_display_stream_handler = nullptr;
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
@@ -123,6 +125,7 @@ bool FlutterWindow::OnCreate() {
     SetupEventChannels();
     SetupWindowBridge();
     SetupOverlayBridge();
+    RegisterDisplayBridge(flutter_controller_->engine(), &g_display_stream_handler);
     // Set up a timer to poll for focus/meeting updates (every 2 seconds)
     SetTimer(GetHandle(), 1, 2000, NULL);
   }
@@ -542,6 +545,12 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case WM_DISPLAYCHANGE:
+    case WM_DPICHANGED:
+      if (g_display_stream_handler) {
+        g_display_stream_handler->SendUpdate();
+      }
+      break;
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;

@@ -28,7 +28,8 @@ class OverlayWindowManager: NSObject {
         // Hide main window
         mainWindow.orderOut(nil)
         
-        let screens = NSScreen.screens
+        let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
+        let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
         for screen in screens {
             let instance = createOverlayInstance(for: screen, args: args)
             overlayInstances[screen] = instance
@@ -122,14 +123,15 @@ class OverlayWindowManager: NSObject {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = false
         
-        // Ensure the window frame is exactly the screen frame
-        window.setFrame(screen.frame, display: true)
+        // The frame will be explicitly applied at the end after assigning the content view
+        
+        let container = NSViewController()
         
         let visualEffectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: screen.frame.size))
         visualEffectView.material = .hudWindow
         visualEffectView.blendingMode = .behindWindow
         visualEffectView.state = .active
-        visualEffectView.autoresizingMask = [.width, .height]
+        container.view = visualEffectView
         
         // Spawn a fresh engine for each monitor to ensure simultaneous UI
         let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
@@ -140,21 +142,44 @@ class OverlayWindowManager: NSObject {
         controller.view.wantsLayer = true
         controller.view.layer?.backgroundColor = NSColor.clear.cgColor
         
-        // CRITICAL: Ensure the Flutter view stretches to fill the visual effect view
-        controller.view.autoresizingMask = [.width, .height]
-        controller.view.frame = visualEffectView.bounds
+        container.addChild(controller)
+        visualEffectView.addSubview(controller.view)
+        
+        controller.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            controller.view.topAnchor.constraint(equalTo: visualEffectView.topAnchor),
+            controller.view.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor),
+            controller.view.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor),
+            controller.view.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor),
+        ])
         
         // Setup MethodChannel for this overlay
         let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: engine.binaryMessenger)
         
         // Pass initial data if available
-        if let args = args {
-            channel.invokeMethod("updateOverlayData", arguments: args)
+        var initialArgs = args ?? [:]
+        
+        // Add display-specific metadata so the Flutter engine knows which screen it is rendering on
+        var displayId = "Display_unknown"
+        if #available(macOS 10.15, *) {
+            displayId = screen.localizedName
         }
+        initialArgs["displayId"] = displayId
+        initialArgs["boundsWidth"] = screen.frame.width
+        initialArgs["boundsHeight"] = screen.frame.height
+        
+        channel.invokeMethod("updateOverlayData", arguments: initialArgs)
         
         channel.setMethodCallHandler { call, result in
             switch call.method {
             case "hideOverlay":
+                OverlayWindowManager.shared.hideOverlay()
+                result(nil)
+            case "skipBreak":
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+                    mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: nil)
+                }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)
             case "setIgnoreMouseEvents":
@@ -169,15 +194,15 @@ class OverlayWindowManager: NSObject {
             }
         }
         
-        visualEffectView.addSubview(controller.view)
-        window.contentView = visualEffectView
+        window.contentViewController = container
+        window.setFrame(screen.frame, display: true)
         
         return OverlayInstance(window: window, engine: engine, controller: controller)
     }
 }
 
 class MainFlutterWindow: NSWindow {
-  private var bridgeChannel: FlutterMethodChannel?
+  fileprivate var bridgeChannel: FlutterMethodChannel?
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -187,6 +212,8 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
+    
+    DisplayBridgeManager.shared.register(with: flutterViewController.engine.binaryMessenger)
 
     self.isOpaque = false
     self.hasShadow = true
@@ -336,4 +363,81 @@ class MainFlutterWindow: NSWindow {
   func triggerReopen() {
     bridgeChannel?.invokeMethod("handleReopen", arguments: nil)
   }
+}
+
+class DisplayBridgeManager: NSObject, FlutterStreamHandler {
+    static let shared = DisplayBridgeManager()
+    
+    private var eventSink: FlutterEventSink?
+    
+    func register(with binaryMessenger: FlutterBinaryMessenger) {
+        let methodChannel = FlutterMethodChannel(name: "com.standup/display_bridge", binaryMessenger: binaryMessenger)
+        methodChannel.setMethodCallHandler { [weak self] call, result in
+            switch call.method {
+            case "getDisplays":
+                result(self?.getDisplays())
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+        
+        let eventChannel = FlutterEventChannel(name: "com.standup/display_events", binaryMessenger: binaryMessenger)
+        eventChannel.setStreamHandler(self)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+    }
+    
+    func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
+        self.eventSink = events
+        return nil
+    }
+    
+    func onCancel(withArguments arguments: Any?) -> FlutterError? {
+        self.eventSink = nil
+        return nil
+    }
+    
+    @objc private func screenParametersChanged() {
+        if let sink = eventSink {
+            sink(["type": "display_changed"])
+        }
+    }
+    
+    private func getDisplays() -> [[String: Any]] {
+        var displays = [[String: Any]]()
+        
+        let screens = NSScreen.screens
+        for (index, screen) in screens.enumerated() {
+            let isPrimary = index == 0 // Usually the primary screen is the first one
+            let frame = screen.frame
+            let visibleFrame = screen.visibleFrame
+            
+            // Generate a persistent ID based on display device UUID if possible, but NSScreen doesn't expose it easily.
+            // Using localizedName as ID for simplicity, or simply an index string
+            var displayId = "Display_\(index)"
+            if #available(macOS 10.15, *) {
+                displayId = screen.localizedName
+            }
+            
+            let displayData: [String: Any] = [
+                "id": displayId,
+                "isPrimary": isPrimary,
+                "width": frame.width,
+                "height": frame.height,
+                "pixelRatio": screen.backingScaleFactor,
+                "boundsX": frame.origin.x,
+                "boundsY": frame.origin.y,
+                "boundsWidth": frame.width,
+                "boundsHeight": frame.height,
+                "workAreaX": visibleFrame.origin.x,
+                "workAreaY": visibleFrame.origin.y,
+                "workAreaWidth": visibleFrame.width,
+                "workAreaHeight": visibleFrame.height,
+                "refreshRate": 60.0 // macOS refresh rate is tricky without CGDisplayMode, 60 is a safe default
+            ]
+            displays.append(displayData)
+        }
+        
+        return displays
+    }
 }

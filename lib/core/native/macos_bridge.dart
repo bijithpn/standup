@@ -16,6 +16,11 @@ class MacOSBridge {
     await _invokeSafely('hideOverlay');
   }
 
+  /// Skip the current break from the overlay and sync to main engine
+  static Future<void> skipBreak() async {
+    await _invokeSafely('skipBreak');
+  }
+
   /// Set the visual effect (vibrancy) of the overlays
   static Future<void> setVisualEffect(String material) async {
     await _invokeSafely('setVisualEffect', {'material': material});

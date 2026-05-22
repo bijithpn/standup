@@ -19,6 +19,8 @@ class OverlayWindowService extends ChangeNotifier {
     required WidgetBuilder builder,
     bool strictMode = false,
     bool floatingMode = false,
+    bool showOnAllDisplays = true,
+    String breakTheme = 'random',
   }) async {
     if (_isOverlayVisible && _currentOverlayType == type) {
       return;
@@ -32,7 +34,11 @@ class OverlayWindowService extends ChangeNotifier {
       if (type != OverlayType.clockPreview) {
         if (Platform.isWindows) {
           // Use unified bridge for Windows overlay configuration
-          await MacOSBridge.showOverlay({'type': type.name});
+          await MacOSBridge.showOverlay({
+            'type': type.name,
+            'showOnAllDisplays': showOnAllDisplays,
+            'theme': breakTheme,
+          });
           await windowManager.setFullScreen(true);
           await windowManager.setAlwaysOnTop(true);
           await windowManager.show();
@@ -41,7 +47,11 @@ class OverlayWindowService extends ChangeNotifier {
           }
         } else if (Platform.isMacOS) {
           // Use native multi-monitor overlay for all real overlays
-          await MacOSBridge.showOverlay({'type': type.name});
+          await MacOSBridge.showOverlay({
+            'type': type.name,
+            'showOnAllDisplays': showOnAllDisplays,
+            'theme': breakTheme,
+          });
           if (strictMode && type == OverlayType.breakScreen) {
             await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
           }

@@ -113,3 +113,23 @@ class OverlayHiddenEvent extends AppEvent {
   final String overlayType;
   OverlayHiddenEvent({required this.overlayType, super.timestamp});
 }
+
+// Display Management Events
+class DisplayConnectedEvent extends AppEvent {
+  final String displayId;
+  DisplayConnectedEvent({required this.displayId, super.timestamp});
+}
+
+class DisplayDisconnectedEvent extends AppEvent {
+  final String displayId;
+  DisplayDisconnectedEvent({required this.displayId, super.timestamp});
+}
+
+class DisplayChangedEvent extends AppEvent {
+  DisplayChangedEvent({super.timestamp});
+}
+
+class OverlayLayoutChangedEvent extends AppEvent {
+  final String displayId;
+  OverlayLayoutChangedEvent({required this.displayId, super.timestamp});
+}

@@ -1,6 +1,6 @@
 name: standup
 description: "standup — a macOS menu bar break reminder app for healthy work habits."
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 #BreakMate
 environment:
@@ -38,13 +38,13 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
 
-
 flutter:
   uses-material-design: true
   assets:
     - assets/icons/
     - assets/icons/cat/
     - assets/slideshow/
+    - assets/music/
     # Original 4 cats
     - assets/animations/cats/grey_cat/sprite_sheet.png
     - assets/animations/cats/orange_cat/sprite_sheet.png
@@ -73,6 +73,13 @@ flutter:
     # Modular pets framework
     - assets/animations/pets/pets.json
     - assets/animations/pets/
+    # Lofi musics
+    - assets/music/lofi_1.mp3
+    - assets/music/lofi_2.mp3
+    - assets/music/lofi_3.mp3
+    - assets/music/lofi_4.mp3
+    - assets/music/lofi_5.mp3
+    - assets/music/lofi_6.mp3
 
   fonts:
     - family: Satoshi
