@@ -76,6 +76,7 @@ class CompanionGame extends FlameGame {
   void onRemove() {
     _eventSubscription.cancel();
     _petStateSubscription.cancel();
+    _petService.stateMachine.dispose();
     _petService.dispose();
     super.onRemove();
   }
@@ -92,19 +93,32 @@ class CompanionGame extends FlameGame {
       return;
     }
     
+    // TimerStateChangedEvent is NOT mapped to PetEvent.tick — the update() loop
+    // already fires tick at 1 Hz. Mapping it here caused double-ticks every
+    // timer update, which jittered the FSM.
     if (event is TimerStateChangedEvent) {
-      petEvent = PetEvent.tick;
+      // Sync context flags so the AI brain has accurate app state
+      _petService.syncContextFlags(
+        isBreakActive: event.state == TimerStateEvent.breakActive,
+        isIdle: event.state == TimerStateEvent.idle,
+      );
+      return;
     } else if (event is BreakStartedEvent) {
+      _petService.syncContextFlags(isBreakActive: true);
       petEvent = PetEvent.breakStarted;
     } else if (event is BreakEndedEvent) {
+      _petService.syncContextFlags(isBreakActive: false);
       petEvent = PetEvent.breakEnded;
     } else if (event is MeetingDetectedEvent) {
+      _petService.syncContextFlags(isMeetingDetected: event.isActive);
       petEvent = event.isActive
           ? PetEvent.meetingDetected
           : PetEvent.meetingEnded;
     } else if (event is FocusModeEvent) {
+      _petService.syncContextFlags(isFocusMode: event.isActive);
       petEvent = event.isActive ? PetEvent.focusModeOn : PetEvent.focusModeOff;
     } else if (event is IdleDetectedEvent) {
+      _petService.syncContextFlags(isIdle: event.isIdle);
       petEvent = event.isIdle
           ? PetEvent.idleTimeout
           : PetEvent.activityDetected;
@@ -173,7 +187,13 @@ class CompanionGame extends FlameGame {
 
   void _applyPetStateToComponent(PetState state) {
     final animState = _mapPetStateToAnimationState(state);
-    catComponent?.changeState(animState);
+    // Guarantee: if the mapped animation doesn't exist, fall back to idle.
+    // changeState() also does this check, but being explicit here avoids
+    // a silent no-op when the component has no animation for the state.
+    final safeState = (catComponent?.animations?.containsKey(animState) == true)
+        ? animState
+        : CatAnimationState.idle;
+    catComponent?.changeState(safeState);
   }
 
   CatAnimationState _mapPetStateToAnimationState(PetState state) {
@@ -324,15 +344,15 @@ class CompanionGame extends FlameGame {
   @override
   void update(double dt) {
     super.update(dt);
-    
-    // Throttle FSM ticks to 1Hz to save CPU
-    // Behavior and state changes don't need frame-rate precision
+
+    // FSM tick at 1 Hz — behavior decisions don't need frame-rate precision
     _tickAccumulator += dt;
     if (_tickAccumulator >= 1.0) {
       _petService.handleEvent(PetEvent.tick);
       _tickAccumulator = 0.0;
     }
-    
+
+    // Service update: navigation + AI decisions (no notifyListeners inside)
     _petService.update(dt);
   }
 

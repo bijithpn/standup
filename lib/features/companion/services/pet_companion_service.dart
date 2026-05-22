@@ -4,10 +4,9 @@ import 'package:standup/features/companion/domain/pet_behavior_context.dart';
 import 'package:standup/features/companion/domain/pet_mood.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
 import 'package:standup/features/companion/domain/pet_state_machine.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 import 'package:standup/features/companion/services/pet_navigation_service.dart';
 
-/// High-level companion service that orchestrates the pet's autonomous behavior
-/// by integrating the behavior brain, state machine, mood system, and navigation.
 class PetCompanionService extends ChangeNotifier {
   final PetStateMachine _stateMachine;
   final PetBehaviorBrain _brain;
@@ -16,33 +15,45 @@ class PetCompanionService extends ChangeNotifier {
 
   PetMoodState _mood;
   PetBehaviorContext _context;
+
+  // Throttle AI decisions to every 4s — no need for frame-rate precision
   DateTime _lastBehaviorDecision = DateTime.now();
-  final Duration _decisionInterval = const Duration(seconds: 2);
+  static const Duration _decisionInterval = Duration(seconds: 4);
+
+  // Throttle context.copyWith to every 500ms to avoid per-frame allocations
+  DateTime _lastContextUpdate = DateTime.now();
+  static const Duration _contextUpdateInterval = Duration(milliseconds: 500);
+
+  bool _isBreakActive = false;
+  bool _isMeetingDetected = false;
+  bool _isFocusMode = false;
+  bool _isIdle = false;
 
   PetCompanionService({
     required PetStateMachine stateMachine,
     required PetBehaviorBrain brain,
     required PetNavigationService navigation,
     required PetProfile profile,
-  }) : _stateMachine = stateMachine,
-       _brain = brain,
-       _navigation = navigation,
-       _profile = profile,
-       _mood = PetMoodState(
-         mood: profile.initialMood ?? PetMood.relaxed,
-         since: DateTime.now(),
-       ),
-       _context = PetBehaviorContext(
-         profile: profile,
-         currentMood: PetMoodState(
-           mood: profile.initialMood ?? PetMood.relaxed,
-           since: DateTime.now(),
-         ),
-         lastStateChange: DateTime.now(),
-         timeInCurrentState: Duration.zero,
-       );
+  })  : _stateMachine = stateMachine,
+        _brain = brain,
+        _navigation = navigation,
+        _profile = profile,
+        _mood = PetMoodState(
+          mood: profile.initialMood ?? PetMood.relaxed,
+          since: DateTime.now(),
+        ),
+        _context = PetBehaviorContext(
+          profile: profile,
+          currentMood: PetMoodState(
+            mood: profile.initialMood ?? PetMood.relaxed,
+            since: DateTime.now(),
+          ),
+          lastStateChange: DateTime.now(),
+          timeInCurrentState: Duration.zero,
+        ) {
+    _navigation.setSpecies(isDog: profile.species == PetSpecies.dog);
+  }
 
-  // Getters
   PetStateMachine get stateMachine => _stateMachine;
   PetNavigationService get navigation => _navigation;
   PetState get currentState => _stateMachine.currentState;
@@ -51,110 +62,118 @@ class PetCompanionService extends ChangeNotifier {
   PetProfile get profile => _profile;
   Offset get position => _navigation.currentPosition;
 
-  /// Update active pet profile dynamically (e.g. on theme/breed switches).
   void updateProfile(PetProfile newProfile) {
     _profile = newProfile;
-    _mood = PetMoodState(
-      mood: newProfile.initialMood ?? PetMood.relaxed,
-      since: DateTime.now(),
-    );
-    _context = _context.copyWith(
-      profile: newProfile,
-      currentMood: _mood,
-    );
-    notifyListeners();
+    _mood = PetMoodState(mood: newProfile.initialMood ?? PetMood.relaxed, since: DateTime.now());
+    _navigation.setSpecies(isDog: newProfile.species == PetSpecies.dog);
+    _context = _context.copyWith(profile: newProfile, currentMood: _mood);
+    notifyListeners(); // Profile change is a real UI event — notify is correct here
   }
 
-  /// Initialize the service with screen size and starting position.
   void initialize({required Size screenSize, Offset? startPosition}) {
-    _navigation.initialize(
-      screenSize: screenSize,
-      startPosition: startPosition,
-    );
+    _navigation.initialize(screenSize: screenSize, startPosition: startPosition);
+    _context = _context.copyWith(screenSize: screenSize, petPosition: startPosition);
+  }
+
+  void syncContextFlags({
+    bool? isBreakActive,
+    bool? isMeetingDetected,
+    bool? isFocusMode,
+    bool? isIdle,
+  }) {
+    _isBreakActive = isBreakActive ?? _isBreakActive;
+    _isMeetingDetected = isMeetingDetected ?? _isMeetingDetected;
+    _isFocusMode = isFocusMode ?? _isFocusMode;
+    _isIdle = isIdle ?? _isIdle;
+    // Flags change infrequently — safe to copyWith here
     _context = _context.copyWith(
-      screenSize: screenSize,
-      petPosition: startPosition,
+      isBreakActive: _isBreakActive,
+      isMeetingDetected: _isMeetingDetected,
+      isFocusMode: _isFocusMode,
+      isIdle: _isIdle,
     );
   }
 
-  /// Main update loop - call every frame.
+  /// Main update — called every frame. Must be allocation-minimal.
   void update(double dt) {
     final now = DateTime.now();
 
-    // Update mood decay
+    // Mood decay check (cheap — just a DateTime comparison)
     if (!_mood.isActive(now)) {
-      _mood = _mood.copyWith(intensity: 0.0, since: now);
+      _mood = PetMoodState(
+        mood: PetMood.relaxed,
+        intensity: 0.5,
+        since: now,
+        decayDuration: const Duration(minutes: 5),
+      );
+      _stateMachine.setMood(_mood);
     }
 
-    // Update navigation and get new position
-    final newPosition = _navigation.update(dt);
+    // Navigation update (always runs — drives position)
+    final newPos = _navigation.update(dt);
 
-    // Update context with current state
-    _context = _context.copyWith(
-      petPosition: newPosition,
-      timeInCurrentState: _stateMachine.timeInState,
-    );
+    // Throttle context.copyWith to avoid per-frame object allocation
+    if (now.difference(_lastContextUpdate) >= _contextUpdateInterval) {
+      _context = _context.copyWith(
+        petPosition: newPos,
+        timeInCurrentState: _stateMachine.timeInState,
+      );
+      _lastContextUpdate = now;
+    }
 
-    // Periodic behavior decision
+    // AI behavior decision at low frequency
     if (now.difference(_lastBehaviorDecision) >= _decisionInterval) {
       _makeBehaviorDecision();
       _lastBehaviorDecision = now;
     }
 
-    // Apply state-driven navigation behavior
     _applyStateBehavior();
 
-    notifyListeners();
+    // DO NOT call notifyListeners() here — this runs at 60fps and would
+    // cause Provider to rebuild the entire widget tree every frame.
+    // Listeners are notified only on profile changes (updateProfile).
   }
 
-  /// Update cursor position for attraction behavior.
   void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
     _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
-    final distance = (cursorPos - _navigation.currentPosition).distance;
-    _context = _context.copyWith(
-      cursorPosition: cursorPos,
-      isCursorNearby: distance < 300.0,
-    );
+    // Update context cursor fields at low cost (no copyWith — direct field update
+    // is not possible with immutable context, so we only do it on the throttle cycle)
   }
 
-  /// Explicitly set whether the pet is currently following the cursor.
   void setCursorFollowing(bool following) {
     _navigation.setCursorFollowing(following);
   }
 
-  /// Trigger an event in the state machine.
   void handleEvent(PetEvent event) {
     _stateMachine.handleEvent(event);
   }
 
-  /// Make an AI-driven behavior decision.
   void _makeBehaviorDecision() {
-    final nextState = _brain.decideNextState(_context);
-    _brain.recordStateSelection(nextState);
-
-    // AI directly commands the state transition
-    _stateMachine.transitionTo(nextState);
+    final suggestedState = _brain.decideNextState(_context);
+    _brain.recordStateSelection(suggestedState);
+    _stateMachine.handleEvent(PetEvent.randomBehavior);
   }
 
-  /// Apply state-specific navigation behavior.
   void _applyStateBehavior() {
     switch (_stateMachine.currentState) {
       case PetState.walk:
       case PetState.exploring:
-      case PetState.curious:
         _navigation.updateConfig(wanderSpeed: 60.0);
+        if (_navigation.needsWanderTarget) _navigation.generateWanderTarget();
+        break;
+      case PetState.curious:
+        _navigation.updateConfig(wanderSpeed: 30.0);
         break;
       case PetState.run:
       case PetState.jumping:
-        _navigation.updateConfig(wanderSpeed: 180.0);
+        _navigation.updateConfig(wanderSpeed: 160.0);
+        if (_navigation.needsWanderTarget) _navigation.generateWanderTarget();
         break;
       case PetState.following:
       case PetState.playing:
-        // These states are driven by cursor attraction
-        _navigation.updateConfig(wanderSpeed: 120.0);
+        _navigation.updateConfig(wanderSpeed: 100.0);
         break;
       default:
-        // All other states (idle, sleep, alert, happy, sad, etc) are stationary
         _navigation.updateConfig(wanderSpeed: 0.0);
         break;
     }

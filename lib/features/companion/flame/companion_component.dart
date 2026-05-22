@@ -6,14 +6,10 @@ import 'package:standup/features/companion/domain/cat_animation_state.dart';
 import 'package:standup/features/companion/flame/companion_game.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 
-/// Generic companion component that works for any pet type (cat, dog, etc.).
-/// The active [CatTheme] determines breed-specific physics and behavior.
 class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState>
     with HasGameReference<CompanionGame>, TapCallbacks, HoverCallbacks {
-  // Movement velocities
-  double _direction = 1.0; // 1.0 = Right, -1.0 = Left
 
-  // State machine & timing
+  double _direction = 1.0;
   double _stateElapsed = 0.0;
   CatAnimationState? _previousState;
 
@@ -26,109 +22,110 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
           anchor: Anchor.center,
         );
 
-  // --- Breed-Specific Physics & Stride Profiles ---
-
   bool get _isDog => game.currentTheme.isDog;
 
   double get _strideFrequency {
     final id = game.currentTheme.id;
-    if (id == CatTheme.keyCorgi) return 1.95; // Corgis move short legs extremely fast
+    if (id == CatTheme.keyCorgi) return 1.95;
     if (id == CatTheme.keyHusky || id == CatTheme.keyCollie) return 1.0;
     if (_isDog) return 1.25;
-    if (id == CatTheme.keyLargeCat) return 0.72; // Slow lazy heavy walk
-    return 1.15; // Nimble cats
+    if (id == CatTheme.keyLargeCat) return 0.72;
+    return 1.15;
   }
 
   @override
   void onMount() {
     super.onMount();
+    // Set filter quality once — no need to set it every render call
+    paint.filterQuality = FilterQuality.medium;
     _updateFlip();
   }
 
-  /// Changes the active animation state.
-  /// Tracks previous looping state to revert to after non-looping animations finish.
+  /// Changes animation state safely.
+  /// - Non-looping animations already in progress are NOT restarted.
+  /// - Missing animations fall back to idle.
   void changeState(CatAnimationState newState, {bool force = false}) {
-    if (current == newState && !force) return;
+    // Fallback: if the requested state has no animation, use idle
+    final target = (animations?.containsKey(newState) == true)
+        ? newState
+        : CatAnimationState.idle;
+
+    if (current == target && !force) {
+      // For a non-looping animation already playing, let it finish — don't restart
+      final anim = animations?[target];
+      if (anim != null && !anim.loop) {
+        final ticker = animationTickers?[target];
+        if (ticker != null && !ticker.done()) return;
+      } else {
+        return; // Same looping state — no-op
+      }
+    }
 
     final currentAnim = animations?[current];
-    final isNewAnimLooping = animations?[newState]?.loop ?? true;
+    final newAnim = animations?[target];
+    final isNewLooping = newAnim?.loop ?? true;
 
-    // If changing FROM a looping anim TO a non-looping one, save the previous state
-    if (currentAnim != null && currentAnim.loop && !isNewAnimLooping) {
+    // Save previous looping state to revert to after non-looping finishes
+    if (currentAnim != null && currentAnim.loop && !isNewLooping) {
       _previousState = current;
-    } else if (isNewAnimLooping) {
+    } else if (isNewLooping) {
       _previousState = null;
     }
 
-    // Reset the ticker for the new state so it plays from the beginning cleanly
-    animationTickers?[newState]?.reset();
+    // Reset ticker only when actually changing state
+    if (current != target) {
+      animationTickers?[target]?.reset();
+    }
 
-    current = newState;
+    current = target;
     _stateElapsed = 0.0;
     _updateFlip();
   }
 
-  /// Sets whether the companion is allowed to wander randomly.
   void setWanderingEnabled(bool enabled) {
     game.petService.navigation.setWanderingEnabled(enabled);
   }
 
-  /// Flips the sprite horizontally based on movement direction.
   void _updateFlip() {
-    if (_direction < 0) {
-      if (scale.x > 0) scale.x = -scale.x.abs();
-    } else {
-      if (scale.x < 0) scale.x = scale.x.abs();
-    }
+    final absScale = scale.x.abs();
+    scale.x = _direction < 0 ? -absScale : absScale;
   }
 
   @override
   void update(double dt) {
-    // --- Stride Frequency scaling for walking/running animations ---
-    // This makes the sprite animation speed match the physical stride rate.
-    // Only scale walk and excited states – other states play at their natural speed.
-    double scaledDt = dt;
-    if (current == CatAnimationState.walk || current == CatAnimationState.excited) {
-      scaledDt = dt * _strideFrequency;
-    }
+    // Scale animation speed for walk/excited to match stride rate
+    final scaledDt = (current == CatAnimationState.walk || current == CatAnimationState.excited)
+        ? dt * _strideFrequency
+        : dt;
     super.update(scaledDt);
 
     _stateElapsed += dt;
 
-    // --- Auto-revert non-looping animations ---
+    // Auto-revert non-looping animations back to previous (or idle)
     final currentAnim = animations?[current];
     if (currentAnim != null && !currentAnim.loop) {
       final ticker = animationTickers?[current];
       if (ticker != null && ticker.done()) {
         ticker.reset();
-        if (_previousState != null) {
-          changeState(_previousState!);
-        } else {
-          changeState(CatAnimationState.idle);
-        }
+        changeState(_previousState ?? CatAnimationState.idle);
         return;
       }
     }
 
-    // Synchronize position from PetCompanionService
+    // Sync position from navigation service
     final servicePos = game.petService.position;
     position = Vector2(servicePos.dx, servicePos.dy);
 
-    // Synchronize flip based on navigation velocity
-    final navVelocity = game.petService.navigation.velocity;
-    if (navVelocity.dx != 0) {
-      _direction = navVelocity.dx > 0 ? 1.0 : -1.0;
+    // Sync horizontal flip from velocity direction
+    final navVel = game.petService.navigation.velocity;
+    if (navVel.dx.abs() > 0.5) {
+      _direction = navVel.dx > 0 ? 1.0 : -1.0;
       _updateFlip();
     }
 
-    // Dog-specific tail-wag body pant bounce during idle/celebrate
-    if (_isDog) {
-      if (current == CatAnimationState.idle || current == CatAnimationState.celebrate) {
-        final double bounce = sin(_stateElapsed * 4.5) * 0.02;
-        scale.y = scale.x.abs() * (1.0 + bounce);
-      } else {
-        scale.y = scale.x.abs();
-      }
+    // Dog idle bounce — cheap sin, only when idle/celebrate
+    if (_isDog && (current == CatAnimationState.idle || current == CatAnimationState.celebrate)) {
+      scale.y = scale.x.abs() * (1.0 + sin(_stateElapsed * 4.5) * 0.02);
     } else {
       scale.y = scale.x.abs();
     }
@@ -138,37 +135,43 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
 
   @override
   void render(Canvas canvas) {
-    canvas.save();
-    paint.filterQuality = FilterQuality.medium;
+    // No canvas.save/restore — they are no-ops here and add overhead.
+    // FilterQuality is set once in onMount.
     super.render(canvas);
-    canvas.restore();
   }
 
-  // --- TapCallbacks ---
+  // --- Tap / Hover ---
+
+  DateTime? _lastTapTime;
 
   @override
   void onTapDown(TapDownEvent event) {
-    game.onUserInteraction('tap');
+    final now = DateTime.now();
+    if (_lastTapTime != null && now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
+      _lastTapTime = null;
+      game.onUserInteraction('doubleTap');
+    } else {
+      _lastTapTime = now;
+    }
   }
 
   @override
   void onTapUp(TapUpEvent event) {
-    game.onUserInteraction('doubleTap');
+    if (_lastTapTime != null) game.onUserInteraction('tap');
   }
 
   @override
-  void onHoverEnter() {
-    game.onUserInteraction('hover');
-  }
+  void onHoverEnter() => game.onUserInteraction('hover');
 
-  @override
-  void onHoverExit() {
-    // Optional: we can add an interaction or just let the state machine revert naturally
-  }
+  // --- Mouse follow ---
 
+  /// Called with raw window-space mouse coordinates.
+  /// The FlameGame canvas fills the window 1:1 in logical pixels, so no
+  /// coordinate transform is needed — Flame's coordinate system already
+  /// matches Flutter logical pixels. The sprite's visual scale does NOT
+  /// affect the coordinate system; only position matters.
   void updateMouseFollow(Map<dynamic, dynamic> data) {
     final bool enabled = data['enabled'] as bool? ?? false;
-
     game.petService.setCursorFollowing(enabled);
 
     final double? mx = (data['mouseX'] as num?)?.toDouble();
