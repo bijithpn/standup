@@ -6,6 +6,7 @@ enum CatAnimationState {
   typing,
   excited,
   sad,
+  stretch,
   breakMode,
   focusMode,
   angry,

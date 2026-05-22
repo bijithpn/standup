@@ -9,6 +9,9 @@ import 'package:standup/features/companion/domain/cat_theme.dart';
 class CatAssetLoader {
   // Cache decoded images to prevent multiple loads of the same file
   static final Map<String, ui.Image> _imageCache = {};
+  
+  // Cache for bounding boxes to avoid re-scanning pixels
+  static final Map<String, ui.Rect> _boundingBoxCache = {};
 
   /// Loads a native Flutter ui.Image from the root assets bundle.
   static Future<ui.Image> _loadImage(String path) async {
@@ -23,6 +26,34 @@ class CatAssetLoader {
       return fi.image;
     } catch (e) {
       throw Exception('Failed to load cat asset: $path, error: $e');
+    }
+  }
+
+  /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
+  static Future<void> preCacheTrayIcons(CatTheme theme) async {
+    final states = [
+      CatAnimationState.idle,
+      CatAnimationState.sleep,
+      CatAnimationState.excited,
+      CatAnimationState.notification,
+    ];
+
+    for (final state in states) {
+      final config = theme.animations[state];
+      int frameCount = 1;
+      if (config is AnimationRowConfig) {
+        frameCount = config.frameCount;
+      } else if (config is SeparateAnimationConfig) {
+        frameCount = config.frameCount;
+      }
+
+      for (int i = 0; i < frameCount; i++) {
+        await extractCatFramePath(
+          theme: theme,
+          state: state,
+          frameIndex: i,
+        );
+      }
     }
   }
 
@@ -233,30 +264,51 @@ class CatAssetLoader {
       }
 
       // Auto-crop: Scan alpha channel inside the frame region to find content bounding box
-      final rawBytes = await sourceImage.toByteData(format: ui.ImageByteFormat.rawRgba);
-      int minX = (sourceX + cropW).toInt();
-      int maxX = sourceX.toInt();
-      int minY = (sourceY + cropH).toInt();
-      int maxY = sourceY.toInt();
+      final String bbCacheKey = '${theme.id}_${state.name}_$frameIndex';
+      ui.Rect? cachedBB = _boundingBoxCache[bbCacheKey];
+      
+      int minX, maxX, minY, maxY;
+      
+      if (cachedBB != null) {
+        minX = cachedBB.left.toInt();
+        maxX = cachedBB.right.toInt();
+        minY = cachedBB.top.toInt();
+        maxY = cachedBB.bottom.toInt();
+      } else {
+        final rawBytes = await sourceImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+        minX = (sourceX + cropW).toInt();
+        maxX = sourceX.toInt();
+        minY = (sourceY + cropH).toInt();
+        maxY = sourceY.toInt();
 
-      if (rawBytes != null) {
-        final bytes = rawBytes.buffer.asUint8List();
-        final width = sourceImage.width;
+        if (rawBytes != null) {
+          final bytes = rawBytes.buffer.asUint8List();
+          final width = sourceImage.width;
 
-        for (int y = sourceY.toInt(); y < sourceY + cropH; y++) {
-          for (int x = sourceX.toInt(); x < sourceX + cropW; x++) {
-            final offset = (y * width + x) * 4;
-            if (offset + 3 < bytes.length) {
-              final alpha = bytes[offset + 3];
-              if (alpha > 10) { // Ignore transparent/near-transparent pixels
-                if (x < minX) minX = x;
-                if (x > maxX) maxX = x;
-                if (y < minY) minY = y;
-                if (y > maxY) maxY = y;
+          for (int y = sourceY.toInt(); y < sourceY + cropH; y++) {
+            final yOffset = y * width * 4;
+            for (int x = sourceX.toInt(); x < sourceX + cropW; x++) {
+              final offset = yOffset + (x * 4);
+              if (offset + 3 < bytes.length) {
+                final alpha = bytes[offset + 3];
+                if (alpha > 15) { // Ignore transparent/near-transparent pixels
+                  if (x < minX) minX = x;
+                  if (x > maxX) maxX = x;
+                  if (y < minY) minY = y;
+                  if (y > maxY) maxY = y;
+                }
               }
             }
           }
         }
+        
+        // Cache the bounding box for next time (or other engines if they shared memory, which they don't, but helps within same engine)
+        _boundingBoxCache[bbCacheKey] = ui.Rect.fromLTRB(
+          minX.toDouble(), 
+          minY.toDouble(), 
+          maxX.toDouble(), 
+          maxY.toDouble()
+        );
       }
 
       const double targetSize = 44.0;

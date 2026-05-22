@@ -27,6 +27,7 @@ class BreakController extends ChangeNotifier {
 
   String _currentTemplate = '';
   String _currentThemeName = 'random';
+  bool _isPreviewMode = false;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -164,7 +165,7 @@ class BreakController extends ChangeNotifier {
           builder: (context) => const SizedBox.shrink(),
         );
       }
-    } else if (overlayService.isOverlayVisible &&
+    } else if (overlayService.isOverlayVisible && !_isPreviewMode &&
         (overlayService.currentOverlayType == OverlayType.breakScreen ||
             overlayService.currentOverlayType == OverlayType.preBreakWarning)) {
       if (strictModeController.isStrictModeActive) {
@@ -232,6 +233,7 @@ class BreakController extends ChangeNotifier {
   void startTestBreak() {
     final overlayService = sl<OverlayWindowService>();
     final settings = _settingsRepo.currentSettings;
+    _isPreviewMode = true;
 
     if (settings.showExercisesInBreak) {
       final availableExercises = settings.exercises.isEmpty
@@ -270,6 +272,7 @@ class BreakController extends ChangeNotifier {
       'remainingSeconds': 60,
       'strictMode': settings.strictMode,
       'type': OverlayType.breakScreen.name,
+      'isPreview': true,
       'playMusic': settings.playMusicDuringBreak,
       'template': _currentTemplate,
       'theme': _currentThemeName,
@@ -285,6 +288,7 @@ class BreakController extends ChangeNotifier {
   }
 
   void skipCurrentBreak() {
+    _isPreviewMode = false;
     if (!_settingsRepo.currentSettings.strictMode) {
       _timerEngine.finishBreak(skipped: true);
       sl<TrayManagerService>().setBreakActive(false);
@@ -300,6 +304,7 @@ class BreakController extends ChangeNotifier {
   }
 
   void completeCurrentBreak() {
+    _isPreviewMode = false;
     _timerEngine.finishBreak(skipped: false);
     sl<TrayManagerService>().setBreakActive(false);
   }

@@ -86,6 +86,12 @@ class CompanionGame extends FlameGame {
 
   void _mapAppEventToPetEvent(AppEvent event) {
     PetEvent? petEvent;
+    
+    if (event is CompanionStateChangedEvent) {
+      _applyCompanionState(event.state);
+      return;
+    }
+    
     if (event is TimerStateChangedEvent) {
       petEvent = PetEvent.tick;
     } else if (event is BreakStartedEvent) {
@@ -105,24 +111,63 @@ class CompanionGame extends FlameGame {
     } else if (event is CompanionInteractionEvent) {
       switch (event.interactionType) {
         case 'tap':
+        case 'click':
           petEvent = PetEvent.userClick;
           break;
         case 'doubleTap':
+        case 'doubleClick':
           petEvent = PetEvent.userDoubleClick;
           break;
         case 'hover':
           petEvent = PetEvent.userHover;
           break;
         case 'dragStart':
+        case 'drag':
           petEvent = PetEvent.userDragStart;
           break;
         case 'dragEnd':
           petEvent = PetEvent.userDragEnd;
           break;
+        case 'stretch':
+          _applyPetStateToComponent(PetState.stretch);
+          return;
+        case 'happy':
+          _applyPetStateToComponent(PetState.happy);
+          return;
+        case 'blink':
+          _applyPetStateToComponent(PetState.blink);
+          return;
       }
     }
     if (petEvent != null) {
       _petService.handleEvent(petEvent);
+    }
+  }
+
+  void _applyCompanionState(CompanionState state) {
+    switch (state) {
+      case CompanionState.idle:
+        _petService.stateMachine.transitionTo(PetState.idle);
+      case CompanionState.walking:
+        _petService.stateMachine.transitionTo(PetState.walk);
+      case CompanionState.sleeping:
+        _petService.stateMachine.transitionTo(PetState.sleep);
+      case CompanionState.alert:
+        _petService.stateMachine.transitionTo(PetState.alert);
+      case CompanionState.dragging:
+        _petService.stateMachine.transitionTo(PetState.drag);
+      case CompanionState.happy:
+        _petService.stateMachine.transitionTo(PetState.happy);
+      case CompanionState.stretch:
+        _petService.stateMachine.transitionTo(PetState.stretch);
+      case CompanionState.breakReminder:
+        _petService.stateMachine.transitionTo(PetState.breakReminder);
+      case CompanionState.meetingPaused:
+        _petService.stateMachine.transitionTo(PetState.meetingPaused);
+      case CompanionState.focusMode:
+        _petService.stateMachine.transitionTo(PetState.focusMode);
+      default:
+        break;
     }
   }
 
@@ -140,6 +185,7 @@ class CompanionGame extends FlameGame {
       case PetState.quiet:
         return CatAnimationState.idle;
       case PetState.stretch:
+        return CatAnimationState.stretch;
       case PetState.celebrating:
       case PetState.dancing:
         return CatAnimationState.celebrate;
@@ -273,10 +319,20 @@ class CompanionGame extends FlameGame {
     }
   }
 
+  double _tickAccumulator = 0.0;
+
   @override
   void update(double dt) {
     super.update(dt);
-    _petService.handleEvent(PetEvent.tick);
+    
+    // Throttle FSM ticks to 1Hz to save CPU
+    // Behavior and state changes don't need frame-rate precision
+    _tickAccumulator += dt;
+    if (_tickAccumulator >= 1.0) {
+      _petService.handleEvent(PetEvent.tick);
+      _tickAccumulator = 0.0;
+    }
+    
     _petService.update(dt);
   }
 
