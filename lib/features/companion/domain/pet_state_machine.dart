@@ -62,6 +62,7 @@ enum PetEvent {
   breakCompleted,
   petFed,
   petPlayed,
+  animationComplete, // fired by CompanionComponent when a non-looping anim finishes
 }
 
 /// Weighted transition with conditions.
@@ -205,6 +206,9 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(event: PetEvent.randomBehavior, targetState: PetState.walk, weight: 2.5,
           cooldown: const Duration(seconds: 10),
           condition: (mood, personality) => personality.activityLevel > 0.2),
+      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.run, weight: 1.0,
+          cooldown: const Duration(seconds: 25),
+          condition: (mood, personality) => personality.activityLevel > 0.5),
       PetTransition(event: PetEvent.randomBehavior, targetState: PetState.grooming, weight: 1.2,
           cooldown: const Duration(seconds: 20),
           condition: (mood, personality) => personality.independence > 0.4),
@@ -270,6 +274,9 @@ class PetStateMachine extends ChangeNotifier {
           cooldown: const Duration(seconds: 10)),
     ],
     PetState.grooming: [
+      // animationComplete fires when lick1 finishes — chain to lick2 (grooming2)
+      PetTransition(event: PetEvent.animationComplete, targetState: PetState.grooming, weight: 1.0,
+          minDuration: const Duration(milliseconds: 100)),
       PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
       PetTransition(event: PetEvent.activityDetected, targetState: PetState.idle, weight: 1.0),
       PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),

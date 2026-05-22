@@ -3,6 +3,7 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_state_machine.dart';
 import 'package:standup/features/companion/flame/companion_game.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 
@@ -91,6 +92,25 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
     scale.x = _direction < 0 ? -absScale : absScale;
   }
 
+  // Speed thresholds (px/s) for animation selection
+  static const double _walkThreshold = 8.0;
+  static const double _runThreshold = 100.0;
+
+  // FSM states that own their animation — velocity must NOT override these
+  static const _fsmOwnedAnimations = {
+    CatAnimationState.sleep,
+    CatAnimationState.stretch,
+    CatAnimationState.breakMode,
+    CatAnimationState.focusMode,
+    CatAnimationState.sad,
+    CatAnimationState.celebrate,
+    CatAnimationState.notification,
+    CatAnimationState.angry,
+    CatAnimationState.lick1,
+    CatAnimationState.lick2,
+    CatAnimationState.typing,
+  };
+
   @override
   void update(double dt) {
     // Scale animation speed for walk/excited to match stride rate
@@ -107,20 +127,48 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
       final ticker = animationTickers?[current];
       if (ticker != null && ticker.done()) {
         ticker.reset();
+        // Fire animationComplete so the FSM can chain (e.g. grooming lick1→lick2)
+        game.petService.handleEvent(PetEvent.animationComplete);
+        // Check if FSM transitioned to another non-looping state (lick chain).
+        // If so, _applyPetStateToComponent already called changeState — don't
+        // revert to idle here or we'd flash a single idle frame between licks.
+        final newAnim = animations?[current];
+        if (newAnim != null && !newAnim.loop && current != (_previousState ?? CatAnimationState.idle)) {
+          return; // FSM chained to another non-looping anim — let it play
+        }
         changeState(_previousState ?? CatAnimationState.idle);
         return;
       }
     }
 
     // Sync position from navigation service
-    final servicePos = game.petService.position;
+    final nav = game.petService.navigation;
+    final servicePos = nav.currentPosition;
     position = Vector2(servicePos.dx, servicePos.dy);
 
     // Sync horizontal flip from velocity direction
-    final navVel = game.petService.navigation.velocity;
-    if (navVel.dx.abs() > 0.5) {
-      _direction = navVel.dx > 0 ? 1.0 : -1.0;
+    final vel = nav.velocity;
+    if (vel.dx.abs() > 0.5) {
+      _direction = vel.dx > 0 ? 1.0 : -1.0;
       _updateFlip();
+    }
+
+    // --- Velocity-driven animation ---
+    // FSM-owned states (sleep, stretch, etc.) always keep their animation.
+    // For all other states, pick walk/run/idle based on actual speed.
+    final cur = current ?? CatAnimationState.idle;
+    if (!_fsmOwnedAnimations.contains(cur) || _isMovementState(cur)) {
+      final speed = nav.speed;
+      if (speed > _runThreshold) {
+        changeState(CatAnimationState.run);
+      } else if (speed > _walkThreshold) {
+        changeState(CatAnimationState.walk);
+      } else {
+        // Stopped — revert to idle only if we were in a movement animation
+        if (cur == CatAnimationState.walk || cur == CatAnimationState.run) {
+          changeState(_previousState ?? CatAnimationState.idle);
+        }
+      }
     }
 
     // Dog idle bounce — cheap sin, only when idle/celebrate
@@ -132,6 +180,9 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
 
     angle = 0.0;
   }
+
+  bool _isMovementState(CatAnimationState? s) =>
+      s == CatAnimationState.walk || s == CatAnimationState.run;
 
   @override
   void render(Canvas canvas) {

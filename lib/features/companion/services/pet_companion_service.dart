@@ -136,8 +136,23 @@ class PetCompanionService extends ChangeNotifier {
 
   void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
     _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
-    // Update context cursor fields at low cost (no copyWith — direct field update
-    // is not possible with immutable context, so we only do it on the throttle cycle)
+
+    final wasFollowing = _navigation.isCursorFollowing;
+    final isNowFollowing = forceFollowing ?? wasFollowing;
+
+    if (isNowFollowing) {
+      // Ensure FSM is in following state so _applyStateBehavior enables navigation
+      if (_stateMachine.currentState != PetState.following &&
+          _stateMachine.currentState != PetState.drag &&
+          _stateMachine.currentState != PetState.breakReminder &&
+          _stateMachine.currentState != PetState.meetingPaused &&
+          _stateMachine.currentState != PetState.focusMode) {
+        _stateMachine.transitionTo(PetState.following);
+      }
+    } else if (wasFollowing && !isNowFollowing) {
+      // Cursor left — let FSM revert naturally via cursorLeft event
+      _stateMachine.handleEvent(PetEvent.cursorLeft);
+    }
   }
 
   void setCursorFollowing(bool following) {
@@ -171,7 +186,9 @@ class PetCompanionService extends ChangeNotifier {
         break;
       case PetState.following:
       case PetState.playing:
-        _navigation.updateConfig(wanderSpeed: 100.0);
+        // Cursor following is handled by navigation's _updateCursorFollow.
+        // Set wanderSpeed=0 so _updateWander doesn't fight it.
+        _navigation.updateConfig(wanderSpeed: 0.0);
         break;
       default:
         _navigation.updateConfig(wanderSpeed: 0.0);
