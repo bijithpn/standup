@@ -137,16 +137,28 @@ class PetCompanionService extends ChangeNotifier {
   void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
     _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
 
+    // Check if cat is annoyed by excessive cursor movement
+    if (_navigation.isAnnoyed && _stateMachine.currentState == PetState.following) {
+      _stateMachine.transitionTo(PetState.angry);
+      return;
+    }
+
     final wasFollowing = _navigation.isCursorFollowing;
     final isNowFollowing = forceFollowing ?? wasFollowing;
 
     if (isNowFollowing) {
+      // Only follow if not in a non-looping animation (lick, stretch, etc.)
+      final cur = _stateMachine.currentState;
+      if (cur == PetState.grooming || cur == PetState.stretch || 
+          cur == PetState.celebrating || cur == PetState.alert ||
+          cur == PetState.angry || cur == PetState.breakReminder ||
+          cur == PetState.meetingPaused || cur == PetState.focusMode ||
+          cur == PetState.drag || cur == PetState.sleep) {
+        return; // Don't interrupt these states
+      }
+
       // Ensure FSM is in following state so _applyStateBehavior enables navigation
-      if (_stateMachine.currentState != PetState.following &&
-          _stateMachine.currentState != PetState.drag &&
-          _stateMachine.currentState != PetState.breakReminder &&
-          _stateMachine.currentState != PetState.meetingPaused &&
-          _stateMachine.currentState != PetState.focusMode) {
+      if (cur != PetState.following) {
         _stateMachine.transitionTo(PetState.following);
       }
     } else if (wasFollowing && !isNowFollowing) {
