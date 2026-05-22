@@ -127,7 +127,7 @@ class BreakController extends ChangeNotifier {
               AppConstants.wellnessSlideshow.length,
             )];
         if (settings.breakTheme == 'random') {
-          const themes = ['image', 'ocean', 'forest', 'minimal'];
+          const themes = ['image', 'ocean', 'forest', 'minimal', 'sunset', 'nebula', 'midnight', 'cyberpunk', 'zen'];
           _currentThemeName = themes[Random().nextInt(themes.length)];
         } else {
           _currentThemeName = settings.breakTheme;
@@ -259,7 +259,7 @@ class BreakController extends ChangeNotifier {
           AppConstants.wellnessSlideshow.length,
         )];
     if (settings.breakTheme == 'random') {
-      const themes = ['image', 'ocean', 'forest', 'minimal'];
+      const themes = ['image', 'ocean', 'forest', 'minimal', 'sunset', 'nebula', 'midnight', 'cyberpunk', 'zen'];
       _currentThemeName = themes[Random().nextInt(themes.length)];
     } else {
       _currentThemeName = settings.breakTheme;

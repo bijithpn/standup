@@ -393,17 +393,6 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
-          _divider(),
-          _actionRow(
-            label: 'Preview Break',
-            subtitle: 'See exactly how your break screen looks right now.',
-            buttonText: 'Preview',
-            buttonColor: AppTheme.accentColor,
-            onPressed: () {
-              controller.startTestBreak();
-              Toast.showSuccess(context, 'Test break started! You can skip it anytime.');
-            },
-          ),
         ]),
         const SizedBox(height: 32),
         _sectionHeader('Manual Controls'),
