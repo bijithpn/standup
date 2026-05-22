@@ -42,6 +42,7 @@ class SettingsRepository {
       notificationsEnabled: _storage.getBool('notifications_enabled', defaultValue: true),
       showOnAllDisplays: _storage.getBool('show_on_all_displays', defaultValue: true),
       breakTheme: _storage.getString('break_theme', defaultValue: 'random'),
+      breakTemplate: _storage.getString('break_template', defaultValue: 'minimal'),
       
 
       focusModeEnabled: _storage.getBool('focus_mode_enabled'),
@@ -123,6 +124,7 @@ class SettingsRepository {
       _storage.setBool('notifications_enabled', settings.notificationsEnabled),
       _storage.setBool('show_on_all_displays', settings.showOnAllDisplays),
       _storage.setString('break_theme', settings.breakTheme),
+      _storage.setString('break_template', settings.breakTemplate),
       
 
       _storage.setBool('focus_mode_enabled', settings.focusModeEnabled),

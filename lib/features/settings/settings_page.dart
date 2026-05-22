@@ -706,6 +706,10 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
         const SizedBox(height: 32),
+        _sectionHeader('Break Templates'),
+        const SizedBox(height: 16),
+        _buildBreakTemplateGrid(),
+        const SizedBox(height: 32),
         _sectionHeader('Colors & Effects'),
         const SizedBox(height: 16),
         _buildCard([
@@ -2013,6 +2017,420 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       },
     );
+  }
+
+  Widget _buildBreakTemplateGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isSmallScreen = constraints.maxWidth < 700;
+
+        final templates = [
+          (id: 'minimal', name: 'Minimal Focus', desc: 'Concentric ring timer with clean outline styling.'),
+          (id: 'companion', name: 'Interactive Pet', desc: 'Snappable pet companion with live dialogue bubbles.'),
+          (id: 'zen', name: 'Zen Breath', desc: 'Japanese morning sun gradient with box breathing guide.'),
+          (id: 'hud', name: 'Productivity HUD', desc: 'Neon stats panels and custom glow activity graph.'),
+          (id: 'floating', name: 'Floating Pill', desc: 'Corner-snapped draggable capsule with warm alerts.'),
+        ];
+
+        if (isSmallScreen) {
+          return Wrap(
+            spacing: 12,
+            runSpacing: 16,
+            children: templates.map((t) {
+              return _breakTemplatePreview(
+                t.name,
+                t.id,
+                t.desc,
+                _settings.breakTemplate == t.id,
+                () => _save(_settings.copyWith(breakTemplate: t.id)),
+              );
+            }).toList(),
+          );
+        }
+
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: templates.map((t) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: _breakTemplatePreview(
+                  t.name,
+                  t.id,
+                  t.desc,
+                  _settings.breakTemplate == t.id,
+                  () => _save(_settings.copyWith(breakTemplate: t.id)),
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _breakTemplatePreview(
+    String name,
+    String id,
+    String description,
+    bool isSelected,
+    VoidCallback onTap,
+  ) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 150,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 150,
+              height: 100,
+              decoration: BoxDecoration(
+                color: AppTheme.contentBackground,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected
+                      ? AppTheme.accentColor
+                      : AppTheme.borderColor.withValues(alpha: 0.8),
+                  width: isSelected ? 2.5 : 1.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppTheme.accentColor.withValues(alpha: 0.25),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        )
+                      ]
+                    : [],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Stack(
+                  children: [
+                    _buildBreakTemplateMock(id),
+                    if (isSelected)
+                      Positioned(
+                        top: 6,
+                        right: 6,
+                        child: Icon(
+                          CupertinoIcons.checkmark_circle_fill,
+                          color: AppTheme.accentColor,
+                          size: 20,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              name,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? AppTheme.accentColor : Colors.white,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                fontSize: 13,
+                fontFamily: 'Satoshi',
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: AppTheme.textSecondary.withValues(alpha: 0.8),
+                fontSize: 10.5,
+                height: 1.3,
+                fontFamily: 'Satoshi',
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBreakTemplateMock(String id) {
+    switch (id) {
+      case 'minimal':
+        return Center(
+          child: Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white24,
+                width: 1.5,
+              ),
+            ),
+            child: Center(
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppTheme.accentColor.withValues(alpha: 0.6),
+                    width: 3.5,
+                  ),
+                ),
+                child: const Center(
+                  child: Text(
+                    '05:00',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      case 'companion':
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                color: Colors.black38,
+              ),
+            ),
+            Positioned(
+              top: 20,
+              left: 15,
+              right: 15,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.white24, width: 0.5),
+                ),
+                child: const Text(
+                  'Time to stretch! 🐾',
+                  style: TextStyle(fontSize: 8, color: Colors.white),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: Icon(
+                CupertinoIcons.paw_solid,
+                size: 22,
+                color: AppTheme.accentColor.withValues(alpha: 0.8),
+              ),
+            ),
+          ],
+        );
+      case 'zen':
+        return Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFE0C3FC),
+                Color(0xFF8EC5FC),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                    border: Border.all(color: Colors.white30, width: 1),
+                  ),
+                ),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.25),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      CupertinoIcons.wind,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      case 'hud':
+        return Container(
+          color: const Color(0xFF0F172A),
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    width: 35,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentColor.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                  Container(
+                    width: 15,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.cyan.withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(1),
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              SizedBox(
+                height: 25,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 4,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentColor.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                    Container(
+                      width: 4,
+                      height: 20,
+                      decoration: BoxDecoration(
+                        color: AppTheme.accentColor.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                    Container(
+                      width: 4,
+                      height: 15,
+                      decoration: BoxDecoration(
+                        color: Colors.cyan.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                    Container(
+                      width: 4,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        color: Colors.cyan.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                    Container(
+                      width: 4,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.cyan.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              const Row(
+                children: [
+                  Icon(CupertinoIcons.bolt_fill, size: 8, color: Colors.amber),
+                  SizedBox(width: 2),
+                  Text(
+                    'HUD ACTIVE',
+                    style: TextStyle(
+                      fontSize: 6,
+                      color: Colors.white30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      case 'floating':
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                color: Colors.black26,
+              ),
+            ),
+            Positioned(
+              bottom: 8,
+              right: 8,
+              child: Container(
+                width: 65,
+                height: 18,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1E293B),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.accentColor.withValues(alpha: 0.6),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.accentColor.withValues(alpha: 0.3),
+                      blurRadius: 4,
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppTheme.accentColor,
+                      ),
+                    ),
+                    const Text(
+                      '04:59 SKIP',
+                      style: TextStyle(
+                        fontSize: 6,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      default:
+        return const SizedBox();
+    }
   }
 
   Widget _buildProfileSelector() {

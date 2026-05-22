@@ -5,17 +5,24 @@ import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/core/native/macos_bridge.dart';
+import 'package:standup/features/break_system/domain/break_model.dart';
+import 'package:standup/features/settings/settings_model.dart';
+import 'package:standup/features/break_overlay/presentation/templates/minimal_focus_template.dart';
+import 'package:standup/features/break_overlay/presentation/templates/companion_interactive_template.dart';
+import 'package:standup/features/break_overlay/presentation/templates/zen_mode_template.dart';
+import 'package:standup/features/break_overlay/presentation/templates/productivity_hud_template.dart';
+import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 
-enum BreakTheme { 
-  image, 
-  ocean, 
-  forest, 
+enum BreakTheme {
+  image,
+  ocean,
+  forest,
   minimal,
-  sunset,    // Warm orange and purple gradients
-  nebula,    // Deep space purple and blue
-  midnight,  // Pure deep dark navy
+  sunset, // Warm orange and purple gradients
+  nebula, // Deep space purple and blue
+  midnight, // Pure deep dark navy
   cyberpunk, // Neon pink and blue
-  zen        // Soft earth tones and cream
+  zen, // Soft earth tones and cream
 }
 
 class StandaloneBreakOverlay extends StatefulWidget {
@@ -55,10 +62,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   double _displayHeight = 0;
   int _screenId = 0;
   bool _strictMode = false;
-  bool _isInternalPreview = false; // Flag to disable expensive animations during preview
+  bool _isInternalPreview =
+      false; // Flag to disable expensive animations during preview
 
   String? _exerciseTitle;
   String? _exerciseInstructions;
+  String _breakTemplate = 'minimal';
+  String _companionCatTheme = 'grey_cat';
 
   @override
   void initState() {
@@ -98,7 +108,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           if (newRemaining == 0 && _remainingSeconds > 0) {
             _fadeController.reverse();
           }
-          
+
           setState(() {
             _title = args['title'] ?? _title;
             _tip = args['tip'] ?? _tip;
@@ -107,7 +117,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             _overlayType = args['type'] ?? _overlayType;
             _strictMode = args['strictMode'] ?? _strictMode;
             _isInternalPreview = args['isPreview'] ?? false;
-            
+
             // Display Context
             final displayId = args['displayId'] as String?;
             final bWidth = (args['boundsWidth'] as num?)?.toDouble() ?? 0;
@@ -127,6 +137,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             }
             if (args['template'] != null) {
               _currentTemplate = args['template'];
+            }
+            if (args['breakTemplate'] != null) {
+              _breakTemplate = args['breakTemplate'];
+            }
+            if (args['companionCatTheme'] != null) {
+              _companionCatTheme = args['companionCatTheme'];
             }
             if (args.containsKey('exerciseTitle')) {
               _exerciseTitle = args['exerciseTitle'];
@@ -160,48 +176,111 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       color: Colors.black,
       child: FadeTransition(
         opacity: _fadeController,
-        child: RepaintBoundary(
-          child: _buildBreakScreen(),
-        ),
+        child: RepaintBoundary(child: _buildBreakScreen()),
       ),
     );
   }
 
   Widget _buildBreakScreen() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Background Layer - Separated into its own RepaintBoundary to avoid UI invalidation
-        RepaintBoundary(
-          child: AnimatedBuilder(
-            animation: _kenBurnsController,
-            builder: (context, child) {
-              return _buildBackground();
-            },
-          ),
-        ),
-
-        // UI Content - Wrapped in RepaintBoundary to isolate from background animation
-        SafeArea(
-          child: RepaintBoundary(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Spacer(),
-                
-                // Main content centered
-                _buildMainContent(),
-
-                const Spacer(),
-
-                // Footer
-                _buildFooter(),
-              ],
-            ),
-          ),
-        ),
-      ],
+    final breakInfo = BreakModel(
+      type:
+          _title.toUpperCase().contains('SHORT') ||
+              _title.toUpperCase().contains('EYE')
+          ? BreakType.short
+          : BreakType.long,
+      durationSeconds: _durationSeconds,
+      title: _title,
+      tip: _tip,
     );
+
+    final settings = SettingsModel(
+      strictMode: _strictMode,
+      companionCatTheme: _companionCatTheme,
+      breakTemplate: _breakTemplate,
+      showExercisesInBreak: _exerciseTitle != null,
+    );
+
+    final total = _durationSeconds;
+    final remaining = _remainingSeconds;
+    Future<void> onSkip() => MacOSBridge.skipBreak();
+
+    switch (_breakTemplate) {
+      case 'companion':
+        return CompanionInteractiveTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'zen':
+        return ZenModeTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'hud':
+        return ProductivityHudTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'floating':
+        return SoftFloatingWidgetTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'minimal':
+        return MinimalFocusTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      default:
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background Layer - Separated into its own RepaintBoundary to avoid UI invalidation
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _kenBurnsController,
+                builder: (context, child) {
+                  return _buildBackground();
+                },
+              ),
+            ),
+
+            // UI Content - Wrapped in RepaintBoundary to isolate from background animation
+            SafeArea(
+              child: RepaintBoundary(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Spacer(),
+
+                    // Main content centered
+                    _buildMainContent(),
+
+                    const Spacer(),
+
+                    // Footer
+                    _buildFooter(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+    }
   }
 
   Widget _buildMainContent() {
@@ -276,10 +355,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   Widget _buildFooter() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 40,
-        vertical: 30,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -349,11 +425,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   Widget _buildBackground() {
     final screenW = _displayWidth > 0 ? _displayWidth : 1920.0;
     final screenH = _displayHeight > 0 ? _displayHeight : 1080.0;
-    
+
     // Using a RepaintBoundary here ensures background animations don't trigger UI rebuilds
-    return RepaintBoundary(
-      child: _buildThemeContent(screenW, screenH),
-    );
+    return RepaintBoundary(child: _buildThemeContent(screenW, screenH));
   }
 
   Widget _buildThemeContent(double screenW, double screenH) {
@@ -364,24 +438,24 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           children: [
             // Optimized image loading
             // Only use transform if NOT in preview to save 100% of that CPU cost
-            _isInternalPreview 
-              ? Image.asset(
-                  _currentTemplate, 
-                  fit: BoxFit.cover,
-                  cacheWidth: screenW.toInt(),
-                  cacheHeight: screenH.toInt(),
-                )
-              : Transform.scale(
-                  scale: 1.05 + (0.1 * _kenBurnsController.value),
-                  child: Image.asset(
-                    _currentTemplate, 
+            _isInternalPreview
+                ? Image.asset(
+                    _currentTemplate,
                     fit: BoxFit.cover,
                     cacheWidth: screenW.toInt(),
                     cacheHeight: screenH.toInt(),
-                    filterQuality: FilterQuality.low,
+                  )
+                : Transform.scale(
+                    scale: 1.05 + (0.1 * _kenBurnsController.value),
+                    child: Image.asset(
+                      _currentTemplate,
+                      fit: BoxFit.cover,
+                      cacheWidth: screenW.toInt(),
+                      cacheHeight: screenH.toInt(),
+                      filterQuality: FilterQuality.low,
+                    ),
                   ),
-                ),
-            
+
             // Speed optimization: Use simpler solid color with opacity instead of multi-stop gradient when possible
             Container(
               decoration: BoxDecoration(
@@ -407,7 +481,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               begin: Alignment.topRight,
               end: Alignment.bottomLeft,
               colors: const [Color(0xFFFF512F), Color(0xFFDD2476)],
-              stops: [0.0, 0.5 + (0.1 * (_isInternalPreview ? 0 : _kenBurnsController.value))],
+              stops: [
+                0.0,
+                0.5 +
+                    (0.1 *
+                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
+              ],
             ),
           ),
         );
@@ -417,7 +496,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center,
-              radius: 1.2 + (0.3 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
+              radius:
+                  1.2 +
+                  (0.3 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
               colors: const [Color(0xFF6441A5), Color(0xFF2a0845)],
             ),
           ),
@@ -441,7 +522,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: const [Color(0xFF00F260), Color(0xFF0575E6)],
-              stops: [0.0, 0.6 + (0.1 * (_isInternalPreview ? 0 : _kenBurnsController.value))],
+              stops: [
+                0.0,
+                0.6 +
+                    (0.1 *
+                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
+              ],
             ),
           ),
         );
@@ -463,7 +549,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              stops: [0.0, 0.5 + (0.05 * (_isInternalPreview ? 0 : _kenBurnsController.value)), 1.0],
+              stops: [
+                0.0,
+                0.5 +
+                    (0.05 *
+                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
+                1.0,
+              ],
               colors: const [
                 Color(0xFF0F2027),
                 Color(0xFF203A43),
@@ -478,7 +570,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             gradient: LinearGradient(
               begin: Alignment.bottomLeft,
               end: Alignment.topRight,
-              stops: [0.0, 0.5 + (0.05 * (_isInternalPreview ? 0 : _kenBurnsController.value)), 1.0],
+              stops: [
+                0.0,
+                0.5 +
+                    (0.05 *
+                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
+                1.0,
+              ],
               colors: const [
                 Color(0xFF134E5E),
                 Color(0xFF71B280),
@@ -492,7 +590,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center,
-              radius: 0.8 + (0.2 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
+              radius:
+                  0.8 +
+                  (0.2 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
               colors: const [Color(0xFF1A1A1A), Color(0xFF050505)],
             ),
           ),

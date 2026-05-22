@@ -24,7 +24,7 @@ class NotificationService {
         requestSoundPermission: true,
       );
       const settings = InitializationSettings(macOS: macOS);
-      await _plugin.initialize(settings);
+      await _plugin.initialize(settings: settings);
       await requestPermission();
       _logger.info('Notification service initialized');
     } catch (e, stackTrace) {
@@ -132,7 +132,12 @@ class NotificationService {
               ? [DarwinNotificationAttachment(iconPath)]
               : null,
         );
-        await _plugin.show(id, title, body, NotificationDetails(macOS: macOS));
+        await _plugin.show(
+          id: id,
+          title: title,
+          body: body,
+          notificationDetails: NotificationDetails(macOS: macOS),
+        );
       },
       errorType: ErrorType.notification,
     );
