@@ -1,243 +1,254 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 
-/// Navigation service for autonomous pet movement, cursor interaction,
-/// and multi-display roaming with organic, physics-based motion.
-class PetNavigationService {
-  static final PetNavigationService _instance =
-      PetNavigationService._internal();
-  factory PetNavigationService() => _instance;
-  PetNavigationService._internal();
+/// Per-species cursor-follow profile.
+/// Cats: cautious — look first, slow approach, stop before reaching cursor.
+/// Dogs: eager — fast rush, overshoot slightly, settle with wiggle.
+class _FollowProfile {
+  final double springStiffness; // How fast velocity catches up to target
+  final double damping;         // How quickly oscillation dies (1.0 = critically damped)
+  final double maxSpeed;        // px/s cap
+  final double stopRadius;      // Stop this many px away from cursor (cats stay aloof)
+  final double lookDelay;       // Seconds of "looking" before moving (cats only)
 
-  // Configuration
-  double _wanderSpeed = 60.0;
-  double _runSpeed = 180.0;
-  double _cursorAttractionRadius = 300.0;
-  double _cursorFollowSpeed = 120.0;
-  double _edgeSnapThreshold = 50.0;
-  double _bounceDamping = 0.7;
-  double _gravityStrength = 800.0;
-  bool _gravityEnabled = false;
+  const _FollowProfile({
+    required this.springStiffness,
+    required this.damping,
+    required this.maxSpeed,
+    required this.stopRadius,
+    required this.lookDelay,
+  });
+
+  static const cat = _FollowProfile(
+    springStiffness: 6.0,
+    damping: 0.85,
+    maxSpeed: 90.0,
+    stopRadius: 40.0,
+    lookDelay: 0.4,
+  );
+
+  static const dog = _FollowProfile(
+    springStiffness: 14.0,
+    damping: 0.65,
+    maxSpeed: 200.0,
+    stopRadius: 8.0,
+    lookDelay: 0.0,
+  );
+}
+
+/// Navigation service for autonomous pet movement and cursor following.
+/// Uses a spring-damper model for natural, organic motion.
+///
+/// Each [PetCompanionService] owns its own instance (no singleton).
+class PetNavigationService {
+  PetNavigationService();
+
+  // Config
+  double _wanderSpeed = 0.0;
+  final double _edgeMargin = 50.0;
+  bool _isWanderingEnabled = true;
+  bool _isDog = false;
 
   // State
-  Offset _currentPosition = Offset.zero;
-  Offset _velocity = Offset.zero;
-  Offset _targetPosition = Offset.zero;
-  Size _screenSize = Size.zero;
-  bool _isCursorFollowing = false;
-  Offset _cursorPosition = Offset.zero;
-  DateTime? _lastWanderTargetTime;
-  final Duration _wanderCooldown = const Duration(seconds: 3);
+  Offset _pos = Offset.zero;
+  Offset _vel = Offset.zero;
+  Offset _wanderTarget = Offset.zero;
+  Size _screen = Size.zero;
+  bool _hasWanderTarget = false;
+  DateTime? _lastWanderTime;
 
-  bool _isWanderingEnabled = true;
+  // Cursor follow
+  bool _isCursorFollowing = false;
+  Offset _cursorPos = Offset.zero;
+  double _lookTimer = 0.0; // Cat look-before-move delay
+
+  static const Duration _wanderCooldown = Duration(seconds: 3);
+  static final _rng = Random();
 
   // Getters
-  Offset get currentPosition => _currentPosition;
-  Offset get velocity => _velocity;
+  Offset get currentPosition => _pos;
+  Offset get velocity => _vel;
   bool get isCursorFollowing => _isCursorFollowing;
   bool get isWanderingEnabled => _isWanderingEnabled;
 
-  /// Initialize navigation with screen boundaries and starting position.
+  bool get needsWanderTarget {
+    if (!_isWanderingEnabled || _wanderSpeed <= 0) return false;
+    if (!_hasWanderTarget) return true;
+    return (_wanderTarget - _pos).distance < 12.0;
+  }
+
   void initialize({required Size screenSize, Offset? startPosition}) {
-    _screenSize = screenSize;
-    _currentPosition =
-        startPosition ?? Offset(screenSize.width / 2, screenSize.height / 2);
-    _targetPosition = _currentPosition;
-    _lastWanderTargetTime = DateTime.now();
+    _screen = screenSize;
+    _pos = startPosition ?? Offset(screenSize.width / 2, screenSize.height / 2);
+    _vel = Offset.zero;
+    _wanderTarget = _pos;
+    _hasWanderTarget = false;
+    _lastWanderTime = null;
+    _lookTimer = 0.0;
   }
 
-  /// Update configuration values.
-  void updateConfig({
-    double? wanderSpeed,
-    double? runSpeed,
-    double? cursorAttractionRadius,
-    double? cursorFollowSpeed,
-    double? edgeSnapThreshold,
-    double? bounceDamping,
-    double? gravityStrength,
-    bool? gravityEnabled,
-  }) {
+  void setSpecies({required bool isDog}) {
+    _isDog = isDog;
+  }
+
+  void updateConfig({double? wanderSpeed}) {
     _wanderSpeed = wanderSpeed ?? _wanderSpeed;
-    _runSpeed = runSpeed ?? _runSpeed;
-    _cursorAttractionRadius = cursorAttractionRadius ?? _cursorAttractionRadius;
-    _cursorFollowSpeed = cursorFollowSpeed ?? _cursorFollowSpeed;
-    _edgeSnapThreshold = edgeSnapThreshold ?? _edgeSnapThreshold;
-    _bounceDamping = bounceDamping ?? _bounceDamping;
-    _gravityStrength = gravityStrength ?? _gravityStrength;
-    _gravityEnabled = gravityEnabled ?? _gravityEnabled;
   }
 
-  /// Update cursor position for attraction/following behavior.
-  void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
-    _cursorPosition = cursorPos;
+  /// Called with the raw cursor position in the game/canvas coordinate space.
+  /// The caller (CompanionGame) is responsible for converting window coords to
+  /// game coords before calling this.
+  void updateCursorPosition(Offset gameSpaceCursor, {bool? forceFollowing}) {
+    _cursorPos = gameSpaceCursor;
     if (forceFollowing != null) {
+      if (forceFollowing && !_isCursorFollowing) {
+        _lookTimer = 0.0; // Reset look delay on new follow
+      }
       _isCursorFollowing = forceFollowing;
-    } else {
-      final distance = (_cursorPosition - _currentPosition).distance;
-      _isCursorFollowing = distance < _cursorAttractionRadius;
     }
   }
 
-  /// Explicitly set whether the pet is currently following the cursor.
   void setCursorFollowing(bool following) {
+    if (following && !_isCursorFollowing) _lookTimer = 0.0;
     _isCursorFollowing = following;
   }
 
-  /// Sets whether the companion is allowed to wander randomly.
   void setWanderingEnabled(bool enabled) {
     _isWanderingEnabled = enabled;
     if (!enabled) {
-      _velocity = Offset.zero;
+      _vel = Offset.zero;
+      _hasWanderTarget = false;
     }
   }
 
-  /// Main update loop - call every frame with delta time.
-  Offset update(double dt) {
-    if (_screenSize == Size.zero) return _currentPosition;
-
-    if (_isCursorFollowing) {
-      _applyCursorAttraction(dt);
-    } else {
-      _applyWandering(dt);
-    }
-
-    if (_gravityEnabled) {
-      _applyGravity(dt);
-    }
-
-    _applyVelocity(dt);
-    _handleScreenBoundaries();
-    _applyEdgeSnapping();
-
-    return _currentPosition;
-  }
-
-  /// Set a specific target position to move towards.
-  void setTarget(Offset target, {double? speed}) {
-    _targetPosition = target;
-    _lastWanderTargetTime = DateTime.now();
-  }
-
-  /// Generate a random wander target within screen bounds.
   void generateWanderTarget() {
     final now = DateTime.now();
-    if (_lastWanderTargetTime != null &&
-        now.difference(_lastWanderTargetTime!) < _wanderCooldown) {
+    if (_lastWanderTime != null &&
+        now.difference(_lastWanderTime!) < _wanderCooldown) {
       return;
     }
-
-    final margin = 50.0;
-    _targetPosition = Offset(
-      margin + Random().nextDouble() * (_screenSize.width - margin * 2),
-      margin + Random().nextDouble() * (_screenSize.height - margin * 2),
+    final m = _edgeMargin;
+    _wanderTarget = Offset(
+      m + _rng.nextDouble() * (_screen.width - m * 2),
+      m + _rng.nextDouble() * (_screen.height - m * 2),
     );
-    _lastWanderTargetTime = now;
+    _hasWanderTarget = true;
+    _lastWanderTime = now;
   }
 
-  /// Teleport to a position (for edge wrapping, etc.).
+  void setTarget(Offset target) {
+    _wanderTarget = target;
+    _hasWanderTarget = true;
+    _lastWanderTime = DateTime.now();
+  }
+
   void teleport(Offset position) {
-    _currentPosition = position;
-    _velocity = Offset.zero;
+    _pos = position;
+    _vel = Offset.zero;
   }
 
-  // Private movement methods
+  Offset update(double dt) {
+    if (_screen == Size.zero) return _pos;
 
-  void _applyCursorAttraction(double dt) {
-    final direction = _cursorPosition - _currentPosition;
-    final distance = direction.distance;
+    if (_isCursorFollowing) {
+      _updateCursorFollow(dt);
+    } else {
+      _updateWander(dt);
+    }
 
-    if (distance < 10.0) {
-      // Damping when very close to stop jitter
-      _velocity = _velocity * 0.8;
-      if (_velocity.distance < 1.0) _velocity = Offset.zero;
+    _pos = Offset(
+      _pos.dx + _vel.dx * dt,
+      _pos.dy + _vel.dy * dt,
+    );
+
+    _clampToBounds();
+    return _pos;
+  }
+
+  void _updateCursorFollow(double dt) {
+    final profile = _isDog ? _FollowProfile.dog : _FollowProfile.cat;
+    final toTarget = _cursorPos - _pos;
+    final dist = toTarget.distance;
+
+    // Within stop radius — damp to rest
+    if (dist <= profile.stopRadius) {
+      _vel = Offset(_vel.dx * 0.75, _vel.dy * 0.75);
+      if (_vel.distance < 0.5) _vel = Offset.zero;
+      _lookTimer = 0.0;
       return;
     }
 
-    final normalizedDirection = direction / distance;
-    
-    // Smooth acceleration
-    final targetSpeed = _cursorFollowSpeed *
-        (distance / _cursorAttractionRadius).clamp(0.2, 1.5);
-    
-    final targetVelocity = normalizedDirection * targetSpeed;
-    
-    // Interpolate velocity for smoothness (acceleration/deceleration)
-    _velocity = Offset(
-      _velocity.dx + (targetVelocity.dx - _velocity.dx) * 5.0 * dt,
-      _velocity.dy + (targetVelocity.dy - _velocity.dy) * 5.0 * dt,
+    // Cat look-delay: stand still and "look" before moving
+    if (!_isDog && _lookTimer < profile.lookDelay) {
+      _lookTimer += dt;
+      _vel = Offset(_vel.dx * 0.8, _vel.dy * 0.8);
+      return;
+    }
+
+    // Spring-damper: F = stiffness * displacement - damping * velocity
+    final dir = toTarget / dist;
+    // Effective target velocity proportional to distance, capped at maxSpeed
+    final targetSpeed = (profile.springStiffness * dist).clamp(0.0, profile.maxSpeed);
+    final targetVel = dir * targetSpeed;
+
+    // Critically-damped spring integration
+    _vel = Offset(
+      _vel.dx + (targetVel.dx - _vel.dx) * profile.damping * dt * 10.0,
+      _vel.dy + (targetVel.dy - _vel.dy) * profile.damping * dt * 10.0,
     );
   }
 
-  void _applyWandering(double dt) {
-    if (!_isWanderingEnabled) {
-      _velocity = Offset.zero;
-      return;
-    }
-    final direction = _targetPosition - _currentPosition;
-    final distance = direction.distance;
-
-    if (distance < 10.0) {
-      _velocity = Offset.zero;
-      generateWanderTarget();
+  void _updateWander(double dt) {
+    if (!_isWanderingEnabled || _wanderSpeed <= 0) {
+      // Decelerate smoothly
+      final decay = (1.0 - 8.0 * dt).clamp(0.0, 1.0);
+      _vel = Offset(_vel.dx * decay, _vel.dy * decay);
+      if (_vel.distance < 0.5) _vel = Offset.zero;
       return;
     }
 
-    final normalizedDirection = direction / distance;
-    _velocity = normalizedDirection * _wanderSpeed;
-  }
+    final toTarget = _wanderTarget - _pos;
+    final dist = toTarget.distance;
+    if (dist < 12.0) {
+      _vel = Offset.zero;
+      _hasWanderTarget = false;
+      return;
+    }
 
-  void _applyGravity(double dt) {
-    _velocity = Offset(_velocity.dx, _velocity.dy + _gravityStrength * dt);
-  }
-
-  void _applyVelocity(double dt) {
-    _currentPosition = Offset(
-      _currentPosition.dx + _velocity.dx * dt,
-      _currentPosition.dy + _velocity.dy * dt,
+    final dir = toTarget / dist;
+    // Ease in/out: slow down as we approach target
+    final speedFactor = (dist / 80.0).clamp(0.3, 1.0);
+    final targetVel = dir * (_wanderSpeed * speedFactor);
+    // Smooth velocity change (avoids instant direction snaps)
+    _vel = Offset(
+      _vel.dx + (targetVel.dx - _vel.dx) * 6.0 * dt,
+      _vel.dy + (targetVel.dy - _vel.dy) * 6.0 * dt,
     );
   }
 
-  void _handleScreenBoundaries() {
-    final halfWidth = 50.0; // Approximate pet width/2
-    final halfHeight = 50.0; // Approximate pet height/2
+  void _clampToBounds() {
+    final m = _edgeMargin;
+    final maxX = _screen.width - m;
+    final maxY = _screen.height - m;
 
-    if (_currentPosition.dx < halfWidth) {
-      _currentPosition = Offset(halfWidth, _currentPosition.dy);
-      _velocity = Offset(_velocity.dx.abs() * _bounceDamping, _velocity.dy);
-    } else if (_currentPosition.dx > _screenSize.width - halfWidth) {
-      _currentPosition = Offset(
-        _screenSize.width - halfWidth,
-        _currentPosition.dy,
-      );
-      _velocity = Offset(-_velocity.dx.abs() * _bounceDamping, _velocity.dy);
+    if (_pos.dx < m) {
+      _pos = Offset(m, _pos.dy);
+      _vel = Offset(_vel.dx.abs() * 0.5, _vel.dy); // Soft bounce
+      _hasWanderTarget = false;
+    } else if (_pos.dx > maxX) {
+      _pos = Offset(maxX, _pos.dy);
+      _vel = Offset(-_vel.dx.abs() * 0.5, _vel.dy);
+      _hasWanderTarget = false;
     }
 
-    if (_currentPosition.dy < halfHeight) {
-      _currentPosition = Offset(_currentPosition.dx, halfHeight);
-      _velocity = Offset(_velocity.dx, _velocity.dy.abs() * _bounceDamping);
-    } else if (_currentPosition.dy > _screenSize.height - halfHeight) {
-      _currentPosition = Offset(
-        _currentPosition.dx,
-        _screenSize.height - halfHeight,
-      );
-      _velocity = Offset(_velocity.dx, -_velocity.dy.abs() * _bounceDamping);
-    }
-  }
-
-  void _applyEdgeSnapping() {
-    if (_velocity.distance < 10.0) {
-      if (_currentPosition.dx < _edgeSnapThreshold) {
-        _currentPosition = Offset(0.0, _currentPosition.dy);
-      } else if (_currentPosition.dx > _screenSize.width - _edgeSnapThreshold) {
-        _currentPosition = Offset(_screenSize.width, _currentPosition.dy);
-      }
-
-      if (_currentPosition.dy < _edgeSnapThreshold) {
-        _currentPosition = Offset(_currentPosition.dx, 0.0);
-      } else if (_currentPosition.dy >
-          _screenSize.height - _edgeSnapThreshold) {
-        _currentPosition = Offset(_currentPosition.dx, _screenSize.height);
-      }
+    if (_pos.dy < m) {
+      _pos = Offset(_pos.dx, m);
+      _vel = Offset(_vel.dx, _vel.dy.abs() * 0.5);
+      _hasWanderTarget = false;
+    } else if (_pos.dy > maxY) {
+      _pos = Offset(_pos.dx, maxY);
+      _vel = Offset(_vel.dx, -_vel.dy.abs() * 0.5);
+      _hasWanderTarget = false;
     }
   }
 }

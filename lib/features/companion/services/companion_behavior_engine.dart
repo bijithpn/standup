@@ -17,13 +17,12 @@ class CompanionBehaviorEngine {
 
   Timer? _behaviorTimer;
   Timer? _wanderTimer;
-  bool _isEnabled = false;
+  bool _isEnabled = true; // Default true; disabled only when explicitly set or settings say so
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
   void start() {
     stop();
-    if (!_isEnabled) return;
     try {
       final settingsRepo = sl<SettingsRepository>();
       if (!settingsRepo.currentSettings.companionEnabled) {
@@ -33,6 +32,7 @@ class CompanionBehaviorEngine {
       // If DI fails (e.g. background isolate), do not start
       return;
     }
+    if (!_isEnabled) return;
 
     _behaviorTimer = Timer.periodic(const Duration(seconds: 5), _onTick);
     _logger.info('Companion behavior engine started');
