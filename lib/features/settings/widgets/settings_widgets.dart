@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/shared/theme/app_theme.dart';
+import 'package:standup/shared/widgets/app_dropdown.dart';
 
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(
@@ -235,46 +236,15 @@ Widget dropdownRow(
                 ),
               ),
             ),
-            Material(
-              type: MaterialType.transparency,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: options.contains(value)
-                        ? value
-                        : (options.isNotEmpty ? options.first : null),
-                    dropdownColor: const Color(0xFF1E1E1E),
-                    icon: const Icon(
-                      CupertinoIcons.chevron_down,
-                      size: 14,
-                      color: AppTheme.accentColor,
-                    ),
-                    style: TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: isSmallScreen ? 11 : 12,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Satoshi',
-                    ),
-                    onChanged: onChanged,
-                    items: options.map<DropdownMenuItem<String>>((
-                      String option,
-                    ) {
-                      return DropdownMenuItem<String>(
-                        value: option,
-                        child: Text(option.toUpperCase()),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
+            AppDropdown<String>(
+              value: options.contains(value)
+                  ? value
+                  : (options.isNotEmpty ? options.first : ''),
+              onChanged: onChanged,
+              items: options.map((option) => AppDropdownItem<String>(
+                value: option,
+                label: option.toUpperCase(),
+              )).toList(),
             ),
           ],
         ),
@@ -400,42 +370,15 @@ Widget inlineDropdown(
   List<String> options,
   ValueChanged<String?> onChanged,
 ) {
-  return Material(
-    type: MaterialType.transparency,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.05),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: options.contains(value)
-              ? value
-              : (options.isNotEmpty ? options.first : null),
-          dropdownColor: const Color(0xFF1E1E1E),
-          icon: const Icon(
-            CupertinoIcons.chevron_down,
-            size: 12,
-            color: Colors.white54,
-          ),
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Satoshi',
-          ),
-          onChanged: onChanged,
-          items: options.map<DropdownMenuItem<String>>((String option) {
-            return DropdownMenuItem<String>(
-              value: option,
-              child: Text(option.toUpperCase()),
-            );
-          }).toList(),
-        ),
-      ),
-    ),
+  return AppDropdown<String>(
+    value: options.contains(value)
+        ? value
+        : (options.isNotEmpty ? options.first : ''),
+    onChanged: onChanged,
+    items: options.map((option) => AppDropdownItem<String>(
+      value: option,
+      label: option.toUpperCase(),
+    )).toList(),
   );
 }
 
@@ -446,27 +389,115 @@ void showPicker({
   required String suffix,
   required ValueChanged<String> onSelected,
 }) {
-  showCupertinoModalPopup(
+  showGeneralDialog(
     context: context,
-    builder: (context) => CupertinoActionSheet(
-      title: Text(title),
-      actions: options
-          .map(
-            (opt) => CupertinoActionSheetAction(
-              onPressed: () {
-                onSelected(opt);
-                Navigator.pop(context);
-              },
-              child: Text('$opt$suffix'),
+    barrierDismissible: true,
+    barrierLabel: 'Dismiss',
+    barrierColor: Colors.black.withValues(alpha: 0.6),
+    transitionDuration: const Duration(milliseconds: 250),
+    pageBuilder: (context, anim1, anim2) {
+      return Center(
+        child: Material(
+          type: MaterialType.transparency,
+          child: Container(
+            width: 320,
+            constraints: const BoxConstraints(maxHeight: 400),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          )
-          .toList(),
-      cancelButton: CupertinoActionSheetAction(
-        onPressed: () => Navigator.pop(context),
-        isDefaultAction: true,
-        child: const Text('Cancel'),
-      ),
-    ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Satoshi',
+                    ),
+                  ),
+                ),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 1,
+                      thickness: 0.5,
+                      color: Colors.white.withValues(alpha: 0.04),
+                    ),
+                    itemBuilder: (context, index) {
+                      final opt = options[index];
+                      return InkWell(
+                        onTap: () {
+                          onSelected(opt);
+                          Navigator.pop(context);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$opt$suffix',
+                              style: const TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Satoshi',
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'Cancel',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    },
+    transitionBuilder: (context, anim1, anim2, child) {
+      return FadeTransition(
+        opacity: anim1,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+            CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+          ),
+          child: child,
+        ),
+      );
+    },
   );
 }
 

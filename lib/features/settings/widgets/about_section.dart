@@ -130,11 +130,11 @@ class _AboutSectionState extends State<AboutSection> {
           divider(),
           buildListRow(
             'Creator: Bijith P N',
-            'Visit portfolio: bijithpn.in',
+            'Visit portfolio: bijith.in',
             null,
             CupertinoIcons.person_circle,
             null,
-            onTap: () => _launchUrl('https://bijithpn.in'),
+            onTap: () => _launchUrl('https://bijith.in'),
             trailing: const Icon(
               CupertinoIcons.link,
               size: 14,

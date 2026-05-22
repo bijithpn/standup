@@ -1,6 +1,21 @@
 # Project Overview
 
-Flutter application project structure.
+BreakMate is a macOS/Windows menu bar application optimized for performance and fluid desktop interactions.
+
+## Architecture & Performance Standards
+
+### Flutter Engine Reuse (macOS)
+- **Engine Group:** The app uses `FlutterEngineGroup` (defined in `AppDelegate.swift`) for spawning overlays and the desktop companion. 
+- **Standard:** Never instantiate a raw `FlutterEngine` for secondary windows. Always use `engineGroup.makeEngine` to ensure 10x faster startup and shared memory benefits.
+
+### Asset Management
+- **Pre-caching:** All companion animations and tray icons MUST be pre-cached during initial startup or breed changes.
+- **Optimization:** Image frame extraction for the system tray uses a **Bounding Box Cache** to avoid redundant pixel scanning.
+- **Rules:** Avoid using `BackdropFilter` for full-screen animations. Prefer gradient-based simulations or lower-resolution blurred background buffers for better GPU performance on high-res displays.
+
+### State Synchronization
+- **Event Bus:** The "Main" engine and "Companion" engine are synchronized via `CompanionStateChangedEvent`.
+- **Constraint:** Logical state (mood, timer status) is managed by the Main engine. Rendering-specific triggers are passed to the Companion engine to ensure consistency.
 
 ## Folder Structure
 
