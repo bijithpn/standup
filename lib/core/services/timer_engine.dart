@@ -49,6 +49,7 @@ class TimerEngine extends ChangeNotifier {
   Duration _workElapsed = Duration.zero;
   Duration _totalWorkToday = Duration.zero;
   DateTime? _lastTickTime;
+  DateTime? _lastBreakFinishedAt; // Added to track session duration accurately
 
   int _shortBreakIntervalMinutes = AppConstants.defaultShortBreakIntervalMinutes;
   int _shortBreakDurationSeconds = AppConstants.defaultShortBreakDurationSeconds;
@@ -112,23 +113,31 @@ class TimerEngine extends ChangeNotifier {
 
   void startTimers() {
     _syncSettingsFromRepo();
-    _state = TimerState.running;
-    _isPreBreak = false;
-    _workElapsed = Duration.zero;
+    
+    // Attempt to restore state first
+    restoreState();
+    
+    // If it was already running or break active, keep it that way
+    if (_state == TimerState.idle) {
+      _state = TimerState.running;
+      _isPreBreak = false;
+      _workElapsed = Duration.zero;
+      _clockOutTriggered = false;
+    }
+    
     _lastTickTime = DateTime.now();
-    _clockOutTriggered = false;
 
     _startTicking();
     _setupActivityMonitor();
     _startUsageTracking();
 
     _emit(TimerStateChangedEvent(
-      state: TimerStateEvent.running,
+      state: _state == TimerState.breakActive ? TimerStateEvent.breakActive : TimerStateEvent.running,
       countdownSeconds: _countdownSeconds,
       workElapsedSeconds: _workElapsed.inSeconds,
     ));
 
-    _logger.info('Timers started in $_mode mode');
+    _logger.info('Timers started (State: $_state) in $_mode mode');
     notifyListeners();
   }
 
@@ -166,6 +175,11 @@ class TimerEngine extends ChangeNotifier {
         countdownSeconds: _countdownSeconds,
         workElapsedSeconds: _workElapsed.inSeconds,
       ));
+
+      // Auto-save state every 30 seconds or on significant changes
+      if (_workElapsed.inSeconds % 30 == 0) {
+        saveState();
+      }
 
       _updateTray();
       notifyListeners();
@@ -337,13 +351,29 @@ class TimerEngine extends ChangeNotifier {
         await _notificationService.showBreakFinished();
       }
 
-      final sessionMinutes = _totalWorkToday.inMinutes;
+      // Record actual session duration (time since last break)
+      final now = DateTime.now();
+      final sessionDuration = _lastBreakFinishedAt != null 
+          ? now.difference(_lastBreakFinishedAt!) 
+          : _workElapsed;
+      
+      final sessionMinutes = sessionDuration.inMinutes;
       final activityLevel = sessionMinutes > 45 ? 'high' : sessionMinutes > 20 ? 'medium' : 'low';
+      
       _adaptiveBreakService?.recordWorkSession(
-        duration: _totalWorkToday,
-        hourOfDay: DateTime.now().hour,
+        duration: sessionDuration,
+        hourOfDay: now.hour,
         activityLevel: activityLevel,
       );
+      
+      // Update interval for the next work session based on history
+      final suggestedInterval = _adaptiveBreakService?.getSuggestedBreakInterval();
+      if (suggestedInterval != null && suggestedInterval > 0) {
+        _shortBreakIntervalMinutes = suggestedInterval;
+        _logger.info('Adaptive: Next break interval set to $suggestedInterval min');
+      }
+      
+      _lastBreakFinishedAt = now;
     }
 
     _emit(BreakEndedEvent(skipped: skipped));
@@ -459,6 +489,7 @@ class TimerEngine extends ChangeNotifier {
   void pauseTimers() {
     if (_state == TimerState.breakActive) return;
     _state = TimerState.paused;
+    saveState();
     _emit(TimerStateChangedEvent(
       state: TimerStateEvent.paused,
       countdownSeconds: _countdownSeconds,
@@ -475,6 +506,7 @@ class TimerEngine extends ChangeNotifier {
     if (!_isWithinWorkingHours()) {
       _state = TimerState.paused;
     }
+    saveState();
     _emit(TimerStateChangedEvent(
       state: _state == TimerState.running
           ? TimerStateEvent.running
@@ -537,6 +569,9 @@ class TimerEngine extends ChangeNotifier {
       if (_longBreakWindowStartedAt != null) {
         _storageService.setInt('timer_long_break_window', _longBreakWindowStartedAt!.millisecondsSinceEpoch);
       }
+      if (_lastBreakFinishedAt != null) {
+        _storageService.setInt('timer_last_break_finished', _lastBreakFinishedAt!.millisecondsSinceEpoch);
+      }
       _logger.info('Timer state saved');
     } catch (e) {
       _logger.error('Failed to save timer state: $e');
@@ -568,6 +603,11 @@ class TimerEngine extends ChangeNotifier {
       final longBreakWindowMs = _storageService.getInt('timer_long_break_window', defaultValue: 0);
       if (longBreakWindowMs > 0) {
         _longBreakWindowStartedAt = DateTime.fromMillisecondsSinceEpoch(longBreakWindowMs);
+      }
+      
+      final lastBreakMs = _storageService.getInt('timer_last_break_finished', defaultValue: 0);
+      if (lastBreakMs > 0) {
+        _lastBreakFinishedAt = DateTime.fromMillisecondsSinceEpoch(lastBreakMs);
       }
 
       _logger.info('Timer state restored: $_state, elapsed=${_workElapsed.inSeconds}s');

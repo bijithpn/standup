@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
@@ -11,6 +12,8 @@ import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/adaptive_break_service.dart';
 import 'package:standup/core/services/window_service.dart';
+import 'package:standup/features/companion/data/cat_asset_loader.dart';
+import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/settings_repository.dart';
@@ -97,6 +100,14 @@ Future<void> initDependencies() async {
   final trayManager = TrayManagerService();
   await trayManager.init();
   sl.registerSingleton<TrayManagerService>(trayManager);
+
+  // Eagerly pre-cache tray icons for the current theme to ensure smooth animation
+  try {
+    final theme = CatTheme.getTheme(settingsRepo.currentSettings.companionCatTheme);
+    CatAssetLoader.preCacheTrayIcons(theme);
+  } catch (e) {
+    debugPrint('Failed to pre-cache tray icons: $e');
+  }
 
   // Application Controllers
   final meetingDetectionService = MeetingDetectionService();

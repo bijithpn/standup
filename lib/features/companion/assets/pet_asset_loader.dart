@@ -31,12 +31,16 @@ class PetAssetLoader {
     }
   }
 
+  static Map<String, dynamic>? _manifestCache;
+
   static Future<Map<String, dynamic>?> loadPetsManifest() async {
+    if (_manifestCache != null) return _manifestCache;
     try {
       final String jsonString = await rootBundle.loadString(
         'assets/animations/pets/pets.json',
       );
-      return jsonDecode(jsonString) as Map<String, dynamic>;
+      _manifestCache = jsonDecode(jsonString) as Map<String, dynamic>;
+      return _manifestCache;
     } catch (e) {
       return null;
     }
@@ -137,6 +141,11 @@ class PetAssetLoader {
     }
 
     return '';
+  }
+
+  static Future<void> preCache(PetProfile profile) async {
+    await loadAnimations(profile);
+    await extractPetIconPath(profile);
   }
 
   static Future<Map<CatAnimationState, SpriteAnimation>> loadAnimations(

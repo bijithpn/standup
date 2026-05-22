@@ -80,13 +80,13 @@ class CompanionBehaviorEngine {
   void _triggerRandomBehavior() {
     final behavior = _random.nextDouble();
 
-    if (behavior < 0.3) {
+    if (behavior < 0.4) { // Increased blink frequency
       _triggerBlink();
-    } else if (behavior < 0.5) {
+    } else if (behavior < 0.6) {
       _triggerStretch();
-    } else if (behavior < 0.7) {
+    } else if (behavior < 0.75) {
       _triggerLookAround();
-    } else if (behavior < 0.85) {
+    } else if (behavior < 0.9) {
       _triggerYawn();
     } else {
       _triggerHappy();
@@ -94,7 +94,11 @@ class CompanionBehaviorEngine {
   }
 
   void _triggerBlink() {
-    _logger.info('Companion: blink');
+    _eventBus.emit(CompanionInteractionEvent(
+      interactionType: 'blink',
+      metadata: {'source': 'behavior_engine'},
+    ));
+    _logger.info('Companion: blink behavior');
   }
 
   void _triggerStretch() {

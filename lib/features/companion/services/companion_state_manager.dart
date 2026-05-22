@@ -126,25 +126,51 @@ class CompanionStateManager {
   void _onInteraction(CompanionInteractionEvent event) {
     switch (event.interactionType) {
       case 'click':
+      case 'tap':
         _setState(CompanionState.alert);
-        Future.delayed(const Duration(milliseconds: 1500), () {
-          if (_state == CompanionState.alert) _setState(CompanionState.idle);
-        });
+        _resetToIdleAfter(const Duration(milliseconds: 2000));
       case 'doubleClick':
+      case 'doubleTap':
         _setState(CompanionState.happy);
-        Future.delayed(const Duration(seconds: 2), () {
-          if (_state == CompanionState.happy) _setState(CompanionState.idle);
-        });
+        _resetToIdleAfter(const Duration(seconds: 3));
       case 'drag':
+      case 'dragStart':
         _isDragging = true;
         _setState(CompanionState.dragging);
+      case 'dragEnd':
+        endDrag();
       case 'hover':
         if (_state == CompanionState.idle) {
           _setState(CompanionState.alert);
+          _resetToIdleAfter(const Duration(milliseconds: 1500));
         }
+      case 'blink':
+        // Blinking is ambient, we don't necessarily change the FSM state 
+        // unless it's a dedicated state, but we can trigger a temporary state.
+        break;
+      case 'stretch':
+        _setState(CompanionState.stretch);
+        _resetToIdleAfter(const Duration(seconds: 4));
+      case 'yawn':
+        _setState(CompanionState.sleeping);
+        _resetToIdleAfter(const Duration(seconds: 3));
+      case 'lookAround':
+        _setState(CompanionState.alert);
+        _resetToIdleAfter(const Duration(seconds: 2));
+      case 'happy':
+        _setState(CompanionState.happy);
+        _resetToIdleAfter(const Duration(seconds: 3));
       case 'rightClick':
         break;
     }
+  }
+
+  void _resetToIdleAfter(Duration duration) {
+    Future.delayed(duration, () {
+      if (!_isDragging && !_meetingPaused && !_focusModeActive) {
+        _setState(CompanionState.idle);
+      }
+    });
   }
 
   void _onPositionChanged(CompanionPositionChangedEvent event) {

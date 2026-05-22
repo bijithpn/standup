@@ -46,6 +46,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   double _displayHeight = 0;
   int _screenId = 0;
   bool _strictMode = false;
+  bool _isInternalPreview = false; // Flag to disable expensive animations during preview
 
   String? _exerciseTitle;
   String? _exerciseInstructions;
@@ -89,6 +90,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
             _overlayType = args['type'] ?? _overlayType;
             _strictMode = args['strictMode'] ?? _strictMode;
+            _isInternalPreview = args['isPreview'] ?? false;
             
             // Display Context
             final displayId = args['displayId'] as String?;
@@ -142,7 +144,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       color: Colors.black,
       child: FadeTransition(
         opacity: _fadeController,
-        child: _buildBreakScreen(),
+        child: RepaintBoundary(
+          child: _buildBreakScreen(),
+        ),
       ),
     );
   }
@@ -151,114 +155,130 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Background Layer
-        AnimatedBuilder(
-          animation: _kenBurnsController,
-          builder: (context, child) {
-            return _buildBackground();
-          },
+        // Background Layer - Separated into its own RepaintBoundary to avoid UI invalidation
+        RepaintBoundary(
+          child: AnimatedBuilder(
+            animation: _kenBurnsController,
+            builder: (context, child) {
+              return _buildBackground();
+            },
+          ),
         ),
 
-        // UI Content
+        // UI Content - Wrapped in RepaintBoundary to isolate from background animation
         SafeArea(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Spacer(),
+          child: RepaintBoundary(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Spacer(),
+                
+                // Main content centered
+                _buildMainContent(),
 
-              // Main content centered
-              Text(
-                _title.toUpperCase().contains('SHORT') ||
-                        _title.toUpperCase().contains('EYE')
-                    ? 'Rest Your Eyes'
-                    : 'Time to Recharge',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 2,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-              const SizedBox(height: 24),
+                const Spacer(),
 
-              Text(
-                _formatTime(_remainingSeconds),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 160,
-                  fontWeight: FontWeight.w200,
-                  letterSpacing: -4,
-                  fontFamily: 'Satoshi',
-                  fontFeatures: [FontFeature.tabularFigures()],
-                  height: 1.0,
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              Container(
-                constraints: const BoxConstraints(maxWidth: 400),
-                child: Text(
-                  _tip,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.7),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: 'Satoshi',
-                    height: 1.5,
-                  ),
-                ),
-              ),
-
-              if (_exerciseTitle != null && _exerciseInstructions != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 40),
-                  child: _buildExerciseCard(),
-                ),
-
-              if (_displayId.isNotEmpty && _displayId != "Primary")
-                Padding(
-                  padding: const EdgeInsets.only(top: 24),
-                  child: Text(
-                    _displayId,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.3),
-                      fontSize: 12,
-                      fontFamily: 'Satoshi',
-                    ),
-                  ),
-                ),
-
-              const Spacer(),
-
-              // Footer
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 40,
-                  vertical: 30,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      DateFormat('HH:mm').format(DateTime.now()),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.6),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Satoshi',
-                      ),
-                    ),
-                    if (!_strictMode) _buildSkipButton(),
-                  ],
-                ),
-              ),
-            ],
+                // Footer
+                _buildFooter(),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMainContent() {
+    return Column(
+      children: [
+        Text(
+          _title.toUpperCase().contains('SHORT') ||
+                  _title.toUpperCase().contains('EYE')
+              ? 'Rest Your Eyes'
+              : 'Time to Recharge',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 2,
+            fontFamily: 'Satoshi',
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        Text(
+          _formatTime(_remainingSeconds),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 160,
+            fontWeight: FontWeight.w200,
+            letterSpacing: -4,
+            fontFamily: 'Satoshi',
+            fontFeatures: [FontFeature.tabularFigures()],
+            height: 1.0,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Text(
+            _tip,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.7),
+              fontSize: 18,
+              fontWeight: FontWeight.w400,
+              fontFamily: 'Satoshi',
+              height: 1.5,
+            ),
+          ),
+        ),
+
+        if (_exerciseTitle != null && _exerciseInstructions != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 40),
+            child: _buildExerciseCard(),
+          ),
+
+        if (_displayId.isNotEmpty && _displayId != "Primary")
+          Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: Text(
+              _displayId,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.3),
+                fontSize: 12,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFooter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 40,
+        vertical: 30,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            DateFormat('HH:mm').format(DateTime.now()),
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.6),
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Satoshi',
+            ),
+          ),
+          if (!_strictMode) _buildSkipButton(),
+        ],
+      ),
     );
   }
 
@@ -311,32 +331,39 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   Widget _buildBackground() {
+    final screenW = _displayWidth > 0 ? _displayWidth : 1920.0;
+    final screenH = _displayHeight > 0 ? _displayHeight : 1080.0;
+    
     switch (_currentTheme) {
       case BreakTheme.image:
         return Stack(
           fit: StackFit.expand,
           children: [
+            // Optimized image loading with cache sizing
             Transform.scale(
-              scale: 1.1 + (0.1 * _kenBurnsController.value),
+              scale: _isInternalPreview ? 1.0 : (1.05 + (0.1 * _kenBurnsController.value)),
               child: Image.asset(
                 _currentTemplate, 
                 fit: BoxFit.cover,
-                width: _displayWidth > 0 ? _displayWidth : double.infinity,
-                height: _displayHeight > 0 ? _displayHeight : double.infinity,
+                cacheWidth: screenW.toInt(),
+                cacheHeight: screenH.toInt(),
+                filterQuality: _isInternalPreview ? FilterQuality.none : FilterQuality.low, 
               ),
             ),
-            BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.4),
-                      Colors.black.withValues(alpha: 0.8),
-                    ],
-                  ),
+            
+            // Simulating blur/depth with a complex gradient instead of BackdropFilter
+            // This is SIGNIFICANTLY faster than BackdropFilter on high-res displays
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.3),
+                    Colors.black.withValues(alpha: 0.8),
+                  ],
+                  stops: const [0.0, 0.4, 1.0],
                 ),
               ),
             ),
@@ -348,7 +375,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              stops: [0.0, 0.5 + (0.1 * _kenBurnsController.value), 1.0],
+              stops: [0.0, 0.5 + (0.05 * _kenBurnsController.value), 1.0],
               colors: const [
                 Color(0xFF0F2027),
                 Color(0xFF203A43),
@@ -363,7 +390,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             gradient: LinearGradient(
               begin: Alignment.bottomLeft,
               end: Alignment.topRight,
-              stops: [0.0, 0.5 + (0.1 * _kenBurnsController.value), 1.0],
+              stops: [0.0, 0.5 + (0.05 * _kenBurnsController.value), 1.0],
               colors: const [
                 Color(0xFF134E5E),
                 Color(0xFF71B280),
@@ -377,8 +404,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           decoration: BoxDecoration(
             gradient: RadialGradient(
               center: Alignment.center,
-              radius: 0.8 + (0.4 * _kenBurnsController.value),
-              colors: const [Color(0xFF2A2A2A), Color(0xFF0A0A0A)],
+              radius: 0.8 + (0.2 * _kenBurnsController.value),
+              colors: const [Color(0xFF1A1A1A), Color(0xFF050505)],
             ),
           ),
         );

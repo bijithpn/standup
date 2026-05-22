@@ -30,15 +30,17 @@ class OverlayWindowManager: NSObject {
         
         let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
         let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
+        
         for screen in screens {
             let instance = createOverlayInstance(for: screen, args: args)
             overlayInstances[screen] = instance
             
             instance.window.alphaValue = 0.0
-            instance.window.makeKeyAndOrderFront(nil)
+            // orderFrontRegardless is critical for showing over other fullscreen apps
+            instance.window.orderFrontRegardless()
             
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.4
+                context.duration = 0.5
                 instance.window.animator().alphaValue = 1.0
             }
         }
@@ -116,42 +118,23 @@ class OverlayWindowManager: NSObject {
             defer: false
         )
         
-        window.backgroundColor = .clear
-        window.isOpaque = false
+        window.backgroundColor = .black // Solid black background to prevent flickering
+        window.isOpaque = true
         window.hasShadow = false
         window.level = .screenSaver
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = false
         
-        // The frame will be explicitly applied at the end after assigning the content view
-        
-        let container = NSViewController()
-        
-        let visualEffectView = NSVisualEffectView(frame: NSRect(origin: .zero, size: screen.frame.size))
-        visualEffectView.material = .hudWindow
-        visualEffectView.blendingMode = .behindWindow
-        visualEffectView.state = .active
-        container.view = visualEffectView
-        
-        // Spawn a fresh engine for each monitor to ensure simultaneous UI
+        // Spawn a fresh engine for each monitor
         let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
         engine.run(withEntrypoint: "overlayMain")
         RegisterGeneratedPlugins(registry: engine)
         
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
-        controller.view.wantsLayer = true
-        controller.view.layer?.backgroundColor = NSColor.clear.cgColor
+        controller.backgroundColor = .black
         
-        container.addChild(controller)
-        visualEffectView.addSubview(controller.view)
-        
-        controller.view.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            controller.view.topAnchor.constraint(equalTo: visualEffectView.topAnchor),
-            controller.view.bottomAnchor.constraint(equalTo: visualEffectView.bottomAnchor),
-            controller.view.leadingAnchor.constraint(equalTo: visualEffectView.leadingAnchor),
-            controller.view.trailingAnchor.constraint(equalTo: visualEffectView.trailingAnchor),
-        ])
+        window.contentViewController = controller
+        window.setFrame(screen.frame, display: true)
         
         // Setup MethodChannel for this overlay
         let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: engine.binaryMessenger)
@@ -193,9 +176,6 @@ class OverlayWindowManager: NSObject {
                 result(FlutterMethodNotImplemented)
             }
         }
-        
-        window.contentViewController = container
-        window.setFrame(screen.frame, display: true)
         
         return OverlayInstance(window: window, engine: engine, controller: controller)
     }
@@ -321,6 +301,20 @@ class MainFlutterWindow: NSWindow {
       case "focusApp":
         NSApp.activate(ignoringOtherApps: true)
         result(nil)
+
+      case "setPresentationOptions":
+        if let args = call.arguments as? [String: Any],
+           let hideDock = args["hideDock"] as? Bool,
+           let hideMenu = args["hideMenu"] as? Bool {
+            if hideDock && hideMenu {
+                NSApp.presentationOptions = [.hideDock, .hideMenuBar]
+            } else {
+                NSApp.presentationOptions = []
+            }
+            result(nil)
+        } else {
+            result(FlutterError(code: "INVALID_ARGS", message: "Missing hideDock or hideMenu", details: nil))
+        }
 
       case "setVisualEffect":
         if let args = call.arguments as? [String: Any], let materialName = args["material"] as? String {

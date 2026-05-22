@@ -47,6 +47,7 @@ enum CompanionState {
   dragging,
   listening,
   happy,
+  stretch,
   breakReminder,
   meetingPaused,
   focusMode,
