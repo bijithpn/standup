@@ -23,6 +23,7 @@ import 'package:standup/features/settings/widgets/general_section.dart';
 import 'package:standup/features/settings/widgets/focus_section.dart';
 import 'package:standup/features/settings/widgets/notifications_section.dart';
 import 'package:standup/features/settings/widgets/about_section.dart';
+import 'package:standup/shared/widgets/app_dropdown.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -348,47 +349,28 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
+                AppDropdown<String>(
+                  value: _settings.breakTheme,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      _save(_settings.copyWith(breakTheme: newValue));
+                    }
+                  },
+                  items: const [
+                    AppDropdownItem(value: 'random', label: 'RANDOM THEME'),
+                    AppDropdownItem(value: 'image', label: 'NATURE IMAGES'),
+                    AppDropdownItem(value: 'ocean', label: 'OCEAN WAVES'),
+                    AppDropdownItem(value: 'forest', label: 'FOREST CANOPY'),
+                    AppDropdownItem(value: 'minimal', label: 'MINIMAL GLOW'),
+                    AppDropdownItem(value: 'sunset', label: 'SUNSET (NEW)'),
+                    AppDropdownItem(value: 'nebula', label: 'NEBULA (NEW)'),
+                    AppDropdownItem(value: 'midnight', label: 'MIDNIGHT (NEW)'),
+                    AppDropdownItem(
+                      value: 'cyberpunk',
+                      label: 'CYBERPUNK (NEW)',
                     ),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _settings.breakTheme,
-                        dropdownColor: const Color(0xFF1E1E1E),
-                        icon: const Icon(
-                          CupertinoIcons.chevron_down,
-                          size: 14,
-                          color: AppTheme.accentColor,
-                        ),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontFamily: 'Satoshi',
-                          fontWeight: FontWeight.w500,
-                        ),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            _save(_settings.copyWith(breakTheme: newValue));
-                          }
-                        },
-                        items: const [
-                          DropdownMenuItem(value: 'random', child: Text('Random Theme')),
-                          DropdownMenuItem(value: 'ocean', child: Text('Ocean Waves')),
-                          DropdownMenuItem(value: 'forest', child: Text('Forest Canopy')),
-                          DropdownMenuItem(value: 'minimal', child: Text('Minimal Glow')),
-                          DropdownMenuItem(value: 'image', child: Text('Nature Images')),
-                        ],
-                      ),
-                    ),
-                  ),
+                    AppDropdownItem(value: 'zen', label: 'ZEN GARDEN (NEW)'),
+                  ],
                 ),
               ],
             ),
@@ -444,15 +426,22 @@ class _SettingsPageState extends State<SettingsPage> {
               return _buildCard([
                 const Padding(
                   padding: EdgeInsets.all(20.0),
-                  child: Text('No external displays detected or plugin not fully initialized.', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Satoshi')),
-                )
+                  child: Text(
+                    'No external displays detected or plugin not fully initialized.',
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontFamily: 'Satoshi',
+                    ),
+                  ),
+                ),
               ]);
             }
             return _buildCard(
               displays.map((display) {
                 return _actionRow(
                   label: display.id,
-                  subtitle: 'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
+                  subtitle:
+                      'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
                   buttonText: 'Active',
                   buttonColor: AppTheme.accentColor.withValues(alpha: 0.2),
                   textColor: AppTheme.accentColor,
@@ -573,53 +562,97 @@ class _SettingsPageState extends State<SettingsPage> {
         _buildCard([
           _inputRow(
             'Short Break Every',
-            '${_settings.shortBreakIntervalMinutes} min',
-            onTap: () => _showPicker(
-              title: 'Short Break Every',
-              options: List.generate(60, (i) => (i + 1).toString()),
-              suffix: ' min',
-              onSelected: (v) => _save(
-                _settings.copyWith(shortBreakIntervalMinutes: int.parse(v)),
-              ),
+            '',
+            trailing: _inlineDropdown(
+              '${_settings.shortBreakIntervalMinutes} min',
+              List.generate(60, (i) => '${i + 1} min'),
+              (v) {
+                if (v != null) {
+                  _save(
+                    _settings.copyWith(
+                      shortBreakIntervalMinutes: int.parse(
+                        v.replaceAll(' min', ''),
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
           ),
           _divider(),
           _inputRow(
             'Short Break Duration',
-            '${_settings.shortBreakDurationSeconds} sec',
-            onTap: () => _showPicker(
-              title: 'Short Break Duration',
-              options: ['15', '20', '30', '45', '60', '90', '120'],
-              suffix: ' sec',
-              onSelected: (v) => _save(
-                _settings.copyWith(shortBreakDurationSeconds: int.parse(v)),
-              ),
+            '',
+            trailing: _inlineDropdown(
+              '${_settings.shortBreakDurationSeconds} sec',
+              [
+                '15 sec',
+                '20 sec',
+                '30 sec',
+                '45 sec',
+                '60 sec',
+                '90 sec',
+                '120 sec',
+              ],
+              (v) {
+                if (v != null) {
+                  _save(
+                    _settings.copyWith(
+                      shortBreakDurationSeconds: int.parse(
+                        v.replaceAll(' sec', ''),
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
           ),
           _divider(),
           _inputRow(
             'Long Break Every',
-            '${_settings.longBreakIntervalMinutes} min',
-            onTap: () => _showPicker(
-              title: 'Long Break Every',
-              options: ['30', '45', '60', '90', '120', '150', '180'],
-              suffix: ' min',
-              onSelected: (v) => _save(
-                _settings.copyWith(longBreakIntervalMinutes: int.parse(v)),
-              ),
+            '',
+            trailing: _inlineDropdown(
+              '${_settings.longBreakIntervalMinutes} min',
+              [
+                '30 min',
+                '45 min',
+                '60 min',
+                '90 min',
+                '120 min',
+                '150 min',
+                '180 min',
+              ],
+              (v) {
+                if (v != null) {
+                  _save(
+                    _settings.copyWith(
+                      longBreakIntervalMinutes: int.parse(
+                        v.replaceAll(' min', ''),
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
           ),
           _divider(),
           _inputRow(
             'Long Break Duration',
-            '${_settings.longBreakDurationMinutes} min',
-            onTap: () => _showPicker(
-              title: 'Long Break Duration',
-              options: ['5', '10', '15', '20', '30'],
-              suffix: ' min',
-              onSelected: (v) => _save(
-                _settings.copyWith(longBreakDurationMinutes: int.parse(v)),
-              ),
+            '',
+            trailing: _inlineDropdown(
+              '${_settings.longBreakDurationMinutes} min',
+              ['5 min', '10 min', '15 min', '20 min', '30 min'],
+              (v) {
+                if (v != null) {
+                  _save(
+                    _settings.copyWith(
+                      longBreakDurationMinutes: int.parse(
+                        v.replaceAll(' min', ''),
+                      ),
+                    ),
+                  );
+                }
+              },
             ),
           ),
         ]),
@@ -790,20 +823,15 @@ class _SettingsPageState extends State<SettingsPage> {
             _divider(),
             _inputRow(
               'End Workday At',
-              _settings.clockOutTime,
-              onTap: () => _showPicker(
-                title: 'End Workday',
-                options: [
-                  '16:00',
-                  '16:30',
-                  '17:00',
-                  '17:30',
-                  '18:00',
-                  '18:30',
-                  '19:00',
-                ],
-                suffix: '',
-                onSelected: (v) => _save(_settings.copyWith(clockOutTime: v)),
+              '',
+              trailing: _inlineDropdown(
+                _settings.clockOutTime,
+                ['16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00'],
+                (v) {
+                  if (v != null) {
+                    _save(_settings.copyWith(clockOutTime: v));
+                  }
+                },
               ),
             ),
           ],
@@ -995,25 +1023,19 @@ class _SettingsPageState extends State<SettingsPage> {
                 CupertinoButton(
                   padding: EdgeInsets.zero,
                   onPressed: () {
-                    showCupertinoModalPopup(
-                      context: context,
-                      builder: (_) => CupertinoActionSheet(
-                        actions: ExerciseCategory.values
-                            .map(
-                              (c) => CupertinoActionSheetAction(
-                                onPressed: () {
-                                  setDialogState(() => category = c);
-                                  Navigator.pop(context);
-                                },
-                                child: Text(c.name),
-                              ),
-                            )
-                            .toList(),
-                        cancelButton: CupertinoActionSheetAction(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
+                    _showPicker(
+                      title: 'Select Category',
+                      options: ExerciseCategory.values
+                          .map((c) => c.name)
+                          .toList(),
+                      suffix: '',
+                      onSelected: (v) {
+                        setDialogState(() {
+                          category = ExerciseCategory.values.firstWhere(
+                            (c) => c.name == v,
+                          );
+                        });
+                      },
                     );
                   },
                   child: Text('Category: ${category.name}'),
@@ -1544,7 +1566,12 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _inputRow(String label, String value, {VoidCallback? onTap}) {
+  Widget _inputRow(
+    String label,
+    String value, {
+    VoidCallback? onTap,
+    Widget? trailing,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       child: Row(
@@ -1561,43 +1588,67 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           ),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  width: 0.5,
+          if (trailing != null)
+            trailing
+          else
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Satoshi',
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      CupertinoIcons.chevron_up_chevron_down,
+                      size: 12,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    value,
-                    style: const TextStyle(
-                      color: AppTheme.accentColor,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Satoshi',
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    CupertinoIcons.chevron_up_chevron_down,
-                    size: 12,
-                    color: AppTheme.textSecondary,
-                  ),
-                ],
-              ),
             ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _inlineDropdown(
+    String value,
+    List<String> options,
+    ValueChanged<String?> onChanged,
+  ) {
+    return AppDropdown<String>(
+      value: options.contains(value)
+          ? value
+          : (options.isNotEmpty ? options.first : ''),
+      onChanged: onChanged,
+      items: options
+          .map(
+            (option) => AppDropdownItem<String>(value: option, label: option),
+          )
+          .toList(),
     );
   }
 
@@ -1607,27 +1658,115 @@ class _SettingsPageState extends State<SettingsPage> {
     required String suffix,
     required ValueChanged<String> onSelected,
   }) {
-    showCupertinoModalPopup(
+    showGeneralDialog(
       context: context,
-      builder: (context) => CupertinoActionSheet(
-        title: Text(title),
-        actions: options
-            .map(
-              (opt) => CupertinoActionSheetAction(
-                onPressed: () {
-                  onSelected(opt);
-                  Navigator.pop(context);
-                },
-                child: Text('$opt$suffix'),
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (context, anim1, anim2) {
+        return Center(
+          child: Material(
+            type: MaterialType.transparency,
+            child: Container(
+              width: 320,
+              constraints: const BoxConstraints(maxHeight: 400),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            )
-            .toList(),
-        cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
-          isDefaultAction: true,
-          child: const Text('Cancel'),
-        ),
-      ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Satoshi',
+                      ),
+                    ),
+                  ),
+                  Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      separatorBuilder: (context, index) => Divider(
+                        height: 1,
+                        thickness: 0.5,
+                        color: Colors.white.withValues(alpha: 0.04),
+                      ),
+                      itemBuilder: (context, index) {
+                        final opt = options[index];
+                        return InkWell(
+                          onTap: () {
+                            onSelected(opt);
+                            Navigator.pop(context);
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 14,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '$opt$suffix',
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Satoshi',
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.4),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, anim1, anim2, child) {
+        return FadeTransition(
+          opacity: anim1,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+              CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
+            ),
+            child: child,
+          ),
+        );
+      },
     );
   }
 
@@ -2158,78 +2297,55 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
             const Spacer(),
-            Material(
-              type: MaterialType.transparency,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: controller.companionCatTheme,
-                    dropdownColor: const Color(0xFF1E1E1E),
-                    icon: const Icon(
-                      CupertinoIcons.chevron_down,
-                      size: 14,
-                      color: AppTheme.accentColor,
-                    ),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontFamily: 'Satoshi',
-                      fontWeight: FontWeight.w500,
-                    ),
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
-                        controller.changeTheme(newValue);
-                      }
-                    },
-                    items: CatTheme.themes.map<DropdownMenuItem<String>>((
-                      theme,
-                    ) {
-                      final itemIsDog = _isDog(theme.id);
-                      return DropdownMenuItem<String>(
-                        value: theme.id,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: itemIsDog
-                                    ? Colors.blue.withValues(alpha: 0.15)
-                                    : Colors.orange.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                itemIsDog ? 'DOG' : 'CAT',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: itemIsDog
-                                      ? Colors.blue
-                                      : Colors.orange,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(theme.name),
-                          ],
+            AppDropdown<String>(
+              value: controller.companionCatTheme,
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  controller.changeTheme(newValue);
+                }
+              },
+              items: CatTheme.themes.map((theme) {
+                final itemIsDog = _isDog(theme.id);
+                return AppDropdownItem<String>(
+                  value: theme.id,
+                  label: theme.name,
+                  customChild: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
                         ),
-                      );
-                    }).toList(),
+                        decoration: BoxDecoration(
+                          color: itemIsDog
+                              ? Colors.blue.withValues(alpha: 0.15)
+                              : Colors.orange.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          itemIsDog ? 'DOG' : 'CAT',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: itemIsDog ? Colors.blue : Colors.orange,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        theme.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ),
+                );
+              }).toList(),
             ),
             const SizedBox(width: 10),
             CupertinoButton(

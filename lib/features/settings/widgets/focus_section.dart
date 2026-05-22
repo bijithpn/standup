@@ -9,11 +9,7 @@ class FocusSection extends StatelessWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
 
-  const FocusSection({
-    super.key,
-    required this.settings,
-    required this.onSave,
-  });
+  const FocusSection({super.key, required this.settings, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +20,13 @@ class FocusSection extends StatelessWidget {
         buildCard([
           _buildFocusModeToggle(),
           divider(),
-          _buildShortBreakInterval(context),
+          _buildShortBreakInterval(),
           divider(),
-          _buildShortBreakDuration(context),
+          _buildShortBreakDuration(),
           divider(),
-          _buildLongBreakInterval(context),
+          _buildLongBreakInterval(),
           divider(),
-          _buildLongBreakDuration(context),
+          _buildLongBreakDuration(),
         ]),
       ],
     );
@@ -45,69 +41,85 @@ class FocusSection extends StatelessWidget {
     );
   }
 
-  Widget _buildShortBreakInterval(BuildContext context) {
-    return inputRow(
+  Widget _buildShortBreakInterval() {
+    return buildListRow(
       'Short Break Interval',
-      'Every ${settings.shortBreakIntervalMinutes} minutes',
-      onTap: () => showPicker(
-        context: context,
-        title: 'Short Break Interval',
-        options: ['10', '15', '20', '25', '30', '45', '60'],
-        suffix: ' min',
-        onSelected: (v) {
-          onSave(settings.copyWith(shortBreakIntervalMinutes: int.parse(v)));
-          sl<TimerEngine>().updateMenuStyle(settings.menuBarStyle);
+      'How often to take short breaks',
+      null,
+      CupertinoIcons.timer,
+      null,
+      trailing: inlineDropdown(
+        '${settings.shortBreakIntervalMinutes} min',
+        ['10 min', '15 min', '20 min', '25 min', '30 min', '45 min', '60 min'],
+        (v) {
+          if (v != null) {
+            final mins = int.parse(v.replaceAll(' min', ''));
+            onSave(settings.copyWith(shortBreakIntervalMinutes: mins));
+            sl<TimerEngine>().updateMenuStyle(settings.menuBarStyle);
+          }
         },
       ),
     );
   }
 
-  Widget _buildShortBreakDuration(BuildContext context) {
-    return inputRow(
+  Widget _buildShortBreakDuration() {
+    return buildListRow(
       'Short Break Duration',
-      '${settings.shortBreakDurationSeconds} seconds',
-      onTap: () => showPicker(
-        context: context,
-        title: 'Short Break Duration',
-        options: ['10', '15', '20', '30', '45', '60'],
-        suffix: ' sec',
-        onSelected: (v) {
-          onSave(settings.copyWith(shortBreakDurationSeconds: int.parse(v)));
-          sl<TrayManagerService>().triggerActionAnimation();
+      'How long short breaks last',
+      null,
+      CupertinoIcons.hourglass,
+      null,
+      trailing: inlineDropdown(
+        '${settings.shortBreakDurationSeconds} sec',
+        ['10 sec', '15 sec', '20 sec', '30 sec', '45 sec', '60 sec'],
+        (v) {
+          if (v != null) {
+            final secs = int.parse(v.replaceAll(' sec', ''));
+            onSave(settings.copyWith(shortBreakDurationSeconds: secs));
+            sl<TrayManagerService>().triggerActionAnimation();
+          }
         },
       ),
     );
   }
 
-  Widget _buildLongBreakInterval(BuildContext context) {
-    return inputRow(
+  Widget _buildLongBreakInterval() {
+    return buildListRow(
       'Long Break Interval',
-      'Every ${settings.longBreakIntervalMinutes} minutes',
-      onTap: () => showPicker(
-        context: context,
-        title: 'Long Break Interval',
-        options: ['30', '45', '60', '90', '120'],
-        suffix: ' min',
-        onSelected: (v) {
-          onSave(settings.copyWith(longBreakIntervalMinutes: int.parse(v)));
-          sl<TrayManagerService>().triggerActionAnimation();
+      'How often to take long breaks',
+      null,
+      CupertinoIcons.timer_fill,
+      null,
+      trailing: inlineDropdown(
+        '${settings.longBreakIntervalMinutes} min',
+        ['30 min', '45 min', '60 min', '90 min', '120 min'],
+        (v) {
+          if (v != null) {
+            final mins = int.parse(v.replaceAll(' min', ''));
+            onSave(settings.copyWith(longBreakIntervalMinutes: mins));
+            sl<TrayManagerService>().triggerActionAnimation();
+          }
         },
       ),
     );
   }
 
-  Widget _buildLongBreakDuration(BuildContext context) {
-    return inputRow(
+  Widget _buildLongBreakDuration() {
+    return buildListRow(
       'Long Break Duration',
-      '${settings.longBreakDurationMinutes} minutes',
-      onTap: () => showPicker(
-        context: context,
-        title: 'Long Break Duration',
-        options: ['3', '5', '10', '15', '20', '30'],
-        suffix: ' min',
-        onSelected: (v) {
-          onSave(settings.copyWith(longBreakDurationMinutes: int.parse(v)));
-          sl<TrayManagerService>().triggerActionAnimation();
+      'How long long breaks last',
+      null,
+      CupertinoIcons.hourglass_bottomhalf_fill,
+      null,
+      trailing: inlineDropdown(
+        '${settings.longBreakDurationMinutes} min',
+        ['3 min', '5 min', '10 min', '15 min', '20 min', '30 min'],
+        (v) {
+          if (v != null) {
+            final mins = int.parse(v.replaceAll(' min', ''));
+            onSave(settings.copyWith(longBreakDurationMinutes: mins));
+            sl<TrayManagerService>().triggerActionAnimation();
+          }
         },
       ),
     );

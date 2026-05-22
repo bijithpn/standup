@@ -1,7 +1,7 @@
 name: standup
 description: "standup — a macOS menu bar break reminder app for healthy work habits."
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.0+23
 #BreakMate
 environment:
   sdk: ^3.10.4
@@ -15,7 +15,7 @@ dependencies:
   window_manager: ^0.5.1
   flutter_local_notifications: ^18.0.1
   launch_at_startup: ^0.3.1
-  package_info_plus: ^8.0.0
+  package_info_plus: ^9.0.1
   shared_preferences: ^2.3.4
   get_it: ^8.0.3
   provider: ^6.1.2
@@ -31,6 +31,7 @@ dependencies:
   audioplayers: ^6.1.0
   animations: ^2.0.1
   flame: ^1.37.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

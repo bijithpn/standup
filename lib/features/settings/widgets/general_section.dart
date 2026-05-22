@@ -35,11 +35,7 @@ class GeneralSection extends StatelessWidget {
         const SizedBox(height: 48),
         sectionHeader('Idle & Inactivity'),
         const SizedBox(height: 24),
-        buildCard([
-          _buildPauseTimer(context),
-          divider(),
-          _buildResetTimer(context),
-        ]),
+        buildCard([_buildPauseTimer(), divider(), _buildResetTimer()]),
         const SizedBox(height: 48),
         sectionHeader('Working Hours'),
         const SizedBox(height: 24),
@@ -49,9 +45,9 @@ class GeneralSection extends StatelessWidget {
             divider(),
             _buildDaysToggle(),
             divider(),
-            _buildTimeSelector(context, 'Start Time', settings.workStartTime),
+            _buildTimeSelector('Start Time', settings.workStartTime),
             divider(),
-            _buildTimeSelector(context, 'End Time', settings.workEndTime),
+            _buildTimeSelector('End Time', settings.workEndTime),
           ],
         ]),
       ],
@@ -146,36 +142,43 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-
-  Widget _buildPauseTimer(BuildContext context) {
-    return inputRow(
+  Widget _buildPauseTimer() {
+    return buildListRow(
       'Pause timer after',
-      '${settings.pauseTimerAfterMinutes} min',
-      onTap: () => showPicker(
-        context: context,
-        title: 'Pause timer after',
-        options: ['1', '2', '3', '5', '10'],
-        suffix: ' min',
-        onSelected: (v) {
-          onSave(settings.copyWith(pauseTimerAfterMinutes: int.parse(v)));
-          sl<TrayManagerService>().triggerActionAnimation();
+      'Inactivity time before pausing the timer',
+      null,
+      CupertinoIcons.pause_circle,
+      null,
+      trailing: inlineDropdown(
+        '${settings.pauseTimerAfterMinutes} min',
+        ['1 min', '2 min', '3 min', '5 min', '10 min'],
+        (v) {
+          if (v != null) {
+            final mins = int.parse(v.replaceAll(' min', ''));
+            onSave(settings.copyWith(pauseTimerAfterMinutes: mins));
+            sl<TrayManagerService>().triggerActionAnimation();
+          }
         },
       ),
     );
   }
 
-  Widget _buildResetTimer(BuildContext context) {
-    return inputRow(
+  Widget _buildResetTimer() {
+    return buildListRow(
       'Reset timer after',
-      '${settings.resetTimerAfterMinutes} min',
-      onTap: () => showPicker(
-        context: context,
-        title: 'Reset timer after',
-        options: ['5', '10', '15', '30', '60'],
-        suffix: ' min',
-        onSelected: (v) {
-          onSave(settings.copyWith(resetTimerAfterMinutes: int.parse(v)));
-          sl<TrayManagerService>().triggerActionAnimation();
+      'Inactivity time before resetting progress',
+      null,
+      CupertinoIcons.refresh,
+      null,
+      trailing: inlineDropdown(
+        '${settings.resetTimerAfterMinutes} min',
+        ['5 min', '10 min', '15 min', '30 min', '60 min'],
+        (v) {
+          if (v != null) {
+            final mins = int.parse(v.replaceAll(' min', ''));
+            onSave(settings.copyWith(resetTimerAfterMinutes: mins));
+            sl<TrayManagerService>().triggerActionAnimation();
+          }
         },
       ),
     );
@@ -255,35 +258,24 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeSelector(BuildContext context, String label, String time) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () => showPicker(
-              context: context,
-              title: label,
-              options: timeOptions(),
-              suffix: '',
-              onSelected: (v) {
-                if (label.startsWith('Start')) {
-                  onSave(settings.copyWith(workStartTime: v));
-                } else {
-                  onSave(settings.copyWith(workEndTime: v));
-                }
-              },
-            ),
-            child: Text(
-              time,
-              style: const TextStyle(color: AppTheme.accentColor),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildTimeSelector(String label, String time) {
+    return buildListRow(
+      label,
+      label.startsWith('Start')
+          ? 'When your workday begins'
+          : 'When your workday ends',
+      null,
+      CupertinoIcons.clock,
+      null,
+      trailing: inlineDropdown(time, timeOptions(), (v) {
+        if (v != null) {
+          if (label.startsWith('Start')) {
+            onSave(settings.copyWith(workStartTime: v));
+          } else {
+            onSave(settings.copyWith(workEndTime: v));
+          }
+        }
+      }),
     );
   }
 }
