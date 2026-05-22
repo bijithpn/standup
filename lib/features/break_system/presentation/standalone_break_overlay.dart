@@ -12,6 +12,7 @@ import 'package:standup/features/break_overlay/presentation/templates/companion_
 import 'package:standup/features/break_overlay/presentation/templates/zen_mode_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/productivity_hud_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
+import 'package:standup/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 
 enum BreakTheme {
   image,
@@ -205,6 +206,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     Future<void> onSkip() => MacOSBridge.skipBreak();
 
     switch (_breakTemplate) {
+      case 'classic':
+        return ClassicSlideshowTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+          singleImage: _currentTemplate,
+          kenBurnsController: _kenBurnsController,
+          exerciseTitle: _exerciseTitle,
+          exerciseInstructions: _exerciseInstructions,
+        );
       case 'companion':
         return CompanionInteractiveTemplate(
           breakInfo: breakInfo,
