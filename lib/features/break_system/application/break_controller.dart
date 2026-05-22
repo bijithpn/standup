@@ -156,6 +156,8 @@ class BreakController extends ChangeNotifier {
           'playMusic': settings.playMusicDuringBreak,
           'template': _currentTemplate,
           'theme': _currentThemeName,
+          'breakTemplate': settings.breakTemplate,
+          'companionCatTheme': settings.companionCatTheme,
         });
       }
     } else if (shouldShowWarning) {
@@ -276,6 +278,8 @@ class BreakController extends ChangeNotifier {
       'playMusic': settings.playMusicDuringBreak,
       'template': _currentTemplate,
       'theme': _currentThemeName,
+      'breakTemplate': settings.breakTemplate,
+      'companionCatTheme': settings.companionCatTheme,
     });
 
     if (settings.playMusicDuringBreak && !_isPlayingMusic) {

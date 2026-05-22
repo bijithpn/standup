@@ -26,6 +26,7 @@ class SettingsModel {
   // Break Screen
   final bool showOnAllDisplays;
   final String breakTheme;
+  final String breakTemplate;
   final bool showExercisesInBreak;
   final String lastExerciseDate;
   final List<String> shownExercisesToday;
@@ -88,6 +89,7 @@ class SettingsModel {
     this.notificationsEnabled = true,
     this.showOnAllDisplays = true,
     this.breakTheme = 'random',
+    this.breakTemplate = 'minimal',
     this.clockFaceTextColorHex = 0xFFFFFFFF,
     this.clockFaceBlurEnabled = true,
     this.customImagePath,
@@ -137,6 +139,7 @@ class SettingsModel {
     bool? notificationsEnabled,
     bool? showOnAllDisplays,
     String? breakTheme,
+    String? breakTemplate,
     bool? showExercisesInBreak,
     String? lastExerciseDate,
     List<String>? shownExercisesToday,
@@ -185,6 +188,7 @@ class SettingsModel {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
       breakTheme: breakTheme ?? this.breakTheme,
+      breakTemplate: breakTemplate ?? this.breakTemplate,
       showExercisesInBreak: showExercisesInBreak ?? this.showExercisesInBreak,
       lastExerciseDate: lastExerciseDate ?? this.lastExerciseDate,
       shownExercisesToday: shownExercisesToday ?? this.shownExercisesToday,
@@ -235,6 +239,7 @@ class SettingsModel {
         'notificationsEnabled': notificationsEnabled,
         'showOnAllDisplays': showOnAllDisplays,
         'breakTheme': breakTheme,
+        'breakTemplate': breakTemplate,
         'showExercisesInBreak': showExercisesInBreak,
         'lastExerciseDate': lastExerciseDate,
         'shownExercisesToday': shownExercisesToday,
@@ -294,6 +299,7 @@ class SettingsModel {
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       showOnAllDisplays: map['showOnAllDisplays'] as bool? ?? true,
       breakTheme: map['breakTheme'] as String? ?? 'random',
+      breakTemplate: map['breakTemplate'] as String? ?? 'minimal',
       showExercisesInBreak: map['showExercisesInBreak'] as bool? ?? true,
       lastExerciseDate: map['lastExerciseDate'] as String? ?? '',
       shownExercisesToday: (map['shownExercisesToday'] as List<dynamic>?)
