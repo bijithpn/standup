@@ -23,6 +23,14 @@ class SettingsModel {
   final bool soundEnabled;
   final bool notificationsEnabled;
 
+  // Break Screen
+  final bool showOnAllDisplays;
+  final String breakTheme;
+  final bool showExercisesInBreak;
+  final String lastExerciseDate;
+  final List<String> shownExercisesToday;
+  final bool playMusicDuringBreak;
+
   // Clock face
   final int clockFaceTextColorHex;
   final bool clockFaceBlurEnabled;
@@ -78,6 +86,8 @@ class SettingsModel {
 
     this.soundEnabled = true,
     this.notificationsEnabled = true,
+    this.showOnAllDisplays = true,
+    this.breakTheme = 'random',
     this.clockFaceTextColorHex = 0xFFFFFFFF,
     this.clockFaceBlurEnabled = true,
     this.customImagePath,
@@ -91,6 +101,10 @@ class SettingsModel {
     this.respectFocusMode = true,
     this.enableClockOut = false,
     this.clockOutTime = '17:00',
+    this.showExercisesInBreak = true,
+    this.lastExerciseDate = '',
+    this.shownExercisesToday = const [],
+    this.playMusicDuringBreak = true,
     this.exercises = const [],
     this.autoSuggestExercises = true,
     this.useCursorCountdown = true,
@@ -121,6 +135,12 @@ class SettingsModel {
 
     bool? soundEnabled,
     bool? notificationsEnabled,
+    bool? showOnAllDisplays,
+    String? breakTheme,
+    bool? showExercisesInBreak,
+    String? lastExerciseDate,
+    List<String>? shownExercisesToday,
+    bool? playMusicDuringBreak,
     int? clockFaceTextColorHex,
     bool? clockFaceBlurEnabled,
     String? customImagePath,
@@ -163,6 +183,12 @@ class SettingsModel {
 
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
+      breakTheme: breakTheme ?? this.breakTheme,
+      showExercisesInBreak: showExercisesInBreak ?? this.showExercisesInBreak,
+      lastExerciseDate: lastExerciseDate ?? this.lastExerciseDate,
+      shownExercisesToday: shownExercisesToday ?? this.shownExercisesToday,
+      playMusicDuringBreak: playMusicDuringBreak ?? this.playMusicDuringBreak,
       clockFaceTextColorHex: clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
       customImagePath: customImagePath ?? this.customImagePath,
@@ -207,6 +233,12 @@ class SettingsModel {
 
         'soundEnabled': soundEnabled,
         'notificationsEnabled': notificationsEnabled,
+        'showOnAllDisplays': showOnAllDisplays,
+        'breakTheme': breakTheme,
+        'showExercisesInBreak': showExercisesInBreak,
+        'lastExerciseDate': lastExerciseDate,
+        'shownExercisesToday': shownExercisesToday,
+        'playMusicDuringBreak': playMusicDuringBreak,
         'clockFaceTextColorHex': clockFaceTextColorHex,
         'clockFaceBlurEnabled': clockFaceBlurEnabled,
         'customImagePath': customImagePath,
@@ -260,6 +292,15 @@ class SettingsModel {
 
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
+      showOnAllDisplays: map['showOnAllDisplays'] as bool? ?? true,
+      breakTheme: map['breakTheme'] as String? ?? 'random',
+      showExercisesInBreak: map['showExercisesInBreak'] as bool? ?? true,
+      lastExerciseDate: map['lastExerciseDate'] as String? ?? '',
+      shownExercisesToday: (map['shownExercisesToday'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      playMusicDuringBreak: map['playMusicDuringBreak'] as bool? ?? true,
       clockFaceTextColorHex: map['clockFaceTextColorHex'] as int? ?? 0xFFFFFFFF,
       clockFaceBlurEnabled: map['clockFaceBlurEnabled'] as bool? ?? true,
       customImagePath: map['customImagePath'] as String?,

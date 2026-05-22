@@ -18,6 +18,7 @@ import 'package:standup/core/utils/toast.dart';
 import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:standup/features/companion/domain/cat_theme.dart';
 import 'package:standup/core/native/macos_bridge.dart';
+import 'package:standup/core/display/controllers/display_controller.dart';
 import 'package:standup/features/settings/widgets/general_section.dart';
 import 'package:standup/features/settings/widgets/focus_section.dart';
 import 'package:standup/features/settings/widgets/notifications_section.dart';
@@ -287,6 +288,124 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _sectionHeader('Display Options'),
+        _buildCard([
+          _toggleRow(
+            'Show on All Displays',
+            'Dim all monitors when taking a break.',
+            _settings.showOnAllDisplays,
+            (val) {
+              _save(_settings.copyWith(showOnAllDisplays: val));
+            },
+          ),
+          _divider(),
+          _toggleRow(
+            'Show Exercises During Break',
+            'Display a random exercise on the break screen.',
+            _settings.showExercisesInBreak,
+            (val) {
+              _save(_settings.copyWith(showExercisesInBreak: val));
+            },
+          ),
+          _divider(),
+          _toggleRow(
+            'Play LoFi Music During Break',
+            'Play relaxing LoFi music when on break.',
+            _settings.playMusicDuringBreak,
+            (val) {
+              _save(_settings.copyWith(playMusicDuringBreak: val));
+            },
+          ),
+          _divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Break Template Theme',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Select the background for your break screen.',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                          letterSpacing: 0,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _settings.breakTheme,
+                        dropdownColor: const Color(0xFF1E1E1E),
+                        icon: const Icon(
+                          CupertinoIcons.chevron_down,
+                          size: 14,
+                          color: AppTheme.accentColor,
+                        ),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontFamily: 'Satoshi',
+                          fontWeight: FontWeight.w500,
+                        ),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            _save(_settings.copyWith(breakTheme: newValue));
+                          }
+                        },
+                        items: const [
+                          DropdownMenuItem(value: 'random', child: Text('Random Theme')),
+                          DropdownMenuItem(value: 'ocean', child: Text('Ocean Waves')),
+                          DropdownMenuItem(value: 'forest', child: Text('Forest Canopy')),
+                          DropdownMenuItem(value: 'minimal', child: Text('Minimal Glow')),
+                          DropdownMenuItem(value: 'image', child: Text('Nature Images')),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          _divider(),
+          _actionRow(
+            label: 'Preview Break',
+            subtitle: 'See exactly how your break screen looks right now.',
+            buttonText: 'Preview',
+            buttonColor: AppTheme.accentColor,
+            onPressed: () {
+              controller.startTestBreak();
+              Toast.showSuccess(context, 'Test break started! You can skip it anytime.');
+            },
+          ),
+        ]),
+        const SizedBox(height: 32),
         _sectionHeader('Manual Controls'),
         _buildCard([
           _actionRow(
@@ -326,6 +445,34 @@ class _SettingsPageState extends State<SettingsPage> {
             },
           ),
         ]),
+        const SizedBox(height: 32),
+        _sectionHeader('Connected Displays'),
+        ListenableBuilder(
+          listenable: sl<DisplayController>(),
+          builder: (context, _) {
+            final displays = sl<DisplayController>().displays;
+            if (displays.isEmpty) {
+              return _buildCard([
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text('No external displays detected or plugin not fully initialized.', style: TextStyle(color: AppTheme.textSecondary, fontFamily: 'Satoshi')),
+                )
+              ]);
+            }
+            return _buildCard(
+              displays.map((display) {
+                return _actionRow(
+                  label: display.id,
+                  subtitle: 'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
+                  buttonText: 'Active',
+                  buttonColor: AppTheme.accentColor.withValues(alpha: 0.2),
+                  textColor: AppTheme.accentColor,
+                  onPressed: () {},
+                );
+              }).toList(),
+            );
+          },
+        ),
       ],
     );
   }

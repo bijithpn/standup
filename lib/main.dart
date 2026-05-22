@@ -7,9 +7,9 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:standup/app/app.dart';
 import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/break_system/presentation/standalone_break_overlay.dart';
+import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/companion/overlay/companion_overlay_window.dart';
 
 import 'package:window_manager/window_manager.dart';
@@ -82,9 +82,13 @@ void main() async {
           size: const Size(1100, 750),
           minimumSize: const Size(400, 600),
           center: true,
-          backgroundColor: Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
+          backgroundColor: Platform.isWindows
+              ? AppTheme.sidebarBackground
+              : Colors.transparent,
           skipTaskbar: false,
-          titleBarStyle: Platform.isWindows ? TitleBarStyle.normal : TitleBarStyle.hidden,
+          titleBarStyle: Platform.isWindows
+              ? TitleBarStyle.normal
+              : TitleBarStyle.hidden,
         );
 
         await windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -96,15 +100,15 @@ void main() async {
           call,
         ) async {
           if (call.method == 'handleReopen') {
-            sl<AppNavigationService>().openSection('General');
             await sl<OverlayWindowService>().showDashboard();
+          } else if (call.method == 'skipBreak') {
+            sl<BreakController>().skipCurrentBreak();
           }
         });
 
         singleInstanceServer.listen((client) {
           utf8.decoder.bind(client).join().then((message) async {
             if (message.trim() == 'showDashboard') {
-              sl<AppNavigationService>().openSection('General');
               await sl<OverlayWindowService>().showDashboard();
             }
             client.destroy();
@@ -165,4 +169,3 @@ Future<void> companionMain() async {
     ),
   );
 }
-

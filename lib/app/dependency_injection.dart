@@ -23,6 +23,9 @@ import 'package:standup/features/companion/services/companion_state_manager.dart
 import 'package:standup/features/companion/services/companion_window_controller.dart';
 import 'package:standup/features/companion/services/companion_behavior_engine.dart';
 import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:standup/core/display/services/display_manager.dart';
+import 'package:standup/core/display/services/overlay_fit_service.dart';
+import 'package:standup/core/display/controllers/display_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -50,6 +53,14 @@ Future<void> initDependencies() async {
   // Overlay Window Service for system-wide displays
   final overlayService = OverlayWindowService();
   sl.registerSingleton<OverlayWindowService>(overlayService);
+
+  // Display Management Services
+  final displayManager = DisplayManager();
+  await displayManager.initialize();
+  sl.registerSingleton<DisplayManager>(displayManager);
+  
+  sl.registerSingleton<OverlayFitService>(OverlayFitService());
+  sl.registerSingleton<DisplayController>(DisplayController(displayManager, sl()));
 
   // Adaptive Break Service for smart timing
   final adaptiveBreakService = AdaptiveBreakService(storage: storage);

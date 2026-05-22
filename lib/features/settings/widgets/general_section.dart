@@ -31,8 +31,6 @@ class GeneralSection extends StatelessWidget {
           divider(),
           _buildMenuBarIcon(),
           _buildStrictMode(),
-          divider(),
-          _buildMultiDisplay(),
         ]),
         const SizedBox(height: 48),
         sectionHeader('Idle & Inactivity'),
@@ -148,15 +146,6 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  Widget _buildMultiDisplay() {
-    return buildListRow(
-      'Multi-Display',
-      'All screens coverage',
-      true,
-      CupertinoIcons.tv,
-      (v) => sl<TrayManagerService>().triggerActionAnimation(),
-    );
-  }
 
   Widget _buildPauseTimer(BuildContext context) {
     return inputRow(
