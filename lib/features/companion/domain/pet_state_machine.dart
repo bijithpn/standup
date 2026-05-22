@@ -14,6 +14,7 @@ enum PetState {
   sleep,
   alert,
   happy,
+  angry,
   drag,
   breakReminder,
   meetingPaused,
@@ -359,6 +360,11 @@ class PetStateMachine extends ChangeNotifier {
     PetState.resting: [
       PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 5)),
       PetTransition(event: PetEvent.activityDetected, targetState: PetState.idle, weight: 1.0),
+    ],
+    PetState.angry: [
+      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 2)),
+      PetTransition(event: PetEvent.cursorLeft, targetState: PetState.idle, weight: 1.0),
+      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
     ],
     PetState.scared: [
       PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),

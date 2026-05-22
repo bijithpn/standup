@@ -62,6 +62,12 @@ class PetNavigationService {
   Offset _cursorPos = Offset.zero;
   double _lookTimer = 0.0; // Cat look-before-move delay
 
+  // Annoyance tracking: if cursor moves too much, cat gets angry
+  int _cursorMoveCount = 0;
+  DateTime _lastCursorMoveReset = DateTime.now();
+  static const int _annoyanceThreshold = 15; // moves per 3 seconds
+  static const Duration _annoyanceWindow = Duration(seconds: 3);
+
   static const Duration _wanderCooldown = Duration(seconds: 3);
   static final _rng = Random();
 
@@ -71,6 +77,7 @@ class PetNavigationService {
   double get speed => _vel.distance; // px/s — used by component to pick walk/run anim
   bool get isCursorFollowing => _isCursorFollowing;
   bool get isWanderingEnabled => _isWanderingEnabled;
+  bool get isAnnoyed => _cursorMoveCount > _annoyanceThreshold;
 
   bool get needsWanderTarget {
     if (!_isWanderingEnabled || _wanderSpeed <= 0) return false;
@@ -100,6 +107,16 @@ class PetNavigationService {
   /// The caller (CompanionGame) is responsible for converting window coords to
   /// game coords before calling this.
   void updateCursorPosition(Offset gameSpaceCursor, {bool? forceFollowing}) {
+    // Track cursor movement for annoyance detection
+    if ((_cursorPos - gameSpaceCursor).distance > 5.0) {
+      _cursorMoveCount++;
+      final now = DateTime.now();
+      if (now.difference(_lastCursorMoveReset) > _annoyanceWindow) {
+        _cursorMoveCount = 0;
+        _lastCursorMoveReset = now;
+      }
+    }
+
     _cursorPos = gameSpaceCursor;
     if (forceFollowing != null) {
       if (forceFollowing && !_isCursorFollowing) {
