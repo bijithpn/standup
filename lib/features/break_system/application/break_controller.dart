@@ -43,6 +43,8 @@ class BreakController extends ChangeNotifier {
   SettingsRepository get settingsRepository => _settingsRepo;
   bool get isPaused => _timerEngine.state == TimerState.paused;
   bool get isBreakActive => _timerEngine.state == TimerState.breakActive;
+  String? get currentExerciseTitle => _currentExerciseTitle;
+  String? get currentExerciseInstructions => _currentExerciseInstructions;
 
   void initialize() {
     _applySettings();

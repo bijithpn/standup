@@ -664,15 +664,15 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _sectionHeader('Clock Styles'),
+        _sectionHeader('Break Templates'),
         const SizedBox(height: 16),
-        _buildStyleGrid(),
+        _buildBreakTemplateGrid(),
         const SizedBox(height: 24),
         // Preview Button
         Center(
           child: CupertinoButton(
             padding: EdgeInsets.zero,
-            onPressed: () => _showClockPreview(),
+            onPressed: () => _showBreakTemplatePreview(),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
@@ -692,7 +692,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    'Preview Current Style',
+                    'Preview Current Template',
                     style: TextStyle(
                       color: AppTheme.accentColor,
                       fontSize: 14,
@@ -705,10 +705,6 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ),
-        const SizedBox(height: 32),
-        _sectionHeader('Break Templates'),
-        const SizedBox(height: 16),
-        _buildBreakTemplateGrid(),
         const SizedBox(height: 32),
         _sectionHeader('Colors & Effects'),
         const SizedBox(height: 16),
@@ -736,9 +732,9 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showClockPreview() {
+  void _showBreakTemplatePreview() {
     try {
-      // Show a demo break overlay with current clock style
+      // Show a demo break overlay with current template style
       final controller = sl<BreakController>();
 
       // Trigger a short preview break
@@ -2025,6 +2021,7 @@ class _SettingsPageState extends State<SettingsPage> {
         final isSmallScreen = constraints.maxWidth < 700;
 
         final templates = [
+          (id: 'classic', name: 'Classic Slideshow', desc: 'Calming slideshow with weekly completed rest streak graph.'),
           (id: 'minimal', name: 'Minimal Focus', desc: 'Concentric ring timer with clean outline styling.'),
           (id: 'companion', name: 'Interactive Pet', desc: 'Snappable pet companion with live dialogue bubbles.'),
           (id: 'zen', name: 'Zen Breath', desc: 'Japanese morning sun gradient with box breathing guide.'),

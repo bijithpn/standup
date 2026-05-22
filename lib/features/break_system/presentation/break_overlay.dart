@@ -12,6 +12,7 @@ import 'package:standup/features/break_overlay/presentation/templates/companion_
 import 'package:standup/features/break_overlay/presentation/templates/zen_mode_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/productivity_hud_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
+import 'package:standup/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 
 class BreakOverlay extends StatefulWidget {
   const BreakOverlay({super.key});
@@ -119,6 +120,18 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
     void onSkip() => widget.controller.skipCurrentBreak();
 
     switch (widget.settings.breakTemplate) {
+      case 'classic':
+        return ClassicSlideshowTemplate(
+          breakInfo: widget.breakInfo,
+          settings: widget.settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+          pageController: widget.pageController,
+          kenBurnsController: widget.kenBurnsController,
+          exerciseTitle: widget.controller.currentExerciseTitle,
+          exerciseInstructions: widget.controller.currentExerciseInstructions,
+        );
       case 'companion':
         return CompanionInteractiveTemplate(
           breakInfo: widget.breakInfo,

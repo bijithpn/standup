@@ -91,7 +91,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   String _getAssetPath() {
-    final dynamic anim = widget.catTheme.animations[widget.animationState] ??
+    final dynamic anim =
+        widget.catTheme.animations[widget.animationState] ??
         widget.catTheme.animations[CatAnimationState.idle] ??
         widget.catTheme.animations.values.first;
 
@@ -106,7 +107,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   void _setupTicker() {
-    final dynamic anim = widget.catTheme.animations[widget.animationState] ??
+    final dynamic anim =
+        widget.catTheme.animations[widget.animationState] ??
         widget.catTheme.animations[CatAnimationState.idle] ??
         widget.catTheme.animations.values.first;
 
@@ -129,8 +131,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
 
     _animationController.stop();
-    _animationController.duration =
-        Duration(milliseconds: (frameCount * stepTime * 1000).toInt());
+    _animationController.duration = Duration(
+      milliseconds: (frameCount * stepTime * 1000).toInt(),
+    );
 
     if (frameCount > 1) {
       if (loop) {
@@ -163,7 +166,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       );
     }
 
-    final dynamic anim = widget.catTheme.animations[widget.animationState] ??
+    final dynamic anim =
+        widget.catTheme.animations[widget.animationState] ??
         widget.catTheme.animations[CatAnimationState.idle] ??
         widget.catTheme.animations.values.first;
 
@@ -187,13 +191,15 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         animation: _animationController,
         builder: (context, child) {
           final int frameIndex = frameCount > 1
-              ? (_animationController.value * frameCount).floor().clamp(0, frameCount - 1)
+              ? (_animationController.value * frameCount).floor().clamp(
+                  0,
+                  frameCount - 1,
+                )
               : 0;
 
           return Transform(
             alignment: Alignment.center,
-            transform: Matrix4.identity()
-              ..scale(widget.flipX ? -1.0 : 1.0, 1.0),
+            transform: Matrix4.diagonal3Values(widget.flipX ? -1.0 : 1.0, 1.0, 1.0),
             child: CustomPaint(
               size: Size(
                 widget.catTheme.spriteSize * widget.scale,
