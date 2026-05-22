@@ -226,6 +226,7 @@ class CompanionGame extends FlameGame {
       case PetState.interacting:
       case PetState.scared:
       case PetState.hiding:
+      case PetState.angry:
         return CatAnimationState.notification;
       case PetState.happy:
       case PetState.excited:
