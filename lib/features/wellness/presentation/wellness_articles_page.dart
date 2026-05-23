@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 
 class WellnessArticlesPage extends StatelessWidget {
@@ -14,19 +14,42 @@ class WellnessArticlesPage extends StatelessWidget {
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            if (!isNarrow)
-              CupertinoSliverNavigationBar(
-                largeTitle: Text(
-                  'Articles',
-                  style: AppTheme.headerStyle.copyWith(fontSize: 32),
-                ),
-                backgroundColor: Colors.transparent,
-                border: null,
-              ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
                 isNarrow ? 16 : 32,
-                isNarrow ? 16 : 0,
+                isNarrow ? 16 : 32,
+                isNarrow ? 16 : 32,
+                16,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Wellness Articles',
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Tips and guides for healthy work habits',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                isNarrow ? 16 : 32,
+                0,
                 isNarrow ? 16 : 32,
                 isNarrow ? 32 : 48,
               ),
@@ -35,32 +58,32 @@ class WellnessArticlesPage extends StatelessWidget {
                   _buildArticleCard(
                     title: 'The 20-20-20 Rule',
                     subtitle: 'Reduce eye strain by looking 20 feet away every 20 minutes for 20 seconds.',
-                    icon: CupertinoIcons.eye_fill,
-                    color: const Color(0xFF007AFF),
+                    icon: LucideIcons.eye,
+                    color: AppTheme.shortBreak,
                     isNarrow: isNarrow,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _buildArticleCard(
                     title: 'Perfect Sitting Posture',
                     subtitle: 'Keep your back straight, shoulders back, and feet flat on the floor.',
-                    icon: CupertinoIcons.person_fill,
-                    color: const Color(0xFF32D74B),
+                    icon: LucideIcons.user,
+                    color: AppTheme.success,
                     isNarrow: isNarrow,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _buildArticleCard(
                     title: 'Hydration & Productivity',
-                    subtitle: 'Drinking water regularly helps maintain focus and energy levels throughout the day.',
-                    icon: CupertinoIcons.drop_fill,
-                    color: const Color(0xFF64D2FF),
+                    subtitle: 'Drinking water regularly helps maintain focus and energy levels.',
+                    icon: LucideIcons.droplet,
+                    color: AppTheme.info,
                     isNarrow: isNarrow,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   _buildArticleCard(
                     title: 'Micro-breaks Matter',
-                    subtitle: 'Short, frequent breaks are more effective than long, infrequent ones for cognitive health.',
-                    icon: CupertinoIcons.timer_fill,
-                    color: const Color(0xFFFF9F0A),
+                    subtitle: 'Short, frequent breaks are more effective than long, infrequent ones.',
+                    icon: LucideIcons.clock,
+                    color: AppTheme.warning,
                     isNarrow: isNarrow,
                   ),
                 ]),
@@ -79,47 +102,52 @@ class WellnessArticlesPage extends StatelessWidget {
     required Color color,
     bool isNarrow = false,
   }) {
-    return AppTheme.glassContainer(
-      child: Padding(
-        padding: EdgeInsets.all(isNarrow ? 20.0 : 24.0),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(isNarrow ? 12 : 14),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: isNarrow ? 22 : 26),
+    return Container(
+      padding: EdgeInsets.all(isNarrow ? 16.0 : 20.0),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(isNarrow ? 10 : 12),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
             ),
-            SizedBox(width: isNarrow ? 16 : 24),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: AppTheme.subHeaderStyle.copyWith(
-                      fontSize: isNarrow ? 16 : 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+            child: Icon(icon, color: color, size: isNarrow ? 20 : 24),
+          ),
+          SizedBox(width: isNarrow ? 14 : 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: isNarrow ? 15 : 16,
+                    color: AppTheme.textPrimary,
+                    fontWeight: FontWeight.w600,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    style: AppTheme.tipStyle.copyWith(
-                      fontSize: isNarrow ? 12 : 14,
-                      color: AppTheme.textSecondary,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: isNarrow ? 12 : 13,
+                    color: AppTheme.textSecondary,
+                    height: 1.4,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            const Icon(CupertinoIcons.chevron_right, color: AppTheme.textMuted, size: 14),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Icon(LucideIcons.chevronRight, color: AppTheme.textMuted, size: 16),
+        ],
       ),
     );
   }
