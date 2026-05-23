@@ -84,7 +84,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         )];
     _currentTheme =
         BreakTheme.values[Random().nextInt(BreakTheme.values.length)];
-    // Fallback theme initialized here; will be overwritten immediately by bridge args if provided.
 
     _kenBurnsController = AnimationController(
       vsync: this,
@@ -93,10 +92,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..forward();
+      duration: const Duration(milliseconds: 600),
+    );
 
     _setupBridge();
+    
+    // Smoothly fade in
+    _fadeController.forward();
   }
 
   void _setupBridge() {
@@ -152,8 +154,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             if (args.containsKey('exerciseInstructions')) {
               _exerciseInstructions = args['exerciseInstructions'];
             }
-            if (args.containsKey('reminderType')) {
+            if (args['reminderType'] != null) {
               _reminderType = args['reminderType'];
+            }
+            
+            // Auto-dismiss quick reminders after 2 seconds
+            if (_overlayType == 'quickReminder') {
+              _fadeController.duration = const Duration(milliseconds: 250);
+              Future.delayed(const Duration(seconds: 2), () {
+                if (mounted) _skipBreak();
+              });
             }
           });
         }
@@ -167,6 +177,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
     });
   }
+  
+  void _skipBreak() {
+    // Reverse fade for a smooth exit, then call the native bridge
+    _fadeController.reverse().then((_) {
+      MacOSBridge.skipBreak();
+    });
+  }
 
   @override
   void dispose() {
@@ -177,15 +194,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: _overlayType == 'quickReminder' ? Colors.transparent : Colors.black,
-      child: FadeTransition(
-        opacity: _fadeController,
+    return FadeTransition(
+      opacity: _fadeController,
+      child: Material(
+        color: _overlayType == 'quickReminder' ? Colors.black.withValues(alpha: 0.4) : Colors.black,
         child: GestureDetector(
           onVerticalDragUpdate: (details) {
             // If dragging up, dismiss the overlay completely (only if not in strict mode).
             if (!_strictMode && details.primaryDelta! < -10) {
-              MacOSBridge.skipBreak();
+              _skipBreak();
             }
           },
           // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
@@ -221,7 +238,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     final total = _durationSeconds;
     final remaining = _remainingSeconds;
-    Future<void> onSkip() => MacOSBridge.skipBreak();
+    Future<void> onSkip() async => _skipBreak();
 
     Widget templateWidget;
     switch (_breakTemplate) {
@@ -360,45 +377,71 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   Widget _buildQuickReminder() {
     final isPosture = _reminderType == 'posture';
     return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _fadeController,
+            curve: Curves.easeOutBack,
+            reverseCurve: Curves.easeIn,
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isPosture ? CupertinoIcons.person_crop_circle_badge_checkmark : CupertinoIcons.eye,
-              color: Colors.white,
-              size: 64,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              isPosture ? 'Posture Check' : 'Eye Rest',
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Satoshi',
-                letterSpacing: 1.5,
+        child: Container(
+          width: 380,
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1C1E).withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 40,
+                spreadRadius: 10,
+                offset: const Offset(0, 10),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              isPosture
-                  ? 'Sit up straight and roll your shoulders back'
-                  : 'Blink your eyes and look away',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.8),
-                fontSize: 18,
-                fontFamily: 'Satoshi',
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.06),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isPosture ? CupertinoIcons.person_crop_circle_badge_checkmark : CupertinoIcons.eye,
+                  color: Colors.white,
+                  size: 48,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              Text(
+                isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Satoshi',
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                isPosture
+                    ? 'Sit up straight, relax your neck, and drop your shoulders.'
+                    : 'Blink a few times and focus on something far away.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.6),
+                  fontSize: 16,
+                  fontFamily: 'Satoshi',
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -725,7 +768,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: () => MacOSBridge.skipBreak(),
+        onTap: _skipBreak,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           decoration: BoxDecoration(

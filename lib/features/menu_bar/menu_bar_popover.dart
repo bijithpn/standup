@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
+import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/analytics/stats_service.dart';
@@ -260,7 +260,7 @@ class MenuBarPopover extends StatelessWidget {
           child: CupertinoButton(
             padding: EdgeInsets.zero,
             onPressed: () async {
-              sl<AppNavigationService>().openSection('General');
+              sl<OverlayWindowService>().showDashboard();
               await windowManager.show();
               await windowManager.focus();
             },
