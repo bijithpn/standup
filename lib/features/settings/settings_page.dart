@@ -2021,12 +2021,36 @@ class _SettingsPageState extends State<SettingsPage> {
         final isSmallScreen = constraints.maxWidth < 700;
 
         final templates = [
-          (id: 'classic', name: 'Classic Slideshow', desc: 'Calming slideshow with weekly completed rest streak graph.'),
-          (id: 'minimal', name: 'Minimal Focus', desc: 'Concentric ring timer with clean outline styling.'),
-          (id: 'companion', name: 'Interactive Pet', desc: 'Snappable pet companion with live dialogue bubbles.'),
-          (id: 'zen', name: 'Zen Breath', desc: 'Japanese morning sun gradient with box breathing guide.'),
-          (id: 'hud', name: 'Productivity HUD', desc: 'Neon stats panels and custom glow activity graph.'),
-          (id: 'floating', name: 'Floating Pill', desc: 'Corner-snapped draggable capsule with warm alerts.'),
+          (
+            id: 'classic',
+            name: 'Classic Slideshow',
+            desc: 'Calming slideshow with weekly completed rest streak graph.',
+          ),
+          (
+            id: 'minimal',
+            name: 'Minimal Focus',
+            desc: 'Concentric ring timer with clean outline styling.',
+          ),
+          (
+            id: 'companion',
+            name: 'Interactive Pet',
+            desc: 'Snappable pet companion with live dialogue bubbles.',
+          ),
+          (
+            id: 'zen',
+            name: 'Zen Breath',
+            desc: 'Japanese morning sun gradient with box breathing guide.',
+          ),
+          (
+            id: 'hud',
+            name: 'Productivity HUD',
+            desc: 'Neon stats panels and custom glow activity graph.',
+          ),
+          (
+            id: 'floating',
+            name: 'Floating Pill',
+            desc: 'Corner-snapped draggable capsule with warm alerts.',
+          ),
         ];
 
         if (isSmallScreen) {
@@ -2100,7 +2124,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           color: AppTheme.accentColor.withValues(alpha: 0.25),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
-                        )
+                        ),
                       ]
                     : [],
               ),
@@ -2164,10 +2188,7 @@ class _SettingsPageState extends State<SettingsPage> {
             height: 50,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white24,
-                width: 1.5,
-              ),
+              border: Border.all(color: Colors.white24, width: 1.5),
             ),
             child: Center(
               child: Container(
@@ -2197,11 +2218,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'companion':
         return Stack(
           children: [
-            Positioned.fill(
-              child: Container(
-                color: Colors.black38,
-              ),
-            ),
+            Positioned.fill(child: Container(color: Colors.black38)),
             Positioned(
               top: 20,
               left: 15,
@@ -2238,10 +2255,7 @@ class _SettingsPageState extends State<SettingsPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFE0C3FC),
-                Color(0xFF8EC5FC),
-              ],
+              colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC)],
             ),
           ),
           child: Center(
@@ -2375,11 +2389,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'floating':
         return Stack(
           children: [
-            Positioned.fill(
-              child: Container(
-                color: Colors.black26,
-              ),
-            ),
+            Positioned.fill(child: Container(color: Colors.black26)),
             Positioned(
               bottom: 8,
               right: 8,
@@ -2397,7 +2407,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     BoxShadow(
                       color: AppTheme.accentColor.withValues(alpha: 0.3),
                       blurRadius: 4,
-                    )
+                    ),
                   ],
                 ),
                 child: Row(
@@ -2560,7 +2570,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ]),
             if (controller.companionEnabled) ...[
               const SizedBox(height: 32),
-              _sectionHeader('Companion Breed'),
+              _sectionHeader('Companion'),
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 16),
                 child: Text(
@@ -2692,7 +2702,7 @@ class _SettingsPageState extends State<SettingsPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'Companion Breed',
+                  'Companion',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -2701,7 +2711,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Active Pet: ${controller.companionPetName}',
+                  'Pet: ${controller.companionPetName}',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppTheme.accentColor,
@@ -2755,6 +2765,7 @@ class _SettingsPageState extends State<SettingsPage> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Satoshi',
+                          color: Colors.white,
                         ),
                       ),
                     ],
