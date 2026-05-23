@@ -107,78 +107,97 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Main Translucent Focus Card
+                    // Main Modern UI Card
                     Container(
-                      width: 580,
-                      padding: const EdgeInsets.all(40),
+                      width: 600,
+                      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.03),
-                        borderRadius: BorderRadius.circular(28),
+                        color: Colors.white.withValues(alpha: 0.02),
+                        borderRadius: BorderRadius.circular(32),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: Colors.white.withValues(alpha: 0.05),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
+                            color: Colors.black.withValues(alpha: 0.2),
+                            blurRadius: 50,
+                            offset: const Offset(0, 30),
                           ),
                         ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Timer Ring & Text Column
-                          Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Elegant slim progress ring
-                              SizedBox(
-                                width: 220,
-                                height: 220,
-                                child: CircularProgressIndicator(
-                                  value: progress,
-                                  strokeWidth: 4,
-                                  backgroundColor: Colors.white.withValues(alpha: 0.05),
-                                  valueColor: const AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
+                          // Top Label
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.05),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  widget.breakInfo.type == BreakType.short
+                                      ? CupertinoIcons.eye
+                                      : CupertinoIcons.wind,
+                                  size: 14,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  widget.breakInfo.type == BreakType.short
+                                      ? 'EYE REST'
+                                      : 'MINDFUL BREAK',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.8),
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.5,
+                                    fontFamily: 'Satoshi',
                                   ),
                                 ),
-                              ),
-                              // Core Countdown
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    _formatDuration(widget.remainingSeconds),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 56,
-                                      fontWeight: FontWeight.w300,
-                                      letterSpacing: -1.5,
-                                      fontFamily: 'Satoshi',
-                                      fontFeatures: [FontFeature.tabularFigures()],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.breakInfo.type == BreakType.short
-                                        ? 'EYE REST'
-                                        : 'MINDFUL BREAK',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.4),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 2,
-                                      fontFamily: 'Satoshi',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 32),
+
+                          // Core Countdown - Typography focused
+                          Text(
+                            _formatDuration(widget.remainingSeconds),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 110,
+                              fontWeight: FontWeight.w200,
+                              letterSpacing: -4,
+                              fontFamily: 'Satoshi',
+                              fontFeatures: [FontFeature.tabularFigures()],
+                              height: 1.0,
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          
+                          // Minimal Linear Progress
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: SizedBox(
+                              height: 2,
+                              width: 240,
+                              child: LinearProgressIndicator(
+                                value: progress,
+                                backgroundColor: Colors.white.withValues(alpha: 0.05),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 48),
 
                           // Text Information Block
                           Text(
@@ -188,10 +207,10 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
                               fontFamily: 'Satoshi',
-                              letterSpacing: -0.5,
+                              letterSpacing: -0.2,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -201,10 +220,11 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                               widget.breakInfo.tip,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.5),
-                                fontSize: 14,
+                                color: Colors.white.withValues(alpha: 0.4),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w400,
                                 fontFamily: 'Satoshi',
-                                height: 1.4,
+                                height: 1.5,
                               ),
                             ),
                           ),
@@ -270,7 +290,7 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                         fontFamily: 'Satoshi',
                       ),
                     ),
-                    if (!widget.settings.strictMode && widget.onSkip != null)
+                    if (widget.onSkip != null)
                       GestureDetector(
                         onTap: widget.onSkip,
                         child: MouseRegion(

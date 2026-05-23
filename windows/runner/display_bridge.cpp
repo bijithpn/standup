@@ -21,7 +21,9 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   GetMonitorInfo(hMonitor, &info);
 
   DisplayData data;
-  data.id = std::string(info.szDevice);
+  char szDevice[32];
+  WideCharToMultiByte(CP_UTF8, 0, info.szDevice, -1, szDevice, 32, NULL, NULL);
+  data.id = std::string(szDevice);
   data.isPrimary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
   data.width = static_cast<double>(info.rcMonitor.right - info.rcMonitor.left);
   data.height = static_cast<double>(info.rcMonitor.bottom - info.rcMonitor.top);

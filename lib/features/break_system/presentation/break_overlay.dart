@@ -76,13 +76,22 @@ class _BreakOverlayState extends State<BreakOverlay>
           return const SizedBox.shrink();
         }
 
-        return _BreakOverlayContent(
-          breakInfo: breakInfo,
-          settings: controller.settingsRepository.currentSettings,
-          timerEngine: timerEngine,
-          controller: controller,
-          pageController: _pageController,
-          kenBurnsController: _kenBurnsController,
+        return GestureDetector(
+          onVerticalDragUpdate: (details) {
+            if (!controller.settingsRepository.currentSettings.strictMode &&
+                details.primaryDelta! < -10) {
+              controller.skipCurrentBreak();
+            }
+          },
+          onHorizontalDragUpdate: (details) {},
+          child: _BreakOverlayContent(
+            breakInfo: breakInfo,
+            settings: controller.settingsRepository.currentSettings,
+            timerEngine: timerEngine,
+            controller: controller,
+            pageController: _pageController,
+            kenBurnsController: _kenBurnsController,
+          ),
         );
       },
     );
@@ -119,9 +128,10 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
         : widget.settings.longBreakDurationMinutes * 60;
     void onSkip() => widget.controller.skipCurrentBreak();
 
+    Widget templateWidget;
     switch (widget.settings.breakTemplate) {
       case 'classic':
-        return ClassicSlideshowTemplate(
+        templateWidget = ClassicSlideshowTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,
@@ -132,47 +142,89 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
           exerciseTitle: widget.controller.currentExerciseTitle,
           exerciseInstructions: widget.controller.currentExerciseInstructions,
         );
+        break;
       case 'companion':
-        return CompanionInteractiveTemplate(
+        templateWidget = CompanionInteractiveTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'zen':
-        return ZenModeTemplate(
+        templateWidget = ZenModeTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'hud':
-        return ProductivityHudTemplate(
+        templateWidget = ProductivityHudTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'floating':
-        return SoftFloatingWidgetTemplate(
+        templateWidget = SoftFloatingWidgetTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'minimal':
       default:
-        return MinimalFocusTemplate(
+        templateWidget = MinimalFocusTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
     }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        templateWidget,
+        // Global visual indicator to swipe up to dismiss
+        if (!widget.settings.strictMode)
+          Positioned(
+            bottom: 24,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.chevron_up,
+                    size: 20,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                  Text(
+                    'Swipe up to dismiss',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 1.0,
+                      fontFamily: 'Satoshi',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 }

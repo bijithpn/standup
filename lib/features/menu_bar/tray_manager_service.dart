@@ -306,17 +306,14 @@ class TrayManagerService with TrayListener {
         MenuItem(
           key: 'complete_break',
           label: 'Complete Break',
-          onClick: _onMenuItemClick,
         ),
         MenuItem(
           key: 'skip_current_break',
           label: 'Skip Break',
-          onClick: _onMenuItemClick,
         ),
         MenuItem(
           key: 'postpone_break',
           label: 'Postpone Break (2 min)',
-          onClick: _onMenuItemClick,
         ),
         MenuItem.separator(),
       ]);
@@ -325,17 +322,14 @@ class TrayManagerService with TrayListener {
         MenuItem(
           key: 'toggle_pause',
           label: _isPaused ? 'Resume Reminders' : 'Pause Reminders',
-          onClick: _onMenuItemClick,
         ),
         MenuItem(
           key: 'take_break',
           label: 'Start Break Now',
-          onClick: _onMenuItemClick,
         ),
         MenuItem(
           key: 'skip_next',
           label: 'Skip Next Break',
-          onClick: _onMenuItemClick,
         ),
         MenuItem.separator(),
       ]);
@@ -345,32 +339,27 @@ class TrayManagerService with TrayListener {
       MenuItem(
         key: 'open_dashboard',
         label: 'Open Dashboard',
-        onClick: _onMenuItemClick,
       ),
       MenuItem(
         key: 'open_settings',
         label: 'Settings',
-        onClick: _onMenuItemClick,
       ),
 
       MenuItem(
         key: 'open_exercises',
         label: 'Exercises',
-        onClick: _onMenuItemClick,
       ),
       MenuItem(
         key: 'open_stats',
         label: 'Statistics',
-        onClick: _onMenuItemClick,
       ),
       MenuItem.separator(),
       MenuItem(
         key: 'posture_reminder',
         label: 'Posture Reminder',
-        onClick: _onMenuItemClick,
       ),
       MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit BreakMate', onClick: _onMenuItemClick),
+      MenuItem(key: 'quit', label: 'Quit BreakMate'),
     ]);
 
     final menu = Menu(items: items);

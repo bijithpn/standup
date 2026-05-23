@@ -323,7 +323,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                         ),
                       ),
                       const SizedBox(height: 40),
-                      if (!widget.settings.strictMode && widget.onSkip != null)
+                      if (widget.onSkip != null)
                         GestureDetector(
                           onTap: widget.onSkip,
                           child: MouseRegion(

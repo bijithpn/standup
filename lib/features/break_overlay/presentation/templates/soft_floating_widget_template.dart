@@ -283,8 +283,7 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                                         ),
                                       ),
                                       const SizedBox(width: 12),
-                                      if (!widget.settings.strictMode &&
-                                          widget.onSkip != null)
+                                      if (widget.onSkip != null)
                                         GestureDetector(
                                           onTap: widget.onSkip,
                                           child: MouseRegion(
