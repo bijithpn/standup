@@ -37,9 +37,9 @@ class MenuBarController {
 
     switch (action) {
       case 'open_dashboard':
-        await openSection('General');
+        await overlayService.showDashboard();
       case 'open_settings':
-        await openSection('General');
+        await overlayService.showDashboard();
 
       case 'open_exercises':
         await openSection('Exercises');

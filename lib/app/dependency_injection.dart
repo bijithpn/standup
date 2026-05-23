@@ -48,7 +48,7 @@ Future<void> initDependencies() async {
   final activityMonitor = ActivityMonitor();
   sl.registerSingleton<ActivityMonitor>(activityMonitor);
 
-  sl.registerSingleton<AppNavigationService>(AppNavigationService());
+  sl.registerSingleton<AppNavigationService>(AppNavigationService(storage));
 
   // Window Service for native macOS window operations
   sl.registerSingleton<WindowService>(WindowService.instance);
