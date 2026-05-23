@@ -258,20 +258,52 @@
       "isEnabled": true
     },
     {
-      "id": "goldie",
-      "name": "Goldie Dog",
-      "species": "dog",
+      "id": "rabbit_hop_01",
+      "name": "Ginger Hop",
+      "species": "rabbit",
       "variant": {
-        "id": "goldie",
-        "name": "Goldie Dog",
-        "assetPath": "assets/animations/dogs/goldie/goldie_v02.png",
-        "isSpriteSheet": true,
-        "rowCount": 5,
-        "frameCount": 2,
-        "spriteSize": 64
+        "id": "cat_1",
+        "name": "Rabbit Hop",
+        "assetPath": "assets/animations/cats/cat_1/",
+        "isSpriteSheet": false,
+        "spriteSize": 50
       },
-      "personality": "friendly",
+      "personality": "shy",
+      "initialMood": "relaxed",
+      "isEnabled": true
+    },
+    {
+      "id": "fox_firefox_01",
+      "name": "Firefox",
+      "species": "fox",
+      "variant": {
+        "id": "orange_cat",
+        "name": "Fox",
+        "assetPath": "assets/animations/cats/orange_cat/sprite_sheet.png",
+        "isSpriteSheet": true,
+        "rowCount": 12,
+        "frameCount": 8,
+        "spriteSize": 32
+      },
+      "personality": "adventurous",
       "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "dragon_shadow_01",
+      "name": "Shadow Wing",
+      "species": "dragon",
+      "variant": {
+        "id": "black_cat",
+        "name": "Shadow Wing",
+        "assetPath": "assets/animations/cats/black_cat/sprite_sheet.png",
+        "isSpriteSheet": true,
+        "rowCount": 12,
+        "frameCount": 8,
+        "spriteSize": 32
+      },
+      "personality": "cool",
+      "initialMood": "curious",
       "isEnabled": true
     }
   ]

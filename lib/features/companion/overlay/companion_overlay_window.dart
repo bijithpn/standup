@@ -3,19 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
 import 'package:standup/features/companion/flame/companion_game.dart';
 
 /// The companion pet overlay window.
-///
-/// Rendered inside an in-process second [FlutterWindow] on Windows (created by
-/// [CompanionWindowManager]) or inside a native NSPanel on macOS.
-///
-/// Settings are received via the `com.breakmate.macos/companion_data`
-/// MethodChannel in both cases:
-///  - Initial settings: pulled with `getInitialSettings`
-///  - Live updates:     pushed with `syncCompanionSettings`
 class CompanionOverlayWindow extends StatefulWidget {
   const CompanionOverlayWindow({super.key});
 
@@ -83,7 +75,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     if (mounted && !_gameInitialized) {
       setState(() {
         _game = CompanionGame(
-          initialTheme: CatTheme.getTheme(_themeId),
+          initialTheme: PetTheme.getTheme(_themeId),
           scaleOverride: _scale,
         );
         _gameInitialized = true;
@@ -112,7 +104,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         _themeId = newThemeId;
         _scale = newScale;
         _game = CompanionGame(
-          initialTheme: CatTheme.getTheme(newThemeId),
+          initialTheme: PetTheme.getTheme(newThemeId),
           scaleOverride: newScale > 0 ? newScale : 6.0,
         );
         _gameInitialized = true;
@@ -133,7 +125,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         final String newThemeId = args['themeId'] as String;
         if (_themeId != newThemeId) {
           _themeId = newThemeId;
-          _game!.updateTheme(CatTheme.getTheme(newThemeId));
+          _game!.updateTheme(PetTheme.getTheme(newThemeId));
         }
       }
 
@@ -169,7 +161,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
       if (args.containsKey('state')) {
         final String? stateStr = args['state'] as String?;
         if (stateStr != null) {
-          final CatAnimationState? s = _parseAnimationState(stateStr);
+          final PetAnimationState? s = _parseAnimationState(stateStr);
           if (s != null) _game!.triggerState(s);
         }
       }
@@ -182,8 +174,8 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     });
   }
 
-  CatAnimationState? _parseAnimationState(String stateStr) {
-    for (final state in CatAnimationState.values) {
+  PetAnimationState? _parseAnimationState(String stateStr) {
+    for (final state in PetAnimationState.values) {
       if (state.name == stateStr) return state;
     }
     return null;

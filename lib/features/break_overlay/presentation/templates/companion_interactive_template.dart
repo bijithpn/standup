@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class CompanionInteractiveTemplate extends StatefulWidget {
@@ -37,7 +38,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
   bool _isSnapping = false;
 
   // AI & Conversation State
-  CatAnimationState _animationState = CatAnimationState.breakMode;
+  PetAnimationState _animationState = PetAnimationState.breakMode;
   String _speechText = 'Take a deep breath. I am here to rest with you!';
   Timer? _aiBehaviorTimer;
   Timer? _speechBubbleTimer;
@@ -80,19 +81,77 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
   void _startAIBehaviorCycle() {
     _aiBehaviorTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
       if (!mounted || _isDragging || _isSnapping) return;
+      
+      final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
+      final species = petTheme.species;
       final random = Random().nextDouble();
+      
       setState(() {
-        if (random < 0.3) {
-          _animationState = CatAnimationState.stretch;
-          _speechText = 'Streeetching feels so good!';
-        } else if (random < 0.5) {
-          _animationState = CatAnimationState.sleep;
-          _speechText = 'Zzz... Rest up...';
-        } else if (random < 0.7) {
-          _animationState = CatAnimationState.lick1;
-          _speechText = 'Cleaning up for our next session!';
+        if (random < 0.25) {
+          _animationState = PetAnimationState.stretch;
+          if (species == PetSpecies.dog) {
+            _speechText = 'A big dog stretch! Ready for action!';
+          } else if (species == PetSpecies.rabbit) {
+            _speechText = 'Hop stretch! Warming up my hind legs!';
+          } else if (species == PetSpecies.fox) {
+            _speechText = 'Sly fox stretch! Stay alert!';
+          } else if (species == PetSpecies.dragon) {
+            _speechText = 'Spreading my wings for a grand stretch!';
+          } else {
+            _speechText = 'Mmm, cat stretching feels incredible...';
+          }
+        } else if (random < 0.45) {
+          _animationState = PetAnimationState.sleep;
+          if (species == PetSpecies.dog) {
+            _speechText = 'Zzz... Cozy puppy dreams...';
+          } else if (species == PetSpecies.rabbit) {
+            _speechText = 'Zzz... Dreaming of clover fields...';
+          } else if (species == PetSpecies.fox) {
+            _speechText = 'Zzz... Curl up in a warm den...';
+          } else if (species == PetSpecies.dragon) {
+            _speechText = 'Zzz... Resting on a pile of gold...';
+          } else {
+            _speechText = 'Zzz... Perfect cozy catnap...';
+          }
+        } else if (random < 0.65) {
+          _animationState = PetAnimationState.lick1;
+          if (species == PetSpecies.dog) {
+            _speechText = 'Cleaning up my puppy paws!';
+          } else if (species == PetSpecies.rabbit) {
+            _speechText = '*Twitching nose and cleaning long ears...*';
+          } else if (species == PetSpecies.fox) {
+            _speechText = '*Grooming its fluffy tail...*';
+          } else if (species == PetSpecies.dragon) {
+            _speechText = '*Polishing shiny dragon scales...*';
+          } else {
+            _speechText = '*Carefully grooming its soft whiskers...*';
+          }
+        } else if (random < 0.8) {
+          _animationState = PetAnimationState.walkSide;
+          if (species == PetSpecies.dog) {
+            _speechText = 'Walking around! Zoom zoom!';
+          } else if (species == PetSpecies.rabbit) {
+            _speechText = 'Hop hop! Exploring new territory!';
+          } else if (species == PetSpecies.fox) {
+            _speechText = 'Prowling silently... What was that?';
+          } else if (species == PetSpecies.dragon) {
+            _speechText = 'Gliding through the air currents...';
+          } else {
+            _speechText = 'Prowling around. I see a bug!';
+          }
         } else {
-          _animationState = CatAnimationState.breakMode;
+          _animationState = PetAnimationState.breakMode;
+          if (species == PetSpecies.dog) {
+            _speechText = 'Let\'s take a break together! Woof!';
+          } else if (species == PetSpecies.rabbit) {
+            _speechText = 'Rest time is the best time! *wiggle nose*';
+          } else if (species == PetSpecies.fox) {
+            _speechText = 'Time to rest in the woods.';
+          } else if (species == PetSpecies.dragon) {
+            _speechText = 'Relax, mortal. Let\'s enjoy this quiet moment.';
+          } else {
+            _speechText = 'Purr... Time to relax and recharge.';
+          }
         }
       });
     });
@@ -141,7 +200,8 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
 
   @override
   Widget build(BuildContext context) {
-    final catTheme = CatTheme.getTheme(widget.settings.companionCatTheme);
+    final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
+    final species = petTheme.species;
     const double widgetSize = 130.0;
 
     return Material(
@@ -247,7 +307,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                   onPanStart: (details) {
                     setState(() {
                       _isDragging = true;
-                      _animationState = CatAnimationState.walk;
+                      _animationState = PetAnimationState.walkSide;
                     });
                   },
                   onPanUpdate: (details) {
@@ -272,7 +332,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                     // Quick Action Menu on Click
                     setState(() {
                       _showInteractionMenu = !_showInteractionMenu;
-                      _animationState = CatAnimationState.excited;
+                      _animationState = PetAnimationState.excited;
                       _speechText = 'Hehe, that tickles!';
                     });
                   },
@@ -345,8 +405,8 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                         if (_showInteractionMenu)
                           Positioned(
                             bottom: -50,
-                            left: -40,
-                            right: -40,
+                            left: -60,
+                            right: -60,
                             child: Center(
                               child: Container(
                                 padding: const EdgeInsets.all(4),
@@ -360,35 +420,112 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
+                                    // 1. Stretch
                                     _buildMenuButton(
                                       icon: CupertinoIcons.sparkles,
                                       color: const Color(0xFFFFD700),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = CatAnimationState.stretch;
-                                          _speechText = 'Let\'s stretch our muscles!';
+                                          _animationState = PetAnimationState.stretch;
+                                          if (species == PetSpecies.dog) {
+                                            _speechText = 'A big dog stretch! Ready for action!';
+                                          } else if (species == PetSpecies.rabbit) {
+                                            _speechText = 'Hop stretch! Warming up my hind legs!';
+                                          } else if (species == PetSpecies.fox) {
+                                            _speechText = 'Sly fox stretch! Stay alert!';
+                                          } else if (species == PetSpecies.dragon) {
+                                            _speechText = 'Spreading my wings for a grand stretch!';
+                                          } else {
+                                            _speechText = 'Mmm, cat stretching feels incredible...';
+                                          }
                                           _showInteractionMenu = false;
                                         });
                                       },
                                     ),
+                                    // 2. Pet / Groom
+                                    _buildMenuButton(
+                                      icon: CupertinoIcons.hand_raised_fill,
+                                      color: const Color(0xFFFF9500),
+                                      onPressed: () {
+                                        setState(() {
+                                          _animationState = PetAnimationState.lick1;
+                                          if (species == PetSpecies.dog) {
+                                            _speechText = 'Happily licking your screen! Slurp!';
+                                          } else if (species == PetSpecies.rabbit) {
+                                            _speechText = '*Twitching nose and cleaning long ears...*';
+                                          } else if (species == PetSpecies.fox) {
+                                            _speechText = '*Grooming its fluffy tail...*';
+                                          } else if (species == PetSpecies.dragon) {
+                                            _speechText = '*Polishing shiny dragon scales...*';
+                                          } else {
+                                            _speechText = '*Carefully grooming its soft whiskers...*';
+                                          }
+                                          _showInteractionMenu = false;
+                                        });
+                                      },
+                                    ),
+                                    // 3. Play / Move
+                                    _buildMenuButton(
+                                      icon: CupertinoIcons.play_arrow_solid,
+                                      color: const Color(0xFF34C759),
+                                      onPressed: () {
+                                        setState(() {
+                                          _animationState = PetAnimationState.walkSide;
+                                          if (species == PetSpecies.dog) {
+                                            _speechText = 'Zooms around hyperactively!';
+                                          } else if (species == PetSpecies.rabbit) {
+                                            _speechText = 'Hop hop! Exploring new territory!';
+                                          } else if (species == PetSpecies.fox) {
+                                            _speechText = 'Prowling silently... What was that?';
+                                          } else if (species == PetSpecies.dragon) {
+                                            _speechText = 'Gliding through the air currents...';
+                                          } else {
+                                            _speechText = 'Stalking a phantom laser pointer...';
+                                          }
+                                          _showInteractionMenu = false;
+                                        });
+                                      },
+                                    ),
+                                    // 4. Excited / Love
                                     _buildMenuButton(
                                       icon: CupertinoIcons.heart_fill,
                                       color: const Color(0xFFFF453A),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = CatAnimationState.excited;
-                                          _speechText = '*Purrs happily* I love you!';
+                                          _animationState = PetAnimationState.excited;
+                                          if (species == PetSpecies.dog) {
+                                            _speechText = 'Happy barks and tail wags! Woof!';
+                                          } else if (species == PetSpecies.rabbit) {
+                                            _speechText = '*Excited nose wiggles and tiny binkies!*';
+                                          } else if (species == PetSpecies.fox) {
+                                            _speechText = '*Happy yips and playful pounces!*';
+                                          } else if (species == PetSpecies.dragon) {
+                                            _speechText = '*Roars softly and breathes tiny heart sparks!*';
+                                          } else {
+                                            _speechText = '*Happy purrs and headbutts! Meow!*';
+                                          }
                                           _showInteractionMenu = false;
                                         });
                                       },
                                     ),
+                                    // 5. Sleep
                                     _buildMenuButton(
                                       icon: CupertinoIcons.moon_fill,
                                       color: const Color(0xFF00E5FF),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = CatAnimationState.sleep;
-                                          _speechText = 'Napping mode initiated...';
+                                          _animationState = PetAnimationState.sleep;
+                                          if (species == PetSpecies.dog) {
+                                            _speechText = 'Soft puppy snores... Zzz.';
+                                          } else if (species == PetSpecies.rabbit) {
+                                            _speechText = 'Napping snugly... Zzz.';
+                                          } else if (species == PetSpecies.fox) {
+                                            _speechText = 'Sleeping in a curl... Zzz.';
+                                          } else if (species == PetSpecies.dragon) {
+                                            _speechText = 'Resting on a pile of gold... Zzz.';
+                                          } else {
+                                            _speechText = 'Cozy catnap mode: activated.';
+                                          }
                                           _showInteractionMenu = false;
                                         });
                                       },
@@ -398,14 +535,14 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                               ),
                             ),
                           ),
-
+ 
                         // Companion Sprite rendering
                         SizedBox(
                           width: widgetSize,
                           height: widgetSize,
                           child: Center(
                             child: CompanionSpriteWidget(
-                              catTheme: catTheme,
+                              petTheme: petTheme,
                               animationState: _animationState,
                               scale: 3.5,
                               flipX: _flipX,

@@ -86,10 +86,12 @@ class FlutterWindow : public Win32Window {
   bool is_companion_ = false;
   flutter::EncodableMap initial_settings_;
 
-  // Store original window style for restoration
   LONG original_style_ = 0;
   LONG original_ex_style_ = 0;
   bool is_overlay_mode_ = false;
+
+  static HHOOK keyboard_hook_;
+  static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

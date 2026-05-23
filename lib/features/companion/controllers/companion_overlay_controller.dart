@@ -6,19 +6,15 @@ import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/companion/services/companion_behavior_engine.dart';
 import 'package:standup/features/settings/settings_repository.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 
 /// Controls the desktop companion pet window.
-///
-/// On both macOS and Windows, all companion management is routed through
-/// [MacOSBridge] which talks to the native `com.breakmate.macos/bridge`
-/// MethodChannel. On Windows, [FlutterWindow::SetupBridge()] handles these
-/// calls and delegates to [CompanionWindowManager] (an in-process second
-/// Flutter window running `companionMain`).
 class CompanionOverlayController extends ChangeNotifier {
   final SettingsRepository _settingsRepo;
 
   bool _companionEnabled = false;
-  String _companionCatTheme = 'grey_cat';
+  String _companionPetTheme = 'grey_cat';
   String _companionPetName = 'Mochi';
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
@@ -36,11 +32,23 @@ class CompanionOverlayController extends ChangeNotifier {
     'Rosie', 'Bella', 'Oliver', 'Coco', 'Duke', 'Jax', 'Milo', 'Ruby', 'Harley',
   ];
 
+  static const List<String> rabbitNames = [
+    'Cottontail', 'Thumper', 'Bunny', 'Bugs', 'Snowball', 'Peter', 'Hops', 'Flop',
+  ];
+
+  static const List<String> foxNames = [
+    'Rusty', 'Foxy', 'Vixen', 'Todd', 'Sly', 'Firefox', 'Red', 'Nick',
+  ];
+
+  static const List<String> dragonNames = [
+    'Spyro', 'Toothless', 'Smaug', 'Draco', 'Norbert', 'Bahamut', 'Ember', 'Ignis',
+  ];
+
   CompanionOverlayController({required SettingsRepository settingsRepo})
     : _settingsRepo = settingsRepo;
 
   bool get companionEnabled => _companionEnabled;
-  String get companionCatTheme => _companionCatTheme;
+  String get companionPetTheme => _companionPetTheme;
   String get companionPetName => _companionPetName;
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
@@ -50,7 +58,7 @@ class CompanionOverlayController extends ChangeNotifier {
     final settings = _settingsRepo.currentSettings;
 
     _companionEnabled = settings.companionEnabled;
-    _companionCatTheme = settings.companionCatTheme;
+    _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
@@ -64,7 +72,7 @@ class CompanionOverlayController extends ChangeNotifier {
   /// Shows the companion via the native bridge (works on macOS + Windows).
   Future<void> _showNativeCompanion() async {
     await MacOSBridge.showCompanion({
-      'themeId': _companionCatTheme,
+      'themeId': _companionPetTheme,
       'petName': _companionPetName,
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
@@ -94,23 +102,32 @@ class CompanionOverlayController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Dynamic updater for switching cat/dog themes.
+  /// Dynamic updater for switching companion themes.
   Future<void> changeTheme(String themeId) async {
-    if (_companionCatTheme == themeId) return;
-    _companionCatTheme = themeId;
+    if (_companionPetTheme == themeId) return;
+    _companionPetTheme = themeId;
 
-    final isDog = {
-      'collie', 'corgi', 'dalmatian', 'husky', 'labrador',
-      'goldie', 'realistic_goldie',
-    }.contains(themeId);
-
+    final species = PetTheme.getTheme(themeId).species;
     final random = Random();
-    final names = isDog ? dogNames : catNames;
+    final List<String> names;
+
+    if (species == PetSpecies.rabbit) {
+      names = rabbitNames;
+    } else if (species == PetSpecies.fox) {
+      names = foxNames;
+    } else if (species == PetSpecies.dragon) {
+      names = dragonNames;
+    } else if (species == PetSpecies.dog) {
+      names = dogNames;
+    } else {
+      names = catNames;
+    }
+
     final randomName = names[random.nextInt(names.length)];
     _companionPetName = randomName;
 
     final updated = _settingsRepo.currentSettings.copyWith(
-      companionCatTheme: themeId,
+      companionPetTheme: themeId,
       companionPetName: randomName,
     );
     await _settingsRepo.save(updated);

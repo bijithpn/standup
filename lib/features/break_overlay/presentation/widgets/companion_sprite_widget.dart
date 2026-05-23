@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
 import 'package:standup/features/companion/domain/animation_row_config.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
-  final CatTheme catTheme;
-  final CatAnimationState animationState;
+  final PetTheme petTheme;
+  final PetAnimationState animationState;
   final double scale;
   final bool flipX;
 
@@ -28,7 +28,7 @@ class CompanionSpriteWidget extends StatefulWidget {
 
   const CompanionSpriteWidget({
     super.key,
-    required this.catTheme,
+    required this.petTheme,
     required this.animationState,
     this.scale = 3.0,
     this.flipX = false,
@@ -55,7 +55,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   @override
   void didUpdateWidget(covariant CompanionSpriteWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.catTheme.id != widget.catTheme.id ||
+    if (oldWidget.petTheme.id != widget.petTheme.id ||
         oldWidget.animationState != widget.animationState) {
       _loadAndSetup();
     }
@@ -104,15 +104,15 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
   String _getAssetPath() {
     final dynamic anim =
-        widget.catTheme.animations[widget.animationState] ??
-        widget.catTheme.animations[CatAnimationState.idle] ??
-        widget.catTheme.animations.values.first;
-
-    if (widget.catTheme.type == CatType.composite) {
-      return widget.catTheme.basePath;
+        widget.petTheme.animations[widget.animationState] ??
+        widget.petTheme.animations[PetAnimationState.idle] ??
+        widget.petTheme.animations.values.first;
+ 
+    if (widget.petTheme.type == PetType.composite) {
+      return widget.petTheme.basePath;
     } else {
       if (anim is SeparateAnimationConfig) {
-        return '${widget.catTheme.basePath}${anim.fileName}';
+        return '${widget.petTheme.basePath}${anim.fileName}';
       }
     }
     return '';
@@ -120,15 +120,15 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
   void _setupTicker() {
     final dynamic anim =
-        widget.catTheme.animations[widget.animationState] ??
-        widget.catTheme.animations[CatAnimationState.idle] ??
-        widget.catTheme.animations.values.first;
-
+        widget.petTheme.animations[widget.animationState] ??
+        widget.petTheme.animations[PetAnimationState.idle] ??
+        widget.petTheme.animations.values.first;
+ 
     int frameCount = 1;
     double stepTime = 0.15;
     bool loop = true;
-
-    if (widget.catTheme.type == CatType.composite) {
+ 
+    if (widget.petTheme.type == PetType.composite) {
       if (anim is AnimationRowConfig) {
         frameCount = anim.frameCount;
         stepTime = anim.stepTime;
@@ -173,20 +173,20 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   Widget build(BuildContext context) {
     if (_isLoading || _loadedImage == null) {
       return SizedBox(
-        width: widget.catTheme.spriteSize * widget.scale,
-        height: widget.catTheme.spriteSize * widget.scale,
+        width: widget.petTheme.spriteSize * widget.scale,
+        height: widget.petTheme.spriteSize * widget.scale,
       );
     }
-
+ 
     final dynamic anim =
-        widget.catTheme.animations[widget.animationState] ??
-        widget.catTheme.animations[CatAnimationState.idle] ??
-        widget.catTheme.animations.values.first;
-
+        widget.petTheme.animations[widget.animationState] ??
+        widget.petTheme.animations[PetAnimationState.idle] ??
+        widget.petTheme.animations.values.first;
+ 
     int row = 0;
     int frameCount = 1;
-
-    if (widget.catTheme.type == CatType.composite) {
+ 
+    if (widget.petTheme.type == PetType.composite) {
       if (anim is AnimationRowConfig) {
         row = anim.row;
         frameCount = anim.frameCount;
@@ -214,12 +214,12 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
             transform: Matrix4.diagonal3Values(widget.flipX ? -1.0 : 1.0, 1.0, 1.0),
             child: CustomPaint(
               size: Size(
-                widget.catTheme.spriteSize * widget.scale,
-                widget.catTheme.spriteSize * widget.scale,
+                widget.petTheme.spriteSize * widget.scale,
+                widget.petTheme.spriteSize * widget.scale,
               ),
               painter: _SpritePainter(
                 image: _loadedImage!,
-                spriteSize: widget.catTheme.spriteSize,
+                spriteSize: widget.petTheme.spriteSize,
                 row: row,
                 frameIndex: frameIndex,
               ),

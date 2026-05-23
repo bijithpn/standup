@@ -1,9 +1,11 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class ZenModeTemplate extends StatefulWidget {
@@ -30,11 +32,14 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     with SingleTickerProviderStateMixin {
   late AnimationController _breathingController;
 
+  PetAnimationState _animationState = PetAnimationState.sleep;
+  Timer? _behaviorTimer;
+
   final List<String> _zenQuotes = [
     'Silence is not silent. It is full of answers.',
     'Breathe in experience, breathe out poetry.',
     'Do not dwell in the past, dream of the future, concentrate the mind on the present.',
-    'Within you, there is a stillness and a sanctuary to which you can retreat at any time.',
+    'Within you, there is a sanctuary to which you can retreat at any time.',
     'Flow with whatever may happen, and let your mind be free.',
     'Mindfulness isn\'t difficult, we just need to remember to do it.',
   ];
@@ -51,12 +56,33 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     )..repeat();
 
     _activeQuote = _zenQuotes[DateTime.now().minute % _zenQuotes.length];
+    _startBehaviorCycle();
   }
 
   @override
   void dispose() {
     _breathingController.dispose();
+    _behaviorTimer?.cancel();
     super.dispose();
+  }
+
+  void _startBehaviorCycle() {
+    _behaviorTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (!mounted) return;
+      final random = Random().nextDouble();
+      setState(() {
+        if (random < 0.65) {
+          // Zen mode: mostly sleeping (65% chance)
+          _animationState = PetAnimationState.sleep;
+        } else if (random < 0.85) {
+          // Sometimes stretching (20% chance)
+          _animationState = PetAnimationState.stretch;
+        } else {
+          // Occasionally grooming (15% chance)
+          _animationState = PetAnimationState.lick1;
+        }
+      });
+    });
   }
 
   String _formatDuration(int seconds) {
@@ -67,7 +93,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final catTheme = CatTheme.getTheme(widget.settings.companionCatTheme);
+    final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final overallProgress = widget.totalSeconds > 0
         ? ((widget.totalSeconds - widget.remainingSeconds) /
                   widget.totalSeconds)
@@ -304,13 +330,17 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                         child: Column(
                           children: [
                             CompanionSpriteWidget(
-                              catTheme: catTheme,
-                              animationState: CatAnimationState.sleep,
+                              petTheme: petTheme,
+                              animationState: _animationState,
                               scale: 3.5,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              '${catTheme.name} is sleeping...',
+                              _animationState == PetAnimationState.sleep
+                                  ? '${petTheme.name} is sleeping...'
+                                  : _animationState == PetAnimationState.stretch
+                                      ? '${petTheme.name} is stretching...'
+                                      : '${petTheme.name} is relaxing...',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color: Colors.white.withValues(alpha: 0.5),

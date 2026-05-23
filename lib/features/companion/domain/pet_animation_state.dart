@@ -10,6 +10,31 @@ enum SpriteLayout {
   mixed,
 }
 
+/// Generic pet animation states.
+enum PetAnimationState {
+  idle,
+  walkUp,
+  walkDown,
+  walkSide,
+  run,
+  sleep,
+  typing,
+  excited,
+  sad,
+  stretch,
+  breakMode,
+  focusMode,
+  angry,
+  notification,
+  celebrate,
+  lick1,
+  lick2,
+  breatheFire,
+  fly,
+  hop,
+  glide,
+}
+
 /// Configuration for a specific animation state's visual representation.
 class PetAnimationConfig {
   final String stateName;
@@ -22,6 +47,11 @@ class PetAnimationConfig {
   final int? frameHeight;
   final int? totalFrames;
   final double? stepTime;
+
+  // Directional sprite sheet rows (optional)
+  final int? rowUp;
+  final int? rowDown;
+  final int? rowSide;
 
   // Individual frames
   final List<String>? framePaths;
@@ -39,6 +69,9 @@ class PetAnimationConfig {
     this.frameHeight,
     this.totalFrames,
     this.stepTime = 0.1,
+    this.rowUp,
+    this.rowDown,
+    this.rowSide,
     this.framePaths,
     this.individualFrameStepTime = 0.1,
     this.fallbackStateName,
@@ -52,6 +85,9 @@ class PetAnimationConfig {
     required int frameHeight,
     required int totalFrames,
     double stepTime = 0.1,
+    int? rowUp,
+    int? rowDown,
+    int? rowSide,
     String? fallbackStateName,
   }) {
     return PetAnimationConfig(
@@ -63,6 +99,9 @@ class PetAnimationConfig {
       frameHeight: frameHeight,
       totalFrames: totalFrames,
       stepTime: stepTime,
+      rowUp: rowUp,
+      rowDown: rowDown,
+      rowSide: rowSide,
       fallbackStateName: fallbackStateName,
     );
   }
@@ -92,6 +131,9 @@ class PetAnimationConfig {
     int? frameHeight,
     int? totalFrames,
     double? stepTime,
+    int? rowUp,
+    int? rowDown,
+    int? rowSide,
     List<String>? framePaths,
     double? individualFrameStepTime,
     String? fallbackStateName,
@@ -105,6 +147,9 @@ class PetAnimationConfig {
       frameHeight: frameHeight ?? this.frameHeight,
       totalFrames: totalFrames ?? this.totalFrames,
       stepTime: stepTime ?? this.stepTime,
+      rowUp: rowUp ?? this.rowUp,
+      rowDown: rowDown ?? this.rowDown,
+      rowSide: rowSide ?? this.rowSide,
       framePaths: framePaths ?? this.framePaths,
       individualFrameStepTime:
           individualFrameStepTime ?? this.individualFrameStepTime,

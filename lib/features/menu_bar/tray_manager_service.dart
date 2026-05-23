@@ -5,9 +5,9 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/companion/data/cat_asset_loader.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/assets/pet_asset_loader.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
 import 'package:standup/features/companion/domain/animation_row_config.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'controllers/menu_bar_controller.dart';
@@ -29,7 +29,7 @@ class TrayManagerService with TrayListener {
   BreakController? _breakController;
   MenuBarController? _menuBarController;
 
-  final Map<CatAnimationState, List<String>> _stateFramePaths = {};
+  final Map<PetAnimationState, List<String>> _stateFramePaths = {};
   String? _defaultIconPath;
 
   Future<void> init() async {
@@ -62,7 +62,7 @@ class TrayManagerService with TrayListener {
     final tempDir = Directory.systemTemp;
 
     final defaultFile = '${tempDir.path}/bm_ctray_defaultTemplate@2x.png';
-    _defaultIconPath = await CatAssetLoader.extractAndWhitenAsset(
+    _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
       'assets/icons/tray_icon.png',
       defaultFile,
     );
@@ -71,16 +71,16 @@ class TrayManagerService with TrayListener {
     }
 
     final settingsRepo = sl<SettingsRepository>();
-    final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
-    final theme = CatTheme.getTheme(selectedThemeId);
+    final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+    final theme = PetTheme.getTheme(selectedThemeId);
 
     _stateFramePaths.clear();
 
     for (final state in [
-      CatAnimationState.idle,
-      CatAnimationState.sleep,
-      CatAnimationState.excited,
-      CatAnimationState.notification,
+      PetAnimationState.idle,
+      PetAnimationState.sleep,
+      PetAnimationState.excited,
+      PetAnimationState.notification,
     ]) {
       try {
         final config = theme.animations[state];
@@ -93,7 +93,7 @@ class TrayManagerService with TrayListener {
 
         final List<String> paths = [];
         for (int i = 0; i < frameCount; i++) {
-          final path = await CatAssetLoader.extractCatFramePath(
+          final path = await PetAssetLoader.extractPetFramePath(
             theme: theme,
             state: state,
             frameIndex: i,
@@ -109,22 +109,22 @@ class TrayManagerService with TrayListener {
           // Fallback to static asset if frame extraction yielded nothing
           String iconName;
           switch (state) {
-            case CatAnimationState.sleep:
+            case PetAnimationState.sleep:
               iconName = 'sleeping';
               break;
-            case CatAnimationState.excited:
+            case PetAnimationState.excited:
               iconName = 'stretch';
               break;
-            case CatAnimationState.notification:
+            case PetAnimationState.notification:
               iconName = 'alert';
               break;
-            case CatAnimationState.idle:
+            case PetAnimationState.idle:
             default:
               iconName = 'idle';
               break;
           }
           final fallbackFile = '${tempDir.path}/bm_ccat_${state.name}Template@2x.png';
-          final fallbackPath = await CatAssetLoader.extractAndWhitenAsset(
+          final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,
           );
@@ -141,15 +141,15 @@ class TrayManagerService with TrayListener {
     }
   }
 
-  CatAnimationState _determineActiveState() {
+  PetAnimationState _determineActiveState() {
     if (_isBreakActive) {
-      return CatAnimationState.notification;
+      return PetAnimationState.notification;
     } else if (_isPaused) {
-      return CatAnimationState.sleep;
+      return PetAnimationState.sleep;
     } else if (_isActionActive) {
-      return CatAnimationState.excited;
+      return PetAnimationState.excited;
     } else {
-      return CatAnimationState.idle;
+      return PetAnimationState.idle;
     }
   }
 
@@ -191,8 +191,8 @@ class TrayManagerService with TrayListener {
     if (_iconMode != TrayIconMode.companion) return;
 
     final settingsRepo = sl<SettingsRepository>();
-    final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
-    final theme = CatTheme.getTheme(selectedThemeId);
+    final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+    final theme = PetTheme.getTheme(selectedThemeId);
     final activeState = _determineActiveState();
     final config = theme.animations[activeState];
     double stepTime = 0.2;
@@ -366,11 +366,6 @@ class TrayManagerService with TrayListener {
     await trayManager.setContextMenu(menu);
   }
 
-  void _onMenuItemClick(MenuItem menuItem) {
-    if (menuItem.key != null) {
-      _handleAction(menuItem.key!);
-    }
-  }
 
   void _handleAction(String action) {
     _logger.info('Tray action: $action');

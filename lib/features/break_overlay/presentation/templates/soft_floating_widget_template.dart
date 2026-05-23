@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class SoftFloatingWidgetTemplate extends StatefulWidget {
@@ -39,6 +40,9 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
   // Pulsing neon shadow animation
   late AnimationController _pulseController;
 
+  PetAnimationState _animationState = PetAnimationState.breakMode;
+  Timer? _behaviorTimer;
+
   @override
   void initState() {
     super.initState();
@@ -46,12 +50,32 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
+    _startBehaviorCycle();
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
+    _behaviorTimer?.cancel();
     super.dispose();
+  }
+
+  void _startBehaviorCycle() {
+    _behaviorTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
+      if (!mounted) return;
+      final random = Random().nextDouble();
+      setState(() {
+        if (random < 0.25) {
+          _animationState = PetAnimationState.stretch;
+        } else if (random < 0.5) {
+          _animationState = PetAnimationState.sleep;
+        } else if (random < 0.75) {
+          _animationState = PetAnimationState.lick1;
+        } else {
+          _animationState = PetAnimationState.idle;
+        }
+      });
+    });
   }
 
   void _snapToBoundaries(
@@ -99,7 +123,7 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final catTheme = CatTheme.getTheme(widget.settings.companionCatTheme);
+    final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final double closedWidth = 180.0;
     final double openWidth = 320.0;
     final double height = 80.0;
@@ -211,8 +235,8 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                                 ),
                                 child: Center(
                                   child: CompanionSpriteWidget(
-                                    catTheme: catTheme,
-                                    animationState: CatAnimationState.breakMode,
+                                    petTheme: petTheme,
+                                    animationState: _animationState,
                                     scale: 2.2,
                                   ),
                                 ),

@@ -38,6 +38,8 @@ enum PetState {
   bored,
   exploring,
   scared,
+  breatheFire,
+  fly,
 }
 
 /// Generic pet events that trigger state transitions.
@@ -369,6 +371,13 @@ class PetStateMachine extends ChangeNotifier {
     PetState.scared: [
       PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
       PetTransition(event: PetEvent.activityDetected, targetState: PetState.alert, weight: 1.0),
+    ],
+    PetState.breatheFire: [
+      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
+    ],
+    PetState.fly: [
+      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 6)),
+      PetTransition(event: PetEvent.cursorNearby, targetState: PetState.following, weight: 1.5),
     ],
   };
 }

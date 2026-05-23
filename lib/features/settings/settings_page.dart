@@ -16,7 +16,8 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/utils/toast.dart';
 import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/display/controllers/display_controller.dart';
 import 'package:standup/features/settings/widgets/general_section.dart';
@@ -2499,15 +2500,35 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             const Spacer(),
             AppDropdown<String>(
-              value: controller.companionCatTheme,
+              value: controller.companionPetTheme,
               onChanged: (String? newValue) {
                 if (newValue != null) {
                   controller.changeTheme(newValue);
                 }
               },
-              items: CatTheme.themes.map((theme) {
-                final itemIsDog = _isDog(theme.id);
-                final isSelected = controller.companionCatTheme == theme.id;
+              items: PetTheme.themes.map((theme) {
+                final species = theme.species;
+                final isSelected = controller.companionPetTheme == theme.id;
+
+                Color tagColor = Colors.orange;
+                switch (species) {
+                  case PetSpecies.dog:
+                    tagColor = Colors.blue;
+                    break;
+                  case PetSpecies.rabbit:
+                    tagColor = Colors.pink;
+                    break;
+                  case PetSpecies.fox:
+                    tagColor = Colors.deepOrange;
+                    break;
+                  case PetSpecies.dragon:
+                    tagColor = Colors.red;
+                    break;
+                  case PetSpecies.cat:
+                    tagColor = Colors.orange;
+                    break;
+                }
+
                 return AppDropdownItem<String>(
                   value: theme.id,
                   label: theme.name,
@@ -2520,17 +2541,15 @@ class _SettingsPageState extends State<SettingsPage> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: itemIsDog
-                              ? Colors.blue.withValues(alpha: 0.15)
-                              : Colors.orange.withValues(alpha: 0.15),
+                          color: tagColor.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          itemIsDog ? 'DOG' : 'CAT',
+                          species.name.toUpperCase(),
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.bold,
-                            color: itemIsDog ? Colors.blue : Colors.orange,
+                            color: tagColor,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -2557,11 +2576,29 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: EdgeInsets.zero,
               minimumSize: Size.zero,
               onPressed: () {
-                final isCurrentDog = _isDog(controller.companionCatTheme);
+                final currentTheme = PetTheme.getTheme(
+                  controller.companionPetTheme,
+                );
+                final species = currentTheme.species;
                 final random = dart_math.Random();
-                final names = isCurrentDog
-                    ? CompanionOverlayController.dogNames
-                    : CompanionOverlayController.catNames;
+                final List<String> names;
+                switch (species) {
+                  case PetSpecies.dog:
+                    names = CompanionOverlayController.dogNames;
+                    break;
+                  case PetSpecies.rabbit:
+                    names = CompanionOverlayController.rabbitNames;
+                    break;
+                  case PetSpecies.fox:
+                    names = CompanionOverlayController.foxNames;
+                    break;
+                  case PetSpecies.dragon:
+                    names = CompanionOverlayController.dragonNames;
+                    break;
+                  case PetSpecies.cat:
+                    names = CompanionOverlayController.catNames;
+                    break;
+                }
                 final randomName = names[random.nextInt(names.length)];
                 controller.changePetName(randomName);
               },
@@ -2577,74 +2614,18 @@ class _SettingsPageState extends State<SettingsPage> {
     ]);
   }
 
-  bool _isDog(String themeId) {
-    return {
-      CatTheme.keyCollie,
-      CatTheme.keyCorgi,
-      CatTheme.keyDalmatian,
-      CatTheme.keyHusky,
-      CatTheme.keyLabrador,
-      CatTheme.keyGoldie,
-      CatTheme.keyRealisticGoldie,
-    }.contains(themeId);
-  }
+  // Decoupled species validation is handled dynamically via PetTheme.getTheme(themeId).species
 
   Widget _buildCompanionTestInteractions(
     CompanionOverlayController controller,
   ) {
-    final themeId = controller.companionCatTheme;
-    final isDog = _isDog(themeId);
-
-    if (themeId == CatTheme.keyRealisticGoldie) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _buildInteractionButton('Idle', CupertinoIcons.hourglass, 'idle'),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppTheme.accentColor.withValues(alpha: 0.15),
-              ),
-            ),
-            child: const Row(
-              children: [
-                Icon(
-                  CupertinoIcons.info_circle_fill,
-                  size: 16,
-                  color: AppTheme.accentColor,
-                ),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Static Breed: This premium high-fidelity breed displays as a static companion.',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.textPrimary,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Satoshi',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    }
+    final themeId = controller.companionPetTheme;
+    final petTheme = PetTheme.getTheme(themeId);
+    final species = petTheme.species;
 
     final List<Map<String, dynamic>> interactions;
 
-    if (themeId == CatTheme.keyPixelCat) {
+    if (themeId == PetTheme.keyPixelCat) {
       interactions = [
         {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
         {
@@ -2674,7 +2655,7 @@ class _SettingsPageState extends State<SettingsPage> {
         },
         {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
       ];
-    } else if (themeId == CatTheme.keyLargeCat) {
+    } else if (themeId == PetTheme.keyLargeCat) {
       interactions = [
         {'label': 'Run Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
         {
@@ -2689,13 +2670,18 @@ class _SettingsPageState extends State<SettingsPage> {
         },
         {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
       ];
-    } else if (themeId == CatTheme.keyCat1 ||
-        themeId == CatTheme.keyCat2 ||
-        themeId == CatTheme.keyCat4 ||
-        themeId == CatTheme.keyCat5 ||
-        themeId == CatTheme.keyCat6) {
+    } else if (themeId == PetTheme.keyCat1 ||
+        themeId == PetTheme.keyCat2 ||
+        themeId == PetTheme.keyCat4 ||
+        themeId == PetTheme.keyCat5 ||
+        themeId == PetTheme.keyCat6 ||
+        themeId == PetTheme.keyRabbit) {
       interactions = [
-        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': species == PetSpecies.rabbit ? 'Hop Around' : 'Walk Around',
+          'icon': CupertinoIcons.paw,
+          'state': 'walk',
+        },
         {
           'label': 'Take Nap',
           'icon': CupertinoIcons.moon_zzz_fill,
@@ -2707,12 +2693,12 @@ class _SettingsPageState extends State<SettingsPage> {
           'state': 'celebrate',
         },
         {
-          'label': 'Angry Itch',
+          'label': species == PetSpecies.rabbit ? 'Nose Twitch' : 'Angry Itch',
           'icon': CupertinoIcons.ant_fill,
           'state': 'angry',
         },
         {
-          'label': 'Meow Alert',
+          'label': species == PetSpecies.rabbit ? 'Perk Ears' : 'Meow Alert',
           'icon': CupertinoIcons.chat_bubble_2_fill,
           'state': 'notification',
         },
@@ -2728,7 +2714,7 @@ class _SettingsPageState extends State<SettingsPage> {
         },
         {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
       ];
-    } else if (themeId == CatTheme.keyCat3) {
+    } else if (themeId == PetTheme.keyCat3) {
       interactions = [
         {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
         {
@@ -2763,7 +2749,7 @@ class _SettingsPageState extends State<SettingsPage> {
         },
         {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
       ];
-    } else if (isDog) {
+    } else if (species == PetSpecies.dog) {
       interactions = [
         {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
         {
@@ -2799,8 +2785,13 @@ class _SettingsPageState extends State<SettingsPage> {
         {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
       ];
     } else {
+      // Fox, Dragon, etc.
       interactions = [
-        {'label': 'Walk Around', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+        {
+          'label': species == PetSpecies.dragon ? 'Glide / Fly' : 'Walk Around',
+          'icon': CupertinoIcons.paw,
+          'state': 'walk',
+        },
         {
           'label': 'Take Nap',
           'icon': CupertinoIcons.moon_zzz_fill,
@@ -2822,7 +2813,9 @@ class _SettingsPageState extends State<SettingsPage> {
           'state': 'celebrate',
         },
         {
-          'label': 'Hiss / Angry',
+          'label': species == PetSpecies.dragon
+              ? 'Breathe Fire'
+              : 'Hiss / Angry',
           'icon': CupertinoIcons.flame_fill,
           'state': 'angry',
         },

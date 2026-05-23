@@ -21,6 +21,11 @@ class PetBehaviorContext {
   final int interactionCount;
   final DateTime? lastInteractionTime;
 
+  // Stateful Needs (from 0.0 to 1.0)
+  final double curiosity;
+  final double fatigue;
+  final double boredom;
+
   PetBehaviorContext({
     required this.profile,
     required this.currentMood,
@@ -38,6 +43,9 @@ class PetBehaviorContext {
     this.ambientNoiseLevel = 0.0,
     this.interactionCount = 0,
     this.lastInteractionTime,
+    this.curiosity = 0.5,
+    this.fatigue = 0.0,
+    this.boredom = 0.0,
   })  : cursorPosition = cursorPosition ?? Offset.zero,
         petPosition = petPosition ?? Offset.zero,
         screenSize = screenSize ?? Size.zero;
@@ -59,6 +67,9 @@ class PetBehaviorContext {
     double? ambientNoiseLevel,
     int? interactionCount,
     DateTime? lastInteractionTime,
+    double? curiosity,
+    double? fatigue,
+    double? boredom,
   }) {
     return PetBehaviorContext(
       profile: profile ?? this.profile,
@@ -77,6 +88,9 @@ class PetBehaviorContext {
       ambientNoiseLevel: ambientNoiseLevel ?? this.ambientNoiseLevel,
       interactionCount: interactionCount ?? this.interactionCount,
       lastInteractionTime: lastInteractionTime ?? this.lastInteractionTime,
+      curiosity: curiosity ?? this.curiosity,
+      fatigue: fatigue ?? this.fatigue,
+      boredom: boredom ?? this.boredom,
     );
   }
 

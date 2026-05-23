@@ -1,45 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:standup/features/companion/domain/pet_type.dart';
 
-/// Per-species cursor-follow profile.
-/// Cats: cautious — look first, slow approach, stop before reaching cursor.
-/// Dogs: eager — fast rush, overshoot slightly, settle with wiggle.
-class _FollowProfile {
-  final double springStiffness; // How fast velocity catches up to target
-  final double damping;         // How quickly oscillation dies (1.0 = critically damped)
-  final double maxSpeed;        // px/s cap
-  final double stopRadius;      // Stop this many px away from cursor (cats stay aloof)
-  final double lookDelay;       // Seconds of "looking" before moving (cats only)
 
-  const _FollowProfile({
-    required this.springStiffness,
-    required this.damping,
-    required this.maxSpeed,
-    required this.stopRadius,
-    required this.lookDelay,
-  });
-
-  static const cat = _FollowProfile(
-    springStiffness: 6.0,
-    damping: 0.85,
-    maxSpeed: 90.0,
-    stopRadius: 40.0,
-    lookDelay: 0.4,
-  );
-
-  static const dog = _FollowProfile(
-    springStiffness: 14.0,
-    damping: 0.65,
-    maxSpeed: 200.0,
-    stopRadius: 8.0,
-    lookDelay: 0.0,
-  );
-}
 
 /// Navigation service for autonomous pet movement and cursor following.
 /// Uses a spring-damper model for natural, organic motion.
-///
-/// Each [PetCompanionService] owns its own instance (no singleton).
 class PetNavigationService {
   PetNavigationService();
 
@@ -47,7 +13,7 @@ class PetNavigationService {
   double _wanderSpeed = 0.0;
   final double _edgeMargin = 50.0;
   bool _isWanderingEnabled = true;
-  bool _isDog = false;
+  PetSpecies _species = PetSpecies.cat;
 
   // State
   Offset _pos = Offset.zero;
@@ -62,22 +28,44 @@ class PetNavigationService {
   Offset _cursorPos = Offset.zero;
   double _lookTimer = 0.0; // Cat look-before-move delay
 
-  // Annoyance tracking: if cursor moves too much, cat gets angry
+  // Hopping and Flying procedural math offsets
+  double _hopTimer = 0.0;
+  double _hopY = 0.0;
+  double _flyTime = 0.0;
+  double _flyY = 0.0;
+
+  // Annoyance tracking: if cursor moves too much, pet gets angry
   int _cursorMoveCount = 0;
   DateTime _lastCursorMoveReset = DateTime.now();
   static const int _annoyanceThreshold = 15; // moves per 3 seconds
   static const Duration _annoyanceWindow = Duration(seconds: 3);
 
-  static const Duration _wanderCooldown = Duration(seconds: 3);
+  Duration _currentWanderCooldown = const Duration(seconds: 3);
   static final _rng = Random();
 
   // Getters
-  Offset get currentPosition => _pos;
+  Offset get currentPosition => _pos + Offset(0, _hopY + _flyY);
   Offset get velocity => _vel;
   double get speed => _vel.distance; // px/s — used by component to pick walk/run anim
   bool get isCursorFollowing => _isCursorFollowing;
   bool get isWanderingEnabled => _isWanderingEnabled;
   bool get isAnnoyed => _cursorMoveCount > _annoyanceThreshold;
+  PetSpecies get species => _species;
+
+  bool get isMoving {
+    if (_isCursorFollowing) {
+      final profile = _species.defaultProfile;
+      if (profile.lookDelay > 0.0 && _lookTimer < profile.lookDelay) {
+        return false;
+      }
+      return (_cursorPos - _pos).distance > profile.stopRadius;
+    } else {
+      return _isWanderingEnabled &&
+          _wanderSpeed > 0 &&
+          _hasWanderTarget &&
+          (_wanderTarget - _pos).distance >= 12.0;
+    }
+  }
 
   bool get needsWanderTarget {
     if (!_isWanderingEnabled || _wanderSpeed <= 0) return false;
@@ -93,10 +81,14 @@ class PetNavigationService {
     _hasWanderTarget = false;
     _lastWanderTime = null;
     _lookTimer = 0.0;
+    _hopTimer = 0.0;
+    _hopY = 0.0;
+    _flyTime = 0.0;
+    _flyY = 0.0;
   }
 
-  void setSpecies({required bool isDog}) {
-    _isDog = isDog;
+  void setSpecies(PetSpecies species) {
+    _species = species;
   }
 
   void updateConfig({double? wanderSpeed}) {
@@ -104,8 +96,6 @@ class PetNavigationService {
   }
 
   /// Called with the raw cursor position in the game/canvas coordinate space.
-  /// The caller (CompanionGame) is responsible for converting window coords to
-  /// game coords before calling this.
   void updateCursorPosition(Offset gameSpaceCursor, {bool? forceFollowing}) {
     // Track cursor movement for annoyance detection
     if ((_cursorPos - gameSpaceCursor).distance > 5.0) {
@@ -142,16 +132,53 @@ class PetNavigationService {
   void generateWanderTarget() {
     final now = DateTime.now();
     if (_lastWanderTime != null &&
-        now.difference(_lastWanderTime!) < _wanderCooldown) {
+        now.difference(_lastWanderTime!) < _currentWanderCooldown) {
       return;
     }
     final m = _edgeMargin;
-    _wanderTarget = Offset(
-      m + _rng.nextDouble() * (_screen.width - m * 2),
-      m + _rng.nextDouble() * (_screen.height - m * 2),
-    );
+    
+    // Rabbit edge-seeking wandering target logic
+    if (_species == PetSpecies.rabbit && _rng.nextDouble() < 0.70) {
+      final double edge = _rng.nextInt(4).toDouble();
+      double tx = m;
+      double ty = m;
+      if (edge == 0) { // Left edge
+        tx = m + _rng.nextDouble() * 20.0;
+        ty = m + _rng.nextDouble() * (_screen.height - m * 2);
+      } else if (edge == 1) { // Right edge
+        tx = _screen.width - m - _rng.nextDouble() * 20.0;
+        ty = m + _rng.nextDouble() * (_screen.height - m * 2);
+      } else if (edge == 2) { // Top edge
+        tx = m + _rng.nextDouble() * (_screen.width - m * 2);
+        ty = m + _rng.nextDouble() * 20.0;
+      } else { // Bottom edge
+        tx = m + _rng.nextDouble() * (_screen.width - m * 2);
+        ty = _screen.height - m - _rng.nextDouble() * 20.0;
+      }
+      _wanderTarget = Offset(tx, ty);
+    } else {
+      // Unpredictable movement: 75% chance of short local wanders, 25% chance of long-distance prowls
+      final bool isProwl = _rng.nextDouble() < 0.25;
+      if (isProwl) {
+        _wanderTarget = Offset(
+          m + _rng.nextDouble() * (_screen.width - m * 2),
+          m + _rng.nextDouble() * (_screen.height - m * 2),
+        );
+      } else {
+        // Local wander within 100 to 250 pixels of current position
+        final double distance = 100.0 + _rng.nextDouble() * 150.0;
+        final double angle = _rng.nextDouble() * 2 * pi;
+        final double targetX = (_pos.dx + cos(angle) * distance).clamp(m, _screen.width - m);
+        final double targetY = (_pos.dy + sin(angle) * distance).clamp(m, _screen.height - m);
+        _wanderTarget = Offset(targetX, targetY);
+      }
+    }
+    
     _hasWanderTarget = true;
     _lastWanderTime = now;
+    
+    // Dynamic unpredictable cooldown: 2 to 7 seconds
+    _currentWanderCooldown = Duration(seconds: 2 + _rng.nextInt(6));
   }
 
   void setTarget(Offset target) {
@@ -180,11 +207,57 @@ class PetNavigationService {
     );
 
     _clampToBounds();
+
+    // Procedural movement calculations (doesn't affect horizontal clamps/physics)
+    if (_species == PetSpecies.rabbit) {
+      _updateHopPhysics(dt);
+    } else {
+      _hopY = 0.0;
+      _hopTimer = 0.0;
+    }
+
+    if (_species == PetSpecies.dragon) {
+      _updateFlyPhysics(dt);
+    } else {
+      _flyY = 0.0;
+      _flyTime = 0.0;
+    }
+
     return _pos;
   }
 
+  void _updateHopPhysics(double dt) {
+    const double hopDuration = 0.6; // single hop length (s)
+    const double hopInterval = 0.45; // wait before next hop (s)
+
+    if (speed > 5.0) {
+      _hopTimer += dt;
+      if (_hopTimer < hopDuration) {
+        final double progress = _hopTimer / hopDuration;
+        _hopY = -22.0 * sin(progress * pi); // Parabolic curve
+      } else {
+        _hopY = 0.0;
+        // Dampen velocity to zero during rest interval
+        _vel = Offset(_vel.dx * 0.1, _vel.dy * 0.1);
+        if (_hopTimer >= hopDuration + hopInterval) {
+          _hopTimer = 0.0;
+        }
+      }
+    } else {
+      _hopY = 0.0;
+      _hopTimer = 0.0;
+    }
+  }
+
+  void _updateFlyPhysics(double dt) {
+    _flyTime += dt;
+    // Sinusoidal floating hover effect
+    _flyY = sin(_flyTime * 3.2) * 10.0;
+  }
+
   void _updateCursorFollow(double dt) {
-    final profile = _isDog ? _FollowProfile.dog : _FollowProfile.cat;
+    final profile = _species.defaultProfile;
+
     final toTarget = _cursorPos - _pos;
     final dist = toTarget.distance;
 
@@ -196,8 +269,8 @@ class PetNavigationService {
       return;
     }
 
-    // Cat look-delay: stand still and "look" before moving
-    if (!_isDog && _lookTimer < profile.lookDelay) {
+    // Species look-delay: stand still and "look" before moving
+    if (profile.lookDelay > 0.0 && _lookTimer < profile.lookDelay) {
       _lookTimer += dt;
       _vel = Offset(_vel.dx * 0.8, _vel.dy * 0.8);
       return;
@@ -205,8 +278,7 @@ class PetNavigationService {
 
     // Spring-damper: F = stiffness * displacement - damping * velocity
     final dir = toTarget / dist;
-    // Effective target velocity proportional to distance, capped at maxSpeed
-    final targetSpeed = (profile.springStiffness * dist).clamp(0.0, profile.maxSpeed);
+    final targetSpeed = (profile.acceleration * dist).clamp(0.0, profile.movementSpeed);
     final targetVel = dir * targetSpeed;
 
     // Critically-damped spring integration
