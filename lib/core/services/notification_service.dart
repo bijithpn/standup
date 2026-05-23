@@ -3,8 +3,8 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/errors/app_exception.dart';
 import 'package:standup/core/errors/error_handler.dart';
 import 'package:standup/core/utils/logger.dart';
-import 'package:standup/features/companion/data/cat_asset_loader.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/assets/pet_asset_loader.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 
 class NotificationService {
@@ -119,11 +119,11 @@ class NotificationService {
       action: () async {
         // Retrieve selected companion theme
         final settingsRepo = sl<SettingsRepository>();
-        final selectedThemeId = settingsRepo.currentSettings.companionCatTheme;
-        final theme = CatTheme.getTheme(selectedThemeId);
+        final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+        final theme = PetTheme.getTheme(selectedThemeId);
         
         // Extract the icon for the selected companion theme
-        final iconPath = await CatAssetLoader.extractCatIconPath(theme);
+        final iconPath = await PetAssetLoader.extractPetIconPath(theme);
 
         final macOS = DarwinNotificationDetails(
           presentAlert: true,

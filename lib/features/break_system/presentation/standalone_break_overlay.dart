@@ -14,7 +14,7 @@ import 'package:standup/features/break_overlay/presentation/templates/productivi
 import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
 
 enum BreakTheme {
   image,
@@ -72,7 +72,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   String? _exerciseTitle;
   String? _exerciseInstructions;
   String _breakTemplate = 'minimal';
-  String _companionCatTheme = 'grey_cat';
+  String _companionPetTheme = 'grey_cat';
 
   @override
   void initState() {
@@ -104,9 +104,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     // Pre-cache companion sprite sheets post-frame to ensure zero-lag load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      CompanionSpriteWidget.precacheSpriteSheet(CatTheme.getTheme('grey_cat').basePath);
-      CompanionSpriteWidget.precacheSpriteSheet(CatTheme.getTheme('orange_cat').basePath);
-      CompanionSpriteWidget.precacheSpriteSheet(CatTheme.getTheme('black_cat').basePath);
+      CompanionSpriteWidget.precacheSpriteSheet(PetTheme.getTheme('grey_cat').basePath);
+      CompanionSpriteWidget.precacheSpriteSheet(PetTheme.getTheme('orange_cat').basePath);
+      CompanionSpriteWidget.precacheSpriteSheet(PetTheme.getTheme('black_cat').basePath);
     });
   }
 
@@ -163,8 +163,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             if (args['breakTemplate'] != null) {
               _breakTemplate = args['breakTemplate'];
             }
-            if (args['companionCatTheme'] != null) {
-              _companionCatTheme = args['companionCatTheme'];
+            if (args['companionPetTheme'] != null) {
+              _companionPetTheme = args['companionPetTheme'];
+            } else if (args['companionCatTheme'] != null) {
+              _companionPetTheme = args['companionCatTheme'];
             }
             if (args.containsKey('exerciseTitle')) {
               _exerciseTitle = args['exerciseTitle'];
@@ -249,7 +251,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     final settings = SettingsModel(
       strictMode: _strictMode,
-      companionCatTheme: _companionCatTheme,
+      companionPetTheme: _companionPetTheme,
       breakTemplate: _breakTemplate,
       showExercisesInBreak: _exerciseTitle != null,
     );

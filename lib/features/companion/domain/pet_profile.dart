@@ -47,21 +47,80 @@ class PetProfile {
     secondaryColor: Color(0xFF795548),
   );
 
-  /// Preset: Friendly golden dog
-  static const goldenDog = PetProfile(
-    id: 'golden_dog_01',
-    name: 'Goldie',
-    species: PetSpecies.dog,
+  /// Preset: Rabbit (Ginger Hop)
+  static const rabbitHop = PetProfile(
+    id: 'rabbit_hop_01',
+    name: 'Ginger Hop',
+    species: PetSpecies.rabbit,
     variant: PetVariant(
-      id: 'goldie',
-      name: 'Golden Retriever',
-      assetPath: 'assets/animations/dogs/goldie/goldie_v02.png',
+      id: 'cat_1',
+      name: 'Rabbit Hop',
+      assetPath: 'assets/animations/cats/cat_1/',
+      isSpriteSheet: false,
     ),
-    personality: PetPersonality.friendly,
+    personality: PetPersonality(
+      activityLevel: 0.6,
+      sociability: 0.5,
+      playfulness: 0.7,
+      curiosity: 0.5,
+      skittishness: 0.8,
+      independence: 0.5,
+    ),
+    initialMood: PetMood.relaxed,
+    primaryColor: Color(0xFFE0A96D),
+    secondaryColor: Color(0xFFDCC7B1),
+  );
+
+  /// Preset: Fox (Firefox)
+  static const foxFirefox = PetProfile(
+    id: 'fox_firefox_01',
+    name: 'Firefox',
+    species: PetSpecies.fox,
+    variant: PetVariant(
+      id: 'orange_cat',
+      name: 'Fox',
+      assetPath: 'assets/animations/cats/orange_cat/sprite_sheet.png',
+      isSpriteSheet: true,
+      rowCount: 12,
+      frameCount: 8,
+    ),
+    personality: PetPersonality(
+      activityLevel: 0.8,
+      sociability: 0.7,
+      playfulness: 0.8,
+      curiosity: 0.9,
+      skittishness: 0.4,
+      independence: 0.6,
+    ),
     initialMood: PetMood.happy,
-    primaryColor: Color(0xFFFFD54F),
-    secondaryColor: Color(0xFFFF8F00),
-    movementSpeed: 1.2,
+    primaryColor: Color(0xFFD75A20),
+    secondaryColor: Color(0xFFF7F7F7),
+  );
+
+  /// Preset: Dragon (Shadow Wing)
+  static const dragonShadow = PetProfile(
+    id: 'dragon_shadow_01',
+    name: 'Shadow Wing',
+    species: PetSpecies.dragon,
+    variant: PetVariant(
+      id: 'black_cat',
+      name: 'Shadow Wing',
+      assetPath: 'assets/animations/cats/black_cat/sprite_sheet.png',
+      isSpriteSheet: true,
+      rowCount: 12,
+      frameCount: 8,
+    ),
+    personality: PetPersonality(
+      activityLevel: 0.7,
+      sociability: 0.6,
+      playfulness: 0.5,
+      curiosity: 0.8,
+      skittishness: 0.2,
+      independence: 0.8,
+    ),
+    initialMood: PetMood.curious,
+    primaryColor: Color(0xFF2C3E50),
+    secondaryColor: Color(0xFFE74C3C),
   );
 
   PetProfile copyWith({
@@ -117,7 +176,9 @@ class PetProfile {
         orElse: () => PetSpecies.cat,
       ),
       variant: PetVariant.fromMap(map['variant'] as Map<String, dynamic>),
-      personality: PetPersonality.fromMap(map['personality'] as Map<String, dynamic>),
+      personality: PetPersonality.fromMap(
+        map['personality'] as Map<String, dynamic>,
+      ),
       initialMood: PetMood.values.firstWhere(
         (e) => e.name == map['initialMood'],
         orElse: () => PetMood.relaxed,

@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
 import 'package:standup/features/companion/assets/pet_asset_loader.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
 import 'package:standup/features/companion/domain/pet_personality.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
 import 'package:standup/features/companion/domain/pet_state_machine.dart';
@@ -16,7 +16,7 @@ import 'package:standup/features/companion/services/pet_companion_service.dart';
 import 'package:standup/features/companion/services/pet_navigation_service.dart';
 
 class CompanionGame extends FlameGame {
-  CompanionGame({required CatTheme initialTheme, this.scaleOverride = 0.0})
+  CompanionGame({required PetTheme initialTheme, this.scaleOverride = 0.0})
     : _eventBus = EventBus.instance,
       _petService = PetCompanionService(
         stateMachine: PetStateMachine(personality: PetPersonality()),
@@ -26,13 +26,13 @@ class CompanionGame extends FlameGame {
       ),
       _theme = initialTheme;
 
-  static PetProfile getProfileFromTheme(CatTheme theme) {
-    final species = theme.isDog ? PetSpecies.dog : PetSpecies.cat;
+  static PetProfile getProfileFromTheme(PetTheme theme) {
+    final species = theme.species;
     final variant = PetVariant(
       id: theme.id,
       name: theme.name,
       assetPath: theme.basePath,
-      isSpriteSheet: theme.type == CatType.composite,
+      isSpriteSheet: theme.type == PetType.composite,
     );
     return PetProfile(
       id: theme.id,
@@ -47,13 +47,13 @@ class CompanionGame extends FlameGame {
   late StreamSubscription<AppEvent> _eventSubscription;
   late StreamSubscription<PetState> _petStateSubscription;
 
-  CatTheme _theme;
+  PetTheme _theme;
   double scaleOverride; // 0.0 = auto-scale
   bool _lastGroomWasLick1 = false; // alternates lick1 → lick2 → lick1 …
 
-  CompanionComponent? catComponent;
+  CompanionComponent? petComponent;
 
-  CatTheme get currentTheme => _theme;
+  PetTheme get currentTheme => _theme;
   PetState get companionState => _petService.currentState;
   PetCompanionService get petService => _petService;
 
@@ -70,7 +70,7 @@ class CompanionGame extends FlameGame {
       _applyPetStateToComponent(state);
     });
     _petService.initialize(screenSize: Size(size.x, size.y));
-    await _loadAndAttachCat();
+    await _loadAndAttachPet();
   }
 
   @override
@@ -189,68 +189,69 @@ class CompanionGame extends FlameGame {
   void _applyPetStateToComponent(PetState state) {
     final animState = _mapPetStateToAnimationState(state);
     // Guarantee: if the mapped animation doesn't exist, fall back to idle.
-    // changeState() also does this check, but being explicit here avoids
-    // a silent no-op when the component has no animation for the state.
-    final safeState = (catComponent?.animations?.containsKey(animState) == true)
+    final safeState = (petComponent?.animations?.containsKey(animState) == true)
         ? animState
-        : CatAnimationState.idle;
-    catComponent?.changeState(safeState);
+        : PetAnimationState.idle;
+    petComponent?.changeState(safeState);
   }
 
-  CatAnimationState _mapPetStateToAnimationState(PetState state) {
+  PetAnimationState _mapPetStateToAnimationState(PetState state) {
     switch (state) {
       case PetState.idle:
       case PetState.blink:
       case PetState.resting:
       case PetState.bored:
       case PetState.quiet:
-        return CatAnimationState.idle;
+        return PetAnimationState.idle;
       case PetState.stretch:
-        return CatAnimationState.stretch;
+        return PetAnimationState.stretch;
       case PetState.celebrating:
       case PetState.dancing:
-        return CatAnimationState.celebrate;
+        return PetAnimationState.celebrate;
       case PetState.walk:
       case PetState.exploring:
       case PetState.following:
       case PetState.turning:
-        return CatAnimationState.walk;
+        return PetAnimationState.walkSide;
       case PetState.run:
       case PetState.jumping:
       case PetState.playing:
-        return CatAnimationState.run;
+        return PetAnimationState.run;
       case PetState.sleep:
-        return CatAnimationState.sleep;
+        return PetAnimationState.sleep;
       case PetState.alert:
       case PetState.curious:
       case PetState.interacting:
       case PetState.scared:
       case PetState.hiding:
       case PetState.angry:
-        return CatAnimationState.notification;
+        return PetAnimationState.notification;
       case PetState.happy:
       case PetState.excited:
       case PetState.affectionate:
-        return CatAnimationState.excited;
+        return PetAnimationState.excited;
       case PetState.breakReminder:
-        return CatAnimationState.breakMode;
+        return PetAnimationState.breakMode;
       case PetState.meetingPaused:
       case PetState.sad:
-        return CatAnimationState.sad;
+        return PetAnimationState.sad;
       case PetState.focusMode:
-        return CatAnimationState.focusMode;
+        return PetAnimationState.focusMode;
       case PetState.grooming:
         // Alternate lick1 → lick2 → lick1 … for a natural grooming sequence.
-        // Falls back to idle if the theme has no lick animations.
-        if (_theme.animations.containsKey(CatAnimationState.lick1)) {
+        if (_theme.animations.containsKey(PetAnimationState.lick1)) {
           _lastGroomWasLick1 = !_lastGroomWasLick1;
-          return _lastGroomWasLick1 ? CatAnimationState.lick1 : CatAnimationState.lick2;
+          return _lastGroomWasLick1 ? PetAnimationState.lick1 : PetAnimationState.lick2;
         }
-        return CatAnimationState.idle;
+        return PetAnimationState.idle;
       case PetState.eating:
-        return CatAnimationState.idle;
+        return PetAnimationState.idle;
       case PetState.drag:
-        return CatAnimationState.idle;
+        return PetAnimationState.idle;
+      case PetState.breatheFire:
+        return PetAnimationState.breatheFire;
+      case PetState.fly:
+        return PetAnimationState.fly;
     }
   }
 
@@ -261,7 +262,7 @@ class CompanionGame extends FlameGame {
     return (target / spriteSize).clamp(3.0, 10.0);
   }
 
-  Future<void> _loadAndAttachCat() async {
+  Future<void> _loadAndAttachPet() async {
     final animations = await PetAssetLoader.loadAnimations(_petService.profile);
     if (animations.isEmpty) return;
 
@@ -272,25 +273,25 @@ class CompanionGame extends FlameGame {
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
 
-    catComponent = CompanionComponent(
+    petComponent = CompanionComponent(
       animations: animations,
       initialState: _mapPetStateToAnimationState(_petService.currentState),
     );
 
-    catComponent!.size = Vector2(spriteSize, spriteSize);
-    catComponent!.scale = Vector2.all(scale);
+    petComponent!.size = Vector2(spriteSize, spriteSize);
+    petComponent!.scale = Vector2.all(scale);
 
     final double scaledHalfH = (spriteSize * scale) / 2;
-    catComponent!.position = Vector2(size.x / 2, size.y - scaledHalfH - 4.0);
+    petComponent!.position = Vector2(size.x / 2, size.y - scaledHalfH - 4.0);
 
-    add(catComponent!);
+    add(petComponent!);
   }
 
-  Future<void> updateTheme(CatTheme newTheme) async {
-    if (_theme.id == newTheme.id && catComponent != null) return;
+  Future<void> updateTheme(PetTheme newTheme) async {
+    if (_theme.id == newTheme.id && petComponent != null) return;
     _theme = newTheme;
     _petService.updateProfile(getProfileFromTheme(newTheme));
-    await _loadAndAttachCat();
+    await _loadAndAttachPet();
   }
 
   void updateScale(double newScale) {
@@ -300,28 +301,28 @@ class CompanionGame extends FlameGame {
   }
 
   void _applyScale() {
-    if (catComponent == null) return;
+    if (petComponent == null) return;
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
-    catComponent!.scale = Vector2.all(scale);
+    petComponent!.scale = Vector2.all(scale);
 
     final double scaledHalfH = (spriteSize * scale) / 2;
-    catComponent!.position = Vector2(
-      catComponent!.position.x,
+    petComponent!.position = Vector2(
+      petComponent!.position.x,
       size.y - scaledHalfH - 4.0,
     );
   }
 
-  void triggerState(CatAnimationState state) {
-    catComponent?.changeState(state);
+  void triggerState(PetAnimationState state) {
+    petComponent?.changeState(state);
   }
 
   void setWanderingEnabled(bool enabled) {
-    catComponent?.setWanderingEnabled(enabled);
+    petComponent?.setWanderingEnabled(enabled);
   }
 
   void updateMouseFollow(Map<dynamic, dynamic> data) {
-    catComponent?.updateMouseFollow(data);
+    petComponent?.updateMouseFollow(data);
   }
 
   void onUserInteraction(String type) {
@@ -381,15 +382,15 @@ class CompanionGame extends FlameGame {
       }
     }
 
-    if (catComponent != null) {
+    if (petComponent != null) {
       final double spriteSize = _theme.spriteSize.toDouble();
       final double scale = _effectiveScale(spriteSize);
-      catComponent!.scale = Vector2.all(scale);
+      petComponent!.scale = Vector2.all(scale);
 
       final double scaledHalfW = (spriteSize * scale) / 2;
       double newX;
       if (spriteSize * scale < size.x) {
-        newX = catComponent!.position.x.clamp(
+        newX = petComponent!.position.x.clamp(
           scaledHalfW,
           size.x - scaledHalfW,
         );
@@ -398,7 +399,7 @@ class CompanionGame extends FlameGame {
       }
 
       final double scaledHalfH = (spriteSize * scale) / 2;
-      catComponent!.position = Vector2(newX, size.y - scaledHalfH - 4.0);
+      petComponent!.position = Vector2(newX, size.y - scaledHalfH - 4.0);
     }
   }
 }

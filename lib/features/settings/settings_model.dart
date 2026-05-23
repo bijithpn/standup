@@ -70,7 +70,7 @@ class SettingsModel {
   final bool enableAnimations;
   final String trayIconStyle; // 'default', 'companion', 'minimal', 'countdown'
   final bool companionEnabled;
-  final String companionCatTheme;
+  final String companionPetTheme;
   final String companionPetName;
   final double companionScale;
   final bool companionClickThrough;
@@ -125,7 +125,7 @@ class SettingsModel {
     this.enableAnimations = true,
     this.trayIconStyle = 'companion',
     this.companionEnabled = false,
-    this.companionCatTheme = 'grey_cat',
+    this.companionPetTheme = 'grey_cat',
     this.companionPetName = 'Mochi',
     this.companionScale = 6.0,
     this.companionClickThrough = false,
@@ -181,7 +181,7 @@ class SettingsModel {
     bool? enableAnimations,
     String? trayIconStyle,
     bool? companionEnabled,
-    String? companionCatTheme,
+    String? companionPetTheme,
     String? companionPetName,
     double? companionScale,
     bool? companionClickThrough,
@@ -236,7 +236,7 @@ class SettingsModel {
       enableAnimations: enableAnimations ?? this.enableAnimations,
       trayIconStyle: trayIconStyle ?? this.trayIconStyle,
       companionEnabled: companionEnabled ?? this.companionEnabled,
-      companionCatTheme: companionCatTheme ?? this.companionCatTheme,
+      companionPetTheme: companionPetTheme ?? this.companionPetTheme,
       companionPetName: companionPetName ?? this.companionPetName,
       companionScale: companionScale ?? this.companionScale,
       companionClickThrough: companionClickThrough ?? this.companionClickThrough,
@@ -293,7 +293,7 @@ class SettingsModel {
         'enableAnimations': enableAnimations,
         'trayIconStyle': trayIconStyle,
         'companionEnabled': companionEnabled,
-        'companionCatTheme': companionCatTheme,
+        'companionPetTheme': companionPetTheme,
         'companionPetName': companionPetName,
         'companionScale': companionScale,
         'companionClickThrough': companionClickThrough,
@@ -365,7 +365,7 @@ class SettingsModel {
       enableAnimations: map['enableAnimations'] as bool? ?? true,
       trayIconStyle: (map['trayIconStyle'] as String? ?? 'companion') == 'cat' ? 'companion' : (map['trayIconStyle'] as String? ?? 'companion'),
       companionEnabled: map['companionEnabled'] as bool? ?? false,
-      companionCatTheme: map['companionCatTheme'] as String? ?? 'grey_cat',
+      companionPetTheme: (map['companionPetTheme'] ?? map['companionCatTheme']) as String? ?? 'grey_cat',
       companionPetName: map['companionPetName'] as String? ?? 'Mochi',
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,

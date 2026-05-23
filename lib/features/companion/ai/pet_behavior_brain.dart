@@ -2,6 +2,7 @@ import 'dart:math';
 import '../domain/pet_behavior_context.dart';
 import '../domain/pet_state_machine.dart';
 import '../domain/pet_mood.dart';
+import '../domain/pet_type.dart';
 
 /// AI decision engine that evaluates context and determines optimal pet behavior.
 /// Uses weighted scoring across multiple factors to avoid repetitive actions.
@@ -48,8 +49,18 @@ class PetBehaviorBrain {
   List<PetState> _getCandidateStates(PetBehaviorContext context) {
     final candidates = <PetState>[];
 
-    // Always include idle as fallback
-    candidates.add(PetState.idle);
+    // Spontaneous ambient candidates so the pet always has an active, unpredictable life
+    candidates.addAll([
+      PetState.idle,
+      PetState.blink,
+      PetState.stretch,
+      PetState.walk,
+      PetState.grooming,
+      PetState.exploring,
+      PetState.bored,
+      PetState.resting,
+      PetState.curious,
+    ]);
 
     // Context-aware candidates
     if (context.isBreakActive) {
@@ -101,6 +112,11 @@ class PetBehaviorBrain {
       candidates.add(PetState.playing);
     }
 
+    // Species-specific candidates
+    if (context.profile.species == PetSpecies.dragon) {
+      candidates.addAll([PetState.fly, PetState.breatheFire]);
+    }
+
     return candidates.toSet().toList();
   }
 
@@ -136,6 +152,49 @@ class PetBehaviorBrain {
     final contextBonus = _getContextRelevanceBonus(state, context);
     score *= (1.0 + contextBonus);
 
+    // --- Dynamic Needs Influence ---
+    // Fatigue Impact
+    if (context.fatigue > 0.6) {
+      if (state == PetState.sleep) {
+        score *= (1.0 + (context.fatigue - 0.6) * 10.0);
+      } else if (state == PetState.resting) {
+        score *= (1.0 + (context.fatigue - 0.6) * 5.0);
+      } else if (state == PetState.run || state == PetState.playing || state == PetState.jumping) {
+        score *= (1.0 - context.fatigue); // heavily penalize high energy states
+      }
+    }
+
+    // Curiosity Impact
+    if (context.curiosity > 0.6) {
+      if (state == PetState.following || state == PetState.interacting || state == PetState.curious || state == PetState.exploring) {
+        score *= (1.0 + (context.curiosity - 0.6) * 6.0);
+      }
+    }
+
+    // Boredom Impact
+    if (context.boredom > 0.5) {
+      if (state == PetState.exploring || state == PetState.walk || state == PetState.playing || state == PetState.bored) {
+        score *= (1.0 + (context.boredom - 0.5) * 4.0);
+      }
+    }
+
+    // --- Species Profile Modifiers ---
+    // Rabbit edge-seeking preference
+    if (context.profile.species == PetSpecies.rabbit && context.isNearScreenEdge) {
+      if (state == PetState.resting || state == PetState.idle) {
+        score *= 3.0; // Rabbits feel safe and love resting near screen boundaries
+      }
+    }
+
+    // Dragon custom actions
+    if (context.profile.species == PetSpecies.dragon) {
+      if (state == PetState.fly) {
+        score *= (1.0 + context.profile.personality.activityLevel * 1.5);
+      } else if (state == PetState.breatheFire) {
+        score *= (1.0 + context.profile.personality.playfulness * 1.2);
+      }
+    }
+
     // Random variance (±20%)
     score *= (0.8 + _random.nextDouble() * 0.4);
 
@@ -164,6 +223,10 @@ class PetBehaviorBrain {
       case PetState.hiding:
       case PetState.scared:
         return mood.mood == PetMood.scared ? 1.0 : 0.2;
+      case PetState.grooming:
+      case PetState.stretch:
+      case PetState.blink:
+        return mood.mood == PetMood.relaxed ? 1.0 : 0.5;
       default:
         return 0.5;
     }
@@ -175,6 +238,8 @@ class PetBehaviorBrain {
       case PetState.run:
       case PetState.jumping:
       case PetState.playing:
+      case PetState.walk:
+      case PetState.stretch:
         return personality.activityLevel;
       case PetState.sleep:
       case PetState.resting:
@@ -186,8 +251,11 @@ class PetBehaviorBrain {
       case PetState.quiet:
         return personality.skittishness;
       case PetState.exploring:
+      case PetState.curious:
         return personality.curiosity;
       case PetState.idle:
+      case PetState.grooming:
+      case PetState.blink:
         return personality.independence;
       default:
         return 0.5;

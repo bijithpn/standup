@@ -2,54 +2,75 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
 import 'package:standup/features/companion/domain/pet_state_machine.dart';
 import 'package:standup/features/companion/flame/companion_game.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+ 
+class _FireParticle {
+  Offset position;
+  Offset velocity;
+  double age;
+  final double maxAge;
+  final double size;
+  final Color color;
 
-class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState>
+  _FireParticle({
+    required this.position,
+    required this.velocity,
+    required this.maxAge,
+    required this.size,
+    required this.color,
+  }) : age = 0.0;
+}
+
+class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState>
     with HasGameReference<CompanionGame>, TapCallbacks, HoverCallbacks {
 
   double _direction = 1.0;
   double _stateElapsed = 0.0;
-  CatAnimationState? _previousState;
+  PetAnimationState? _previousState;
+  final Random _rng = Random();
+
+  // Snout offset for Dragon fire breathing particle origin
+  Offset get _snoutOffset => Offset(_direction * (size.x * 0.35), -size.y * 0.12);
+
+  // Active fire particles
+  final List<_FireParticle> _particles = [];
 
   CompanionComponent({
-    required Map<CatAnimationState, SpriteAnimation> animations,
-    CatAnimationState initialState = CatAnimationState.idle,
+    required Map<PetAnimationState, SpriteAnimation> animations,
+    PetAnimationState initialState = PetAnimationState.idle,
   }) : super(
           animations: animations,
           current: initialState,
           anchor: Anchor.center,
         );
 
-  bool get _isDog => game.currentTheme.isDog;
-
-  double get _strideFrequency {
-    final id = game.currentTheme.id;
-    if (id == CatTheme.keyCorgi) return 1.95;
-    if (id == CatTheme.keyHusky || id == CatTheme.keyCollie) return 1.0;
-    if (_isDog) return 1.25;
-    if (id == CatTheme.keyLargeCat) return 0.72;
-    return 1.15;
-  }
+  double get _strideFrequency => game.currentTheme.species.defaultProfile.strideFrequency;
 
   @override
   void onMount() {
     super.onMount();
-    // Set filter quality once — no need to set it every render call
     paint.filterQuality = FilterQuality.none;
     _updateFlip();
   }
 
   /// Changes animation state safely.
-  /// - Non-looping animations already in progress are NOT restarted.
-  /// - Missing animations fall back to idle.
-  void changeState(CatAnimationState newState, {bool force = false}) {
-    // Fallback: if the requested state has no animation, use idle
-    final target = (animations?.containsKey(newState) == true)
-        ? newState
-        : CatAnimationState.idle;
+  /// Handles fallback of missing directional animations to side-view walking seamlessly.
+  void changeState(PetAnimationState newState, {bool force = false}) {
+    var target = newState;
+
+    // Directional walk fallback to side walk
+    if (target == PetAnimationState.walkUp || target == PetAnimationState.walkDown) {
+      if (animations?.containsKey(target) != true) {
+        target = PetAnimationState.walkSide;
+      }
+    }
+
+    // Safety fallback: if the requested state has no animation, use idle
+    if (animations?.containsKey(target) != true) {
+      target = PetAnimationState.idle;
+    }
 
     if (current == target && !force) {
       // For a non-looping animation already playing, let it finish — don't restart
@@ -93,32 +114,49 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
   }
 
   // Speed thresholds (px/s) for animation selection
-  static const double _walkThreshold = 8.0;
   static const double _runThreshold = 100.0;
 
   // FSM states that own their animation — velocity must NOT override these
   static const _fsmOwnedAnimations = {
-    CatAnimationState.sleep,
-    CatAnimationState.stretch,
-    CatAnimationState.breakMode,
-    CatAnimationState.focusMode,
-    CatAnimationState.sad,
-    CatAnimationState.celebrate,
-    CatAnimationState.notification,
-    CatAnimationState.angry,
-    CatAnimationState.lick1,
-    CatAnimationState.lick2,
-    CatAnimationState.typing,
+    PetAnimationState.sleep,
+    PetAnimationState.stretch,
+    PetAnimationState.breakMode,
+    PetAnimationState.focusMode,
+    PetAnimationState.sad,
+    PetAnimationState.celebrate,
+    PetAnimationState.notification,
+    PetAnimationState.angry,
+    PetAnimationState.lick1,
+    PetAnimationState.lick2,
+    PetAnimationState.typing,
+    PetAnimationState.breatheFire,
   };
 
   @override
   void update(double dt) {
-    // Scale animation speed for walk/excited to match stride rate
-    final scaledDt = (current == CatAnimationState.walk || current == CatAnimationState.excited)
-        ? dt * _strideFrequency
-        : dt;
-    super.update(scaledDt);
+    final nav = game.petService.navigation;
+    final speed = nav.speed;
+    final vel = nav.velocity;
+    final baseSpeed = game.currentTheme.species.defaultProfile.movementSpeed;
 
+    // --- Dynamic Step Time / Prevents Foot-sliding ---
+    // Scaled dt based on velocity ratio, ensuring perfect physical pacing
+    double scaledDt = dt;
+    if (current == PetAnimationState.walkSide ||
+        current == PetAnimationState.walkUp ||
+        current == PetAnimationState.walkDown) {
+      final activeSpeed = speed > 0.5 ? speed : (baseSpeed * 0.4);
+      final speedRatio = (activeSpeed / baseSpeed).clamp(0.2, 2.5);
+      scaledDt = dt * speedRatio * _strideFrequency;
+    } else if (current == PetAnimationState.run) {
+      final activeSpeed = speed > 0.5 ? speed : (baseSpeed * 0.8);
+      final speedRatio = (activeSpeed / (baseSpeed * 1.8)).clamp(0.4, 2.5);
+      scaledDt = dt * speedRatio;
+    } else if (current == PetAnimationState.excited) {
+      scaledDt = dt * _strideFrequency;
+    }
+
+    super.update(scaledDt);
     _stateElapsed += dt;
 
     // Auto-revert non-looping animations back to previous (or idle)
@@ -127,68 +165,149 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
       final ticker = animationTickers?[current];
       if (ticker != null && ticker.done()) {
         ticker.reset();
-        // Fire animationComplete so the FSM can chain (e.g. grooming lick1→lick2)
         game.petService.handleEvent(PetEvent.animationComplete);
-        // Check if FSM transitioned to another non-looping state (lick chain).
-        // If so, _applyPetStateToComponent already called changeState — don't
-        // revert to idle here or we'd flash a single idle frame between licks.
         final newAnim = animations?[current];
-        if (newAnim != null && !newAnim.loop && current != (_previousState ?? CatAnimationState.idle)) {
+        if (newAnim != null && !newAnim.loop && current != (_previousState ?? PetAnimationState.idle)) {
           return; // FSM chained to another non-looping anim — let it play
         }
-        changeState(_previousState ?? CatAnimationState.idle);
+        changeState(_previousState ?? PetAnimationState.idle);
         return;
       }
     }
 
     // Sync position from navigation service
-    final nav = game.petService.navigation;
     final servicePos = nav.currentPosition;
     position = Vector2(servicePos.dx, servicePos.dy);
 
     // Sync horizontal flip from velocity direction
-    final vel = nav.velocity;
     if (vel.dx.abs() > 0.5) {
       _direction = vel.dx > 0 ? 1.0 : -1.0;
       _updateFlip();
     }
 
-    // --- Velocity-driven animation ---
-    // FSM-owned states (sleep, stretch, etc.) always keep their animation.
-    // For all other states, pick walk/run/idle based on actual speed.
-    final cur = current ?? CatAnimationState.idle;
-    if (!_fsmOwnedAnimations.contains(cur) || _isMovementState(cur)) {
-      final speed = nav.speed;
-      if (speed > _runThreshold) {
-        changeState(CatAnimationState.run);
-      } else if (speed > _walkThreshold) {
-        changeState(CatAnimationState.walk);
+    // --- Directional Walk & Deceleration Transitions ---
+    final cur = current ?? PetAnimationState.idle;
+    final isNavMoving = nav.isMoving;
+    final isFsmOwned = _fsmOwnedAnimations.contains(cur);
+    final canOverride = !isFsmOwned || _isMovementState(cur);
+
+    if (canOverride) {
+      if (isNavMoving || speed > 0.5) {
+        if (speed > _runThreshold) {
+          changeState(PetAnimationState.run);
+        } else {
+          // Dominant vector direction logic for 4-way selection
+          PetAnimationState walkState = PetAnimationState.walkSide;
+          if (vel.dy.abs() > vel.dx.abs()) {
+            if (vel.dy < 0) {
+              walkState = PetAnimationState.walkUp;
+            } else {
+              walkState = PetAnimationState.walkDown;
+            }
+          } else {
+            walkState = PetAnimationState.walkSide;
+          }
+          changeState(walkState);
+        }
       } else {
-        // Stopped — revert to idle only if we were in a movement animation
-        if (cur == CatAnimationState.walk || cur == CatAnimationState.run) {
-          changeState(_previousState ?? CatAnimationState.idle);
+        // Deceleration Stride-Sync: Let the current walking cycle reach index 0 before going to idle
+        if (_isMovementState(cur)) {
+          final ticker = animationTickers?[cur];
+          if (ticker == null || ticker.currentIndex == 0) {
+            changeState(_previousState ?? PetAnimationState.idle);
+          }
         }
       }
     }
 
-    // Dog idle bounce — cheap sin, only when idle/celebrate
-    if (_isDog && (current == CatAnimationState.idle || current == CatAnimationState.celebrate)) {
-      scale.y = scale.x.abs() * (1.0 + sin(_stateElapsed * 4.5) * 0.02);
+    // --- Dynamic Leaning & Squash-and-Stretch for Vertical Movement ---
+    final bool isMovingVertically = vel.dy.abs() > 1.5 && speed > 5.0;
+    final bool isUsingFallbackWalk = current == PetAnimationState.walkSide;
+    final profile = game.currentTheme.species.defaultProfile;
+
+    if (isMovingVertically && (isUsingFallbackWalk || current == PetAnimationState.run || current == PetAnimationState.excited || current == PetAnimationState.fly)) {
+      // 3D Tilt: Rotate sprite based on vertical speed and orientation
+      final double maxSpeed = profile.movementSpeed;
+      final double maxTilt = profile.maxTilt; // species specific tilt limit
+      final double tiltFactor = (vel.dy / maxSpeed).clamp(-1.0, 1.0);
+      angle = _direction * tiltFactor * maxTilt;
+
+      // Squash and stretch vertical scaling based on vertical speed
+      final double stretch = (vel.dy / 220.0).clamp(-0.12, 0.12);
+      scale.y = scale.x.abs() * (1.0 - stretch);
     } else {
-      scale.y = scale.x.abs();
+      angle = 0.0;
+      // Idle breathing / celebration micro-bob
+      if (current == PetAnimationState.idle || current == PetAnimationState.celebrate) {
+        scale.y = scale.x.abs() * (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
+      } else if (isMovingVertically && _isMovementState(current)) {
+        final double bob = sin(_stateElapsed * 10.0) * profile.bobIntensity;
+        scale.y = scale.x.abs() * (1.0 + bob);
+      } else {
+        scale.y = scale.x.abs();
+      }
     }
 
-    angle = 0.0;
+    // --- Procedural Fire Particle Emitter for Dragon Snout ---
+    _updateFireParticles(dt);
   }
 
-  bool _isMovementState(CatAnimationState? s) =>
-      s == CatAnimationState.walk || s == CatAnimationState.run;
+  void _updateFireParticles(double dt) {
+    // 1. Update and decay active particles
+    for (final p in _particles) {
+      p.position += p.velocity * dt;
+      p.age += dt;
+    }
+    _particles.removeWhere((p) => p.age >= p.maxAge);
+
+    // 2. Spawn new particles during Dragon's fire-breath state
+    if (current == PetAnimationState.breatheFire) {
+      final origin = _snoutOffset;
+      for (int i = 0; i < 2; i++) {
+        final double vx = _direction * (60.0 + _rng.nextDouble() * 50.0);
+        final double vy = -15.0 + _rng.nextDouble() * 30.0;
+        final colors = [
+          const Color(0xFFFF3D00), // Pure Red-Orange
+          const Color(0xFFFF9100), // Deep Orange
+          const Color(0xFFFFD600), // Fire Yellow
+        ];
+        _particles.add(
+          _FireParticle(
+            position: origin,
+            velocity: Offset(vx, vy),
+            maxAge: 0.4 + _rng.nextDouble() * 0.3,
+            size: 3.0 + _rng.nextDouble() * 5.0,
+            color: colors[_rng.nextInt(colors.length)],
+          ),
+        );
+      }
+    }
+  }
+
+  bool _isMovementState(PetAnimationState? s) =>
+      s == PetAnimationState.walkUp ||
+      s == PetAnimationState.walkDown ||
+      s == PetAnimationState.walkSide ||
+      s == PetAnimationState.run ||
+      s == PetAnimationState.fly;
 
   @override
   void render(Canvas canvas) {
-    // No canvas.save/restore — they are no-ops here and add overhead.
-    // FilterQuality is set once in onMount.
     super.render(canvas);
+
+    // Render Dragon Snout Fire Particles procedurally over the sprite
+    if (_particles.isNotEmpty) {
+      final paint = Paint()..style = PaintingStyle.fill;
+      for (final p in _particles) {
+        final double ratio = (p.age / p.maxAge).clamp(0.0, 1.0);
+        paint.color = p.color.withValues(alpha: 1.0 - ratio);
+        canvas.drawCircle(
+          p.position,
+          p.size * (1.0 - 0.5 * ratio),
+          paint,
+        );
+      }
+    }
   }
 
   // --- Tap / Hover ---
@@ -216,11 +335,6 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
 
   // --- Mouse follow ---
 
-  /// Called with raw window-space mouse coordinates.
-  /// The FlameGame canvas fills the window 1:1 in logical pixels, so no
-  /// coordinate transform is needed — Flame's coordinate system already
-  /// matches Flutter logical pixels. The sprite's visual scale does NOT
-  /// affect the coordinate system; only position matters.
   void updateMouseFollow(Map<dynamic, dynamic> data) {
     final bool enabled = data['enabled'] as bool? ?? false;
     game.petService.setCursorFollowing(enabled);
@@ -234,7 +348,7 @@ class CompanionComponent extends SpriteAnimationGroupComponent<CatAnimationState
     if (!enabled) {
       angle = 0.0;
       scale.y = scale.x.abs();
-      changeState(CatAnimationState.idle);
+      changeState(PetAnimationState.idle);
     }
   }
 }

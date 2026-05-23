@@ -12,7 +12,7 @@ import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/features/break_system/presentation/standalone_break_overlay.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/companion/assets/pet_asset_loader.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
 import 'package:standup/features/companion/flame/companion_game.dart';
 import 'package:standup/features/companion/overlay/companion_overlay_window.dart';
 
@@ -187,7 +187,7 @@ Future<void> companionMain() async {
   // Pre-load the default cat theme to warm up the Flame engine and image codec
   // This significantly reduces the "blank screen" time when the companion is first shown.
   try {
-    final defaultTheme = CatTheme.getTheme('grey_cat');
+    final defaultTheme = PetTheme.getTheme('grey_cat');
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),
     );

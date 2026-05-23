@@ -15,6 +15,26 @@
 
 // ... rest of stream handlers ...
 
+HHOOK FlutterWindow::keyboard_hook_ = nullptr;
+
+LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
+  if (nCode == HC_ACTION) {
+    KBDLLHOOKSTRUCT* pKeyBoard = (KBDLLHOOKSTRUCT*)lParam;
+    bool winDown = (GetAsyncKeyState(VK_LWIN) & 0x8000) || (GetAsyncKeyState(VK_RWIN) & 0x8000);
+    bool ctrlDown = (GetAsyncKeyState(VK_LCONTROL) & 0x8000) || (GetAsyncKeyState(VK_RCONTROL) & 0x8000);
+    
+    // Block Win+Ctrl+Left/Right (Virtual Desktop Switch via 4-finger swipe)
+    if (winDown && ctrlDown && (pKeyBoard->vkCode == VK_LEFT || pKeyBoard->vkCode == VK_RIGHT)) {
+      return 1; // swallow
+    }
+    // Block Win+Tab (Task View via 3-finger swipe)
+    if (winDown && pKeyBoard->vkCode == VK_TAB) {
+      return 1; // swallow
+    }
+  }
+  return CallNextHookEx(keyboard_hook_, nCode, wParam, lParam);
+}
+
 class FocusModeStreamHandler : public flutter::StreamHandler<flutter::EncodableValue> {
  public:
   FocusModeStreamHandler() {}
@@ -404,6 +424,10 @@ void FlutterWindow::SetupBridge() {
 
 void FlutterWindow::OnDestroy() {
   KillTimer(GetHandle(), 1);
+  if (keyboard_hook_) {
+    UnhookWindowsHookEx(keyboard_hook_);
+    keyboard_hook_ = nullptr;
+  }
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -453,6 +477,11 @@ void FlutterWindow::ConfigureAsOverlay() {
                SWP_NOACTIVATE);
 
   is_overlay_mode_ = true;
+
+  // Set keyboard hook to block swiping spaces
+  if (!keyboard_hook_) {
+    keyboard_hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+  }
 }
 
 // Reset window to normal state
@@ -469,6 +498,12 @@ void FlutterWindow::ResetToNormal() {
                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 
   is_overlay_mode_ = false;
+
+  // Remove keyboard hook
+  if (keyboard_hook_) {
+    UnhookWindowsHookEx(keyboard_hook_);
+    keyboard_hook_ = nullptr;
+  }
 }
 
 // Set window transparency (opacity 0.0 - 1.0)

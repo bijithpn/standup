@@ -1,11 +1,139 @@
 /// Defines the species and variant types for pet companions.
+enum MovementType {
+  walk,
+  hop,
+  fly,
+}
+
+/// Species-specific behavior parameters.
+class PetBehaviorProfile {
+  final double mouseAttraction; // Curiosity multiplier
+  final double sleepLikelihood; // Fatigue rate multiplier
+  final double edgePreference;  // Likelihood to stay near boundaries
+  final List<String> customActions;
+  
+  // Decoupled physics & render traits
+  final double movementSpeed;              // max follow/wander speed
+  final double acceleration;               // stiffness rate (springStiffness)
+  final double damping;                    // damping factor for spring system
+  final double lookDelay;                  // seconds of "looking" before moving
+  final double wanderRadius;               // local prowl radius limit
+  final double specialAbilityProbability;  // chance to trigger custom actions
+  final double strideFrequency;            // foot step frequency multiplier
+  final double maxTilt;                    // max lean angle in radians for flying/climbing
+  final double bobIntensity;               // breathing/movement vertical scaling factor
+  final double stopRadius;                 // stop this many px away from cursor
+
+  const PetBehaviorProfile({
+    this.mouseAttraction = 1.0,
+    this.sleepLikelihood = 1.0,
+    this.edgePreference = 0.0,
+    this.customActions = const [],
+    this.movementSpeed = 90.0,
+    this.acceleration = 6.0,
+    this.damping = 0.85,
+    this.lookDelay = 0.0,
+    this.wanderRadius = 250.0,
+    this.specialAbilityProbability = 0.0,
+    this.strideFrequency = 1.15,
+    this.maxTilt = 0.22,
+    this.bobIntensity = 0.04,
+    this.stopRadius = 40.0,
+  });
+
+  static const cat = PetBehaviorProfile(
+    mouseAttraction: 0.8,
+    sleepLikelihood: 1.2,
+    edgePreference: 0.2,
+    movementSpeed: 90.0,
+    acceleration: 6.0,
+    damping: 0.85,
+    lookDelay: 0.4,
+    wanderRadius: 250.0,
+    specialAbilityProbability: 0.15,
+    strideFrequency: 1.15,
+    maxTilt: 0.22,
+    bobIntensity: 0.04,
+    stopRadius: 40.0,
+  );
+
+  static const dog = PetBehaviorProfile(
+    mouseAttraction: 1.4,
+    sleepLikelihood: 1.0,
+    edgePreference: 0.1,
+    movementSpeed: 200.0,
+    acceleration: 14.0,
+    damping: 0.65,
+    lookDelay: 0.0,
+    wanderRadius: 350.0,
+    specialAbilityProbability: 0.2,
+    strideFrequency: 1.25,
+    maxTilt: 0.22,
+    bobIntensity: 0.02,
+    stopRadius: 8.0,
+  );
+
+  static const rabbit = PetBehaviorProfile(
+    mouseAttraction: 0.5,
+    sleepLikelihood: 0.8,
+    edgePreference: 0.8, // Heavy edge preference
+    movementSpeed: 100.0,
+    acceleration: 8.0,
+    damping: 0.90,
+    lookDelay: 0.2,
+    wanderRadius: 150.0,
+    specialAbilityProbability: 0.4,
+    strideFrequency: 1.0,
+    maxTilt: 0.15,
+    bobIntensity: 0.03,
+    stopRadius: 30.0,
+  );
+
+  static const fox = PetBehaviorProfile(
+    mouseAttraction: 1.5,
+    sleepLikelihood: 0.9,
+    edgePreference: 0.3,
+    movementSpeed: 170.0,
+    acceleration: 12.0,
+    damping: 0.75,
+    lookDelay: 0.1,
+    wanderRadius: 300.0,
+    specialAbilityProbability: 0.2,
+    strideFrequency: 1.15,
+    maxTilt: 0.22,
+    bobIntensity: 0.04,
+    stopRadius: 20.0,
+  );
+
+  static const dragon = PetBehaviorProfile(
+    mouseAttraction: 1.2,
+    sleepLikelihood: 0.7,
+    edgePreference: 0.4,
+    customActions: ['breatheFire', 'fly'],
+    movementSpeed: 150.0,
+    acceleration: 10.0,
+    damping: 0.80,
+    lookDelay: 0.3,
+    wanderRadius: 400.0,
+    specialAbilityProbability: 0.3,
+    strideFrequency: 1.15,
+    maxTilt: 0.22,
+    bobIntensity: 0.05,
+    stopRadius: 35.0,
+  );
+}
+
 enum PetSpecies {
-  cat,
-  dog,
-  bird,
-  rabbit,
-  hamster,
-  reptile,
+  cat(MovementType.walk, PetBehaviorProfile.cat),
+  dog(MovementType.walk, PetBehaviorProfile.dog),
+  rabbit(MovementType.hop, PetBehaviorProfile.rabbit),
+  fox(MovementType.walk, PetBehaviorProfile.fox),
+  dragon(MovementType.fly, PetBehaviorProfile.dragon);
+
+  final MovementType movementType;
+  final PetBehaviorProfile defaultProfile;
+
+  const PetSpecies(this.movementType, this.defaultProfile);
 }
 
 /// Represents a visual variant of a specific pet species.

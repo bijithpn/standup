@@ -151,6 +151,8 @@ class PetRegistryService {
 
   void _registerDefaultPresets() {
     registerProfile(PetProfile.orangeCat);
-    registerProfile(PetProfile.goldenDog);
+    registerProfile(PetProfile.rabbitHop);
+    registerProfile(PetProfile.foxFirefox);
+    registerProfile(PetProfile.dragonShadow);
   }
 }

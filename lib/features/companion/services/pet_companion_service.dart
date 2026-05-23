@@ -1,10 +1,10 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:standup/features/companion/ai/pet_behavior_brain.dart';
 import 'package:standup/features/companion/domain/pet_behavior_context.dart';
 import 'package:standup/features/companion/domain/pet_mood.dart';
 import 'package:standup/features/companion/domain/pet_profile.dart';
 import 'package:standup/features/companion/domain/pet_state_machine.dart';
-import 'package:standup/features/companion/domain/pet_type.dart';
 import 'package:standup/features/companion/services/pet_navigation_service.dart';
 
 class PetCompanionService extends ChangeNotifier {
@@ -29,6 +29,10 @@ class PetCompanionService extends ChangeNotifier {
   bool _isFocusMode = false;
   bool _isIdle = false;
 
+  double _curiosity = 0.5;
+  double _fatigue = 0.0;
+  double _boredom = 0.0;
+
   PetCompanionService({
     required PetStateMachine stateMachine,
     required PetBehaviorBrain brain,
@@ -50,8 +54,11 @@ class PetCompanionService extends ChangeNotifier {
           ),
           lastStateChange: DateTime.now(),
           timeInCurrentState: Duration.zero,
+          curiosity: 0.5,
+          fatigue: 0.0,
+          boredom: 0.0,
         ) {
-    _navigation.setSpecies(isDog: profile.species == PetSpecies.dog);
+    _navigation.setSpecies(profile.species);
   }
 
   PetStateMachine get stateMachine => _stateMachine;
@@ -65,7 +72,7 @@ class PetCompanionService extends ChangeNotifier {
   void updateProfile(PetProfile newProfile) {
     _profile = newProfile;
     _mood = PetMoodState(mood: newProfile.initialMood ?? PetMood.relaxed, since: DateTime.now());
-    _navigation.setSpecies(isDog: newProfile.species == PetSpecies.dog);
+    _navigation.setSpecies(newProfile.species);
     _context = _context.copyWith(profile: newProfile, currentMood: _mood);
     notifyListeners(); // Profile change is a real UI event — notify is correct here
   }
@@ -109,6 +116,38 @@ class PetCompanionService extends ChangeNotifier {
       _stateMachine.setMood(_mood);
     }
 
+    // Tick needs
+    final profileMultiplier = _profile.species.defaultProfile;
+    if (_stateMachine.currentState == PetState.sleep) {
+      _fatigue = (_fatigue - 0.1 * dt).clamp(0.0, 1.0);
+    } else {
+      double rate = 0.005; // Base passive rate
+      if (_stateMachine.currentState == PetState.walk ||
+          _stateMachine.currentState == PetState.exploring ||
+          _stateMachine.currentState == PetState.following) {
+        rate = 0.015;
+      } else if (_stateMachine.currentState == PetState.run ||
+          _stateMachine.currentState == PetState.jumping ||
+          _stateMachine.currentState == PetState.playing) {
+        rate = 0.035;
+      }
+      _fatigue = (_fatigue + rate * profileMultiplier.sleepLikelihood * dt).clamp(0.0, 1.0);
+    }
+
+    if (_stateMachine.currentState == PetState.following ||
+        _stateMachine.currentState == PetState.playing) {
+      _curiosity = (_curiosity - 0.02 * dt).clamp(0.0, 1.0);
+    } else {
+      _curiosity = (_curiosity + 0.005 * profileMultiplier.mouseAttraction * dt).clamp(0.0, 1.0);
+    }
+
+    if (_stateMachine.currentState == PetState.idle ||
+        _stateMachine.currentState == PetState.resting) {
+      _boredom = (_boredom + 0.015 * dt).clamp(0.0, 1.0);
+    } else {
+      _boredom = (_boredom - 0.05 * dt).clamp(0.0, 1.0);
+    }
+
     // Navigation update (always runs — drives position)
     final newPos = _navigation.update(dt);
 
@@ -117,6 +156,9 @@ class PetCompanionService extends ChangeNotifier {
       _context = _context.copyWith(
         petPosition: newPos,
         timeInCurrentState: _stateMachine.timeInState,
+        curiosity: _curiosity,
+        fatigue: _fatigue,
+        boredom: _boredom,
       );
       _lastContextUpdate = now;
     }
@@ -135,6 +177,13 @@ class PetCompanionService extends ChangeNotifier {
   }
 
   void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
+    // Increase curiosity when cursor moves
+    final double dist = (_navigation.currentPosition - cursorPos).distance;
+    if (dist > 10.0) {
+      final profileMultiplier = _profile.species.defaultProfile;
+      _curiosity = (_curiosity + 0.02 * profileMultiplier.mouseAttraction).clamp(0.0, 1.0);
+    }
+
     _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
 
     // Check if cat is annoyed by excessive cursor movement
@@ -175,25 +224,38 @@ class PetCompanionService extends ChangeNotifier {
     _stateMachine.handleEvent(event);
   }
 
+  final Random _rng = Random();
+
   void _makeBehaviorDecision() {
-    final suggestedState = _brain.decideNextState(_context);
-    _brain.recordStateSelection(suggestedState);
-    _stateMachine.handleEvent(PetEvent.randomBehavior);
+    final cur = _stateMachine.currentState;
+    // Only transition spontaneously if currently in an ambient/relaxed state
+    if (cur == PetState.idle || cur == PetState.resting || cur == PetState.bored || cur == PetState.exploring) {
+      final suggestedState = _brain.decideNextState(_context);
+      _brain.recordStateSelection(suggestedState);
+      _stateMachine.transitionTo(suggestedState);
+    } else {
+      _stateMachine.handleEvent(PetEvent.randomBehavior);
+    }
   }
 
   void _applyStateBehavior() {
     switch (_stateMachine.currentState) {
       case PetState.walk:
       case PetState.exploring:
-        _navigation.updateConfig(wanderSpeed: 60.0);
+        // Unpredictable/variable walking speeds
+        final double speed = 45.0 + _rng.nextDouble() * 30.0;
+        _navigation.updateConfig(wanderSpeed: speed);
         if (_navigation.needsWanderTarget) _navigation.generateWanderTarget();
         break;
       case PetState.curious:
-        _navigation.updateConfig(wanderSpeed: 30.0);
+        final double speed = 25.0 + _rng.nextDouble() * 15.0;
+        _navigation.updateConfig(wanderSpeed: speed);
         break;
       case PetState.run:
       case PetState.jumping:
-        _navigation.updateConfig(wanderSpeed: 160.0);
+        // Unpredictable sprinting speeds
+        final double speed = 140.0 + _rng.nextDouble() * 50.0;
+        _navigation.updateConfig(wanderSpeed: speed);
         if (_navigation.needsWanderTarget) _navigation.generateWanderTarget();
         break;
       case PetState.following:

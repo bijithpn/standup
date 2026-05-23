@@ -159,7 +159,8 @@ class BreakController extends ChangeNotifier {
           'template': _currentTemplate,
           'theme': _currentThemeName,
           'breakTemplate': settings.breakTemplate,
-          'companionCatTheme': settings.companionCatTheme,
+          'companionPetTheme': settings.companionPetTheme,
+          'companionCatTheme': settings.companionPetTheme,
         });
       }
     } else if (shouldShowWarning) {
@@ -281,7 +282,8 @@ class BreakController extends ChangeNotifier {
       'template': _currentTemplate,
       'theme': _currentThemeName,
       'breakTemplate': settings.breakTemplate,
-      'companionCatTheme': settings.companionCatTheme,
+      'companionPetTheme': settings.companionPetTheme,
+      'companionCatTheme': settings.companionPetTheme,
     });
 
     if (settings.playMusicDuringBreak && !_isPlayingMusic) {

@@ -1,10 +1,12 @@
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/companion/domain/cat_theme.dart';
-import 'package:standup/features/companion/domain/cat_animation_state.dart';
+import 'package:standup/features/companion/domain/pet_theme.dart';
+import 'package:standup/features/companion/domain/pet_animation_state.dart';
 import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class MinimalFocusTemplate extends StatefulWidget {
@@ -31,6 +33,9 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
     with SingleTickerProviderStateMixin {
   late AnimationController _gradientController;
 
+  PetAnimationState _animationState = PetAnimationState.breakMode;
+  Timer? _behaviorTimer;
+
   @override
   void initState() {
     super.initState();
@@ -38,12 +43,32 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat(reverse: true);
+    _startBehaviorCycle();
   }
 
   @override
   void dispose() {
     _gradientController.dispose();
+    _behaviorTimer?.cancel();
     super.dispose();
+  }
+
+  void _startBehaviorCycle() {
+    _behaviorTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
+      if (!mounted) return;
+      final random = Random().nextDouble();
+      setState(() {
+        if (random < 0.25) {
+          _animationState = PetAnimationState.stretch;
+        } else if (random < 0.5) {
+          _animationState = PetAnimationState.sleep;
+        } else if (random < 0.75) {
+          _animationState = PetAnimationState.lick1;
+        } else {
+          _animationState = PetAnimationState.idle;
+        }
+      });
+    });
   }
 
   String _formatDuration(int seconds) {
@@ -54,7 +79,7 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final catTheme = CatTheme.getTheme(widget.settings.companionCatTheme);
+    final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final progress = widget.totalSeconds > 0
         ? (widget.remainingSeconds / widget.totalSeconds).clamp(0.0, 1.0)
         : 0.0;
@@ -237,8 +262,8 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CompanionSpriteWidget(
-                          catTheme: catTheme,
-                          animationState: CatAnimationState.breakMode,
+                          petTheme: petTheme,
+                          animationState: _animationState,
                           scale: 3.5,
                         ),
                         const SizedBox(width: 16),
