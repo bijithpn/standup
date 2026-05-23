@@ -64,7 +64,7 @@ class _AboutSectionState extends State<AboutSection> {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     colors: [AppTheme.accentColor, Color(0xFFFF7E5F)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -135,7 +135,7 @@ class _AboutSectionState extends State<AboutSection> {
             CupertinoIcons.person_circle,
             null,
             onTap: () => _launchUrl('https://bijith.in'),
-            trailing: const Icon(
+            trailing: Icon(
               CupertinoIcons.link,
               size: 14,
               color: AppTheme.accentColor,
@@ -149,7 +149,7 @@ class _AboutSectionState extends State<AboutSection> {
             CupertinoIcons.globe,
             null,
             onTap: () => _launchUrl('https://breakmate.vercel.app'),
-            trailing: const Icon(
+            trailing: Icon(
               CupertinoIcons.link,
               size: 14,
               color: AppTheme.accentColor,
@@ -165,7 +165,7 @@ class _AboutSectionState extends State<AboutSection> {
             onTap: () => _launchUrl(
               'https://github.com/bijithintersmart/standup/issues',
             ),
-            trailing: const Icon(
+            trailing: Icon(
               CupertinoIcons.link,
               size: 14,
               color: AppTheme.accentColor,

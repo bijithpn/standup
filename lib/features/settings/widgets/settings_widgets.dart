@@ -139,7 +139,7 @@ Widget inputRow(String label, String value, {VoidCallback? onTap}) {
               children: [
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.accentColor,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -241,10 +241,14 @@ Widget dropdownRow(
                   ? value
                   : (options.isNotEmpty ? options.first : ''),
               onChanged: onChanged,
-              items: options.map((option) => AppDropdownItem<String>(
-                value: option,
-                label: option.toUpperCase(),
-              )).toList(),
+              items: options
+                  .map(
+                    (option) => AppDropdownItem<String>(
+                      value: option,
+                      label: option.toUpperCase(),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),
@@ -375,10 +379,14 @@ Widget inlineDropdown(
         ? value
         : (options.isNotEmpty ? options.first : ''),
     onChanged: onChanged,
-    items: options.map((option) => AppDropdownItem<String>(
-      value: option,
-      label: option.toUpperCase(),
-    )).toList(),
+    items: options
+        .map(
+          (option) => AppDropdownItem<String>(
+            value: option,
+            label: option.toUpperCase(),
+          ),
+        )
+        .toList(),
   );
 }
 
@@ -491,9 +499,10 @@ void showPicker({
       return FadeTransition(
         opacity: anim1,
         child: ScaleTransition(
-          scale: Tween<double>(begin: 0.95, end: 1.0).animate(
-            CurvedAnimation(parent: anim1, curve: Curves.easeOutBack),
-          ),
+          scale: Tween<double>(
+            begin: 0.95,
+            end: 1.0,
+          ).animate(CurvedAnimation(parent: anim1, curve: Curves.easeOutBack)),
           child: child,
         ),
       );

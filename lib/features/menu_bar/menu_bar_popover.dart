@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:lucide_icons/lucide_icons.dart';
 import 'package:provider/provider.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/timer_engine.dart';
@@ -10,7 +10,6 @@ import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
 
-/// Enhanced menu bar popover panel showing timer status and quick actions
 class MenuBarPopover extends StatelessWidget {
   const MenuBarPopover({super.key});
 
@@ -24,16 +23,16 @@ class MenuBarPopover extends StatelessWidget {
 
         return Container(
           width: 320,
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.contentBackground,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.borderColor, width: 0.5),
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            border: Border.all(color: AppTheme.border, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
+                color: Colors.black.withValues(alpha: 0.6),
+                blurRadius: 40,
+                offset: const Offset(0, 20),
               ),
             ],
           ),
@@ -41,60 +40,14 @@ class MenuBarPopover extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with app name
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.infinite,
-                      color: AppTheme.accentColor,
-                      size: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    'BreakMate',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                  const Spacer(),
-                  // Status indicator
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: timerEngine.state == TimerState.breakActive
-                          ? AppTheme.shortBreakColor
-                          : AppTheme.accentColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Timer display
+              _buildHeader(timerEngine),
+              const SizedBox(height: 16),
               _buildTimerSection(timerEngine, timeUntilBreak),
-              const SizedBox(height: 20),
-
-              // Quick actions
+              const SizedBox(height: 16),
               _buildQuickActions(controller),
-              const SizedBox(height: 24),
-
-              // Stats preview
+              const SizedBox(height: 16),
               _buildStatsPreview(stats),
-              const SizedBox(height: 24),
-
-              // Bottom actions
+              const SizedBox(height: 16),
               _buildBottomActions(),
             ],
           ),
@@ -103,54 +56,107 @@ class MenuBarPopover extends StatelessWidget {
     );
   }
 
+  Widget _buildHeader(TimerEngine timerEngine) {
+    final isBreak = timerEngine.state == TimerState.breakActive;
+    
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppTheme.primary, AppTheme.primaryDark],
+            ),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          ),
+          child: const Icon(
+            LucideIcons.coffee,
+            color: Colors.white,
+            size: 14,
+          ),
+        ),
+        const SizedBox(width: 10),
+        const Text(
+          'BreakMate',
+          style: TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: isBreak ? AppTheme.shortBreak : AppTheme.success,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: (isBreak ? AppTheme.shortBreak : AppTheme.success)
+                    .withValues(alpha: 0.5),
+                blurRadius: 8,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTimerSection(TimerEngine timerEngine, Duration timeUntilBreak) {
     final isBreak = timerEngine.state == TimerState.breakActive;
     final mins = timeUntilBreak.inMinutes;
     final secs = (timeUntilBreak.inSeconds % 60).toString().padLeft(2, '0');
 
-    return AppTheme.glassContainer(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              isBreak ? 'BREAK IN PROGRESS' : 'NEXT BREAK IN',
-              style: AppTheme.sectionTitle.copyWith(
-                fontSize: 10,
-                color: AppTheme.textMuted,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.gray900,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            isBreak ? 'BREAK IN PROGRESS' : 'NEXT BREAK IN',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textMuted,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                '$mins:$secs',
+                style: TextStyle(
+                  color: isBreak ? AppTheme.shortBreak : AppTheme.textPrimary,
+                  fontSize: 32,
+                  fontWeight: FontWeight.w300,
+                  letterSpacing: -1,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Text(
-                  '$mins:$secs',
-                  style: TextStyle(
-                    color: isBreak ? AppTheme.shortBreakColor : Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.w300,
-                    letterSpacing: -1,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const Spacer(),
-                Icon(
-                  isBreak ? CupertinoIcons.wind : CupertinoIcons.timer,
-                  size: 20,
-                  color: isBreak ? AppTheme.shortBreakColor : AppTheme.accentColor,
-                ),
-              ],
-            ),
-          ],
-        ),
+              const Spacer(),
+              Icon(
+                isBreak ? LucideIcons.coffee : LucideIcons.clock,
+                size: 20,
+                color: isBreak ? AppTheme.shortBreak : AppTheme.primary,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildQuickActions(BreakController controller) {
     final isBreak = controller.isBreakActive;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -168,45 +174,30 @@ class MenuBarPopover extends StatelessWidget {
           children: [
             Expanded(
               child: _ActionButton(
-                icon: controller.isPaused ? CupertinoIcons.play_fill : CupertinoIcons.pause_fill,
+                icon: controller.isPaused ? LucideIcons.play : LucideIcons.pause,
                 label: controller.isPaused ? 'Resume' : 'Pause',
-                color: isBreak ? AppTheme.textMuted : AppTheme.accentColor,
+                color: isBreak ? AppTheme.textMuted : AppTheme.primary,
                 onTap: isBreak ? () {} : () => controller.togglePause(),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: isBreak 
-                ? _ActionButton(
-                    icon: CupertinoIcons.forward_fill,
-                    label: 'Skip Break',
-                    color: AppTheme.shortBreakColor,
-                    onTap: () => controller.skipCurrentBreak(),
-                  )
-                : _ActionButton(
-                    icon: CupertinoIcons.bolt_fill,
-                    label: 'Break Now',
-                    color: AppTheme.shortBreakColor,
-                    onTap: () => controller.takeBreakNow(),
-                  ),
+              child: isBreak
+                  ? _ActionButton(
+                      icon: LucideIcons.skipForward,
+                      label: 'Skip',
+                      color: AppTheme.shortBreak,
+                      onTap: () => controller.skipCurrentBreak(),
+                    )
+                  : _ActionButton(
+                      icon: LucideIcons.zap,
+                      label: 'Break Now',
+                      color: AppTheme.shortBreak,
+                      onTap: () => controller.takeBreakNow(),
+                    ),
             ),
           ],
         ),
-        if (!isBreak) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: _ActionButton(
-                  icon: CupertinoIcons.forward_fill,
-                  label: 'Skip Next',
-                  color: AppTheme.textMuted,
-                  onTap: () => controller.skipNextBreak(),
-                ),
-              ),
-            ],
-          ),
-        ],
       ],
     );
   }
@@ -228,24 +219,24 @@ class MenuBarPopover extends StatelessWidget {
         Row(
           children: [
             _StatCard(
-              icon: CupertinoIcons.checkmark_seal_fill,
+              icon: LucideIcons.checkCircle,
               value: stats.breaksCompleted.toString(),
-              label: 'Completed',
-              color: AppTheme.shortBreakColor,
+              label: 'Done',
+              color: AppTheme.success,
             ),
             const SizedBox(width: 8),
             _StatCard(
-              icon: CupertinoIcons.flame_fill,
+              icon: LucideIcons.flame,
               value: stats.currentStreak.toString(),
-              label: 'Day Streak',
-              color: AppTheme.upcomingBreakColor,
+              label: 'Streak',
+              color: AppTheme.warning,
             ),
             const SizedBox(width: 8),
             _StatCard(
-              icon: CupertinoIcons.chart_bar_fill,
+              icon: LucideIcons.target,
               value: '${stats.productivityScore}%',
               label: 'Score',
-              color: AppTheme.accentColor,
+              color: AppTheme.primary,
             ),
           ],
         ),
@@ -257,49 +248,60 @@ class MenuBarPopover extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
-            onPressed: () async {
-              sl<OverlayWindowService>().showDashboard();
-              await windowManager.show();
-              await windowManager.focus();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: AppTheme.cardBackground,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Center(
-                child: Text(
-                  'Settings',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () async {
+                sl<OverlayWindowService>().showDashboard();
+                await windowManager.show();
+                await windowManager.focus();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppTheme.gray800,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(LucideIcons.settings, size: 14, color: AppTheme.textSecondary),
+                    SizedBox(width: 6),
+                    Text(
+                      'Settings',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
         const SizedBox(width: 8),
-        CupertinoButton(
-          padding: EdgeInsets.zero,
-          onPressed: () async {
-            await windowManager.setPreventClose(false);
-            await windowManager.close();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: AppTheme.cardBackground,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Icon(
-              CupertinoIcons.power,
-              color: Colors.white54,
-              size: 18,
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: () async {
+              await windowManager.setPreventClose(false);
+              await windowManager.close();
+            },
+            child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.gray800,
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: const Icon(
+                LucideIcons.power,
+                color: AppTheme.textMuted,
+                size: 16,
+              ),
             ),
           ),
         ),
@@ -323,30 +325,32 @@ class _ActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoButton(
-      padding: EdgeInsets.zero,
-      onPressed: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            border: Border.all(color: color.withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -370,30 +374,32 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.cardBackground,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppTheme.borderColor),
+          color: AppTheme.gray900,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(color: AppTheme.borderSubtle),
         ),
         child: Column(
           children: [
             Icon(icon, size: 16, color: color),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               value,
               style: TextStyle(
                 color: color,
                 fontSize: 16,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: const TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

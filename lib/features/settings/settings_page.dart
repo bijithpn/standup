@@ -686,7 +686,7 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     CupertinoIcons.play_circle_fill,
                     size: 18,
                     color: AppTheme.accentColor,
@@ -869,7 +869,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   color: AppTheme.accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   onPressed: () => _showExerciseEditor(),
-                  child: const Text(
+                  child: Text(
                     'Add Exercise',
                     style: TextStyle(color: AppTheme.accentColor, fontSize: 13),
                   ),
@@ -1613,7 +1613,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     Text(
                       value,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppTheme.accentColor,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -2193,7 +2193,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     Container(
                       width: 6,
                       height: 6,
-                      decoration: const BoxDecoration(
+                      decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppTheme.accentColor,
                       ),
@@ -2398,11 +2398,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.sync,
-                        size: 18,
-                        color: AppTheme.accentColor,
-                      ),
+                      Icon(Icons.sync, size: 18, color: AppTheme.accentColor),
                       const SizedBox(width: 12),
                       const Expanded(
                         child: Column(
@@ -2489,7 +2485,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 const SizedBox(height: 4),
                 Text(
                   'Pet: ${controller.companionPetName}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.accentColor,
                     fontWeight: FontWeight.w600,
@@ -2602,7 +2598,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 final randomName = names[random.nextInt(names.length)];
                 controller.changePetName(randomName);
               },
-              child: const Icon(
+              child: Icon(
                 CupertinoIcons.refresh_bold,
                 size: 14,
                 color: AppTheme.accentColor,

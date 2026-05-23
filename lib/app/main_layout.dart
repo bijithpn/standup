@@ -182,7 +182,7 @@ class _MainLayoutState extends State<MainLayout> {
             height: 52,
             decoration: BoxDecoration(
               color: AppTheme.sidebarBackground.withValues(alpha: 0.95),
-              border: const Border(
+              border: Border(
                 bottom: BorderSide(color: AppTheme.separatorColor, width: 0.5),
               ),
             ),
@@ -273,6 +273,7 @@ class _MainLayoutState extends State<MainLayout> {
           SettingsPage(section: 'Exercises'),
           SettingsPage(section: 'Notifications'),
           SettingsPage(section: 'Clock Out'),
+
           SettingsPage(section: 'Companion'),
           SettingsPage(section: 'Statistics'),
           // Bottom nav
@@ -389,7 +390,7 @@ class _SidebarContent extends StatelessWidget {
           const SizedBox(height: 14),
           // App name — two-toned
           RichText(
-            text: const TextSpan(
+            text: TextSpan(
               children: [
                 TextSpan(
                   text: 'Break',
