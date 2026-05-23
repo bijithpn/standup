@@ -438,7 +438,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                         fontFamily: 'Satoshi',
                       ),
                     ),
-                    if (!widget.settings.strictMode && widget.onSkip != null)
+                    if (widget.onSkip != null)
                       GestureDetector(
                         onTap: widget.onSkip,
                         child: MouseRegion(

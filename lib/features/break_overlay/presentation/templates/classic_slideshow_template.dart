@@ -364,7 +364,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                       ),
 
                       // Skip Button
-                      if (!widget.settings.strictMode && widget.onSkip != null)
+                      if (widget.onSkip != null)
                         GestureDetector(
                           onTap: widget.onSkip,
                           child: MouseRegion(

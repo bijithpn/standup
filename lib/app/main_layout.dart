@@ -155,7 +155,10 @@ class _MainLayoutState extends State<MainLayout> {
             selectedIndex: _pageIndex,
             mainItems: _mainNavItems,
             bottomItems: _bottomNavItems,
-            onItemSelected: (i) => setState(() => _pageIndex = i),
+            onItemSelected: (i) {
+              setState(() => _pageIndex = i);
+              _navigationService.openSection(_allItems[i].section);
+            },
           );
         },
       ),
@@ -242,6 +245,7 @@ class _MainLayoutState extends State<MainLayout> {
                       _pageIndex = i;
                       _isMenuOpen = false;
                     });
+                    _navigationService.openSection(_allItems[i].section);
                   },
                 ),
               ),

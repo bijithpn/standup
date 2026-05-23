@@ -1791,230 +1791,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _stylePreview(String name, bool isSelected, VoidCallback onTap) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 150;
-        final width = isSmallScreen ? 100.0 : 140.0;
-        final height = isSmallScreen ? 70.0 : 90.0;
-        final iconSize = isSmallScreen ? 20.0 : 28.0;
-        final fontSize = isSmallScreen ? 11.0 : 12.0;
-
-        return GestureDetector(
-          onTap: onTap,
-          child: Column(
-            children: [
-              Container(
-                width: width,
-                height: height,
-                decoration: BoxDecoration(
-                  color: AppTheme.contentBackground,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppTheme.accentColor
-                        : AppTheme.borderColor,
-                    width: 2,
-                  ),
-                ),
-                child: Stack(
-                  children: [
-                    _buildStyleMock(name),
-                    if (isSelected)
-                      Center(
-                        child: Icon(
-                          Icons.check_circle,
-                          color: AppTheme.accentColor,
-                          size: iconSize,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(height: isSmallScreen ? 6 : 8),
-              Text(
-                name,
-                style: TextStyle(
-                  color: isSelected
-                      ? AppTheme.accentColor
-                      : AppTheme.textSecondary,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                  fontSize: fontSize,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildStyleMock(String name) {
-    switch (name) {
-      case 'BreakLoop':
-        return Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppTheme.shortBreakColor.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '00:20',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ),
-        );
-      case 'Desktop':
-        return Column(
-          children: [
-            const Spacer(),
-            Container(
-              width: 60,
-              height: 20,
-              decoration: BoxDecoration(
-                color: Colors.white10,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-            const Spacer(),
-            Container(height: 10, color: Colors.white.withValues(alpha: 0.05)),
-          ],
-        );
-      case 'Ambient':
-        return Center(
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppTheme.accentColor.withValues(alpha: 0.3),
-                width: 3,
-              ),
-            ),
-            child: const Center(
-              child: Text(
-                '12:00',
-                style: TextStyle(fontSize: 10, color: Colors.white30),
-              ),
-            ),
-          ),
-        );
-      case 'Focus':
-        return Center(
-          child: Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentColor.withValues(alpha: 0.5),
-                  blurRadius: 10,
-                ),
-              ],
-            ),
-          ),
-        );
-
-      default:
-        return const SizedBox();
-    }
-  }
-
-  Widget _buildStyleGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isSmallScreen = constraints.maxWidth < 700;
-
-        if (isSmallScreen) {
-          return Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              _stylePreview(
-                'BreakLoop',
-                _settings.clockFaceStyle == 'breakloop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'breakloop')),
-              ),
-              _stylePreview(
-                'Desktop',
-                _settings.clockFaceStyle == 'desktop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'desktop')),
-              ),
-              _stylePreview(
-                'Personal',
-                _settings.clockFaceStyle == 'personal',
-                () => _save(_settings.copyWith(clockFaceStyle: 'personal')),
-              ),
-              _stylePreview(
-                'Ambient',
-                _settings.clockFaceStyle == 'ambient',
-                () => _save(_settings.copyWith(clockFaceStyle: 'ambient')),
-              ),
-              _stylePreview(
-                'Focus',
-                _settings.clockFaceStyle == 'focus',
-                () => _save(_settings.copyWith(clockFaceStyle: 'focus')),
-              ),
-            ],
-          );
-        }
-
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _stylePreview(
-                'BreakLoop',
-                _settings.clockFaceStyle == 'breakloop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'breakloop')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Desktop',
-                _settings.clockFaceStyle == 'desktop',
-                () => _save(_settings.copyWith(clockFaceStyle: 'desktop')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Personal',
-                _settings.clockFaceStyle == 'personal',
-                () => _save(_settings.copyWith(clockFaceStyle: 'personal')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Ambient',
-                _settings.clockFaceStyle == 'ambient',
-                () => _save(_settings.copyWith(clockFaceStyle: 'ambient')),
-              ),
-              const SizedBox(width: 16),
-              _stylePreview(
-                'Focus',
-                _settings.clockFaceStyle == 'focus',
-                () => _save(_settings.copyWith(clockFaceStyle: 'focus')),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildBreakTemplateGrid() {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2731,6 +2507,7 @@ class _SettingsPageState extends State<SettingsPage> {
               },
               items: CatTheme.themes.map((theme) {
                 final itemIsDog = _isDog(theme.id);
+                final isSelected = controller.companionCatTheme == theme.id;
                 return AppDropdownItem<String>(
                   value: theme.id,
                   label: theme.name,
@@ -2761,11 +2538,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       const SizedBox(width: 8),
                       Text(
                         theme.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w600,
                           fontFamily: 'Satoshi',
-                          color: Colors.white,
                         ),
                       ),
                     ],

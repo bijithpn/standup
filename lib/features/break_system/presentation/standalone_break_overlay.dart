@@ -181,7 +181,17 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       color: _overlayType == 'quickReminder' ? Colors.transparent : Colors.black,
       child: FadeTransition(
         opacity: _fadeController,
-        child: RepaintBoundary(child: _buildBreakScreen()),
+        child: GestureDetector(
+          onVerticalDragUpdate: (details) {
+            // If dragging up, dismiss the overlay completely (only if not in strict mode).
+            if (!_strictMode && details.primaryDelta! < -10) {
+              MacOSBridge.skipBreak();
+            }
+          },
+          // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
+          onHorizontalDragUpdate: (details) {},
+          child: RepaintBoundary(child: _buildBreakScreen()),
+        ),
       ),
     );
   }
@@ -213,9 +223,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     final remaining = _remainingSeconds;
     Future<void> onSkip() => MacOSBridge.skipBreak();
 
+    Widget templateWidget;
     switch (_breakTemplate) {
       case 'classic':
-        return ClassicSlideshowTemplate(
+        templateWidget = ClassicSlideshowTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
@@ -226,48 +237,54 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           exerciseTitle: _exerciseTitle,
           exerciseInstructions: _exerciseInstructions,
         );
+        break;
       case 'companion':
-        return CompanionInteractiveTemplate(
+        templateWidget = CompanionInteractiveTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'zen':
-        return ZenModeTemplate(
+        templateWidget = ZenModeTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'hud':
-        return ProductivityHudTemplate(
+        templateWidget = ProductivityHudTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'floating':
-        return SoftFloatingWidgetTemplate(
+        templateWidget = SoftFloatingWidgetTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       case 'minimal':
-        return MinimalFocusTemplate(
+        templateWidget = MinimalFocusTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
         );
+        break;
       default:
-        return Stack(
+        templateWidget = Stack(
           fit: StackFit.expand,
           children: [
             // Background Layer - Separated into its own RepaintBoundary to avoid UI invalidation
@@ -302,6 +319,42 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           ],
         );
     }
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        templateWidget,
+        // Global visual indicator to swipe up to dismiss
+        if (!_strictMode)
+          Positioned(
+            bottom: 24,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.chevron_up,
+                    size: 20,
+                    color: Colors.white.withValues(alpha: 0.5),
+                  ),
+                  Text(
+                    'Swipe up to dismiss',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.5),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 1.0,
+                      fontFamily: 'Satoshi',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildQuickReminder() {
@@ -436,7 +489,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               fontFamily: 'Satoshi',
             ),
           ),
-          if (!_strictMode) _buildSkipButton(),
+          if (true) _buildSkipButton(),
         ],
       ),
     );
