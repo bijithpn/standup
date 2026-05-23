@@ -61,6 +61,11 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Exercises',
     ),
     _NavItem(
+      label: 'Notifications',
+      icon: CupertinoIcons.bell,
+      section: 'Notifications',
+    ),
+    _NavItem(
       label: 'Clock Out',
       icon: CupertinoIcons.moon,
       section: 'Clock Out',
@@ -261,8 +266,8 @@ class _MainLayoutState extends State<MainLayout> {
           SettingsPage(section: 'General'),
           SettingsPage(section: 'Breaks & Profiles'),
           SettingsPage(section: 'Intelligent Detection'),
-
           SettingsPage(section: 'Exercises'),
+          SettingsPage(section: 'Notifications'),
           SettingsPage(section: 'Clock Out'),
           SettingsPage(section: 'Companion'),
           SettingsPage(section: 'Statistics'),

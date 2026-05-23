@@ -118,19 +118,22 @@ class OverlayWindowManager: NSObject {
             defer: false
         )
         
-        window.backgroundColor = .black // Solid black background to prevent flickering
-        window.isOpaque = true
+        let isTransparent = args?["isTransparent"] as? Bool ?? false
+        
+        window.backgroundColor = isTransparent ? .clear : .black // Solid black background to prevent flickering
+        window.isOpaque = !isTransparent
         window.hasShadow = false
         window.level = .screenSaver
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-        window.ignoresMouseEvents = false
+        window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
+        
         // Spawn a fresh engine for each monitor
         let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
         engine.run(withEntrypoint: "overlayMain")
         RegisterGeneratedPlugins(registry: engine)
         
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
-        controller.backgroundColor = .black
+        controller.backgroundColor = isTransparent ? .clear : .black
         
         window.contentViewController = controller
         window.setFrame(screen.frame, display: true)

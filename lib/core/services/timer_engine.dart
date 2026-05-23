@@ -42,6 +42,8 @@ class TimerEngine extends ChangeNotifier {
   BreakModel? _activeBreak;
   int _countdownSeconds = 0;
   bool _isCompletionState = false;
+  int _postureElapsedSeconds = 0;
+  int _eyeBlinkElapsedSeconds = 0;
 
   bool _isPreBreak = false;
   bool _clockOutTriggered = false;
@@ -159,7 +161,10 @@ class TimerEngine extends ChangeNotifier {
         }
         _workElapsed += delta;
         _totalWorkToday += delta;
+        _postureElapsedSeconds += delta.inSeconds;
+        _eyeBlinkElapsedSeconds += delta.inSeconds;
         _checkBreakConditions();
+        _checkHealthReminders();
       } else if (_state == TimerState.breakActive) {
         _countdownSeconds--;
         if (_countdownSeconds <= 0) {
@@ -258,6 +263,48 @@ class TimerEngine extends ChangeNotifier {
     if (_workElapsed >= interval) {
       _isPreBreak = false;
       _triggerBreak();
+    }
+  }
+
+  void _checkHealthReminders() {
+    final settings = _settingsRepository.currentSettings;
+
+    if (settings.postureReminderEnabled && settings.postureReminderIntervalMinutes > 0) {
+      if (_postureElapsedSeconds >= settings.postureReminderIntervalMinutes * 60) {
+        _postureElapsedSeconds = 0;
+        _triggerHealthReminder('posture', settings.postureReminderType);
+      }
+    }
+
+    if (settings.eyeBlinkReminderEnabled && settings.eyeBlinkReminderIntervalMinutes > 0) {
+      if (_eyeBlinkElapsedSeconds >= settings.eyeBlinkReminderIntervalMinutes * 60) {
+        _eyeBlinkElapsedSeconds = 0;
+        _triggerHealthReminder('eyeblink', settings.eyeBlinkReminderType);
+      }
+    }
+  }
+
+  void _triggerHealthReminder(String reminderType, String displayType) {
+    _logger.info('Triggering $reminderType reminder ($displayType)');
+    if (displayType == 'native') {
+      if (reminderType == 'posture') {
+        _notificationService.showPostureReminder();
+      } else {
+        _notificationService.showEyeRestReminder();
+      }
+    } else {
+      sl<OverlayWindowService>().showOverlay(
+        type: OverlayType.quickReminder,
+        builder: (_) => const SizedBox.shrink(), // handeled directly in standalone overlay
+        reminderType: reminderType,
+      );
+      
+      // Auto dismiss after 5 seconds
+      Future.delayed(const Duration(seconds: 5), () {
+        if (sl<OverlayWindowService>().currentOverlayType == OverlayType.quickReminder) {
+          sl<OverlayWindowService>().hideOverlay();
+        }
+      });
     }
   }
 
@@ -519,6 +566,8 @@ class TimerEngine extends ChangeNotifier {
 
   void resetTimers() {
     _workElapsed = Duration.zero;
+    _postureElapsedSeconds = 0;
+    _eyeBlinkElapsedSeconds = 0;
     _state = TimerState.idle;
     _clockOutTriggered = false;
     _emit(TimerStateChangedEvent(
@@ -566,6 +615,8 @@ class TimerEngine extends ChangeNotifier {
 
       _storageService.setBool('timer_is_pre_break', _isPreBreak);
       _storageService.setBool('timer_clock_out_triggered', _clockOutTriggered);
+      _storageService.setInt('timer_posture_elapsed', _postureElapsedSeconds);
+      _storageService.setInt('timer_eye_blink_elapsed', _eyeBlinkElapsedSeconds);
       if (_longBreakWindowStartedAt != null) {
         _storageService.setInt('timer_long_break_window', _longBreakWindowStartedAt!.millisecondsSinceEpoch);
       }
@@ -599,6 +650,8 @@ class TimerEngine extends ChangeNotifier {
 
       _isPreBreak = _storageService.getBool('timer_is_pre_break');
       _clockOutTriggered = _storageService.getBool('timer_clock_out_triggered');
+      _postureElapsedSeconds = _storageService.getInt('timer_posture_elapsed', defaultValue: 0);
+      _eyeBlinkElapsedSeconds = _storageService.getInt('timer_eye_blink_elapsed', defaultValue: 0);
 
       final longBreakWindowMs = _storageService.getInt('timer_long_break_window', defaultValue: 0);
       if (longBreakWindowMs > 0) {

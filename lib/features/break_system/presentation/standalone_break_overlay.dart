@@ -63,6 +63,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   double _displayHeight = 0;
   int _screenId = 0;
   bool _strictMode = false;
+  String? _reminderType;
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
 
@@ -151,6 +152,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             if (args.containsKey('exerciseInstructions')) {
               _exerciseInstructions = args['exerciseInstructions'];
             }
+            if (args.containsKey('reminderType')) {
+              _reminderType = args['reminderType'];
+            }
           });
         }
       } else if (call.method == 'setScreenInfo') {
@@ -174,7 +178,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black,
+      color: _overlayType == 'quickReminder' ? Colors.transparent : Colors.black,
       child: FadeTransition(
         opacity: _fadeController,
         child: RepaintBoundary(child: _buildBreakScreen()),
@@ -183,6 +187,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   Widget _buildBreakScreen() {
+    if (_overlayType == 'quickReminder') {
+      return _buildQuickReminder();
+    }
+
     final breakInfo = BreakModel(
       type:
           _title.toUpperCase().contains('SHORT') ||
@@ -294,6 +302,53 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           ],
         );
     }
+  }
+
+  Widget _buildQuickReminder() {
+    final isPosture = _reminderType == 'posture';
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isPosture ? CupertinoIcons.person_crop_circle_badge_checkmark : CupertinoIcons.eye,
+              color: Colors.white,
+              size: 64,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              isPosture ? 'Posture Check' : 'Eye Rest',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Satoshi',
+                letterSpacing: 1.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              isPosture
+                  ? 'Sit up straight and roll your shoulders back'
+                  : 'Blink your eyes and look away',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 18,
+                fontFamily: 'Satoshi',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildMainContent() {

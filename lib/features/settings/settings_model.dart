@@ -22,6 +22,12 @@ class SettingsModel {
   // Notifications
   final bool soundEnabled;
   final bool notificationsEnabled;
+  final bool postureReminderEnabled;
+  final int postureReminderIntervalMinutes;
+  final String postureReminderType;
+  final bool eyeBlinkReminderEnabled;
+  final int eyeBlinkReminderIntervalMinutes;
+  final String eyeBlinkReminderType;
 
   // Break Screen
   final bool showOnAllDisplays;
@@ -87,6 +93,12 @@ class SettingsModel {
 
     this.soundEnabled = true,
     this.notificationsEnabled = true,
+    this.postureReminderEnabled = false,
+    this.postureReminderIntervalMinutes = 30,
+    this.postureReminderType = 'overlay',
+    this.eyeBlinkReminderEnabled = false,
+    this.eyeBlinkReminderIntervalMinutes = 20,
+    this.eyeBlinkReminderType = 'overlay',
     this.showOnAllDisplays = true,
     this.breakTheme = 'random',
     this.breakTemplate = 'minimal',
@@ -137,6 +149,12 @@ class SettingsModel {
 
     bool? soundEnabled,
     bool? notificationsEnabled,
+    bool? postureReminderEnabled,
+    int? postureReminderIntervalMinutes,
+    String? postureReminderType,
+    bool? eyeBlinkReminderEnabled,
+    int? eyeBlinkReminderIntervalMinutes,
+    String? eyeBlinkReminderType,
     bool? showOnAllDisplays,
     String? breakTheme,
     String? breakTemplate,
@@ -186,6 +204,12 @@ class SettingsModel {
 
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
+      postureReminderEnabled: postureReminderEnabled ?? this.postureReminderEnabled,
+      postureReminderIntervalMinutes: postureReminderIntervalMinutes ?? this.postureReminderIntervalMinutes,
+      postureReminderType: postureReminderType ?? this.postureReminderType,
+      eyeBlinkReminderEnabled: eyeBlinkReminderEnabled ?? this.eyeBlinkReminderEnabled,
+      eyeBlinkReminderIntervalMinutes: eyeBlinkReminderIntervalMinutes ?? this.eyeBlinkReminderIntervalMinutes,
+      eyeBlinkReminderType: eyeBlinkReminderType ?? this.eyeBlinkReminderType,
       showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
       breakTheme: breakTheme ?? this.breakTheme,
       breakTemplate: breakTemplate ?? this.breakTemplate,
@@ -237,6 +261,12 @@ class SettingsModel {
 
         'soundEnabled': soundEnabled,
         'notificationsEnabled': notificationsEnabled,
+        'postureReminderEnabled': postureReminderEnabled,
+        'postureReminderIntervalMinutes': postureReminderIntervalMinutes,
+        'postureReminderType': postureReminderType,
+        'eyeBlinkReminderEnabled': eyeBlinkReminderEnabled,
+        'eyeBlinkReminderIntervalMinutes': eyeBlinkReminderIntervalMinutes,
+        'eyeBlinkReminderType': eyeBlinkReminderType,
         'showOnAllDisplays': showOnAllDisplays,
         'breakTheme': breakTheme,
         'breakTemplate': breakTemplate,
@@ -297,6 +327,12 @@ class SettingsModel {
 
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
+      postureReminderEnabled: map['postureReminderEnabled'] as bool? ?? false,
+      postureReminderIntervalMinutes: map['postureReminderIntervalMinutes'] as int? ?? 30,
+      postureReminderType: map['postureReminderType'] as String? ?? 'overlay',
+      eyeBlinkReminderEnabled: map['eyeBlinkReminderEnabled'] as bool? ?? false,
+      eyeBlinkReminderIntervalMinutes: map['eyeBlinkReminderIntervalMinutes'] as int? ?? 20,
+      eyeBlinkReminderType: map['eyeBlinkReminderType'] as String? ?? 'overlay',
       showOnAllDisplays: map['showOnAllDisplays'] as bool? ?? true,
       breakTheme: map['breakTheme'] as String? ?? 'random',
       breakTemplate: map['breakTemplate'] as String? ?? 'minimal',

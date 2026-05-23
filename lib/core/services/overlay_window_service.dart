@@ -21,6 +21,7 @@ class OverlayWindowService extends ChangeNotifier {
     bool floatingMode = false,
     bool showOnAllDisplays = true,
     String breakTheme = 'random',
+    String? reminderType,
   }) async {
     if (_isOverlayVisible && _currentOverlayType == type) {
       return;
@@ -34,11 +35,15 @@ class OverlayWindowService extends ChangeNotifier {
       if (type != OverlayType.clockPreview) {
         if (Platform.isWindows) {
           // Use unified bridge for Windows overlay configuration
-          await MacOSBridge.showOverlay({
+          final args = <String, dynamic>{
             'type': type.name,
             'showOnAllDisplays': showOnAllDisplays,
             'theme': breakTheme,
-          });
+            'isTransparent': type == OverlayType.quickReminder,
+            'ignoreMouseEvents': type == OverlayType.quickReminder,
+          };
+          if (reminderType != null) args['reminderType'] = reminderType;
+          await MacOSBridge.showOverlay(args);
           await windowManager.setFullScreen(true);
           await windowManager.setAlwaysOnTop(true);
           await windowManager.show();
@@ -47,11 +52,15 @@ class OverlayWindowService extends ChangeNotifier {
           }
         } else if (Platform.isMacOS) {
           // Use native multi-monitor overlay for all real overlays
-          await MacOSBridge.showOverlay({
+          final args = <String, dynamic>{
             'type': type.name,
             'showOnAllDisplays': showOnAllDisplays,
             'theme': breakTheme,
-          });
+            'isTransparent': type == OverlayType.quickReminder,
+            'ignoreMouseEvents': type == OverlayType.quickReminder,
+          };
+          if (reminderType != null) args['reminderType'] = reminderType;
+          await MacOSBridge.showOverlay(args);
           if (strictMode && type == OverlayType.breakScreen) {
             await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
           }
@@ -184,4 +193,7 @@ enum OverlayType {
 
   /// Clock preview overlay (demo mode)
   clockPreview,
+
+  /// Quick transparent health reminder
+  quickReminder,
 }
