@@ -12,6 +12,20 @@ class CompanionSpriteWidget extends StatefulWidget {
   final double scale;
   final bool flipX;
 
+  static final Map<String, ui.Image> _imageCache = {};
+
+  static Future<void> precacheSpriteSheet(String path) async {
+    if (_imageCache.containsKey(path)) return;
+    try {
+      final data = await rootBundle.load(path);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      _imageCache[path] = frame.image;
+    } catch (e) {
+      debugPrint('CompanionSpriteWidget: Precache error for $path: $e');
+    }
+  }
+
   const CompanionSpriteWidget({
     super.key,
     required this.catTheme,
@@ -26,8 +40,6 @@ class CompanionSpriteWidget extends StatefulWidget {
 
 class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     with SingleTickerProviderStateMixin {
-  static final Map<String, ui.Image> _imageCache = {};
-
   late AnimationController _animationController;
   ui.Image? _loadedImage;
   bool _isLoading = false;
@@ -147,13 +159,13 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   Future<ui.Image> _loadImage(String path) async {
-    if (_imageCache.containsKey(path)) {
-      return _imageCache[path]!;
+    if (CompanionSpriteWidget._imageCache.containsKey(path)) {
+      return CompanionSpriteWidget._imageCache[path]!;
     }
     final data = await rootBundle.load(path);
     final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
     final frame = await codec.getNextFrame();
-    _imageCache[path] = frame.image;
+    CompanionSpriteWidget._imageCache[path] = frame.image;
     return frame.image;
   }
 

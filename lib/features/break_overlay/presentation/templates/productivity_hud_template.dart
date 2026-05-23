@@ -69,13 +69,13 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Neon Grid background pattern
+              // Neon Grid background pattern - ultra subtle
               Positioned.fill(
                 child: Opacity(
-                  opacity: 0.02,
+                  opacity: 0.005,
                   child: GridPaper(
-                    color: const Color(0xFF00FFCC),
-                    interval: 60,
+                    color: Colors.white,
+                    interval: 120,
                     divisions: 1,
                     subdivisions: 1,
                   ),
@@ -185,21 +185,21 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
           title: 'BREAK STATUS',
           value: _formatDuration(widget.remainingSeconds),
           progress: overallProgress,
-          color: const Color(0xFF00E5FF),
+          color: const Color(0xFF8E9AAF),
         ),
         const SizedBox(height: 20),
         _buildMetricCard(
           title: 'HYDRATION TARGET',
           value: '80% (6/8 GLASSES)',
           progress: 0.75,
-          color: const Color(0xFF00FFCC),
+          color: const Color(0xFFA3B18A),
         ),
         const SizedBox(height: 20),
         _buildMetricCard(
           title: 'EYE STRAIN METRIC',
           value: 'CRITICAL WARNING',
           progress: 0.9,
-          color: const Color(0xFFFF3366),
+          color: const Color(0xFFE07A5F),
         ),
       ],
     );
@@ -297,14 +297,14 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
         Stack(
           alignment: Alignment.center,
           children: [
-            // Sci-fi decorative HUD circles
+            // Sci-fi decorative HUD circles - softened
             Container(
               width: 240,
               height: 240,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF00FFCC).withValues(alpha: 0.1),
+                  color: Colors.white.withValues(alpha: 0.04),
                   width: 1,
                 ),
               ),
@@ -315,7 +315,7 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: const Color(0xFF00E5FF).withValues(alpha: 0.05),
+                  color: Colors.white.withValues(alpha: 0.02),
                   width: 1.5,
                 ),
               ),
@@ -346,12 +346,12 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
                           left: 0,
                           right: 0,
                           child: Container(
-                            height: 2.0,
-                            decoration: const BoxDecoration(
+                            height: 1.5,
+                            decoration: BoxDecoration(
                               boxShadow: [
                                 BoxShadow(
-                                  color: Color(0xFF00FFCC),
-                                  blurRadius: 12,
+                                  color: const Color(0xFF8E9AAF).withValues(alpha: 0.3),
+                                  blurRadius: 16,
                                   spreadRadius: 2,
                                 ),
                               ],
@@ -370,18 +370,18 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF00FFCC).withValues(alpha: 0.03),
+            color: Colors.white.withValues(alpha: 0.015),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
-              color: const Color(0xFF00FFCC).withValues(alpha: 0.15),
+              color: Colors.white.withValues(alpha: 0.06),
             ),
           ),
           child: const Text(
-            'HOLOGRAPHIC ASSISTANT ONLINE',
+            'ASSISTANT CALIBRATION STABLE',
             style: TextStyle(
-              color: Color(0xFF00FFCC),
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
+              color: Colors.white60,
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
               letterSpacing: 1.5,
               fontFamily: 'Satoshi',
             ),
@@ -400,16 +400,16 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
           padding: const EdgeInsets.all(20),
           width: double.infinity,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.01),
+            color: Colors.white.withValues(alpha: 0.015),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: const Color(0xFF00FFCC).withValues(alpha: 0.15),
+              color: Colors.white.withValues(alpha: 0.06),
             ),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'DAILY COMPLETED STREAK',
                 style: TextStyle(
                   color: Color(0xFF888899),
@@ -419,21 +419,21 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
                   fontFamily: 'Satoshi',
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Icon(
-                    CupertinoIcons.flame_fill,
-                    color: Colors.orangeAccent,
-                    size: 24,
+                    CupertinoIcons.flame,
+                    color: Colors.white.withValues(alpha: 0.6),
+                    size: 20,
                   ),
-                  SizedBox(width: 8),
-                  Text(
+                  const SizedBox(width: 8),
+                  const Text(
                     '5 STREAKS ACTIVE',
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                       fontFamily: 'Satoshi',
                     ),
                   ),
@@ -507,9 +507,9 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF3366).withValues(alpha: 0.05),
+                  color: const Color(0xFFE07A5F).withValues(alpha: 0.05),
                   border: Border.all(
-                    color: const Color(0xFFFF3366).withValues(alpha: 0.3),
+                    color: const Color(0xFFE07A5F).withValues(alpha: 0.3),
                   ),
                   borderRadius: BorderRadius.circular(4),
                 ),
@@ -518,7 +518,7 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
                     Text(
                       'TERMINATE_SESSION',
                       style: TextStyle(
-                        color: Color(0xFFFF3366),
+                        color: Color(0xFFE07A5F),
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 1.0,
@@ -529,7 +529,7 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
                     Icon(
                       CupertinoIcons.clear_thick,
                       size: 10,
-                      color: Color(0xFFFF3366),
+                      color: Color(0xFFE07A5F),
                     ),
                   ],
                 ),

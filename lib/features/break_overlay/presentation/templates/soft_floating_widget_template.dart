@@ -177,20 +177,20 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                       height: height,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.8),
+                        color: const Color(0xFF16161A).withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(height / 2),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: 0.08),
                           width: 1,
                         ),
                         boxShadow: [
-                          // Slow glowing outer warnings pulse
+                          // Organic, highly sophisticated ambient glow shadow
                           BoxShadow(
                             color: Colors.white.withValues(
-                              alpha: 0.05 + (_pulseController.value * 0.05),
+                              alpha: 0.02 + (_pulseController.value * 0.03),
                             ),
-                            blurRadius: 10 + (_pulseController.value * 10),
-                            spreadRadius: 2 + (_pulseController.value * 2),
+                            blurRadius: 16 + (_pulseController.value * 8),
+                            spreadRadius: 1 + (_pulseController.value * 1),
                           ),
                         ],
                       ),
