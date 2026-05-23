@@ -91,8 +91,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                 child: Image.asset(
                   AppConstants.wellnessSlideshow[index],
                   fit: BoxFit.cover,
-                  cacheWidth: screenWidth.toInt().clamp(100, 3840),
-                  cacheHeight: screenHeight.toInt().clamp(100, 2160),
+                  cacheWidth: screenWidth.toInt().clamp(100, 1920),
+                  cacheHeight: screenHeight.toInt().clamp(100, 1080),
                   filterQuality: FilterQuality.low,
                 ),
               );
@@ -110,8 +110,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
             child: Image.asset(
               fallbackImg,
               fit: BoxFit.cover,
-              cacheWidth: screenWidth.toInt().clamp(100, 3840),
-              cacheHeight: screenHeight.toInt().clamp(100, 2160),
+              cacheWidth: screenWidth.toInt().clamp(100, 1920),
+              cacheHeight: screenHeight.toInt().clamp(100, 1080),
               filterQuality: FilterQuality.low,
             ),
           );
@@ -196,8 +196,24 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                 // Centered Main Time and Tip Card
                 RepaintBoundary(
                   child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 620),
+                    child: Container(
+                      width: 520,
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(32),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 40,
+                            offset: const Offset(0, 20),
+                          ),
+                        ],
+                      ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -207,38 +223,35 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                 : 'Time to Recharge',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 28,
+                              fontSize: 24,
                               fontWeight: FontWeight.w600,
-                              letterSpacing: -0.5,
+                              letterSpacing: -0.3,
                               fontFamily: 'Satoshi',
                             ),
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                           Text(
                             _formatDuration(widget.remainingSeconds),
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 130,
+                              fontSize: 90,
                               fontWeight: FontWeight.w200,
-                              letterSpacing: -5.0,
+                              letterSpacing: -4.0,
                               height: 1.0,
                               fontFamily: 'Satoshi',
                               fontFeatures: [FontFeature.tabularFigures()],
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 40),
-                            child: Text(
-                              widget.breakInfo.tip,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.8),
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                                height: 1.5,
-                                fontFamily: 'Satoshi',
-                              ),
+                          Text(
+                            widget.breakInfo.tip,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w400,
+                              height: 1.5,
+                              fontFamily: 'Satoshi',
                             ),
                           ),
                           
@@ -250,10 +263,10 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
+                                color: Colors.white.withValues(alpha: 0.03),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.1),
+                                  color: Colors.white.withValues(alpha: 0.08),
                                 ),
                               ),
                               child: Column(
@@ -263,7 +276,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                     children: [
                                       const Icon(
                                         CupertinoIcons.heart_fill,
-                                        size: 14,
+                                        size: 13,
                                         color: Color(0xFFFF453A),
                                       ),
                                       const SizedBox(width: 8),
@@ -271,7 +284,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                         'EXERCISE: ${widget.exerciseTitle!}',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 13,
+                                          fontSize: 12,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: 0.5,
                                           fontFamily: 'Satoshi',
@@ -284,8 +297,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                     widget.exerciseInstructions!,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.7),
-                                      fontSize: 13,
+                                      color: Colors.white.withValues(alpha: 0.6),
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w400,
                                       height: 1.4,
                                       fontFamily: 'Satoshi',

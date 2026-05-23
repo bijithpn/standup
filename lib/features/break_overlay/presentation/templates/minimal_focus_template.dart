@@ -109,19 +109,19 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                   children: [
                     // Main Modern UI Card
                     Container(
-                      width: 600,
-                      padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 48),
+                      width: 520,
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.02),
+                        color: Colors.white.withValues(alpha: 0.015),
                         borderRadius: BorderRadius.circular(32),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.white.withValues(alpha: 0.06),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 50,
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 60,
                             offset: const Offset(0, 30),
                           ),
                         ],
@@ -133,7 +133,7 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.05),
+                              color: Colors.white.withValues(alpha: 0.03),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.05),
@@ -146,7 +146,7 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                                   widget.breakInfo.type == BreakType.short
                                       ? CupertinoIcons.eye
                                       : CupertinoIcons.wind,
-                                  size: 14,
+                                  size: 13,
                                   color: Colors.white.withValues(alpha: 0.8),
                                 ),
                                 const SizedBox(width: 8),
@@ -156,46 +156,45 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                                       : 'MINDFUL BREAK',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.8),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 1.5,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.8,
                                     fontFamily: 'Satoshi',
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 48),
 
-                          // Core Countdown - Typography focused
-                          Text(
-                            _formatDuration(widget.remainingSeconds),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 110,
-                              fontWeight: FontWeight.w200,
-                              letterSpacing: -4,
-                              fontFamily: 'Satoshi',
-                              fontFeatures: [FontFeature.tabularFigures()],
-                              height: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 32),
-                          
-                          // Minimal Linear Progress
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(2),
-                            child: SizedBox(
-                              height: 2,
-                              width: 240,
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                backgroundColor: Colors.white.withValues(alpha: 0.05),
-                                valueColor: const AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
+                          // Circular Progress Ring enclosing clean timer
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              SizedBox(
+                                width: 200,
+                                height: 200,
+                                child: CircularProgressIndicator(
+                                  value: progress,
+                                  strokeWidth: 2,
+                                  backgroundColor: Colors.white.withValues(alpha: 0.04),
+                                  valueColor: const AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
+                              Text(
+                                _formatDuration(widget.remainingSeconds),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 48,
+                                  fontWeight: FontWeight.w200,
+                                  letterSpacing: -1.5,
+                                  fontFamily: 'Satoshi',
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 48),
 
@@ -207,10 +206,10 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.w600,
                               fontFamily: 'Satoshi',
-                              letterSpacing: -0.2,
+                              letterSpacing: -0.3,
                             ),
                           ),
                           const SizedBox(height: 12),

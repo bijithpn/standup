@@ -183,12 +183,12 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
+                      color: Colors.white.withValues(alpha: 0.015),
                       borderRadius: BorderRadius.circular(24),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
+                        color: Colors.white.withValues(alpha: 0.06),
                       ),
                     ),
                     child: Row(
@@ -296,12 +296,15 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: const Color(0xFF1E1E24).withValues(alpha: 0.85),
                                   borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.1),
+                                  ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.2),
-                                      blurRadius: 10,
+                                      color: Colors.black.withValues(alpha: 0.3),
+                                      blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
                                   ],
@@ -313,9 +316,9 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                       _speechText,
                                       textAlign: TextAlign.center,
                                       style: const TextStyle(
-                                        color: Color(0xFF1E1E24),
+                                        color: Colors.white,
                                         fontSize: 11,
-                                        fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w500,
                                         fontFamily: 'Satoshi',
                                       ),
                                     ),
@@ -348,10 +351,10 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E24),
+                                  color: const Color(0xFF1E1E24).withValues(alpha: 0.9),
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1),
+                                    color: Colors.white.withValues(alpha: 0.12),
                                   ),
                                 ),
                                 child: Row(
@@ -359,6 +362,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                   children: [
                                     _buildMenuButton(
                                       icon: CupertinoIcons.sparkles,
+                                      color: const Color(0xFFFFD700),
                                       onPressed: () {
                                         setState(() {
                                           _animationState = CatAnimationState.stretch;
@@ -369,6 +373,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                     ),
                                     _buildMenuButton(
                                       icon: CupertinoIcons.heart_fill,
+                                      color: const Color(0xFFFF453A),
                                       onPressed: () {
                                         setState(() {
                                           _animationState = CatAnimationState.excited;
@@ -379,6 +384,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                     ),
                                     _buildMenuButton(
                                       icon: CupertinoIcons.moon_fill,
+                                      color: const Color(0xFF00E5FF),
                                       onPressed: () {
                                         setState(() {
                                           _animationState = CatAnimationState.sleep;
@@ -487,7 +493,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
     );
   }
 
-  Widget _buildMenuButton({required IconData icon, required VoidCallback onPressed}) {
+  Widget _buildMenuButton({required IconData icon, required Color color, required VoidCallback onPressed}) {
     return GestureDetector(
       onTap: onPressed,
       child: MouseRegion(
@@ -498,7 +504,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, size: 14, color: Colors.white),
+          child: Icon(icon, size: 14, color: color),
         ),
       ),
     );
@@ -509,7 +515,7 @@ class _BubbleTailPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = const Color(0xFF1E1E24).withValues(alpha: 0.85)
       ..style = PaintingStyle.fill;
 
     final path = Path()

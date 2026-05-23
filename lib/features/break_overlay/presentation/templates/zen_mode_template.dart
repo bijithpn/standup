@@ -164,7 +164,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                                       ),
                                     ),
                                   ),
-                                  // Pulsing Breathing Circle
+                                  // Pulsing Breathing Circle with premium organic glow
                                   Transform.scale(
                                     scale: scale,
                                     child: Container(
@@ -173,21 +173,21 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         color: Colors.white.withValues(
-                                          alpha: 0.03,
+                                          alpha: 0.02,
                                         ),
                                         border: Border.all(
                                           color: Colors.white.withValues(
-                                            alpha: 0.2,
+                                            alpha: 0.15,
                                           ),
                                           width: 1,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
                                             color: Colors.white.withValues(
-                                              alpha: 0.02,
+                                              alpha: 0.05,
                                             ),
-                                            blurRadius: 30,
-                                            spreadRadius: 5,
+                                            blurRadius: 40,
+                                            spreadRadius: 2,
                                           ),
                                         ],
                                       ),
@@ -411,8 +411,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     return Row(
       children: [
         Container(
-          width: 14,
-          height: 14,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: completed
@@ -423,8 +423,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
             border: Border.all(
               color: completed
                   ? Colors.white
-                  : Colors.white.withValues(alpha: 0.2),
-              width: 2,
+                  : Colors.white.withValues(alpha: 0.25),
+              width: 1.5,
             ),
           ),
         ),
@@ -467,9 +467,9 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
 
   Widget _buildTimelineLine({required bool completed}) {
     return Container(
-      width: 2,
+      width: 1,
       height: 40,
-      margin: const EdgeInsets.only(left: 6),
+      margin: const EdgeInsets.only(left: 3.5),
       color: completed ? Colors.white : Colors.white.withValues(alpha: 0.1),
     );
   }

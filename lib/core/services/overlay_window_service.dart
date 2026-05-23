@@ -64,8 +64,10 @@ class OverlayWindowService extends ChangeNotifier {
           if (strictMode && type == OverlayType.breakScreen) {
             await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
           }
-          // Always hide the main window when showing a system-level overlay
-          await windowManager.hide();
+          // Hide the main window after a tiny delay to ensure focus is seamlessly transitioned
+          Future.delayed(const Duration(milliseconds: 200), () {
+            windowManager.hide();
+          });
         }
       } else {
         // Clock preview still uses main window for simplicity

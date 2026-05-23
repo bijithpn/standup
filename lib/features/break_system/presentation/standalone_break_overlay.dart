@@ -13,6 +13,8 @@ import 'package:standup/features/break_overlay/presentation/templates/zen_mode_t
 import 'package:standup/features/break_overlay/presentation/templates/productivity_hud_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
+import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:standup/features/companion/domain/cat_theme.dart';
 
 enum BreakTheme {
   image,
@@ -99,6 +101,22 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     
     // Smoothly fade in
     _fadeController.forward();
+
+    // Pre-cache companion sprite sheets post-frame to ensure zero-lag load
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      CompanionSpriteWidget.precacheSpriteSheet(CatTheme.getTheme('grey_cat').basePath);
+      CompanionSpriteWidget.precacheSpriteSheet(CatTheme.getTheme('orange_cat').basePath);
+      CompanionSpriteWidget.precacheSpriteSheet(CatTheme.getTheme('black_cat').basePath);
+    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Pre-cache slideshow images so they load instantly in memory
+    for (final path in AppConstants.wellnessSlideshow) {
+      precacheImage(AssetImage(path), context);
+    }
   }
 
   void _setupBridge() {
@@ -606,16 +624,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 ? Image.asset(
                     _currentTemplate,
                     fit: BoxFit.cover,
-                    cacheWidth: screenW.toInt(),
-                    cacheHeight: screenH.toInt(),
+                    cacheWidth: screenW.toInt().clamp(100, 1920),
+                    cacheHeight: screenH.toInt().clamp(100, 1080),
                   )
                 : Transform.scale(
                     scale: 1.05 + (0.1 * _kenBurnsController.value),
                     child: Image.asset(
                       _currentTemplate,
                       fit: BoxFit.cover,
-                      cacheWidth: screenW.toInt(),
-                      cacheHeight: screenH.toInt(),
+                      cacheWidth: screenW.toInt().clamp(100, 1920),
+                      cacheHeight: screenH.toInt().clamp(100, 1080),
                       filterQuality: FilterQuality.low,
                     ),
                   ),
