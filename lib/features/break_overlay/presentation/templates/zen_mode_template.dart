@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
 import 'package:standup/shared/theme/app_theme.dart';
