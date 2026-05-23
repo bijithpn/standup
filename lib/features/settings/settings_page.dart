@@ -2540,6 +2540,7 @@ class _SettingsPageState extends State<SettingsPage> {
                         theme.name,
                         style: TextStyle(
                           fontSize: 13,
+                          color: Colors.white,
                           fontWeight: isSelected
                               ? FontWeight.w700
                               : FontWeight.w600,

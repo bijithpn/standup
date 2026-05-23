@@ -77,7 +77,10 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                 
                 return Stack(
                   children: [
-                    if (!isOverlayVisible && !isBreakActive) const MainLayout(),
+                    Offstage(
+                      offstage: isOverlayVisible || isBreakActive,
+                      child: const MainLayout(),
+                    ),
                     const BreakOverlay(),
                     const PreBreakWarningOverlay(),
                   ],
