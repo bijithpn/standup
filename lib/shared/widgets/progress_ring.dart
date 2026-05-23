@@ -14,7 +14,7 @@ class ProgressRing extends StatelessWidget {
     required this.progress,
     this.size = 200,
     this.strokeWidth = 6,
-    this.color = AppTheme.shortBreakColor,
+    this.color = const Color(0xFF06B6D4), // AppTheme.shortBreak
     this.child,
   });
 

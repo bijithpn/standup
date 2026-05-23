@@ -79,7 +79,7 @@ class AppDropdown<T> extends StatelessWidget {
                     ),
                   ],
                   if (isSelected)
-                    const Icon(
+                    Icon(
                       CupertinoIcons.checkmark_alt,
                       size: 14,
                       color: AppTheme.accentColor,

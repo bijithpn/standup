@@ -45,7 +45,7 @@ class DailyStatsChart extends StatelessWidget {
                           TextSpan(
                             text: 'Completed: ${day.breaksCompleted}\n',
                             style: const TextStyle(
-                              color: AppTheme.shortBreakColor,
+                              color: Color(0xFF06B6D4),
                               fontWeight: FontWeight.normal,
                               fontSize: 12,
                             ),
