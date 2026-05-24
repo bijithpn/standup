@@ -202,8 +202,11 @@ class TrayManagerService with TrayListener {
       stepTime = config.stepTime;
     }
     
-    // Clamp to a safe minimum of 120ms to protect macOS system tray resource consumption
-    final ms = (stepTime * 1000).toInt().clamp(120, 1000);
+    final isOptimized = settingsRepo.currentSettings.companionOptimization;
+    
+    // Clamp to a safe minimum of 120ms (or 250ms if optimized to protect macOS resource consumption)
+    final minMs = isOptimized ? 250 : 120;
+    final ms = (stepTime * 1000).toInt().clamp(minMs, 1000);
     _animTimer = Timer.periodic(Duration(milliseconds: ms), (_) {
       _advanceFrame();
     });
@@ -273,32 +276,20 @@ class TrayManagerService with TrayListener {
 
   Future<void> _buildMenu() async {
     String statusLabel = 'BreakMate';
-    String nextBreakLabel = 'Next: --';
     
     if (_timerEngine != null) {
-      final remaining = _timerEngine!.timeUntilNextShortBreak;
-      final mins = remaining.inMinutes;
-      final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-      
       if (_isBreakActive) {
         statusLabel = 'On Break';
-        final breakRemaining = _timerEngine!.countdownSeconds;
-        final breakMins = breakRemaining ~/ 60;
-        final breakSecs = (breakRemaining % 60).toString().padLeft(2, '0');
-        nextBreakLabel = 'Time Remaining: $breakMins:$breakSecs';
       } else if (_isPaused) {
-        statusLabel = 'Reminders Paused';
-        nextBreakLabel = 'Timer is inactive';
+        statusLabel = 'Timer Paused';
       } else {
-        statusLabel = 'Reminders Active';
-        nextBreakLabel = 'Next Break: $mins:$secs';
+        statusLabel = 'Timer Running';
       }
     }
 
     final List<MenuItem> items = [];
 
     items.add(MenuItem(label: statusLabel, disabled: true));
-    items.add(MenuItem(label: nextBreakLabel, disabled: true));
     items.add(MenuItem.separator());
 
     if (_isBreakActive) {
@@ -321,11 +312,11 @@ class TrayManagerService with TrayListener {
       items.addAll([
         MenuItem(
           key: 'toggle_pause',
-          label: _isPaused ? 'Resume Reminders' : 'Pause Reminders',
+          label: _isPaused ? 'Resume Timer' : 'Pause Timer',
         ),
         MenuItem(
           key: 'take_break',
-          label: 'Start Break Now',
+          label: 'Instant Break',
         ),
         MenuItem(
           key: 'skip_next',
@@ -335,28 +326,21 @@ class TrayManagerService with TrayListener {
       ]);
     }
 
+    final settingsRepo = sl<SettingsRepository>();
+    final isOptimized = settingsRepo.currentSettings.companionOptimization;
+
     items.addAll([
       MenuItem(
-        key: 'open_dashboard',
-        label: 'Open Dashboard',
-      ),
-      MenuItem(
-        key: 'open_settings',
-        label: 'Settings',
-      ),
-
-      MenuItem(
-        key: 'open_exercises',
-        label: 'Exercises',
+        key: 'open_app',
+        label: 'Open App',
       ),
       MenuItem(
         key: 'open_stats',
         label: 'Statistics',
       ),
-      MenuItem.separator(),
       MenuItem(
-        key: 'posture_reminder',
-        label: 'Posture Reminder',
+        key: 'toggle_companion_optim',
+        label: isOptimized ? '✓ Optimize Companion' : 'Optimize Companion',
       ),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Quit BreakMate'),

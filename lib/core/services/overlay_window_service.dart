@@ -116,6 +116,11 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.setBackgroundColor(Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent);
       await windowManager.center();
 
+      bool isMinimized = await windowManager.isMinimized();
+      if (isMinimized) {
+        await windowManager.restore();
+      }
+
       await windowManager.show();
       await windowManager.focus();
       if (Platform.isMacOS) {

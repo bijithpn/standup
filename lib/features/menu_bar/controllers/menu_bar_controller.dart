@@ -1,11 +1,13 @@
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/services/notification_service.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
+import 'package:standup/features/settings/settings_repository.dart';
+import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 
@@ -36,13 +38,8 @@ class MenuBarController {
     }
 
     switch (action) {
-      case 'open_dashboard':
+      case 'open_app':
         await overlayService.showDashboard();
-      case 'open_settings':
-        await overlayService.showDashboard();
-
-      case 'open_exercises':
-        await openSection('Exercises');
       case 'open_stats':
         await openSection('Statistics');
       case 'toggle_pause':
@@ -57,8 +54,18 @@ class MenuBarController {
         _breakController?.skipCurrentBreak();
       case 'postpone_break':
         _breakController?.postponeCurrentBreak();
-      case 'posture_reminder':
-        await sl<NotificationService>().showPostureReminder();
+      case 'toggle_companion_optim':
+        final settingsRepo = sl<SettingsRepository>();
+        final currentVal = settingsRepo.currentSettings.companionOptimization;
+        final nextVal = !currentVal;
+        try {
+          await sl<CompanionOverlayController>().changeOptimization(nextVal);
+        } catch (_) {
+          final updated = settingsRepo.currentSettings.copyWith(companionOptimization: nextVal);
+          await settingsRepo.save(updated);
+        }
+        sl<TrayManagerService>().setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
+        sl<TrayManagerService>().triggerActionAnimation();
       case 'quit':
         await _quitApp();
       default:
