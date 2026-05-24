@@ -38,6 +38,7 @@ class TimerEngine extends ChangeNotifier {
   Timer? _pauseAutoResumeTimer;
 
   TimerState _state = TimerState.idle;
+  bool _isManuallyPaused = false;
   WorkMode _mode = WorkMode.flexible;
   BreakModel? _activeBreak;
   int _countdownSeconds = 0;
@@ -527,7 +528,7 @@ class TimerEngine extends ChangeNotifier {
   void _setupActivityMonitor() {
     _activityMonitor.setIdleThreshold(_pauseTimerAfterMinutes);
     _activityMonitor.setActivityCallback((isActive) {
-      if (isActive && _state == TimerState.paused) {
+      if (isActive && _state == TimerState.paused && !_isManuallyPaused) {
         resumeTimers();
       } else if (!isActive && _state == TimerState.running) {
         pauseTimers();
@@ -547,9 +548,12 @@ class TimerEngine extends ChangeNotifier {
     _activityMonitor.start();
   }
 
-  void pauseTimers() {
+  void pauseTimers({bool isManual = false}) {
     if (_state == TimerState.breakActive) return;
     _state = TimerState.paused;
+    if (isManual) {
+      _isManuallyPaused = true;
+    }
     saveState();
     _emit(TimerStateChangedEvent(
       state: TimerStateEvent.paused,
@@ -562,6 +566,7 @@ class TimerEngine extends ChangeNotifier {
   void resumeTimers() {
     if (_state == TimerState.breakActive) return;
     _state = TimerState.running;
+    _isManuallyPaused = false;
     _isPreBreak = false;
     _lastTickTime = DateTime.now();
     if (!_isWithinWorkingHours()) {

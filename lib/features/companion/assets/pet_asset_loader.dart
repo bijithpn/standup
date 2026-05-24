@@ -315,10 +315,12 @@ class PetAssetLoader {
       final sourceImage = await loadImage(assetPath);
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
+      final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+      final tintColor = isDark ? const ui.Color(0xFFFFFFFF) : const ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = const ui.ColorFilter.mode(
-          ui.Color(0xFFFFFFFF),
+        ..colorFilter = ui.ColorFilter.mode(
+          tintColor,
           ui.BlendMode.srcIn,
         );
 
@@ -409,7 +411,9 @@ class PetAssetLoader {
     required int frameIndex,
   }) async {
     final tempDir = Directory.systemTemp;
-    final file = File('${tempDir.path}/bm_pframe_${theme.id}_${state.name}_${frameIndex}Template@2x.png');
+    final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+    final themeSuffix = isDark ? '_dark' : '_light';
+    final file = File('${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex${themeSuffix}Template@2x.png');
 
     if (await file.exists()) {
       return file.path;
@@ -504,10 +508,12 @@ class PetAssetLoader {
       const double targetSize = 44.0;
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
+      final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+      final tintColor = isDark ? const ui.Color(0xFFFFFFFF) : const ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = const ui.ColorFilter.mode(
-          ui.Color(0xFFFFFFFF),
+        ..colorFilter = ui.ColorFilter.mode(
+          tintColor,
           ui.BlendMode.srcIn,
         );
 

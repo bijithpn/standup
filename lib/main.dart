@@ -29,7 +29,13 @@ void _setupGlobalErrors() {
     debugPrint('=== FLUTTER ERROR ===');
     debugPrint(details.exceptionAsString());
     debugPrint(details.stack?.toString());
-    if (!details.silent) {
+    
+    // Ignore harmless framework-level hardware keyboard assertions on desktop
+    final exceptionStr = details.exceptionAsString();
+    final isHardwareKeyboardAssert = exceptionStr.contains('HardwareKeyboard') || 
+                                     exceptionStr.contains('_pressedKeys.containsKey');
+                                     
+    if (!details.silent && !isHardwareKeyboardAssert) {
       ErrorToastService.showError('Oops! An internal error occurred.');
     }
     FlutterError.presentError(details); // Calls ErrorWidget.builder

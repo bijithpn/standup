@@ -224,7 +224,7 @@ class BreakController extends ChangeNotifier {
     if (isPaused) {
       _timerEngine.resumeTimers();
     } else {
-      _timerEngine.pauseTimers();
+      _timerEngine.pauseTimers(isManual: true);
     }
     sl<TrayManagerService>().updatePauseState(isPaused);
     notifyListeners();
@@ -233,6 +233,7 @@ class BreakController extends ChangeNotifier {
   void takeBreakNow() {
     _timerEngine.triggerBreakNow();
     sl<TrayManagerService>().setBreakActive(true);
+    notifyListeners();
   }
 
   void startTestBreak() {

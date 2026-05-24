@@ -5,9 +5,6 @@ import 'package:standup/core/services/overlay_window_service.dart';
 import 'package:standup/core/services/app_navigation_service.dart';
 import 'package:standup/core/utils/logger.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/settings/settings_repository.dart';
-import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 
@@ -54,18 +51,8 @@ class MenuBarController {
         _breakController?.skipCurrentBreak();
       case 'postpone_break':
         _breakController?.postponeCurrentBreak();
-      case 'toggle_companion_optim':
-        final settingsRepo = sl<SettingsRepository>();
-        final currentVal = settingsRepo.currentSettings.companionOptimization;
-        final nextVal = !currentVal;
-        try {
-          await sl<CompanionOverlayController>().changeOptimization(nextVal);
-        } catch (_) {
-          final updated = settingsRepo.currentSettings.copyWith(companionOptimization: nextVal);
-          await settingsRepo.save(updated);
-        }
-        sl<TrayManagerService>().setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
-        sl<TrayManagerService>().triggerActionAnimation();
+      case 'open_companion':
+        await openSection('Companion');
       case 'quit':
         await _quitApp();
       default:

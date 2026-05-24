@@ -75,7 +75,6 @@ class SettingsModel {
   final double companionScale;
   final bool companionClickThrough;
   final bool companionFollowMouse;
-  final bool companionOptimization;
 
   const SettingsModel({
     this.autoStart = true,
@@ -131,7 +130,6 @@ class SettingsModel {
     this.companionScale = 6.0,
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
-    this.companionOptimization = true,
   });
 
   SettingsModel copyWith({
@@ -188,7 +186,6 @@ class SettingsModel {
     double? companionScale,
     bool? companionClickThrough,
     bool? companionFollowMouse,
-    bool? companionOptimization,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -244,7 +241,6 @@ class SettingsModel {
       companionScale: companionScale ?? this.companionScale,
       companionClickThrough: companionClickThrough ?? this.companionClickThrough,
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
-      companionOptimization: companionOptimization ?? this.companionOptimization,
     );
   }
 
@@ -302,7 +298,6 @@ class SettingsModel {
         'companionScale': companionScale,
         'companionClickThrough': companionClickThrough,
         'companionFollowMouse': companionFollowMouse,
-        'companionOptimization': companionOptimization,
       };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -375,7 +370,6 @@ class SettingsModel {
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
-      companionOptimization: map['companionOptimization'] as bool? ?? true,
     );
   }
 }

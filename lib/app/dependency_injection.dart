@@ -206,7 +206,7 @@ void _setupIpcBridge() {
         if (action == 'start') {
           timerEngine.startTimers();
         } else if (action == 'pause') {
-          timerEngine.pauseTimers();
+          timerEngine.pauseTimers(isManual: true);
         } else if (action == 'reset') {
           timerEngine.resetTimers();
         }

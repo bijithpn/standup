@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/widgets.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/utils/logger.dart';
@@ -14,7 +16,7 @@ import 'controllers/menu_bar_controller.dart';
 
 enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
 
-class TrayManagerService with TrayListener {
+class TrayManagerService with TrayListener, WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
   bool _isPaused = false;
   TrayIconMode _iconMode = TrayIconMode.companion;
@@ -34,10 +36,27 @@ class TrayManagerService with TrayListener {
 
   Future<void> init() async {
     trayManager.addListener(this);
+    WidgetsBinding.instance.addObserver(this);
     
     // Eagerly sync style from SettingsRepository before icon extraction/load
     final settingsRepo = sl<SettingsRepository>();
     setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
+    
+    // Clean up older cached white/legacy tray icons from system temp directory
+    try {
+      final tempDir = Directory.systemTemp;
+      if (tempDir.existsSync()) {
+        final list = tempDir.listSync();
+        for (final file in list) {
+          if (file is File) {
+            final filename = file.path.split(Platform.pathSeparator).last;
+            if (filename.startsWith('bm_')) {
+              file.deleteSync();
+            }
+          }
+        }
+      }
+    } catch (_) {}
     
     await _extractIcons();
     await _applyIcon();
@@ -60,8 +79,10 @@ class TrayManagerService with TrayListener {
 
   Future<void> _extractIcons() async {
     final tempDir = Directory.systemTemp;
+    final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+    final themeSuffix = isDark ? '_dark' : '_light';
 
-    final defaultFile = '${tempDir.path}/bm_ctray_defaultTemplate@2x.png';
+    final defaultFile = '${tempDir.path}/bm_ctray_default${themeSuffix}Template@2x.png';
     _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
       'assets/icons/tray_icon.png',
       defaultFile,
@@ -123,7 +144,7 @@ class TrayManagerService with TrayListener {
               iconName = 'idle';
               break;
           }
-          final fallbackFile = '${tempDir.path}/bm_ccat_${state.name}Template@2x.png';
+          final fallbackFile = '${tempDir.path}/bm_ccat_${state.name}${themeSuffix}Template@2x.png';
           final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,
@@ -166,13 +187,13 @@ class TrayManagerService with TrayListener {
           } else {
             path = _defaultIconPath;
           }
-          if (path != null) await trayManager.setIcon(path);
+          if (path != null) await trayManager.setIcon(path, isTemplate: true);
           break;
         case TrayIconMode.defaultIcon:
         case TrayIconMode.minimal:
         case TrayIconMode.countdownOnly:
           if (_defaultIconPath != null) {
-            await trayManager.setIcon(_defaultIconPath!);
+            await trayManager.setIcon(_defaultIconPath!, isTemplate: true);
           }
           break;
       }
@@ -202,11 +223,8 @@ class TrayManagerService with TrayListener {
       stepTime = config.stepTime;
     }
     
-    final isOptimized = settingsRepo.currentSettings.companionOptimization;
-    
-    // Clamp to a safe minimum of 120ms (or 250ms if optimized to protect macOS resource consumption)
-    final minMs = isOptimized ? 250 : 120;
-    final ms = (stepTime * 1000).toInt().clamp(minMs, 1000);
+    // Clamp to a safe minimum of 120ms to protect macOS system tray resource consumption
+    final ms = (stepTime * 1000).toInt().clamp(120, 1000);
     _animTimer = Timer.periodic(Duration(milliseconds: ms), (_) {
       _advanceFrame();
     });
@@ -326,21 +344,18 @@ class TrayManagerService with TrayListener {
       ]);
     }
 
-    final settingsRepo = sl<SettingsRepository>();
-    final isOptimized = settingsRepo.currentSettings.companionOptimization;
-
     items.addAll([
       MenuItem(
         key: 'open_app',
         label: 'Open App',
       ),
       MenuItem(
-        key: 'open_stats',
-        label: 'Statistics',
+        key: 'open_companion',
+        label: 'Desktop Companion',
       ),
       MenuItem(
-        key: 'toggle_companion_optim',
-        label: isOptimized ? '✓ Optimize Companion' : 'Optimize Companion',
+        key: 'open_stats',
+        label: 'Statistics',
       ),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Quit BreakMate'),
@@ -419,10 +434,19 @@ class TrayManagerService with TrayListener {
     }
   }
 
+  @override
+  void didChangePlatformBrightness() {
+    _logger.info('Platform brightness changed, regenerating tray icons...');
+    _extractIcons().then((_) {
+      _applyIcon();
+    });
+  }
+
   void dispose() {
     _animTimer?.cancel();
     _timerEngine?.removeListener(_onTimerChanged);
     _breakController?.removeListener(_onTimerChanged);
     trayManager.removeListener(this);
+    WidgetsBinding.instance.removeObserver(this);
   }
 }
