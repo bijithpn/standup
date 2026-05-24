@@ -260,9 +260,24 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildMainContent() {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
-      transitionBuilder: (child, animation) =>
-          FadeTransition(opacity: animation, child: child),
+      duration: const Duration(milliseconds: 260),
+      transitionBuilder: (child, animation) {
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(0.04, 0.0), // subtle premium slide from the right
+          end: Offset.zero,
+        ).animate(CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        ));
+
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: slideAnimation,
+            child: child,
+          ),
+        );
+      },
       child: IndexedStack(
         key: ValueKey(_pageIndex),
         index: _pageIndex,
