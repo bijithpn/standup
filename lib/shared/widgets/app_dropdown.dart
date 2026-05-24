@@ -35,18 +35,20 @@ class AppDropdown<T> extends StatelessWidget {
           initialValue: value,
           tooltip: label ?? 'Select option',
           onSelected: onChanged,
-          offset: const Offset(0, 45),
-          elevation: 8,
+          offset: const Offset(0, 4),
+          position: PopupMenuPosition.under,
+          constraints: const BoxConstraints(maxHeight: 250),
+          elevation: 12,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 0.8),
           ),
-          color: const Color(0xFF1A1A1A),
+          color: const Color(0xFF161616),
           itemBuilder: (context) => items.map((item) {
             final isSelected = item.value == value;
             return PopupMenuItem<T>(
               value: item.value,
-              height: 40,
+              height: 34,
               child: Row(
                 children: [
                   if (item.customChild != null)
@@ -55,19 +57,19 @@ class AppDropdown<T> extends StatelessWidget {
                     if (item.icon != null) ...[
                       Icon(
                         item.icon,
-                        size: 16,
+                        size: 15,
                         color: isSelected
                             ? AppTheme.accentColor
                             : AppTheme.textSecondary,
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
                     ],
                     Expanded(
                       child: Text(
                         item.label,
                         style: TextStyle(
                           fontFamily: 'Satoshi',
-                          fontSize: 13,
+                          fontSize: 12.5,
                           fontWeight: isSelected
                               ? FontWeight.w700
                               : FontWeight.w500,
@@ -81,7 +83,7 @@ class AppDropdown<T> extends StatelessWidget {
                   if (isSelected)
                     Icon(
                       CupertinoIcons.checkmark_alt,
-                      size: 14,
+                      size: 13,
                       color: AppTheme.accentColor,
                     ),
                 ],
@@ -90,13 +92,13 @@ class AppDropdown<T> extends StatelessWidget {
           }).toList(),
           child: Container(
             width: width,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.04),
-              borderRadius: BorderRadius.circular(10),
+              color: Colors.white.withValues(alpha: 0.02),
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 1,
+                color: Colors.white.withValues(alpha: 0.05),
+                width: 0.8,
               ),
             ),
             child: Row(

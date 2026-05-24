@@ -13,7 +13,7 @@ import 'package:standup/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:standup/app/main_layout.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
-
+import 'package:standup/core/services/error_toast_service.dart';
 
 class BreakMateApp extends StatefulWidget {
   const BreakMateApp({super.key});
@@ -23,8 +23,6 @@ class BreakMateApp extends StatefulWidget {
 }
 
 class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
-
-
   @override
   void initState() {
     super.initState();
@@ -41,13 +39,14 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
 
   void _setupTrayActions() {
     final controller = sl<BreakController>();
-    
+
     controller.addListener(() {
       sl<TrayManagerService>().updatePauseState(controller.isPaused);
-      
+
       final overlayService = sl<OverlayWindowService>();
-      if (!controller.isBreakActive && overlayService.currentOverlayType == OverlayType.breakScreen) {
-        overlayService.hideOverlay();
+      if (!controller.isBreakActive &&
+          overlayService.currentOverlayType == OverlayType.breakScreen) {
+        overlayService.showDashboard();
       }
     });
   }
@@ -61,20 +60,23 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         Provider.value(value: sl<StatsService>()),
       ],
       child: MacosApp(
+        navigatorKey: ErrorToastService.navigatorKey,
         title: 'BreakMate',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.macosTheme,
         home: Builder(
           builder: (context) {
-
             final overlayService = sl<OverlayWindowService>();
-            
+
             return ListenableBuilder(
-              listenable: Listenable.merge([overlayService, sl<BreakController>()]),
+              listenable: Listenable.merge([
+                overlayService,
+                sl<BreakController>(),
+              ]),
               builder: (context, _) {
                 final isBreakActive = sl<BreakController>().isBreakActive;
                 final isOverlayVisible = overlayService.isOverlayVisible;
-                
+
                 return Stack(
                   children: [
                     Offstage(

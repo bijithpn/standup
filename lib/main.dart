@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
+import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -19,6 +21,95 @@ import 'package:standup/features/companion/overlay/companion_overlay_window.dart
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:standup/shared/theme/app_theme.dart';
+import 'package:standup/core/services/error_toast_service.dart';
+
+void _setupGlobalErrors() {
+  // 1. Log Flutter errors to console
+  FlutterError.onError = (FlutterErrorDetails details) {
+    debugPrint('=== FLUTTER ERROR ===');
+    debugPrint(details.exceptionAsString());
+    debugPrint(details.stack?.toString());
+    if (!details.silent) {
+      ErrorToastService.showError('Oops! An internal error occurred.');
+    }
+    FlutterError.presentError(details); // Calls ErrorWidget.builder
+  };
+
+  // 2. Async Dart errors
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('=== ASYNC DART ERROR ===');
+    debugPrint(error.toString());
+    debugPrint(stack.toString());
+    ErrorToastService.showError('Oops! An action failed. Please try again.');
+    return true; // Prevent default crash behavior
+  };
+
+  // 3. User friendly UI for render errors
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      color: const Color(0xFF161616),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.redAccent,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Oops! Something went wrong.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'An unexpected error occurred. We have logged the details.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 14,
+                  fontFamily: 'Satoshi',
+                ),
+              ),
+              if (kDebugMode) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.redAccent.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      details.exceptionAsString(),
+                      style: const TextStyle(
+                        color: Colors.redAccent,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+}
 
 void main() async {
   final isolateName = Isolate.current.debugName ?? '';
@@ -40,6 +131,7 @@ void main() async {
     () async {
       try {
         WidgetsFlutterBinding.ensureInitialized();
+        _setupGlobalErrors();
 
         // Initialize flutter_acrylic for glassmorphic effect
         if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
@@ -51,8 +143,9 @@ void main() async {
         bool isActualMain = true;
         if (Platform.isMacOS) {
           try {
-            final res = await const MethodChannel('com.breakmate.macos/bridge')
-                .invokeMethod<bool>('checkIsMainEngine');
+            final res = await const MethodChannel(
+              'com.breakmate.macos/bridge',
+            ).invokeMethod<bool>('checkIsMainEngine');
             isActualMain = res ?? true;
           } catch (_) {
             isActualMain = false;
@@ -99,7 +192,8 @@ void main() async {
 
         WindowOptions windowOptions = WindowOptions(
           size: const Size(1100, 750),
-          minimumSize: const Size(400, 600),
+          minimumSize: const Size(1100, 750),
+          maximumSize: const Size(1100, 750),
           center: true,
           backgroundColor: Platform.isWindows
               ? AppTheme.sidebarBackground
@@ -112,6 +206,7 @@ void main() async {
 
         await windowManager.waitUntilReadyToShow(windowOptions, () async {
           await windowManager.setPreventClose(true);
+          await windowManager.setResizable(false);
           await windowManager.hide();
         });
 
@@ -166,6 +261,7 @@ void main() async {
 @pragma('vm:entry-point')
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
+  _setupGlobalErrors();
 
   runApp(
     const MaterialApp(
@@ -178,6 +274,7 @@ void overlayMain() {
 @pragma('vm:entry-point')
 Future<void> companionMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _setupGlobalErrors();
 
   // On macOS, initialize flutter_acrylic for the companion panel.
   if (Platform.isMacOS) {

@@ -93,11 +93,14 @@ Widget toggleRow(
             ],
           ),
         ),
-        const SizedBox(width: 16),
-        CupertinoSwitch(
-          value: value,
-          activeTrackColor: AppTheme.accentColor,
-          onChanged: onChanged,
+        Transform.scale(
+          scale: 0.8,
+          alignment: Alignment.centerRight,
+          child: CupertinoSwitch(
+            value: value,
+            activeTrackColor: AppTheme.accentColor,
+            onChanged: onChanged,
+          ),
         ),
       ],
     ),
@@ -193,12 +196,16 @@ Widget sliderRow(
                 ),
                 SizedBox(
                   width: isSmallScreen ? 120 : 180,
-                  child: CupertinoSlider(
-                    value: value.clamp(min, max),
-                    min: min,
-                    max: max,
-                    onChanged: onChanged,
-                    activeColor: AppTheme.accentColor,
+                  child: Transform.scale(
+                    scale: 0.85,
+                    alignment: Alignment.centerRight,
+                    child: CupertinoSlider(
+                      value: value.clamp(min, max),
+                      min: min,
+                      max: max,
+                      onChanged: onChanged,
+                      activeColor: AppTheme.accentColor,
+                    ),
                   ),
                 ),
               ],
@@ -347,10 +354,14 @@ Widget buildListRow(
         ),
         const SizedBox(width: 8),
         if (value != null)
-          CupertinoSwitch(
-            value: value,
-            onChanged: onChanged,
-            activeTrackColor: AppTheme.accentColor,
+          Transform.scale(
+            scale: 0.8,
+            alignment: Alignment.centerRight,
+            child: CupertinoSwitch(
+              value: value,
+              onChanged: onChanged,
+              activeTrackColor: AppTheme.accentColor,
+            ),
           ),
         // ignore: use_null_aware_elements
         if (trailing != null) trailing,

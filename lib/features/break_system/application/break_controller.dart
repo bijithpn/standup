@@ -176,7 +176,7 @@ class BreakController extends ChangeNotifier {
       if (strictModeController.isStrictModeActive) {
         strictModeController.disableStrictMode();
       }
-      overlayService.hideOverlay();
+      overlayService.showDashboard();
       _stopMusic();
     }
 
@@ -300,7 +300,7 @@ class BreakController extends ChangeNotifier {
     if (!_settingsRepo.currentSettings.strictMode) {
       _timerEngine.finishBreak(skipped: true);
       sl<TrayManagerService>().setBreakActive(false);
-      sl<OverlayWindowService>().hideOverlay();
+      sl<OverlayWindowService>().showDashboard();
       _stopMusic();
     }
   }

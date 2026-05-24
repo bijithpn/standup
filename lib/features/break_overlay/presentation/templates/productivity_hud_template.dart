@@ -36,7 +36,7 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate> {
   @override
   Widget build(BuildContext context) {
     final progress = widget.totalSeconds > 0
-        ? 1 - (widget.remainingSeconds / widget.totalSeconds)
+        ? (1 - (widget.remainingSeconds / widget.totalSeconds)).clamp(0.0, 1.0)
         : 0.0;
 
     final isShortBreak = widget.breakInfo.type == BreakType.short;

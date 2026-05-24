@@ -921,11 +921,15 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
-          CupertinoSwitch(
-            value: exercise.enabled,
-            activeTrackColor: AppTheme.accentColor,
-            onChanged: (enabled) =>
-                _upsertExercise(exercise.copyWith(enabled: enabled)),
+          Transform.scale(
+            scale: 0.8,
+            alignment: Alignment.centerRight,
+            child: CupertinoSwitch(
+              value: exercise.enabled,
+              activeTrackColor: AppTheme.accentColor,
+              onChanged: (enabled) =>
+                  _upsertExercise(exercise.copyWith(enabled: enabled)),
+            ),
           ),
           CupertinoButton(
             padding: EdgeInsets.zero,
@@ -1503,12 +1507,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   ),
                   SizedBox(
                     width: isSmallScreen ? 120 : 180,
-                    child: CupertinoSlider(
-                      value: value.clamp(min, max),
-                      min: min,
-                      max: max,
-                      onChanged: onChanged,
-                      activeColor: AppTheme.accentColor,
+                    child: Transform.scale(
+                      scale: 0.85,
+                      alignment: Alignment.centerRight,
+                      child: CupertinoSlider(
+                        value: value.clamp(min, max),
+                        min: min,
+                        max: max,
+                        onChanged: onChanged,
+                        activeColor: AppTheme.accentColor,
+                      ),
                     ),
                   ),
                 ],
@@ -1556,11 +1564,14 @@ class _SettingsPageState extends State<SettingsPage> {
               ],
             ),
           ),
-          const SizedBox(width: 16),
-          CupertinoSwitch(
-            value: value,
-            activeTrackColor: AppTheme.accentColor,
-            onChanged: onChanged,
+          Transform.scale(
+            scale: 0.8,
+            alignment: Alignment.centerRight,
+            child: CupertinoSwitch(
+              value: value,
+              activeTrackColor: AppTheme.accentColor,
+              onChanged: onChanged,
+            ),
           ),
         ],
       ),
