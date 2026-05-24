@@ -7,7 +7,6 @@ import 'package:standup/core/utils/toast.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
-import 'package:standup/features/companion/controllers/companion_overlay_controller.dart';
 
 class GeneralSection extends StatelessWidget {
   final SettingsModel settings;
@@ -31,8 +30,6 @@ class GeneralSection extends StatelessWidget {
           _buildMenuStyle(),
           divider(),
           _buildMenuBarIcon(),
-          divider(),
-          _buildCompanionOptimization(),
           divider(),
           _buildStrictMode(),
         ]),
@@ -141,22 +138,6 @@ class GeneralSection extends StatelessWidget {
       CupertinoIcons.lock_shield,
       (v) {
         onSave(settings.copyWith(strictMode: v));
-        sl<TrayManagerService>().triggerActionAnimation();
-      },
-    );
-  }
-
-  Widget _buildCompanionOptimization() {
-    return buildListRow(
-      'Companion Optimization',
-      'Reduce companion resource usage and status tray animation lag',
-      settings.companionOptimization,
-      CupertinoIcons.battery_charging,
-      (v) {
-        onSave(settings.copyWith(companionOptimization: v));
-        try {
-          sl<CompanionOverlayController>().changeOptimization(v);
-        } catch (_) {}
         sl<TrayManagerService>().triggerActionAnimation();
       },
     );
