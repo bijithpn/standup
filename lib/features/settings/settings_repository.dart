@@ -94,6 +94,7 @@ class SettingsRepository {
       companionScale: _storage.getDouble('companion_scale', defaultValue: 1.5),
       companionClickThrough: _storage.getBool('companion_click_through', defaultValue: false),
       companionFollowMouse: _storage.getBool('companion_follow_mouse', defaultValue: false),
+      companionOptimization: _storage.getBool('companion_optimization', defaultValue: true),
     );
   }
 
@@ -174,6 +175,7 @@ class SettingsRepository {
       _storage.setDouble('companion_scale', settings.companionScale),
       _storage.setBool('companion_click_through', settings.companionClickThrough),
       _storage.setBool('companion_follow_mouse', settings.companionFollowMouse),
+      _storage.setBool('companion_optimization', settings.companionOptimization),
     ]);
   }
 

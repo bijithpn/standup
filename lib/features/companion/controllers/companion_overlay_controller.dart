@@ -19,6 +19,7 @@ class CompanionOverlayController extends ChangeNotifier {
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
   bool _companionFollowMouse = false;
+  bool _companionOptimization = true;
 
   static const List<String> catNames = [
     'Mochi', 'Luna', 'Milo', 'Bella', 'Oliver', 'Simba', 'Chloe', 'Cleo',
@@ -53,6 +54,7 @@ class CompanionOverlayController extends ChangeNotifier {
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
   bool get companionFollowMouse => _companionFollowMouse;
+  bool get companionOptimization => _companionOptimization;
 
   Future<void> init() async {
     final settings = _settingsRepo.currentSettings;
@@ -63,6 +65,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
+    _companionOptimization = settings.companionOptimization;
 
     if (_companionEnabled) {
       await _showNativeCompanion();
@@ -203,6 +206,21 @@ class CompanionOverlayController extends ChangeNotifier {
 
     if (_companionEnabled) {
       await MacOSBridge.setCompanionFollowMouse(enabled);
+    }
+    notifyListeners();
+  }
+
+  Future<void> changeOptimization(bool enabled) async {
+    if (_companionOptimization == enabled) return;
+    _companionOptimization = enabled;
+
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionOptimization: enabled,
+    );
+    await _settingsRepo.save(updated);
+
+    if (_companionEnabled) {
+      await MacOSBridge.setCompanionWandering(!enabled);
     }
     notifyListeners();
   }

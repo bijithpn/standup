@@ -125,6 +125,13 @@ class TimerEngine extends ChangeNotifier {
       _isPreBreak = false;
       _workElapsed = Duration.zero;
       _clockOutTriggered = false;
+    } else if (_state == TimerState.breakActive && _activeBreak == null) {
+      _activeBreak = BreakModel(
+         type: BreakType.short,
+         durationSeconds: _countdownSeconds > 0 ? _countdownSeconds : _shortBreakDurationSeconds,
+         title: 'Break Resumed',
+         tip: 'Take a breather.',
+       );
     }
     
     _lastTickTime = DateTime.now();
@@ -255,9 +262,16 @@ class TimerEngine extends ChangeNotifier {
     final interval = Duration(minutes: _shortBreakIntervalMinutes);
     final remaining = interval - _workElapsed;
 
-    if (remaining <= const Duration(seconds: 20) && !_isPreBreak) {
-      _isPreBreak = true;
-      notifyListeners();
+    if (remaining <= const Duration(seconds: 20)) {
+      if (!_isPreBreak) {
+        _isPreBreak = true;
+        notifyListeners();
+      }
+    } else {
+      if (_isPreBreak) {
+        _isPreBreak = false;
+        notifyListeners();
+      }
     }
 
     if (_workElapsed >= interval) {
@@ -634,6 +648,13 @@ class TimerEngine extends ChangeNotifier {
       final stateStr = _storageService.getString('timer_state', defaultValue: 'idle');
       _state = TimerState.values.firstWhere((s) => s.name == stateStr, orElse: () => TimerState.idle);
 
+      // Prevent break screen from showing immediately on application launch
+      if (_state == TimerState.breakActive) {
+        _state = TimerState.running;
+        _workElapsed = Duration.zero;
+        _countdownSeconds = 0;
+      }
+
       final modeStr = _storageService.getString('timer_mode', defaultValue: 'flexible');
       _mode = WorkMode.values.firstWhere((m) => m.name == modeStr, orElse: () => WorkMode.flexible);
 
@@ -648,7 +669,8 @@ class TimerEngine extends ChangeNotifier {
       _resetTimerAfterMinutes = _storageService.getInt('timer_reset_after', defaultValue: _resetTimerAfterMinutes);
       _isCompletionState = _storageService.getBool('timer_is_completion');
 
-      _isPreBreak = _storageService.getBool('timer_is_pre_break');
+      // Prevent pre-break warnings from showing immediately on application launch
+      _isPreBreak = false;
       _clockOutTriggered = _storageService.getBool('timer_clock_out_triggered');
       _postureElapsedSeconds = _storageService.getInt('timer_posture_elapsed', defaultValue: 0);
       _eyeBlinkElapsedSeconds = _storageService.getInt('timer_eye_blink_elapsed', defaultValue: 0);

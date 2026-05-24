@@ -25,6 +25,7 @@ import 'package:standup/features/settings/widgets/focus_section.dart';
 import 'package:standup/features/settings/widgets/notifications_section.dart';
 import 'package:standup/features/settings/widgets/about_section.dart';
 import 'package:standup/shared/widgets/app_dropdown.dart';
+import 'package:standup/shared/widgets/minimal_controls.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -495,13 +496,12 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
           ),
           const SizedBox(width: 16),
-          CupertinoButton(
+          MinimalButton(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: buttonColor,
+            backgroundColor: buttonColor,
             disabledColor: buttonColor.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
             onPressed: onPressed,
-            minimumSize: Size(0, 0),
             child: Text(
               buttonText,
               style: TextStyle(
@@ -671,38 +671,30 @@ class _SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 24),
         // Preview Button
         Center(
-          child: CupertinoButton(
-            padding: EdgeInsets.zero,
+          child: MinimalButton(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
             onPressed: () => _showBreakTemplatePreview(),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.accentColor.withValues(alpha: 0.2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  CupertinoIcons.play_circle_fill,
+                  size: 18,
+                  color: AppTheme.accentColor,
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    CupertinoIcons.play_circle_fill,
-                    size: 18,
+                const SizedBox(width: 10),
+                Text(
+                  'Preview Current Template',
+                  style: TextStyle(
                     color: AppTheme.accentColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2,
                   ),
-                  const SizedBox(width: 10),
-                  Text(
-                    'Preview Current Template',
-                    style: TextStyle(
-                      color: AppTheme.accentColor,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.2,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -861,12 +853,12 @@ class _SettingsPageState extends State<SettingsPage> {
             child: Row(
               children: [
                 const Expanded(child: Text('Exercise Library')),
-                CupertinoButton(
+                MinimalButton(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 8,
                   ),
-                  color: AppTheme.accentColor.withValues(alpha: 0.1),
+                  backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   onPressed: () => _showExerciseEditor(),
                   child: Text(
@@ -931,13 +923,15 @@ class _SettingsPageState extends State<SettingsPage> {
                   _upsertExercise(exercise.copyWith(enabled: enabled)),
             ),
           ),
-          CupertinoButton(
+          MinimalButton(
             padding: EdgeInsets.zero,
+            backgroundColor: Colors.transparent,
             onPressed: () => _showExerciseEditor(existing: exercise),
-            child: const Icon(CupertinoIcons.pencil, size: 18),
+            child: const Icon(CupertinoIcons.pencil, size: 18, color: AppTheme.textSecondary),
           ),
-          CupertinoButton(
+          MinimalButton(
             padding: EdgeInsets.zero,
+            backgroundColor: Colors.transparent,
             onPressed: () => _deleteExercise(exercise),
             child: const Icon(
               CupertinoIcons.delete,
@@ -1025,8 +1019,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 8),
-                CupertinoButton(
-                  padding: EdgeInsets.zero,
+                MinimalButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  isSecondary: true,
                   onPressed: () {
                     _showPicker(
                       title: 'Select Category',
@@ -1510,7 +1505,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     child: Transform.scale(
                       scale: 0.85,
                       alignment: Alignment.centerRight,
-                      child: CupertinoSlider(
+                      child: MinimalSlider(
                         value: value.clamp(min, max),
                         min: min,
                         max: max,

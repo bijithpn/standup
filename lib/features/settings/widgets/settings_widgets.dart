@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/shared/widgets/app_dropdown.dart';
+import 'package:standup/shared/widgets/minimal_controls.dart';
 
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(
@@ -124,39 +125,30 @@ Widget inputRow(String label, String value, {VoidCallback? onTap}) {
             ),
           ),
         ),
-        CupertinoButton(
-          padding: EdgeInsets.zero,
+        MinimalButton(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           onPressed: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.1),
-                width: 0.5,
+          isSecondary: true,
+          borderRadius: BorderRadius.circular(6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  color: AppTheme.accentColor,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Satoshi',
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: AppTheme.accentColor,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Satoshi',
-                  ),
-                ),
-                const SizedBox(width: 4),
-                const Icon(
-                  CupertinoIcons.chevron_up_chevron_down,
-                  size: 12,
-                  color: AppTheme.textSecondary,
-                ),
-              ],
-            ),
+              const SizedBox(width: 4),
+              const Icon(
+                CupertinoIcons.chevron_up_chevron_down,
+                size: 12,
+                color: AppTheme.textSecondary,
+              ),
+            ],
           ),
         ),
       ],
@@ -199,7 +191,7 @@ Widget sliderRow(
                   child: Transform.scale(
                     scale: 0.85,
                     alignment: Alignment.centerRight,
-                    child: CupertinoSlider(
+                    child: MinimalSlider(
                       value: value.clamp(min, max),
                       min: min,
                       max: max,
@@ -370,7 +362,8 @@ Widget buildListRow(
   );
 
   if (onTap != null) {
-    return CupertinoButton(
+    return MinimalButton(
+      backgroundColor: Colors.transparent,
       padding: EdgeInsets.zero,
       onPressed: onTap,
       child: content,
@@ -487,17 +480,10 @@ void showPicker({
                 ),
                 Padding(
                   padding: const EdgeInsets.all(12),
-                  child: CupertinoButton(
-                    padding: EdgeInsets.zero,
+                  child: MinimalButton(
+                    isSecondary: true,
                     onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Cancel',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    child: const Text('Cancel'),
                   ),
                 ),
               ],
