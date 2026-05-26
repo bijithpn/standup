@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 /// Detects video calls, meetings, and macOS Focus/DND to pause reminders.
 class SmartDetectionService {

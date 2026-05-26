@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
-import 'package:standup/shared/theme/app_theme.dart';
-import 'package:standup/features/settings/settings_page.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
+import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/features/settings/settings_page.dart';
 
 // ─── Nav item model ────────────────────────────────────────────────────────
 

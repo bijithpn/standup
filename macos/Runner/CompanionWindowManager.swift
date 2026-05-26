@@ -203,6 +203,10 @@ class CompanionWindowManager: NSObject {
         inst.window.orderOut(nil)
         inst.window.contentViewController = nil
         inst.window.contentView = nil
+        
+        let channel = FlutterMethodChannel(name: "com.breakmate.macos/companion_data", binaryMessenger: inst.engine.binaryMessenger)
+        channel.setMethodCallHandler(nil)
+        
         IpcBridgeManager.shared.unregister(engine: inst.engine)
         inst.engine.shutDownEngine()
         instance = nil

@@ -1,11 +1,11 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/flame/companion_game.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/flame/companion_game.dart';
 
 /// The companion pet overlay window.
 class CompanionOverlayWindow extends StatefulWidget {

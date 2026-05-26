@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/settings/widgets/settings_widgets.dart';
-import 'package:standup/shared/theme/app_theme.dart';
-import 'package:standup/core/utils/toast.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/services/timer_engine.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/core/utils/toast.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 
 class GeneralSection extends StatelessWidget {
   final SettingsModel settings;

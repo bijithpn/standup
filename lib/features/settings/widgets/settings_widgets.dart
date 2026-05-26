@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/shared/theme/app_theme.dart';
-import 'package:standup/shared/widgets/app_dropdown.dart';
-import 'package:standup/shared/widgets/minimal_controls.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/app_dropdown.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(

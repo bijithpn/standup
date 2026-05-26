@@ -285,14 +285,14 @@ void FlutterWindow::SetupEventChannels() {
   auto focus_handler = std::make_unique<FocusModeStreamHandler>();
   g_focus_mode_handler = focus_handler.get();
   focus_mode_channel_ = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
-      flutter_controller_->engine()->messenger(), "com.standup/focus_mode",
+      flutter_controller_->engine()->messenger(), "com.breakmate/focus_mode",
       &flutter::StandardMethodCodec::GetInstance());
   focus_mode_channel_->SetStreamHandler(std::move(focus_handler));
 
   auto meeting_handler = std::make_unique<MeetingDetectionStreamHandler>();
   g_meeting_detection_handler = meeting_handler.get();
   meeting_detection_channel_ = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
-      flutter_controller_->engine()->messenger(), "com.standup/meeting_detection",
+      flutter_controller_->engine()->messenger(), "com.breakmate/meeting_detection",
       &flutter::StandardMethodCodec::GetInstance());
   meeting_detection_channel_->SetStreamHandler(std::move(meeting_handler));
 }
@@ -535,7 +535,7 @@ void FlutterWindow::SetIgnoreMouseEvents(bool ignore) {
 
 void FlutterWindow::SetupOverlayBridge() {
   overlay_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      flutter_controller_->engine()->messenger(), "com.standup/overlay",
+      flutter_controller_->engine()->messenger(), "com.breakmate/overlay",
       &flutter::StandardMethodCodec::GetInstance());
 
   overlay_channel_->SetMethodCallHandler(

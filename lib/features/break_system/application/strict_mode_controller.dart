@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:standup/core/native/meeting_detection_service.dart';
-import 'package:standup/core/native/focus_mode_service.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/focus_mode_service.dart';
 
 class StrictModeController {
-  final _overlayChannel = const MethodChannel('com.standup/overlay');
+  final _overlayChannel = const MethodChannel('com.breakmate/overlay');
   final MeetingDetectionService _meetingService;
   final FocusModeService _focusService;
 

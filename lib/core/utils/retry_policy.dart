@@ -1,4 +1,4 @@
-import 'package:standup/core/constants/app_constants.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 
 class RetryPolicy {
   final int maxRetries;

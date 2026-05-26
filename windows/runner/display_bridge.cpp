@@ -50,7 +50,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler** handler_out) {
   // Setup Method Channel
   auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      engine->messenger(), "com.standup/display_bridge",
+      engine->messenger(), "com.breakmate/display_bridge",
       &flutter::StandardMethodCodec::GetInstance());
 
   channel->SetMethodCallHandler(
@@ -89,7 +89,7 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
   auto handler = std::make_unique<DisplayStreamHandler>();
   *handler_out = handler.get();
   auto event_channel = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
-      engine->messenger(), "com.standup/display_events",
+      engine->messenger(), "com.breakmate/display_events",
       &flutter::StandardMethodCodec::GetInstance());
   event_channel->SetStreamHandler(std::move(handler));
 

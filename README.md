@@ -1,4 +1,4 @@
-# BreakMate (standup)
+# BreakMate
 
 > A high-performance, multi-engine macOS & Windows productivity suite designed to protect your physical and mental well-being.
 >

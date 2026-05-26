@@ -8,25 +8,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:standup/app/app.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/timer_engine.dart';
-import 'package:standup/features/break_system/presentation/standalone_break_overlay.dart';
-import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/companion/assets/pet_asset_loader.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/flame/companion_game.dart';
-import 'package:standup/features/companion/overlay/companion_overlay_window.dart';
+import 'package:breakmate/app/app.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/break_system/presentation/standalone_break_overlay.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/flame/companion_game.dart';
+import 'package:breakmate/features/companion/overlay/companion_overlay_window.dart';
 
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:standup/shared/theme/app_theme.dart';
-import 'package:standup/core/services/error_toast_service.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/core/services/error_toast_service.dart';
 
-import 'package:standup/core/ipc/ipc_bridge.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/events/app_events.dart';
+import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/events/app_events.dart';
 
 void _setupGlobalErrors() {
   // 1. Log Flutter errors to console

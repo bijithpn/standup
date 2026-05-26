@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:standup/features/companion/domain/pet_type.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
 
 
 

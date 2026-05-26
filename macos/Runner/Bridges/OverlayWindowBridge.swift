@@ -5,7 +5,7 @@ class OverlayWindowBridge: NSObject {
     private let channel: FlutterMethodChannel
 
     init(registrar: FlutterPluginRegistrar) {
-        channel = FlutterMethodChannel(name: "com.standup/overlay", binaryMessenger: registrar.messenger)
+        channel = FlutterMethodChannel(name: "com.breakmate/overlay", binaryMessenger: registrar.messenger)
         super.init()
         
         channel.setMethodCallHandler { [weak self] (call, result) in

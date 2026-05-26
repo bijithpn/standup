@@ -1,5 +1,5 @@
-name: standup
-description: "standup — a macOS menu bar break reminder app for healthy work habits."
+name: breakmate
+description: "BreakMate — a macOS menu bar break reminder app for healthy work habits."
 publish_to: "none"
 version: 1.0.0+23
 #BreakMate

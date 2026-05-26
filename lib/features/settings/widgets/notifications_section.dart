@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/settings/widgets/settings_widgets.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/notification_service.dart';
-import 'package:standup/shared/widgets/app_dropdown.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/shared/widgets/app_dropdown.dart';
 
 class NotificationsSection extends StatelessWidget {
   final SettingsModel settings;

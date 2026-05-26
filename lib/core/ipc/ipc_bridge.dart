@@ -1,5 +1,5 @@
 import 'package:flutter/services.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 const _ipcChannel = MethodChannel('com.breakmate/ipc');
 

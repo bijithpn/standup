@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:standup/core/errors/app_exception.dart';
-import 'package:standup/core/errors/error_handler.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class StorageService {
   late SharedPreferences _prefs;

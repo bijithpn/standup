@@ -1,6 +1,6 @@
-import 'package:standup/core/errors/app_exception.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/core/utils/retry_policy.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/utils/retry_policy.dart';
 
 class ErrorHandler {
   final AppLogger _logger = AppLogger();

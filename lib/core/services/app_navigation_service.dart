@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:standup/core/services/storage_service.dart';
+import 'package:breakmate/core/services/storage_service.dart';
 
 class AppNavigationService {
   final StorageService storageService;

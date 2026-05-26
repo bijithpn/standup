@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:standup/core/display/models/display_info.dart';
-import 'package:standup/core/display/services/display_manager.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/events/app_events.dart';
+import 'package:breakmate/core/display/models/display_info.dart';
+import 'package:breakmate/core/display/services/display_manager.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/events/app_events.dart';
 
 class DisplayController extends ChangeNotifier {
   final DisplayManager _displayManager;

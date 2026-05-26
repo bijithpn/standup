@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'package:standup/core/constants/app_constants.dart';
-import 'package:standup/core/services/storage_service.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 /// Adaptive break timing service that learns from user activity patterns
 /// and suggests optimal break times based on historical data

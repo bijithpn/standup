@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:standup/core/display/models/display_info.dart';
-import 'package:standup/core/display/models/overlay_display_config.dart';
+import 'package:breakmate/core/display/models/display_info.dart';
+import 'package:breakmate/core/display/models/overlay_display_config.dart';
 
 class OverlayFitService {
   /// Calculates the best layout bounds for an overlay given the display

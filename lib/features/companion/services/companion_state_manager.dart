@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
-import 'package:standup/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/macos_bridge.dart';
 
 class CompanionStateManager {
   CompanionStateManager({EventBus? eventBus})

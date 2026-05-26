@@ -1,12 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:standup/core/constants/app_constants.dart';
-import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/break_system/presentation/widgets/break_activity_graph.dart';
-import 'package:standup/features/analytics/stats_service.dart';
-import 'package:standup/app/dependency_injection.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/break_activity_graph.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/app/dependency_injection.dart';
 
 class ClassicSlideshowTemplate extends StatefulWidget {
   final BreakModel breakInfo;

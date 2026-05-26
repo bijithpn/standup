@@ -63,7 +63,7 @@ class FlutterWindow : public Win32Window {
   // Sets up the companion data bridge (if is_companion_)
   void SetupCompanionBridge();
 
-  // Sets up the overlay bridge (com.standup/overlay)
+  // Sets up the overlay bridge (com.breakmate/overlay)
   void SetupOverlayBridge();
 
   // The project to run.

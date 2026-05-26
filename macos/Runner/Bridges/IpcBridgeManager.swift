@@ -18,6 +18,11 @@ class IpcBridgeManager: NSObject {
     
     /// Cleans up engines that have been shut down.
     func unregister(engine: FlutterEngine) {
+        let channel = FlutterMethodChannel(
+            name: "com.breakmate/ipc",
+            binaryMessenger: engine.binaryMessenger
+        )
+        channel.setMethodCallHandler(nil)
         engines.removeAll { $0 === engine }
     }
     
@@ -27,7 +32,11 @@ class IpcBridgeManager: NSObject {
             binaryMessenger: engine.binaryMessenger
         )
         
-        channel.setMethodCallHandler { [weak self] (call, result) in
+        channel.setMethodCallHandler { [weak self, weak engine] (call, result) in
+            guard let engine = engine else {
+                result(FlutterError(code: "DEALLOCATED", message: "Engine was deallocated", details: nil))
+                return
+            }
             if call.method == "sendEvent" {
                 guard let args = call.arguments as? [String: Any],
                       let event = args["event"] as? String,

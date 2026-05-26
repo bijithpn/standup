@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/settings/widgets/settings_widgets.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class UpdateSection extends StatefulWidget {
   final SettingsModel settings;
@@ -47,12 +47,19 @@ class _UpdateSectionState extends State<UpdateSection> {
       } else if (call.method == 'onUpdateError') {
         final args = Map<String, dynamic>.from(call.arguments);
         final error = args['error'] as String? ?? 'Failed to check for updates';
+        final normalizedError = error.toLowerCase();
+        final isUpToDate = normalizedError.contains('up to date') || 
+                           normalizedError.contains('up-to-date') ||
+                           normalizedError.contains('newest version') ||
+                           normalizedError.contains('latest version') ||
+                           normalizedError.contains('no update') ||
+                           normalizedError.contains('no updates');
         if (mounted) {
           setState(() {
             _isChecking = false;
             _checked = true;
             _hasUpdate = false;
-            _errorMessage = error;
+            _errorMessage = isUpToDate ? '' : error;
           });
         }
       }
@@ -112,21 +119,12 @@ class _UpdateSectionState extends State<UpdateSection> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: (_hasUpdate
-                            ? AppTheme.accentColor
-                            : (_isChecking ? AppTheme.textSecondary : AppTheme.success))
-                            .withValues(alpha: 0.1),
+                        color: _getStatusColor().withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        _hasUpdate
-                            ? CupertinoIcons.arrow_down_circle_fill
-                            : (_isChecking
-                                ? CupertinoIcons.arrow_2_circlepath
-                                : CupertinoIcons.checkmark_seal_fill),
-                        color: _hasUpdate
-                            ? AppTheme.accentColor
-                            : (_isChecking ? AppTheme.textSecondary : AppTheme.success),
+                        _getStatusIcon(),
+                        color: _getStatusColor(),
                         size: 24,
                       ),
                     ),
@@ -136,11 +134,13 @@ class _UpdateSectionState extends State<UpdateSection> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _hasUpdate
-                                ? 'Version $_updateVersion Available'
-                                : (_isChecking
-                                    ? 'Checking for updates...'
-                                    : (_checked ? 'BreakMate is up to date' : 'Check for Updates')),
+                            _errorMessage.isNotEmpty
+                                ? 'Update Check Failed'
+                                : (_hasUpdate
+                                    ? 'Version $_updateVersion Available'
+                                    : (_isChecking
+                                        ? 'Checking for updates...'
+                                        : (_checked ? 'BreakMate is up to date' : 'Check for Updates'))),
                             style: const TextStyle(
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
@@ -151,13 +151,15 @@ class _UpdateSectionState extends State<UpdateSection> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _hasUpdate
-                                ? 'A new version of BreakMate is ready to be installed.'
-                                : (_isChecking
-                                    ? 'Connecting to the updates server...'
-                                    : (_checked
-                                        ? 'Last checked: Just now'
-                                        : 'Ensure you have the latest features and fixes.')),
+                            _errorMessage.isNotEmpty
+                                ? 'An error occurred while connecting to the updates server.'
+                                : (_hasUpdate
+                                    ? 'A new version of BreakMate is ready to be installed.'
+                                    : (_isChecking
+                                        ? 'Connecting to the updates server...'
+                                        : (_checked
+                                            ? 'Last checked: Just now'
+                                            : 'Ensure you have the latest features and fixes.'))),
                             style: const TextStyle(
                               fontSize: 12,
                               color: AppTheme.textSecondary,
@@ -313,5 +315,31 @@ class _UpdateSectionState extends State<UpdateSection> {
         const SizedBox(height: 32),
       ],
     );
+  }
+
+  Color _getStatusColor() {
+    if (_errorMessage.isNotEmpty) {
+      return Colors.redAccent;
+    }
+    if (_hasUpdate) {
+      return AppTheme.accentColor;
+    }
+    if (_checked && !_hasUpdate) {
+      return AppTheme.success;
+    }
+    return AppTheme.accentColor;
+  }
+
+  IconData _getStatusIcon() {
+    if (_errorMessage.isNotEmpty) {
+      return CupertinoIcons.exclamationmark_triangle_fill;
+    }
+    if (_hasUpdate) {
+      return CupertinoIcons.arrow_down_circle_fill;
+    }
+    if (_checked && !_hasUpdate) {
+      return CupertinoIcons.checkmark_seal_fill;
+    }
+    return CupertinoIcons.arrow_2_circlepath;
   }
 }

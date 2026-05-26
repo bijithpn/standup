@@ -1,11 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:standup/features/companion/ai/pet_behavior_brain.dart';
-import 'package:standup/features/companion/domain/pet_behavior_context.dart';
-import 'package:standup/features/companion/domain/pet_mood.dart';
-import 'package:standup/features/companion/domain/pet_profile.dart';
-import 'package:standup/features/companion/domain/pet_state_machine.dart';
-import 'package:standup/features/companion/services/pet_navigation_service.dart';
+import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
+import 'package:breakmate/features/companion/domain/pet_behavior_context.dart';
+import 'package:breakmate/features/companion/domain/pet_mood.dart';
+import 'package:breakmate/features/companion/domain/pet_profile.dart';
+import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
+import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
 
 class PetCompanionService extends ChangeNotifier {
   final PetStateMachine _stateMachine;

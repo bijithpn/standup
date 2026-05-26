@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class SoftFloatingWidgetTemplate extends StatefulWidget {
   final BreakModel breakInfo;

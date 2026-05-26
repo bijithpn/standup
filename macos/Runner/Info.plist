@@ -31,7 +31,7 @@
 	<key>LSUIElement</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://raw.githubusercontent.com/bijithintersmart/standup/main/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
     <string>slAPA33FAD7gQb/RsicU7RYC8q7W8oxqLyDaLulD7uY=</string>
 	<key>SUEnableAutomaticChecks</key>

@@ -56,28 +56,34 @@ jobs:
           pod install
           cd ..
           flutter build macos --release
+- name: Install macOS Dependencies
+  run: |
+    brew install create-dmg
+    brew install --cask sparkle
 
-      - name: Create DMG (Unsigned)
-        run: |
-          chmod +x scripts/create_dmg.sh
-          ./scripts/create_dmg.sh
+- name: Build Flutter macOS App
+...
+- name: Generate Sparkle Appcast
+  env:
+    SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
+    TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
+    SHORT_VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+    BUILD_VERSION: ${{ steps.version_info.outputs.BUILD_NUMBER }}
+  run: |
+    echo "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
 
-      - name: Generate Sparkle Appcast
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
-          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
-          SHORT_VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
-          BUILD_VERSION: ${{ steps.version_info.outputs.BUILD_NUMBER }}
-        run: |
-          echo "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
+    DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+    FILE_SIZE=$(stat -f%z "$DMG_PATH")
 
-          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
-          FILE_SIZE=$(stat -f%z "$DMG_PATH")
+    # Find the sign_update binary in the Caskroom
+    SPARKLE_BIN=$(find /usr/local/Caskroom/sparkle -name sign_update | head -n 1)
+    if [ -z "$SPARKLE_BIN" ]; then
+      SPARKLE_BIN=$(find /opt/homebrew/Caskroom/sparkle -name sign_update | head -n 1)
+    fi
 
-          # sign_update is installed via brew sparkle
-          SIGNATURE=$(sign_update "$DMG_PATH" --ed25519 sparkle_priv.key)
-
-          DMG_URL="https://github.com/bijithintersmart/standup/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
+    # Generate signature
+    SIGNATURE=$($SPARKLE_BIN "$DMG_PATH" --ed25519 sparkle_priv.key)
+          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
 
           python3 scripts/generate_appcast.py \
             "$BUILD_VERSION" \
@@ -89,9 +95,9 @@ jobs:
 
           rm sparkle_priv.key
 
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
+          - name: Publish GitHub Release
+          uses: softprops/action-gh-release@v1
+          with:
           tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
           files: release_dmg/BreakMate-Installer.dmg
           name: Release ${{ steps.version_info.outputs.TAG_NAME }}

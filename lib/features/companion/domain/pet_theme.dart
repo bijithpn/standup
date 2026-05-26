@@ -1,6 +1,6 @@
-import 'package:standup/features/companion/domain/animation_row_config.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/pet_type.dart';
+import 'package:breakmate/features/companion/domain/animation_row_config.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
 
 enum PetType { composite, separate }
 

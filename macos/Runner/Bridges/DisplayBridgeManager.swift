@@ -7,7 +7,7 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     
     func register(with binaryMessenger: FlutterBinaryMessenger) {
-        let methodChannel = FlutterMethodChannel(name: "com.standup/display_bridge", binaryMessenger: binaryMessenger)
+        let methodChannel = FlutterMethodChannel(name: "com.breakmate/display_bridge", binaryMessenger: binaryMessenger)
         methodChannel.setMethodCallHandler { [weak self] call, result in
             switch call.method {
             case "getDisplays":
@@ -17,7 +17,7 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
             }
         }
         
-        let eventChannel = FlutterEventChannel(name: "com.standup/display_events", binaryMessenger: binaryMessenger)
+        let eventChannel = FlutterEventChannel(name: "com.breakmate/display_events", binaryMessenger: binaryMessenger)
         eventChannel.setStreamHandler(self)
         
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)

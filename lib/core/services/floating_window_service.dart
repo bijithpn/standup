@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:screen_retriever/screen_retriever.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 /// Service to manage a floating always-on-top window
 /// This window stays visible even when the app is minimized or other apps are in focus
