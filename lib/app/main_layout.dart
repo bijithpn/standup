@@ -266,10 +266,12 @@ class _MainLayoutState extends State<MainLayout> {
 
   Widget _buildMainContent() {
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 260),
+      duration: const Duration(milliseconds: 280),
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
       transitionBuilder: (child, animation) {
         final slideAnimation = Tween<Offset>(
-          begin: const Offset(0.04, 0.0), // subtle premium slide from the right
+          begin: const Offset(0.0, 0.03), // premium vertical slide up
           end: Offset.zero,
         ).animate(CurvedAnimation(
           parent: animation,
@@ -284,25 +286,38 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         );
       },
-      child: IndexedStack(
+      child: KeyedSubtree(
         key: ValueKey(_pageIndex),
-        index: _pageIndex,
-        children: const [
-          SettingsPage(section: 'General'),
-          SettingsPage(section: 'Breaks & Profiles'),
-          SettingsPage(section: 'Intelligent Detection'),
-          SettingsPage(section: 'Exercises'),
-          SettingsPage(section: 'Notifications'),
-          SettingsPage(section: 'Clock Out'),
-
-          SettingsPage(section: 'Companion'),
-          SettingsPage(section: 'Statistics'),
-          // Bottom nav
-          SettingsPage(section: 'Updates'),
-          SettingsPage(section: 'About'),
-        ],
+        child: _getPageForIndex(_pageIndex),
       ),
     );
+  }
+
+  Widget _getPageForIndex(int index) {
+    switch (index) {
+      case 0:
+        return const SettingsPage(section: 'General');
+      case 1:
+        return const SettingsPage(section: 'Breaks & Profiles');
+      case 2:
+        return const SettingsPage(section: 'Intelligent Detection');
+      case 3:
+        return const SettingsPage(section: 'Exercises');
+      case 4:
+        return const SettingsPage(section: 'Notifications');
+      case 5:
+        return const SettingsPage(section: 'Clock Out');
+      case 6:
+        return const SettingsPage(section: 'Companion');
+      case 7:
+        return const SettingsPage(section: 'Statistics');
+      case 8:
+        return const SettingsPage(section: 'Updates');
+      case 9:
+        return const SettingsPage(section: 'About');
+      default:
+        return const SettingsPage(section: 'General');
+    }
   }
 }
 
