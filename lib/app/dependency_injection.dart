@@ -14,17 +14,9 @@ import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/core/native/meeting_detection_service.dart';
-import 'package:breakmate/core/native/focus_mode_service.dart';
-import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
-import 'package:breakmate/features/companion/services/companion_state_manager.dart';
-import 'package:breakmate/features/companion/services/companion_window_controller.dart';
-import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/core/display/services/overlay_fit_service.dart';
@@ -38,11 +30,17 @@ Future<void> initDependencies() async {
 
   // Core Services
   final storage = StorageService();
-  await storage.init();
-  sl.registerSingleton<StorageService>(storage);
-
   final notifications = NotificationService();
-  await notifications.init();
+  final displayManager = DisplayManager();
+
+  // Parallelize independent initializations
+  await Future.wait([
+    storage.init(),
+    notifications.init(),
+    displayManager.initialize(),
+  ]);
+
+  sl.registerSingleton<StorageService>(storage);
   sl.registerSingleton<NotificationService>(notifications);
 
   final activityMonitor = ActivityMonitor();
@@ -58,12 +56,12 @@ Future<void> initDependencies() async {
   sl.registerSingleton<OverlayWindowService>(overlayService);
 
   // Display Management Services
-  final displayManager = DisplayManager();
-  await displayManager.initialize();
   sl.registerSingleton<DisplayManager>(displayManager);
-  
+
   sl.registerSingleton<OverlayFitService>(OverlayFitService());
-  sl.registerSingleton<DisplayController>(DisplayController(displayManager, sl()));
+  sl.registerSingleton<DisplayController>(
+    DisplayController(displayManager, sl()),
+  );
 
   // Adaptive Break Service for smart timing
   final adaptiveBreakService = AdaptiveBreakService(storage: storage);
@@ -74,7 +72,9 @@ Future<void> initDependencies() async {
   settingsRepo.load();
   sl.registerSingleton<SettingsRepository>(settingsRepo);
 
-  notifications.setNotificationsEnabled(settingsRepo.currentSettings.notificationsEnabled);
+  notifications.setNotificationsEnabled(
+    settingsRepo.currentSettings.notificationsEnabled,
+  );
   notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
 
   final smartDetectionService = SmartDetectionService();
@@ -98,70 +98,25 @@ Future<void> initDependencies() async {
 
   // Tray Manager Service (must be before BreakController)
   final trayManager = TrayManagerService();
-  await trayManager.init();
+
+  // Run tray manager init and companion controller init in parallel
+  final companionOverlayController = CompanionOverlayController(
+    settingsRepo: sl(),
+  );
+
+  await Future.wait([trayManager.init(), companionOverlayController.init()]);
+
   sl.registerSingleton<TrayManagerService>(trayManager);
 
   // Eagerly pre-cache tray icons for the current theme to ensure smooth animation
   try {
-    final theme = PetTheme.getTheme(settingsRepo.currentSettings.companionPetTheme);
+    final theme = PetTheme.getTheme(
+      settingsRepo.currentSettings.companionPetTheme,
+    );
     PetAssetLoader.preCacheTrayIcons(theme);
   } catch (e) {
     debugPrint('Failed to pre-cache tray icons: $e');
   }
-
-  // Application Controllers
-  final meetingDetectionService = MeetingDetectionService();
-  sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
-
-  final focusModeService = FocusModeService();
-  sl.registerSingleton<FocusModeService>(focusModeService);
-
-  final strictModeController = StrictModeController(
-    meetingDetectionService,
-    focusModeService,
-  );
-  sl.registerSingleton<StrictModeController>(strictModeController);
-
-  final breakController = BreakController(
-    timerEngine: sl(),
-    settingsRepo: sl(),
-    statsService: sl(),
-  );
-  breakController.initialize();
-  sl.registerSingleton<BreakController>(breakController);
-
-  // Menu Bar Controller (centralized action routing)
-  sl.registerSingleton<MenuBarController>(MenuBarController());
-
-  // Wire tray menu with dependencies
-  trayManager.setDependencies(timerEngine, sl<BreakController>());
-  trayManager.setMenuBarController(sl<MenuBarController>());
-
-  // Wire menu bar controller with break controller
-  sl<MenuBarController>().setDependencies(sl<BreakController>());
-
-  // Companion Services
-  final companionStateManager = CompanionStateManager(
-    eventBus: sl(),
-  );
-  companionStateManager.startListening();
-  sl.registerSingleton<CompanionStateManager>(companionStateManager);
-
-  final companionWindowController = CompanionWindowController();
-  sl.registerSingleton<CompanionWindowController>(companionWindowController);
-
-  final companionBehaviorEngine = CompanionBehaviorEngine(
-    eventBus: sl(),
-  );
-  companionBehaviorEngine.setEnabled(settingsRepo.currentSettings.companionEnabled);
-  sl.registerSingleton<CompanionBehaviorEngine>(companionBehaviorEngine);
-
-  // Companion Overlay Controller (for settings UI)
-  final companionOverlayController = CompanionOverlayController(
-    settingsRepo: sl(),
-  );
-  await companionOverlayController.init();
-  sl.registerSingleton<CompanionOverlayController>(companionOverlayController);
 
   // IPC Bridge: wire native macOS events to EventBus
   _setupIpcBridge();
@@ -180,37 +135,47 @@ void _setupIpcBridge() {
         final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
         TimerStateEvent? timerState;
         switch (state) {
-          case 'running': timerState = TimerStateEvent.running;
-          case 'breakActive': timerState = TimerStateEvent.breakActive;
-          case 'paused': timerState = TimerStateEvent.paused;
-          case 'idle': timerState = TimerStateEvent.idle;
+          case 'running':
+            timerState = TimerStateEvent.running;
+          case 'breakActive':
+            timerState = TimerStateEvent.breakActive;
+          case 'paused':
+            timerState = TimerStateEvent.paused;
+          case 'idle':
+            timerState = TimerStateEvent.idle;
         }
         if (timerState != null) {
-          eventBus.emit(TimerStateChangedEvent(
-            state: timerState,
-            countdownSeconds: countdown,
-            workElapsedSeconds: elapsed,
-          ));
+          eventBus.emit(
+            TimerStateChangedEvent(
+              state: timerState,
+              countdownSeconds: countdown,
+              workElapsedSeconds: elapsed,
+            ),
+          );
         }
       case 'timer.breakStarted':
-        eventBus.emit(BreakStartedEvent(
-          isLongBreak: data['isLongBreak'] as bool? ?? false,
-          durationSeconds: (data['durationSeconds'] as num?)?.toInt() ?? 0,
-          title: data['title'] as String? ?? 'Break',
-        ));
+        eventBus.emit(
+          BreakStartedEvent(
+            isLongBreak: data['isLongBreak'] as bool? ?? false,
+            durationSeconds: (data['durationSeconds'] as num?)?.toInt() ?? 0,
+            title: data['title'] as String? ?? 'Break',
+          ),
+        );
       case 'timer.breakEnded':
-        eventBus.emit(BreakEndedEvent(
-          skipped: data['skipped'] as bool? ?? false,
-        ));
+        eventBus.emit(
+          BreakEndedEvent(skipped: data['skipped'] as bool? ?? false),
+        );
       case 'detection.meeting':
-        eventBus.emit(MeetingDetectedEvent(
-          isActive: data['isActive'] as bool? ?? false,
-          bundleId: data['bundleId'] as String? ?? '',
-        ));
+        eventBus.emit(
+          MeetingDetectedEvent(
+            isActive: data['isActive'] as bool? ?? false,
+            bundleId: data['bundleId'] as String? ?? '',
+          ),
+        );
       case 'detection.focusMode':
-        eventBus.emit(FocusModeEvent(
-          isActive: data['isActive'] as bool? ?? false,
-        ));
+        eventBus.emit(
+          FocusModeEvent(isActive: data['isActive'] as bool? ?? false),
+        );
       case 'tray.action':
         final action = data['action'] as String?;
         if (action == 'start') {
@@ -221,17 +186,21 @@ void _setupIpcBridge() {
           timerEngine.resetTimers();
         }
       case 'companion.positionChanged':
-        eventBus.emit(CompanionPositionChangedEvent(
-          x: (data['x'] as num?)?.toDouble() ?? 0,
-          y: (data['y'] as num?)?.toDouble() ?? 0,
-        ));
-      case 'companion.stateChanged':
-        eventBus.emit(CompanionStateChangedEvent(
-          state: CompanionState.values.firstWhere(
-            (s) => s.name == (data['state'] as String?),
-            orElse: () => CompanionState.idle,
+        eventBus.emit(
+          CompanionPositionChangedEvent(
+            x: (data['x'] as num?)?.toDouble() ?? 0,
+            y: (data['y'] as num?)?.toDouble() ?? 0,
           ),
-        ));
+        );
+      case 'companion.stateChanged':
+        eventBus.emit(
+          CompanionStateChangedEvent(
+            state: CompanionState.values.firstWhere(
+              (s) => s.name == (data['state'] as String?),
+              orElse: () => CompanionState.idle,
+            ),
+          ),
+        );
     }
   });
 }

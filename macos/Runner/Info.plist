@@ -35,8 +35,16 @@
 	<key>SUPublicEDKey</key>
     <string>slAPA33FAD7gQb/RsicU7RYC8q7W8oxqLyDaLulD7uY=</string>
 	<key>SUEnableAutomaticChecks</key>
-	<false/>
+	<true/>
 	<key>SUAllowsAutomaticUpdates</key>
 	<true/>
+    <key>SUEnableInstallerLauncherService</key>
+    <true/>
+    <key>NSAppSleepDisabled</key>
+    <true/>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSSupportsAutomaticGraphicsSwitching</key>
+    <true/>
 </dict>
 </plist>

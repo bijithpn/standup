@@ -48,6 +48,14 @@ class _UpdateSectionState extends State<UpdateSection> {
         final args = Map<String, dynamic>.from(call.arguments);
         final error = args['error'] as String? ?? 'Failed to check for updates';
         final normalizedError = error.toLowerCase();
+        
+        String displayError = error;
+        if (normalizedError.contains('signature')) {
+          displayError = 'Update validation failed (invalid signature). Please contact support.';
+        } else if (normalizedError.contains('connect') || normalizedError.contains('network')) {
+          displayError = 'Unable to connect to update server. Please check your internet connection.';
+        }
+
         final isUpToDate = normalizedError.contains('up to date') || 
                            normalizedError.contains('up-to-date') ||
                            normalizedError.contains('newest version') ||
@@ -59,7 +67,7 @@ class _UpdateSectionState extends State<UpdateSection> {
             _isChecking = false;
             _checked = true;
             _hasUpdate = false;
-            _errorMessage = isUpToDate ? '' : error;
+            _errorMessage = isUpToDate ? '' : displayError;
           });
         }
       }

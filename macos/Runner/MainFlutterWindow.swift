@@ -2,8 +2,10 @@ import Cocoa
 import FlutterMacOS
 
 class OverlayPanel: NSPanel {
-    override var canBecomeKey: Bool { return true }
-    override var canBecomeMain: Bool { return true }
+    var isReminder: Bool = false
+    
+    override var canBecomeKey: Bool { return !isReminder }
+    override var canBecomeMain: Bool { return !isReminder }
 }
 
 class OverlayWindowManager: NSObject {
@@ -20,24 +22,36 @@ class OverlayWindowManager: NSObject {
     func showOverlay(args: [String: Any]? = nil) {
         if !overlayInstances.isEmpty { return }
         
+        let type = args?["type"] as? String ?? "breakScreen"
+        let isReminder = type == "quickReminder"
+        
         guard let appDelegate = NSApp.delegate as? AppDelegate,
               let mainWindow = appDelegate.mainFlutterWindow else {
             return
         }
         
-        // Hide main window
-        mainWindow.orderOut(nil)
+        // Only hide main window for full break screens, not for reminders
+        if !isReminder {
+            mainWindow.orderOut(nil)
+        }
         
         let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
         let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
         
         for screen in screens {
             let instance = createOverlayInstance(for: screen, args: args)
+            instance.window.isReminder = isReminder
             overlayInstances[screen] = instance
             
             instance.window.alphaValue = 0.0
-            // orderFrontRegardless is critical for showing over other fullscreen apps
-            instance.window.orderFrontRegardless()
+            
+            // For reminders, use orderFront to avoid stealing focus from other apps
+            // For full screens, use orderFrontRegardless to ensure visibility over fullscreen apps
+            if isReminder {
+                instance.window.orderFront(nil)
+            } else {
+                instance.window.orderFrontRegardless()
+            }
             
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.5
@@ -135,9 +149,14 @@ class OverlayWindowManager: NSObject {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
         
-        // Spawn a fresh engine for each monitor
-        let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
-        engine.run(withEntrypoint: "overlayMain")
+        // Use the engine group from AppDelegate for shared resources and faster startup
+        let appDelegate = NSApp.delegate as! AppDelegate
+        guard let engineGroup = appDelegate.engineGroup else {
+            return
+        }
+        
+        // Spawn a fresh engine from the group for each monitor
+        let engine = engineGroup.makeEngine(withEntrypoint: "overlayMain", libraryURI: nil)
         RegisterSecondaryPlugins(registry: engine)
         
         IpcBridgeManager.shared.register(engine: engine)

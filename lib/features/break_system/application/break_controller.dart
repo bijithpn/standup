@@ -193,20 +193,7 @@ class BreakController extends ChangeNotifier {
         });
       }
     } else if (shouldShowWarning) {
-      if (!_preBreakWarningShown &&
-          overlayService.currentOverlayType != OverlayType.quickReminder) {
-        _preBreakWarningShown = true;
-        overlayService.showOverlay(
-          type: OverlayType.quickReminder,
-          builder: (context) => const SizedBox.shrink(),
-          reminderType: 'breakStart',
-          overlayData: {
-            'title': 'Break starts soon',
-            'tip': 'Wrap up your flow before the rest overlay opens.',
-            'remainingSeconds': _timerEngine.timeUntilNextShortBreak.inSeconds,
-          },
-        );
-      }
+      // Pre-break warning logic removed as per user request to avoid focus redirection
     } else if (overlayService.isOverlayVisible &&
         !_isPreviewMode &&
         (overlayService.currentOverlayType == OverlayType.breakScreen ||
