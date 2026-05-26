@@ -30,5 +30,13 @@
 	<string>NSApplication</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://bijithintersmart.github.io/standup/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>YOUR_PUBLIC_SPARKLE_EDDSA_KEY_HERE</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAllowsAutomaticUpdates</key>
+	<true/>
 </dict>
 </plist>
