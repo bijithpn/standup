@@ -78,10 +78,14 @@ class OverlayWindowService extends ChangeNotifier {
               hideMenu: true,
             );
           }
-          // Hide the main window after a tiny delay to ensure focus is seamlessly transitioned
-          Future.delayed(const Duration(milliseconds: 200), () {
-            windowManager.hide();
-          });
+          
+          // Only hide the main window for the full break screen.
+          // Quick reminders should not interfere with the main window's visibility.
+          if (type == OverlayType.breakScreen) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              windowManager.hide();
+            });
+          }
         }
       } else {
         // Clock preview still uses main window for simplicity

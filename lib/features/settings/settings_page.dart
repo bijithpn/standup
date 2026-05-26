@@ -1229,6 +1229,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget _buildHeatmapGrid() {
     // 5 rows × 52 columns
     final weeklyStats = _stats.weeklyData;
+    // Pre-map for O(1) lookup performance (avoids O(N^2) total lookups in the grid)
+    final statsMap = {for (var s in weeklyStats) s.date: s};
+    
     final now = DateTime.now();
     return Column(
       children: List.generate(5, (row) {
@@ -1241,9 +1244,7 @@ class _SettingsPageState extends State<SettingsPage> {
               final dateStr =
                   '${cellDate.year}-${cellDate.month.toString().padLeft(2, '0')}-${cellDate.day.toString().padLeft(2, '0')}';
 
-              final dayStats = weeklyStats
-                  .where((d) => d.date == dateStr)
-                  .firstOrNull;
+              final dayStats = statsMap[dateStr];
               final hasActivity =
                   dayStats != null && dayStats.breaksCompleted > 0;
               final intensity = dayStats != null

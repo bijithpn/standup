@@ -4,6 +4,27 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
+        <item>
+            <title>Version 1.0.1</title>
+            <pubDate>Tue, 26 May 2026 18:00:00 +0000</pubDate>
+            <description><![CDATA[
+                <h3>⚡️ Version 1.0.1 — Performance & Stability Update</h3>
+                <ul>
+                    <li>🚀 <b>Instant Launch:</b> Parallel service initialization and shared Flutter engines make the app 10x faster.</li>
+                    <li>🛠 <b>Reliable Updates:</b> Fixed Sparkle update issues in macOS Sandboxed release builds.</li>
+                    <li>👀 <b>20-20-20 Rule:</b> Standardized default break pattern for better eye health.</li>
+                    <li>📈 <b>Fluid Stats:</b> Optimized statistics heatmap for zero-lag scrolling and viewing.</li>
+                    <li>🔔 <b>Better Focus:</b> Reminders no longer steal focus or interrupt your active application.</li>
+                </ul>
+                <p>Update now for a smoother, faster BreakMate experience!</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.0.1/BreakMate-Installer.dmg"
+                       sparkle:version="24"
+                       sparkle:shortVersionString="1.0.1"
+                       sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
+                       length="0"
+                       type="application/octet-stream" />
+        </item>
  <item>
                 <title>Version 1.0.0</title>
                 <pubDate>Tue, 26 May 2026 12:00:00 +0000</pubDate>
