@@ -71,13 +71,13 @@ jobs:
         run: |
           echo "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
 
-          DMG_PATH="release_dmg/standup-Installer.dmg"
+          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
           FILE_SIZE=$(stat -f%z "$DMG_PATH")
 
           # sign_update is installed via brew sparkle
           SIGNATURE=$(sign_update "$DMG_PATH" --ed25519 sparkle_priv.key)
 
-          DMG_URL="https://github.com/bijithintersmart/standup/releases/download/${TAG_NAME}/standup-Installer.dmg"
+          DMG_URL="https://github.com/bijithintersmart/standup/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
 
           python3 scripts/generate_appcast.py \
             "$BUILD_VERSION" \
@@ -93,13 +93,13 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
-          files: release_dmg/standup-Installer.dmg
+          files: release_dmg/BreakMate-Installer.dmg
           name: Release ${{ steps.version_info.outputs.TAG_NAME }}
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update Appcast File in Repository
         run: |
