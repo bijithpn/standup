@@ -26,13 +26,14 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 }
 
 @main
-class AppDelegate: FlutterAppDelegate {
+class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   var meetingBridge: MeetingDetectionBridge?
   var focusBridge: FocusModeBridge?
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
+  var sparkleBridge: SparkleBridge?
   
-  let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+  lazy var updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
 
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return false
@@ -66,6 +67,7 @@ class AppDelegate: FlutterAppDelegate {
       focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)
       windowBridge = WindowBridge(registrar: registrar)
+      sparkleBridge = SparkleBridge(registrar: registrar, updater: updaterController.updater)
     }
     
     super.applicationDidFinishLaunching(notification)
@@ -79,6 +81,19 @@ class AppDelegate: FlutterAppDelegate {
       checkForUpdatesItem.target = updaterController
       appMenu.insertItem(checkForUpdatesItem, at: 2)
     }
+  }
+
+  // MARK: - SPUUpdaterDelegate
+  func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+    sparkleBridge?.updater(updater, didFindValidUpdate: item)
+  }
+
+  func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+    sparkleBridge?.updaterDidNotFindUpdate(updater)
+  }
+
+  func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+    sparkleBridge?.updater(updater, didAbortWithError: error)
   }
 }
 
@@ -257,5 +272,69 @@ class WindowBridge: NSObject, FlutterPlugin {
         default: break
         }
         result(nil)
+    }
+}
+
+// MARK: - SparkleBridge
+
+class SparkleBridge: NSObject {
+    private let channel: FlutterMethodChannel
+    private let updater: SPUUpdater
+    
+    init(registrar: FlutterPluginRegistrar, updater: SPUUpdater) {
+        self.channel = FlutterMethodChannel(
+            name: "com.breakmate/sparkle",
+            binaryMessenger: registrar.messenger
+        )
+        self.updater = updater
+        super.init()
+        
+        channel.setMethodCallHandler { [weak self] (call, result) in
+            switch call.method {
+            case "checkForUpdates":
+                self?.updater.checkForUpdatesInBackground()
+                result(nil)
+            case "startUpdate":
+                // Standard Sparkle user-facing update check and installation flow
+                self?.updater.checkForUpdates()
+                result(nil)
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+    }
+    
+    func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        let notes = item.itemDescription ?? "No release notes available."
+        let version = item.displayVersionString
+        let args: [String: Any] = [
+            "hasUpdate": true,
+            "version": version,
+            "notes": notes
+        ]
+        DispatchQueue.main.async { [weak self] in
+            self?.channel.invokeMethod("onUpdateResult", arguments: args)
+        }
+    }
+    
+    func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+        let args: [String: Any] = [
+            "hasUpdate": false,
+            "version": "",
+            "notes": ""
+        ]
+        DispatchQueue.main.async { [weak self] in
+            self?.channel.invokeMethod("onUpdateResult", arguments: args)
+        }
+    }
+    
+    func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+        let args: [String: Any] = [
+            "hasUpdate": false,
+            "error": error.localizedDescription
+        ]
+        DispatchQueue.main.async { [weak self] in
+            self?.channel.invokeMethod("onUpdateError", arguments: args)
+        }
     }
 }

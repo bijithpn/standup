@@ -85,6 +85,12 @@ class _MainLayoutState extends State<MainLayout> {
   // Bottom nav items (shown at the footer of the sidebar)
   static const List<_NavItem> _bottomNavItems = [
     _NavItem(
+      label: 'Software Update',
+      icon: CupertinoIcons.arrow_down_circle,
+      section: 'Updates',
+      isBottom: true,
+    ),
+    _NavItem(
       label: 'About',
       icon: CupertinoIcons.info_circle,
       section: 'About',
@@ -292,6 +298,7 @@ class _MainLayoutState extends State<MainLayout> {
           SettingsPage(section: 'Companion'),
           SettingsPage(section: 'Statistics'),
           // Bottom nav
+          SettingsPage(section: 'Updates'),
           SettingsPage(section: 'About'),
         ],
       ),

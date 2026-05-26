@@ -24,6 +24,7 @@ import 'package:standup/features/settings/widgets/general_section.dart';
 import 'package:standup/features/settings/widgets/focus_section.dart';
 import 'package:standup/features/settings/widgets/notifications_section.dart';
 import 'package:standup/features/settings/widgets/about_section.dart';
+import 'package:standup/features/settings/widgets/update_section.dart';
 import 'package:standup/shared/widgets/app_dropdown.dart';
 import 'package:standup/shared/widgets/minimal_controls.dart';
 
@@ -207,6 +208,8 @@ class _SettingsPageState extends State<SettingsPage> {
         return _buildExercises();
       case 'Clock Out':
         return _buildClockOut();
+      case 'Updates':
+        return UpdateSection(settings: _settings, onSave: _save);
       case 'About':
         return AboutSection(settings: _settings, onSave: _save);
       case 'Statistics':
