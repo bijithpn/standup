@@ -27,7 +27,6 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 
 @main
 class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
-  var engineGroup: FlutterEngineGroup?
   var meetingBridge: MeetingDetectionBridge?
   var focusBridge: FocusModeBridge?
   var overlayBridge: OverlayWindowBridge?
@@ -61,8 +60,6 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    engineGroup = FlutterEngineGroup(name: "BreakMateEngineGroup", project: nil)
-    
     if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
       let registrar = controller.registrar(forPlugin: "AppBridges")
       

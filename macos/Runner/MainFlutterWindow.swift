@@ -142,27 +142,22 @@ class OverlayWindowManager: NSObject {
         
         let isTransparent = args?["isTransparent"] as? Bool ?? false
         
-        window.backgroundColor = isTransparent ? .clear : .black // Solid black background to prevent flickering
+        window.backgroundColor = isTransparent ? NSColor.clear : NSColor.black // Solid black background to prevent flickering
         window.isOpaque = !isTransparent
         window.hasShadow = false
         window.level = .screenSaver
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
         
-        // Use the engine group from AppDelegate for shared resources and faster startup
-        let appDelegate = NSApp.delegate as! AppDelegate
-        guard let engineGroup = appDelegate.engineGroup else {
-            return
-        }
-        
-        // Spawn a fresh engine from the group for each monitor
-        let engine = engineGroup.makeEngine(withEntrypoint: "overlayMain", libraryURI: nil)
+        // Spawn a fresh engine for each monitor
+        let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
+        engine.run(withEntrypoint: "overlayMain")
         RegisterSecondaryPlugins(registry: engine)
         
         IpcBridgeManager.shared.register(engine: engine)
         
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
-        controller.backgroundColor = isTransparent ? .clear : .black
+        controller.backgroundColor = isTransparent ? NSColor.clear : NSColor.black
         
         window.contentViewController = controller
         window.setFrame(screen.frame, display: true)
