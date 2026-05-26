@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-APP_NAME="standup"
+APP_NAME="BreakMate"
 APP_DIR="build/macos/Build/Products/Release/${APP_NAME}.app"
 DMG_NAME="${APP_NAME}-Installer.dmg"
 DMG_DIR="release_dmg"

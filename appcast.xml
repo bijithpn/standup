@@ -15,7 +15,7 @@
                        <li>🎵 <b>Lofi Beats:</b> Built-in lofi music player to help you stay focused during work sessions.</li>
                        <li>📊 <b>Analytics & Stats:</b> Detailed charts to track your productivity and break trends over time.</li>
                        <li>🛑 <b>Smart Detection:</b> Automatically detects meetings and respects your Focus Mode settings.</li><li>⚡️ <b>Hardened Runtime:</b> Optimized for macOS performance with full securitysandboxing.</li></ul><p>Enjoying standup? Follow us on GitHub for more updates!</p>]]></description>
-               <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.0.0/standup-Installer.dmg"
+               <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.0.0/BreakMate-Installer.dmg"
                           sparkle:version="1"
                           sparkle:shortVersionString="1.0.0"
                           sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
