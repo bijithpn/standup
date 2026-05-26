@@ -2371,7 +2371,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
             _buildCard([
               _toggleRow(
-                'Enable Desktop Companion',
+                'Enable Companion',
                 'Show or hide your desktop pet companion overlay',
                 controller.companionEnabled,
                 (v) => controller.toggleCompanion(v),

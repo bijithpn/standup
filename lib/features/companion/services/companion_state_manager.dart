@@ -3,6 +3,8 @@ import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
 import 'package:standup/core/utils/logger.dart';
 
+import 'package:standup/core/native/macos_bridge.dart';
+
 class CompanionStateManager {
   CompanionStateManager({EventBus? eventBus})
       : _eventBus = eventBus ?? EventBus.instance,
@@ -189,6 +191,9 @@ class CompanionStateManager {
     _state = newState;
     _eventBus.emit(CompanionStateChangedEvent(state: newState));
     _logger.info('Companion state changed to: ${newState.name}');
+
+    // Sync to companion isolate via native bridge
+    MacOSBridge.triggerCompanionState(newState.name);
   }
 
   void setVisibility(bool visible) {

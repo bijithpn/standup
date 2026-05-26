@@ -134,11 +134,11 @@ Future<void> initDependencies() async {
   sl.registerSingleton<MenuBarController>(MenuBarController());
 
   // Wire tray menu with dependencies
-  trayManager.setDependencies(timerEngine, sl());
-  trayManager.setMenuBarController(sl());
+  trayManager.setDependencies(timerEngine, sl<BreakController>());
+  trayManager.setMenuBarController(sl<MenuBarController>());
 
   // Wire menu bar controller with break controller
-  sl<MenuBarController>().setDependencies(sl());
+  sl<MenuBarController>().setDependencies(sl<BreakController>());
 
   // Companion Services
   final companionStateManager = CompanionStateManager(
@@ -192,6 +192,16 @@ void _setupIpcBridge() {
             workElapsedSeconds: elapsed,
           ));
         }
+      case 'timer.breakStarted':
+        eventBus.emit(BreakStartedEvent(
+          isLongBreak: data['isLongBreak'] as bool? ?? false,
+          durationSeconds: (data['durationSeconds'] as num?)?.toInt() ?? 0,
+          title: data['title'] as String? ?? 'Break',
+        ));
+      case 'timer.breakEnded':
+        eventBus.emit(BreakEndedEvent(
+          skipped: data['skipped'] as bool? ?? false,
+        ));
       case 'detection.meeting':
         eventBus.emit(MeetingDetectedEvent(
           isActive: data['isActive'] as bool? ?? false,

@@ -12,8 +12,8 @@ class MacOSBridge {
   }
 
   /// Hide the native multi-monitor overlay
-  static Future<void> hideOverlay() async {
-    await _invokeSafely('hideOverlay');
+  static Future<void> hideOverlay({bool restoreMainWindow = true}) async {
+    await _invokeSafely('hideOverlay', {'restoreMainWindow': restoreMainWindow});
   }
 
   /// Skip the current break from the overlay and sync to main engine

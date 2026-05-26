@@ -33,6 +33,7 @@
 		33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */; };
 		33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */; };
 		33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */; };
+		33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +97,7 @@
 		33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetectionBridge.swift; sourceTree = "<group>"; };
 		33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowBridge.swift; sourceTree = "<group>"; };
 		33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWindowManager.swift; sourceTree = "<group>"; };
+		33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IpcBridgeManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -157,6 +159,7 @@
 				33CCB0022044BFA00003C045 /* FocusModeBridge.swift */,
 				33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */,
 				33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */,
+				33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */,
 			);
 			path = Bridges;
 			sourceTree = "<group>";
@@ -464,6 +467,7 @@
 				33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */,
 				33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */,
 				33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */,
+				33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

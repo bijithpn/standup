@@ -11,6 +11,7 @@ class OverlayWindowService extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
   bool _isOverlayVisible = false;
   OverlayType? _currentOverlayType;
+  bool _wasMainVisibleBeforeOverlay = false;
   static const MethodChannel _windowsChannel = MethodChannel(
     'com.standup/overlay_window',
   );
@@ -28,6 +29,11 @@ class OverlayWindowService extends ChangeNotifier {
   }) async {
     if (_isOverlayVisible && _currentOverlayType == type) {
       return;
+    }
+
+    if (!_isOverlayVisible) {
+      _wasMainVisibleBeforeOverlay = await windowManager.isVisible();
+      _logger.info('Main window visibility status before overlay: $_wasMainVisibleBeforeOverlay');
     }
 
     try {
@@ -96,7 +102,7 @@ class OverlayWindowService extends ChangeNotifier {
   }
 
   /// Restore the window to its dashboard state
-  Future<void> showDashboard() async {
+  Future<void> showDashboard({bool forceShow = false}) async {
     try {
       _logger.info('Restoring dashboard window');
 
@@ -104,10 +110,15 @@ class OverlayWindowService extends ChangeNotifier {
         await hideOverlay();
       }
 
+      if (!_wasMainVisibleBeforeOverlay && !forceShow) {
+        _logger.info('Bypassing dashboard focus/activation because main window was hidden/closed before overlay');
+        return;
+      }
+
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
-        await MacOSBridge.hideOverlay();
+        await MacOSBridge.hideOverlay(restoreMainWindow: true);
         await MacOSBridge.setPresentationOptions(
           hideDock: false,
           hideMenu: false,
@@ -118,15 +129,18 @@ class OverlayWindowService extends ChangeNotifier {
       _isOverlayVisible = false;
       _currentOverlayType = null;
 
-      await windowManager.setAlwaysOnTop(false);
-      await windowManager.setFullScreen(false);
-      await windowManager.setSize(const Size(1100, 750));
-      await windowManager.setSkipTaskbar(false);
-      await windowManager.setHasShadow(true);
-      await windowManager.setIgnoreMouseEvents(false);
-      await windowManager.setBackgroundColor(
-        Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
-      );
+      await Future.wait([
+        windowManager.setAlwaysOnTop(false),
+        windowManager.setFullScreen(false),
+        windowManager.setSize(const Size(1100, 750)),
+        windowManager.setSkipTaskbar(false),
+        windowManager.setHasShadow(true),
+        windowManager.setIgnoreMouseEvents(false),
+        windowManager.setBackgroundColor(
+          Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
+        ),
+      ]);
+
       await windowManager.center();
 
       bool isMinimized = await windowManager.isMinimized();
@@ -158,7 +172,7 @@ class OverlayWindowService extends ChangeNotifier {
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
-        await MacOSBridge.hideOverlay();
+        await MacOSBridge.hideOverlay(restoreMainWindow: _wasMainVisibleBeforeOverlay);
         await MacOSBridge.setPresentationOptions(
           hideDock: false,
           hideMenu: false,

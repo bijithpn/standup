@@ -6,6 +6,7 @@ import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/features/menu_bar/tray_manager_service.dart';
 import 'package:standup/features/settings/break_profile.dart';
+import 'package:standup/core/utils/logger.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 import 'package:standup/features/analytics/stats_service.dart';
 import 'package:standup/features/break_system/application/strict_mode_controller.dart';
@@ -15,6 +16,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'dart:math';
 
 class BreakController extends ChangeNotifier {
+  final AppLogger _logger = AppLogger();
   final TimerEngine _timerEngine;
   final SettingsRepository _settingsRepo;
   final StatsService _statsService;
@@ -260,7 +262,9 @@ class BreakController extends ChangeNotifier {
   }
 
   void togglePause() {
+    _logger.info('Toggling pause state. Current state: ${_timerEngine.state}');
     if (_timerEngine.state == TimerState.breakActive) {
+      _logger.info('Cannot pause during active break');
       return;
     }
     if (isPaused) {
@@ -269,11 +273,13 @@ class BreakController extends ChangeNotifier {
       _timerEngine.pauseTimers(isManual: true);
     }
     final paused = _timerEngine.state == TimerState.paused;
+    _logger.info('New pause state: $paused');
     sl<TrayManagerService>().updatePauseState(paused);
     notifyListeners();
   }
 
   void takeBreakNow() {
+    _logger.info('Manually triggering break now');
     _timerEngine.triggerBreakNow();
     sl<TrayManagerService>().setBreakActive(true);
     notifyListeners();
@@ -350,13 +356,15 @@ class BreakController extends ChangeNotifier {
   }
 
   void skipNextBreak() {
+    _logger.info('Manually skipping next break');
     _timerEngine.skipNextBreak();
+    notifyListeners();
   }
 
-  void skipCurrentBreak() {
+  Future<void> skipCurrentBreak() async {
     _isPreviewMode = false;
     if (!_settingsRepo.currentSettings.strictMode) {
-      _timerEngine.finishBreak(skipped: true);
+      await _timerEngine.finishBreak(skipped: true);
       sl<TrayManagerService>().setBreakActive(false);
       sl<OverlayWindowService>().showDashboard();
       _stopMusic();
@@ -369,9 +377,9 @@ class BreakController extends ChangeNotifier {
     }
   }
 
-  void completeCurrentBreak() {
+  Future<void> completeCurrentBreak() async {
     _isPreviewMode = false;
-    _timerEngine.finishBreak(skipped: false);
+    await _timerEngine.finishBreak(skipped: false);
     sl<TrayManagerService>().setBreakActive(false);
   }
 
