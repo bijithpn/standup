@@ -23,6 +23,10 @@ class SettingsRepository {
         AppConstants.keyShortBreakDuration,
         defaultValue: AppConstants.defaultShortBreakDurationSeconds,
       ),
+      preBreakWarningSeconds: _storage.getInt(
+        AppConstants.keyPreBreakWarningSeconds,
+        defaultValue: AppConstants.defaultPreBreakWarningSeconds,
+      ),
       longBreakIntervalMinutes: _storage.getInt(
         AppConstants.keyLongBreakInterval,
         defaultValue: AppConstants.defaultLongBreakIntervalMinutes,
@@ -37,13 +41,27 @@ class SettingsRepository {
       ),
       autoStart: _storage.getBool(AppConstants.keyAutoStart),
       strictMode: _storage.getBool(AppConstants.keyStrictMode),
-      selectedProfileId: _storage.getString('selected_profile_id', defaultValue: 'health'),
-      menuBarStyle: _storage.getString('menu_bar_style', defaultValue: 'countdown'),
-      notificationsEnabled: _storage.getBool('notifications_enabled', defaultValue: true),
-      showOnAllDisplays: _storage.getBool('show_on_all_displays', defaultValue: true),
+      selectedProfileId: _storage.getString(
+        'selected_profile_id',
+        defaultValue: 'health',
+      ),
+      menuBarStyle: _storage.getString(
+        'menu_bar_style',
+        defaultValue: 'countdown',
+      ),
+      notificationsEnabled: _storage.getBool(
+        'notifications_enabled',
+        defaultValue: true,
+      ),
+      showOnAllDisplays: _storage.getBool(
+        'show_on_all_displays',
+        defaultValue: true,
+      ),
       breakTheme: _storage.getString('break_theme', defaultValue: 'random'),
-      breakTemplate: _storage.getString('break_template', defaultValue: 'minimal'),
-      
+      breakTemplate: _storage.getString(
+        'break_template',
+        defaultValue: 'minimal',
+      ),
 
       focusModeEnabled: _storage.getBool('focus_mode_enabled'),
       clockFaceStyle: _storage.getString(
@@ -72,11 +90,20 @@ class SettingsRepository {
         _storage.getString('working_days'),
         fallback: const [1, 2, 3, 4, 5],
       ),
-      workStartTime: _storage.getString('work_start_time', defaultValue: '09:00'),
+      workStartTime: _storage.getString(
+        'work_start_time',
+        defaultValue: '09:00',
+      ),
       workEndTime: _storage.getString('work_end_time', defaultValue: '18:00'),
-      detectVideoCalls: _storage.getBool('detect_video_calls', defaultValue: true),
+      detectVideoCalls: _storage.getBool(
+        'detect_video_calls',
+        defaultValue: true,
+      ),
       detectMeetings: _storage.getBool('detect_meetings', defaultValue: true),
-      respectFocusMode: _storage.getBool('respect_focus_mode', defaultValue: true),
+      respectFocusMode: _storage.getBool(
+        'respect_focus_mode',
+        defaultValue: true,
+      ),
       enableClockOut: _storage.getBool('enable_clock_out', defaultValue: false),
       clockOutTime: _storage.getString('clock_out_time', defaultValue: '17:00'),
       exercises: _loadExercises(),
@@ -84,16 +111,44 @@ class SettingsRepository {
         'auto_suggest_exercises',
         defaultValue: true,
       ),
-      useCursorCountdown: _storage.getBool('use_cursor_countdown', defaultValue: true),
-      trayIconStyle: _storage.getString('tray_icon_style', defaultValue: 'companion') == 'cat' ? 'companion' : _storage.getString('tray_icon_style', defaultValue: 'companion'),
-      dailyWorkGoalHours: _storage.getInt('daily_work_goal_hours', defaultValue: 8),
-      remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
-      companionEnabled: _storage.getBool('companion_enabled', defaultValue: true),
-      companionPetTheme: _storage.getString('companion_cat_theme', defaultValue: 'grey_cat'),
-      companionPetName: _storage.getString('companion_pet_name', defaultValue: 'Mochi'),
+      useCursorCountdown: _storage.getBool(
+        'use_cursor_countdown',
+        defaultValue: true,
+      ),
+      trayIconStyle:
+          _storage.getString('tray_icon_style', defaultValue: 'companion') ==
+              'cat'
+          ? 'companion'
+          : _storage.getString('tray_icon_style', defaultValue: 'companion'),
+      dailyWorkGoalHours: _storage.getInt(
+        'daily_work_goal_hours',
+        defaultValue: 8,
+      ),
+      remindClockOutEnabled: _storage.getBool(
+        'remind_clock_out_enabled',
+        defaultValue: true,
+      ),
+      companionEnabled: _storage.getBool(
+        'companion_enabled',
+        defaultValue: true,
+      ),
+      companionPetTheme: _storage.getString(
+        'companion_cat_theme',
+        defaultValue: 'grey_cat',
+      ),
+      companionPetName: _storage.getString(
+        'companion_pet_name',
+        defaultValue: 'Mochi',
+      ),
       companionScale: _storage.getDouble('companion_scale', defaultValue: 1.5),
-      companionClickThrough: _storage.getBool('companion_click_through', defaultValue: false),
-      companionFollowMouse: _storage.getBool('companion_follow_mouse', defaultValue: false),
+      companionClickThrough: _storage.getBool(
+        'companion_click_through',
+        defaultValue: false,
+      ),
+      companionFollowMouse: _storage.getBool(
+        'companion_follow_mouse',
+        defaultValue: false,
+      ),
     );
   }
 
@@ -107,6 +162,10 @@ class SettingsRepository {
       _storage.setInt(
         AppConstants.keyShortBreakDuration,
         settings.shortBreakDurationSeconds,
+      ),
+      _storage.setInt(
+        AppConstants.keyPreBreakWarningSeconds,
+        settings.preBreakWarningSeconds,
       ),
       _storage.setInt(
         AppConstants.keyLongBreakInterval,
@@ -125,7 +184,6 @@ class SettingsRepository {
       _storage.setBool('show_on_all_displays', settings.showOnAllDisplays),
       _storage.setString('break_theme', settings.breakTheme),
       _storage.setString('break_template', settings.breakTemplate),
-      
 
       _storage.setBool('focus_mode_enabled', settings.focusModeEnabled),
       _storage.setString('clock_face_style', settings.clockFaceStyle),
@@ -172,7 +230,10 @@ class SettingsRepository {
       _storage.setString('companion_cat_theme', settings.companionPetTheme),
       _storage.setString('companion_pet_name', settings.companionPetName),
       _storage.setDouble('companion_scale', settings.companionScale),
-      _storage.setBool('companion_click_through', settings.companionClickThrough),
+      _storage.setBool(
+        'companion_click_through',
+        settings.companionClickThrough,
+      ),
       _storage.setBool('companion_follow_mouse', settings.companionFollowMouse),
     ]);
   }

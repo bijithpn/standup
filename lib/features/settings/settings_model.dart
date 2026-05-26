@@ -14,10 +14,9 @@ class SettingsModel {
   // Break timings
   final int shortBreakIntervalMinutes;
   final int shortBreakDurationSeconds;
+  final int preBreakWarningSeconds;
   final int longBreakIntervalMinutes;
   final int longBreakDurationMinutes;
-
-
 
   // Notifications
   final bool soundEnabled;
@@ -50,7 +49,7 @@ class SettingsModel {
   final bool workingHoursEnabled;
   final List<int> workingDays; // 1=Mon … 7=Sun
   final String workStartTime; // "HH:mm"
-  final String workEndTime;   // "HH:mm"
+  final String workEndTime; // "HH:mm"
 
   // Smart detection
   final bool detectVideoCalls;
@@ -88,6 +87,7 @@ class SettingsModel {
     this.focusModeEnabled = false,
     this.shortBreakIntervalMinutes = 20,
     this.shortBreakDurationSeconds = 20,
+    this.preBreakWarningSeconds = 20,
     this.longBreakIntervalMinutes = 60,
     this.longBreakDurationMinutes = 3,
 
@@ -144,6 +144,7 @@ class SettingsModel {
     bool? focusModeEnabled,
     int? shortBreakIntervalMinutes,
     int? shortBreakDurationSeconds,
+    int? preBreakWarningSeconds,
     int? longBreakIntervalMinutes,
     int? longBreakDurationMinutes,
 
@@ -192,23 +193,36 @@ class SettingsModel {
       clockFaceStyle: clockFaceStyle ?? this.clockFaceStyle,
       selectedProfileId: selectedProfileId ?? this.selectedProfileId,
       strictMode: strictMode ?? this.strictMode,
-      remindClockOutEnabled: remindClockOutEnabled ?? this.remindClockOutEnabled,
+      remindClockOutEnabled:
+          remindClockOutEnabled ?? this.remindClockOutEnabled,
       dailyWorkGoalHours: dailyWorkGoalHours ?? this.dailyWorkGoalHours,
-      pauseTimerAfterMinutes: pauseTimerAfterMinutes ?? this.pauseTimerAfterMinutes,
+      pauseTimerAfterMinutes:
+          pauseTimerAfterMinutes ?? this.pauseTimerAfterMinutes,
       menuBarStyle: menuBarStyle ?? this.menuBarStyle,
       focusModeEnabled: focusModeEnabled ?? this.focusModeEnabled,
-      shortBreakIntervalMinutes: shortBreakIntervalMinutes ?? this.shortBreakIntervalMinutes,
-      shortBreakDurationSeconds: shortBreakDurationSeconds ?? this.shortBreakDurationSeconds,
-      longBreakIntervalMinutes: longBreakIntervalMinutes ?? this.longBreakIntervalMinutes,
-      longBreakDurationMinutes: longBreakDurationMinutes ?? this.longBreakDurationMinutes,
+      shortBreakIntervalMinutes:
+          shortBreakIntervalMinutes ?? this.shortBreakIntervalMinutes,
+      shortBreakDurationSeconds:
+          shortBreakDurationSeconds ?? this.shortBreakDurationSeconds,
+      preBreakWarningSeconds:
+          preBreakWarningSeconds ?? this.preBreakWarningSeconds,
+      longBreakIntervalMinutes:
+          longBreakIntervalMinutes ?? this.longBreakIntervalMinutes,
+      longBreakDurationMinutes:
+          longBreakDurationMinutes ?? this.longBreakDurationMinutes,
 
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
-      postureReminderEnabled: postureReminderEnabled ?? this.postureReminderEnabled,
-      postureReminderIntervalMinutes: postureReminderIntervalMinutes ?? this.postureReminderIntervalMinutes,
+      postureReminderEnabled:
+          postureReminderEnabled ?? this.postureReminderEnabled,
+      postureReminderIntervalMinutes:
+          postureReminderIntervalMinutes ?? this.postureReminderIntervalMinutes,
       postureReminderType: postureReminderType ?? this.postureReminderType,
-      eyeBlinkReminderEnabled: eyeBlinkReminderEnabled ?? this.eyeBlinkReminderEnabled,
-      eyeBlinkReminderIntervalMinutes: eyeBlinkReminderIntervalMinutes ?? this.eyeBlinkReminderIntervalMinutes,
+      eyeBlinkReminderEnabled:
+          eyeBlinkReminderEnabled ?? this.eyeBlinkReminderEnabled,
+      eyeBlinkReminderIntervalMinutes:
+          eyeBlinkReminderIntervalMinutes ??
+          this.eyeBlinkReminderIntervalMinutes,
       eyeBlinkReminderType: eyeBlinkReminderType ?? this.eyeBlinkReminderType,
       showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
       breakTheme: breakTheme ?? this.breakTheme,
@@ -217,10 +231,12 @@ class SettingsModel {
       lastExerciseDate: lastExerciseDate ?? this.lastExerciseDate,
       shownExercisesToday: shownExercisesToday ?? this.shownExercisesToday,
       playMusicDuringBreak: playMusicDuringBreak ?? this.playMusicDuringBreak,
-      clockFaceTextColorHex: clockFaceTextColorHex ?? this.clockFaceTextColorHex,
+      clockFaceTextColorHex:
+          clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
       customImagePath: customImagePath ?? this.customImagePath,
-      resetTimerAfterMinutes: resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
+      resetTimerAfterMinutes:
+          resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,
       workingDays: workingDays ?? this.workingDays,
       workStartTime: workStartTime ?? this.workStartTime,
@@ -239,66 +255,68 @@ class SettingsModel {
       companionPetTheme: companionPetTheme ?? this.companionPetTheme,
       companionPetName: companionPetName ?? this.companionPetName,
       companionScale: companionScale ?? this.companionScale,
-      companionClickThrough: companionClickThrough ?? this.companionClickThrough,
+      companionClickThrough:
+          companionClickThrough ?? this.companionClickThrough,
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
     );
   }
 
   Map<String, dynamic> toMap() => {
-        'autoStart': autoStart,
-        'clockFaceStyle': clockFaceStyle,
-        'selectedProfileId': selectedProfileId,
-        'strictMode': strictMode,
-        'remindClockOutEnabled': remindClockOutEnabled,
-        'dailyWorkGoalHours': dailyWorkGoalHours,
-        'pauseTimerAfterMinutes': pauseTimerAfterMinutes,
-        'menuBarStyle': menuBarStyle,
-        'focusModeEnabled': focusModeEnabled,
-        'shortBreakIntervalMinutes': shortBreakIntervalMinutes,
-        'shortBreakDurationSeconds': shortBreakDurationSeconds,
-        'longBreakIntervalMinutes': longBreakIntervalMinutes,
-        'longBreakDurationMinutes': longBreakDurationMinutes,
+    'autoStart': autoStart,
+    'clockFaceStyle': clockFaceStyle,
+    'selectedProfileId': selectedProfileId,
+    'strictMode': strictMode,
+    'remindClockOutEnabled': remindClockOutEnabled,
+    'dailyWorkGoalHours': dailyWorkGoalHours,
+    'pauseTimerAfterMinutes': pauseTimerAfterMinutes,
+    'menuBarStyle': menuBarStyle,
+    'focusModeEnabled': focusModeEnabled,
+    'shortBreakIntervalMinutes': shortBreakIntervalMinutes,
+    'shortBreakDurationSeconds': shortBreakDurationSeconds,
+    'preBreakWarningSeconds': preBreakWarningSeconds,
+    'longBreakIntervalMinutes': longBreakIntervalMinutes,
+    'longBreakDurationMinutes': longBreakDurationMinutes,
 
-        'soundEnabled': soundEnabled,
-        'notificationsEnabled': notificationsEnabled,
-        'postureReminderEnabled': postureReminderEnabled,
-        'postureReminderIntervalMinutes': postureReminderIntervalMinutes,
-        'postureReminderType': postureReminderType,
-        'eyeBlinkReminderEnabled': eyeBlinkReminderEnabled,
-        'eyeBlinkReminderIntervalMinutes': eyeBlinkReminderIntervalMinutes,
-        'eyeBlinkReminderType': eyeBlinkReminderType,
-        'showOnAllDisplays': showOnAllDisplays,
-        'breakTheme': breakTheme,
-        'breakTemplate': breakTemplate,
-        'showExercisesInBreak': showExercisesInBreak,
-        'lastExerciseDate': lastExerciseDate,
-        'shownExercisesToday': shownExercisesToday,
-        'playMusicDuringBreak': playMusicDuringBreak,
-        'clockFaceTextColorHex': clockFaceTextColorHex,
-        'clockFaceBlurEnabled': clockFaceBlurEnabled,
-        'customImagePath': customImagePath,
-        'resetTimerAfterMinutes': resetTimerAfterMinutes,
-        'workingHoursEnabled': workingHoursEnabled,
-        'workingDays': workingDays,
-        'workStartTime': workStartTime,
-        'workEndTime': workEndTime,
-        'detectVideoCalls': detectVideoCalls,
-        'detectMeetings': detectMeetings,
-        'respectFocusMode': respectFocusMode,
-        'enableClockOut': enableClockOut,
-        'clockOutTime': clockOutTime,
-        'exercises': exercises.map((e) => e.toMap()).toList(),
-        'autoSuggestExercises': autoSuggestExercises,
-        'useCursorCountdown': useCursorCountdown,
-        'enableAnimations': enableAnimations,
-        'trayIconStyle': trayIconStyle,
-        'companionEnabled': companionEnabled,
-        'companionPetTheme': companionPetTheme,
-        'companionPetName': companionPetName,
-        'companionScale': companionScale,
-        'companionClickThrough': companionClickThrough,
-        'companionFollowMouse': companionFollowMouse,
-      };
+    'soundEnabled': soundEnabled,
+    'notificationsEnabled': notificationsEnabled,
+    'postureReminderEnabled': postureReminderEnabled,
+    'postureReminderIntervalMinutes': postureReminderIntervalMinutes,
+    'postureReminderType': postureReminderType,
+    'eyeBlinkReminderEnabled': eyeBlinkReminderEnabled,
+    'eyeBlinkReminderIntervalMinutes': eyeBlinkReminderIntervalMinutes,
+    'eyeBlinkReminderType': eyeBlinkReminderType,
+    'showOnAllDisplays': showOnAllDisplays,
+    'breakTheme': breakTheme,
+    'breakTemplate': breakTemplate,
+    'showExercisesInBreak': showExercisesInBreak,
+    'lastExerciseDate': lastExerciseDate,
+    'shownExercisesToday': shownExercisesToday,
+    'playMusicDuringBreak': playMusicDuringBreak,
+    'clockFaceTextColorHex': clockFaceTextColorHex,
+    'clockFaceBlurEnabled': clockFaceBlurEnabled,
+    'customImagePath': customImagePath,
+    'resetTimerAfterMinutes': resetTimerAfterMinutes,
+    'workingHoursEnabled': workingHoursEnabled,
+    'workingDays': workingDays,
+    'workStartTime': workStartTime,
+    'workEndTime': workEndTime,
+    'detectVideoCalls': detectVideoCalls,
+    'detectMeetings': detectMeetings,
+    'respectFocusMode': respectFocusMode,
+    'enableClockOut': enableClockOut,
+    'clockOutTime': clockOutTime,
+    'exercises': exercises.map((e) => e.toMap()).toList(),
+    'autoSuggestExercises': autoSuggestExercises,
+    'useCursorCountdown': useCursorCountdown,
+    'enableAnimations': enableAnimations,
+    'trayIconStyle': trayIconStyle,
+    'companionEnabled': companionEnabled,
+    'companionPetTheme': companionPetTheme,
+    'companionPetName': companionPetName,
+    'companionScale': companionScale,
+    'companionClickThrough': companionClickThrough,
+    'companionFollowMouse': companionFollowMouse,
+  };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
     List<ExerciseModel> exercises = [];
@@ -322,23 +340,27 @@ class SettingsModel {
       focusModeEnabled: map['focusModeEnabled'] as bool? ?? false,
       shortBreakIntervalMinutes: map['shortBreakIntervalMinutes'] as int? ?? 20,
       shortBreakDurationSeconds: map['shortBreakDurationSeconds'] as int? ?? 20,
+      preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 20,
       longBreakIntervalMinutes: map['longBreakIntervalMinutes'] as int? ?? 60,
       longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 3,
 
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       postureReminderEnabled: map['postureReminderEnabled'] as bool? ?? false,
-      postureReminderIntervalMinutes: map['postureReminderIntervalMinutes'] as int? ?? 30,
+      postureReminderIntervalMinutes:
+          map['postureReminderIntervalMinutes'] as int? ?? 30,
       postureReminderType: map['postureReminderType'] as String? ?? 'overlay',
       eyeBlinkReminderEnabled: map['eyeBlinkReminderEnabled'] as bool? ?? false,
-      eyeBlinkReminderIntervalMinutes: map['eyeBlinkReminderIntervalMinutes'] as int? ?? 20,
+      eyeBlinkReminderIntervalMinutes:
+          map['eyeBlinkReminderIntervalMinutes'] as int? ?? 20,
       eyeBlinkReminderType: map['eyeBlinkReminderType'] as String? ?? 'overlay',
       showOnAllDisplays: map['showOnAllDisplays'] as bool? ?? true,
       breakTheme: map['breakTheme'] as String? ?? 'random',
       breakTemplate: map['breakTemplate'] as String? ?? 'minimal',
       showExercisesInBreak: map['showExercisesInBreak'] as bool? ?? true,
       lastExerciseDate: map['lastExerciseDate'] as String? ?? '',
-      shownExercisesToday: (map['shownExercisesToday'] as List<dynamic>?)
+      shownExercisesToday:
+          (map['shownExercisesToday'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
@@ -348,7 +370,8 @@ class SettingsModel {
       customImagePath: map['customImagePath'] as String?,
       resetTimerAfterMinutes: map['resetTimerAfterMinutes'] as int? ?? 15,
       workingHoursEnabled: map['workingHoursEnabled'] as bool? ?? false,
-      workingDays: (map['workingDays'] as List<dynamic>?)
+      workingDays:
+          (map['workingDays'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList() ??
           [1, 2, 3, 4, 5],
@@ -363,9 +386,13 @@ class SettingsModel {
       autoSuggestExercises: map['autoSuggestExercises'] as bool? ?? true,
       useCursorCountdown: map['useCursorCountdown'] as bool? ?? true,
       enableAnimations: map['enableAnimations'] as bool? ?? true,
-      trayIconStyle: (map['trayIconStyle'] as String? ?? 'companion') == 'cat' ? 'companion' : (map['trayIconStyle'] as String? ?? 'companion'),
+      trayIconStyle: (map['trayIconStyle'] as String? ?? 'companion') == 'cat'
+          ? 'companion'
+          : (map['trayIconStyle'] as String? ?? 'companion'),
       companionEnabled: map['companionEnabled'] as bool? ?? false,
-      companionPetTheme: (map['companionPetTheme'] ?? map['companionCatTheme']) as String? ?? 'grey_cat',
+      companionPetTheme:
+          (map['companionPetTheme'] ?? map['companionCatTheme']) as String? ??
+          'grey_cat',
       companionPetName: map['companionPetName'] as String? ?? 'Mochi',
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,

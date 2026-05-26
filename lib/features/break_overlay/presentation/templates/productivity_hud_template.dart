@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/shared/theme/app_theme.dart';
 
-class ProductivityHudTemplate extends StatefulWidget {
+class ProductivityHudTemplate extends StatelessWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final int remainingSeconds;
@@ -21,12 +20,6 @@ class ProductivityHudTemplate extends StatefulWidget {
     this.onSkip,
   });
 
-  @override
-  State<ProductivityHudTemplate> createState() =>
-      _ProductivityHudTemplateState();
-}
-
-class _ProductivityHudTemplateState extends State<ProductivityHudTemplate> {
   String _formatTime(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -35,214 +28,150 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate> {
 
   @override
   Widget build(BuildContext context) {
-    final progress = widget.totalSeconds > 0
-        ? (1 - (widget.remainingSeconds / widget.totalSeconds)).clamp(0.0, 1.0)
+    final progress = totalSeconds > 0
+        ? (1 - (remainingSeconds / totalSeconds)).clamp(0.0, 1.0)
         : 0.0;
-
-    final isShortBreak = widget.breakInfo.type == BreakType.short;
-    final accentColor = isShortBreak ? AppTheme.shortBreak : AppTheme.longBreak;
+    final isShortBreak = breakInfo.type == BreakType.short;
+    final accent = isShortBreak
+        ? const Color(0xFF38BDF8)
+        : const Color(0xFF34D399);
+    final size = MediaQuery.of(context).size;
+    final compact = size.width < 760;
 
     return Material(
-      color: AppTheme.gray950,
+      color: const Color(0xFF050608),
       child: Stack(
+        fit: StackFit.expand,
         children: [
-          // Grid pattern
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.02,
-              child: GridPaper(
-                color: Colors.white,
-                interval: 100,
-                divisions: 1,
-                subdivisions: 1,
-              ),
-            ),
-          ),
-
-          // Main HUD
+          const RepaintBoundary(child: _HudGrid()),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.all(32),
+              padding: EdgeInsets.all(compact ? 22 : 36),
               child: Column(
                 children: [
-                  // Top bar
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Break type
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                          border: Border.all(
-                            color: accentColor.withValues(alpha: 0.2),
+                      _SignalChip(
+                        accent: accent,
+                        icon: isShortBreak
+                            ? LucideIcons.eye
+                            : LucideIcons.timer,
+                        label: isShortBreak ? 'VISUAL RESET' : 'RECOVERY MODE',
+                      ),
+                      const Spacer(),
+                      _TelemetryValue(
+                        label: 'LOCAL',
+                        value: DateFormat('HH:mm').format(DateTime.now()),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 760),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _formatTime(remainingSeconds),
+                          textAlign: TextAlign.left,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: compact ? 78 : 118,
+                            height: 0.9,
+                            fontWeight: FontWeight.w300,
+                            fontFamily: 'Satoshi',
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isShortBreak ? LucideIcons.eye : LucideIcons.coffee,
-                              size: 12,
-                              color: accentColor,
+                        const SizedBox(height: 28),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 6,
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.08,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              isShortBreak ? 'EYE REST' : 'BREAK',
-                              style: TextStyle(
-                                color: accentColor,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
-                              ),
+                            valueColor: AlwaysStoppedAnimation<Color>(accent),
+                          ),
+                        ),
+                        const SizedBox(height: 28),
+                        Wrap(
+                          spacing: 18,
+                          runSpacing: 14,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            _TelemetryValue(
+                              label: 'PHASE',
+                              value: isShortBreak ? 'Eyes' : 'Body',
+                            ),
+                            _TelemetryValue(
+                              label: 'PROGRESS',
+                              value: '${(progress * 100).round()}%',
+                            ),
+                            _TelemetryValue(
+                              label: 'STATE',
+                              value: settings.strictMode ? 'Locked' : 'Open',
                             ),
                           ],
                         ),
-                      ),
-
-                      // Current time
-                      Text(
-                        DateFormat('HH:mm').format(DateTime.now()),
-                        style: const TextStyle(
-                          color: AppTheme.textMuted,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // Center content
-                  Column(
-                    children: [
-                      // Timer
-                      Text(
-                        _formatTime(widget.remainingSeconds),
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 72,
-                          fontWeight: FontWeight.w200,
-                          letterSpacing: -3,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Progress bar
-                      Container(
-                        width: 400,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: AppTheme.gray800,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        child: FractionallySizedBox(
-                          alignment: Alignment.centerLeft,
-                          widthFactor: progress,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: accentColor,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // Title
-                      Text(
-                        isShortBreak ? 'Rest Your Eyes' : 'Take a Break',
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      // Tip
-                      SizedBox(
-                        width: 500,
-                        child: Text(
-                          widget.breakInfo.tip,
-                          textAlign: TextAlign.center,
+                        const SizedBox(height: 36),
+                        Text(
+                          isShortBreak
+                              ? 'Defocus and reset.'
+                              : 'Recover before the next push.',
                           style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            height: 1.6,
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Satoshi',
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        Text(
+                          breakInfo.tip,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.62),
+                            fontSize: 15,
+                            height: 1.5,
+                            fontFamily: 'Satoshi',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-
                   const Spacer(),
-
-                  // Bottom bar
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Stats
-                      Row(
-                        children: [
-                          _buildStat(
-                            icon: LucideIcons.target,
-                            label: 'Focus',
-                            value: '${(progress * 100).toInt()}%',
-                          ),
-                          const SizedBox(width: 24),
-                          _buildStat(
-                            icon: LucideIcons.zap,
-                            label: 'Energy',
-                            value: 'High',
-                          ),
-                        ],
+                      Icon(
+                        LucideIcons.activity,
+                        size: 18,
+                        color: Colors.white.withValues(alpha: 0.42),
                       ),
-
-                      // Skip button
-                      if (widget.onSkip != null)
-                        MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: GestureDetector(
-                            onTap: widget.onSkip,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.gray800,
-                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                border: Border.all(color: AppTheme.border),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    'Skip',
-                                    style: const TextStyle(
-                                      color: AppTheme.textSecondary,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Icon(
-                                    LucideIcons.chevronRight,
-                                    size: 14,
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ],
-                              ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'low stimulus overlay',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.42),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Satoshi',
+                        ),
+                      ),
+                      const Spacer(),
+                      if (onSkip != null && !settings.strictMode)
+                        IconButton(
+                          tooltip: 'Skip break',
+                          onPressed: onSkip,
+                          icon: const Icon(LucideIcons.chevronRight),
+                          color: Colors.white.withValues(alpha: 0.72),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white.withValues(
+                              alpha: 0.08,
+                            ),
+                            fixedSize: const Size.square(42),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
                         ),
@@ -256,41 +185,124 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate> {
       ),
     );
   }
+}
 
-  Widget _buildStat({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      children: [
-        Icon(
-          icon,
-          size: 14,
-          color: AppTheme.textMuted,
-        ),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+class _HudGrid extends StatelessWidget {
+  const _HudGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _HudGridPainter());
+  }
+}
+
+class _HudGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bg = Paint()..color = const Color(0xFF050608);
+    canvas.drawRect(Offset.zero & size, bg);
+
+    final major = Paint()
+      ..color = Colors.white.withValues(alpha: 0.04)
+      ..strokeWidth = 1;
+    final minor = Paint()
+      ..color = Colors.white.withValues(alpha: 0.018)
+      ..strokeWidth = 1;
+
+    for (double x = 0; x < size.width; x += 24) {
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        x % 96 == 0 ? major : minor,
+      );
+    }
+    for (double y = 0; y < size.height; y += 24) {
+      canvas.drawLine(
+        Offset(0, y),
+        Offset(size.width, y),
+        y % 96 == 0 ? major : minor,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _SignalChip extends StatelessWidget {
+  final Color accent;
+  final IconData icon;
+  final String label;
+
+  const _SignalChip({
+    required this.accent,
+    required this.icon,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(icon, size: 14, color: accent),
+            const SizedBox(width: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              style: TextStyle(
+                color: accent,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                fontFamily: 'Satoshi',
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TelemetryValue extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TelemetryValue({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.36),
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.1,
+            fontFamily: 'Satoshi',
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.78),
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Satoshi',
+          ),
         ),
       ],
     );

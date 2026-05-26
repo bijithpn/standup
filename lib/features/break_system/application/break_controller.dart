@@ -28,6 +28,7 @@ class BreakController extends ChangeNotifier {
   String _currentTemplate = '';
   String _currentThemeName = 'random';
   bool _isPreviewMode = false;
+  bool _preBreakWarningShown = false;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -72,6 +73,7 @@ class BreakController extends ChangeNotifier {
       }
 
       if (overlayService.currentOverlayType != OverlayType.breakScreen) {
+        _preBreakWarningShown = false;
         if (strictModeController.isInMeeting) {
           debugPrint('Auto-postponing break due to active meeting.');
           _timerEngine.postponeBreak();
@@ -115,21 +117,23 @@ class BreakController extends ChangeNotifier {
           }
         }
 
-        overlayService.showOverlay(
-          type: OverlayType.breakScreen,
-          builder: (context) => const SizedBox.shrink(),
-          strictMode: settings.strictMode,
-          showOnAllDisplays: settings.showOnAllDisplays,
-          breakTheme: settings.breakTheme,
-        );
-
         // Determine universal template and theme for all displays
         _currentTemplate =
             AppConstants.wellnessSlideshow[Random().nextInt(
               AppConstants.wellnessSlideshow.length,
             )];
         if (settings.breakTheme == 'random') {
-          const themes = ['image', 'ocean', 'forest', 'minimal', 'sunset', 'nebula', 'midnight', 'cyberpunk', 'zen'];
+          const themes = [
+            'image',
+            'ocean',
+            'forest',
+            'minimal',
+            'sunset',
+            'nebula',
+            'midnight',
+            'cyberpunk',
+            'zen',
+          ];
           _currentThemeName = themes[Random().nextInt(themes.length)];
         } else {
           _currentThemeName = settings.breakTheme;
@@ -138,6 +142,29 @@ class BreakController extends ChangeNotifier {
         // Store these so we can pass them in updateOverlayData
         _currentExerciseTitle = exerciseTitle;
         _currentExerciseInstructions = exerciseInstructions;
+
+        overlayService.showOverlay(
+          type: OverlayType.breakScreen,
+          builder: (context) => const SizedBox.shrink(),
+          strictMode: settings.strictMode,
+          showOnAllDisplays: settings.showOnAllDisplays,
+          breakTheme: _currentThemeName,
+          overlayData: {
+            'title': breakInfo?.title,
+            'tip': breakInfo?.tip,
+            'durationSeconds': breakInfo?.durationSeconds,
+            'remainingSeconds': _timerEngine.countdownSeconds,
+            'strictMode': settings.strictMode,
+            'exerciseTitle': _currentExerciseTitle,
+            'exerciseInstructions': _currentExerciseInstructions,
+            'playMusic': settings.playMusicDuringBreak,
+            'template': _currentTemplate,
+            'theme': _currentThemeName,
+            'breakTemplate': settings.breakTemplate,
+            'companionPetTheme': settings.companionPetTheme,
+            'companionCatTheme': settings.companionPetTheme,
+          },
+        );
 
         // Start background music if enabled
         if (settings.playMusicDuringBreak && !_isPlayingMusic) {
@@ -164,13 +191,22 @@ class BreakController extends ChangeNotifier {
         });
       }
     } else if (shouldShowWarning) {
-      if (overlayService.currentOverlayType != OverlayType.preBreakWarning) {
+      if (!_preBreakWarningShown &&
+          overlayService.currentOverlayType != OverlayType.quickReminder) {
+        _preBreakWarningShown = true;
         overlayService.showOverlay(
-          type: OverlayType.preBreakWarning,
+          type: OverlayType.quickReminder,
           builder: (context) => const SizedBox.shrink(),
+          reminderType: 'breakStart',
+          overlayData: {
+            'title': 'Break starts soon',
+            'tip': 'Wrap up your flow before the rest overlay opens.',
+            'remainingSeconds': _timerEngine.timeUntilNextShortBreak.inSeconds,
+          },
         );
       }
-    } else if (overlayService.isOverlayVisible && !_isPreviewMode &&
+    } else if (overlayService.isOverlayVisible &&
+        !_isPreviewMode &&
         (overlayService.currentOverlayType == OverlayType.breakScreen ||
             overlayService.currentOverlayType == OverlayType.preBreakWarning)) {
       if (strictModeController.isStrictModeActive) {
@@ -178,6 +214,8 @@ class BreakController extends ChangeNotifier {
       }
       overlayService.showDashboard();
       _stopMusic();
+    } else if (!shouldShowWarning) {
+      _preBreakWarningShown = false;
     }
 
     notifyListeners();
@@ -206,6 +244,7 @@ class BreakController extends ChangeNotifier {
     _timerEngine.updateSettings(
       shortIntervalMinutes: settings.shortBreakIntervalMinutes,
       shortDurationSeconds: settings.shortBreakDurationSeconds,
+      preBreakWarningSeconds: settings.preBreakWarningSeconds,
       longIntervalMinutes: settings.longBreakIntervalMinutes,
       longDurationSeconds: settings.longBreakDurationMinutes * 60,
       pauseAfterMinutes: settings.pauseTimerAfterMinutes,
@@ -221,12 +260,16 @@ class BreakController extends ChangeNotifier {
   }
 
   void togglePause() {
+    if (_timerEngine.state == TimerState.breakActive) {
+      return;
+    }
     if (isPaused) {
       _timerEngine.resumeTimers();
     } else {
       _timerEngine.pauseTimers(isManual: true);
     }
-    sl<TrayManagerService>().updatePauseState(isPaused);
+    final paused = _timerEngine.state == TimerState.paused;
+    sl<TrayManagerService>().updatePauseState(paused);
     notifyListeners();
   }
 
@@ -253,25 +296,28 @@ class BreakController extends ChangeNotifier {
       }
     }
 
-    overlayService.showOverlay(
-      type: OverlayType.breakScreen,
-      builder: (context) => const SizedBox.shrink(),
-      strictMode: settings.strictMode,
-      showOnAllDisplays: settings.showOnAllDisplays,
-      breakTheme: settings.breakTheme,
-    );
     _currentTemplate =
         AppConstants.wellnessSlideshow[Random().nextInt(
           AppConstants.wellnessSlideshow.length,
         )];
     if (settings.breakTheme == 'random') {
-      const themes = ['image', 'ocean', 'forest', 'minimal', 'sunset', 'nebula', 'midnight', 'cyberpunk', 'zen'];
+      const themes = [
+        'image',
+        'ocean',
+        'forest',
+        'minimal',
+        'sunset',
+        'nebula',
+        'midnight',
+        'cyberpunk',
+        'zen',
+      ];
       _currentThemeName = themes[Random().nextInt(themes.length)];
     } else {
       _currentThemeName = settings.breakTheme;
     }
 
-    MacOSBridge.updateOverlayData({
+    final previewData = {
       'title': 'Test Break',
       'tip': 'This is a preview of your break screen.',
       'durationSeconds': 60,
@@ -285,7 +331,18 @@ class BreakController extends ChangeNotifier {
       'breakTemplate': settings.breakTemplate,
       'companionPetTheme': settings.companionPetTheme,
       'companionCatTheme': settings.companionPetTheme,
-    });
+    };
+
+    overlayService.showOverlay(
+      type: OverlayType.breakScreen,
+      builder: (context) => const SizedBox.shrink(),
+      strictMode: settings.strictMode,
+      showOnAllDisplays: settings.showOnAllDisplays,
+      breakTheme: _currentThemeName,
+      overlayData: previewData,
+    );
+
+    MacOSBridge.updateOverlayData(previewData);
 
     if (settings.playMusicDuringBreak && !_isPlayingMusic) {
       _playLofiMusic();

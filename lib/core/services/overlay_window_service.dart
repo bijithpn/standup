@@ -11,7 +11,9 @@ class OverlayWindowService extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
   bool _isOverlayVisible = false;
   OverlayType? _currentOverlayType;
-  static const MethodChannel _windowsChannel = MethodChannel('com.standup/overlay_window');
+  static const MethodChannel _windowsChannel = MethodChannel(
+    'com.standup/overlay_window',
+  );
 
   /// Show a system-wide overlay window
   Future<void> showOverlay({
@@ -22,6 +24,7 @@ class OverlayWindowService extends ChangeNotifier {
     bool showOnAllDisplays = true,
     String breakTheme = 'random',
     String? reminderType,
+    Map<String, dynamic>? overlayData,
   }) async {
     if (_isOverlayVisible && _currentOverlayType == type) {
       return;
@@ -41,6 +44,7 @@ class OverlayWindowService extends ChangeNotifier {
             'theme': breakTheme,
             'isTransparent': type == OverlayType.quickReminder,
             'ignoreMouseEvents': type == OverlayType.quickReminder,
+            ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await MacOSBridge.showOverlay(args);
@@ -58,11 +62,15 @@ class OverlayWindowService extends ChangeNotifier {
             'theme': breakTheme,
             'isTransparent': type == OverlayType.quickReminder,
             'ignoreMouseEvents': type == OverlayType.quickReminder,
+            ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await MacOSBridge.showOverlay(args);
           if (strictMode && type == OverlayType.breakScreen) {
-            await MacOSBridge.setPresentationOptions(hideDock: true, hideMenu: true);
+            await MacOSBridge.setPresentationOptions(
+              hideDock: true,
+              hideMenu: true,
+            );
           }
           // Hide the main window after a tiny delay to ensure focus is seamlessly transitioned
           Future.delayed(const Duration(milliseconds: 200), () {
@@ -100,7 +108,10 @@ class OverlayWindowService extends ChangeNotifier {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
         await MacOSBridge.hideOverlay();
-        await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+        await MacOSBridge.setPresentationOptions(
+          hideDock: false,
+          hideMenu: false,
+        );
         await MacOSBridge.setWindowLevel('normal');
       }
 
@@ -113,7 +124,9 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.setSkipTaskbar(false);
       await windowManager.setHasShadow(true);
       await windowManager.setIgnoreMouseEvents(false);
-      await windowManager.setBackgroundColor(Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent);
+      await windowManager.setBackgroundColor(
+        Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
+      );
       await windowManager.center();
 
       bool isMinimized = await windowManager.isMinimized();
@@ -146,14 +159,19 @@ class OverlayWindowService extends ChangeNotifier {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
         await MacOSBridge.hideOverlay();
-        await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+        await MacOSBridge.setPresentationOptions(
+          hideDock: false,
+          hideMenu: false,
+        );
       }
 
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
       await windowManager.setSkipTaskbar(false);
       await windowManager.hide();
-      await windowManager.setBackgroundColor(Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent);
+      await windowManager.setBackgroundColor(
+        Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
+      );
 
       _isOverlayVisible = false;
       _currentOverlayType = null;
@@ -179,7 +197,10 @@ class OverlayWindowService extends ChangeNotifier {
       await _windowsChannel.invokeMethod('resetToNormal');
     } else if (Platform.isMacOS) {
       await MacOSBridge.hideOverlay();
-      await MacOSBridge.setPresentationOptions(hideDock: false, hideMenu: false);
+      await MacOSBridge.setPresentationOptions(
+        hideDock: false,
+        hideMenu: false,
+      );
     }
     await windowManager.setAlwaysOnTop(false);
     await windowManager.setFullScreen(false);
@@ -190,8 +211,6 @@ class OverlayWindowService extends ChangeNotifier {
 
 /// Types of overlays supported
 enum OverlayType {
-
-
   /// Pre-break warning overlay
   preBreakWarning,
 

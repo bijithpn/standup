@@ -10,8 +10,8 @@ import 'dart:io';
 
 class MenuBarController {
   MenuBarController({EventBus? eventBus})
-      : _eventBus = eventBus ?? EventBus.instance,
-        _logger = AppLogger();
+    : _eventBus = eventBus ?? EventBus.instance,
+      _logger = AppLogger();
 
   final EventBus _eventBus;
   final AppLogger _logger;
@@ -37,24 +37,34 @@ class MenuBarController {
     switch (action) {
       case 'open_app':
         await overlayService.showDashboard();
+        return;
       case 'open_stats':
         await openSection('Statistics');
+        return;
       case 'toggle_pause':
         _breakController?.togglePause();
+        return;
       case 'take_break':
         _breakController?.takeBreakNow();
+        return;
       case 'skip_next':
         _breakController?.skipNextBreak();
+        return;
       case 'complete_break':
         _breakController?.completeCurrentBreak();
+        return;
       case 'skip_current_break':
         _breakController?.skipCurrentBreak();
+        return;
       case 'postpone_break':
         _breakController?.postponeCurrentBreak();
+        return;
       case 'open_companion':
         await openSection('Companion');
+        return;
       case 'quit':
         await _quitApp();
+        return;
       default:
         _logger.error('Unhandled menu action: $action');
     }

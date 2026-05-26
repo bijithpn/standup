@@ -65,24 +65,10 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppTheme.gray950,
+      color: const Color(0xFF080A0C),
       child: Stack(
         children: [
-          // Subtle gradient
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.center,
-                  radius: 1.2,
-                  colors: [
-                    AppTheme.longBreak.withValues(alpha: 0.02),
-                    AppTheme.gray950,
-                  ],
-                ),
-              ),
-            ),
-          ),
+          const Positioned.fill(child: _ZenBackdrop()),
 
           Center(
             child: Column(
@@ -95,10 +81,10 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: AppTheme.longBreak.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                    color: const Color(0xFFA7F3D0).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: AppTheme.longBreak.withValues(alpha: 0.2),
+                      color: const Color(0xFFA7F3D0).withValues(alpha: 0.24),
                     ),
                   ),
                   child: Row(
@@ -107,13 +93,13 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                       Icon(
                         LucideIcons.wind,
                         size: 12,
-                        color: AppTheme.longBreak,
+                        color: Color(0xFFA7F3D0),
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'ZEN MODE',
                         style: TextStyle(
-                          color: AppTheme.longBreak,
+                          color: Color(0xFFA7F3D0),
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           letterSpacing: 1.2,
@@ -176,13 +162,13 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                                   height: 260,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: AppTheme.longBreak.withValues(
-                                      alpha: 0.05,
-                                    ),
+                                    color: const Color(
+                                      0xFFA7F3D0,
+                                    ).withValues(alpha: 0.05),
                                     border: Border.all(
-                                      color: AppTheme.longBreak.withValues(
-                                        alpha: 0.3,
-                                      ),
+                                      color: const Color(
+                                        0xFFA7F3D0,
+                                      ).withValues(alpha: 0.3),
                                       width: 2,
                                     ),
                                   ),
@@ -229,8 +215,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                   width: 480,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: AppTheme.gray900,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                    color: const Color(0xFF111318).withValues(alpha: 0.86),
+                    borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppTheme.borderSubtle),
                   ),
                   child: Column(
@@ -304,4 +290,33 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
       ),
     );
   }
+}
+
+class _ZenBackdrop extends StatelessWidget {
+  const _ZenBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(painter: _ZenBackdropPainter());
+  }
+}
+
+class _ZenBackdropPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFF080A0C),
+    );
+
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.035)
+      ..strokeWidth = 1;
+    for (double x = 0; x < size.width; x += 64) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

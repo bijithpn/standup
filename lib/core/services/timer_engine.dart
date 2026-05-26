@@ -17,7 +17,8 @@ import 'package:standup/core/utils/logger.dart';
 import 'package:standup/features/break_system/domain/break_model.dart';
 import 'package:standup/features/settings/settings_repository.dart';
 
-export 'package:standup/features/break_system/domain/break_model.dart' show BreakType;
+export 'package:standup/features/break_system/domain/break_model.dart'
+    show BreakType;
 
 enum TimerState { running, paused, idle, breakActive }
 
@@ -39,6 +40,7 @@ class TimerEngine extends ChangeNotifier {
 
   TimerState _state = TimerState.idle;
   bool _isManuallyPaused = false;
+  bool _manualOverride = false;
   WorkMode _mode = WorkMode.flexible;
   BreakModel? _activeBreak;
   int _countdownSeconds = 0;
@@ -54,8 +56,11 @@ class TimerEngine extends ChangeNotifier {
   DateTime? _lastTickTime;
   DateTime? _lastBreakFinishedAt; // Added to track session duration accurately
 
-  int _shortBreakIntervalMinutes = AppConstants.defaultShortBreakIntervalMinutes;
-  int _shortBreakDurationSeconds = AppConstants.defaultShortBreakDurationSeconds;
+  int _shortBreakIntervalMinutes =
+      AppConstants.defaultShortBreakIntervalMinutes;
+  int _shortBreakDurationSeconds =
+      AppConstants.defaultShortBreakDurationSeconds;
+  int _preBreakWarningSeconds = AppConstants.defaultPreBreakWarningSeconds;
   int _longBreakIntervalMinutes = AppConstants.defaultLongBreakIntervalMinutes;
   int _longBreakDurationMinutes = AppConstants.defaultLongBreakDurationMinutes;
   int _pauseTimerAfterMinutes = 5;
@@ -70,13 +75,13 @@ class TimerEngine extends ChangeNotifier {
     AdaptiveBreakService? adaptiveBreakService,
     SmartDetectionService? smartDetectionService,
     EventBus? eventBus,
-  })  : _activityMonitor = activityMonitor,
-        _notificationService = notificationService,
-        _settingsRepository = settingsRepository,
-        _storageService = storageService,
-        _adaptiveBreakService = adaptiveBreakService,
-        _smartDetectionService = smartDetectionService,
-        _eventBus = eventBus ?? EventBus.instance {
+  }) : _activityMonitor = activityMonitor,
+       _notificationService = notificationService,
+       _settingsRepository = settingsRepository,
+       _storageService = storageService,
+       _adaptiveBreakService = adaptiveBreakService,
+       _smartDetectionService = smartDetectionService,
+       _eventBus = eventBus ?? EventBus.instance {
     _syncSettingsFromRepo();
   }
 
@@ -86,6 +91,7 @@ class TimerEngine extends ChangeNotifier {
     final s = _settingsRepository.currentSettings;
     _shortBreakIntervalMinutes = s.shortBreakIntervalMinutes;
     _shortBreakDurationSeconds = s.shortBreakDurationSeconds;
+    _preBreakWarningSeconds = s.preBreakWarningSeconds;
     _longBreakIntervalMinutes = s.longBreakIntervalMinutes;
     _longBreakDurationMinutes = s.longBreakDurationMinutes;
     _pauseTimerAfterMinutes = s.pauseTimerAfterMinutes;
@@ -116,10 +122,10 @@ class TimerEngine extends ChangeNotifier {
 
   void startTimers() {
     _syncSettingsFromRepo();
-    
+
     // Attempt to restore state first
     restoreState();
-    
+
     // If it was already running or break active, keep it that way
     if (_state == TimerState.idle) {
       _state = TimerState.running;
@@ -128,24 +134,30 @@ class TimerEngine extends ChangeNotifier {
       _clockOutTriggered = false;
     } else if (_state == TimerState.breakActive && _activeBreak == null) {
       _activeBreak = BreakModel(
-         type: BreakType.short,
-         durationSeconds: _countdownSeconds > 0 ? _countdownSeconds : _shortBreakDurationSeconds,
-         title: 'Break Resumed',
-         tip: 'Take a breather.',
-       );
+        type: BreakType.short,
+        durationSeconds: _countdownSeconds > 0
+            ? _countdownSeconds
+            : _shortBreakDurationSeconds,
+        title: 'Break Resumed',
+        tip: 'Take a breather.',
+      );
     }
-    
+
     _lastTickTime = DateTime.now();
 
     _startTicking();
     _setupActivityMonitor();
     _startUsageTracking();
 
-    _emit(TimerStateChangedEvent(
-      state: _state == TimerState.breakActive ? TimerStateEvent.breakActive : TimerStateEvent.running,
-      countdownSeconds: _countdownSeconds,
-      workElapsedSeconds: _workElapsed.inSeconds,
-    ));
+    _emit(
+      TimerStateChangedEvent(
+        state: _state == TimerState.breakActive
+            ? TimerStateEvent.breakActive
+            : TimerStateEvent.running,
+        countdownSeconds: _countdownSeconds,
+        workElapsedSeconds: _workElapsed.inSeconds,
+      ),
+    );
 
     _logger.info('Timers started (State: $_state) in $_mode mode');
     notifyListeners();
@@ -162,10 +174,13 @@ class TimerEngine extends ChangeNotifier {
 
       if (_state == TimerState.running) {
         if (_checkClockOut(now)) return;
-        if (!_shouldRunWorkTimer()) {
-          _updateTray();
-          notifyListeners();
-          return;
+        if (_shouldRunWorkTimer()) {
+          _manualOverride = false;
+        } else {
+          if (!_manualOverride) {
+            pauseTimers(isManual: false);
+            return;
+          }
         }
         _workElapsed += delta;
         _totalWorkToday += delta;
@@ -181,13 +196,15 @@ class TimerEngine extends ChangeNotifier {
         }
       }
 
-      _emit(TimerStateChangedEvent(
-        state: _state == TimerState.breakActive
-            ? TimerStateEvent.breakActive
-            : TimerStateEvent.running,
-        countdownSeconds: _countdownSeconds,
-        workElapsedSeconds: _workElapsed.inSeconds,
-      ));
+      _emit(
+        TimerStateChangedEvent(
+          state: _state == TimerState.breakActive
+              ? TimerStateEvent.breakActive
+              : TimerStateEvent.running,
+          countdownSeconds: _countdownSeconds,
+          workElapsedSeconds: _workElapsed.inSeconds,
+        ),
+      );
 
       // Auto-save state every 30 seconds or on significant changes
       if (_workElapsed.inSeconds % 30 == 0) {
@@ -263,7 +280,10 @@ class TimerEngine extends ChangeNotifier {
     final interval = Duration(minutes: _shortBreakIntervalMinutes);
     final remaining = interval - _workElapsed;
 
-    if (remaining <= const Duration(seconds: 20)) {
+    final warningWindow = Duration(
+      seconds: _preBreakWarningSeconds.clamp(0, 300).toInt(),
+    );
+    if (warningWindow > Duration.zero && remaining <= warningWindow) {
       if (!_isPreBreak) {
         _isPreBreak = true;
         notifyListeners();
@@ -284,15 +304,19 @@ class TimerEngine extends ChangeNotifier {
   void _checkHealthReminders() {
     final settings = _settingsRepository.currentSettings;
 
-    if (settings.postureReminderEnabled && settings.postureReminderIntervalMinutes > 0) {
-      if (_postureElapsedSeconds >= settings.postureReminderIntervalMinutes * 60) {
+    if (settings.postureReminderEnabled &&
+        settings.postureReminderIntervalMinutes > 0) {
+      if (_postureElapsedSeconds >=
+          settings.postureReminderIntervalMinutes * 60) {
         _postureElapsedSeconds = 0;
         _triggerHealthReminder('posture', settings.postureReminderType);
       }
     }
 
-    if (settings.eyeBlinkReminderEnabled && settings.eyeBlinkReminderIntervalMinutes > 0) {
-      if (_eyeBlinkElapsedSeconds >= settings.eyeBlinkReminderIntervalMinutes * 60) {
+    if (settings.eyeBlinkReminderEnabled &&
+        settings.eyeBlinkReminderIntervalMinutes > 0) {
+      if (_eyeBlinkElapsedSeconds >=
+          settings.eyeBlinkReminderIntervalMinutes * 60) {
         _eyeBlinkElapsedSeconds = 0;
         _triggerHealthReminder('eyeblink', settings.eyeBlinkReminderType);
       }
@@ -310,13 +334,15 @@ class TimerEngine extends ChangeNotifier {
     } else {
       sl<OverlayWindowService>().showOverlay(
         type: OverlayType.quickReminder,
-        builder: (_) => const SizedBox.shrink(), // handeled directly in standalone overlay
+        builder: (_) =>
+            const SizedBox.shrink(), // handeled directly in standalone overlay
         reminderType: reminderType,
       );
-      
+
       // Auto dismiss after 5 seconds
       Future.delayed(const Duration(seconds: 5), () {
-        if (sl<OverlayWindowService>().currentOverlayType == OverlayType.quickReminder) {
+        if (sl<OverlayWindowService>().currentOverlayType ==
+            OverlayType.quickReminder) {
           sl<OverlayWindowService>().hideOverlay();
         }
       });
@@ -335,11 +361,13 @@ class TimerEngine extends ChangeNotifier {
       tip: 'Your workday is over. Time to step away and live your life.',
     );
 
-    _emit(BreakStartedEvent(
-      isLongBreak: true,
-      durationSeconds: _countdownSeconds,
-      title: _activeBreak!.title,
-    ));
+    _emit(
+      BreakStartedEvent(
+        isLongBreak: true,
+        durationSeconds: _countdownSeconds,
+        title: _activeBreak!.title,
+      ),
+    );
 
     _notificationService.showClockOutReminder();
     _logger.info('Clock out triggered');
@@ -363,11 +391,13 @@ class TimerEngine extends ChangeNotifier {
         type: BreakType.long,
         durationSeconds: _countdownSeconds,
         title: 'LONG BREAK',
-        tip: 'Time to stand, stretch, and mentally reset. Step away from your desk.',
+        tip:
+            'Time to stand, stretch, and mentally reset. Step away from your desk.',
       );
       _longBreakWindowStartedAt = DateTime.now();
     } else {
-      final suggestedDuration = _adaptiveBreakService?.getSuggestedBreakDuration() ??
+      final suggestedDuration =
+          _adaptiveBreakService?.getSuggestedBreakDuration() ??
           _shortBreakDurationSeconds;
       _countdownSeconds = suggestedDuration;
       _activeBreak = BreakModel(
@@ -378,14 +408,16 @@ class TimerEngine extends ChangeNotifier {
       );
     }
 
-    _emit(BreakStartedEvent(
-      isLongBreak: isLongBreak,
-      durationSeconds: _countdownSeconds,
-      title: _activeBreak!.title,
-    ));
+    _emit(
+      BreakStartedEvent(
+        isLongBreak: isLongBreak,
+        durationSeconds: _countdownSeconds,
+        title: _activeBreak!.title,
+      ),
+    );
 
     sl<TrayManagerService>().setBreakActive(true);
-    
+
     _logger.info('Break triggered: ${_activeBreak!.title}');
     notifyListeners();
   }
@@ -398,43 +430,51 @@ class TimerEngine extends ChangeNotifier {
     } else {
       _isCompletionState = true;
       notifyListeners();
-      
+
       MacOSBridge.updateOverlayData({
         'title': 'Well Done!',
         'remainingSeconds': 0,
-        'durationSeconds': _activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
+        'durationSeconds':
+            _activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
         'strictMode': false,
       });
 
       await Future.delayed(const Duration(seconds: 2));
       sl<StatsService>().recordCompletedBreak();
-      
+
       if (!sl<OverlayWindowService>().isOverlayVisible) {
         await _notificationService.showBreakFinished();
       }
 
       // Record actual session duration (time since last break)
       final now = DateTime.now();
-      final sessionDuration = _lastBreakFinishedAt != null 
-          ? now.difference(_lastBreakFinishedAt!) 
+      final sessionDuration = _lastBreakFinishedAt != null
+          ? now.difference(_lastBreakFinishedAt!)
           : _workElapsed;
-      
+
       final sessionMinutes = sessionDuration.inMinutes;
-      final activityLevel = sessionMinutes > 45 ? 'high' : sessionMinutes > 20 ? 'medium' : 'low';
-      
+      final activityLevel = sessionMinutes > 45
+          ? 'high'
+          : sessionMinutes > 20
+          ? 'medium'
+          : 'low';
+
       _adaptiveBreakService?.recordWorkSession(
         duration: sessionDuration,
         hourOfDay: now.hour,
         activityLevel: activityLevel,
       );
-      
+
       // Update interval for the next work session based on history
-      final suggestedInterval = _adaptiveBreakService?.getSuggestedBreakInterval();
+      final suggestedInterval = _adaptiveBreakService
+          ?.getSuggestedBreakInterval();
       if (suggestedInterval != null && suggestedInterval > 0) {
         _shortBreakIntervalMinutes = suggestedInterval;
-        _logger.info('Adaptive: Next break interval set to $suggestedInterval min');
+        _logger.info(
+          'Adaptive: Next break interval set to $suggestedInterval min',
+        );
       }
-      
+
       _lastBreakFinishedAt = now;
     }
 
@@ -448,11 +488,13 @@ class TimerEngine extends ChangeNotifier {
     _workElapsed = Duration.zero;
     sl<TrayManagerService>().setBreakActive(false);
 
-    _emit(TimerStateChangedEvent(
-      state: TimerStateEvent.running,
-      countdownSeconds: 0,
-      workElapsedSeconds: 0,
-    ));
+    _emit(
+      TimerStateChangedEvent(
+        state: TimerStateEvent.running,
+        countdownSeconds: 0,
+        workElapsedSeconds: 0,
+      ),
+    );
 
     notifyListeners();
   }
@@ -467,14 +509,24 @@ class TimerEngine extends ChangeNotifier {
   void updateSettings({
     int? shortIntervalMinutes,
     int? shortDurationSeconds,
+    int? preBreakWarningSeconds,
     int? longIntervalMinutes,
     int? longDurationSeconds,
     int? pauseAfterMinutes,
     int? resetAfterMinutes,
   }) {
-    if (shortIntervalMinutes != null) _shortBreakIntervalMinutes = shortIntervalMinutes;
-    if (shortDurationSeconds != null) _shortBreakDurationSeconds = shortDurationSeconds;
-    if (longIntervalMinutes != null) _longBreakIntervalMinutes = longIntervalMinutes;
+    if (shortIntervalMinutes != null) {
+      _shortBreakIntervalMinutes = shortIntervalMinutes;
+    }
+    if (shortDurationSeconds != null) {
+      _shortBreakDurationSeconds = shortDurationSeconds;
+    }
+    if (preBreakWarningSeconds != null) {
+      _preBreakWarningSeconds = preBreakWarningSeconds;
+    }
+    if (longIntervalMinutes != null) {
+      _longBreakIntervalMinutes = longIntervalMinutes;
+    }
     if (longDurationSeconds != null) {
       _longBreakDurationMinutes = (longDurationSeconds / 60).ceil();
     }
@@ -482,12 +534,17 @@ class TimerEngine extends ChangeNotifier {
     if (resetAfterMinutes != null) _resetTimerAfterMinutes = resetAfterMinutes;
 
     _activityMonitor.setIdleThreshold(_pauseTimerAfterMinutes);
-    _notificationService
-        .setNotificationsEnabled(_settingsRepository.currentSettings.notificationsEnabled);
-    _notificationService.setSoundEnabled(_settingsRepository.currentSettings.soundEnabled);
+    _notificationService.setNotificationsEnabled(
+      _settingsRepository.currentSettings.notificationsEnabled,
+    );
+    _notificationService.setSoundEnabled(
+      _settingsRepository.currentSettings.soundEnabled,
+    );
 
-    _logger.info('Settings updated at runtime: interval=$_shortBreakIntervalMinutes min, '
-        'duration=$_shortBreakDurationSeconds s');
+    _logger.info(
+      'Settings updated at runtime: interval=$_shortBreakIntervalMinutes min, '
+      'duration=$_shortBreakDurationSeconds s',
+    );
     notifyListeners();
   }
 
@@ -507,7 +564,8 @@ class TimerEngine extends ChangeNotifier {
 
     final mins = remaining.inMinutes;
     final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-    final title = settings.menuBarStyle == 'countdown' ||
+    final title =
+        settings.menuBarStyle == 'countdown' ||
             settings.trayIconStyle == 'countdown'
         ? '$mins:$secs'
         : '';
@@ -516,12 +574,12 @@ class TimerEngine extends ChangeNotifier {
     final status = _state == TimerState.breakActive
         ? 'Break active'
         : _isSmartPauseActive()
-            ? 'Paused for meeting or Focus'
-            : !_isWithinWorkingHours()
-                ? 'Paused outside working hours'
-                : _state == TimerState.paused
-                    ? 'Paused'
-                    : 'Next break';
+        ? 'Paused for meeting or Focus'
+        : !_isWithinWorkingHours()
+        ? 'Paused outside working hours'
+        : _state == TimerState.paused
+        ? 'Paused'
+        : 'Next break';
     sl<TrayManagerService>().setTooltip('$status in $mins:$secs');
   }
 
@@ -538,7 +596,9 @@ class TimerEngine extends ChangeNotifier {
           () {
             if (_state == TimerState.paused) {
               _workElapsed = Duration.zero;
-              _logger.info('Timer reset after $_resetTimerAfterMinutes min idle');
+              _logger.info(
+                'Timer reset after $_resetTimerAfterMinutes min idle',
+              );
             }
           },
         );
@@ -554,12 +614,15 @@ class TimerEngine extends ChangeNotifier {
     if (isManual) {
       _isManuallyPaused = true;
     }
+    _manualOverride = false;
     saveState();
-    _emit(TimerStateChangedEvent(
-      state: TimerStateEvent.paused,
-      countdownSeconds: _countdownSeconds,
-      workElapsedSeconds: _workElapsed.inSeconds,
-    ));
+    _emit(
+      TimerStateChangedEvent(
+        state: TimerStateEvent.paused,
+        countdownSeconds: _countdownSeconds,
+        workElapsedSeconds: _workElapsed.inSeconds,
+      ),
+    );
     notifyListeners();
   }
 
@@ -567,19 +630,19 @@ class TimerEngine extends ChangeNotifier {
     if (_state == TimerState.breakActive) return;
     _state = TimerState.running;
     _isManuallyPaused = false;
+    _manualOverride = true;
     _isPreBreak = false;
     _lastTickTime = DateTime.now();
-    if (!_isWithinWorkingHours()) {
-      _state = TimerState.paused;
-    }
     saveState();
-    _emit(TimerStateChangedEvent(
-      state: _state == TimerState.running
-          ? TimerStateEvent.running
-          : TimerStateEvent.paused,
-      countdownSeconds: _countdownSeconds,
-      workElapsedSeconds: _workElapsed.inSeconds,
-    ));
+    _emit(
+      TimerStateChangedEvent(
+        state: _state == TimerState.running
+            ? TimerStateEvent.running
+            : TimerStateEvent.paused,
+        countdownSeconds: _countdownSeconds,
+        workElapsedSeconds: _workElapsed.inSeconds,
+      ),
+    );
     notifyListeners();
   }
 
@@ -588,19 +651,24 @@ class TimerEngine extends ChangeNotifier {
     _postureElapsedSeconds = 0;
     _eyeBlinkElapsedSeconds = 0;
     _state = TimerState.idle;
+    _isManuallyPaused = false;
+    _manualOverride = false;
     _clockOutTriggered = false;
-    _emit(TimerStateChangedEvent(
-      state: TimerStateEvent.idle,
-      countdownSeconds: 0,
-      workElapsedSeconds: 0,
-    ));
+    _emit(
+      TimerStateChangedEvent(
+        state: TimerStateEvent.idle,
+        countdownSeconds: 0,
+        workElapsedSeconds: 0,
+      ),
+    );
     notifyListeners();
   }
 
   void triggerBreakNow({bool isLong = false}) {
     if (isLong) {
-      _longBreakWindowStartedAt = DateTime.now()
-          .subtract(Duration(minutes: _longBreakIntervalMinutes));
+      _longBreakWindowStartedAt = DateTime.now().subtract(
+        Duration(minutes: _longBreakIntervalMinutes),
+      );
     }
     _triggerBreak();
   }
@@ -622,12 +690,31 @@ class TimerEngine extends ChangeNotifier {
       _storageService.setString('timer_state', _state.name);
       _storageService.setString('timer_mode', _mode.name);
       _storageService.setInt('timer_work_elapsed', _workElapsed.inSeconds);
-      _storageService.setInt('timer_total_work_today', _totalWorkToday.inSeconds);
+      _storageService.setInt(
+        'timer_total_work_today',
+        _totalWorkToday.inSeconds,
+      );
       _storageService.setInt('timer_countdown', _countdownSeconds);
-      _storageService.setInt('timer_short_break_interval', _shortBreakIntervalMinutes);
-      _storageService.setInt('timer_short_break_duration', _shortBreakDurationSeconds);
-      _storageService.setInt('timer_long_break_interval', _longBreakIntervalMinutes);
-      _storageService.setInt('timer_long_break_duration', _longBreakDurationMinutes);
+      _storageService.setInt(
+        'timer_short_break_interval',
+        _shortBreakIntervalMinutes,
+      );
+      _storageService.setInt(
+        'timer_short_break_duration',
+        _shortBreakDurationSeconds,
+      );
+      _storageService.setInt(
+        'timer_pre_break_warning',
+        _preBreakWarningSeconds,
+      );
+      _storageService.setInt(
+        'timer_long_break_interval',
+        _longBreakIntervalMinutes,
+      );
+      _storageService.setInt(
+        'timer_long_break_duration',
+        _longBreakDurationMinutes,
+      );
       _storageService.setInt('timer_pause_after', _pauseTimerAfterMinutes);
       _storageService.setInt('timer_reset_after', _resetTimerAfterMinutes);
       _storageService.setBool('timer_is_completion', _isCompletionState);
@@ -635,12 +722,21 @@ class TimerEngine extends ChangeNotifier {
       _storageService.setBool('timer_is_pre_break', _isPreBreak);
       _storageService.setBool('timer_clock_out_triggered', _clockOutTriggered);
       _storageService.setInt('timer_posture_elapsed', _postureElapsedSeconds);
-      _storageService.setInt('timer_eye_blink_elapsed', _eyeBlinkElapsedSeconds);
+      _storageService.setInt(
+        'timer_eye_blink_elapsed',
+        _eyeBlinkElapsedSeconds,
+      );
       if (_longBreakWindowStartedAt != null) {
-        _storageService.setInt('timer_long_break_window', _longBreakWindowStartedAt!.millisecondsSinceEpoch);
+        _storageService.setInt(
+          'timer_long_break_window',
+          _longBreakWindowStartedAt!.millisecondsSinceEpoch,
+        );
       }
       if (_lastBreakFinishedAt != null) {
-        _storageService.setInt('timer_last_break_finished', _lastBreakFinishedAt!.millisecondsSinceEpoch);
+        _storageService.setInt(
+          'timer_last_break_finished',
+          _lastBreakFinishedAt!.millisecondsSinceEpoch,
+        );
       }
       _logger.info('Timer state saved');
     } catch (e) {
@@ -650,8 +746,14 @@ class TimerEngine extends ChangeNotifier {
 
   void restoreState() {
     try {
-      final stateStr = _storageService.getString('timer_state', defaultValue: 'idle');
-      _state = TimerState.values.firstWhere((s) => s.name == stateStr, orElse: () => TimerState.idle);
+      final stateStr = _storageService.getString(
+        'timer_state',
+        defaultValue: 'idle',
+      );
+      _state = TimerState.values.firstWhere(
+        (s) => s.name == stateStr,
+        orElse: () => TimerState.idle,
+      );
 
       // Prevent break screen from showing immediately on application launch
       if (_state == TimerState.breakActive) {
@@ -660,37 +762,85 @@ class TimerEngine extends ChangeNotifier {
         _countdownSeconds = 0;
       }
 
-      final modeStr = _storageService.getString('timer_mode', defaultValue: 'flexible');
-      _mode = WorkMode.values.firstWhere((m) => m.name == modeStr, orElse: () => WorkMode.flexible);
+      final modeStr = _storageService.getString(
+        'timer_mode',
+        defaultValue: 'flexible',
+      );
+      _mode = WorkMode.values.firstWhere(
+        (m) => m.name == modeStr,
+        orElse: () => WorkMode.flexible,
+      );
 
-      _workElapsed = Duration(seconds: _storageService.getInt('timer_work_elapsed'));
-      _totalWorkToday = Duration(seconds: _storageService.getInt('timer_total_work_today'));
+      _workElapsed = Duration(
+        seconds: _storageService.getInt('timer_work_elapsed'),
+      );
+      _totalWorkToday = Duration(
+        seconds: _storageService.getInt('timer_total_work_today'),
+      );
       _countdownSeconds = _storageService.getInt('timer_countdown');
-      _shortBreakIntervalMinutes = _storageService.getInt('timer_short_break_interval', defaultValue: _shortBreakIntervalMinutes);
-      _shortBreakDurationSeconds = _storageService.getInt('timer_short_break_duration', defaultValue: _shortBreakDurationSeconds);
-      _longBreakIntervalMinutes = _storageService.getInt('timer_long_break_interval', defaultValue: _longBreakIntervalMinutes);
-      _longBreakDurationMinutes = _storageService.getInt('timer_long_break_duration', defaultValue: _longBreakDurationMinutes);
-      _pauseTimerAfterMinutes = _storageService.getInt('timer_pause_after', defaultValue: _pauseTimerAfterMinutes);
-      _resetTimerAfterMinutes = _storageService.getInt('timer_reset_after', defaultValue: _resetTimerAfterMinutes);
+      _shortBreakIntervalMinutes = _storageService.getInt(
+        'timer_short_break_interval',
+        defaultValue: _shortBreakIntervalMinutes,
+      );
+      _shortBreakDurationSeconds = _storageService.getInt(
+        'timer_short_break_duration',
+        defaultValue: _shortBreakDurationSeconds,
+      );
+      _preBreakWarningSeconds = _storageService.getInt(
+        'timer_pre_break_warning',
+        defaultValue: _preBreakWarningSeconds,
+      );
+      _longBreakIntervalMinutes = _storageService.getInt(
+        'timer_long_break_interval',
+        defaultValue: _longBreakIntervalMinutes,
+      );
+      _longBreakDurationMinutes = _storageService.getInt(
+        'timer_long_break_duration',
+        defaultValue: _longBreakDurationMinutes,
+      );
+      _pauseTimerAfterMinutes = _storageService.getInt(
+        'timer_pause_after',
+        defaultValue: _pauseTimerAfterMinutes,
+      );
+      _resetTimerAfterMinutes = _storageService.getInt(
+        'timer_reset_after',
+        defaultValue: _resetTimerAfterMinutes,
+      );
       _isCompletionState = _storageService.getBool('timer_is_completion');
 
       // Prevent pre-break warnings from showing immediately on application launch
       _isPreBreak = false;
       _clockOutTriggered = _storageService.getBool('timer_clock_out_triggered');
-      _postureElapsedSeconds = _storageService.getInt('timer_posture_elapsed', defaultValue: 0);
-      _eyeBlinkElapsedSeconds = _storageService.getInt('timer_eye_blink_elapsed', defaultValue: 0);
+      _postureElapsedSeconds = _storageService.getInt(
+        'timer_posture_elapsed',
+        defaultValue: 0,
+      );
+      _eyeBlinkElapsedSeconds = _storageService.getInt(
+        'timer_eye_blink_elapsed',
+        defaultValue: 0,
+      );
 
-      final longBreakWindowMs = _storageService.getInt('timer_long_break_window', defaultValue: 0);
+      final longBreakWindowMs = _storageService.getInt(
+        'timer_long_break_window',
+        defaultValue: 0,
+      );
       if (longBreakWindowMs > 0) {
-        _longBreakWindowStartedAt = DateTime.fromMillisecondsSinceEpoch(longBreakWindowMs);
+        _longBreakWindowStartedAt = DateTime.fromMillisecondsSinceEpoch(
+          longBreakWindowMs,
+        );
       }
-      
-      final lastBreakMs = _storageService.getInt('timer_last_break_finished', defaultValue: 0);
+
+      final lastBreakMs = _storageService.getInt(
+        'timer_last_break_finished',
+        defaultValue: 0,
+      );
       if (lastBreakMs > 0) {
         _lastBreakFinishedAt = DateTime.fromMillisecondsSinceEpoch(lastBreakMs);
       }
 
-      _logger.info('Timer state restored: $_state, elapsed=${_workElapsed.inSeconds}s');
+      _logger.info(
+        'Timer state restored: $_state, elapsed=${_workElapsed.inSeconds}s',
+      );
     } catch (e) {
       _logger.error('Failed to restore timer state: $e');
     }
@@ -704,8 +854,6 @@ class TimerEngine extends ChangeNotifier {
       }
     });
   }
-
-
 
   String _randomTip(List<String> tips) {
     final copy = List<String>.from(tips)..shuffle();
