@@ -21,6 +21,14 @@ import 'package:breakmate/features/companion/controllers/companion_overlay_contr
 import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/core/display/services/overlay_fit_service.dart';
 import 'package:breakmate/core/display/controllers/display_controller.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/focus_mode_service.dart';
+import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
+import 'package:breakmate/features/companion/services/companion_state_manager.dart';
+import 'package:breakmate/features/companion/services/companion_window_controller.dart';
+import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
+import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -107,6 +115,56 @@ Future<void> initDependencies() async {
   await Future.wait([trayManager.init(), companionOverlayController.init()]);
 
   sl.registerSingleton<TrayManagerService>(trayManager);
+
+  // Application Controllers
+  final meetingDetectionService = MeetingDetectionService();
+  sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
+
+  final focusModeService = FocusModeService();
+  sl.registerSingleton<FocusModeService>(focusModeService);
+
+  final strictModeController = StrictModeController(
+    meetingDetectionService,
+    focusModeService,
+  );
+  sl.registerSingleton<StrictModeController>(strictModeController);
+
+  final breakController = BreakController(
+    timerEngine: sl(),
+    settingsRepo: sl(),
+    statsService: sl(),
+  );
+  breakController.initialize();
+  sl.registerSingleton<BreakController>(breakController);
+
+  // Menu Bar Controller (centralized action routing)
+  sl.registerSingleton<MenuBarController>(MenuBarController());
+
+  // Wire tray menu with dependencies
+  trayManager.setDependencies(timerEngine, sl());
+  trayManager.setMenuBarController(sl());
+
+  // Wire menu bar controller with break controller
+  sl<MenuBarController>().setDependencies(sl());
+
+  // Companion Services
+  final companionStateManager = CompanionStateManager(eventBus: sl());
+  companionStateManager.startListening();
+  sl.registerSingleton<CompanionStateManager>(companionStateManager);
+
+  // Companion Window Controller
+  final companionWindowController = CompanionWindowController();
+  sl.registerSingleton<CompanionWindowController>(companionWindowController);
+
+  // Companion Behavior Engine
+  final companionBehaviorEngine = CompanionBehaviorEngine(eventBus: sl());
+  companionBehaviorEngine.setEnabled(
+    settingsRepo.currentSettings.companionEnabled,
+  );
+  sl.registerSingleton<CompanionBehaviorEngine>(companionBehaviorEngine);
+
+  // Companion Overlay Controller (for settings UI)
+  sl.registerSingleton<CompanionOverlayController>(companionOverlayController);
 
   // Eagerly pre-cache tray icons for the current theme to ensure smooth animation
   try {
