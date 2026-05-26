@@ -14,13 +14,12 @@ fi
 
 mkdir -p "$DMG_DIR"
 
-# 1. Deep Sign the .app bundle
-echo "Deep signing .app bundle..."
-codesign --force --deep --options runtime --sign "Developer ID Application: Your Name (TEAMID)" "$APP_DIR"
+# 1. (REMOVED) Deep Sign the .app bundle
+# echo "Deep signing .app bundle..."
+# codesign --force --deep --options runtime --sign "Developer ID Application: Your Name (TEAMID)" "$APP_DIR"
 
 # 2. Create DMG
 echo "Creating DMG..."
-# Note: create-dmg must be installed (brew install create-dmg)
 create-dmg \
   --volname "${APP_NAME} Installer" \
   --background "assets/icons/tray_icon.png" \
@@ -33,8 +32,8 @@ create-dmg \
   "${DMG_DIR}/${DMG_NAME}" \
   "$APP_DIR"
 
-# 3. Sign the DMG
-echo "Signing DMG..."
-codesign --force --sign "Developer ID Application: Your Name (TEAMID)" "${DMG_DIR}/${DMG_NAME}"
+# 3. (REMOVED) Sign the DMG
+# echo "Signing DMG..."
+# codesign --force --sign "Developer ID Application: Your Name (TEAMID)" "${DMG_DIR}/${DMG_NAME}"
 
-echo "DMG created and signed at ${DMG_DIR}/${DMG_NAME}"
+echo "DMG created at ${DMG_DIR}/${DMG_NAME}"
