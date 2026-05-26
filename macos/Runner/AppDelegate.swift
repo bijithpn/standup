@@ -1,5 +1,6 @@
 import Cocoa
 import FlutterMacOS
+import Sparkle
 import appkit_ui_element_colors
 import audioplayers_darwin
 import flutter_local_notifications
@@ -30,6 +31,8 @@ class AppDelegate: FlutterAppDelegate {
   var focusBridge: FocusModeBridge?
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
+  
+  let updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
 
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return false
@@ -66,6 +69,16 @@ class AppDelegate: FlutterAppDelegate {
     }
     
     super.applicationDidFinishLaunching(notification)
+    
+    if let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu {
+      let checkForUpdatesItem = NSMenuItem(
+        title: "Check for Updates...",
+        action: #selector(SPUStandardUpdaterController.checkForUpdates(_:)),
+        keyEquivalent: ""
+      )
+      checkForUpdatesItem.target = updaterController
+      appMenu.insertItem(checkForUpdatesItem, at: 2)
+    }
   }
 }
 

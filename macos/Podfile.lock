@@ -18,6 +18,7 @@ PODS:
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - Sparkle (2.9.2)
   - tray_manager (0.0.1):
     - FlutterMacOS
   - url_launcher_macos (0.0.1):
@@ -35,9 +36,14 @@ DEPENDENCIES:
   - package_info_plus (from `Flutter/ephemeral/.symlinks/plugins/package_info_plus/macos`)
   - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
+  - Sparkle (~> 2.6)
   - tray_manager (from `Flutter/ephemeral/.symlinks/plugins/tray_manager/macos`)
   - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
   - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
+
+SPEC REPOS:
+  trunk:
+    - Sparkle
 
 EXTERNAL SOURCES:
   appkit_ui_element_colors:
@@ -75,10 +81,11 @@ SPEC CHECKSUMS:
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
+  Sparkle: 2d0c930d42d53ee0fdf98bbb342c08eaf18ab5f0
   tray_manager: a104b5c81b578d83f3c3d0f40a997c8b10810166
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
-PODFILE CHECKSUM: 180da7a1dbc1d932db021ebc8007656e7c46dd99
+PODFILE CHECKSUM: d80d4349b3ae10f00782b85cf1938aff0b57f8a4
 
 COCOAPODS: 1.16.2
