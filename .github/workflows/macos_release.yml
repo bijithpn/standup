@@ -10,15 +10,10 @@ on:
 jobs:
   build-and-release:
     name: Build, Package & Release macOS App
-    runs-on: macos-14
+    runs-on: macos-latest
 
     permissions:
       contents: write
-
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
-
-    env:
-      FLUTTER_VERSION: "stable"
 
     steps:
       - name: Checkout Repository
@@ -26,11 +21,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract Version Information
+      - name: Extract Version from pubspec.yaml
         id: version_info
-        shell: bash
         run: |
-          RAW_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          RAW_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
 
           SHORT_VERSION=$(echo "$RAW_VERSION" | cut -d'+' -f1)
           BUILD_NUMBER=$(echo "$RAW_VERSION" | cut -d'+' -f2)
@@ -49,47 +43,40 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          cache: true
 
-      - name: Flutter Doctor
-        run: flutter doctor -v
-
-      - name: Install Dependencies
+      - name: Install macOS Dependencies
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
           brew install create-dmg
+          brew install sparkle
 
-      - name: Install Flutter Packages
+      - name: Install Flutter Dependencies
         run: flutter pub get
+
+      - name: Install CocoaPods
+        run: |
+          cd macos
+          pod install
+          cd ..
 
       - name: Build macOS Release
         run: flutter build macos --release
 
-      - name: Debug Build Output
-        run: |
-          ls -R build/macos || true
-
-      - name: Verify App Exists
-        run: |
-          APP_PATH="build/macos/Build/Products/Release/BreakMate.app"
-
-          if [ ! -d "$APP_PATH" ]; then
-            echo "App bundle not found!"
-            exit 1
-          fi
-
-          echo "App bundle found"
-
-      - name: Create DMG
+      - name: Create DMG Installer
         run: |
           chmod +x scripts/create_dmg.sh
-          dos2unix scripts/create_dmg.sh || true
-
           ./scripts/create_dmg.sh
 
-      - name: Verify DMG Exists
+      - name: Generate Sparkle Appcast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
+          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
+          SHORT_VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+          BUILD_VERSION: ${{ steps.version_info.outputs.BUILD_NUMBER }}
         run: |
+          set -e
+
           DMG_PATH="release_dmg/BreakMate-Installer.dmg"
 
           if [ ! -f "$DMG_PATH" ]; then
@@ -97,91 +84,68 @@ jobs:
             exit 1
           fi
 
-          ls -lh "$DMG_PATH"
+          echo "Writing Sparkle private key..."
 
-      - name: Restore Sparkle Private Key
-        run: |
-          echo "${{ secrets.SPARKLE_EDDSA_KEY_BASE64 }}" | base64 --decode > sparkle_priv.key
-          chmod 600 sparkle_priv.key
 
-      - name: Install Sparkle Tools
-        run: |
-          curl -L https://github.com/sparkle-project/Sparkle/releases/latest/download/Sparkle.tar.xz -o sparkle.tar.xz
 
-          tar -xf sparkle.tar.xz
+          printf "%s" "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
 
-          find . -name sign_update
+          echo "Checking private key file..."
 
-      - name: Generate Sparkle Signature
-        id: sparkle_signature
-        shell: bash
-        run: |
-          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
-
-          FILE_SIZE=$(stat -f%z "$DMG_PATH")
-
-          SIGN_TOOL=$(find . -name sign_update | head -n 1)
-
-          if [ -z "$SIGN_TOOL" ]; then
-            echo "sign_update not found"
+          if [ ! -s sparkle_priv.key ]; then
+            echo "Sparkle private key file is empty!"
             exit 1
           fi
 
-          SIGN_OUTPUT=$($SIGN_TOOL -f sparkle_priv.key "$DMG_PATH")
+          FILE_SIZE=$(stat -f%z "$DMG_PATH")
+
+          echo "Finding Sparkle sign_update binary..."
+
+          SPARKLE_BIN="$(brew --prefix)/bin/sign_update"
+
+          if [ ! -f "$SPARKLE_BIN" ]; then
+            echo "sign_update binary not found!"
+            exit 1
+          fi
+
+          chmod +x "$SPARKLE_BIN"
+
+          echo "Generating Sparkle signature..."
+
+          SIGN_OUTPUT=$("$SPARKLE_BIN" -f sparkle_priv.key "$DMG_PATH")
 
           echo "$SIGN_OUTPUT"
 
           SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')
 
           if [ -z "$SIGNATURE" ]; then
-            echo "Failed to extract Sparkle signature"
+            echo "Failed to extract Sparkle signature!"
             exit 1
           fi
 
-          echo "SIGNATURE=$SIGNATURE" >> $GITHUB_OUTPUT
-          echo "FILE_SIZE=$FILE_SIZE" >> $GITHUB_OUTPUT
+          echo "Signature generated successfully"
 
-      - name: Generate Appcast
-        env:
-          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
-          SHORT_VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
-          BUILD_NUMBER: ${{ steps.version_info.outputs.BUILD_NUMBER }}
-          SIGNATURE: ${{ steps.sparkle_signature.outputs.SIGNATURE }}
-          FILE_SIZE: ${{ steps.sparkle_signature.outputs.FILE_SIZE }}
-        run: |
           DMG_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
 
           python3 scripts/generate_appcast.py \
-            "$BUILD_NUMBER" \
+            "$BUILD_VERSION" \
             "$SHORT_VERSION" \
             "$DMG_URL" \
             "$SIGNATURE" \
             "$FILE_SIZE" \
             "appcast.xml"
 
-          cat appcast.xml
-
-      - name: Create Git Tag
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          TAG=${{ steps.version_info.outputs.TAG_NAME }}
-
-          git tag "$TAG" || echo "Tag already exists"
-
-          git push origin "$TAG" || echo "Tag already pushed"
+          rm -f sparkle_priv.key
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
+          files: release_dmg/BreakMate-Installer.dmg
           name: Release ${{ steps.version_info.outputs.TAG_NAME }}
-          files: |
-            release_dmg/BreakMate-Installer.dmg
-          generate_release_notes: true
           draft: false
           prerelease: false
+          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -195,8 +159,3 @@ jobs:
           git commit -m "chore: update appcast for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]" || echo "No changes to commit"
 
           git push origin main
-
-      - name: Cleanup Sensitive Files
-        if: always()
-        run: |
-          rm -f sparkle_priv.key
