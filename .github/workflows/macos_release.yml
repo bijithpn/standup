@@ -1,4 +1,3 @@
-```yaml
 name: macOS Release Pipeline
 
 on:
@@ -6,7 +5,11 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'appcast.xml'
+      - "appcast.xml"
+
+concurrency:
+  group: macos-release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-release:
@@ -16,13 +19,16 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      FLUTTER_VERSION: stable
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      - name: Extract Version from pubspec.yaml
+      - name: Extract Version
         id: version_info
         run: |
           RAW_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
@@ -36,29 +42,66 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
 
-          echo "Version: $SHORT_VERSION"
-          echo "Build: $BUILD_NUMBER"
-          echo "Tag: $TAG_NAME"
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
+
+      - name: Cache Flutter Pub
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.pub-cache
+          key: pub-cache-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-cache-${{ runner.os }}-
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cocoapods
+            macos/Pods
+          key: pods-${{ runner.os }}-${{ hashFiles('macos/Podfile.lock') }}
+          restore-keys: |
+            pods-${{ runner.os }}-
+
+      - name: Cache Flutter Build
+        uses: actions/cache@v4
+        with:
+          path: |
+            build
+            .dart_tool
+          key: flutter-build-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            flutter-build-${{ runner.os }}-
 
       - name: Install macOS Dependencies
         env:
           HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
-          brew install create-dmg
-          brew install sparkle
+          if ! command -v create-dmg &> /dev/null; then
+            brew install create-dmg
+          fi
 
-      - name: Install Flutter Dependencies
+          if ! command -v sign_update &> /dev/null; then
+            brew install sparkle
+          fi
+
+      - name: Install Flutter Packages
         run: flutter pub get
 
       - name: Install CocoaPods
         run: |
           cd macos
-          pod install
+
+          if [ ! -d "Pods" ]; then
+            pod install
+          else
+            echo "Pods cache restored. Skipping pod install."
+          fi
+
           cd ..
 
       - name: Build macOS Release
@@ -81,37 +124,22 @@ jobs:
           DMG_PATH="release_dmg/BreakMate-Installer.dmg"
 
           if [ ! -f "$DMG_PATH" ]; then
-            echo "DMG not found!"
+            echo "DMG file missing"
             exit 1
           fi
 
-          echo "Writing Sparkle private key..."
-
-          # IMPORTANT:
-          # printf preserves formatting correctly
           printf "%s" "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
 
-          echo "Checking private key file..."
-
           if [ ! -s sparkle_priv.key ]; then
-            echo "Sparkle private key file is empty!"
+            echo "Sparkle private key missing"
             exit 1
           fi
 
           FILE_SIZE=$(stat -f%z "$DMG_PATH")
 
-          echo "Finding Sparkle sign_update binary..."
-
           SPARKLE_BIN="$(brew --prefix)/bin/sign_update"
 
-          if [ ! -f "$SPARKLE_BIN" ]; then
-            echo "sign_update binary not found!"
-            exit 1
-          fi
-
           chmod +x "$SPARKLE_BIN"
-
-          echo "Generating Sparkle signature..."
 
           SIGN_OUTPUT=$("$SPARKLE_BIN" -f sparkle_priv.key "$DMG_PATH")
 
@@ -120,11 +148,9 @@ jobs:
           SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')
 
           if [ -z "$SIGNATURE" ]; then
-            echo "Failed to extract Sparkle signature!"
+            echo "Failed to generate Sparkle signature"
             exit 1
           fi
-
-          echo "Signature generated successfully"
 
           DMG_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
 
@@ -150,14 +176,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Commit Updated Appcast
+      - name: Commit Appcast
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
           git add appcast.xml
 
-          git commit -m "chore: update appcast for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]" || echo "No changes to commit"
+          git commit -m "chore: update appcast for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]" || echo "No changes"
 
           git push origin main
-```
