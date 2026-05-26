@@ -29,16 +29,13 @@ class SoftFloatingWidgetTemplate extends StatefulWidget {
       _SoftFloatingWidgetTemplateState();
 }
 
-class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
-    with SingleTickerProviderStateMixin {
+class _SoftFloatingWidgetTemplateState
+    extends State<SoftFloatingWidgetTemplate> {
   // Placement coordinates
   double? _x;
   double? _y;
   bool _isDragging = false;
   bool _isHovered = false;
-
-  // Pulsing neon shadow animation
-  late AnimationController _pulseController;
 
   PetAnimationState _animationState = PetAnimationState.breakMode;
   Timer? _behaviorTimer;
@@ -46,16 +43,11 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..repeat(reverse: true);
     _startBehaviorCycle();
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
     _behaviorTimer?.cancel();
     super.dispose();
   }
@@ -143,8 +135,7 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Extra light dimming overlay to keep focus on screen
-              Container(color: Colors.black.withValues(alpha: 0.4)),
+              const _FloatingBackdrop(),
 
               // Corner Snappable Floating Pill
               AnimatedPositioned(
@@ -201,20 +192,17 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                       height: height,
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF16161A).withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(height / 2),
+                        color: const Color(0xFF101216).withValues(alpha: 0.92),
+                        borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: Colors.white.withValues(alpha: 0.1),
                           width: 1,
                         ),
                         boxShadow: [
-                          // Organic, highly sophisticated ambient glow shadow
                           BoxShadow(
-                            color: Colors.white.withValues(
-                              alpha: 0.02 + (_pulseController.value * 0.03),
-                            ),
-                            blurRadius: 16 + (_pulseController.value * 8),
-                            spreadRadius: 1 + (_pulseController.value * 1),
+                            color: Colors.black.withValues(alpha: 0.42),
+                            blurRadius: 28,
+                            offset: const Offset(0, 18),
                           ),
                         ],
                       ),
@@ -346,4 +334,34 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
       ),
     );
   }
+}
+
+class _FloatingBackdrop extends StatelessWidget {
+  const _FloatingBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _FloatingBackdropPainter(),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _FloatingBackdropPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black.withValues(alpha: 0.54);
+    canvas.drawRect(Offset.zero & size, paint);
+
+    final railPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.035)
+      ..strokeWidth = 1;
+    for (double y = 72; y < size.height; y += 96) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), railPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

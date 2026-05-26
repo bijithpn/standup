@@ -13,8 +13,6 @@ import 'package:standup/features/break_overlay/presentation/templates/zen_mode_t
 import 'package:standup/features/break_overlay/presentation/templates/productivity_hud_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:standup/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
-import 'package:standup/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
 
 enum BreakTheme {
   image,
@@ -54,6 +52,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   late BreakTheme _currentTheme;
   late AnimationController _kenBurnsController;
   late AnimationController _fadeController;
+  bool _classicEffectsRunning = false;
 
   String _title = "Time for a Break";
   String _tip = "Take a moment to recharge.";
@@ -90,7 +89,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _kenBurnsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
-    )..repeat(reverse: true);
+    );
 
     _fadeController = AnimationController(
       vsync: this,
@@ -98,24 +97,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
 
     _setupBridge();
-    
+
     // Smoothly fade in
     _fadeController.forward();
-
-    // Pre-cache companion sprite sheets post-frame to ensure zero-lag load
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      CompanionSpriteWidget.precacheSpriteSheet(PetTheme.getTheme('grey_cat').basePath);
-      CompanionSpriteWidget.precacheSpriteSheet(PetTheme.getTheme('orange_cat').basePath);
-      CompanionSpriteWidget.precacheSpriteSheet(PetTheme.getTheme('black_cat').basePath);
-    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Pre-cache slideshow images so they load instantly in memory
-    for (final path in AppConstants.wellnessSlideshow) {
-      precacheImage(AssetImage(path), context);
+    if (_breakTemplate == 'classic') {
+      precacheImage(AssetImage(_currentTemplate), context);
     }
   }
 
@@ -163,6 +154,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             if (args['breakTemplate'] != null) {
               _breakTemplate = args['breakTemplate'];
             }
+            _syncClassicEffects(_breakTemplate == 'classic');
             if (args['companionPetTheme'] != null) {
               _companionPetTheme = args['companionPetTheme'];
             } else if (args['companionCatTheme'] != null) {
@@ -177,7 +169,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             if (args['reminderType'] != null) {
               _reminderType = args['reminderType'];
             }
-            
+
             // Auto-dismiss quick reminders after 2 seconds
             if (_overlayType == 'quickReminder') {
               _fadeController.duration = const Duration(milliseconds: 250);
@@ -197,7 +189,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
     });
   }
-  
+
+  void _syncClassicEffects(bool enabled) {
+    if (_classicEffectsRunning == enabled) return;
+    _classicEffectsRunning = enabled;
+
+    if (enabled) {
+      _kenBurnsController.repeat(reverse: true);
+    } else {
+      _kenBurnsController.stop();
+    }
+  }
+
   void _skipBreak() {
     // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
@@ -217,7 +220,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     return FadeTransition(
       opacity: _fadeController,
       child: Material(
-        color: _overlayType == 'quickReminder' ? Colors.black.withValues(alpha: 0.4) : Colors.black,
+        color: _overlayType == 'quickReminder'
+            ? Colors.black.withValues(alpha: 0.4)
+            : Colors.black,
         child: GestureDetector(
           onVerticalDragUpdate: (details) {
             // If dragging up, dismiss the overlay completely (only if not in strict mode).
@@ -361,6 +366,29 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       fit: StackFit.expand,
       children: [
         templateWidget,
+        if (!_strictMode)
+          Positioned(
+            top: 28,
+            right: 28,
+            child: SafeArea(
+              child: IconButton(
+                tooltip: 'Skip break',
+                onPressed: _skipBreak,
+                icon: const Icon(CupertinoIcons.xmark),
+                color: Colors.white.withValues(alpha: 0.78),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.24),
+                  fixedSize: const Size.square(42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         // Global visual indicator to swipe up to dismiss
         if (!_strictMode)
           Positioned(
@@ -396,6 +424,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   Widget _buildQuickReminder() {
     final isPosture = _reminderType == 'posture';
+    final isBreakStart = _reminderType == 'breakStart';
     return Center(
       child: ScaleTransition(
         scale: Tween<double>(begin: 0.9, end: 1.0).animate(
@@ -411,7 +440,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           decoration: BoxDecoration(
             color: const Color(0xFF1C1C1E).withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.5),
@@ -431,14 +463,22 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isPosture ? CupertinoIcons.person_crop_circle_badge_checkmark : CupertinoIcons.eye,
+                  isBreakStart
+                      ? CupertinoIcons.timer
+                      : isPosture
+                      ? CupertinoIcons.person_crop_circle_badge_checkmark
+                      : CupertinoIcons.eye,
                   color: Colors.white,
                   size: 48,
                 ),
               ),
               const SizedBox(height: 24),
               Text(
-                isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
+                isBreakStart
+                    ? 'Break Starts Soon'
+                    : isPosture
+                    ? 'Check Your Posture'
+                    : 'Rest Your Eyes',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -449,7 +489,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
               const SizedBox(height: 12),
               Text(
-                isPosture
+                isBreakStart
+                    ? 'You have ${_remainingSeconds.clamp(0, 999)} seconds to save your work and pause cleanly.'
+                    : isPosture
                     ? 'Sit up straight, relax your neck, and drop your shoulders.'
                     : 'Blink a few times and focus on something far away.',
                 textAlign: TextAlign.center,

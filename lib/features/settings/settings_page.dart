@@ -182,7 +182,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Intelligent Detection':
         return 'Focus mode';
       case 'Companion':
-        return 'Desktop Companion';
+        return 'Companion';
       default:
         return section;
     }
@@ -566,7 +566,7 @@ class _SettingsPageState extends State<SettingsPage> {
             '',
             trailing: _inlineDropdown(
               '${_settings.shortBreakIntervalMinutes} min',
-              List.generate(60, (i) => '${i + 1} min'),
+              List.generate(180, (i) => '${i + 1} min'),
               (v) {
                 if (v != null) {
                   _save(
@@ -587,13 +587,12 @@ class _SettingsPageState extends State<SettingsPage> {
             trailing: _inlineDropdown(
               '${_settings.shortBreakDurationSeconds} sec',
               [
-                '15 sec',
-                '20 sec',
-                '30 sec',
-                '45 sec',
-                '60 sec',
+                ...List.generate(12, (i) => '${(i + 1) * 5} sec'),
+                '75 sec',
                 '90 sec',
                 '120 sec',
+                '180 sec',
+                '300 sec',
               ],
               (v) {
                 if (v != null) {
@@ -610,19 +609,39 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           _divider(),
           _inputRow(
+            'Heads-up Before Break',
+            'Show a small wrap-up reminder before the overlay opens.',
+            trailing: _inlineDropdown(
+              '${_settings.preBreakWarningSeconds} sec',
+              [
+                '0 sec',
+                '10 sec',
+                '15 sec',
+                '20 sec',
+                '30 sec',
+                '45 sec',
+                '60 sec',
+              ],
+              (v) {
+                if (v != null) {
+                  _save(
+                    _settings.copyWith(
+                      preBreakWarningSeconds: int.parse(
+                        v.replaceAll(' sec', ''),
+                      ),
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+          _divider(),
+          _inputRow(
             'Long Break Every',
             '',
             trailing: _inlineDropdown(
               '${_settings.longBreakIntervalMinutes} min',
-              [
-                '30 min',
-                '45 min',
-                '60 min',
-                '90 min',
-                '120 min',
-                '150 min',
-                '180 min',
-              ],
+              List.generate(46, (i) => '${15 + (i * 5)} min'),
               (v) {
                 if (v != null) {
                   _save(
@@ -642,7 +661,7 @@ class _SettingsPageState extends State<SettingsPage> {
             '',
             trailing: _inlineDropdown(
               '${_settings.longBreakDurationMinutes} min',
-              ['5 min', '10 min', '15 min', '20 min', '30 min'],
+              List.generate(30, (i) => '${i + 1} min'),
               (v) {
                 if (v != null) {
                   _save(
@@ -927,7 +946,11 @@ class _SettingsPageState extends State<SettingsPage> {
             padding: EdgeInsets.zero,
             backgroundColor: Colors.transparent,
             onPressed: () => _showExerciseEditor(existing: exercise),
-            child: const Icon(CupertinoIcons.pencil, size: 18, color: AppTheme.textSecondary),
+            child: const Icon(
+              CupertinoIcons.pencil,
+              size: 18,
+              color: AppTheme.textSecondary,
+            ),
           ),
           MinimalButton(
             padding: EdgeInsets.zero,
@@ -1020,7 +1043,10 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
                 const SizedBox(height: 8),
                 MinimalButton(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   isSecondary: true,
                   onPressed: () {
                     _showPicker(
@@ -1806,33 +1832,33 @@ class _SettingsPageState extends State<SettingsPage> {
         final templates = [
           (
             id: 'classic',
-            name: 'Classic Slideshow',
-            desc: 'Calming slideshow with weekly completed rest streak graph.',
+            name: 'Gallery Focus',
+            desc: 'Image-backed rest view with a compact progress panel.',
           ),
           (
             id: 'minimal',
-            name: 'Minimal Focus',
-            desc: 'Concentric ring timer with clean outline styling.',
+            name: 'Quiet Grid',
+            desc: 'Fast-loading custom dial with low-stimulus geometry.',
           ),
           (
             id: 'companion',
-            name: 'Interactive Pet',
-            desc: 'Snappable pet companion with live dialogue bubbles.',
+            name: 'Companion Dock',
+            desc: 'Draggable companion layer with a clean command rail.',
           ),
           (
             id: 'zen',
-            name: 'Zen Breath',
-            desc: 'Japanese morning sun gradient with box breathing guide.',
+            name: 'Breath Lines',
+            desc: 'Minimal breathing guide on a quiet lined surface.',
           ),
           (
             id: 'hud',
-            name: 'Productivity HUD',
-            desc: 'Neon stats panels and custom glow activity graph.',
+            name: 'Signal HUD',
+            desc: 'Telemetry-style timer using static grid rendering.',
           ),
           (
             id: 'floating',
-            name: 'Floating Pill',
-            desc: 'Corner-snapped draggable capsule with warm alerts.',
+            name: 'Floating Dock',
+            desc: 'Snappable compact overlay with lazy companion loading.',
           ),
         ];
 
@@ -2331,7 +2357,7 @@ class _SettingsPageState extends State<SettingsPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionHeader('Desktop Companion'),
+            _sectionHeader('Companion'),
             Padding(
               padding: const EdgeInsets.only(left: 4, bottom: 24),
               child: Text(

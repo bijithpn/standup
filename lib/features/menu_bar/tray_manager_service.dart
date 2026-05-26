@@ -37,11 +37,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   Future<void> init() async {
     trayManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
-    
+
     // Eagerly sync style from SettingsRepository before icon extraction/load
     final settingsRepo = sl<SettingsRepository>();
     setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
-    
+
     // Clean up older cached white/legacy tray icons from system temp directory
     try {
       final tempDir = Directory.systemTemp;
@@ -57,7 +57,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         }
       }
     } catch (_) {}
-    
+
     await _extractIcons();
     await _applyIcon();
     await _buildMenu();
@@ -79,10 +79,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   Future<void> _extractIcons() async {
     final tempDir = Directory.systemTemp;
-    final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+    final isDark =
+        ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     final themeSuffix = isDark ? '_dark' : '_light';
 
-    final defaultFile = '${tempDir.path}/bm_ctray_default${themeSuffix}Template@2x.png';
+    final defaultFile =
+        '${tempDir.path}/bm_ctray_default${themeSuffix}Template@2x.png';
     _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
       'assets/icons/tray_icon.png',
       defaultFile,
@@ -144,7 +146,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
               iconName = 'idle';
               break;
           }
-          final fallbackFile = '${tempDir.path}/bm_ccat_${state.name}${themeSuffix}Template@2x.png';
+          final fallbackFile =
+              '${tempDir.path}/bm_ccat_${state.name}${themeSuffix}Template@2x.png';
           final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,
@@ -222,7 +225,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     } else if (config is SeparateAnimationConfig) {
       stepTime = config.stepTime;
     }
-    
+
     // Clamp to a safe minimum of 120ms to protect macOS system tray resource consumption
     final ms = (stepTime * 1000).toInt().clamp(120, 1000);
     _animTimer = Timer.periodic(Duration(milliseconds: ms), (_) {
@@ -250,13 +253,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   void triggerActionAnimation() {
     if (_iconMode != TrayIconMode.companion) return;
-    
+
     _actionAnimTimer?.cancel();
     _isActionActive = true;
     _currentFrameIndex = 0;
     _updateTimerSpeed();
     _applyIcon();
-    
+
     _actionAnimTimer = Timer(const Duration(milliseconds: 1200), () {
       _isActionActive = false;
       _currentFrameIndex = 0;
@@ -294,7 +297,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   Future<void> _buildMenu() async {
     String statusLabel = 'BreakMate';
-    
+
     if (_timerEngine != null) {
       if (_isBreakActive) {
         statusLabel = 'On Break';
@@ -312,18 +315,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     if (_isBreakActive) {
       items.addAll([
-        MenuItem(
-          key: 'complete_break',
-          label: 'Complete Break',
-        ),
-        MenuItem(
-          key: 'skip_current_break',
-          label: 'Skip Break',
-        ),
-        MenuItem(
-          key: 'postpone_break',
-          label: 'Postpone Break (2 min)',
-        ),
+        MenuItem(key: 'complete_break', label: 'Complete Break'),
+        MenuItem(key: 'skip_current_break', label: 'Skip Break'),
+        MenuItem(key: 'postpone_break', label: 'Postpone Break (2 min)'),
         MenuItem.separator(),
       ]);
     } else {
@@ -332,31 +326,16 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           key: 'toggle_pause',
           label: _isPaused ? 'Resume Timer' : 'Pause Timer',
         ),
-        MenuItem(
-          key: 'take_break',
-          label: 'Instant Break',
-        ),
-        MenuItem(
-          key: 'skip_next',
-          label: 'Skip Next Break',
-        ),
+        MenuItem(key: 'take_break', label: 'Instant Break'),
+        MenuItem(key: 'skip_next', label: 'Skip Next Break'),
         MenuItem.separator(),
       ]);
     }
 
     items.addAll([
-      MenuItem(
-        key: 'open_app',
-        label: 'Open App',
-      ),
-      MenuItem(
-        key: 'open_companion',
-        label: 'Desktop Companion',
-      ),
-      MenuItem(
-        key: 'open_stats',
-        label: 'Statistics',
-      ),
+      MenuItem(key: 'open_app', label: 'Open App'),
+      MenuItem(key: 'open_companion', label: 'Companion'),
+      MenuItem(key: 'open_stats', label: 'Statistics'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Quit BreakMate'),
     ]);
@@ -364,7 +343,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final menu = Menu(items: items);
     await trayManager.setContextMenu(menu);
   }
-
 
   void _handleAction(String action) {
     _logger.info('Tray action: $action');
@@ -377,7 +355,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     controller.handleAction(action);
   }
 
-  void setDependencies(TimerEngine timerEngine, BreakController breakController) {
+  void setDependencies(
+    TimerEngine timerEngine,
+    BreakController breakController,
+  ) {
     _timerEngine?.removeListener(_onTimerChanged);
     _breakController?.removeListener(_onTimerChanged);
     _timerEngine = timerEngine;
@@ -388,6 +369,22 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void _onTimerChanged() {
+    final timerEngine = _timerEngine;
+    if (timerEngine != null) {
+      final isPaused = timerEngine.state == TimerState.paused;
+      final isBreakActive = timerEngine.state == TimerState.breakActive;
+      final visualStateChanged =
+          _isPaused != isPaused || _isBreakActive != isBreakActive;
+
+      _isPaused = isPaused;
+      _isBreakActive = isBreakActive;
+
+      if (visualStateChanged) {
+        _currentFrameIndex = 0;
+        _updateTimerSpeed();
+        _applyIcon();
+      }
+    }
     _buildMenu();
   }
 

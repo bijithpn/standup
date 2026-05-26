@@ -35,7 +35,8 @@ class ClassicSlideshowTemplate extends StatefulWidget {
   });
 
   @override
-  State<ClassicSlideshowTemplate> createState() => _ClassicSlideshowTemplateState();
+  State<ClassicSlideshowTemplate> createState() =>
+      _ClassicSlideshowTemplateState();
 }
 
 class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
@@ -55,7 +56,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
         final data = stats.weeklyData.map((d) => d.breaksCompleted).toList();
         if (data.isNotEmpty) {
           setState(() {
-            _dataPoints = data.length > 7 ? data.sublist(data.length - 7) : data;
+            _dataPoints = data.length > 7
+                ? data.sublist(data.length - 7)
+                : data;
           });
         }
       }
@@ -101,7 +104,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
         },
       );
     } else {
-      final fallbackImg = widget.singleImage ?? AppConstants.wellnessSlideshow.first;
+      final fallbackImg =
+          widget.singleImage ?? AppConstants.wellnessSlideshow.first;
       backgroundWidget = AnimatedBuilder(
         animation: widget.kenBurnsController,
         builder: (context, child) {
@@ -125,9 +129,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
         fit: StackFit.expand,
         children: [
           // Slideshow Background with Ken Burns
-          RepaintBoundary(
-            child: backgroundWidget,
-          ),
+          RepaintBoundary(child: backgroundWidget),
 
           // Calming dimming glassmorphic/gradient overlay
           Container(
@@ -151,7 +153,10 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
               children: [
                 // Top Header Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40.0,
+                    vertical: 20.0,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -197,20 +202,23 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                 RepaintBoundary(
                   child: Center(
                     child: Container(
-                      width: 520,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 48),
+                      width: 560,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 48,
+                      ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(32),
+                        color: Colors.black.withValues(alpha: 0.58),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
+                          color: Colors.white.withValues(alpha: 0.12),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 40,
-                            offset: const Offset(0, 20),
+                            color: Colors.black.withValues(alpha: 0.34),
+                            blurRadius: 30,
+                            offset: const Offset(0, 16),
                           ),
                         ],
                       ),
@@ -254,17 +262,20 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                               fontFamily: 'Satoshi',
                             ),
                           ),
-                          
+
                           // Optional exercise instruction card
                           if (widget.settings.showExercisesInBreak &&
                               widget.exerciseTitle != null &&
                               widget.exerciseInstructions != null) ...[
                             const SizedBox(height: 32),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.03),
-                                borderRadius: BorderRadius.circular(16),
+                                borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.08),
                                 ),
@@ -297,7 +308,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                     widget.exerciseInstructions!,
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.6),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w400,
                                       height: 1.4,
@@ -318,7 +331,10 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
 
                 // Bottom Panel: Streak Activity Graph & Skip Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 30.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 40.0,
+                    vertical: 30.0,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -352,7 +368,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                       Text(
                                         'WEEKLY REST ACTIVITY',
                                         style: TextStyle(
-                                          color: Colors.white.withValues(alpha: 0.5),
+                                          color: Colors.white.withValues(
+                                            alpha: 0.5,
+                                          ),
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: 1.0,

@@ -16,6 +16,7 @@ class AppConstants {
   // Short break defaults
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
+  static const int defaultPreBreakWarningSeconds = 20;
 
   // Long break defaults
   static const int defaultLongBreakIntervalMinutes = 60;
@@ -35,6 +36,7 @@ class AppConstants {
   // Storage keys
   static const String keyShortBreakInterval = 'short_break_interval';
   static const String keyShortBreakDuration = 'short_break_duration';
+  static const String keyPreBreakWarningSeconds = 'pre_break_warning_seconds';
   static const String keyLongBreakInterval = 'long_break_interval';
   static const String keyLongBreakDuration = 'long_break_duration';
   static const String keySoundEnabled = 'sound_enabled';

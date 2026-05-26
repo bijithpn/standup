@@ -27,10 +27,12 @@ class CompanionInteractiveTemplate extends StatefulWidget {
   });
 
   @override
-  State<CompanionInteractiveTemplate> createState() => _CompanionInteractiveTemplateState();
+  State<CompanionInteractiveTemplate> createState() =>
+      _CompanionInteractiveTemplateState();
 }
 
-class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTemplate> {
+class _CompanionInteractiveTemplateState
+    extends State<CompanionInteractiveTemplate> {
   // Companion placement and physics snapping
   double? _x;
   double? _y;
@@ -81,11 +83,11 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
   void _startAIBehaviorCycle() {
     _aiBehaviorTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
       if (!mounted || _isDragging || _isSnapping) return;
-      
+
       final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
       final species = petTheme.species;
       final random = Random().nextDouble();
-      
+
       setState(() {
         if (random < 0.25) {
           _animationState = PetAnimationState.stretch;
@@ -157,9 +159,13 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
     });
   }
 
-  void _snapToEdges(double screenWidth, double screenHeight, double widgetSize) {
+  void _snapToEdges(
+    double screenWidth,
+    double screenHeight,
+    double widgetSize,
+  ) {
     if (_x == null || _y == null) return;
-    
+
     // Snap to the closest edge: Left, Right, Top, Bottom
     final distLeft = _x!;
     final distRight = screenWidth - (_x! + widgetSize);
@@ -217,24 +223,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Ambient full-screen dark screen dimming
-              Container(
-                color: Colors.black.withValues(alpha: 0.8),
-              ),
-
-              // Ambient backdrop aesthetic particles or slow floating glow
-              Positioned(
-                top: constraints.maxHeight * 0.15,
-                left: constraints.maxWidth * 0.2,
-                child: Container(
-                  width: 300,
-                  height: 300,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.02),
-                  ),
-                ),
-              ),
+              const _CompanionBackdrop(),
 
               // Main Subtle Floating Timer Header Card
               Positioned(
@@ -243,12 +232,15 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.015),
-                      borderRadius: BorderRadius.circular(24),
+                      color: const Color(0xFF111318).withValues(alpha: 0.88),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
+                        color: Colors.white.withValues(alpha: 0.1),
                       ),
                     ),
                     child: Row(
@@ -258,7 +250,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: Colors.greenAccent,
+                            color: Color(0xFFA7F3D0),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -299,7 +291,9 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
 
               // Interactive Companion Widget
               AnimatedPositioned(
-                duration: _isDragging ? Duration.zero : const Duration(milliseconds: 300),
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
                 left: _x,
                 top: _y,
@@ -326,7 +320,11 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                     setState(() {
                       _isDragging = false;
                     });
-                    _snapToEdges(constraints.maxWidth, constraints.maxHeight, widgetSize);
+                    _snapToEdges(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                      widgetSize,
+                    );
                   },
                   onTap: () {
                     // Quick Action Menu on Click
@@ -356,14 +354,18 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                   vertical: 8,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E24).withValues(alpha: 0.85),
-                                  borderRadius: BorderRadius.circular(16),
+                                  color: const Color(
+                                    0xFF1E1E24,
+                                  ).withValues(alpha: 0.85),
+                                  borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.1),
                                   ),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.3),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.3,
+                                      ),
                                       blurRadius: 12,
                                       offset: const Offset(0, 4),
                                     ),
@@ -411,8 +413,10 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                               child: Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1E1E24).withValues(alpha: 0.9),
-                                  borderRadius: BorderRadius.circular(20),
+                                  color: const Color(
+                                    0xFF1E1E24,
+                                  ).withValues(alpha: 0.92),
+                                  borderRadius: BorderRadius.circular(10),
                                   border: Border.all(
                                     color: Colors.white.withValues(alpha: 0.12),
                                   ),
@@ -426,17 +430,26 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                       color: const Color(0xFFFFD700),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = PetAnimationState.stretch;
+                                          _animationState =
+                                              PetAnimationState.stretch;
                                           if (species == PetSpecies.dog) {
-                                            _speechText = 'A big dog stretch! Ready for action!';
-                                          } else if (species == PetSpecies.rabbit) {
-                                            _speechText = 'Hop stretch! Warming up my hind legs!';
-                                          } else if (species == PetSpecies.fox) {
-                                            _speechText = 'Sly fox stretch! Stay alert!';
-                                          } else if (species == PetSpecies.dragon) {
-                                            _speechText = 'Spreading my wings for a grand stretch!';
+                                            _speechText =
+                                                'A big dog stretch! Ready for action!';
+                                          } else if (species ==
+                                              PetSpecies.rabbit) {
+                                            _speechText =
+                                                'Hop stretch! Warming up my hind legs!';
+                                          } else if (species ==
+                                              PetSpecies.fox) {
+                                            _speechText =
+                                                'Sly fox stretch! Stay alert!';
+                                          } else if (species ==
+                                              PetSpecies.dragon) {
+                                            _speechText =
+                                                'Spreading my wings for a grand stretch!';
                                           } else {
-                                            _speechText = 'Mmm, cat stretching feels incredible...';
+                                            _speechText =
+                                                'Mmm, cat stretching feels incredible...';
                                           }
                                           _showInteractionMenu = false;
                                         });
@@ -448,17 +461,26 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                       color: const Color(0xFFFF9500),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = PetAnimationState.lick1;
+                                          _animationState =
+                                              PetAnimationState.lick1;
                                           if (species == PetSpecies.dog) {
-                                            _speechText = 'Happily licking your screen! Slurp!';
-                                          } else if (species == PetSpecies.rabbit) {
-                                            _speechText = '*Twitching nose and cleaning long ears...*';
-                                          } else if (species == PetSpecies.fox) {
-                                            _speechText = '*Grooming its fluffy tail...*';
-                                          } else if (species == PetSpecies.dragon) {
-                                            _speechText = '*Polishing shiny dragon scales...*';
+                                            _speechText =
+                                                'Happily licking your screen! Slurp!';
+                                          } else if (species ==
+                                              PetSpecies.rabbit) {
+                                            _speechText =
+                                                '*Twitching nose and cleaning long ears...*';
+                                          } else if (species ==
+                                              PetSpecies.fox) {
+                                            _speechText =
+                                                '*Grooming its fluffy tail...*';
+                                          } else if (species ==
+                                              PetSpecies.dragon) {
+                                            _speechText =
+                                                '*Polishing shiny dragon scales...*';
                                           } else {
-                                            _speechText = '*Carefully grooming its soft whiskers...*';
+                                            _speechText =
+                                                '*Carefully grooming its soft whiskers...*';
                                           }
                                           _showInteractionMenu = false;
                                         });
@@ -470,17 +492,26 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                       color: const Color(0xFF34C759),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = PetAnimationState.walkSide;
+                                          _animationState =
+                                              PetAnimationState.walkSide;
                                           if (species == PetSpecies.dog) {
-                                            _speechText = 'Zooms around hyperactively!';
-                                          } else if (species == PetSpecies.rabbit) {
-                                            _speechText = 'Hop hop! Exploring new territory!';
-                                          } else if (species == PetSpecies.fox) {
-                                            _speechText = 'Prowling silently... What was that?';
-                                          } else if (species == PetSpecies.dragon) {
-                                            _speechText = 'Gliding through the air currents...';
+                                            _speechText =
+                                                'Zooms around hyperactively!';
+                                          } else if (species ==
+                                              PetSpecies.rabbit) {
+                                            _speechText =
+                                                'Hop hop! Exploring new territory!';
+                                          } else if (species ==
+                                              PetSpecies.fox) {
+                                            _speechText =
+                                                'Prowling silently... What was that?';
+                                          } else if (species ==
+                                              PetSpecies.dragon) {
+                                            _speechText =
+                                                'Gliding through the air currents...';
                                           } else {
-                                            _speechText = 'Stalking a phantom laser pointer...';
+                                            _speechText =
+                                                'Stalking a phantom laser pointer...';
                                           }
                                           _showInteractionMenu = false;
                                         });
@@ -492,17 +523,26 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                       color: const Color(0xFFFF453A),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = PetAnimationState.excited;
+                                          _animationState =
+                                              PetAnimationState.excited;
                                           if (species == PetSpecies.dog) {
-                                            _speechText = 'Happy barks and tail wags! Woof!';
-                                          } else if (species == PetSpecies.rabbit) {
-                                            _speechText = '*Excited nose wiggles and tiny binkies!*';
-                                          } else if (species == PetSpecies.fox) {
-                                            _speechText = '*Happy yips and playful pounces!*';
-                                          } else if (species == PetSpecies.dragon) {
-                                            _speechText = '*Roars softly and breathes tiny heart sparks!*';
+                                            _speechText =
+                                                'Happy barks and tail wags! Woof!';
+                                          } else if (species ==
+                                              PetSpecies.rabbit) {
+                                            _speechText =
+                                                '*Excited nose wiggles and tiny binkies!*';
+                                          } else if (species ==
+                                              PetSpecies.fox) {
+                                            _speechText =
+                                                '*Happy yips and playful pounces!*';
+                                          } else if (species ==
+                                              PetSpecies.dragon) {
+                                            _speechText =
+                                                '*Roars softly and breathes tiny heart sparks!*';
                                           } else {
-                                            _speechText = '*Happy purrs and headbutts! Meow!*';
+                                            _speechText =
+                                                '*Happy purrs and headbutts! Meow!*';
                                           }
                                           _showInteractionMenu = false;
                                         });
@@ -514,17 +554,26 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                                       color: const Color(0xFF00E5FF),
                                       onPressed: () {
                                         setState(() {
-                                          _animationState = PetAnimationState.sleep;
+                                          _animationState =
+                                              PetAnimationState.sleep;
                                           if (species == PetSpecies.dog) {
-                                            _speechText = 'Soft puppy snores... Zzz.';
-                                          } else if (species == PetSpecies.rabbit) {
-                                            _speechText = 'Napping snugly... Zzz.';
-                                          } else if (species == PetSpecies.fox) {
-                                            _speechText = 'Sleeping in a curl... Zzz.';
-                                          } else if (species == PetSpecies.dragon) {
-                                            _speechText = 'Resting on a pile of gold... Zzz.';
+                                            _speechText =
+                                                'Soft puppy snores... Zzz.';
+                                          } else if (species ==
+                                              PetSpecies.rabbit) {
+                                            _speechText =
+                                                'Napping snugly... Zzz.';
+                                          } else if (species ==
+                                              PetSpecies.fox) {
+                                            _speechText =
+                                                'Sleeping in a curl... Zzz.';
+                                          } else if (species ==
+                                              PetSpecies.dragon) {
+                                            _speechText =
+                                                'Resting on a pile of gold... Zzz.';
                                           } else {
-                                            _speechText = 'Cozy catnap mode: activated.';
+                                            _speechText =
+                                                'Cozy catnap mode: activated.';
                                           }
                                           _showInteractionMenu = false;
                                         });
@@ -535,7 +584,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                               ),
                             ),
                           ),
- 
+
                         // Companion Sprite rendering
                         SizedBox(
                           width: widgetSize,
@@ -573,7 +622,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                       ),
                     ),
                     Text(
-                      'Drag your companion to snap them to screen edges.',
+                      'Drag to reposition',
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.35),
                         fontSize: 12,
@@ -592,7 +641,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
                               vertical: 10,
                             ),
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: Colors.white.withValues(alpha: 0.15),
                               ),
@@ -630,7 +679,11 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
     );
   }
 
-  Widget _buildMenuButton({required IconData icon, required Color color, required VoidCallback onPressed}) {
+  Widget _buildMenuButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onPressed,
+  }) {
     return GestureDetector(
       onTap: onPressed,
       child: MouseRegion(
@@ -638,9 +691,7 @@ class _CompanionInteractiveTemplateState extends State<CompanionInteractiveTempl
         child: Container(
           padding: const EdgeInsets.all(8),
           margin: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-          ),
+          decoration: const BoxDecoration(shape: BoxShape.circle),
           child: Icon(icon, size: 14, color: color),
         ),
       ),
@@ -662,6 +713,38 @@ class _BubbleTailPainter extends CustomPainter {
       ..close();
 
     canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _CompanionBackdrop extends StatelessWidget {
+  const _CompanionBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _CompanionBackdropPainter(),
+      child: const SizedBox.expand(),
+    );
+  }
+}
+
+class _CompanionBackdropPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFF07080A).withValues(alpha: 0.92),
+    );
+
+    final railPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.04)
+      ..strokeWidth = 1;
+    for (double x = 36; x < size.width; x += 84) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), railPaint);
+    }
   }
 
   @override

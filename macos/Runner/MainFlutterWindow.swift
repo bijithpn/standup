@@ -153,7 +153,12 @@ class OverlayWindowManager: NSObject {
         initialArgs["boundsWidth"] = screen.frame.width
         initialArgs["boundsHeight"] = screen.frame.height
         
-        channel.invokeMethod("updateOverlayData", arguments: initialArgs)
+        DispatchQueue.main.async {
+            channel.invokeMethod("updateOverlayData", arguments: initialArgs)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            channel.invokeMethod("updateOverlayData", arguments: initialArgs)
+        }
         
         channel.setMethodCallHandler { call, result in
             switch call.method {

@@ -27,20 +27,26 @@ class _BreakOverlayState extends State<BreakOverlay>
   int _currentSlide = 0;
   Timer? _slideshowTimer;
   late AnimationController _kenBurnsController;
+  late AnimationController _fadeController;
+  bool _classicEffectsRunning = false;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _startSlideshow();
 
     _kenBurnsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
-    )..repeat(reverse: true);
+    );
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
   }
 
   void _startSlideshow() {
+    if (_slideshowTimer != null) return;
     _slideshowTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (!mounted) return;
       setState(() {
@@ -57,11 +63,26 @@ class _BreakOverlayState extends State<BreakOverlay>
     });
   }
 
+  void _syncClassicEffects(bool enabled) {
+    if (_classicEffectsRunning == enabled) return;
+    _classicEffectsRunning = enabled;
+
+    if (enabled) {
+      _startSlideshow();
+      _kenBurnsController.repeat(reverse: true);
+    } else {
+      _slideshowTimer?.cancel();
+      _slideshowTimer = null;
+      _kenBurnsController.stop();
+    }
+  }
+
   @override
   void dispose() {
     _slideshowTimer?.cancel();
     _pageController.dispose();
     _kenBurnsController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -73,24 +94,41 @@ class _BreakOverlayState extends State<BreakOverlay>
         final breakInfo = timerEngine.activeBreak;
 
         if (breakInfo == null || timerEngine.state != TimerState.breakActive) {
+          _syncClassicEffects(false);
+          if (_fadeController.value > 0) {
+            _fadeController.reverse();
+          }
           return const SizedBox.shrink();
         }
 
-        return GestureDetector(
-          onVerticalDragUpdate: (details) {
-            if (!controller.settingsRepository.currentSettings.strictMode &&
-                details.primaryDelta! < -10) {
-              controller.skipCurrentBreak();
-            }
-          },
-          onHorizontalDragUpdate: (details) {},
-          child: _BreakOverlayContent(
-            breakInfo: breakInfo,
-            settings: controller.settingsRepository.currentSettings,
-            timerEngine: timerEngine,
-            controller: controller,
-            pageController: _pageController,
-            kenBurnsController: _kenBurnsController,
+        final settings = controller.settingsRepository.currentSettings;
+        _syncClassicEffects(settings.breakTemplate == 'classic');
+        if (_fadeController.status != AnimationStatus.forward &&
+            _fadeController.value < 1) {
+          _fadeController.forward();
+        }
+
+        return FadeTransition(
+          opacity: CurvedAnimation(
+            parent: _fadeController,
+            curve: Curves.easeOutCubic,
+          ),
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              if (!controller.settingsRepository.currentSettings.strictMode &&
+                  details.primaryDelta! < -10) {
+                controller.skipCurrentBreak();
+              }
+            },
+            onHorizontalDragUpdate: (details) {},
+            child: _BreakOverlayContent(
+              breakInfo: breakInfo,
+              settings: settings,
+              timerEngine: timerEngine,
+              controller: controller,
+              pageController: _pageController,
+              kenBurnsController: _kenBurnsController,
+            ),
           ),
         );
       },
@@ -195,6 +233,29 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
       fit: StackFit.expand,
       children: [
         templateWidget,
+        if (!widget.settings.strictMode)
+          Positioned(
+            top: 28,
+            right: 28,
+            child: SafeArea(
+              child: IconButton(
+                tooltip: 'Skip break',
+                onPressed: onSkip,
+                icon: const Icon(CupertinoIcons.xmark),
+                color: Colors.white.withValues(alpha: 0.78),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.black.withValues(alpha: 0.24),
+                  fixedSize: const Size.square(42),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         // Global visual indicator to swipe up to dismiss
         if (!widget.settings.strictMode)
           Positioned(
