@@ -2,9 +2,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/settings/widgets/settings_widgets.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class AboutSection extends StatefulWidget {
   final SettingsModel settings;

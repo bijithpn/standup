@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class ZenModeTemplate extends StatefulWidget {
   final BreakModel breakInfo;

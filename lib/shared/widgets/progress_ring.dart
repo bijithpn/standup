@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class ProgressRing extends StatelessWidget {
   final double progress;

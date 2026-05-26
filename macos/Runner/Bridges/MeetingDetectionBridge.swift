@@ -16,7 +16,7 @@ class MeetingDetectionBridge: NSObject, FlutterStreamHandler {
 
     init(registrar: FlutterPluginRegistrar) {
         super.init()
-        let channel = FlutterEventChannel(name: "com.standup/meeting_detection", binaryMessenger: registrar.messenger)
+        let channel = FlutterEventChannel(name: "com.breakmate/meeting_detection", binaryMessenger: registrar.messenger)
         channel.setStreamHandler(self)
         
         NSWorkspace.shared.notificationCenter.addObserver(

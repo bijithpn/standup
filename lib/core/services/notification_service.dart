@@ -1,11 +1,11 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/errors/app_exception.dart';
-import 'package:standup/core/errors/error_handler.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/features/companion/assets/pet_asset_loader.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/settings/settings_repository.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
 class NotificationService {
   final FlutterLocalNotificationsPlugin _plugin =

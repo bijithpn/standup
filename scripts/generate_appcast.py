@@ -13,8 +13,8 @@ def generate_appcast(version, short_version, dmg_url, signature, file_size, appc
     else:
         root = ET.Element('rss', version='2.0')
         channel = ET.SubElement(root, 'channel')
-        ET.SubElement(channel, 'title').text = 'standup Updates'
-        ET.SubElement(channel, 'description').text = 'Most recent updates to standup.'
+        ET.SubElement(channel, 'title').text = 'breakmate Updates'
+        ET.SubElement(channel, 'description').text = 'Most recent updates to breakmate.'
         ET.SubElement(channel, 'language').text = 'en'
     
     channel = root.find('channel')

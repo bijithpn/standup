@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class AppDropdown<T> extends StatelessWidget {
   final T value;

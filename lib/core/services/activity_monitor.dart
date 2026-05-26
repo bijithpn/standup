@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'package:standup/core/constants/app_constants.dart';
-import 'package:standup/core/native/macos_bridge.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 typedef ActivityCallback = void Function(bool isActive);
 

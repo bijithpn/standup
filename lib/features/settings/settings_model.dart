@@ -1,4 +1,4 @@
-import 'package:standup/features/settings/exercise_model.dart';
+import 'package:breakmate/features/settings/exercise_model.dart';
 
 class SettingsModel {
   final bool autoStart;

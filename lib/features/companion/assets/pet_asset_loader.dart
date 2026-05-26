@@ -3,11 +3,11 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/pet_profile.dart';
-import 'package:standup/features/companion/domain/pet_type.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/domain/animation_row_config.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/pet_profile.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 
 class PetAssetLoader {
   static final Map<String, ui.Image> _imageCache = {};

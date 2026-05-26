@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'package:standup/core/display/models/display_info.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/app/dependency_injection.dart';
+import 'package:breakmate/core/display/models/display_info.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/app/dependency_injection.dart';
 
 class DisplayManager {
   final AppLogger _logger = AppLogger();
-  static const MethodChannel _channel = MethodChannel('com.standup/display_bridge');
-  static const EventChannel _eventChannel = EventChannel('com.standup/display_events');
+  static const MethodChannel _channel = MethodChannel('com.breakmate/display_bridge');
+  static const EventChannel _eventChannel = EventChannel('com.breakmate/display_events');
 
   final List<DisplayInfo> _activeDisplays = [];
   StreamSubscription? _eventSubscription;

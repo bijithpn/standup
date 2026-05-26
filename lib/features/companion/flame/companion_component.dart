@@ -2,9 +2,9 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/pet_state_machine.dart';
-import 'package:standup/features/companion/flame/companion_game.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
+import 'package:breakmate/features/companion/flame/companion_game.dart';
  
 class _FireParticle {
   Offset position;

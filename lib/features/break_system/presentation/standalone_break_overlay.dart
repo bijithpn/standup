@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
-import 'package:standup/core/constants/app_constants.dart';
-import 'package:standup/core/native/macos_bridge.dart';
-import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/features/break_overlay/presentation/templates/minimal_focus_template.dart';
-import 'package:standup/features/break_overlay/presentation/templates/companion_interactive_template.dart';
-import 'package:standup/features/break_overlay/presentation/templates/zen_mode_template.dart';
-import 'package:standup/features/break_overlay/presentation/templates/productivity_hud_template.dart';
-import 'package:standup/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
-import 'package:standup/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/companion_interactive_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 
 enum BreakTheme {
   image,

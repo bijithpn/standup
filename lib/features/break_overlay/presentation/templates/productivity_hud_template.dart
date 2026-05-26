@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 
 class ProductivityHudTemplate extends StatelessWidget {
   final BreakModel breakInfo;

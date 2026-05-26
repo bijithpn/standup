@@ -1,24 +1,24 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/constants/app_constants.dart';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/ipc/ipc_bridge.dart';
-import 'package:standup/core/native/macos_bridge.dart';
-import 'package:standup/core/services/adaptive_break_service.dart';
-import 'package:standup/core/services/activity_monitor.dart';
-import 'package:standup/core/services/notification_service.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/smart_detection_service.dart';
-import 'package:standup/core/services/storage_service.dart';
-import 'package:standup/features/analytics/stats_service.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/features/break_system/domain/break_model.dart';
-import 'package:standup/features/settings/settings_repository.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/services/adaptive_break_service.dart';
+import 'package:breakmate/core/services/activity_monitor.dart';
+import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
-export 'package:standup/features/break_system/domain/break_model.dart'
+export 'package:breakmate/features/break_system/domain/break_model.dart'
     show BreakType;
 
 enum TimerState { running, paused, idle, breakActive }

@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/animation_row_config.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;

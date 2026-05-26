@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 class MeetingDetectionService {
-  final _channel = const EventChannel('com.standup/meeting_detection');
+  final _channel = const EventChannel('com.breakmate/meeting_detection');
 
   Stream<bool> get isMeetingActiveStream {
     if (defaultTargetPlatform != TargetPlatform.macOS && defaultTargetPlatform != TargetPlatform.windows) {

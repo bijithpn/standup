@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:standup/shared/theme/app_theme.dart';
-import 'package:standup/features/analytics/stats_service.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
 
 class ProductivityTrendChart extends StatelessWidget {
   final List<DailyStats> weeklyData;

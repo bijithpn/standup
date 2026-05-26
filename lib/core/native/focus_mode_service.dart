@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 class FocusModeService {
-  final _channel = const EventChannel('com.standup/focus_mode');
+  final _channel = const EventChannel('com.breakmate/focus_mode');
 
   Stream<bool> get isFocusModeActiveStream {
     if (defaultTargetPlatform != TargetPlatform.macOS && defaultTargetPlatform != TargetPlatform.windows) {

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/timer_engine.dart';
-import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/analytics/stats_service.dart';
-import 'package:standup/features/analytics/stats_model.dart';
-import 'package:standup/shared/theme/app_theme.dart';
-import 'package:standup/app/dependency_injection.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/analytics/stats_model.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
 
 class MenuBarPopover extends StatelessWidget {

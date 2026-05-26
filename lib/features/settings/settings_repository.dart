@@ -1,9 +1,9 @@
 import 'dart:convert';
 
-import 'package:standup/core/services/storage_service.dart';
-import 'package:standup/features/settings/exercise_model.dart';
-import 'package:standup/features/settings/settings_model.dart';
-import 'package:standup/core/constants/app_constants.dart';
+import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/features/settings/exercise_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 
 class SettingsRepository {
   final StorageService _storage;

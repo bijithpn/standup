@@ -1,10 +1,10 @@
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/services/overlay_window_service.dart';
-import 'package:standup/core/services/app_navigation_service.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/features/break_system/application/break_controller.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 

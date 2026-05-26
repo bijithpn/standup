@@ -6,7 +6,7 @@ class FocusModeBridge: NSObject, FlutterStreamHandler {
 
     init(registrar: FlutterPluginRegistrar) {
         super.init()
-        let channel = FlutterEventChannel(name: "com.standup/focus_mode", binaryMessenger: registrar.messenger)
+        let channel = FlutterEventChannel(name: "com.breakmate/focus_mode", binaryMessenger: registrar.messenger)
         channel.setStreamHandler(self)
         
         // Best-effort DND detection via DistributedNotificationCenter

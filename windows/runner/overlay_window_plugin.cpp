@@ -33,7 +33,7 @@ class OverlayWindowPlugin : public flutter::Plugin {
 void OverlayWindowPlugin::RegisterWithRegistrar(
     flutter::PluginRegistrarWindows* registrar) {
   auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      registrar->messenger(), "com.standup/overlay_window",
+      registrar->messenger(), "com.breakmate/overlay_window",
       &flutter::StandardMethodCodec::GetInstance());
 
   auto plugin = std::make_unique<OverlayWindowPlugin>(registrar);

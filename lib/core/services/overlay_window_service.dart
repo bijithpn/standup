@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:standup/core/native/macos_bridge.dart';
-import 'package:standup/core/utils/logger.dart';
+import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/utils/logger.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 /// Service to manage system-wide overlay windows that appear on top of all applications
 class OverlayWindowService extends ChangeNotifier {
@@ -13,7 +13,7 @@ class OverlayWindowService extends ChangeNotifier {
   OverlayType? _currentOverlayType;
   bool _wasMainVisibleBeforeOverlay = false;
   static const MethodChannel _windowsChannel = MethodChannel(
-    'com.standup/overlay_window',
+    'com.breakmate/overlay_window',
   );
 
   /// Show a system-wide overlay window

@@ -1,13 +1,13 @@
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/native/macos_bridge.dart';
-import 'package:standup/features/menu_bar/tray_manager_service.dart';
-import 'package:standup/features/companion/services/companion_behavior_engine.dart';
-import 'package:standup/features/settings/settings_repository.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/domain/pet_type.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
 
 /// Controls the desktop companion pet window.
 class CompanionOverlayController extends ChangeNotifier {

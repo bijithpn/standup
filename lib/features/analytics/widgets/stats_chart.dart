@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/features/analytics/stats_model.dart';
-import 'package:standup/shared/theme/app_theme.dart';
+import 'package:breakmate/features/analytics/stats_model.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
 class DailyStatsChart extends StatelessWidget {
   final StatsModel stats;

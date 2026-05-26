@@ -3,15 +3,15 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:tray_manager/tray_manager.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/core/services/timer_engine.dart';
-import 'package:standup/features/break_system/application/break_controller.dart';
-import 'package:standup/features/companion/assets/pet_asset_loader.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/animation_row_config.dart';
-import 'package:standup/features/settings/settings_repository.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/animation_row_config.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 import 'controllers/menu_bar_controller.dart';
 
 enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }

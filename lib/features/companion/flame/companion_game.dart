@@ -1,19 +1,19 @@
 import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/features/companion/assets/pet_asset_loader.dart';
-import 'package:standup/features/companion/domain/pet_animation_state.dart';
-import 'package:standup/features/companion/domain/pet_theme.dart';
-import 'package:standup/features/companion/domain/pet_personality.dart';
-import 'package:standup/features/companion/domain/pet_profile.dart';
-import 'package:standup/features/companion/domain/pet_state_machine.dart';
-import 'package:standup/features/companion/domain/pet_type.dart';
-import 'package:standup/features/companion/flame/companion_component.dart';
-import 'package:standup/features/companion/ai/pet_behavior_brain.dart';
-import 'package:standup/features/companion/services/pet_companion_service.dart';
-import 'package:standup/features/companion/services/pet_navigation_service.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/pet_personality.dart';
+import 'package:breakmate/features/companion/domain/pet_profile.dart';
+import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
+import 'package:breakmate/features/companion/flame/companion_component.dart';
+import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
+import 'package:breakmate/features/companion/services/pet_companion_service.dart';
+import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({required PetTheme initialTheme, this.scaleOverride = 0.0})

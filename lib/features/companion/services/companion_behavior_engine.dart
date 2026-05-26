@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:standup/core/events/app_events.dart';
-import 'package:standup/core/events/event_bus.dart';
-import 'package:standup/core/utils/logger.dart';
-import 'package:standup/app/dependency_injection.dart';
-import 'package:standup/features/settings/settings_repository.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
 class CompanionBehaviorEngine {
   CompanionBehaviorEngine({EventBus? eventBus})
