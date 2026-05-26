@@ -74,13 +74,13 @@ class CompanionWindowManager: NSObject {
         // Unconditional click-through for zero user work disruption
         window.ignoresMouseEvents = true
         
-        // Use the engine group from AppDelegate for shared resources and faster startup
-        let appDelegate = NSApp.delegate as! AppDelegate
-        guard let engineGroup = appDelegate.engineGroup else {
-            return
-        }
-        
-        let engine = engineGroup.makeEngine(withEntrypoint: "companionMain", libraryURI: nil)
+        // Spawn a fresh, dedicated Flutter engine with its own Dart isolate.
+        let engine = FlutterEngine(
+            name: "CompanionEngine",
+            project: nil,
+            allowHeadlessExecution: true
+        )
+        engine.run(withEntrypoint: "companionMain")
         RegisterSecondaryPlugins(registry: engine)
         
         IpcBridgeManager.shared.register(engine: engine)
