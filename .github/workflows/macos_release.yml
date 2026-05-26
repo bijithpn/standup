@@ -1,6 +1,8 @@
 name: macOS Release Pipeline
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - main
@@ -9,8 +11,8 @@ on:
 
 jobs:
   build-and-release:
-    name: Build, Package & Release macOS App
-    runs-on: macos-latest
+    name: Build & Release macOS App
+    runs-on: macos-14
 
     permissions:
       contents: write
@@ -21,10 +23,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract Version from pubspec.yaml
+      - name: Extract Version
         id: version_info
+        shell: bash
         run: |
-          RAW_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
 
           SHORT_VERSION=$(echo "$RAW_VERSION" | cut -d'+' -f1)
           BUILD_NUMBER=$(echo "$RAW_VERSION" | cut -d'+' -f2)
@@ -35,48 +38,38 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
 
-          echo "Version: $SHORT_VERSION"
-          echo "Build: $BUILD_NUMBER"
-          echo "Tag: $TAG_NAME"
-
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
-      - name: Install macOS Dependencies
-        env:
-          HOMEBREW_NO_AUTO_UPDATE: 1
+      - name: Install Dependencies
         run: |
           brew install create-dmg
-          brew install sparkle
 
-      - name: Install Flutter Dependencies
+      - name: Install Flutter Packages
         run: flutter pub get
 
-      - name: Install CocoaPods
-        run: |
-          cd macos
-          pod install
-          cd ..
-
-      - name: Build macOS Release
+      - name: Build macOS App
         run: flutter build macos --release
 
-      - name: Create DMG Installer
+      - name: Verify App Exists
+        run: |
+          APP_PATH="build/macos/Build/Products/Release/BreakMate.app"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "App bundle not found!"
+            exit 1
+          fi
+
+      - name: Create DMG
         run: |
           chmod +x scripts/create_dmg.sh
           ./scripts/create_dmg.sh
 
-      - name: Generate Sparkle Appcast
-        env:
-          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
-          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
-          SHORT_VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
-          BUILD_VERSION: ${{ steps.version_info.outputs.BUILD_NUMBER }}
+      - name: Verify DMG
         run: |
-          set -e
-
           DMG_PATH="release_dmg/BreakMate-Installer.dmg"
 
           if [ ! -f "$DMG_PATH" ]; then
@@ -84,78 +77,31 @@ jobs:
             exit 1
           fi
 
-          echo "Writing Sparkle private key..."
+          ls -lh "$DMG_PATH"
 
-
-
-          printf "%s" "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
-
-          echo "Checking private key file..."
-
-          if [ ! -s sparkle_priv.key ]; then
-            echo "Sparkle private key file is empty!"
-            exit 1
-          fi
-
-          FILE_SIZE=$(stat -f%z "$DMG_PATH")
-
-          echo "Finding Sparkle sign_update binary..."
-
-          SPARKLE_BIN="$(brew --prefix)/bin/sign_update"
-
-          if [ ! -f "$SPARKLE_BIN" ]; then
-            echo "sign_update binary not found!"
-            exit 1
-          fi
-
-          chmod +x "$SPARKLE_BIN"
-
-          echo "Generating Sparkle signature..."
-
-          SIGN_OUTPUT=$("$SPARKLE_BIN" -f sparkle_priv.key "$DMG_PATH")
-
-          echo "$SIGN_OUTPUT"
-
-          SIGNATURE=$(echo "$SIGN_OUTPUT" | sed -n 's/.*edSignature="\([^"]*\)".*/\1/p')
-
-          if [ -z "$SIGNATURE" ]; then
-            echo "Failed to extract Sparkle signature!"
-            exit 1
-          fi
-
-          echo "Signature generated successfully"
-
-          DMG_URL="https://github.com/${{ github.repository }}/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
-
-          python3 scripts/generate_appcast.py \
-            "$BUILD_VERSION" \
-            "$SHORT_VERSION" \
-            "$DMG_URL" \
-            "$SIGNATURE" \
-            "$FILE_SIZE" \
-            "appcast.xml"
-
-          rm -f sparkle_priv.key
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
-          files: release_dmg/BreakMate-Installer.dmg
-          name: Release ${{ steps.version_info.outputs.TAG_NAME }}
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit Updated Appcast
+      - name: Create Git Tag
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          git add appcast.xml
+          TAG=${{ steps.version_info.outputs.TAG_NAME }}
 
-          git commit -m "chore: update appcast for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]" || echo "No changes to commit"
+          git tag "$TAG" || echo "Tag already exists"
 
-          git push origin main
+          git push origin "$TAG" || echo "Tag already pushed"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
+          name: Release ${{ steps.version_info.outputs.TAG_NAME }}
+
+          files: |
+            release_dmg/BreakMate-Installer.dmg
+
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
