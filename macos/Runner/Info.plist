@@ -33,7 +33,7 @@
 	<key>SUFeedURL</key>
 	<string>https://bijithintersmart.github.io/standup/appcast.xml</string>
 	<key>SUPublicEDKey</key>
-	<string>YOUR_PUBLIC_SPARKLE_EDDSA_KEY_HERE</string>
+    <string>slAPA33FAD7gQb/RsicU7RYC8q7W8oxqLyDaLulD7uY=</string>
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
 	<key>SUAllowsAutomaticUpdates</key>

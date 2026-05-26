@@ -2,19 +2,42 @@ name: macOS Release Pipeline
 
 on:
   push:
-    tags:
-      - "v*" # Runs only when pushing version tags like v1.0.0
+    branches:
+      - main
+    paths-ignore:
+      - 'appcast.xml' # Prevent infinite loop when committing appcast back
 
 jobs:
   build-and-release:
-    name: Build, Sign, Notarize & Release macOS App
+    name: Build, Package & Auto-Release macOS App
     runs-on: macos-latest
+    permissions:
+      contents: write # Required for creating releases and pushing tags
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Extract Version from pubspec.yaml
+        id: version_info
+        run: |
+          # Extract version from pubspec.yaml (e.g., "1.0.0+23")
+          RAW_VERSION=$(grep '^version: ' pubspec.yaml | sed 's/version: //')
+          
+          # Separate semantic version and build number
+          SHORT_VERSION=$(echo $RAW_VERSION | cut -d'+' -f1)
+          BUILD_NUMBER=$(echo $RAW_VERSION | cut -d'+' -f2)
+          
+          # Create tag name
+          TAG_NAME="v${SHORT_VERSION}"
+          
+          echo "SHORT_VERSION=${SHORT_VERSION}" >> $GITHUB_OUTPUT
+          echo "BUILD_NUMBER=${BUILD_NUMBER}" >> $GITHUB_OUTPUT
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_OUTPUT
+          
+          echo "Building version $SHORT_VERSION (Build $BUILD_NUMBER) for tag $TAG_NAME"
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -26,89 +49,35 @@ jobs:
           brew install create-dmg
           brew install sparkle
 
-      - name: Setup Apple Certificates
-        env:
-          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_CERTS_BASE64 }}
-          P12_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-
-          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-
-          security import $CERTIFICATE_PATH \
-            -P "$P12_PASSWORD" \
-            -A \
-            -t cert \
-            -f pkcs12 \
-            -k $KEYCHAIN_PATH
-
-          security list-keychain -d user -s $KEYCHAIN_PATH
-
-          security set-key-partition-list \
-            -S apple-tool:,apple:,codesign: \
-            -s \
-            -k "$KEYCHAIN_PASSWORD" \
-            $KEYCHAIN_PATH
-
-      - name: Configure Notarytool API Key
-        env:
-          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
-        run: |
-          PRIVATE_KEY_PATH=$RUNNER_TEMP/AuthKey_${KEY_ID}.p8
-
-          echo -n "$PRIVATE_KEY_BASE64" | base64 --decode -o $PRIVATE_KEY_PATH
-
-          xcrun notarytool store-credentials "AC_API" \
-            --issuer "$ISSUER_ID" \
-            --key-id "$KEY_ID" \
-            --key "$PRIVATE_KEY_PATH"
-
       - name: Build Flutter macOS App
         run: |
           flutter pub get
-
           cd macos
           pod install
           cd ..
-
           flutter build macos --release
 
-      - name: Create Signed DMG
+      - name: Create DMG (Unsigned)
         run: |
           chmod +x scripts/create_dmg.sh
           ./scripts/create_dmg.sh
 
-      - name: Notarize and Staple DMG
-        run: |
-          chmod +x scripts/notarize.sh
-          ./scripts/notarize.sh
-
       - name: Generate Sparkle Appcast
         env:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_EDDSA_KEY }}
-          VERSION_TAG: ${{ github.ref_name }}
+          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
+          SHORT_VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+          BUILD_VERSION: ${{ steps.version_info.outputs.BUILD_NUMBER }}
         run: |
           echo "$SPARKLE_PRIVATE_KEY" > sparkle_priv.key
 
-          SHORT_VERSION=$(echo $VERSION_TAG | sed 's/v//')
-          BUILD_VERSION="100"
-
           DMG_PATH="release_dmg/standup-Installer.dmg"
-
           FILE_SIZE=$(stat -f%z "$DMG_PATH")
 
-          # sign_update path differs on GitHub runners
+          # sign_update is installed via brew sparkle
           SIGNATURE=$(sign_update "$DMG_PATH" --ed25519 sparkle_priv.key)
 
-          DMG_URL="https://github.com/bijithintersmart/standup/releases/download/${VERSION_TAG}/standup-Installer.dmg"
+          DMG_URL="https://github.com/bijithintersmart/standup/releases/download/${TAG_NAME}/standup-Installer.dmg"
 
           python3 scripts/generate_appcast.py \
             "$BUILD_VERSION" \
@@ -123,21 +92,20 @@ jobs:
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
           files: release_dmg/standup-Installer.dmg
-          name: Release ${{ github.ref_name }}
+          name: Release ${{ steps.version_info.outputs.TAG_NAME }}
           draft: false
           prerelease: false
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GB_TOKEN }}
 
-      - name: Update Appcast File
+      - name: Update Appcast File in Repository
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
           git add appcast.xml
-
-          git commit -m "chore: update appcast for ${{ github.ref_name }}" || echo "No changes to commit"
-
+          git commit -m "chore: update appcast for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]" || echo "No changes to commit"
           git push origin main
