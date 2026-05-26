@@ -11,6 +11,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:standup/app/app.dart';
 import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/services/overlay_window_service.dart';
+import 'package:standup/core/services/timer_engine.dart';
 import 'package:standup/features/break_system/presentation/standalone_break_overlay.dart';
 import 'package:standup/features/break_system/application/break_controller.dart';
 import 'package:standup/features/companion/assets/pet_asset_loader.dart';
@@ -23,18 +24,23 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:standup/shared/theme/app_theme.dart';
 import 'package:standup/core/services/error_toast_service.dart';
 
+import 'package:standup/core/ipc/ipc_bridge.dart';
+import 'package:standup/core/events/event_bus.dart';
+import 'package:standup/core/events/app_events.dart';
+
 void _setupGlobalErrors() {
   // 1. Log Flutter errors to console
   FlutterError.onError = (FlutterErrorDetails details) {
     debugPrint('=== FLUTTER ERROR ===');
     debugPrint(details.exceptionAsString());
     debugPrint(details.stack?.toString());
-    
+
     // Ignore harmless framework-level hardware keyboard assertions on desktop
     final exceptionStr = details.exceptionAsString();
-    final isHardwareKeyboardAssert = exceptionStr.contains('HardwareKeyboard') || 
-                                     exceptionStr.contains('_pressedKeys.containsKey');
-                                     
+    final isHardwareKeyboardAssert =
+        exceptionStr.contains('HardwareKeyboard') ||
+        exceptionStr.contains('_pressedKeys.containsKey');
+
     if (!details.silent && !isHardwareKeyboardAssert) {
       ErrorToastService.showError('Oops! An internal error occurred.');
     }
@@ -220,9 +226,13 @@ void main() async {
           call,
         ) async {
           if (call.method == 'handleReopen') {
-            await sl<OverlayWindowService>().showDashboard();
+            await sl<OverlayWindowService>().showDashboard(forceShow: true);
           } else if (call.method == 'skipBreak') {
             sl<BreakController>().skipCurrentBreak();
+          } else if (call.method == 'systemSleep') {
+            sl<TimerEngine>().handleSystemSleep();
+          } else if (call.method == 'systemWake') {
+            sl<TimerEngine>().handleSystemWake();
           }
         });
 
@@ -230,7 +240,7 @@ void main() async {
           singleInstanceServer.listen((client) {
             utf8.decoder.bind(client).join().then((message) async {
               if (message.trim() == 'showDashboard') {
-                await sl<OverlayWindowService>().showDashboard();
+                await sl<OverlayWindowService>().showDashboard(forceShow: true);
               }
               client.destroy();
             });
@@ -264,10 +274,50 @@ void main() async {
   );
 }
 
+void _setupMinimalIpc() {
+  final eventBus = EventBus.instance;
+  IpcBridge.instance.setEventHandler((event, data) {
+    switch (event) {
+      case 'timer.stateChanged':
+        final stateStr = data['state'] as String?;
+        final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
+        final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
+        TimerStateEvent? timerState;
+        switch (stateStr) {
+          case 'running':
+            timerState = TimerStateEvent.running;
+          case 'breakActive':
+            timerState = TimerStateEvent.breakActive;
+          case 'paused':
+            timerState = TimerStateEvent.paused;
+          case 'idle':
+            timerState = TimerStateEvent.idle;
+        }
+        if (timerState != null) {
+          eventBus.emit(
+            TimerStateChangedEvent(
+              state: timerState,
+              countdownSeconds: countdown,
+              workElapsedSeconds: elapsed,
+            ),
+          );
+        }
+      case 'detection.meeting':
+        eventBus.emit(
+          MeetingDetectedEvent(
+            isActive: data['isActive'] as bool? ?? false,
+            bundleId: data['bundleId'] as String? ?? '',
+          ),
+        );
+    }
+  });
+}
+
 @pragma('vm:entry-point')
 void overlayMain() {
   WidgetsFlutterBinding.ensureInitialized();
   _setupGlobalErrors();
+  _setupMinimalIpc();
 
   runApp(
     const MaterialApp(
@@ -281,6 +331,7 @@ void overlayMain() {
 Future<void> companionMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   _setupGlobalErrors();
+  _setupMinimalIpc();
 
   // On macOS, initialize flutter_acrylic for the companion panel.
   if (Platform.isMacOS) {

@@ -48,7 +48,7 @@ class OverlayWindowManager: NSObject {
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
     }
     
-    func hideOverlay() {
+    func hideOverlay(restoreMainWindow: Bool = true) {
         if overlayInstances.isEmpty { return }
         
         let instances = Array(overlayInstances.values)
@@ -60,14 +60,18 @@ class OverlayWindowManager: NSObject {
                 instance.window.animator().alphaValue = 0.0
             }
         }, completionHandler: {
-            // Restore main window visibility
-            if let appDelegate = NSApp.delegate as? AppDelegate,
+            // Restore main window visibility only if requested
+            if restoreMainWindow,
+               let appDelegate = NSApp.delegate as? AppDelegate,
                let mainWindow = appDelegate.mainFlutterWindow {
                 mainWindow.makeKeyAndOrderFront(nil)
             }
             
             for instance in instances {
                 instance.window.orderOut(nil)
+                instance.window.contentViewController = nil
+                instance.window.contentView = nil
+                IpcBridgeManager.shared.unregister(engine: instance.engine)
                 instance.engine.shutDownEngine()
             }
         })
@@ -130,7 +134,9 @@ class OverlayWindowManager: NSObject {
         // Spawn a fresh engine for each monitor
         let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
         engine.run(withEntrypoint: "overlayMain")
-        RegisterGeneratedPlugins(registry: engine)
+        RegisterSecondaryPlugins(registry: engine)
+        
+        IpcBridgeManager.shared.register(engine: engine)
         
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
         controller.backgroundColor = isTransparent ? .clear : .black
@@ -202,6 +208,8 @@ class MainFlutterWindow: NSWindow {
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
     
+    IpcBridgeManager.shared.register(engine: flutterViewController.engine)
+    
     DisplayBridgeManager.shared.register(with: flutterViewController.engine.binaryMessenger)
 
     self.isOpaque = false
@@ -210,7 +218,48 @@ class MainFlutterWindow: NSWindow {
     self.titleVisibility = .hidden
     self.titlebarAppearsTransparent = true
     
+    // Register workspace notifications for sleep/wake
+    NSWorkspace.shared.notificationCenter.addObserver(
+        self,
+        selector: #selector(handleSystemSleep),
+        name: NSWorkspace.willSleepNotification,
+        object: nil
+    )
+    NSWorkspace.shared.notificationCenter.addObserver(
+        self,
+        selector: #selector(handleSystemWake),
+        name: NSWorkspace.didWakeNotification,
+        object: nil
+    )
+    
+    // Register distributed notifications for lock/unlock
+    DistributedNotificationCenter.default().addObserver(
+        self,
+        selector: #selector(handleSystemSleep),
+        name: NSNotification.Name("com.apple.screenIsLocked"),
+        object: nil
+    )
+    DistributedNotificationCenter.default().addObserver(
+        self,
+        selector: #selector(handleSystemWake),
+        name: NSNotification.Name("com.apple.screenIsUnlocked"),
+        object: nil
+    )
+    
     super.awakeFromNib()
+  }
+
+  deinit {
+    NSWorkspace.shared.notificationCenter.removeObserver(self)
+    DistributedNotificationCenter.default().removeObserver(self)
+  }
+
+  @objc private func handleSystemSleep() {
+    bridgeChannel?.invokeMethod("systemSleep", arguments: nil)
+  }
+
+  @objc private func handleSystemWake() {
+    bridgeChannel?.invokeMethod("systemWake", arguments: nil)
   }
 
   private func configureBridge(binaryMessenger: FlutterBinaryMessenger) {
@@ -226,7 +275,8 @@ class MainFlutterWindow: NSWindow {
         result(nil)
 
       case "hideOverlay":
-        OverlayWindowManager.shared.hideOverlay()
+        let restore = (call.arguments as? [String: Any])?["restoreMainWindow"] as? Bool ?? true
+        OverlayWindowManager.shared.hideOverlay(restoreMainWindow: restore)
         result(nil)
 
       case "showCompanion":

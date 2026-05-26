@@ -4,6 +4,7 @@ import 'package:standup/app/dependency_injection.dart';
 import 'package:standup/core/constants/app_constants.dart';
 import 'package:standup/core/events/app_events.dart';
 import 'package:standup/core/events/event_bus.dart';
+import 'package:standup/core/ipc/ipc_bridge.dart';
 import 'package:standup/core/native/macos_bridge.dart';
 import 'package:standup/core/services/adaptive_break_service.dart';
 import 'package:standup/core/services/activity_monitor.dart';
@@ -39,7 +40,8 @@ class TimerEngine extends ChangeNotifier {
   Timer? _pauseAutoResumeTimer;
 
   TimerState _state = TimerState.idle;
-  bool _isManuallyPaused = false;
+   bool _isManuallyPaused = false;
+  bool _systemSleepPaused = false;
   bool _manualOverride = false;
   WorkMode _mode = WorkMode.flexible;
   BreakModel? _activeBreak;
@@ -85,7 +87,28 @@ class TimerEngine extends ChangeNotifier {
     _syncSettingsFromRepo();
   }
 
-  void _emit(AppEvent event) => _eventBus.emit(event);
+  void _emit(AppEvent event) {
+    _eventBus.emit(event);
+
+    // Synchronize state across isolates via IPC Bridge
+    if (event is TimerStateChangedEvent) {
+      IpcBridge.instance.notifyTimerStateChanged(
+        event.state.name,
+        countdownSeconds: event.countdownSeconds,
+        workElapsedSeconds: event.workElapsedSeconds,
+      );
+    } else if (event is BreakStartedEvent) {
+      IpcBridge.instance.sendEvent('timer.breakStarted', {
+        'isLongBreak': event.isLongBreak,
+        'durationSeconds': event.durationSeconds,
+        'title': event.title,
+      });
+    } else if (event is BreakEndedEvent) {
+      IpcBridge.instance.sendEvent('timer.breakEnded', {
+        'skipped': event.skipped,
+      });
+    }
+  }
 
   void _syncSettingsFromRepo() {
     final s = _settingsRepository.currentSettings;
@@ -166,9 +189,27 @@ class TimerEngine extends ChangeNotifier {
   void _startTicking() {
     _tickTimer?.cancel();
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_state == TimerState.paused || _state == TimerState.idle) return;
-
       final now = DateTime.now();
+
+      if (_systemSleepPaused) {
+        _lastTickTime = now;
+        return;
+      }
+
+      // Auto-resume if conditions met and not manually paused
+      if (_state == TimerState.paused &&
+          !_isManuallyPaused &&
+          _shouldRunWorkTimer()) {
+        _logger.info('Auto-resuming timer: conditions met');
+        resumeTimers();
+      }
+
+      if (_state == TimerState.paused || _state == TimerState.idle) {
+        _updateTray();
+        notifyListeners();
+        return;
+      }
+
       final delta = now.difference(_lastTickTime ?? now);
       _lastTickTime = now;
 
@@ -682,6 +723,22 @@ class TimerEngine extends ChangeNotifier {
   void postponeBreak() {
     _countdownSeconds += 120;
     _emit(BreakPostponedEvent(additionalSeconds: 120));
+    notifyListeners();
+  }
+
+  void handleSystemSleep() {
+    _logger.info('System sleep or screen lock detected: pausing break/work timers');
+    _systemSleepPaused = true;
+    _lastTickTime = DateTime.now();
+    saveState();
+    notifyListeners();
+  }
+
+  void handleSystemWake() {
+    _logger.info('System wake or screen unlock detected: resuming break/work timers');
+    _systemSleepPaused = false;
+    _lastTickTime = DateTime.now();
+    saveState();
     notifyListeners();
   }
 

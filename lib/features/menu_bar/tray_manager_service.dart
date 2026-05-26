@@ -245,10 +245,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void setBreakActive(bool active) {
+    if (_isBreakActive == active) return;
     _isBreakActive = active;
     _currentFrameIndex = 0;
     _updateTimerSpeed();
     _applyIcon();
+    _scheduleMenuRebuild();
   }
 
   void triggerActionAnimation() {
@@ -295,6 +297,25 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  bool _isRebuildingMenu = false;
+  bool _menuRebuildPending = false;
+
+  void _scheduleMenuRebuild() {
+    if (_isRebuildingMenu) {
+      _menuRebuildPending = true;
+      return;
+    }
+
+    _isRebuildingMenu = true;
+    _buildMenu().then((_) {
+      _isRebuildingMenu = false;
+      if (_menuRebuildPending) {
+        _menuRebuildPending = false;
+        _scheduleMenuRebuild();
+      }
+    });
+  }
+
   Future<void> _buildMenu() async {
     String statusLabel = 'BreakMate';
 
@@ -303,8 +324,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         statusLabel = 'On Break';
       } else if (_isPaused) {
         statusLabel = 'Timer Paused';
-      } else {
+      } else if (_timerEngine!.state == TimerState.running) {
         statusLabel = 'Timer Running';
+      } else {
+        statusLabel = 'Timer Idle';
       }
     }
 
@@ -314,10 +337,19 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     items.add(MenuItem.separator());
 
     if (_isBreakActive) {
+      final isStrict = sl<SettingsRepository>().currentSettings.strictMode;
       items.addAll([
         MenuItem(key: 'complete_break', label: 'Complete Break'),
-        MenuItem(key: 'skip_current_break', label: 'Skip Break'),
-        MenuItem(key: 'postpone_break', label: 'Postpone Break (2 min)'),
+        MenuItem(
+          key: 'skip_current_break',
+          label: 'Skip Break',
+          disabled: isStrict,
+        ),
+        MenuItem(
+          key: 'postpone_break',
+          label: 'Postpone Break (2 min)',
+          disabled: isStrict,
+        ),
         MenuItem.separator(),
       ]);
     } else {
@@ -333,9 +365,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
 
     items.addAll([
-      MenuItem(key: 'open_app', label: 'Open App'),
-      MenuItem(key: 'open_companion', label: 'Companion'),
-      MenuItem(key: 'open_stats', label: 'Statistics'),
+      MenuItem(key: 'open_app', label: 'Open Dashboard'),
+      MenuItem(key: 'open_companion', label: 'Companion Settings'),
+      MenuItem(key: 'open_stats', label: 'View Statistics'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Quit BreakMate'),
     ]);
@@ -347,11 +379,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   void _handleAction(String action) {
     _logger.info('Tray action: $action');
     triggerActionAnimation();
-    final controller = _menuBarController;
-    if (controller == null) {
-      _logger.error('No MenuBarController registered for action: $action');
-      return;
-    }
+    final controller = _menuBarController ?? sl<MenuBarController>();
     controller.handleAction(action);
   }
 
@@ -365,37 +393,36 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     _breakController = breakController;
     timerEngine.addListener(_onTimerChanged);
     breakController.addListener(_onTimerChanged);
-    _buildMenu();
+    _scheduleMenuRebuild();
   }
+
+  TimerState? _lastState;
 
   void _onTimerChanged() {
     final timerEngine = _timerEngine;
     if (timerEngine != null) {
-      final isPaused = timerEngine.state == TimerState.paused;
-      final isBreakActive = timerEngine.state == TimerState.breakActive;
-      final visualStateChanged =
-          _isPaused != isPaused || _isBreakActive != isBreakActive;
-
-      _isPaused = isPaused;
-      _isBreakActive = isBreakActive;
-
-      if (visualStateChanged) {
+      final state = timerEngine.state;
+      if (_lastState != state) {
+        _lastState = state;
+        _isPaused = state == TimerState.paused;
+        _isBreakActive = state == TimerState.breakActive;
         _currentFrameIndex = 0;
         _updateTimerSpeed();
         _applyIcon();
+        _scheduleMenuRebuild();
       }
     }
-    _buildMenu();
   }
 
   void updatePauseState(bool isPaused) {
+    if (_isPaused == isPaused) return;
     _isPaused = isPaused;
     if (_iconMode == TrayIconMode.companion) {
       _currentFrameIndex = 0;
       _updateTimerSpeed();
       _applyIcon();
     }
-    _buildMenu();
+    _scheduleMenuRebuild();
   }
 
   Future<void> setTrayTitle(String title) async {

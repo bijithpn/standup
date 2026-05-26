@@ -23,48 +23,49 @@ class MenuBarController {
   }
 
   Future<void> handleAction(String action) async {
-    _logger.info('Menu action: $action');
+    _logger.info('Handling menu bar action: $action');
     _eventBus.emit(TrayActionEvent(action: action));
 
     final overlayService = sl<OverlayWindowService>();
     final navigation = sl<AppNavigationService>();
+    final breakController = _breakController ?? sl<BreakController>();
 
     Future<void> openSection(String section) async {
       navigation.openSection(section);
-      await overlayService.showDashboard();
+      await overlayService.showDashboard(forceShow: true);
     }
 
     switch (action) {
       case 'open_app':
-        await overlayService.showDashboard();
-        return;
+        await overlayService.showDashboard(forceShow: true);
+        break;
       case 'open_stats':
         await openSection('Statistics');
-        return;
+        break;
       case 'toggle_pause':
-        _breakController?.togglePause();
-        return;
+        breakController.togglePause();
+        break;
       case 'take_break':
-        _breakController?.takeBreakNow();
-        return;
+        breakController.takeBreakNow();
+        break;
       case 'skip_next':
-        _breakController?.skipNextBreak();
-        return;
+        breakController.skipNextBreak();
+        break;
       case 'complete_break':
-        _breakController?.completeCurrentBreak();
-        return;
+        await breakController.completeCurrentBreak();
+        break;
       case 'skip_current_break':
-        _breakController?.skipCurrentBreak();
-        return;
+        await breakController.skipCurrentBreak();
+        break;
       case 'postpone_break':
-        _breakController?.postponeCurrentBreak();
-        return;
+        breakController.postponeCurrentBreak();
+        break;
       case 'open_companion':
         await openSection('Companion');
-        return;
+        break;
       case 'quit':
         await _quitApp();
-        return;
+        break;
       default:
         _logger.error('Unhandled menu action: $action');
     }

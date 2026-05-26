@@ -81,7 +81,9 @@ class CompanionWindowManager: NSObject {
             allowHeadlessExecution: true
         )
         engine.run(withEntrypoint: "companionMain")
-        RegisterGeneratedPlugins(registry: engine)
+        RegisterSecondaryPlugins(registry: engine)
+        
+        IpcBridgeManager.shared.register(engine: engine)
         
         finishCompanionSetup(
             engine: engine,
@@ -199,6 +201,9 @@ class CompanionWindowManager: NSObject {
         guard let inst = instance else { return }
         
         inst.window.orderOut(nil)
+        inst.window.contentViewController = nil
+        inst.window.contentView = nil
+        IpcBridgeManager.shared.unregister(engine: inst.engine)
         inst.engine.shutDownEngine()
         instance = nil
         
