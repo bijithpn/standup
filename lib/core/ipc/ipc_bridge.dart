@@ -43,11 +43,13 @@ class IpcBridge {
   Future<void> notifyTimerStateChanged(String state, {
     required int countdownSeconds,
     required int workElapsedSeconds,
+    int? targetEndTime,
   }) async {
     await sendEvent('timer.stateChanged', {
       'state': state,
       'countdownSeconds': countdownSeconds,
       'workElapsedSeconds': workElapsedSeconds,
+      'targetEndTime': targetEndTime,
     });
   }
 

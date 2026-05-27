@@ -58,6 +58,11 @@ class TimerEngine extends ChangeNotifier {
   DateTime? _lastTickTime;
   DateTime? _lastBreakFinishedAt; // Added to track session duration accurately
 
+  DateTime? _breakEndTime;
+  DateTime? _workEndTime;
+  TimerState? _lastIpcState;
+  DateTime? _lastIpcTargetEndTime;
+
   int _shortBreakIntervalMinutes =
       AppConstants.defaultShortBreakIntervalMinutes;
   int _shortBreakDurationSeconds =
@@ -92,11 +97,24 @@ class TimerEngine extends ChangeNotifier {
 
     // Synchronize state across isolates via IPC Bridge
     if (event is TimerStateChangedEvent) {
-      IpcBridge.instance.notifyTimerStateChanged(
-        event.state.name,
-        countdownSeconds: event.countdownSeconds,
-        workElapsedSeconds: event.workElapsedSeconds,
-      );
+      final targetEndTime = event.targetEndTime;
+      final stateChanged = _lastIpcState != _state;
+      final targetEndTimeChanged = _lastIpcTargetEndTime == null && targetEndTime != null ||
+          _lastIpcTargetEndTime != null && targetEndTime == null ||
+          (_lastIpcTargetEndTime != null && targetEndTime != null &&
+              (_lastIpcTargetEndTime!.difference(targetEndTime).abs().inSeconds > 1));
+
+      if (stateChanged || targetEndTimeChanged) {
+        _lastIpcState = _state;
+        _lastIpcTargetEndTime = targetEndTime;
+
+        IpcBridge.instance.notifyTimerStateChanged(
+          event.state.name,
+          countdownSeconds: event.countdownSeconds,
+          workElapsedSeconds: event.workElapsedSeconds,
+          targetEndTime: targetEndTime?.millisecondsSinceEpoch,
+        );
+      }
     } else if (event is BreakStartedEvent) {
       IpcBridge.instance.sendEvent('timer.breakStarted', {
         'isLongBreak': event.isLongBreak,
@@ -129,6 +147,15 @@ class TimerEngine extends ChangeNotifier {
 
   bool get isPreBreak => _isPreBreak;
   Duration get totalWorkToday => _totalWorkToday;
+
+  DateTime? get targetEndTime {
+    if (_state == TimerState.breakActive) {
+      return _breakEndTime;
+    } else if (_state == TimerState.running) {
+      return _workEndTime;
+    }
+    return null;
+  }
 
   Duration get timeUntilNextShortBreak {
     final interval = Duration(minutes: _shortBreakIntervalMinutes);
@@ -168,6 +195,17 @@ class TimerEngine extends ChangeNotifier {
 
     _lastTickTime = DateTime.now();
 
+    if (_state == TimerState.breakActive) {
+      _breakEndTime = DateTime.now().add(Duration(seconds: _countdownSeconds));
+      _workEndTime = null;
+    } else if (_state == TimerState.running) {
+      _workEndTime = DateTime.now().add(timeUntilNextShortBreak);
+      _breakEndTime = null;
+    } else {
+      _breakEndTime = null;
+      _workEndTime = null;
+    }
+
     _startTicking();
     _setupActivityMonitor();
     _startUsageTracking();
@@ -179,6 +217,7 @@ class TimerEngine extends ChangeNotifier {
             : TimerStateEvent.running,
         countdownSeconds: _countdownSeconds,
         workElapsedSeconds: _workElapsed.inSeconds,
+        targetEndTime: targetEndTime,
       ),
     );
 
@@ -237,6 +276,14 @@ class TimerEngine extends ChangeNotifier {
         }
       }
 
+      if (_state == TimerState.breakActive) {
+        _breakEndTime ??= DateTime.now().add(Duration(seconds: _countdownSeconds));
+        _workEndTime = null;
+      } else if (_state == TimerState.running) {
+        _workEndTime ??= DateTime.now().add(timeUntilNextShortBreak);
+        _breakEndTime = null;
+      }
+
       _emit(
         TimerStateChangedEvent(
           state: _state == TimerState.breakActive
@@ -244,6 +291,7 @@ class TimerEngine extends ChangeNotifier {
               : TimerStateEvent.running,
           countdownSeconds: _countdownSeconds,
           workElapsedSeconds: _workElapsed.inSeconds,
+          targetEndTime: targetEndTime,
         ),
       );
 
@@ -394,6 +442,8 @@ class TimerEngine extends ChangeNotifier {
     _state = TimerState.breakActive;
     _workElapsed = Duration.zero;
     _countdownSeconds = 60;
+    _breakEndTime = DateTime.now().add(Duration(seconds: _countdownSeconds));
+    _workEndTime = null;
 
     _activeBreak = BreakModel(
       type: BreakType.long,
@@ -448,6 +498,9 @@ class TimerEngine extends ChangeNotifier {
         tip: _randomTip(AppConstants.shortBreakTips),
       );
     }
+
+    _breakEndTime = DateTime.now().add(Duration(seconds: _countdownSeconds));
+    _workEndTime = null;
 
     _emit(
       BreakStartedEvent(
@@ -527,6 +580,8 @@ class TimerEngine extends ChangeNotifier {
     _isPreBreak = false;
     _lastTickTime = DateTime.now();
     _workElapsed = Duration.zero;
+    _breakEndTime = null;
+    _workEndTime = DateTime.now().add(timeUntilNextShortBreak);
     sl<TrayManagerService>().setBreakActive(false);
 
     _emit(
@@ -534,6 +589,7 @@ class TimerEngine extends ChangeNotifier {
         state: TimerStateEvent.running,
         countdownSeconds: 0,
         workElapsedSeconds: 0,
+        targetEndTime: targetEndTime,
       ),
     );
 
@@ -656,12 +712,15 @@ class TimerEngine extends ChangeNotifier {
       _isManuallyPaused = true;
     }
     _manualOverride = false;
+    _breakEndTime = null;
+    _workEndTime = null;
     saveState();
     _emit(
       TimerStateChangedEvent(
         state: TimerStateEvent.paused,
         countdownSeconds: _countdownSeconds,
         workElapsedSeconds: _workElapsed.inSeconds,
+        targetEndTime: targetEndTime,
       ),
     );
     notifyListeners();
@@ -674,6 +733,8 @@ class TimerEngine extends ChangeNotifier {
     _manualOverride = true;
     _isPreBreak = false;
     _lastTickTime = DateTime.now();
+    _breakEndTime = null;
+    _workEndTime = DateTime.now().add(timeUntilNextShortBreak);
     saveState();
     _emit(
       TimerStateChangedEvent(
@@ -682,6 +743,7 @@ class TimerEngine extends ChangeNotifier {
             : TimerStateEvent.paused,
         countdownSeconds: _countdownSeconds,
         workElapsedSeconds: _workElapsed.inSeconds,
+        targetEndTime: targetEndTime,
       ),
     );
     notifyListeners();
@@ -695,11 +757,14 @@ class TimerEngine extends ChangeNotifier {
     _isManuallyPaused = false;
     _manualOverride = false;
     _clockOutTriggered = false;
+    _breakEndTime = null;
+    _workEndTime = null;
     _emit(
       TimerStateChangedEvent(
         state: TimerStateEvent.idle,
         countdownSeconds: 0,
         workElapsedSeconds: 0,
+        targetEndTime: targetEndTime,
       ),
     );
     notifyListeners();
@@ -722,7 +787,17 @@ class TimerEngine extends ChangeNotifier {
 
   void postponeBreak() {
     _countdownSeconds += 120;
+    _breakEndTime = _breakEndTime?.add(const Duration(seconds: 120)) ??
+        DateTime.now().add(Duration(seconds: _countdownSeconds));
     _emit(BreakPostponedEvent(additionalSeconds: 120));
+    _emit(
+      TimerStateChangedEvent(
+        state: TimerStateEvent.breakActive,
+        countdownSeconds: _countdownSeconds,
+        workElapsedSeconds: _workElapsed.inSeconds,
+        targetEndTime: targetEndTime,
+      ),
+    );
     notifyListeners();
   }
 

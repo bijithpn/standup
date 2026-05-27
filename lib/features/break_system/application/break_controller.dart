@@ -32,6 +32,9 @@ class BreakController extends ChangeNotifier {
   bool _isPreviewMode = false;
   bool _preBreakWarningShown = false;
 
+  TimerState? _lastOverlayState;
+  DateTime? _lastOverlayTargetEndTime;
+
   BreakController({
     required TimerEngine timerEngine,
     required SettingsRepository settingsRepo,
@@ -145,6 +148,10 @@ class BreakController extends ChangeNotifier {
         _currentExerciseTitle = exerciseTitle;
         _currentExerciseInstructions = exerciseInstructions;
 
+        final targetEndTime = _timerEngine.targetEndTime;
+        _lastOverlayState = _timerEngine.state;
+        _lastOverlayTargetEndTime = targetEndTime;
+
         overlayService.showOverlay(
           type: OverlayType.breakScreen,
           builder: (context) => const SizedBox.shrink(),
@@ -156,6 +163,7 @@ class BreakController extends ChangeNotifier {
             'tip': breakInfo?.tip,
             'durationSeconds': breakInfo?.durationSeconds,
             'remainingSeconds': _timerEngine.countdownSeconds,
+            'targetEndTime': targetEndTime?.millisecondsSinceEpoch,
             'strictMode': settings.strictMode,
             'exerciseTitle': _currentExerciseTitle,
             'exerciseInstructions': _currentExerciseInstructions,
@@ -176,21 +184,34 @@ class BreakController extends ChangeNotifier {
 
       // Update all overlay engines with the current timer state
       if (breakInfo != null) {
-        MacOSBridge.updateOverlayData({
-          'title': breakInfo.title,
-          'tip': breakInfo.tip,
-          'durationSeconds': breakInfo.durationSeconds,
-          'remainingSeconds': _timerEngine.countdownSeconds,
-          'strictMode': settings.strictMode,
-          'exerciseTitle': _currentExerciseTitle,
-          'exerciseInstructions': _currentExerciseInstructions,
-          'playMusic': settings.playMusicDuringBreak,
-          'template': _currentTemplate,
-          'theme': _currentThemeName,
-          'breakTemplate': settings.breakTemplate,
-          'companionPetTheme': settings.companionPetTheme,
-          'companionCatTheme': settings.companionPetTheme,
-        });
+        final targetEndTime = _timerEngine.targetEndTime;
+        final stateChanged = _lastOverlayState != _timerEngine.state;
+        final targetEndTimeChanged = _lastOverlayTargetEndTime == null && targetEndTime != null ||
+            _lastOverlayTargetEndTime != null && targetEndTime == null ||
+            (_lastOverlayTargetEndTime != null && targetEndTime != null &&
+                (_lastOverlayTargetEndTime!.difference(targetEndTime).abs().inSeconds > 1));
+
+        if (stateChanged || targetEndTimeChanged) {
+          _lastOverlayState = _timerEngine.state;
+          _lastOverlayTargetEndTime = targetEndTime;
+
+          MacOSBridge.updateOverlayData({
+            'title': breakInfo.title,
+            'tip': breakInfo.tip,
+            'durationSeconds': breakInfo.durationSeconds,
+            'remainingSeconds': _timerEngine.countdownSeconds,
+            'targetEndTime': targetEndTime?.millisecondsSinceEpoch,
+            'strictMode': settings.strictMode,
+            'exerciseTitle': _currentExerciseTitle,
+            'exerciseInstructions': _currentExerciseInstructions,
+            'playMusic': settings.playMusicDuringBreak,
+            'template': _currentTemplate,
+            'theme': _currentThemeName,
+            'breakTemplate': settings.breakTemplate,
+            'companionPetTheme': settings.companionPetTheme,
+            'companionCatTheme': settings.companionPetTheme,
+          });
+        }
       }
     } else if (shouldShowWarning) {
       // Pre-break warning logic removed as per user request to avoid focus redirection
@@ -203,6 +224,8 @@ class BreakController extends ChangeNotifier {
       }
       overlayService.showDashboard();
       _stopMusic();
+      _lastOverlayState = null;
+      _lastOverlayTargetEndTime = null;
     } else if (!shouldShowWarning) {
       _preBreakWarningShown = false;
     }

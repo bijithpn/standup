@@ -1,3 +1,5 @@
+import 'dart:async' show Timer;
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -68,6 +70,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
 
+  DateTime? _targetEndTime;
+  Timer? _localTimer;
+
   String? _exerciseTitle;
   String? _exerciseInstructions;
   String _breakTemplate = 'minimal';
@@ -102,6 +107,30 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _fadeController.forward();
   }
 
+  void _startLocalTimer() {
+    _localTimer?.cancel();
+    _localTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_targetEndTime != null) {
+        final now = DateTime.now();
+        final diff = _targetEndTime!.difference(now).inSeconds;
+        final newRemaining = diff.clamp(0, _durationSeconds);
+
+        if (newRemaining != _remainingSeconds) {
+          if (newRemaining == 0 && _remainingSeconds > 0) {
+            _fadeController.reverse();
+          }
+          setState(() {
+            _remainingSeconds = newRemaining;
+          });
+        }
+      }
+    });
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -115,6 +144,17 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (call.method == 'updateOverlayData') {
         final args = call.arguments as Map;
         if (mounted) {
+          // If targetEndTime is passed, use it to count down locally!
+          final targetEndMs = args['targetEndTime'] as int?;
+          if (targetEndMs != null) {
+            _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
+            _startLocalTimer();
+          } else {
+            _targetEndTime = null;
+            _localTimer?.cancel();
+            _localTimer = null;
+          }
+
           // If we are transitioning to zero remaining seconds (auto-close),
           // or explicitly told to close, trigger fade out.
           final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
@@ -126,7 +166,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             _title = args['title'] ?? _title;
             _tip = args['tip'] ?? _tip;
             _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
-            _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
+            if (targetEndMs == null) {
+              _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
+            }
             _overlayType = args['type'] ?? _overlayType;
             _strictMode = args['strictMode'] ?? _strictMode;
             _isInternalPreview = args['isPreview'] ?? false;
@@ -210,6 +252,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   @override
   void dispose() {
+    _localTimer?.cancel();
     _kenBurnsController.dispose();
     _fadeController.dispose();
     super.dispose();
