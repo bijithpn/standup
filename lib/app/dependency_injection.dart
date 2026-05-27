@@ -191,6 +191,10 @@ void _setupIpcBridge() {
         final state = data['state'] as String?;
         final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
         final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
+        final targetEndMs = data['targetEndTime'] as int?;
+        final targetEndTime = targetEndMs != null
+            ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
+            : null;
         TimerStateEvent? timerState;
         switch (state) {
           case 'running':
@@ -208,6 +212,7 @@ void _setupIpcBridge() {
               state: timerState,
               countdownSeconds: countdown,
               workElapsedSeconds: elapsed,
+              targetEndTime: targetEndTime,
             ),
           );
         }

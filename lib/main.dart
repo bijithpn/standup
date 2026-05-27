@@ -75,55 +75,55 @@ void _setupGlobalErrors() {
                   size: 48,
                 ),
                 const SizedBox(height: 16),
-              const Text(
-                'Oops! Something went wrong.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'An unexpected error occurred. We have logged the details.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontFamily: 'Satoshi',
-                ),
-              ),
-              if (kDebugMode) ...[
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.redAccent.withValues(alpha: 0.3),
-                    ),
+                const Text(
+                  'Oops! Something went wrong.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Satoshi',
                   ),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      details.exceptionAsString(),
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontSize: 11,
-                        fontFamily: 'monospace',
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'An unexpected error occurred. We have logged the details.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+                if (kDebugMode) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.black45,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      child: Text(
+                        details.exceptionAsString(),
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 11,
+                          fontFamily: 'monospace',
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-};
+    );
+  };
 }
 
 void main() async {
@@ -285,6 +285,10 @@ void _setupMinimalIpc() {
         final stateStr = data['state'] as String?;
         final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
         final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
+        final targetEndMs = data['targetEndTime'] as int?;
+        final targetEndTime = targetEndMs != null
+            ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
+            : null;
         TimerStateEvent? timerState;
         switch (stateStr) {
           case 'running':
@@ -302,6 +306,7 @@ void _setupMinimalIpc() {
               state: timerState,
               countdownSeconds: countdown,
               workElapsedSeconds: elapsed,
+              targetEndTime: targetEndTime,
             ),
           );
         }
