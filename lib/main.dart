@@ -289,6 +289,7 @@ void _setupMinimalIpc() {
         final targetEndTime = targetEndMs != null
             ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
             : null;
+        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)?.toInt();
         TimerStateEvent? timerState;
         switch (stateStr) {
           case 'running':
@@ -307,6 +308,7 @@ void _setupMinimalIpc() {
               countdownSeconds: countdown,
               workElapsedSeconds: elapsed,
               targetEndTime: targetEndTime,
+              totalWorkTodaySeconds: totalWorkTodaySecs,
             ),
           );
         }

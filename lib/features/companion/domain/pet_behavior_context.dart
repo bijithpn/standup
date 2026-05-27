@@ -25,6 +25,7 @@ class PetBehaviorContext {
   final double curiosity;
   final double fatigue;
   final double boredom;
+  final Duration totalWorkToday;
 
   PetBehaviorContext({
     required this.profile,
@@ -46,6 +47,7 @@ class PetBehaviorContext {
     this.curiosity = 0.5,
     this.fatigue = 0.0,
     this.boredom = 0.0,
+    this.totalWorkToday = Duration.zero,
   })  : cursorPosition = cursorPosition ?? Offset.zero,
         petPosition = petPosition ?? Offset.zero,
         screenSize = screenSize ?? Size.zero;
@@ -70,6 +72,7 @@ class PetBehaviorContext {
     double? curiosity,
     double? fatigue,
     double? boredom,
+    Duration? totalWorkToday,
   }) {
     return PetBehaviorContext(
       profile: profile ?? this.profile,
@@ -91,6 +94,7 @@ class PetBehaviorContext {
       curiosity: curiosity ?? this.curiosity,
       fatigue: fatigue ?? this.fatigue,
       boredom: boredom ?? this.boredom,
+      totalWorkToday: totalWorkToday ?? this.totalWorkToday,
     );
   }
 

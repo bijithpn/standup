@@ -10,11 +10,13 @@ class TimerStateChangedEvent extends AppEvent {
   final int countdownSeconds;
   final int workElapsedSeconds;
   final DateTime? targetEndTime;
+  final int? totalWorkTodaySeconds;
   TimerStateChangedEvent({
     required this.state,
     required this.countdownSeconds,
     required this.workElapsedSeconds,
     this.targetEndTime,
+    this.totalWorkTodaySeconds,
     super.timestamp,
   });
 }

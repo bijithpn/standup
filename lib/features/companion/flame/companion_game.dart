@@ -103,6 +103,7 @@ class CompanionGame extends FlameGame {
       _petService.syncContextFlags(
         isBreakActive: event.state == TimerStateEvent.breakActive,
         isIdle: event.state == TimerStateEvent.idle,
+        totalWorkTodaySeconds: event.totalWorkTodaySeconds,
       );
       return;
     } else if (event is BreakStartedEvent) {

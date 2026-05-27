@@ -164,6 +164,20 @@ class PetBehaviorBrain {
       }
     }
 
+    // Daily Cumulative Work Fatigue (Phase 3.1)
+    // Shift probability to sleeping/resting if totalWorkToday > 3-4 hours
+    final double workHours = context.totalWorkToday.inSeconds / 3600.0;
+    if (workHours >= 3.0) {
+      final double fatigueMultiplier = 1.0 + (workHours - 3.0) * 1.5;
+      if (state == PetState.sleep) {
+        score *= (1.5 * fatigueMultiplier);
+      } else if (state == PetState.resting) {
+        score *= (1.2 * fatigueMultiplier);
+      } else if (state == PetState.run || state == PetState.playing || state == PetState.jumping) {
+        score /= (1.2 * fatigueMultiplier); // heavily penalize active states
+      }
+    }
+
     // Curiosity Impact
     if (context.curiosity > 0.6) {
       if (state == PetState.following || state == PetState.interacting || state == PetState.curious || state == PetState.exploring) {
