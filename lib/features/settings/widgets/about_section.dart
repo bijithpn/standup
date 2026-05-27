@@ -34,7 +34,7 @@ class _AboutSectionState extends State<AboutSection> {
         setState(() {
           _version = info.version;
           _buildNumber = info.buildNumber;
-          _appName = 'BreakMate';
+          _appName = info.appName;
         });
       }
     } catch (_) {}
