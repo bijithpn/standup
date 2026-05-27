@@ -26,7 +26,7 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
 2. Right-click (or Control-click) the BreakMate app and select Open.
 3. If it still blocks, go to **System Settings > Privacy & Security** and click **Allow Anyway** next to BreakMate.
             ]]></description>
-            <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/release_dmg/BreakMate-Installer.dmg"
+            <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/BreakMate-Installer.dmg"
                        sparkle:version="27"
                        sparkle:shortVersionString="1.1.2"
                        sparkle:edSignature="TTw51+l7P99G6El3WN1lIACi79Gs8Tw0rMMjJH9DBaCTMPzIt7E1e+JUJQ9+C3ErfZ8zA1JTWrUpb6gIa9WgAg=="
@@ -62,7 +62,7 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/release_dmg/BreakMate-Installer.dmg"
+            <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/BreakMate-Installer.dmg"
                        sparkle:version="26"
                        sparkle:shortVersionString="1.1.1"
                        sparkle:edSignature="hd/NP7QQgkdPnflSthI87VC1wFVqLYMm2PfoRh0gXVQJaUfjqLb7mzGooSLZZld6WyWgZJGEyI5a6et8iPBmDQ=="

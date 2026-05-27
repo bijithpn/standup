@@ -215,7 +215,12 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'About':
         return AboutSection(settings: _settings, onSave: _save);
       case 'Statistics':
-        return _buildStatistics();
+        return Consumer<StatsService>(
+          builder: (context, statsService, _) {
+            _stats = statsService.load();
+            return _buildStatistics();
+          },
+        );
       case 'Companion':
         return _buildCompanion();
       default:

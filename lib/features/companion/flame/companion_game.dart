@@ -357,21 +357,60 @@ class CompanionGame extends FlameGame {
     }
   }
 
+  bool _isOnBattery = false;
+  bool _isAppActive = true;
+  bool _isLowPowerMode = false;
+
+  bool get isThrottled => _isOnBattery || !_isAppActive || _isLowPowerMode;
+
+  void updateEnergyStatus({
+    bool? isOnBattery,
+    bool? isAppActive,
+    bool? isLowPowerMode,
+  }) {
+    _isOnBattery = isOnBattery ?? _isOnBattery;
+    _isAppActive = isAppActive ?? _isAppActive;
+    _isLowPowerMode = isLowPowerMode ?? _isLowPowerMode;
+  }
+
   double _tickAccumulator = 0.0;
+  double _timeSinceLastFrame = 0.0;
 
   @override
   void update(double dt) {
-    super.update(dt);
+    if (isThrottled) {
+      _timeSinceLastFrame += dt;
+      const throttledFrameTime = 1.0 / 15.0; // 15 FPS
+      if (_timeSinceLastFrame < throttledFrameTime) {
+        return;
+      }
 
-    // FSM tick at 1 Hz — behavior decisions don't need frame-rate precision
-    _tickAccumulator += dt;
-    if (_tickAccumulator >= 1.0) {
-      _petService.handleEvent(PetEvent.tick);
-      _tickAccumulator = 0.0;
+      super.update(_timeSinceLastFrame);
+
+      // FSM tick at 1 Hz — behavior decisions don't need frame-rate precision
+      _tickAccumulator += _timeSinceLastFrame;
+      if (_tickAccumulator >= 1.0) {
+        _petService.handleEvent(PetEvent.tick);
+        _tickAccumulator = 0.0;
+      }
+
+      // Service update: navigation + AI decisions (no notifyListeners inside)
+      _petService.update(_timeSinceLastFrame);
+
+      _timeSinceLastFrame = 0.0;
+    } else {
+      super.update(dt);
+
+      // FSM tick at 1 Hz — behavior decisions don't need frame-rate precision
+      _tickAccumulator += dt;
+      if (_tickAccumulator >= 1.0) {
+        _petService.handleEvent(PetEvent.tick);
+        _tickAccumulator = 0.0;
+      }
+
+      // Service update: navigation + AI decisions (no notifyListeners inside)
+      _petService.update(dt);
     }
-
-    // Service update: navigation + AI decisions (no notifyListeners inside)
-    _petService.update(dt);
   }
 
   Size? _lastInitializedSize;
