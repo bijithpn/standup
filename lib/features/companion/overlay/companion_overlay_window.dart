@@ -171,6 +171,16 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
             args['mouseFollow'] as Map<dynamic, dynamic>?;
         if (data != null) _game!.updateMouseFollow(data);
       }
+
+      if (args.containsKey('isOnBattery') ||
+          args.containsKey('isAppActive') ||
+          args.containsKey('isLowPowerMode')) {
+        _game!.updateEnergyStatus(
+          isOnBattery: args['isOnBattery'] as bool?,
+          isAppActive: args['isAppActive'] as bool?,
+          isLowPowerMode: args['isLowPowerMode'] as bool?,
+        );
+      }
     });
   }
 

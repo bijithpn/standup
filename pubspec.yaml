@@ -100,7 +100,7 @@ flutter:
           weight: 700
     - family: Satoshi
       fonts:
-        - asset: assets/fonts/Satoshi/Fonts/Satoshi-Regular.ttf
+        - asset: assets/fonts/Inter/Inter-Regular.ttf
 
 flutter_launcher_icons:
   windows:

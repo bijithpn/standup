@@ -1,5 +1,6 @@
 import Cocoa
 import FlutterMacOS
+import IOKit.ps
 
 class CompanionPanel: NSPanel {
     override var canBecomeKey: Bool {
@@ -19,6 +20,9 @@ class CompanionWindowManager: NSObject {
     private var userClickThrough = false
     private var followMouseEnabled = false
     private var followMouseTimer: Timer?
+    
+    private var energyStatusTimer: Timer?
+    private var lastEnergyStatus: [String: Any] = [:]
     
     // Stores the initial spawn args so Flutter can pull them after its method handler registers
     private var pendingInitialArgs: [String: Any]?
@@ -126,7 +130,12 @@ class CompanionWindowManager: NSObject {
                 result(nil)
             } else if call.method == "getInitialSettings" {
                 // Flutter pulls its initial configuration on startup to avoid the push-race
-                result(self?.pendingInitialArgs ?? [:])
+                var response = self?.pendingInitialArgs ?? [:]
+                let energyStatus = self?.getSystemEnergyStatus() ?? [:]
+                for (key, value) in energyStatus {
+                    response[key] = value
+                }
+                result(response)
             } else {
                 result(FlutterMethodNotImplemented)
             }
@@ -139,6 +148,9 @@ class CompanionWindowManager: NSObject {
         
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        
+        // Start the energy status tracking timer
+        startEnergyStatusTimer()
     }
     
     private func clampFrameToScreen(_ frame: NSRect, for window: NSWindow) -> NSRect {
@@ -216,6 +228,11 @@ class CompanionWindowManager: NSObject {
         followMouseTimer = nil
         followMouseEnabled = false
         mouseChaseActive = false
+        
+        // Reset energy status timer and states cleanly
+        energyStatusTimer?.invalidate()
+        energyStatusTimer = nil
+        lastEnergyStatus = [:]
     }
     
     /// Dynamic click-through modifier.
@@ -371,5 +388,61 @@ class CompanionWindowManager: NSObject {
                 "mouseY": Double(localMouseY)
             ]
         ])
+    }
+    
+    // MARK: - Adaptive FPS / Battery & Focus Throttling
+    
+    private func getSystemEnergyStatus() -> [String: Any] {
+        let onBattery = checkIsOnBattery()
+        let appActive = NSApp.isActive
+        let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        return [
+            "isOnBattery": onBattery,
+            "isAppActive": appActive,
+            "isLowPowerMode": lowPowerMode
+        ]
+    }
+    
+    private func checkIsOnBattery() -> Bool {
+        let snapshot = IOPSCopyPowerSourcesInfo().takeRetainedValue()
+        let sources = IOPSCopyPowerSourcesList(snapshot).takeUnretainedValue() as Array
+        for source in sources {
+            if let desc = IOPSGetPowerSourceDescription(snapshot, source).takeUnretainedValue() as? [String: Any] {
+                if let state = desc[kIOPSPowerSourceStateKey] as? String {
+                    if state == kIOPSBatteryPowerValue {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+    
+    private func startEnergyStatusTimer() {
+        energyStatusTimer?.invalidate()
+        energyStatusTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.checkAndSyncEnergyStatus()
+        }
+        // Run once immediately
+        checkAndSyncEnergyStatus()
+    }
+    
+    private func checkAndSyncEnergyStatus() {
+        guard let inst = instance else { return }
+        let status = getSystemEnergyStatus()
+        
+        // Only sync if status changed
+        if lastEnergyStatus["isOnBattery"] as? Bool != status["isOnBattery"] as? Bool ||
+           lastEnergyStatus["isAppActive"] as? Bool != status["isAppActive"] as? Bool ||
+           lastEnergyStatus["isLowPowerMode"] as? Bool != status["isLowPowerMode"] as? Bool {
+            
+            lastEnergyStatus = status
+            
+            let channel = FlutterMethodChannel(
+                name: "com.breakmate.macos/companion_data",
+                binaryMessenger: inst.engine.binaryMessenger
+            )
+            channel.invokeMethod("syncCompanionSettings", arguments: status)
+        }
     }
 }

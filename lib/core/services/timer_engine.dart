@@ -296,8 +296,15 @@ class TimerEngine extends ChangeNotifier {
         ),
       );
 
-      // Auto-save state every 30 seconds or on significant changes
-      if (_stateData.workElapsed.inSeconds % 30 == 0) {
+      // Auto-save state every 30 seconds during work session or active break
+      final isRunningSave = state == TimerState.running &&
+          _stateData.workElapsed.inSeconds > 0 &&
+          _stateData.workElapsed.inSeconds % 30 == 0;
+      final isBreakSave = state == TimerState.breakActive &&
+          countdownSeconds > 0 &&
+          countdownSeconds % 30 == 0;
+
+      if (isRunningSave || isBreakSave) {
         saveState();
       }
 
@@ -431,6 +438,7 @@ class TimerEngine extends ChangeNotifier {
     );
 
     _notificationService.showClockOutReminder();
+    saveState();
     _logger.info('Clock out triggered');
     notifyListeners();
   }
@@ -484,6 +492,7 @@ class TimerEngine extends ChangeNotifier {
 
     sl<TrayManagerService>().setBreakActive(true);
 
+    saveState();
     _logger.info('Break triggered: ${activeBreak!.title}');
     notifyListeners();
   }
@@ -565,6 +574,7 @@ class TimerEngine extends ChangeNotifier {
       ),
     );
 
+    saveState();
     notifyListeners();
   }
 
@@ -735,6 +745,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.clockOutTriggered = false;
     _stateData.breakEndTime = null;
     _stateData.workEndTime = null;
+    saveState();
     _emit(
       TimerStateChangedEvent(
         state: TimerStateEvent.idle,
