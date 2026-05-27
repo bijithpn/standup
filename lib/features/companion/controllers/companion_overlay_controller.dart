@@ -8,6 +8,8 @@ import 'package:breakmate/features/companion/services/companion_behavior_engine.
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
+import 'package:flame/flame.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 
 /// Controls the desktop companion pet window.
 class CompanionOverlayController extends ChangeNotifier {
@@ -21,27 +23,92 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _companionFollowMouse = false;
 
   static const List<String> catNames = [
-    'Mochi', 'Luna', 'Milo', 'Bella', 'Oliver', 'Simba', 'Chloe', 'Cleo',
-    'Loki', 'Lily', 'Oreo', 'Nala', 'Coco', 'Ziggy', 'Biscuit', 'Peanut',
-    'Pumpkin', 'Mocha', 'Pip', 'Mimi', 'Cookie', 'Teddy', 'Penny', 'Ruby', 'Lucky',
+    'Mochi',
+    'Luna',
+    'Milo',
+    'Bella',
+    'Oliver',
+    'Simba',
+    'Chloe',
+    'Cleo',
+    'Loki',
+    'Lily',
+    'Oreo',
+    'Nala',
+    'Coco',
+    'Ziggy',
+    'Biscuit',
+    'Peanut',
+    'Pumpkin',
+    'Mocha',
+    'Pip',
+    'Mimi',
+    'Cookie',
+    'Teddy',
+    'Penny',
+    'Ruby',
+    'Lucky',
   ];
 
   static const List<String> dogNames = [
-    'Buster', 'Buddy', 'Max', 'Daisy', 'Charlie', 'Cooper', 'Lola', 'Bailey',
-    'Teddy', 'Sadie', 'Rocky', 'Tucker', 'Bear', 'Bentley', 'Toby', 'Winston',
-    'Rosie', 'Bella', 'Oliver', 'Coco', 'Duke', 'Jax', 'Milo', 'Ruby', 'Harley',
+    'Buster',
+    'Buddy',
+    'Max',
+    'Daisy',
+    'Charlie',
+    'Cooper',
+    'Lola',
+    'Bailey',
+    'Teddy',
+    'Sadie',
+    'Rocky',
+    'Tucker',
+    'Bear',
+    'Bentley',
+    'Toby',
+    'Winston',
+    'Rosie',
+    'Bella',
+    'Oliver',
+    'Coco',
+    'Duke',
+    'Jax',
+    'Milo',
+    'Ruby',
+    'Harley',
   ];
 
   static const List<String> rabbitNames = [
-    'Cottontail', 'Thumper', 'Bunny', 'Bugs', 'Snowball', 'Peter', 'Hops', 'Flop',
+    'Cottontail',
+    'Thumper',
+    'Bunny',
+    'Bugs',
+    'Snowball',
+    'Peter',
+    'Hops',
+    'Flop',
   ];
 
   static const List<String> foxNames = [
-    'Rusty', 'Foxy', 'Vixen', 'Todd', 'Sly', 'Firefox', 'Red', 'Nick',
+    'Rusty',
+    'Foxy',
+    'Vixen',
+    'Todd',
+    'Sly',
+    'Firefox',
+    'Red',
+    'Nick',
   ];
 
   static const List<String> dragonNames = [
-    'Spyro', 'Toothless', 'Smaug', 'Draco', 'Norbert', 'Bahamut', 'Ember', 'Ignis',
+    'Spyro',
+    'Toothless',
+    'Smaug',
+    'Draco',
+    'Norbert',
+    'Bahamut',
+    'Ember',
+    'Ignis',
   ];
 
   CompanionOverlayController({required SettingsRepository settingsRepo})
@@ -105,6 +172,11 @@ class CompanionOverlayController extends ChangeNotifier {
   /// Dynamic updater for switching companion themes.
   Future<void> changeTheme(String themeId) async {
     if (_companionPetTheme == themeId) return;
+
+    // Evict old pet theme assets aggressively from main isolate
+    PetAssetLoader.clearCache();
+    Flame.images.clear(themeId);
+
     _companionPetTheme = themeId;
 
     final species = PetTheme.getTheme(themeId).species;

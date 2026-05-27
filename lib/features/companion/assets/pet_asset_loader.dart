@@ -8,6 +8,7 @@ import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class PetAssetLoader {
   static final Map<String, ui.Image> _imageCache = {};
@@ -570,5 +571,6 @@ class PetAssetLoader {
     _imageCache.clear();
     _animationCache.clear();
     _boundingBoxCache.clear();
+    CompanionSpriteWidget.clearCache();
   }
 }

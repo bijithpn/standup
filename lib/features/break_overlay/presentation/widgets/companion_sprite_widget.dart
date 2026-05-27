@@ -14,6 +14,10 @@ class CompanionSpriteWidget extends StatefulWidget {
 
   static final Map<String, ui.Image> _imageCache = {};
 
+  static void clearCache() {
+    _imageCache.clear();
+  }
+
   static Future<void> precacheSpriteSheet(String path) async {
     if (_imageCache.containsKey(path)) return;
     try {
