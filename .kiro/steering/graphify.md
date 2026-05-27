@@ -2,4 +2,4 @@
 inclusion: always
 ---
 
-graphify: A knowledge graph of this project lives in `graphify-out/`. If `graphify-out/GRAPH_REPORT.md` exists, read it before answering architecture questions, tracing dependencies, or searching files — it contains god nodes, community structure, and surprising connections the graph found. Navigate by graph structure instead of grepping raw files.
+graphify: A knowledge graph of this project lives in `graphify-out/`. For codebase, architecture, or dependency questions, when `graphify-out/graph.json` exists, first run `graphify query "<question>"` (or `graphify path "<A>" "<B>"` / `graphify explain "<concept>"`). These return a scoped subgraph, usually much smaller than `GRAPH_REPORT.md` or raw grep output. Read `GRAPH_REPORT.md` only for broad architecture review or when those commands do not surface enough context.
