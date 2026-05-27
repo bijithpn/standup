@@ -570,16 +570,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         ),
         const SizedBox(height: 24),
 
-        Text(
-          _formatTime(_remainingSeconds),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 160,
-            fontWeight: FontWeight.w200,
-            letterSpacing: -4,
-            fontFamily: 'Satoshi',
-            fontFeatures: [FontFeature.tabularFigures()],
-            height: 1.0,
+        RepaintBoundary(
+          child: Text(
+            _formatTime(_remainingSeconds),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 160,
+              fontWeight: FontWeight.w200,
+              letterSpacing: -4,
+              fontFamily: 'Satoshi',
+              fontFeatures: [FontFeature.tabularFigures()],
+              height: 1.0,
+            ),
           ),
         ),
 

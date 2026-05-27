@@ -18,13 +18,15 @@ class CountdownTimerWidget extends StatelessWidget {
         ? '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
         : '$seconds';
 
-    return Text(
-      display,
-      style: const TextStyle(
-        fontSize: 48,
-        fontWeight: FontWeight.w300,
-        color: Colors.white,
-        letterSpacing: -1,
+    return RepaintBoundary(
+      child: Text(
+        display,
+        style: const TextStyle(
+          fontSize: 48,
+          fontWeight: FontWeight.w300,
+          color: Colors.white,
+          letterSpacing: -1,
+        ),
       ),
     );
   }

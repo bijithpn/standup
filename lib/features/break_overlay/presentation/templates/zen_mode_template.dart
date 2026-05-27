@@ -111,9 +111,10 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                 const SizedBox(height: 64),
 
                 // Breathing circle
-                AnimatedBuilder(
-                  animation: _breathingController,
-                  builder: (context, child) {
+                RepaintBoundary(
+                  child: AnimatedBuilder(
+                    animation: _breathingController,
+                    builder: (context, child) {
                     final val = _breathingController.value;
                     double scale = 0.5;
                     String text = 'Breathe In';
@@ -207,7 +208,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                       ],
                     );
                   },
-                ),
+                ),),
                 const SizedBox(height: 48),
 
                 // Quote

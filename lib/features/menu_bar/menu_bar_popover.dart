@@ -109,16 +109,17 @@ class MenuBarPopover extends StatelessWidget {
     final mins = timeUntilBreak.inMinutes;
     final secs = (timeUntilBreak.inSeconds % 60).toString().padLeft(2, '0');
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.gray900,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RepaintBoundary(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.gray900,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+          border: Border.all(color: AppTheme.borderSubtle),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           Text(
             isBreak ? 'BREAK IN PROGRESS' : 'NEXT BREAK IN',
             style: const TextStyle(
@@ -151,7 +152,7 @@ class MenuBarPopover extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),);
   }
 
   Widget _buildQuickActions(BreakController controller) {
