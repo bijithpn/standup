@@ -232,35 +232,37 @@ class _SoftFloatingWidgetTemplateState
                               const SizedBox(width: 12),
 
                               // Time remaining pill
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _formatDuration(widget.remainingSeconds),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: -0.5,
-                                      fontFamily: 'Satoshi',
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    widget.breakInfo.type == BreakType.short
-                                        ? 'Eye Rest'
-                                        : 'Mindful Rest',
-                                    style: TextStyle(
-                                      color: Colors.white.withValues(
-                                        alpha: 0.4,
+                              RepaintBoundary(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _formatDuration(widget.remainingSeconds),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: -0.5,
+                                        fontFamily: 'Satoshi',
                                       ),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Satoshi',
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      widget.breakInfo.type == BreakType.short
+                                          ? 'Eye Rest'
+                                          : 'Mindful Rest',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(
+                                          alpha: 0.4,
+                                        ),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Satoshi',
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               const SizedBox(width: 16),
 

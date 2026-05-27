@@ -66,78 +66,80 @@ class ProductivityHudTemplate extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 760),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          _formatTime(remainingSeconds),
-                          textAlign: TextAlign.left,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: compact ? 78 : 118,
-                            height: 0.9,
-                            fontWeight: FontWeight.w300,
-                            fontFamily: 'Satoshi',
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        const SizedBox(height: 28),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(2),
-                          child: LinearProgressIndicator(
-                            value: progress,
-                            minHeight: 6,
-                            backgroundColor: Colors.white.withValues(
-                              alpha: 0.08,
+                  RepaintBoundary(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 760),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            _formatTime(remainingSeconds),
+                            textAlign: TextAlign.left,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: compact ? 78 : 118,
+                              height: 0.9,
+                              fontWeight: FontWeight.w300,
+                              fontFamily: 'Satoshi',
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
-                            valueColor: AlwaysStoppedAnimation<Color>(accent),
                           ),
-                        ),
-                        const SizedBox(height: 28),
-                        Wrap(
-                          spacing: 18,
-                          runSpacing: 14,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            _TelemetryValue(
-                              label: 'PHASE',
-                              value: isShortBreak ? 'Eyes' : 'Body',
+                          const SizedBox(height: 28),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(2),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 6,
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.08,
+                              ),
+                              valueColor: AlwaysStoppedAnimation<Color>(accent),
                             ),
-                            _TelemetryValue(
-                              label: 'PROGRESS',
-                              value: '${(progress * 100).round()}%',
-                            ),
-                            _TelemetryValue(
-                              label: 'STATE',
-                              value: settings.strictMode ? 'Locked' : 'Open',
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 36),
-                        Text(
-                          isShortBreak
-                              ? 'Defocus and reset.'
-                              : 'Recover before the next push.',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Satoshi',
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          breakInfo.tip,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.62),
-                            fontSize: 15,
-                            height: 1.5,
-                            fontFamily: 'Satoshi',
+                          const SizedBox(height: 28),
+                          Wrap(
+                            spacing: 18,
+                            runSpacing: 14,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _TelemetryValue(
+                                label: 'PHASE',
+                                value: isShortBreak ? 'Eyes' : 'Body',
+                              ),
+                              _TelemetryValue(
+                                label: 'PROGRESS',
+                                value: '${(progress * 100).round()}%',
+                              ),
+                              _TelemetryValue(
+                                label: 'STATE',
+                                value: settings.strictMode ? 'Locked' : 'Open',
+                              ),
+                            ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 36),
+                          Text(
+                            isShortBreak
+                                ? 'Defocus and reset.'
+                                : 'Recover before the next push.',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Satoshi',
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            breakInfo.tip,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.62),
+                              fontSize: 15,
+                              height: 1.5,
+                              fontFamily: 'Satoshi',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const Spacer(),

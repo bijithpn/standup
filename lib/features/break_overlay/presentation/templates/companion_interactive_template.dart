@@ -231,59 +231,61 @@ class _CompanionInteractiveTemplateState
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111318).withValues(alpha: 0.88),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.1),
+                  child: RepaintBoundary(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 14,
                       ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFA7F3D0),
-                            shape: BoxShape.circle,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111318).withValues(alpha: 0.88),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.1),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFA7F3D0),
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          _formatDuration(widget.remainingSeconds),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.5,
-                            fontFamily: 'Satoshi',
+                          const SizedBox(width: 12),
+                          Text(
+                            _formatDuration(widget.remainingSeconds),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.5,
+                              fontFamily: 'Satoshi',
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          width: 1,
-                          height: 20,
-                          color: Colors.white.withValues(alpha: 0.15),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          widget.breakInfo.type == BreakType.short
-                              ? 'Mindful Rest'
-                              : 'Step Away & Unwind',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.7),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Satoshi',
+                          const SizedBox(width: 16),
+                          Container(
+                            width: 1,
+                            height: 20,
+                            color: Colors.white.withValues(alpha: 0.15),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 16),
+                          Text(
+                            widget.breakInfo.type == BreakType.short
+                                ? 'Mindful Rest'
+                                : 'Step Away & Unwind',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Satoshi',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
