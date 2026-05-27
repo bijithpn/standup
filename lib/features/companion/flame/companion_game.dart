@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flame/game.dart';
+import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -88,12 +89,12 @@ class CompanionGame extends FlameGame {
 
   void _mapAppEventToPetEvent(AppEvent event) {
     PetEvent? petEvent;
-    
+
     if (event is CompanionStateChangedEvent) {
       _applyCompanionState(event.state);
       return;
     }
-    
+
     // TimerStateChangedEvent is NOT mapped to PetEvent.tick — the update() loop
     // already fires tick at 1 Hz. Mapping it here caused double-ticks every
     // timer update, which jittered the FSM.
@@ -241,7 +242,9 @@ class CompanionGame extends FlameGame {
         // Alternate lick1 → lick2 → lick1 … for a natural grooming sequence.
         if (_theme.animations.containsKey(PetAnimationState.lick1)) {
           _lastGroomWasLick1 = !_lastGroomWasLick1;
-          return _lastGroomWasLick1 ? PetAnimationState.lick1 : PetAnimationState.lick2;
+          return _lastGroomWasLick1
+              ? PetAnimationState.lick1
+              : PetAnimationState.lick2;
         }
         return PetAnimationState.idle;
       case PetState.eating:
@@ -289,6 +292,11 @@ class CompanionGame extends FlameGame {
 
   Future<void> updateTheme(PetTheme newTheme) async {
     if (_theme.id == newTheme.id && petComponent != null) return;
+
+    // Aggressively clear caches to evict old theme assets
+    PetAssetLoader.clearCache();
+    Flame.images.clear(_theme.id);
+
     _theme = newTheme;
     _petService.updateProfile(getProfileFromTheme(newTheme));
     await _loadAndAttachPet();
@@ -374,7 +382,7 @@ class CompanionGame extends FlameGame {
         final double spriteSize = _theme.spriteSize.toDouble();
         final double scale = _effectiveScale(spriteSize);
         final double scaledHalfH = (spriteSize * scale) / 2;
-        
+
         _petService.initialize(
           screenSize: newSize,
           startPosition: Offset(size.x / 2, size.y - scaledHalfH - 4.0),
