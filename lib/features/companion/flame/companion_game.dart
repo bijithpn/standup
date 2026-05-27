@@ -177,6 +177,8 @@ class CompanionGame extends FlameGame {
         _petService.stateMachine.transitionTo(PetState.happy);
       case CompanionState.stretch:
         _petService.stateMachine.transitionTo(PetState.stretch);
+      case CompanionState.blink:
+        _petService.stateMachine.transitionTo(PetState.blink);
       case CompanionState.breakReminder:
         _petService.stateMachine.transitionTo(PetState.breakReminder);
       case CompanionState.meetingPaused:
@@ -200,11 +202,12 @@ class CompanionGame extends FlameGame {
   PetAnimationState _mapPetStateToAnimationState(PetState state) {
     switch (state) {
       case PetState.idle:
-      case PetState.blink:
       case PetState.resting:
       case PetState.bored:
       case PetState.quiet:
         return PetAnimationState.idle;
+      case PetState.blink:
+        return PetAnimationState.blink;
       case PetState.stretch:
         return PetAnimationState.stretch;
       case PetState.celebrating:

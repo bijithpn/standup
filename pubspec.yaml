@@ -1,7 +1,7 @@
 name: breakmate
 description: "BreakMate — a macOS menu bar break reminder app for healthy work habits."
 publish_to: "none"
-version: 1.1.1+26
+version: 1.1.2+27
 #BreakMate
 environment:
   sdk: ^3.10.4
@@ -33,6 +33,8 @@ dependencies:
   flame: ^1.37.0
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.14+1
+  flutter_widget_from_html: ^0.17.2
+  markdown: ^7.3.1
 
 dev_dependencies:
   flutter_test:

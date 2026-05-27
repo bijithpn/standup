@@ -1,15 +1,22 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:markdown/markdown.dart' as md;
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 class UpdateSection extends StatefulWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
 
-  const UpdateSection({super.key, required this.settings, required this.onSave});
+  const UpdateSection({
+    super.key,
+    required this.settings,
+    required this.onSave,
+  });
 
   @override
   State<UpdateSection> createState() => _UpdateSectionState();
@@ -48,20 +55,24 @@ class _UpdateSectionState extends State<UpdateSection> {
         final args = Map<String, dynamic>.from(call.arguments);
         final error = args['error'] as String? ?? 'Failed to check for updates';
         final normalizedError = error.toLowerCase();
-        
+
         String displayError = error;
         if (normalizedError.contains('signature')) {
-          displayError = 'Update validation failed (invalid signature). Please contact support.';
-        } else if (normalizedError.contains('connect') || normalizedError.contains('network')) {
-          displayError = 'Unable to connect to update server. Please check your internet connection.';
+          displayError =
+              'Update validation failed (invalid signature). Please contact support.';
+        } else if (normalizedError.contains('connect') ||
+            normalizedError.contains('network')) {
+          displayError =
+              'Unable to connect to update server. Please check your internet connection.';
         }
 
-        final isUpToDate = normalizedError.contains('up to date') || 
-                           normalizedError.contains('up-to-date') ||
-                           normalizedError.contains('newest version') ||
-                           normalizedError.contains('latest version') ||
-                           normalizedError.contains('no update') ||
-                           normalizedError.contains('no updates');
+        final isUpToDate =
+            normalizedError.contains('up to date') ||
+            normalizedError.contains('up-to-date') ||
+            normalizedError.contains('newest version') ||
+            normalizedError.contains('latest version') ||
+            normalizedError.contains('no update') ||
+            normalizedError.contains('no updates');
         if (mounted) {
           setState(() {
             _isChecking = false;
@@ -72,7 +83,7 @@ class _UpdateSectionState extends State<UpdateSection> {
         }
       }
     });
-    
+
     // Automatically trigger a background check when entering the update section
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
@@ -106,37 +117,59 @@ class _UpdateSectionState extends State<UpdateSection> {
     } catch (_) {}
   }
 
+  String _formatReleaseNotes(String rawNotes) {
+    if (rawNotes.isEmpty) return 'No release notes available.';
+
+    // 1. Unescape XML entities to get the "intended" content
+    String notes = rawNotes
+        .replaceAll('&amp;', '&')
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'");
+
+    // 2. Convert Markdown to HTML (preserves existing structure but might escape tags)
+    String html = md.markdownToHtml(
+      notes,
+      extensionSet: md.ExtensionSet.gitHubFlavored,
+    );
+
+    // 3. SURGICAL FIX: Restore the HTML tags that the markdown parser escaped.
+    // This allows us to support both MD headers (##) and HTML headers (<h3>).
+    html = html.replaceAll(RegExp(r'&lt;(/?[a-z0-9]+.*?)&gt;'), r'<$1>');
+
+    return html;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Styled section header and visual top area
         sectionHeader('Software Update'),
         const SizedBox(height: 8),
-        
+
         buildCard([
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    // Premium animated/styled state icon
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: _getStatusColor().withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
+                        color: _getStatusColor().withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
                         _getStatusIcon(),
                         color: _getStatusColor(),
-                        size: 24,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 18),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,29 +180,31 @@ class _UpdateSectionState extends State<UpdateSection> {
                                 : (_hasUpdate
                                     ? 'Version $_updateVersion Available'
                                     : (_isChecking
-                                        ? 'Checking for updates...'
-                                        : (_checked ? 'BreakMate is up to date' : 'Check for Updates'))),
+                                        ? 'Checking for Updates...'
+                                        : (_checked
+                                            ? 'BreakMate is Up to Date'
+                                            : 'Software Update'))),
                             style: const TextStyle(
-                              fontSize: 15,
+                              fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimary,
                               fontFamily: 'Satoshi',
-                              letterSpacing: -0.2,
+                              letterSpacing: -0.3,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _errorMessage.isNotEmpty
-                                ? 'An error occurred while connecting to the updates server.'
+                                ? 'An error occurred while connecting to the server.'
                                 : (_hasUpdate
-                                    ? 'A new version of BreakMate is ready to be installed.'
+                                    ? 'A newer version is ready to be installed.'
                                     : (_isChecking
-                                        ? 'Connecting to the updates server...'
+                                        ? 'Connecting to update server...'
                                         : (_checked
-                                            ? 'Last checked: Just now'
-                                            : 'Ensure you have the latest features and fixes.'))),
+                                            ? 'Everything is running smoothly.'
+                                            : 'Keep your app modern and stable.'))),
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: 13,
                               color: AppTheme.textSecondary,
                               fontFamily: 'Satoshi',
                             ),
@@ -178,26 +213,19 @@ class _UpdateSectionState extends State<UpdateSection> {
                       ),
                     ),
                     if (!_isChecking && !_hasUpdate)
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.05),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: BorderSide(
-                              color: Colors.white.withValues(alpha: 0.05),
-                            ),
-                          ),
-                        ),
+                      MinimalButton(
                         onPressed: _checkForUpdates,
+                        isSecondary: true,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
                         child: const Text(
                           'Check Now',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            fontFamily: 'Satoshi',
                           ),
                         ),
                       )
@@ -206,112 +234,127 @@ class _UpdateSectionState extends State<UpdateSection> {
                         width: 18,
                         height: 18,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                          strokeWidth: 2.5,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.accentColor,
+                          ),
                         ),
-                      )
+                      ),
                   ],
                 ),
-                
+
                 if (_errorMessage.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withValues(alpha: 0.1)),
+                      color: Colors.redAccent.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.redAccent.withValues(alpha: 0.15),
+                      ),
                     ),
                     child: Text(
                       _errorMessage,
                       style: const TextStyle(
                         color: Colors.redAccent,
-                        fontSize: 12,
+                        fontSize: 13,
                         fontFamily: 'Satoshi',
                       ),
                     ),
                   ),
                 ],
-                
+
                 if (_hasUpdate) ...[
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Release Notes & Changes',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                      fontFamily: 'Satoshi',
+                  const Padding(
+                    padding: EdgeInsets.only(top: 32, bottom: 12),
+                    child: Text(
+                      'RELEASE NOTES',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        color: AppTheme.textSecondary,
+                        letterSpacing: 1.5,
+                        fontFamily: 'Satoshi',
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.black26,
-                      borderRadius: BorderRadius.circular(10),
+                      color: Colors.white.withValues(alpha: 0.04),
+                      borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.04),
+                        color: Colors.white.withValues(alpha: 0.06),
                       ),
                     ),
-                    constraints: const BoxConstraints(maxHeight: 280),
+                    constraints: const BoxConstraints(maxHeight: 320),
                     child: SingleChildScrollView(
-                      child: Text(
-                        _updateNotes,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
+                      physics: const BouncingScrollPhysics(),
+                      child: HtmlWidget(
+                        _formatReleaseNotes(_updateNotes),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
                           fontFamily: 'Satoshi',
-                          height: 1.5,
+                          height: 1.6,
                         ),
+                        customStylesBuilder: (element) {
+                          if (element.localName == 'h3' ||
+                              element.localName == 'h2') {
+                            return {
+                              'font-weight': 'bold',
+                              'font-size': '18px',
+                              'margin-bottom': '12px',
+                              'margin-top': '8px',
+                              'color': '#ffffff',
+                            };
+                          }
+                          if (element.localName == 'li') {
+                            return {
+                              'margin-bottom': '8px',
+                              'line-height': '1.5',
+                            };
+                          }
+                          if (element.localName == 'p') {
+                            return {
+                              'margin-bottom': '16px',
+                            };
+                          }
+                          return null;
+                        },
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  GestureDetector(
-                    onTap: _startUpdate,
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppTheme.accentColor, const Color(0xFFFF7E5F)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: MinimalButton(
+                      onPressed: _startUpdate,
+                      backgroundColor: AppTheme.accentColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      borderRadius: BorderRadius.circular(14),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            CupertinoIcons.arrow_down_doc_fill,
+                            color: Colors.white,
+                            size: 18,
                           ),
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(alpha: 0.25),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.arrow_down_doc_fill,
+                          SizedBox(width: 10),
+                          Text(
+                            'Install and Restart Now',
+                            style: TextStyle(
                               color: Colors.white,
-                              size: 16,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Satoshi',
                             ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Install Update Now',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Satoshi',
-                              ),
-                            ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

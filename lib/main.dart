@@ -319,6 +319,15 @@ void _setupMinimalIpc() {
             bundleId: data['bundleId'] as String? ?? '',
           ),
         );
+      case 'companion.interaction':
+        eventBus.emit(
+          CompanionInteractionEvent(
+            interactionType: data['interactionType'] as String? ?? 'click',
+            metadata: data['metadata'] != null
+                ? Map<String, dynamic>.from(data['metadata'] as Map)
+                : null,
+          ),
+        );
     }
   });
 }

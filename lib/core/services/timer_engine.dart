@@ -350,6 +350,21 @@ class TimerEngine extends ChangeNotifier {
 
   void _triggerHealthReminder(String reminderType, String displayType) {
     _logger.info('Triggering $reminderType reminder ($displayType)');
+
+    final settings = _settingsRepository.currentSettings;
+    if (settings.companionEnabled) {
+      // Phase 3.4: Map micro-breaks to Companion animations instead of OS popups
+      final interactionType = reminderType == 'posture' ? 'stretch' : 'blink';
+      _eventBus.emit(CompanionInteractionEvent(interactionType: interactionType));
+      
+      // Also notify other isolates via IPC
+      IpcBridge.instance.sendEvent('companion.interaction', {
+        'interactionType': interactionType,
+      });
+      
+      return;
+    }
+
     if (displayType == 'native') {
       if (reminderType == 'posture') {
         _notificationService.showPostureReminder();

@@ -22,6 +22,7 @@ enum PetAnimationState {
   excited,
   sad,
   stretch,
+  blink,
   breakMode,
   focusMode,
   angry,
