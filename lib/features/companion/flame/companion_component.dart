@@ -295,6 +295,34 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
   void render(Canvas canvas) {
     super.render(canvas);
 
+    // Render "ON AIR" / Meeting Indicator
+    if (game.petService.context.isMeetingDetected) {
+      final double spriteSize = game.currentTheme.spriteSize.toDouble();
+      final Offset badgePos = Offset(spriteSize * 0.3, -spriteSize * 0.4);
+      
+      final paint = Paint()
+        ..color = const Color(0xFFFF3B30)
+        ..style = PaintingStyle.fill;
+      
+      // Draw a small pulsating red dot
+      final double pulse = 1.0 + sin(_stateElapsed * 4.0) * 0.2;
+      canvas.drawCircle(badgePos, 3.0 * pulse, paint);
+      
+      // Draw "ON AIR" text badge if space permits
+      const textStyle = TextStyle(
+        color: Colors.white,
+        fontSize: 5,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'Satoshi',
+      );
+      final textPainter = TextPainter(
+        text: const TextSpan(text: 'ON AIR', style: textStyle),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, badgePos + const Offset(5, -3));
+    }
+
     // Render Dragon Snout Fire Particles procedurally over the sprite
     if (_particles.isNotEmpty) {
       final paint = Paint()..style = PaintingStyle.fill;

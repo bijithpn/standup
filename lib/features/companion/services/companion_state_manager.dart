@@ -147,9 +147,8 @@ class CompanionStateManager {
           _resetToIdleAfter(const Duration(milliseconds: 1500));
         }
       case 'blink':
-        // Blinking is ambient, we don't necessarily change the FSM state 
-        // unless it's a dedicated state, but we can trigger a temporary state.
-        break;
+        _setState(CompanionState.blink);
+        _resetToIdleAfter(const Duration(seconds: 2));
       case 'stretch':
         _setState(CompanionState.stretch);
         _resetToIdleAfter(const Duration(seconds: 4));

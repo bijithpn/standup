@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -19,6 +21,7 @@ enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
 class TrayManagerService with TrayListener, WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
   bool _isPaused = false;
+  bool _isMeetingActive = false;
   TrayIconMode _iconMode = TrayIconMode.companion;
 
   Timer? _animTimer;
@@ -63,6 +66,14 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     await _buildMenu();
     _startCatAnimation();
     _logger.info('Tray manager initialized (mode: $_iconMode)');
+
+    // Listen for meeting events from the main isolate's event bus
+    sl<EventBus>().stream.listen((event) {
+      if (event is MeetingDetectedEvent) {
+        _isMeetingActive = event.isActive;
+        _scheduleMenuRebuild();
+      }
+    });
   }
 
   void setMenuBarController(MenuBarController controller) {
@@ -320,7 +331,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     String statusLabel = 'BreakMate';
 
     if (_timerEngine != null) {
-      if (_isBreakActive) {
+      if (_isMeetingActive) {
+        statusLabel = 'In a Meeting (Paused)';
+      } else if (_isBreakActive) {
         statusLabel = 'On Break';
       } else if (_isPaused) {
         statusLabel = 'Timer Paused';

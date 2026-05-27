@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -26,8 +27,11 @@ class BreakController extends ChangeNotifier {
 
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlayingMusic = false;
+  Timer? _fadeTimer;
+  double _currentVolume = 0.0;
 
   String _currentTemplate = '';
+
   String _currentThemeName = 'random';
   bool _isPreviewMode = false;
   bool _preBreakWarningShown = false;
@@ -186,10 +190,16 @@ class BreakController extends ChangeNotifier {
       if (breakInfo != null) {
         final targetEndTime = _timerEngine.targetEndTime;
         final stateChanged = _lastOverlayState != _timerEngine.state;
-        final targetEndTimeChanged = _lastOverlayTargetEndTime == null && targetEndTime != null ||
+        final targetEndTimeChanged =
+            _lastOverlayTargetEndTime == null && targetEndTime != null ||
             _lastOverlayTargetEndTime != null && targetEndTime == null ||
-            (_lastOverlayTargetEndTime != null && targetEndTime != null &&
-                (_lastOverlayTargetEndTime!.difference(targetEndTime).abs().inSeconds > 1));
+            (_lastOverlayTargetEndTime != null &&
+                targetEndTime != null &&
+                (_lastOverlayTargetEndTime!
+                        .difference(targetEndTime)
+                        .abs()
+                        .inSeconds >
+                    1));
 
         if (stateChanged || targetEndTimeChanged) {
           _lastOverlayState = _timerEngine.state;
@@ -218,6 +228,13 @@ class BreakController extends ChangeNotifier {
         _preBreakWarningShown = true;
         final isLong = _timerEngine.activeBreak?.isLong ?? false;
         sl<NotificationService>().showBreakReminder(isLong: isLong);
+
+        // Start pre-break music fade-in if enabled
+        if (settings.playMusicDuringBreak && !_isPlayingMusic) {
+          _playLofiMusicWithFadeIn(
+            trackIndex: 1,
+          ); // Use lofi_1.mp3 as per roadmap
+        }
       }
     } else if (overlayService.isOverlayVisible &&
         !_isPreviewMode &&
@@ -227,32 +244,66 @@ class BreakController extends ChangeNotifier {
         strictModeController.disableStrictMode();
       }
       overlayService.showDashboard();
-      _stopMusic();
+      _stopMusicWithFadeOut();
       _lastOverlayState = null;
       _lastOverlayTargetEndTime = null;
     } else if (!shouldShowWarning) {
+      if (_preBreakWarningShown && !shouldShowBreak && !_isPreviewMode) {
+        _stopMusicWithFadeOut();
+      }
       _preBreakWarningShown = false;
     }
 
     notifyListeners();
   }
 
-  void _playLofiMusic() async {
+  void _playLofiMusicWithFadeIn({int? trackIndex}) async {
     try {
-      final random = Random().nextInt(6) + 1; // 1 to 6
+      _fadeTimer?.cancel();
+      final track = trackIndex ?? (Random().nextInt(6) + 1);
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
-      await _audioPlayer.play(AssetSource('music/lofi_$random.mp3'));
+      _currentVolume = 0.0;
+      await _audioPlayer.setVolume(_currentVolume);
+      await _audioPlayer.play(AssetSource('music/lofi_$track.mp3'));
       _isPlayingMusic = true;
+
+      // Fade in over 3 seconds (10 steps of 0.1 volume every 300ms)
+      _fadeTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
+        _currentVolume += 0.1;
+        if (_currentVolume >= 1.0) {
+          _currentVolume = 1.0;
+          _audioPlayer.setVolume(_currentVolume);
+          timer.cancel();
+        } else {
+          _audioPlayer.setVolume(_currentVolume);
+        }
+      });
     } catch (e) {
-      debugPrint("Failed to play lofi music: $e");
+      debugPrint("Failed to play lofi music with fade in: $e");
     }
   }
 
-  void _stopMusic() async {
-    if (_isPlayingMusic) {
-      await _audioPlayer.stop();
-      _isPlayingMusic = false;
-    }
+  void _stopMusicWithFadeOut() async {
+    if (!_isPlayingMusic) return;
+    _fadeTimer?.cancel();
+
+    // Fade out over 2 seconds (10 steps of 0.1 volume every 200ms)
+    _fadeTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+      _currentVolume -= 0.1;
+      if (_currentVolume <= 0.0) {
+        _currentVolume = 0.0;
+        _audioPlayer.setVolume(_currentVolume);
+        _audioPlayer.stop();
+        _isPlayingMusic = false;
+        timer.cancel();
+      } else {
+        _audioPlayer.setVolume(_currentVolume);
+      }
+    });
+  }
+
+  void _playLofiMusic() async {
+    _playLofiMusicWithFadeIn();
   }
 
   void _applySettings() {
@@ -381,7 +432,7 @@ class BreakController extends ChangeNotifier {
       await _timerEngine.finishBreak(skipped: true);
       sl<TrayManagerService>().setBreakActive(false);
       sl<OverlayWindowService>().showDashboard();
-      _stopMusic();
+      _stopMusicWithFadeOut();
     }
   }
 

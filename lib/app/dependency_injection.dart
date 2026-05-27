@@ -120,6 +120,11 @@ Future<void> initDependencies() async {
   final meetingDetectionService = MeetingDetectionService();
   sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
 
+  // Listen for meeting events and broadcast via IPC to all isolates
+  meetingDetectionService.isMeetingActiveStream.listen((isActive) {
+    IpcBridge.instance.notifyMeetingDetected(isActive);
+  });
+
   final focusModeService = FocusModeService();
   sl.registerSingleton<FocusModeService>(focusModeService);
 
@@ -264,6 +269,15 @@ void _setupIpcBridge() {
               (s) => s.name == (data['state'] as String?),
               orElse: () => CompanionState.idle,
             ),
+          ),
+        );
+      case 'companion.interaction':
+        eventBus.emit(
+          CompanionInteractionEvent(
+            interactionType: data['interactionType'] as String? ?? 'click',
+            metadata: data['metadata'] != null
+                ? Map<String, dynamic>.from(data['metadata'] as Map)
+                : null,
           ),
         );
     }
