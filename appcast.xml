@@ -29,8 +29,8 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
             <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/BreakMate-Installer.dmg"
                        sparkle:version="27"
                        sparkle:shortVersionString="1.1.2"
-                       sparkle:edSignature="TTw51+l7P99G6El3WN1lIACi79Gs8Tw0rMMjJH9DBaCTMPzIt7E1e+JUJQ9+C3ErfZ8zA1JTWrUpb6gIa9WgAg=="
-                       length="56982304"
+                       sparkle:edSignature="PGaGx3Voux9NCskQSN4IhzCUntwijTvM1Gyb4G151fX/tVdcyXyIlDDS04WqE0LPsIT3kSvdTVRgkJZ6Ge2vBw=="
+                       length="59755663"
                        type="application/octet-stream" />
         </item>
                 <item>
