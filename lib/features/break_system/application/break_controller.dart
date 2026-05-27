@@ -214,7 +214,11 @@ class BreakController extends ChangeNotifier {
         }
       }
     } else if (shouldShowWarning) {
-      // Pre-break warning logic removed as per user request to avoid focus redirection
+      if (!_preBreakWarningShown) {
+        _preBreakWarningShown = true;
+        final isLong = _timerEngine.activeBreak?.isLong ?? false;
+        sl<NotificationService>().showBreakReminder(isLong: isLong);
+      }
     } else if (overlayService.isOverlayVisible &&
         !_isPreviewMode &&
         (overlayService.currentOverlayType == OverlayType.breakScreen ||
