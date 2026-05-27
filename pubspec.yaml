@@ -105,8 +105,8 @@ flutter:
 flutter_launcher_icons:
   windows:
     generate: true
-    image_path: "assets/icons/tray_icon.png"
+    image_path: "assets/icons/app_icon.jpeg"
     icon_size: 48
   macos:
     generate: true
-    image_path: "assets/icons/tray_icon.png"
+    image_path: "assets/icons/app_icon.jpeg"

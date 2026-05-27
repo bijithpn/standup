@@ -1,43 +1,51 @@
 import 'dart:developer' as developer;
 
 import 'package:flutter/services.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 
-class MacOSBridge {
-  static const MethodChannel _channel = MethodChannel('com.breakmate.macos/bridge');
+class MacOSBridge implements NativeBridgePlatform {
+  final MethodChannel _channel = const MethodChannel('com.breakmate.macos/bridge');
   static final Set<String> _loggedMissingMethods = {};
 
   /// Show the native multi-monitor overlay
-  static Future<void> showOverlay([Map<String, dynamic>? args]) async {
+  @override
+  Future<void> showOverlay([Map<String, dynamic>? args]) async {
     await _invokeSafely('showOverlay', args);
   }
 
   /// Hide the native multi-monitor overlay
-  static Future<void> hideOverlay({bool restoreMainWindow = true}) async {
+  @override
+  Future<void> hideOverlay({bool restoreMainWindow = true}) async {
     await _invokeSafely('hideOverlay', {'restoreMainWindow': restoreMainWindow});
   }
 
   /// Skip the current break from the overlay and sync to main engine
-  static Future<void> skipBreak() async {
+  @override
+  Future<void> skipBreak() async {
     await _invokeSafely('skipBreak');
   }
 
   /// Set the visual effect (vibrancy) of the overlays
-  static Future<void> setVisualEffect(String material) async {
+  @override
+  Future<void> setVisualEffect(String material) async {
     await _invokeSafely('setVisualEffect', {'material': material});
   }
 
   /// Focus the application and un-minimize if needed
-  static Future<void> focusApp() async {
+  @override
+  Future<void> focusApp() async {
     await _invokeSafely('focusApp');
   }
 
   /// Set the window level (e.g., 'screenSaver', 'floating', 'normal')
-  static Future<void> setWindowLevel(String level) async {
+  @override
+  Future<void> setWindowLevel(String level) async {
     await _invokeSafely('setWindowLevel', {'level': level});
   }
 
   /// Set presentation options for the application
-  static Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu}) async {
+  @override
+  Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu}) async {
     await _invokeSafely('setPresentationOptions', {
       'hideDock': hideDock,
       'hideMenu': hideMenu,
@@ -45,73 +53,86 @@ class MacOSBridge {
   }
 
   /// Get the system idle time in seconds
-  static Future<double> getIdleTime() async {
+  @override
+  Future<double> getIdleTime() async {
     final double? idleTime = await _invokeSafely<double>('getIdleTime');
     return idleTime ?? 0.0;
   }
 
   /// Get the current macOS appearance ('dark' or 'light')
-  static Future<String> getAppearance() async {
+  @override
+  Future<String> getAppearance() async {
     final String? appearance = await _invokeSafely<String>('getAppearance');
     return appearance ?? 'light';
   }
 
   /// Set the overlay to ignore mouse events (click-through)
-  static Future<void> setIgnoreMouseEvents(bool ignore) async {
+  @override
+  Future<void> setIgnoreMouseEvents(bool ignore) async {
     await _invokeSafely('setIgnoreMouseEvents', {'ignore': ignore});
   }
 
   /// Update data in all active overlay engines
-  static Future<void> updateOverlayData(Map<String, dynamic> data) async {
+  @override
+  Future<void> updateOverlayData(Map<String, dynamic> data) async {
     await _invokeSafely('updateOverlayData', data);
   }
 
   /// Spawns the native floating desktop companion window
-  static Future<void> showCompanion(Map<String, dynamic> args) async {
+  @override
+  Future<void> showCompanion(Map<String, dynamic> args) async {
     await _invokeSafely('showCompanion', args);
   }
 
   /// Closes the native floating desktop companion window
-  static Future<void> hideCompanion() async {
+  @override
+  Future<void> hideCompanion() async {
     await _invokeSafely('hideCompanion');
   }
 
   /// Sets companion window click-through mode
-  static Future<void> setCompanionClickThrough(bool ignore) async {
+  @override
+  Future<void> setCompanionClickThrough(bool ignore) async {
     await _invokeSafely('setCompanionClickThrough', {'ignore': ignore});
   }
 
   /// Updates companion scale and native dimensions
-  static Future<void> updateCompanionScale(double scale) async {
+  @override
+  Future<void> updateCompanionScale(double scale) async {
     await _invokeSafely('updateCompanionScale', {'scale': scale});
   }
 
   /// Swaps companion theme dynamically
-  static Future<void> updateCompanionTheme(String themeId) async {
+  @override
+  Future<void> updateCompanionTheme(String themeId) async {
     await _invokeSafely('updateCompanionTheme', {'themeId': themeId});
   }
 
   /// Updates companion display metadata.
-  static Future<void> updateCompanionName(String petName) async {
+  @override
+  Future<void> updateCompanionName(String petName) async {
     await _invokeSafely('updateCompanionName', {'petName': petName});
   }
 
   /// Triggers a dynamic behavioral animation state in the companion overlay
-  static Future<void> triggerCompanionState(String stateName) async {
+  @override
+  Future<void> triggerCompanionState(String stateName) async {
     await _invokeSafely('triggerCompanionState', {'state': stateName});
   }
 
   /// Sets wandering AI state in the companion overlay
-  static Future<void> setCompanionWandering(bool enabled) async {
+  @override
+  Future<void> setCompanionWandering(bool enabled) async {
     await _invokeSafely('setCompanionWandering', {'enabled': enabled});
   }
 
   /// Sets follow mouse cursor state in the companion overlay
-  static Future<void> setCompanionFollowMouse(bool enabled) async {
+  @override
+  Future<void> setCompanionFollowMouse(bool enabled) async {
     await _invokeSafely('setCompanionFollowMouse', {'enabled': enabled});
   }
 
-  static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
+  Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);
     } on MissingPluginException {

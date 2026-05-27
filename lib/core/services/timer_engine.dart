@@ -5,7 +5,7 @@ import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
-import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -506,7 +506,7 @@ class TimerEngine extends ChangeNotifier {
       _stateData.isCompletionState = true;
       notifyListeners();
 
-      MacOSBridge.updateOverlayData({
+      NativeBridge.updateOverlayData({
         'title': 'Well Done!',
         'remainingSeconds': 0,
         'durationSeconds':

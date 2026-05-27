@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
@@ -53,7 +53,7 @@ class OverlayWindowService extends ChangeNotifier {
             ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
-          await MacOSBridge.showOverlay(args);
+          await NativeBridge.showOverlay(args);
           await windowManager.setFullScreen(true);
           await windowManager.setAlwaysOnTop(true);
           await windowManager.show();
@@ -71,9 +71,9 @@ class OverlayWindowService extends ChangeNotifier {
             ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
-          await MacOSBridge.showOverlay(args);
+          await NativeBridge.showOverlay(args);
           if (strictMode && type == OverlayType.breakScreen) {
-            await MacOSBridge.setPresentationOptions(
+            await NativeBridge.setPresentationOptions(
               hideDock: true,
               hideMenu: true,
             );
@@ -90,7 +90,7 @@ class OverlayWindowService extends ChangeNotifier {
       } else {
         // Clock preview still uses main window for simplicity
         if (Platform.isMacOS) {
-          await MacOSBridge.setWindowLevel('floating');
+          await NativeBridge.setWindowLevel('floating');
         }
         await windowManager.show();
         await windowManager.focus();
@@ -122,12 +122,12 @@ class OverlayWindowService extends ChangeNotifier {
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
-        await MacOSBridge.hideOverlay(restoreMainWindow: true);
-        await MacOSBridge.setPresentationOptions(
+        await NativeBridge.hideOverlay(restoreMainWindow: true);
+        await NativeBridge.setPresentationOptions(
           hideDock: false,
           hideMenu: false,
         );
-        await MacOSBridge.setWindowLevel('normal');
+        await NativeBridge.setWindowLevel('normal');
       }
 
       _isOverlayVisible = false;
@@ -155,7 +155,7 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.show();
       await windowManager.focus();
       if (Platform.isMacOS) {
-        await MacOSBridge.focusApp();
+        await NativeBridge.focusApp();
       }
       notifyListeners();
     } catch (e) {
@@ -176,8 +176,8 @@ class OverlayWindowService extends ChangeNotifier {
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
-        await MacOSBridge.hideOverlay(restoreMainWindow: _wasMainVisibleBeforeOverlay);
-        await MacOSBridge.setPresentationOptions(
+        await NativeBridge.hideOverlay(restoreMainWindow: _wasMainVisibleBeforeOverlay);
+        await NativeBridge.setPresentationOptions(
           hideDock: false,
           hideMenu: false,
         );
@@ -214,8 +214,8 @@ class OverlayWindowService extends ChangeNotifier {
     if (Platform.isWindows) {
       await _windowsChannel.invokeMethod('resetToNormal');
     } else if (Platform.isMacOS) {
-      await MacOSBridge.hideOverlay();
-      await MacOSBridge.setPresentationOptions(
+      await NativeBridge.hideOverlay();
+      await NativeBridge.setPresentationOptions(
         hideDock: false,
         hideMenu: false,
       );

@@ -5,7 +5,7 @@ import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/system_media_service.dart';
-import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/break_profile.dart';
 import 'package:breakmate/core/utils/logger.dart';
@@ -213,7 +213,7 @@ class BreakController extends ChangeNotifier {
             sl<SystemMediaService>().pauseMedia();
           }
 
-          MacOSBridge.updateOverlayData({
+          NativeBridge.updateOverlayData({
             'title': breakInfo.title,
             'tip': breakInfo.tip,
             'durationSeconds': breakInfo.durationSeconds,
@@ -421,7 +421,7 @@ class BreakController extends ChangeNotifier {
       overlayData: previewData,
     );
 
-    MacOSBridge.updateOverlayData(previewData);
+    NativeBridge.updateOverlayData(previewData);
 
     if (settings.playMusicDuringBreak && !_isPlayingMusic) {
       _playLofiMusic();

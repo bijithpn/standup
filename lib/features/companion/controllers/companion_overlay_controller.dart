@@ -2,7 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -138,7 +138,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   /// Shows the companion via the native bridge (works on macOS + Windows).
   Future<void> _showNativeCompanion() async {
-    await MacOSBridge.showCompanion({
+    await NativeBridge.showCompanion({
       'themeId': _companionPetTheme,
       'petName': _companionPetName,
       'scale': _companionScale,
@@ -164,7 +164,7 @@ class CompanionOverlayController extends ChangeNotifier {
     if (enabled) {
       await _showNativeCompanion();
     } else {
-      await MacOSBridge.hideCompanion();
+      await NativeBridge.hideCompanion();
     }
     notifyListeners();
   }
@@ -205,8 +205,8 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
 
     if (_companionEnabled) {
-      await MacOSBridge.updateCompanionTheme(themeId);
-      await MacOSBridge.updateCompanionName(randomName);
+      await NativeBridge.updateCompanionTheme(themeId);
+      await NativeBridge.updateCompanionName(randomName);
     }
 
     try {
@@ -228,7 +228,7 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
 
     if (_companionEnabled) {
-      await MacOSBridge.updateCompanionName(nextName);
+      await NativeBridge.updateCompanionName(nextName);
     }
 
     notifyListeners();
@@ -244,7 +244,7 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
 
     if (_companionEnabled) {
-      await MacOSBridge.updateCompanionScale(scale);
+      await NativeBridge.updateCompanionScale(scale);
     }
     notifyListeners();
   }
@@ -259,7 +259,7 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
 
     if (_companionEnabled) {
-      await MacOSBridge.setCompanionClickThrough(enabled);
+      await NativeBridge.setCompanionClickThrough(enabled);
     }
     notifyListeners();
   }
@@ -274,14 +274,14 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
 
     if (_companionEnabled) {
-      await MacOSBridge.setCompanionFollowMouse(enabled);
+      await NativeBridge.setCompanionFollowMouse(enabled);
     }
     notifyListeners();
   }
 
   Future<void> refreshCompanion() async {
     if (!_companionEnabled) return;
-    await MacOSBridge.hideCompanion();
+    await NativeBridge.hideCompanion();
     await Future.delayed(const Duration(milliseconds: 300));
     await _showNativeCompanion();
   }
@@ -289,7 +289,7 @@ class CompanionOverlayController extends ChangeNotifier {
   @override
   void dispose() {
     if (_companionEnabled) {
-      MacOSBridge.hideCompanion();
+      NativeBridge.hideCompanion();
     }
     super.dispose();
   }

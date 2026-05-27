@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:math' as dart_math;
 
 import 'package:breakmate/features/analytics/presentation/widgets/wellness_score_card.dart';
@@ -20,7 +19,7 @@ import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
-import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/display/controllers/display_controller.dart';
 import 'package:breakmate/features/settings/widgets/general_section.dart';
 import 'package:breakmate/features/settings/widgets/focus_section.dart';
@@ -2964,9 +2963,7 @@ class _SettingsPageState extends State<SettingsPage> {
     return CupertinoButton(
       padding: EdgeInsets.zero,
       onPressed: () async {
-        if (Platform.isMacOS) {
-          await MacOSBridge.triggerCompanionState(state);
-        }
+        await NativeBridge.triggerCompanionState(state);
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
