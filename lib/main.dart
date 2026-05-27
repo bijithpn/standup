@@ -264,11 +264,13 @@ void main() async {
           debugPrint('Launch at startup setup failed: $e');
         }
 
-        await SentryFlutter.init((options) {
-          options.dsn = kReleaseMode
-              ? 'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344'
-              : '';
-        }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
+        if (kReleaseMode) {
+          await SentryFlutter.init((options) {
+            options.dsn = 'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344';
+          }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
+        } else {
+          runApp(const BreakMateApp());
+        }
       } catch (e, stack) {
         debugPrint('FATAL STARTUP ERROR: $e');
         debugPrint(stack.toString());

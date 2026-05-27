@@ -395,7 +395,10 @@ class CompanionWindowManager: NSObject {
     private func getSystemEnergyStatus() -> [String: Any] {
         let onBattery = checkIsOnBattery()
         let appActive = NSApp.isActive
-        let lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        var lowPowerMode = false
+        if #available(macOS 12.0, *) {
+            lowPowerMode = ProcessInfo.processInfo.isLowPowerModeEnabled
+        }
         return [
             "isOnBattery": onBattery,
             "isAppActive": appActive,

@@ -57,7 +57,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
       providers: [
         ChangeNotifierProvider.value(value: sl<BreakController>()),
         Provider.value(value: sl<SettingsRepository>()),
-        Provider.value(value: sl<StatsService>()),
+        ChangeNotifierProvider.value(value: sl<StatsService>()),
       ],
       child: MacosApp(
         navigatorKey: ErrorToastService.navigatorKey,
