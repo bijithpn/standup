@@ -4,6 +4,92 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
+                <item>
+            <title>Version 1.1.1</title>
+            <pubDate>Wed, 27 May 2026 06:02:32 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.1.1</h3>
+                <p>## BreakMate v1.1.1 — Minor Fixes &amp; Improvements
+
+This is a small maintenance release with a few polish improvements and under-the-hood fixes.
+
+### What's Changed
+
+* **Stability:** Fixed a minor edge case that could cause the break timer to reset unexpectedly when switching between apps rapidly.
+
+* **Performance:** Reduced memory footprint of the desktop companion window during long idle sessions.
+
+* **Pet behavior:** Smoothed out occasional animation stutter when the pet transitions between idle and sleeping states.
+
+### Installation Note (macOS)
+
+Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
+
+1. Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.
+2. Right-click (or Control-click) the BreakMate app and select Open.
+3. If it still blocks, go to System Settings &gt; Privacy &amp; Security and click Allow Anyway next to BreakMate.</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.1.1/BreakMate-Installer.dmg"
+                       sparkle:version="26"
+                       sparkle:shortVersionString="1.1.1"
+                       sparkle:edSignature="hd/NP7QQgkdPnflSthI87VC1wFVqLYMm2PfoRh0gXVQJaUfjqLb7mzGooSLZZld6WyWgZJGEyI5a6et8iPBmDQ=="
+                       length="53458622"
+                       type="application/octet-stream" />
+        </item>
+<item>
+            <title>Version 1.1.0</title>
+            <pubDate>Wed, 27 May 2026 05:00:00 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.1.0 — Performance Refactoring &amp; Pet Fatigue</h3>
+                <p>This update brings major performance improvements under the hood, upgrades to how state is synced across components, and the introduction of the new Pet Fatigue AI behavioral model.</p>
+
+                <h4>AI Pet Fatigue (Phase 3.1)</h4>
+                <ul>
+                    <li>Your companion pet now dynamically shows tired behavior as your day goes on. The behavioral decision engine tracks your cumulative work hours throughout the day.</li>
+                    <li>If you have worked for 3 hours or more, the pet is much more likely to sleep or rest, while high-energy animations like running or jumping are naturally discouraged so the pet stays calm.</li>
+                </ul>
+
+                <h4>Isolate Exception Fix &amp; Better Stability</h4>
+                <ul>
+                    <li>Resolved the services library crash that was occurring in background isolate communication.</li>
+                    <li>Implemented a proxy method channel pattern so that background polling operations for idle status and smart app detection run reliably on separate Dart threads without causing UI micro-stutters or engine crashes.</li>
+                </ul>
+
+                <h4>Isolate State Synchronization</h4>
+                <ul>
+                    <li>Synced target end times and daily work totals across the main app and overlay components, making sure the companion desktop panel is always aligned with the main app status.</li>
+                </ul>
+
+                <h4>Core Code Refactoring (Phase 2.1)</h4>
+                <ul>
+                    <li>Simplified the large monolithic TimerEngine class by breaking it down into smaller, focused modules: TimerStateData (state properties), TimerRepository (persistence), and TimerContextManager (focus mode and meeting detection).</li>
+                </ul>
+
+                <h4>Performance Optimization</h4>
+                <ul>
+                    <li>Added aggressive memory cleanup by clearing pet theme image caches when switching pet selections.</li>
+                    <li>Wrapped fast-ticking timer elements in RepaintBoundary widgets to avoid redrawing the entire companion overlay window unnecessarily.</li>
+                </ul>
+
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is built independently and is not verified by Apple, macOS will show a security warning when you attempt to launch it for the first time.</p>
+                <ol>
+                    <li>Double-click the BreakMate-Installer.dmg file and drag BreakMate to your Applications folder.</li>
+                    <li>Open your Applications folder, right-click (or Control-click) the BreakMate app, and select Open.</li>
+                    <li>If it still blocks launch, go to <b>System Settings &gt; Privacy &amp; Security</b>, scroll down to the Security section, and click <b>Allow Anyway</b> next to the BreakMate notice to authorize it.</li>
+                </ol>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.1.0/BreakMate-Installer.dmg"
+                       sparkle:version="25"
+                       sparkle:shortVersionString="1.1.0"
+                       sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
+                       length="0"
+                       type="application/octet-stream" />
+        </item>
         <item>
             <title>Version 1.0.1</title>
             <pubDate>Tue, 26 May 2026 18:00:00 +0000</pubDate>
