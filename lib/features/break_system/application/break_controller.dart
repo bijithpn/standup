@@ -4,6 +4,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/core/native/macos_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/break_profile.dart';
@@ -204,6 +205,13 @@ class BreakController extends ChangeNotifier {
         if (stateChanged || targetEndTimeChanged) {
           _lastOverlayState = _timerEngine.state;
           _lastOverlayTargetEndTime = targetEndTime;
+
+          // Phase 4.2: Auto-pause Spotify/Apple Music when break starts
+          if (_timerEngine.state == TimerState.breakActive &&
+              settings.autoPauseMedia &&
+              !_isPreviewMode) {
+            sl<SystemMediaService>().pauseMedia();
+          }
 
           MacOSBridge.updateOverlayData({
             'title': breakInfo.title,

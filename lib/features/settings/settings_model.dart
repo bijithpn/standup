@@ -36,6 +36,7 @@ class SettingsModel {
   final String lastExerciseDate;
   final List<String> shownExercisesToday;
   final bool playMusicDuringBreak;
+  final bool autoPauseMedia;
 
   // Clock face
   final int clockFaceTextColorHex;
@@ -119,6 +120,7 @@ class SettingsModel {
     this.lastExerciseDate = '',
     this.shownExercisesToday = const [],
     this.playMusicDuringBreak = true,
+    this.autoPauseMedia = true,
     this.exercises = const [],
     this.autoSuggestExercises = true,
     this.useCursorCountdown = true,
@@ -163,6 +165,7 @@ class SettingsModel {
     String? lastExerciseDate,
     List<String>? shownExercisesToday,
     bool? playMusicDuringBreak,
+    bool? autoPauseMedia,
     int? clockFaceTextColorHex,
     bool? clockFaceBlurEnabled,
     String? customImagePath,
@@ -231,6 +234,7 @@ class SettingsModel {
       lastExerciseDate: lastExerciseDate ?? this.lastExerciseDate,
       shownExercisesToday: shownExercisesToday ?? this.shownExercisesToday,
       playMusicDuringBreak: playMusicDuringBreak ?? this.playMusicDuringBreak,
+      autoPauseMedia: autoPauseMedia ?? this.autoPauseMedia,
       clockFaceTextColorHex:
           clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
@@ -292,6 +296,7 @@ class SettingsModel {
     'lastExerciseDate': lastExerciseDate,
     'shownExercisesToday': shownExercisesToday,
     'playMusicDuringBreak': playMusicDuringBreak,
+    'autoPauseMedia': autoPauseMedia,
     'clockFaceTextColorHex': clockFaceTextColorHex,
     'clockFaceBlurEnabled': clockFaceBlurEnabled,
     'customImagePath': customImagePath,
@@ -365,6 +370,7 @@ class SettingsModel {
               .toList() ??
           [],
       playMusicDuringBreak: map['playMusicDuringBreak'] as bool? ?? true,
+      autoPauseMedia: map['autoPauseMedia'] as bool? ?? true,
       clockFaceTextColorHex: map['clockFaceTextColorHex'] as int? ?? 0xFFFFFFFF,
       clockFaceBlurEnabled: map['clockFaceBlurEnabled'] as bool? ?? true,
       customImagePath: map['customImagePath'] as String?,

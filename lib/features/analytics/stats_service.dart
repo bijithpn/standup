@@ -23,6 +23,8 @@ class StatsService {
     // Ensure all required keys exist
     _ensureStorageKeys();
 
+    final weeklyData = _loadWeeklyData();
+
     return StatsModel(
       breaksCompleted: _storage.getInt(AppConstants.keyBreaksCompleted),
       breaksSkipped: _storage.getInt(AppConstants.keyBreaksSkipped),
@@ -30,11 +32,35 @@ class StatsService {
       lastActiveDate: today,
       currentStreak: _storage.getInt(AppConstants.keyCurrentStreak),
       longestStreak: _storage.getInt(AppConstants.keyLongestStreak),
-      weeklyData: _loadWeeklyData(),
+      weeklyData: weeklyData,
       totalWorkSessions: _storage.getInt(AppConstants.keyTotalWorkSessions),
       averageBreaksPerDay: _calculateAverageBreaksPerDay(),
       productivityScore: _calculateProductivityScore(),
+      wellnessScore: _calculateWellnessScore(weeklyData),
+      totalWellnessActions: _calculateTotalWellnessActions(weeklyData),
     );
+  }
+
+  int _calculateTotalWellnessActions(List<DailyStats> weeklyData) {
+    return weeklyData.fold<int>(0, (sum, day) => sum + day.wellnessActions);
+  }
+
+  int _calculateWellnessScore(List<DailyStats> weeklyData) {
+    if (weeklyData.isEmpty) return 0;
+    
+    // Ideal: 10 wellness actions per day (blink reminders + posture stretches)
+    // Weight: 70% frequency of actions, 30% break completion rate
+    final totalActions = _calculateTotalWellnessActions(weeklyData);
+    final avgActions = totalActions / weeklyData.length;
+    
+    final insights = getInsights();
+    final completionRate = insights.completionRate;
+
+    int score = 0;
+    score += ((avgActions / 10).clamp(0.0, 1.0) * 70).round();
+    score += (completionRate * 30).round();
+    
+    return score.clamp(0, 100);
   }
 
   /// Ensure all storage keys are initialized
@@ -47,13 +73,13 @@ class StatsService {
       AppConstants.keyLongestStreak,
       AppConstants.keyTotalWorkSessions,
     ];
-    
+
     for (final key in keys) {
-      if ((_storage.getInt(key)) ==0) {
+      if ((_storage.getInt(key)) == 0) {
         _storage.setInt(key, 0);
       }
     }
-    
+
     // Initialize weekly data if not exists
     if (_storage.getString(AppConstants.keyWeeklyStats).isEmpty) {
       _saveWeeklyData(_initializeWeeklyData());
@@ -80,6 +106,10 @@ class StatsService {
     _updateWeeklyData(breaksSkipped: 1);
   }
 
+  void recordWellnessAction() {
+    _updateWeeklyData(wellnessActions: 1);
+  }
+
   void addUsageMinutes(int minutes) {
     final current = _storage.getInt(AppConstants.keyDailyUsageMinutes);
     _storage.setInt(AppConstants.keyDailyUsageMinutes, current + minutes);
@@ -99,12 +129,25 @@ class StatsService {
   /// Get productivity insights
   ProductivityInsights getInsights() {
     final weeklyData = _loadWeeklyData();
-    final totalBreaks = weeklyData.fold<int>(0, (sum, day) => sum + day.breaksCompleted);
-    final totalUsage = weeklyData.fold<int>(0, (sum, day) => sum + day.usageMinutes);
-    final totalSkipped = weeklyData.fold<int>(0, (sum, day) => sum + day.breaksSkipped);
+    final totalBreaks = weeklyData.fold<int>(
+      0,
+      (sum, day) => sum + day.breaksCompleted,
+    );
+    final totalUsage = weeklyData.fold<int>(
+      0,
+      (sum, day) => sum + day.usageMinutes,
+    );
+    final totalSkipped = weeklyData.fold<int>(
+      0,
+      (sum, day) => sum + day.breaksSkipped,
+    );
 
-    final avgBreaksPerDay = weeklyData.isNotEmpty ? totalBreaks / weeklyData.length : 0.0;
-    final avgUsagePerDay = weeklyData.isNotEmpty ? totalUsage / weeklyData.length : 0.0;
+    final avgBreaksPerDay = weeklyData.isNotEmpty
+        ? totalBreaks / weeklyData.length
+        : 0.0;
+    final avgUsagePerDay = weeklyData.isNotEmpty
+        ? totalUsage / weeklyData.length
+        : 0.0;
 
     String insight = 'Keep up the good work!';
     if (avgBreaksPerDay < 3) {
@@ -160,7 +203,12 @@ class StatsService {
     final today = _todayString();
     final todayStats = weeklyData.firstWhere(
       (day) => day.date == today,
-      orElse: () => DailyStats(date: today, breaksCompleted: 0, breaksSkipped: 0, usageMinutes: 0),
+      orElse: () => DailyStats(
+        date: today,
+        breaksCompleted: 0,
+        breaksSkipped: 0,
+        usageMinutes: 0,
+      ),
     );
     return todayStats.breaksCompleted;
   }
@@ -183,19 +231,26 @@ class StatsService {
     final List<DailyStats> weeklyData = [];
     for (int i = 6; i >= 0; i--) {
       final date = DateTime.now().subtract(Duration(days: i));
-      final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final dateStr =
+          '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
       weeklyData.add(DailyStats(
         date: dateStr,
         breaksCompleted: 0,
         breaksSkipped: 0,
         usageMinutes: 0,
+        wellnessActions: 0,
       ));
     }
     _saveWeeklyData(weeklyData);
     return weeklyData;
   }
 
-  void _updateWeeklyData({int breaksCompleted = 0, int breaksSkipped = 0, int usageMinutes = 0}) {
+  void _updateWeeklyData({
+    int breaksCompleted = 0,
+    int breaksSkipped = 0,
+    int usageMinutes = 0,
+    int wellnessActions = 0,
+  }) {
     final weeklyData = _loadWeeklyData();
     final today = _todayString();
 
@@ -207,15 +262,19 @@ class StatsService {
         breaksCompleted: todayStats.breaksCompleted + breaksCompleted,
         breaksSkipped: todayStats.breaksSkipped + breaksSkipped,
         usageMinutes: todayStats.usageMinutes + usageMinutes,
+        wellnessActions: todayStats.wellnessActions + wellnessActions,
       );
     } else {
       // Add new day if it doesn't exist
-      weeklyData.add(DailyStats(
-        date: today,
-        breaksCompleted: breaksCompleted,
-        breaksSkipped: breaksSkipped,
-        usageMinutes: usageMinutes,
-      ));
+      weeklyData.add(
+        DailyStats(
+          date: today,
+          breaksCompleted: breaksCompleted,
+          breaksSkipped: breaksSkipped,
+          usageMinutes: usageMinutes,
+          wellnessActions: wellnessActions,
+        ),
+      );
       // Keep only the last 365 days
       if (weeklyData.length > 365) {
         weeklyData.removeAt(0);
@@ -232,7 +291,10 @@ class StatsService {
   double _calculateAverageBreaksPerDay() {
     final weeklyData = _loadWeeklyData();
     if (weeklyData.isEmpty) return 0.0;
-    final total = weeklyData.fold<int>(0, (sum, day) => sum + day.breaksCompleted);
+    final total = weeklyData.fold<int>(
+      0,
+      (sum, day) => sum + day.breaksCompleted,
+    );
     return total / weeklyData.length;
   }
 
@@ -284,12 +346,14 @@ class DailyStats {
   final int breaksCompleted;
   final int breaksSkipped;
   final int usageMinutes;
+  final int wellnessActions;
 
   DailyStats({
     required this.date,
     required this.breaksCompleted,
     required this.breaksSkipped,
     required this.usageMinutes,
+    this.wellnessActions = 0,
   });
 
   factory DailyStats.fromJson(Map<String, dynamic> json) {
@@ -298,6 +362,7 @@ class DailyStats {
       breaksCompleted: json['breaksCompleted'] ?? 0,
       breaksSkipped: json['breaksSkipped'] ?? 0,
       usageMinutes: json['usageMinutes'] ?? 0,
+      wellnessActions: json['wellnessActions'] ?? 0,
     );
   }
 
@@ -307,13 +372,18 @@ class DailyStats {
       'breaksCompleted': breaksCompleted,
       'breaksSkipped': breaksSkipped,
       'usageMinutes': usageMinutes,
+      'wellnessActions': wellnessActions,
     };
   }
 
   String get dayName {
     try {
       final parts = date.split('-');
-      final dateTime = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
+      final dateTime = DateTime(
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+        int.parse(parts[2]),
+      );
       const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       return days[dateTime.weekday - 1];
     } catch (e) {

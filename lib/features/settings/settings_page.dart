@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:math' as dart_math;
 
+import 'package:breakmate/features/analytics/presentation/widgets/wellness_score_card.dart';
+import 'package:breakmate/features/analytics/widgets/productivity_wellness_chart.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
@@ -227,6 +229,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   int _breaksSubTab = 0;
+  int _statsSubTab = 0;
 
   Widget _buildBreaks() {
     return LayoutBuilder(
@@ -520,11 +523,24 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _subTabButton(String label, int index, {bool isSmall = false}) {
-    final isSelected = _breaksSubTab == index;
+  Widget _subTabButton(
+    String label,
+    int index, {
+    bool isSmall = false,
+    int? currentTab,
+    ValueChanged<int>? onTabChanged,
+  }) {
+    final selectedIdx = currentTab ?? _breaksSubTab;
+    final isSelected = selectedIdx == index;
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _breaksSubTab = index),
+        onTap: () {
+          if (onTabChanged != null) {
+            onTabChanged(index);
+          } else {
+            setState(() => _breaksSubTab = index);
+          }
+        },
         child: Container(
           padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 10),
           decoration: BoxDecoration(
@@ -545,9 +561,10 @@ class _SettingsPageState extends State<SettingsPage> {
               label,
               style: TextStyle(
                 color: isSelected ? Colors.white : AppTheme.textSecondary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: isSmall ? 10 : 12,
                 letterSpacing: -0.1,
+                fontFamily: 'Satoshi',
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -1115,81 +1132,146 @@ class _SettingsPageState extends State<SettingsPage> {
           'Statistics',
           subtitle: 'Detailed insights into your rest and work balance.',
         ),
-        // ── Break Activity heatmap ─────────────────────────────
+
+        // Tab-like segmented control for stats
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: AppTheme.cleanCardDecoration,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          margin: const EdgeInsets.only(bottom: 24),
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.05),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          child: Row(
             children: [
-              const Text(
-                'Break Activity',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  fontFamily: 'Satoshi',
-                ),
+              _subTabButton(
+                'Overview',
+                0,
+                currentTab: _statsSubTab,
+                onTabChanged: (i) => setState(() => _statsSubTab = i),
               ),
-              const SizedBox(height: 16),
-              _buildHeatmapMonthLabels(),
-              const SizedBox(height: 6),
-              _buildHeatmapGrid(),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Less',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.textMuted,
-                          fontFamily: 'Satoshi',
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      _heatSquare(AppTheme.cardBackgroundElevated),
-                      const SizedBox(width: 3),
-                      _heatSquare(
-                        AppTheme.shortBreakColor.withValues(alpha: 0.3),
-                      ),
-                      const SizedBox(width: 3),
-                      _heatSquare(
-                        AppTheme.shortBreakColor.withValues(alpha: 0.6),
-                      ),
-                      const SizedBox(width: 3),
-                      _heatSquare(AppTheme.shortBreakColor),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'More',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppTheme.textMuted,
-                          fontFamily: 'Satoshi',
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    '$_calculatedBreaks breaks completed',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textMuted,
-                      fontFamily: 'Satoshi',
-                    ),
-                  ),
-                ],
+              _subTabButton(
+                'Wellness Dashboard',
+                1,
+                currentTab: _statsSubTab,
+                onTabChanged: (i) => setState(() => _statsSubTab = i),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        // ── Break Statistics card ──────────────────────────────
-        _buildBreakStatisticsCard(),
+
+        if (_statsSubTab == 0) ...[
+          // ── Break Activity heatmap ─────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: AppTheme.cleanCardDecoration,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Break Activity',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'Satoshi',
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildHeatmapMonthLabels(),
+                const SizedBox(height: 6),
+                _buildHeatmapGrid(),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Text(
+                          'Less',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.textMuted,
+                            fontFamily: 'Satoshi',
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        _heatSquare(AppTheme.cardBackgroundElevated),
+                        const SizedBox(width: 3),
+                        _heatSquare(
+                          AppTheme.shortBreakColor.withValues(alpha: 0.3),
+                        ),
+                        const SizedBox(width: 3),
+                        _heatSquare(
+                          AppTheme.shortBreakColor.withValues(alpha: 0.6),
+                        ),
+                        const SizedBox(width: 3),
+                        _heatSquare(AppTheme.shortBreakColor),
+                        const SizedBox(width: 4),
+                        const Text(
+                          'More',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppTheme.textMuted,
+                            fontFamily: 'Satoshi',
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      '$_calculatedBreaks breaks completed',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.textMuted,
+                        fontFamily: 'Satoshi',
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // ── Break Statistics card ──────────────────────────────
+          _buildBreakStatisticsCard(),
+        ] else
+          _buildWellnessDashboard(),
+
         const SizedBox(height: 40),
+      ],
+    );
+  }
+
+  Widget _buildWellnessDashboard() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        WellnessScoreCard(
+          productivityScore: _stats.productivityScore,
+          wellnessScore: _stats.wellnessScore,
+        ),
+        const SizedBox(height: 24),
+        ProductivityWellnessChart(stats: _stats),
+        const SizedBox(height: 24),
+        _buildCard([
+          _statsMetricRow(
+            CupertinoIcons.heart_circle,
+            const Color(0xFF10B981),
+            'Wellness Actions',
+            'Stretches and eye rests recorded',
+            '${_stats.totalWellnessActions}',
+          ),
+          _divider(),
+          _statsMetricRow(
+            CupertinoIcons.graph_square,
+            AppTheme.accentColor,
+            'Productivity Focus',
+            'Estimated active work minutes',
+            '${_stats.dailyUsageMinutes}',
+          ),
+        ]),
       ],
     );
   }
@@ -1231,7 +1313,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final weeklyStats = _stats.weeklyData;
     // Pre-map for O(1) lookup performance (avoids O(N^2) total lookups in the grid)
     final statsMap = {for (var s in weeklyStats) s.date: s};
-    
+
     final now = DateTime.now();
     return Column(
       children: List.generate(5, (row) {

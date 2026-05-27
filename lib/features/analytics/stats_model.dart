@@ -11,6 +11,8 @@ class StatsModel {
   final int totalWorkSessions;
   final double averageBreaksPerDay;
   final int productivityScore;
+  final int wellnessScore;
+  final int totalWellnessActions;
 
   const StatsModel({
     this.breaksCompleted = 0,
@@ -23,6 +25,8 @@ class StatsModel {
     this.totalWorkSessions = 0,
     this.averageBreaksPerDay = 0.0,
     this.productivityScore = 0,
+    this.wellnessScore = 0,
+    this.totalWellnessActions = 0,
   });
 
   double get completionRate {
@@ -42,6 +46,8 @@ class StatsModel {
     int? totalWorkSessions,
     double? averageBreaksPerDay,
     int? productivityScore,
+    int? wellnessScore,
+    int? totalWellnessActions,
   }) {
     return StatsModel(
       breaksCompleted: breaksCompleted ?? this.breaksCompleted,
@@ -54,6 +60,8 @@ class StatsModel {
       totalWorkSessions: totalWorkSessions ?? this.totalWorkSessions,
       averageBreaksPerDay: averageBreaksPerDay ?? this.averageBreaksPerDay,
       productivityScore: productivityScore ?? this.productivityScore,
+      wellnessScore: wellnessScore ?? this.wellnessScore,
+      totalWellnessActions: totalWellnessActions ?? this.totalWellnessActions,
     );
   }
 }

@@ -12,6 +12,7 @@ import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
+import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -62,6 +63,8 @@ Future<void> initDependencies() async {
   // Overlay Window Service for system-wide displays
   final overlayService = OverlayWindowService();
   sl.registerSingleton<OverlayWindowService>(overlayService);
+
+  sl.registerSingleton<SystemMediaService>(SystemMediaService());
 
   // Display Management Services
   sl.registerSingleton<DisplayManager>(displayManager);
