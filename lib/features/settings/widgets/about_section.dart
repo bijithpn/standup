@@ -64,24 +64,24 @@ class _AboutSectionState extends State<AboutSection> {
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.accentColor, Color(0xFFFF7E5F)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.accentColor.withValues(alpha: 0.3),
-                      blurRadius: 20,
+                      color: AppTheme.accentColor.withValues(alpha: 0.35),
+                      blurRadius: 22,
                       offset: const Offset(0, 8),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  CupertinoIcons.timer,
-                  size: 40,
-                  color: Colors.white,
+                padding: const EdgeInsets.all(2.5), // Premium gradient border
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(17.5),
+                  child: Image.asset(
+                    'assets/icons/app_icon.jpeg',
+                    width: 67,
+                    height: 67,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
-import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
@@ -246,7 +246,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _skipBreak() {
     // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
-      MacOSBridge.skipBreak();
+      NativeBridge.skipBreak();
     });
   }
 

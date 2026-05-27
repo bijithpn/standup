@@ -270,20 +270,17 @@ class _MainLayoutState extends State<MainLayout> {
       switchInCurve: Curves.easeInOutCubic,
       switchOutCurve: Curves.easeInOutCubic,
       transitionBuilder: (child, animation) {
-        final slideAnimation = Tween<Offset>(
-          begin: const Offset(0.0, 0.03), // premium vertical slide up
-          end: Offset.zero,
-        ).animate(CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOutCubic,
-        ));
+        final slideAnimation =
+            Tween<Offset>(
+              begin: const Offset(0.0, 0.03), // premium vertical slide up
+              end: Offset.zero,
+            ).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
 
         return FadeTransition(
           opacity: animation,
-          child: SlideTransition(
-            position: slideAnimation,
-            child: child,
-          ),
+          child: SlideTransition(position: slideAnimation, child: child),
         );
       },
       child: KeyedSubtree(
@@ -403,24 +400,26 @@ class _SidebarContent extends StatelessWidget {
         children: [
           // App icon
           Container(
-            width: 64,
-            height: 64,
+            width: 72,
+            height: 72,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+                  color: AppTheme.accentColor.withValues(alpha: 0.35),
+                  blurRadius: 22,
+                  offset: const Offset(0, 8),
                 ),
               ],
             ),
-            child: const Center(
-              child: Icon(
-                CupertinoIcons.infinite,
-                color: Color(0xFF1C1C1E),
-                size: 32,
+            padding: const EdgeInsets.all(2.5), // Premium gradient border
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(17.5),
+              child: Image.asset(
+                'assets/icons/app_icon.jpeg',
+                width: 60,
+                height: 60,
+                fit: BoxFit.cover,
               ),
             ),
           ),
