@@ -32,6 +32,8 @@ class GeneralSection extends StatelessWidget {
           _buildMenuBarIcon(),
           divider(),
           _buildStrictMode(),
+          divider(),
+          _buildAutoPauseMedia(),
         ]),
         const SizedBox(height: 48),
         sectionHeader('Idle & Inactivity'),
@@ -138,6 +140,19 @@ class GeneralSection extends StatelessWidget {
       CupertinoIcons.lock_shield,
       (v) {
         onSave(settings.copyWith(strictMode: v));
+        sl<TrayManagerService>().triggerActionAnimation();
+      },
+    );
+  }
+
+  Widget _buildAutoPauseMedia() {
+    return buildListRow(
+      'Auto-pause Media',
+      'Pause Spotify/Apple Music when a break starts',
+      settings.autoPauseMedia,
+      CupertinoIcons.speaker_slash,
+      (v) {
+        onSave(settings.copyWith(autoPauseMedia: v));
         sl<TrayManagerService>().triggerActionAnimation();
       },
     );

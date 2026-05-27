@@ -27,6 +27,7 @@ import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 void _setupGlobalErrors() {
   // 1. Log Flutter errors to console
@@ -263,7 +264,13 @@ void main() async {
           debugPrint('Launch at startup setup failed: $e');
         }
 
-        runApp(const BreakMateApp());
+        await SentryFlutter.init((options) {
+          options.dsn = kReleaseMode
+              ? 'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344'
+              : '';
+        }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
+        // TODO:
+        await Sentry.captureException(Exception('This is a sample exception.'));
       } catch (e, stack) {
         debugPrint('FATAL STARTUP ERROR: $e');
         debugPrint(stack.toString());
@@ -289,7 +296,8 @@ void _setupMinimalIpc() {
         final targetEndTime = targetEndMs != null
             ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
             : null;
-        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)?.toInt();
+        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)
+            ?.toInt();
         TimerStateEvent? timerState;
         switch (stateStr) {
           case 'running':
@@ -333,15 +341,22 @@ void _setupMinimalIpc() {
 }
 
 @pragma('vm:entry-point')
-void overlayMain() {
+Future<void> overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   _setupGlobalErrors();
   _setupMinimalIpc();
 
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: StandaloneBreakOverlay(),
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = '';
+    },
+    appRunner: () => runApp(
+      SentryWidget(
+        child: const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: StandaloneBreakOverlay(),
+        ),
+      ),
     ),
   );
 }
@@ -366,10 +381,19 @@ Future<void> companionMain() async {
     );
   } catch (_) {}
 
-  runApp(
-    const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: CompanionOverlayWindow(),
+  await SentryFlutter.init(
+    (options) {
+      options.dsn = kReleaseMode
+          ? 'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344'
+          : '';
+    },
+    appRunner: () => runApp(
+      SentryWidget(
+        child: const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: CompanionOverlayWindow(),
+        ),
+      ),
     ),
   );
 }
