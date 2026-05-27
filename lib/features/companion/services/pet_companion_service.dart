@@ -32,6 +32,7 @@ class PetCompanionService extends ChangeNotifier {
   double _curiosity = 0.5;
   double _fatigue = 0.0;
   double _boredom = 0.0;
+  Duration _totalWorkToday = Duration.zero;
 
   PetCompanionService({
     required PetStateMachine stateMachine,
@@ -87,17 +88,22 @@ class PetCompanionService extends ChangeNotifier {
     bool? isMeetingDetected,
     bool? isFocusMode,
     bool? isIdle,
+    int? totalWorkTodaySeconds,
   }) {
     _isBreakActive = isBreakActive ?? _isBreakActive;
     _isMeetingDetected = isMeetingDetected ?? _isMeetingDetected;
     _isFocusMode = isFocusMode ?? _isFocusMode;
     _isIdle = isIdle ?? _isIdle;
+    if (totalWorkTodaySeconds != null) {
+      _totalWorkToday = Duration(seconds: totalWorkTodaySeconds);
+    }
     // Flags change infrequently — safe to copyWith here
     _context = _context.copyWith(
       isBreakActive: _isBreakActive,
       isMeetingDetected: _isMeetingDetected,
       isFocusMode: _isFocusMode,
       isIdle: _isIdle,
+      totalWorkToday: _totalWorkToday,
     );
   }
 

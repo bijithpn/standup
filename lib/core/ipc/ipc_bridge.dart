@@ -44,12 +44,14 @@ class IpcBridge {
     required int countdownSeconds,
     required int workElapsedSeconds,
     int? targetEndTime,
+    int? totalWorkTodaySeconds,
   }) async {
     await sendEvent('timer.stateChanged', {
       'state': state,
       'countdownSeconds': countdownSeconds,
       'workElapsedSeconds': workElapsedSeconds,
       'targetEndTime': targetEndTime,
+      'totalWorkTodaySeconds': totalWorkTodaySeconds,
     });
   }
 

@@ -98,6 +98,7 @@ class TimerEngine extends ChangeNotifier {
           countdownSeconds: event.countdownSeconds,
           workElapsedSeconds: event.workElapsedSeconds,
           targetEndTime: targetEndTime?.millisecondsSinceEpoch,
+          totalWorkTodaySeconds: _stateData.totalWorkToday.inSeconds,
         );
       }
     } else if (event is BreakStartedEvent) {

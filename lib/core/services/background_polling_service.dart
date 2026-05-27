@@ -9,11 +9,8 @@ import 'package:breakmate/core/utils/logger.dart';
 
 /// Top-level entry point function for the background Dart Isolate.
 void _backgroundPollingEntry(Map<String, dynamic> initialData) {
-  final RootIsolateToken token = initialData['token'] as RootIsolateToken;
   final SendPort sendPort = initialData['sendPort'] as SendPort;
   int idleThresholdMinutes = initialData['idleThresholdMinutes'] as int? ?? 3;
-
-  BackgroundIsolateBinaryMessenger.ensureInitialized(token);
 
   final ReceivePort commandPort = ReceivePort();
   sendPort.send(commandPort.sendPort);
@@ -25,17 +22,51 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   Timer? idleTimer;
   Timer? smartTimer;
 
-  const bridgeChannel = MethodChannel('com.breakmate.macos/bridge');
+  int nextRequestId = 0;
+  final Map<int, Completer<dynamic>> pendingRequests = {};
+
+  // Helper to send proxy requests to the main isolate
+  Future<dynamic> invokeMethodProxy(String method, [dynamic args]) {
+    final completer = Completer<dynamic>();
+    final requestId = nextRequestId++;
+    pendingRequests[requestId] = completer;
+
+    sendPort.send({
+      'type': 'invokeMethod',
+      'id': requestId,
+      'method': method,
+      'args': args,
+    });
+
+    return completer.future;
+  }
 
   commandPort.listen((message) {
     if (message is Map<String, dynamic>) {
-      final command = message['command'] as String?;
-      if (command == 'setIdleThreshold') {
-        idleThresholdMinutes = message['minutes'] as int? ?? idleThresholdMinutes;
-      } else if (command == 'stop') {
-        idleTimer?.cancel();
-        smartTimer?.cancel();
-        commandPort.close();
+      final type = message['type'] as String?;
+      if (type == 'invokeMethodResult') {
+        final id = message['id'] as int;
+        final completer = pendingRequests.remove(id);
+        if (completer != null) {
+          if (message.containsKey('error')) {
+            completer.completeError(message['error']);
+          } else {
+            completer.complete(message['result']);
+          }
+        }
+      } else {
+        final command = message['command'] as String?;
+        if (command == 'setIdleThreshold') {
+          idleThresholdMinutes = message['minutes'] as int? ?? idleThresholdMinutes;
+        } else if (command == 'stop') {
+          idleTimer?.cancel();
+          smartTimer?.cancel();
+          for (final c in pendingRequests.values) {
+            c.completeError('Isolate stopped');
+          }
+          pendingRequests.clear();
+          commandPort.close();
+        }
       }
     }
   });
@@ -43,7 +74,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   // 1. Idle status polling (every 5 seconds)
   idleTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
     try {
-      final double? idleSeconds = await bridgeChannel.invokeMethod<double>('getIdleTime');
+      final double? idleSeconds = (await invokeMethodProxy('getIdleTime')) as double?;
       if (idleSeconds != null) {
         final thresholdSeconds = idleThresholdMinutes * 60;
         final newIsIdle = idleSeconds >= thresholdSeconds;
@@ -66,7 +97,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   smartTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
     try {
       // Check Video Call
-      final String? frontApp = await bridgeChannel.invokeMethod<String>('getFrontmostApp');
+      final String? frontApp = (await invokeMethodProxy('getFrontmostApp')) as String?;
       bool newVideoCallActive = false;
       if (frontApp != null) {
         const videoCallApps = [
@@ -85,7 +116,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
       }
 
       // Check Focus Mode
-      final bool? activeFocus = await bridgeChannel.invokeMethod<bool>('isFocusModeActive');
+      final bool? activeFocus = (await invokeMethodProxy('isFocusModeActive')) as bool?;
       final newFocusActive = activeFocus ?? false;
 
       if (newVideoCallActive != isVideoCallActive || newFocusActive != isFocusModeActive) {
@@ -123,18 +154,11 @@ class BackgroundPollingService {
     _logger.info('Starting BackgroundPollingService...');
 
     _receivePort = ReceivePort();
-    final token = RootIsolateToken.instance;
-    if (token == null) {
-      _logger.error('RootIsolateToken is null. Cannot start background isolate.');
-      _isRunning = false;
-      return;
-    }
 
     try {
       _isolate = await Isolate.spawn(
         _backgroundPollingEntry,
         {
-          'token': token,
           'sendPort': _receivePort!.sendPort,
           'idleThresholdMinutes': sl<SettingsRepository>().currentSettings.pauseTimerAfterMinutes,
         },
@@ -158,12 +182,35 @@ class BackgroundPollingService {
             try {
               sl<SmartDetectionService>().updateDetectionStatus(isVideoCallActive, isFocusModeActive, frontApp);
             } catch (_) {}
+          } else if (type == 'invokeMethod') {
+            final id = message['id'] as int;
+            final method = message['method'] as String;
+            final args = message['args'];
+            _handleInvokeMethodProxy(id, method, args);
           }
         }
       });
     } catch (e) {
       _logger.error('Failed to spawn background polling isolate: $e');
       _isRunning = false;
+    }
+  }
+
+  void _handleInvokeMethodProxy(int id, String method, dynamic args) async {
+    const bridgeChannel = MethodChannel('com.breakmate.macos/bridge');
+    try {
+      final result = await bridgeChannel.invokeMethod(method, args);
+      _sendPort?.send({
+        'type': 'invokeMethodResult',
+        'id': id,
+        'result': result,
+      });
+    } catch (e) {
+      _sendPort?.send({
+        'type': 'invokeMethodResult',
+        'id': id,
+        'error': e.toString(),
+      });
     }
   }
 
