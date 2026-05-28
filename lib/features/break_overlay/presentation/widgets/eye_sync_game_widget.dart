@@ -21,7 +21,7 @@ class EyeSyncGameWidget extends StatefulWidget {
 class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
     with SingleTickerProviderStateMixin {
   // Seconds elapsed in current session
-  int _elapsed = 0;
+  final ValueNotifier<int> _elapsed = ValueNotifier<int>(0);
 
   // Number of sessions completed
   int _completedSessions = 0;
@@ -62,6 +62,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
   @override
   void dispose() {
     _orbController.dispose();
+    _elapsed.dispose();
     _sessionTimer?.cancel();
     super.dispose();
   }
@@ -98,19 +99,17 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
   // ── Session timer ─────────────────────────────────────────────────────────
 
   void _startSession() {
-    _elapsed = 0;
+    _elapsed.value = 0;
     _sessionTimer?.cancel();
     _sessionTimer = Timer.periodic(const Duration(seconds: 1), _onTick);
   }
 
   void _onTick(Timer _) {
     if (!mounted) return;
-    _elapsed++;
-    if (_elapsed >= _sessionSeconds) {
+    _elapsed.value++;
+    if (_elapsed.value >= _sessionSeconds) {
       _sessionTimer?.cancel();
       _advanceSession();
-    } else {
-      setState(() {});
     }
   }
 
@@ -133,8 +132,6 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
   Widget build(BuildContext context) {
     if (_done) return _buildDoneState();
 
-    final progress = (_elapsed / _sessionSeconds).clamp(0.0, 1.0);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -147,10 +144,16 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
         const SizedBox(height: 32),
 
         // Orb viewport
-        _EyeSyncViewport(
-          orbAnimation: _orbAnimation,
-          orbController: _orbController,
-          progress: progress,
+        ValueListenableBuilder<int>(
+          valueListenable: _elapsed,
+          builder: (context, elapsed, child) {
+            final progress = (elapsed / _sessionSeconds).clamp(0.0, 1.0);
+            return _EyeSyncViewport(
+              orbAnimation: _orbAnimation,
+              orbController: _orbController,
+              progress: progress,
+            );
+          },
         ),
         const SizedBox(height: 28),
 
@@ -161,19 +164,24 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.52),
             fontSize: 13,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
           ),
         ),
         const SizedBox(height: 6),
-        Text(
-          '${_sessionSeconds - _elapsed}s remaining in this session',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: const Color(0xFF38BDF8).withValues(alpha: 0.75),
-            fontSize: 12,
-            fontFamily: 'Satoshi',
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
+        ValueListenableBuilder<int>(
+          valueListenable: _elapsed,
+          builder: (context, elapsed, child) {
+            return Text(
+              '${_sessionSeconds - elapsed}s remaining in this session',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: const Color(0xFF38BDF8).withValues(alpha: 0.75),
+                fontSize: 12,
+                fontFamily: 'Inter',
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            );
+          },
         ),
       ],
     );
@@ -211,7 +219,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
             color: Colors.white,
             fontSize: 22,
             fontWeight: FontWeight.w300,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
             letterSpacing: -0.3,
           ),
         ),
@@ -223,7 +231,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
             color: Colors.white.withValues(alpha: 0.52),
             fontSize: 13,
             height: 1.6,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
           ),
         ),
       ],

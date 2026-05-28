@@ -17,7 +17,7 @@ Widget sectionHeader(String title, {String? subtitle}) {
             fontWeight: FontWeight.w700,
             color: AppTheme.textPrimary,
             letterSpacing: -0.2,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
           ),
         ),
         if (subtitle != null) ...[
@@ -27,7 +27,7 @@ Widget sectionHeader(String title, {String? subtitle}) {
             style: TextStyle(
               fontSize: 12,
               color: AppTheme.textSecondary.withValues(alpha: 0.7),
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
             ),
           ),
         ],
@@ -78,7 +78,7 @@ Widget toggleRow(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                   color: AppTheme.textPrimary,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
               const SizedBox(height: 2),
@@ -88,7 +88,7 @@ Widget toggleRow(
                   color: AppTheme.textSecondary,
                   fontSize: 12,
                   letterSpacing: 0,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
             ],
@@ -108,7 +108,12 @@ Widget toggleRow(
   );
 }
 
-Widget inputRow(String label, String value, {VoidCallback? onTap}) {
+Widget inputRow(
+  String label,
+  String value, {
+  VoidCallback? onTap,
+  Widget? trailing,
+}) {
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
     child: Row(
@@ -121,36 +126,39 @@ Widget inputRow(String label, String value, {VoidCallback? onTap}) {
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: AppTheme.textPrimary,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
             ),
           ),
         ),
-        MinimalButton(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          onPressed: onTap,
-          isSecondary: true,
-          borderRadius: BorderRadius.circular(6),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  color: AppTheme.accentColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Satoshi',
+        if (trailing != null)
+          trailing
+        else
+          MinimalButton(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            onPressed: onTap,
+            isSecondary: true,
+            borderRadius: BorderRadius.circular(6),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: AppTheme.accentColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              const Icon(
-                CupertinoIcons.chevron_up_chevron_down,
-                size: 12,
-                color: AppTheme.textSecondary,
-              ),
-            ],
+                const SizedBox(width: 4),
+                const Icon(
+                  CupertinoIcons.chevron_up_chevron_down,
+                  size: 12,
+                  color: AppTheme.textSecondary,
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     ),
   );
@@ -437,7 +445,7 @@ void showPicker({
                       color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      fontFamily: 'Satoshi',
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ),
@@ -469,7 +477,7 @@ void showPicker({
                                 color: AppTheme.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
-                                fontFamily: 'Satoshi',
+                                fontFamily: 'Inter',
                               ),
                             ),
                           ),

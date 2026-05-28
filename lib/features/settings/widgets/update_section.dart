@@ -200,7 +200,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimary,
-                              fontFamily: 'Satoshi',
+                              fontFamily: 'Inter',
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -218,7 +218,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppTheme.textSecondary,
-                              fontFamily: 'Satoshi',
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ],
@@ -272,7 +272,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                       style: const TextStyle(
                         color: Colors.redAccent,
                         fontSize: 13,
-                        fontFamily: 'Satoshi',
+                        fontFamily: 'Inter',
                       ),
                     ),
                   ),
@@ -288,7 +288,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                         fontWeight: FontWeight.w900,
                         color: AppTheme.textSecondary,
                         letterSpacing: 1.5,
-                        fontFamily: 'Satoshi',
+                        fontFamily: 'Inter',
                       ),
                     ),
                   ),
@@ -310,7 +310,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                         textStyle: const TextStyle(
                           fontSize: 14,
                           color: AppTheme.textPrimary,
-                          fontFamily: 'Satoshi',
+                          fontFamily: 'Inter',
                           height: 1.6,
                         ),
                         customStylesBuilder: (element) {
@@ -363,7 +363,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                               color: Colors.white,
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              fontFamily: 'Satoshi',
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ],

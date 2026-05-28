@@ -110,15 +110,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   void _startLocalTimer() {
     _localTimer?.cancel();
-    _localTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
+    _localTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();
         return;
       }
       if (_targetEndTime != null) {
-        final now = DateTime.now();
-        final diff = _targetEndTime!.difference(now).inSeconds;
-        final newRemaining = diff.clamp(0, _durationSeconds);
+        final newRemaining = _targetEndTime!
+            .difference(DateTime.now())
+            .inSeconds
+            .clamp(0, _durationSeconds);
 
         if (newRemaining != _remainingSeconds) {
           if (newRemaining == 0 && _remainingSeconds > 0) {
@@ -464,7 +465,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 1.0,
-                      fontFamily: 'Satoshi',
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ],
@@ -536,7 +537,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                   color: Colors.white,
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                   letterSpacing: -0.5,
                 ),
               ),
@@ -551,7 +552,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 16,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                   height: 1.4,
                 ),
               ),
@@ -575,7 +576,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             fontSize: 24,
             fontWeight: FontWeight.w500,
             letterSpacing: 2,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
           ),
         ),
         const SizedBox(height: 24),
@@ -588,7 +589,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               fontSize: 160,
               fontWeight: FontWeight.w200,
               letterSpacing: -4,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
               fontFeatures: [FontFeature.tabularFigures()],
               height: 1.0,
             ),
@@ -606,7 +607,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               color: Colors.white.withValues(alpha: 0.7),
               fontSize: 18,
               fontWeight: FontWeight.w400,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
               height: 1.5,
             ),
           ),
@@ -626,7 +627,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.3),
                 fontSize: 12,
-                fontFamily: 'Satoshi',
+                fontFamily: 'Inter',
               ),
             ),
           ),
@@ -646,7 +647,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               color: Colors.white.withValues(alpha: 0.6),
               fontSize: 16,
               fontWeight: FontWeight.w500,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
             ),
           ),
           if (true) _buildSkipButton(),
@@ -681,7 +682,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                   color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
             ],
@@ -694,7 +695,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               color: Colors.white.withValues(alpha: 0.8),
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
               height: 1.5,
             ),
           ),
@@ -902,7 +903,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                   color: Colors.white,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
               const SizedBox(width: 8),

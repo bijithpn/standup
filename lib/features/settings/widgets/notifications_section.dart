@@ -168,7 +168,7 @@ class NotificationsSection extends StatelessWidget {
                   children: [
                     Icon(CupertinoIcons.play_fill, size: 14, color: Colors.white),
                     SizedBox(width: 6),
-                    Text('Preview', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Satoshi')),
+                    Text('Preview', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
                   ],
                 ),
               ),

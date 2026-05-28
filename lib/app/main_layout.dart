@@ -435,7 +435,7 @@ class _SidebarContent extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                     letterSpacing: -0.3,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
                 TextSpan(
@@ -445,7 +445,7 @@ class _SidebarContent extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     color: AppTheme.accentColor,
                     letterSpacing: -0.3,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -528,7 +528,7 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                       ? AppTheme.textPrimary
                       : AppTheme.textSecondary,
                   letterSpacing: -0.1,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
             ],

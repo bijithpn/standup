@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:math';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
+import 'package:flutter/widgets.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
-class CompanionBehaviorEngine {
+class CompanionBehaviorEngine with WidgetsBindingObserver {
   CompanionBehaviorEngine({EventBus? eventBus})
       : _eventBus = eventBus ?? EventBus.instance,
-        _logger = AppLogger();
+        _logger = AppLogger() {
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   final EventBus _eventBus;
   final AppLogger _logger;
@@ -137,7 +140,17 @@ class CompanionBehaviorEngine {
     _idleCycles = 0;
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+      stop();
+    } else if (state == AppLifecycleState.resumed) {
+      start();
+    }
+  }
+
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     stop();
   }
 }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
@@ -57,7 +58,7 @@ class PetAssetLoader {
   }
 
   static Future<String> extractPetIconPath(PetTheme theme) async {
-    final tempDir = Directory.systemTemp;
+    final tempDir = await getApplicationSupportDirectory();
     final file = File('${tempDir.path}/bm_selected_pet_${theme.id}.png');
 
     // If already extracted, return cached path
@@ -411,7 +412,7 @@ class PetAssetLoader {
     required PetAnimationState state,
     required int frameIndex,
   }) async {
-    final tempDir = Directory.systemTemp;
+    final tempDir = await getApplicationSupportDirectory();
     final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     final themeSuffix = isDark ? '_dark' : '_light';
     final file = File('${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex${themeSuffix}Template@2x.png');

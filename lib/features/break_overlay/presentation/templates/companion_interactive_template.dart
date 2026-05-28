@@ -32,7 +32,7 @@ class CompanionInteractiveTemplate extends StatefulWidget {
 }
 
 class _CompanionInteractiveTemplateState
-    extends State<CompanionInteractiveTemplate> {
+    extends State<CompanionInteractiveTemplate> with WidgetsBindingObserver {
   // Companion placement and physics snapping
   double? _x;
   double? _y;
@@ -60,12 +60,25 @@ class _CompanionInteractiveTemplateState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _startSpeechCycle();
     _startAIBehaviorCycle();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+      _aiBehaviorTimer?.cancel();
+      _speechBubbleTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      _startSpeechCycle();
+      _startAIBehaviorCycle();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _aiBehaviorTimer?.cancel();
     _speechBubbleTimer?.cancel();
     super.dispose();
@@ -209,6 +222,8 @@ class _CompanionInteractiveTemplateState
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final species = petTheme.species;
     const double widgetSize = 130.0;
+    final bool enableAnimations = widget.settings.enableAnimations &&
+        !MediaQuery.of(context).disableAnimations;
 
     return Material(
       color: Colors.transparent,
@@ -263,7 +278,7 @@ class _CompanionInteractiveTemplateState
                               fontSize: 24,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.5,
-                              fontFamily: 'Satoshi',
+                              fontFamily: 'Inter',
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -281,7 +296,7 @@ class _CompanionInteractiveTemplateState
                               color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              fontFamily: 'Satoshi',
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ],
@@ -293,7 +308,7 @@ class _CompanionInteractiveTemplateState
 
               // Interactive Companion Widget
               AnimatedPositioned(
-                duration: _isDragging
+                duration: _isDragging || !enableAnimations
                     ? Duration.zero
                     : const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
@@ -349,7 +364,7 @@ class _CompanionInteractiveTemplateState
                           child: Center(
                             child: AnimatedOpacity(
                               opacity: 1.0,
-                              duration: const Duration(milliseconds: 300),
+                              duration: enableAnimations ? const Duration(milliseconds: 300) : Duration.zero,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,
@@ -383,7 +398,7 @@ class _CompanionInteractiveTemplateState
                                         color: Colors.white,
                                         fontSize: 11,
                                         fontWeight: FontWeight.w500,
-                                        fontFamily: 'Satoshi',
+                                        fontFamily: 'Inter',
                                       ),
                                     ),
                                     // Bubble Tail
@@ -620,7 +635,7 @@ class _CompanionInteractiveTemplateState
                         color: Colors.white.withValues(alpha: 0.5),
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        fontFamily: 'Satoshi',
+                        fontFamily: 'Inter',
                       ),
                     ),
                     Text(
@@ -629,7 +644,7 @@ class _CompanionInteractiveTemplateState
                         color: Colors.white.withValues(alpha: 0.35),
                         fontSize: 12,
                         fontStyle: FontStyle.italic,
-                        fontFamily: 'Satoshi',
+                        fontFamily: 'Inter',
                       ),
                     ),
                     if (widget.onSkip != null)
@@ -657,7 +672,7 @@ class _CompanionInteractiveTemplateState
                                     color: Colors.white,
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    fontFamily: 'Satoshi',
+                                    fontFamily: 'Inter',
                                   ),
                                 ),
                                 const SizedBox(width: 6),

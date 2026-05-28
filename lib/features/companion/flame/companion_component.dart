@@ -313,7 +313,7 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
         color: Colors.white,
         fontSize: 5,
         fontWeight: FontWeight.bold,
-        fontFamily: 'Satoshi',
+        fontFamily: 'Inter',
       );
       final textPainter = TextPainter(
         text: const TextSpan(text: 'ON AIR', style: textStyle),

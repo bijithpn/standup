@@ -119,6 +119,8 @@ class _SoftFloatingWidgetTemplateState
     final double closedWidth = 180.0;
     final double openWidth = 320.0;
     final double height = 80.0;
+    final bool enableAnimations = widget.settings.enableAnimations &&
+        !MediaQuery.of(context).disableAnimations;
 
     return Material(
       color: Colors.transparent,
@@ -139,7 +141,7 @@ class _SoftFloatingWidgetTemplateState
 
               // Corner Snappable Floating Pill
               AnimatedPositioned(
-                duration: _isDragging
+                duration: _isDragging || !enableAnimations
                     ? Duration.zero
                     : const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
@@ -186,7 +188,7 @@ class _SoftFloatingWidgetTemplateState
                       );
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
+                      duration: enableAnimations ? const Duration(milliseconds: 250) : Duration.zero,
                       curve: Curves.easeOutBack,
                       width: currentWidth,
                       height: height,
@@ -244,7 +246,7 @@ class _SoftFloatingWidgetTemplateState
                                         fontSize: 16,
                                         fontWeight: FontWeight.w700,
                                         letterSpacing: -0.5,
-                                        fontFamily: 'Satoshi',
+                                        fontFamily: 'Inter',
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -258,7 +260,7 @@ class _SoftFloatingWidgetTemplateState
                                         ),
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
-                                        fontFamily: 'Satoshi',
+                                        fontFamily: 'Inter',
                                       ),
                                     ),
                                   ],
@@ -270,7 +272,7 @@ class _SoftFloatingWidgetTemplateState
                               Expanded(
                                 child: AnimatedOpacity(
                                   opacity: _isHovered ? 1.0 : 0.0,
-                                  duration: const Duration(milliseconds: 150),
+                                  duration: enableAnimations ? const Duration(milliseconds: 150) : Duration.zero,
                                   child: Row(
                                     children: [
                                       Container(
@@ -292,7 +294,7 @@ class _SoftFloatingWidgetTemplateState
                                             ),
                                             fontSize: 10,
                                             height: 1.3,
-                                            fontFamily: 'Satoshi',
+                                            fontFamily: 'Inter',
                                           ),
                                         ),
                                       ),

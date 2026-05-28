@@ -68,24 +68,25 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
           builder: (context) {
             final overlayService = sl<OverlayWindowService>();
 
-            return ListenableBuilder(
-              listenable: Listenable.merge([
-                overlayService,
-                sl<BreakController>(),
-              ]),
-              builder: (context, _) {
-                final isBreakActive = sl<BreakController>().isBreakActive;
-                final isOverlayVisible = overlayService.isOverlayVisible;
+            return Selector<BreakController, bool>(
+              selector: (context, controller) => controller.isBreakActive,
+              builder: (context, isBreakActive, _) {
+                return ListenableBuilder(
+                  listenable: overlayService,
+                  builder: (context, _) {
+                    final isOverlayVisible = overlayService.isOverlayVisible;
 
-                return Stack(
-                  children: [
-                    Offstage(
-                      offstage: isOverlayVisible || isBreakActive,
-                      child: const MainLayout(),
-                    ),
-                    const BreakOverlay(),
-                    const PreBreakWarningOverlay(),
-                  ],
+                    return Stack(
+                      children: [
+                        Offstage(
+                          offstage: isOverlayVisible || isBreakActive,
+                          child: const MainLayout(),
+                        ),
+                        const BreakOverlay(),
+                        const PreBreakWarningOverlay(),
+                      ],
+                    );
+                  },
                 );
               },
             );

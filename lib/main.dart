@@ -27,6 +27,8 @@ import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/utils/frame_timing_logger.dart';
+import 'package:breakmate/core/utils/memory_checkpoints.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 void _setupGlobalErrors() {
@@ -82,7 +84,7 @@ void _setupGlobalErrors() {
                     color: Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -92,7 +94,7 @@ void _setupGlobalErrors() {
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 14,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
                 if (kDebugMode) ...[
@@ -146,7 +148,18 @@ void main() async {
   runZonedGuarded(
     () async {
       try {
+        final startupT0 = DateTime.now();
+        void logStartup(String label) {
+          if (kDebugMode) {
+            final ms = DateTime.now().difference(startupT0).inMilliseconds;
+            debugPrint('[Startup] +${ms}ms — $label');
+          }
+        }
+
         WidgetsFlutterBinding.ensureInitialized();
+        logStartup('WidgetsFlutterBinding.ensureInitialized');
+        FrameTimingLogger.instance.start();
+        MemoryCheckpoints.instance.logCheckpoint('startup');
         _setupGlobalErrors();
 
         // Initialize flutter_acrylic for glassmorphic effect
@@ -202,9 +215,11 @@ void main() async {
 
         // Initialize all dependencies
         await initDependencies();
+        logStartup('initDependencies complete');
 
         // Initialize Window Manager
         await windowManager.ensureInitialized();
+        logStartup('windowManager.ensureInitialized');
 
         WindowOptions windowOptions = WindowOptions(
           size: const Size(1100, 750),
@@ -266,9 +281,14 @@ void main() async {
 
         if (kReleaseMode) {
           await SentryFlutter.init((options) {
-            options.dsn = 'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344';
+            options.dsn =
+                'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344';
           }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
         } else {
+          // Log first dashboard frame time in debug mode
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            logStartup('first dashboard frame rendered');
+          });
           runApp(const BreakMateApp());
         }
       } catch (e, stack) {
