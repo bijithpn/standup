@@ -52,6 +52,8 @@ class AppConstants {
   static const String keyTotalWorkSessions = 'total_work_sessions';
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
+  static const String keyCompanionPetTheme = 'companion_pet_theme';
+  static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
   // Streak configuration
   static const int breaksPerDayForStreak = 5;

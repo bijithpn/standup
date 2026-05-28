@@ -68,10 +68,11 @@ Get-ChildItem -Recurse assets/ | Sort-Object Length -Descending | Select-Object 
 ```
 
 Key budget:
-- Music files: ~25 MB total (6 lofi MP3s)
-- Slideshow images: ~3 MB total
-- Pet animations: ~5 MB total
-- Fonts: ~2 MB total
+- Total asset tree: target under 20 MB
+- Music files: one bundled default track, currently ~4 MB
+- Fonts: currently ~1.6 MB total; subset before release if installer size grows
+- Tray/source images: keep oversized source/reference images out of Flutter asset declarations
+- Pet animations: load only the selected pet at startup where possible
 
 ## Flutter DevTools Performance Snapshots
 

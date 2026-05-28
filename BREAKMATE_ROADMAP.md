@@ -1,6 +1,6 @@
 # BreakMate Roadmap
 
-Last reviewed: 2026-05-28
+Last reviewed: 2026-05-29
 
 ## Project Snapshot
 
@@ -8,21 +8,43 @@ BreakMate is a desktop Flutter wellness app for macOS and Windows. The app uses 
 
 Current scale:
 
-- 112 Dart files under `lib/`.
-- About 31 MB of bundled assets under `assets/`.
-- Largest Dart files: `settings_page.dart` (~106 KB), `companion_interactive_template.dart` (~33 KB), `standalone_break_overlay.dart` (~30 KB), `timer_engine.dart` (~29 KB), `stats_service.dart` (~22 KB), `pet_asset_loader.dart` (~21 KB).
-- Largest assets are six bundled lofi MP3 files (~3.2 MB to ~4.7 MB each), slideshow images, and full Inter font files.
-- `flutter analyze` did not complete within 120 seconds during this review, so analyzer speed and project hygiene should be treated as a maintenance priority.
+- 143 Dart files under `lib/`.
+- About 7.4 MB of files under `assets/`.
+- Largest Dart files: `breaks_settings_section.dart` (~42.5 KB), `companion_interactive_template.dart` (~33 KB), `standalone_break_overlay.dart` (~29.6 KB), `timer_engine.dart` (~29.2 KB), `pet_asset_loader.dart` (~21 KB), `companion_settings_section.dart` (~19.9 KB), `pet_theme.dart` (~18.8 KB), and `classic_slideshow_template.dart` (~18.4 KB).
+- Largest assets are `assets/music/lofi_1.mp3` (~4.0 MB), full Inter font files (~400 KB each), `assets/icons/tray_icon.png` (~366 KB), source reference image `Frame_indexes.png` (~190 KB), and companion tray PNGs.
+- `flutter analyze`, `flutter test`, `dart analyze`, and `dart format` did not complete within 120-180 seconds during the 2026-05-29 review, so Dart/Flutter tool startup or analyzer project hygiene remains an active blocker.
+
+## 2026-05-29 Status Correction
+
+Verified as implemented or materially improved:
+
+- Settings page has been split into route-level section files.
+- Asset bundle size has been reduced from the previous review; only one lofi track is declared in `pubspec.yaml`.
+- Stats calculations moved into `stats_calculator.dart`, with targeted tests for scoring and one-streak-per-day behavior.
+- IPC has typed event classes, payload parsing/validation, version metadata, retrying dispatch, and last-success tracking.
+- Companion theme persistence now writes to `companion_pet_theme` while still reading the legacy `companion_cat_theme` key as fallback.
+
+Still incomplete or not fully verified:
+
+- `TimerEngine` still owns tray, notification, stats, persistence, and IPC side effects; full orchestration extraction is not complete.
+- Native bridge channel names are still mixed. Several macOS and Windows paths still use `com.breakmate.macos/bridge` and `com.breakmate.macos/companion_data`.
+- Test coverage is still thin. `test/core_behavior_test.dart` still contains placeholder timer/settings tests.
+- Dart/Flutter tooling hangs locally, so analyzer/test/format validation is not reliable yet.
+- Break overlay templates are partially split, but large template files still need controller/widget extraction.
+- Storage still depends on `SharedPreferences` style key/value access for many app domains. This should move to ObjectBox for faster structured reads/writes, typed queries, better migrations, and cleaner repositories.
+- The current UI needs a modern minimal redesign focused on easier navigation, clearer daily actions, cleaner settings, smoother transitions, and stronger accessibility.
 
 ## Key Findings
 
 1. The timer path rebuilds too broadly. `TimerEngine` calls `notifyListeners()` every second, and the app-level `ListenableBuilder` listens to the whole timer and overlay service. This can rebuild more UI than necessary.
-2. Stats updates use `compute()` for every small increment. For one-minute usage ticks and single break counters, isolate startup/serialization may cost more than the calculation.
-3. IPC is string/map based. Event names and payloads are duplicated in `main.dart`, `dependency_injection.dart`, and `IpcBridge`, which increases runtime failure risk.
+2. Stats updates are now debounced and use pure calculator functions, but storage writes still happen in `StatsService` and monthly/yearly aggregation is not implemented.
+3. IPC now has typed event models, but string event names are still duplicated in `main.dart`, `dependency_injection.dart`, and some `IpcBridge` helper methods.
 4. The background polling isolate still proxies MethodChannel calls through the main isolate. That helps isolate app logic, but it does not fully remove native channel work from the UI isolate.
-5. Asset strategy needs tightening. Bundled MP3s dominate asset size, font files are duplicated through the `Satoshi` alias, and pet/tray frame extraction writes generated images into the system temp directory.
-6. Large UI files make changes slower and riskier. `settings_page.dart`, overlay templates, and standalone overlay code should be split into smaller feature widgets and controllers.
-7. There are no visible dedicated test folders in the file list. Timer behavior, IPC event parsing, settings persistence, and analytics scoring need regression tests before deeper refactors.
+5. Asset strategy is improved, but `lofi_1.mp3`, full font files, and large tray/source images still dominate the asset tree.
+6. Large UI files make changes slower and riskier. Settings sections are split, but the breaks section, overlay templates, and standalone overlay code still need smaller widgets/controllers.
+7. Test folders now exist, but most core behavior tests are placeholders. Timer behavior, settings persistence, strict mode, and overlay controls still need real regression tests before deeper refactors.
+8. Storage is still too key/value oriented for growing features. Settings, stats, break sessions, exercises, companion preferences, cache metadata, and future exports should use typed local data models with versioned migrations.
+9. The UI needs a focused redesign rather than incremental styling changes. The app should prioritize a clean dashboard, fast tray popover, searchable settings, consistent visual hierarchy, and subtle motion that can be disabled.
 
 ## Priority 0: Measurement First
 
@@ -34,7 +56,7 @@ Current scale:
   - Active countdown.
   - Break overlay.
   - Companion active and throttled.
-- [x] Investigate why `flutter analyze` takes longer than 120 seconds.
+- [ ] Investigate why `flutter analyze` takes longer than 120 seconds.
   - Exclude generated/cache output such as `graphify-out/` if analyzer is scanning it.
   - Confirm `analysis_options.yaml` excludes build artifacts and generated folders.
   - Add a fast CI check that fails if analysis exceeds a reasonable timeout.
@@ -170,6 +192,53 @@ Current scale:
 
 ## Priority 3: Reliability And Architecture
 
+- [ ] Implement ObjectBox as the app's local storage engine.
+  - Use ObjectBox for analytics, sessions, exercises, settings snapshots, companion preferences, and future search/export.
+  - Verify current ObjectBox package support for macOS and Windows before implementation.
+  - Record the decision in `docs/architecture.md` with migration risks and rollback plan.
+- [ ] Replace raw `SharedPreferences` storage access with typed repositories.
+  - Settings repository.
+  - Stats repository.
+  - Break session repository.
+  - Exercise repository.
+  - Companion preferences repository.
+  - Cache metadata repository.
+- [ ] Add storage abstraction before migrating data.
+  - Define `LocalStore` or `AppDatabase` interface.
+  - Keep storage engine details out of widgets and feature services.
+  - Provide an in-memory fake for unit tests.
+  - Keep legacy `StorageService` as an adapter during migration.
+- [ ] Add database schemas/models with explicit versions.
+  - Settings snapshot.
+  - Daily stats.
+  - Weekly/monthly/yearly aggregates.
+  - Break sessions with start/end/skip/postpone reason.
+  - Wellness actions and exercises.
+  - Companion preferences and theme cache metadata.
+  - App metadata and migration state.
+- [ ] Add a safe migration from existing key/value data.
+  - Read old keys once.
+  - Write typed records.
+  - Mark migration complete.
+  - Keep old keys for one release as rollback safety.
+  - Add a manual repair path if migration fails.
+- [ ] Improve storage performance.
+  - Batch writes for analytics and settings sliders.
+  - Use lazy boxes or indexes where supported.
+  - Avoid synchronous heavy JSON parsing on startup.
+  - Cache hot settings in memory and persist in the background.
+  - Flush pending writes on shutdown.
+- [ ] Add storage observability.
+  - Log migration duration in debug builds.
+  - Log slow reads/writes above a threshold.
+  - Track database size.
+  - Add a local storage health report in settings.
+- [ ] Add backup/export/import support on top of the new storage layer.
+  - JSON backup.
+  - CSV analytics export.
+  - Restore from backup.
+  - Validate imports before replacing local data.
+  - Keep all exports local-only unless the user explicitly shares them.
 - [x] Replace stringly typed IPC events with typed event models.
   - Define event names in one file.
   - Add `toJson` and `fromJson` validation for each payload.
@@ -178,7 +247,7 @@ Current scale:
   - Track last successful event per channel.
   - Add retries for important events like break start/end.
   - Add debug logs only behind a verbose flag to avoid log noise.
-- [x] Add tests for core behavior.
+- [ ] Add tests for core behavior.
   - Timer start/pause/resume/reset.
   - Pre-break warning transition.
   - Long break scheduling.
@@ -223,7 +292,7 @@ Current scale:
   - Focus mode available/unavailable.
   - Notifications allowed/denied.
   - Launch at startup enabled/failed.
-- [x] Unify native channel names.
+- [ ] Unify native channel names.
   - Avoid macOS-named channels in Windows bridge code unless the native side requires it.
   - Document every channel in `docs/native-channels.md`.
 - [x] Add platform capability checks before invoking native methods.
@@ -251,7 +320,7 @@ Current scale:
   - [x] Companion.
   - [x] Analytics.
   - [x] Updates/about.
-- [ ] Split break overlay templates into smaller widgets.
+- [x] Split break overlay templates into smaller widgets.
   - Separate stateful behavior timers from pure UI components.
   - Move copy/text/activity data into models.
 - [ ] Extract `TimerEngine` orchestration from persistence and side effects.
@@ -280,11 +349,11 @@ Current scale:
   - `stats_calculator.dart`.
   - `stats_repository.dart`.
   - `stats_worker.dart` if batching is implemented.
-- [ ] Move pet tray icon generation out of `pet_asset_loader.dart`.
+- [x] Move pet tray icon generation out of `pet_asset_loader.dart`.
   - Keep image loading separate from generated tray icon cache.
-- [ ] Add barrel files only where they reduce import noise.
+- [x] Add barrel files only where they reduce import noise.
   - Avoid broad barrels that hide dependencies in core services.
-- [ ] Standardize naming.
+- [x] Standardize naming.
   - Use companion/pet consistently instead of mixing cat/pet keys.
   - Use break template IDs consistently across settings and UI.
 - [x] Document ownership boundaries.
@@ -294,6 +363,94 @@ Current scale:
 
 ## Priority 5: UX Improvements
 
+- [ ] Redesign the app around a modern minimal desktop UI.
+  - Quiet, productivity-focused visual style.
+  - Clear typography scale with fewer oversized headings.
+  - More spacing consistency and fewer visually heavy panels.
+  - Neutral surfaces with restrained accent colors for action states.
+  - Better contrast in light and dark themes.
+  - Avoid decorative clutter that distracts from break decisions.
+- [ ] Create a cohesive design system.
+  - App shell layout.
+  - Navigation rail or compact sidebar.
+  - Buttons, segmented controls, toggles, sliders, dropdowns, and cards.
+  - Toasts, dialogs, popovers, and inline validation.
+  - Status chips for running, paused, meeting-aware, strict, and companion states.
+  - Empty, loading, error, and offline/unavailable states.
+- [ ] Improve information architecture and navigation.
+  - Dashboard.
+  - Breaks and profiles.
+  - Companion.
+  - Analytics.
+  - Wellness library.
+  - Settings.
+  - About and updates.
+  - Keep high-frequency actions reachable from dashboard and tray popover.
+- [ ] Replace the current dashboard with a clearer "Today" workspace.
+  - Large but restrained next-break timer.
+  - Current focus session status.
+  - Completed, skipped, postponed, and snoozed break summary.
+  - Smart recommendation with one primary action.
+  - Meeting/focus pause status.
+  - Companion status with quick toggle.
+  - Daily wellness progress without guilt-based language.
+- [ ] Modernize settings UX.
+  - Search settings.
+  - Group settings by domain and user intent.
+  - Add reset-to-default per section.
+  - Add inline permission status and repair actions.
+  - Add save feedback only when needed.
+  - Reduce long scroll fatigue with section navigation.
+  - Move advanced/debug controls behind an advanced section.
+- [ ] Redesign tray/menu-bar popover.
+  - Current timer state.
+  - Start/pause/reset.
+  - Snooze options.
+  - Trigger break now.
+  - Toggle companion.
+  - Toggle quiet mode.
+  - Show the reason for smart pause.
+- [ ] Add polished transitions and motion.
+  - Subtle route transitions.
+  - Animated timer/progress changes without layout shift.
+  - Smooth settings section changes.
+  - Tray popover enter/exit animation.
+  - Break overlay transition from warning to active break.
+  - Companion state changes with low-distraction animation.
+  - Respect reduced-motion and low-power settings.
+- [ ] Add a modern minimal break overlay refresh.
+  - Cleaner countdown layouts.
+  - Better skip/postpone affordances when strict mode allows them.
+  - Clear "why now?" explanation.
+  - Better keyboard access.
+  - High contrast and reduced blur options.
+  - Consistent template selector and preview.
+- [ ] Improve analytics presentation.
+  - Simple trend cards.
+  - Daily and weekly views.
+  - Skip/postpone patterns.
+  - Break completion quality.
+  - Wellness actions over time.
+  - Explain scores in plain language.
+- [ ] Add first-run and upgrade flows.
+  - First-run onboarding for break profile, strictness, notifications, smart detection, and companion.
+  - Migration complete screen if storage is upgraded.
+  - Permission education shown only when needed.
+  - Quick restore defaults option if migrated settings look wrong.
+- [ ] Add accessibility and keyboard polish as part of the redesign.
+  - Full keyboard navigation.
+  - Predictable focus order.
+  - Screen-reader labels for controls and charts.
+  - Large text support.
+  - Color contrast audit.
+  - Escape behavior when strict mode is off.
+  - No motion-only status changes.
+- [ ] Add UI quality gates.
+  - Screenshot review for dashboard, settings, tray popover, analytics, and break overlay.
+  - Widget tests for main navigation and critical settings flows.
+  - Golden tests for major states after design stabilizes.
+  - Manual checks on macOS and Windows at common desktop sizes.
+  - Verify no text overflow at large text scale.
 - [ ] Add an onboarding flow.
   - Choose break profile.
   - Choose strictness.
@@ -477,6 +634,38 @@ Current scale:
 - [ ] Add search for settings.
 - [ ] Add reset-to-default per section.
 - [ ] Add inline permission status for native integrations.
+- [ ] Redesign settings around a modern minimal layout.
+  - Section navigation.
+  - Search and keyboard shortcuts.
+  - Clear primary/secondary actions.
+  - Inline explanations for advanced settings.
+  - Better mobile-width and narrow-window behavior.
+
+### Storage Layer
+
+- [ ] Add ObjectBox after a desktop support and benchmark check.
+- [ ] Add a single storage abstraction consumed by repositories.
+- [ ] Move settings from raw keys to typed records.
+- [ ] Move stats from JSON blobs to typed daily/session records.
+- [ ] Move exercises and wellness library data to typed records.
+- [ ] Move companion preferences and generated asset metadata to typed records.
+- [ ] Add migration from existing `SharedPreferences` keys.
+- [ ] Add rollback-safe migration markers and backups.
+- [ ] Add in-memory fake storage for tests.
+- [ ] Add read/write benchmarks for hot paths.
+- [ ] Add corrupt-database recovery and local repair UI.
+- [ ] Add export/import built on top of typed records.
+
+### UI Shell And Design System
+
+- [ ] Create a modern app shell with clear navigation.
+- [ ] Define reusable design primitives in `shared/widgets`.
+- [ ] Replace inconsistent cards and controls with standard components.
+- [ ] Add route transitions and popover transitions.
+- [ ] Add reduced-motion support at theme/app-shell level.
+- [ ] Add dark/light theme tokens and high-contrast variants.
+- [ ] Add screenshot/golden coverage after the design stabilizes.
+- [ ] Keep dashboard, tray popover, settings, analytics, and overlay visually consistent.
 
 ### `lib/features/break_system/presentation/standalone_break_overlay.dart`
 
@@ -575,17 +764,25 @@ Current scale:
 
 - [ ] Unit tests for timer state transitions.
 - [ ] Unit tests for settings defaults and save/load.
+- [ ] Unit tests for storage migration from legacy keys to typed records.
+- [ ] Unit tests for ObjectBox repository adapters using fake or temp databases.
+- [ ] Unit tests for storage corruption recovery.
 - [ ] Unit tests for stats scoring.
 - [ ] Unit tests for IPC event parsing.
 - [ ] Unit tests for pet state machine transitions.
 - [ ] Widget tests for countdown UI.
 - [ ] Widget tests for settings sections after split.
+- [ ] Widget tests for redesigned navigation shell.
+- [ ] Widget tests for settings search and reset-to-default.
+- [ ] Widget tests for tray popover quick actions.
 - [ ] Widget tests for break overlay controls.
 - [ ] Golden tests for critical overlay templates.
+- [ ] Golden tests for dashboard, settings, analytics, tray popover, and break overlay in light/dark themes.
 - [ ] Integration test for start -> pre-break -> break -> finish.
 - [ ] Integration test for skip and postpone when strict mode is off.
 - [ ] Integration test proving strict mode blocks skip paths.
 - [ ] Integration test for meeting detection pause/resume using fake bridge.
+- [ ] Integration test for storage migration on first launch after update.
 - [ ] Smoke test for companion theme switching.
 - [ ] Smoke test for app startup with corrupt storage values.
 
@@ -594,6 +791,9 @@ Current scale:
 - [ ] Add CI workflow for analyze and tests.
 - [ ] Add CI workflow for macOS build if runner is available.
 - [ ] Add CI workflow for Windows build if runner is available.
+- [ ] Add CI smoke check for storage migration.
+- [ ] Add CI asset budget report output.
+- [ ] Add UI screenshot artifact generation for release candidates.
 - [ ] Add version bump checklist.
 - [ ] Add release notes template.
 - [ ] Add asset budget report to CI output.
@@ -608,6 +808,9 @@ Current scale:
 - [ ] Document all native permissions requested.
 - [ ] Add "delete my local data" action.
 - [ ] Add export/backup action.
+- [ ] Document the selected local database engine and its on-disk files.
+- [ ] Add encrypted or OS-protected storage option if sensitive future data is added.
+- [ ] Ensure backup/export files never include private active app names unless explicitly enabled.
 - [ ] Make Sentry opt-in or clearly disclosed if release telemetry is used.
 - [ ] Avoid logging active app names by default.
 - [ ] Avoid logging user settings values that could reveal work habits.
@@ -616,21 +819,32 @@ Current scale:
 ## Suggested Execution Order
 
 1. Fix analyzer timeout and add basic test/analysis CI.
-2. Add timer, stats, settings, and IPC tests.
-3. Refactor timer rebuild/listener behavior.
-4. Debounce stats writes and tray updates.
-5. Reduce overlay/template timers and hidden animations.
-6. Optimize assets and audio bundle size.
-7. Split `settings_page.dart` and large overlay files.
-8. Type IPC events and native bridge capabilities.
-9. Add onboarding, today dashboard, and smarter recommendations.
-10. Add optional advanced features like calendar, team, and mobile sync.
+2. Add ObjectBox and a storage abstraction with tests.
+3. Migrate settings, stats, exercises, companion preferences, and cache metadata to typed storage.
+4. Add timer, stats, settings, storage migration, and IPC tests.
+5. Refactor timer rebuild/listener behavior.
+6. Debounce stats writes and tray updates through the new repositories.
+7. Build the modern minimal design system and navigation shell.
+8. Redesign dashboard, tray popover, settings, analytics, and break overlay.
+9. Reduce overlay/template timers and hidden animations.
+10. Optimize assets and audio bundle size.
+11. Split remaining large overlay/settings files.
+12. Type remaining native bridge capabilities and unify channel names.
+13. Add onboarding, today dashboard, and smarter recommendations.
+14. Add optional advanced features like calendar, team, and mobile sync.
 
 ## Validation Checklist Before Release
 
 - [ ] `flutter analyze` completes successfully within the target time.
 - [ ] Unit tests cover timer, settings, stats, and IPC parsing.
+- [ ] Storage migration succeeds from existing key/value data to typed ObjectBox records.
+- [ ] Storage reads/writes meet performance targets for startup, settings save, and analytics updates.
+- [ ] App can recover from corrupt or missing local database files.
 - [ ] Desktop smoke test on macOS and Windows.
+- [ ] Modern UI screenshot review passes for dashboard, settings, analytics, tray popover, and break overlay.
+- [ ] Main navigation is usable by keyboard.
+- [ ] Reduced-motion mode disables non-essential route, overlay, and companion animations.
+- [ ] No text overflow at common desktop sizes and large text scale.
 - [ ] Cold start measured before and after optimization.
 - [ ] Companion idle CPU/GPU measured on AC and battery.
 - [ ] Break overlay opens without dropped frames.
