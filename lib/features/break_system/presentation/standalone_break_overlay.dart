@@ -15,6 +15,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode
 import 'package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
 
 enum BreakTheme {
   image,
@@ -352,6 +353,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         break;
       case 'floating':
         templateWidget = SoftFloatingWidgetTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+        break;
+      case 'activities':
+        templateWidget = ActivitiesBreakTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,

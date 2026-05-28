@@ -13,6 +13,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode
 import 'package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
 
 class BreakOverlay extends StatefulWidget {
   const BreakOverlay({super.key});
@@ -210,6 +211,15 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
         break;
       case 'floating':
         templateWidget = SoftFloatingWidgetTemplate(
+          breakInfo: widget.breakInfo,
+          settings: widget.settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+        break;
+      case 'activities':
+        templateWidget = ActivitiesBreakTemplate(
           breakInfo: widget.breakInfo,
           settings: widget.settings,
           remainingSeconds: remaining,

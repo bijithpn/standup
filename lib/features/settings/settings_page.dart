@@ -1950,6 +1950,11 @@ class _SettingsPageState extends State<SettingsPage> {
             name: 'Floating Dock',
             desc: 'Snappable compact overlay with lazy companion loading.',
           ),
+          (
+            id: 'activities',
+            name: 'Activity Studio',
+            desc: 'Guided breathing & eye sync exercises for active recovery.',
+          ),
         ];
 
         if (isSmallScreen) {
@@ -2333,6 +2338,105 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
             ),
           ],
+        );
+      case 'activities':
+        return Container(
+          color: const Color(0xFF070A0D),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Segmented tab mock
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.wind,
+                            size: 7,
+                            color: Color(0xFF38BDF8),
+                          ),
+                          SizedBox(width: 3),
+                          Text(
+                            'Breathe',
+                            style: TextStyle(
+                              fontSize: 6,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            CupertinoIcons.eye,
+                            size: 7,
+                            color: Colors.white54,
+                          ),
+                          SizedBox(width: 3),
+                          Text(
+                            'Eye Sync',
+                            style: TextStyle(
+                              fontSize: 6,
+                              color: Colors.white54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                // Breathing ring mock
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF7DD3FC).withValues(alpha: 0.6),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Center(
+                    child: Text(
+                      'In',
+                      style: TextStyle(
+                        color: Color(0xFF7DD3FC),
+                        fontSize: 7,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       default:
         return const SizedBox();
