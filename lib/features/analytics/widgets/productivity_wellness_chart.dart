@@ -35,7 +35,7 @@ class ProductivityWellnessChart extends StatelessWidget {
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
               _buildLegendRow(),

@@ -5,6 +5,7 @@ import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
@@ -44,6 +45,11 @@ class TimerEngine extends ChangeNotifier {
   Timer? _tickTimer;
   Timer? _usageTrackerTimer;
   Timer? _pauseAutoResumeTimer;
+
+  // Debounce tray updates: only call native tray APIs when the displayed
+  // value actually changes, avoiding a native call every tick.
+  String? _lastTrayTitle;
+  String? _lastTrayTooltip;
 
   int _shortBreakIntervalMinutes =
       AppConstants.defaultShortBreakIntervalMinutes;
@@ -103,24 +109,24 @@ class TimerEngine extends ChangeNotifier {
         _lastIpcState = state;
         _lastIpcTargetEndTime = targetEndTime;
 
-        IpcBridge.instance.notifyTimerStateChanged(
-          event.state.name,
+        IpcBridge.instance.dispatch(TimerStateChangedIpcEvent(
+          stateName: event.state.name,
           countdownSeconds: event.countdownSeconds,
           workElapsedSeconds: event.workElapsedSeconds,
           targetEndTime: targetEndTime?.millisecondsSinceEpoch,
           totalWorkTodaySeconds: _stateData.totalWorkToday.inSeconds,
-        );
+        ));
       }
     } else if (event is BreakStartedEvent) {
-      IpcBridge.instance.sendEvent('timer.breakStarted', {
-        'isLongBreak': event.isLongBreak,
-        'durationSeconds': event.durationSeconds,
-        'title': event.title,
-      });
+      IpcBridge.instance.dispatch(BreakStartedIpcEvent(
+        isLongBreak: event.isLongBreak,
+        durationSeconds: event.durationSeconds,
+        title: event.title,
+      ));
     } else if (event is BreakEndedEvent) {
-      IpcBridge.instance.sendEvent('timer.breakEnded', {
-        'skipped': event.skipped,
-      });
+      IpcBridge.instance.dispatch(BreakEndedIpcEvent(
+        skipped: event.skipped,
+      ));
     }
   }
 
@@ -332,6 +338,7 @@ class TimerEngine extends ChangeNotifier {
     if (warningWindow > Duration.zero && remaining <= warningWindow) {
       if (!isPreBreak) {
         _stateData.isPreBreak = true;
+        _notificationService.showBreakReminder(isLong: _isLongBreakDue());
         notifyListeners();
       }
     } else {
@@ -383,9 +390,9 @@ class TimerEngine extends ChangeNotifier {
       sl<StatsService>().recordWellnessAction();
 
       // Also notify other isolates via IPC
-      IpcBridge.instance.sendEvent('companion.interaction', {
-        'interactionType': interactionType,
-      });
+      IpcBridge.instance.dispatch(CompanionInteractionIpcEvent(
+        interactionType: interactionType,
+      ));
 
       return;
     }
@@ -650,7 +657,6 @@ class TimerEngine extends ChangeNotifier {
             settings.trayIconStyle == 'countdown'
         ? '$mins:$secs'
         : '';
-    sl<TrayManagerService>().setTrayTitle(title);
 
     final status = state == TimerState.breakActive
         ? 'Break active'
@@ -661,7 +667,16 @@ class TimerEngine extends ChangeNotifier {
         : state == TimerState.paused
         ? 'Paused'
         : 'Next break';
-    sl<TrayManagerService>().setTooltip('$status in $mins:$secs');
+    final tooltip = '$status in $mins:$secs';
+
+    if (title != _lastTrayTitle) {
+      _lastTrayTitle = title;
+      sl<TrayManagerService>().setTrayTitle(title);
+    }
+    if (tooltip != _lastTrayTooltip) {
+      _lastTrayTooltip = tooltip;
+      sl<TrayManagerService>().setTooltip(tooltip);
+    }
   }
 
   void _setupActivityMonitor() {

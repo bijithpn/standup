@@ -83,7 +83,7 @@ class _MinimalButtonState extends State<MinimalButton> with SingleTickerProvider
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: widget.isSecondary ? AppTheme.textPrimary : Colors.white,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
             ),
             child: widget.child,
           ),

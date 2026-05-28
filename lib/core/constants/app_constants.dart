@@ -6,11 +6,11 @@ class AppConstants {
 
   // Wellness Slideshow
   static const List<String> wellnessSlideshow = [
-    'assets/slideshow/slide_1.png',
-    'assets/slideshow/slide_2.png',
-    'assets/slideshow/slide_3.png',
-    'assets/slideshow/slide_4.png',
-    'assets/slideshow/slide_5.png',
+    'assets/slideshow/slide_1.jpeg',
+    'assets/slideshow/slide_2.jpeg',
+    'assets/slideshow/slide_3.jpeg',
+    'assets/slideshow/slide_4.jpeg',
+    'assets/slideshow/slide_5.jpeg',
   ];
 
   // Short break defaults

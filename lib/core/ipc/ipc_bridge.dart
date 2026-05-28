@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/ipc/ipc_events.dart';
 
 const _ipcChannel = MethodChannel('com.breakmate/ipc');
 
@@ -22,13 +23,42 @@ class IpcBridge {
   }
 
   Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
-    try {
-      await _ipcChannel.invokeMethod('sendEvent', {
-        'event': event,
-        'data': data ?? {},
-      });
-    } catch (e) {
-      _logger.error('Failed to send IPC event $event: $e');
+    int retries = 3;
+    while (retries > 0) {
+      try {
+        await _ipcChannel.invokeMethod('sendEvent', {
+          'event': event,
+          'data': data ?? {},
+        });
+        return;
+      } catch (e) {
+        retries--;
+        if (retries == 0) {
+          _logger.error('Failed to send IPC event $event: $e');
+        } else {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      }
+    }
+  }
+
+  Future<void> dispatch(IpcEvent event) async {
+    int retries = 3;
+    while (retries > 0) {
+      try {
+        await _ipcChannel.invokeMethod('sendEvent', {
+          'event': event.eventName,
+          'data': event.payload,
+        });
+        return;
+      } catch (e) {
+        retries--;
+        if (retries == 0) {
+          _logger.error('Failed to dispatch typed IPC event ${event.eventName}: $e');
+        } else {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+      }
     }
   }
 

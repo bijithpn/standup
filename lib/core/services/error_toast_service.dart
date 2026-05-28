@@ -49,7 +49,7 @@ class ErrorToastService {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
-                        fontFamily: 'Satoshi',
+                        fontFamily: 'Inter',
                       ),
                       overflow: TextOverflow.ellipsis,
                       maxLines: 2,

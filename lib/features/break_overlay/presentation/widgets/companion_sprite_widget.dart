@@ -45,6 +45,8 @@ class CompanionSpriteWidget extends StatefulWidget {
 class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
+  final ValueNotifier<int> _frameIndexNotifier = ValueNotifier<int>(0);
+  int _lastFrameCount = 1;
   ui.Image? _loadedImage;
   bool _isLoading = false;
   String _currentLoadedPath = '';
@@ -53,6 +55,14 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   void initState() {
     super.initState();
     _animationController = AnimationController(vsync: this);
+    _animationController.addListener(() {
+      final int frameIndex = _lastFrameCount > 1
+          ? (_animationController.value * _lastFrameCount).floor().clamp(0, _lastFrameCount - 1)
+          : 0;
+      if (_frameIndexNotifier.value != frameIndex) {
+        _frameIndexNotifier.value = frameIndex;
+      }
+    });
     _loadAndSetup();
   }
 
@@ -68,6 +78,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   @override
   void dispose() {
     _animationController.dispose();
+    _frameIndexNotifier.dispose();
     super.dispose();
   }
 
@@ -150,6 +161,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     _animationController.duration = Duration(
       milliseconds: (frameCount * stepTime * 1000).toInt(),
     );
+    _lastFrameCount = frameCount;
 
     if (frameCount > 1) {
       if (loop) {
@@ -159,6 +171,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       }
     } else {
       _animationController.value = 0.0;
+      _frameIndexNotifier.value = 0;
     }
   }
 
@@ -202,17 +215,12 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       }
     }
 
-    return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _animationController,
-        builder: (context, child) {
-          final int frameIndex = frameCount > 1
-              ? (_animationController.value * frameCount).floor().clamp(
-                  0,
-                  frameCount - 1,
-                )
-              : 0;
+    _lastFrameCount = frameCount;
 
+    return RepaintBoundary(
+      child: ValueListenableBuilder<int>(
+        valueListenable: _frameIndexNotifier,
+        builder: (context, frameIndex, child) {
           return Transform(
             alignment: Alignment.center,
             transform: Matrix4.diagonal3Values(widget.flipX ? -1.0 : 1.0, 1.0, 1.0),

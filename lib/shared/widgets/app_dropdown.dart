@@ -68,7 +68,7 @@ class AppDropdown<T> extends StatelessWidget {
                       child: Text(
                         item.label,
                         style: TextStyle(
-                          fontFamily: 'Satoshi',
+                          fontFamily: 'Inter',
                           fontSize: 12.5,
                           fontWeight: isSelected
                               ? FontWeight.w700
@@ -145,7 +145,7 @@ class AppDropdown<T> extends StatelessWidget {
         color: AppTheme.textPrimary,
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        fontFamily: 'Satoshi',
+        fontFamily: 'Inter',
       ),
       overflow: TextOverflow.ellipsis,
     );

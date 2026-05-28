@@ -17,7 +17,7 @@ import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:math';
 
-class BreakController extends ChangeNotifier {
+class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
   final TimerEngine _timerEngine;
   final SettingsRepository _settingsRepo;
@@ -26,7 +26,7 @@ class BreakController extends ChangeNotifier {
   String? _currentExerciseTitle;
   String? _currentExerciseInstructions;
 
-  final AudioPlayer _audioPlayer = AudioPlayer();
+  AudioPlayer? _audioPlayer;
   bool _isPlayingMusic = false;
   Timer? _fadeTimer;
   double _currentVolume = 0.0;
@@ -64,6 +64,23 @@ class BreakController extends ChangeNotifier {
 
     // Listen for timer events to trigger global overlays
     _timerEngine.addListener(_handleGlobalOverlays);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+      if (_fadeTimer != null && _fadeTimer!.isActive) {
+        _fadeTimer!.cancel();
+        // Snap to target volume
+        if (_isPlayingMusic) {
+          _currentVolume = 1.0;
+        } else {
+          _currentVolume = 0.0;
+        }
+        _audioPlayer?.setVolume(_currentVolume);
+      }
+    }
   }
 
   void _handleGlobalOverlays() {
@@ -268,11 +285,15 @@ class BreakController extends ChangeNotifier {
   void _playLofiMusicWithFadeIn({int? trackIndex}) async {
     try {
       _fadeTimer?.cancel();
-      final track = trackIndex ?? (Random().nextInt(6) + 1);
-      await _audioPlayer.setReleaseMode(ReleaseMode.loop);
+      _audioPlayer ??= AudioPlayer();
+
+      // Only one track remains after optimization
+      final track = 1;
+      
+      await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
       _currentVolume = 0.0;
-      await _audioPlayer.setVolume(_currentVolume);
-      await _audioPlayer.play(AssetSource('music/lofi_$track.mp3'));
+      await _audioPlayer!.setVolume(_currentVolume);
+      await _audioPlayer!.play(AssetSource('music/lofi_$track.mp3'));
       _isPlayingMusic = true;
 
       // Fade in over 3 seconds (10 steps of 0.1 volume every 300ms)
@@ -280,10 +301,10 @@ class BreakController extends ChangeNotifier {
         _currentVolume += 0.1;
         if (_currentVolume >= 1.0) {
           _currentVolume = 1.0;
-          _audioPlayer.setVolume(_currentVolume);
+          _audioPlayer?.setVolume(_currentVolume);
           timer.cancel();
         } else {
-          _audioPlayer.setVolume(_currentVolume);
+          _audioPlayer?.setVolume(_currentVolume);
         }
       });
     } catch (e) {
@@ -300,12 +321,14 @@ class BreakController extends ChangeNotifier {
       _currentVolume -= 0.1;
       if (_currentVolume <= 0.0) {
         _currentVolume = 0.0;
-        _audioPlayer.setVolume(_currentVolume);
-        _audioPlayer.stop();
+        _audioPlayer?.setVolume(_currentVolume);
+        _audioPlayer?.stop();
+        _audioPlayer?.dispose();
+        _audioPlayer = null;
         _isPlayingMusic = false;
         timer.cancel();
       } else {
-        _audioPlayer.setVolume(_currentVolume);
+        _audioPlayer?.setVolume(_currentVolume);
       }
     });
   }
@@ -493,8 +516,9 @@ class BreakController extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timerEngine.removeListener(_onTimerChanged);
-    _audioPlayer.dispose();
+    _audioPlayer?.dispose();
     super.dispose();
   }
 }

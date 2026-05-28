@@ -73,11 +73,8 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
   // Current phase index into _phases
   int _phaseIndex = 0;
 
-  // Progress within the current phase: 0.0 → 1.0
-  double _phaseProgress = 0.0;
-
   // Seconds elapsed in the current phase
-  int _phaseElapsed = 0;
+  final ValueNotifier<int> _phaseElapsed = ValueNotifier<int>(0);
 
   // Total completed cycles
   int _completedCycles = 0;
@@ -105,6 +102,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
   @override
   void dispose() {
     _ticker?.cancel();
+    _phaseElapsed.dispose();
     _ringController.dispose();
     super.dispose();
   }
@@ -157,8 +155,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
   }
 
   void _startPhase() {
-    _phaseElapsed = 0;
-    _phaseProgress = 0.0;
+    _phaseElapsed.value = 0;
     _ticker?.cancel();
     _ticker = Timer.periodic(const Duration(seconds: 1), _onTick);
   }
@@ -166,14 +163,11 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
   void _onTick(Timer _) {
     if (!mounted) return;
     final phase = _phases[_phaseIndex];
-    _phaseElapsed++;
-    final progress = (_phaseElapsed / phase.durationSeconds).clamp(0.0, 1.0);
+    _phaseElapsed.value++;
 
-    if (_phaseElapsed >= phase.durationSeconds) {
+    if (_phaseElapsed.value >= phase.durationSeconds) {
       _ticker?.cancel();
       _advancePhase();
-    } else {
-      setState(() => _phaseProgress = progress);
     }
   }
 
@@ -193,12 +187,10 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
       setState(() {
         _completedCycles = newCycles;
         _phaseIndex = nextPhaseIndex;
-        _phaseProgress = 0.0;
       });
     } else {
       setState(() {
         _phaseIndex = nextPhaseIndex;
-        _phaseProgress = 0.0;
       });
     }
 
@@ -239,12 +231,18 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                   alignment: Alignment.center,
                   children: [
                     // Background ring (arc showing phase progress)
-                    CustomPaint(
-                      size: const Size.square(ringRadius * 2),
-                      painter: _PhaseArcPainter(
-                        color: phase.color,
-                        progress: _phaseProgress,
-                      ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _phaseElapsed,
+                      builder: (context, elapsed, child) {
+                        final progress = (elapsed / phase.durationSeconds).clamp(0.0, 1.0);
+                        return CustomPaint(
+                          size: const Size.square(ringRadius * 2),
+                          painter: _PhaseArcPainter(
+                            color: phase.color,
+                            progress: progress,
+                          ),
+                        );
+                      }
                     ),
 
                     // Breathing orb
@@ -283,20 +281,25 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                               fontSize: 26,
                               fontWeight: FontWeight.w300,
                               letterSpacing: -0.3,
-                              fontFamily: 'Satoshi',
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          '${phase.durationSeconds - _phaseElapsed}s',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            fontFamily: 'Satoshi',
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
+                        ValueListenableBuilder<int>(
+                          valueListenable: _phaseElapsed,
+                          builder: (context, elapsed, child) {
+                            return Text(
+                              '${phase.durationSeconds - elapsed}s',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.4),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Inter',
+                                fontFeatures: const [FontFeature.tabularFigures()],
+                              ),
+                            );
+                          }
                         ),
                       ],
                     ),
@@ -318,7 +321,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.52),
               fontSize: 13,
-              fontFamily: 'Satoshi',
+              fontFamily: 'Inter',
               letterSpacing: 0.2,
             ),
           ),
@@ -358,7 +361,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
             color: Colors.white,
             fontSize: 22,
             fontWeight: FontWeight.w300,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
             letterSpacing: -0.3,
           ),
         ),
@@ -370,7 +373,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
             color: Colors.white.withValues(alpha: 0.52),
             fontSize: 13,
             height: 1.6,
-            fontFamily: 'Satoshi',
+            fontFamily: 'Inter',
           ),
         ),
       ],

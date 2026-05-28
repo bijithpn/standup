@@ -36,6 +36,7 @@ dependencies:
   flutter_widget_from_html: ^0.17.2
   markdown: ^7.3.1
   sentry_flutter: ^9.20.0
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:
@@ -50,7 +51,6 @@ flutter:
     - assets/icons/
     - assets/icons/cat/
     - assets/slideshow/
-    - assets/music/
     # Original 4 cats
     - assets/animations/cats/grey_cat/sprite_sheet.png
     - assets/animations/cats/orange_cat/sprite_sheet.png
@@ -81,11 +81,6 @@ flutter:
     - assets/animations/pets/
     # Lofi musics
     - assets/music/lofi_1.mp3
-    - assets/music/lofi_2.mp3
-    - assets/music/lofi_3.mp3
-    - assets/music/lofi_4.mp3
-    - assets/music/lofi_5.mp3
-    - assets/music/lofi_6.mp3
 
   fonts:
     - family: Inter
@@ -98,9 +93,6 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter/Inter-Bold.ttf
           weight: 700
-    - family: Satoshi
-      fonts:
-        - asset: assets/fonts/Inter/Inter-Regular.ttf
 
 flutter_launcher_icons:
   windows:

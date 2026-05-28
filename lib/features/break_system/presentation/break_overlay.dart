@@ -35,7 +35,6 @@ class _BreakOverlayState extends State<BreakOverlay>
   void initState() {
     super.initState();
     _pageController = PageController();
-
     _kenBurnsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
@@ -67,7 +66,6 @@ class _BreakOverlayState extends State<BreakOverlay>
   void _syncClassicEffects(bool enabled) {
     if (_classicEffectsRunning == enabled) return;
     _classicEffectsRunning = enabled;
-
     if (enabled) {
       _startSlideshow();
       _kenBurnsController.repeat(reverse: true);
@@ -89,25 +87,34 @@ class _BreakOverlayState extends State<BreakOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<BreakController>(
-      builder: (context, controller, _) {
-        final timerEngine = controller.timerEngine;
-        final breakInfo = timerEngine.activeBreak;
-
-        if (breakInfo == null || timerEngine.state != TimerState.breakActive) {
+    // Low-frequency selector: only rebuilds when break state or settings change,
+    // NOT every second. Countdown is isolated below via a nested Selector.
+    return Selector<BreakController, _BreakLayoutData?>(
+      selector: (_, c) {
+        final engine = c.timerEngine;
+        if (engine.activeBreak == null ||
+            engine.state != TimerState.breakActive) {
+          return null;
+        }
+        return _BreakLayoutData(
+          breakInfo: engine.activeBreak!,
+          settings: c.settingsRepository.currentSettings,
+        );
+      },
+      builder: (context, data, _) {
+        if (data == null) {
           _syncClassicEffects(false);
-          if (_fadeController.value > 0) {
-            _fadeController.reverse();
-          }
+          if (_fadeController.value > 0) _fadeController.reverse();
           return const SizedBox.shrink();
         }
 
-        final settings = controller.settingsRepository.currentSettings;
-        _syncClassicEffects(settings.breakTemplate == 'classic');
+        _syncClassicEffects(data.settings.breakTemplate == 'classic');
         if (_fadeController.status != AnimationStatus.forward &&
             _fadeController.value < 1) {
           _fadeController.forward();
         }
+
+        final controller = context.read<BreakController>();
 
         return FadeTransition(
           opacity: CurvedAnimation(
@@ -116,16 +123,13 @@ class _BreakOverlayState extends State<BreakOverlay>
           ),
           child: GestureDetector(
             onVerticalDragUpdate: (details) {
-              if (!controller.settingsRepository.currentSettings.strictMode &&
-                  details.primaryDelta! < -10) {
+              if (!data.settings.strictMode && details.primaryDelta! < -10) {
                 controller.skipCurrentBreak();
               }
             },
-            onHorizontalDragUpdate: (details) {},
+            onHorizontalDragUpdate: (_) {},
             child: _BreakOverlayContent(
-              breakInfo: breakInfo,
-              settings: settings,
-              timerEngine: timerEngine,
+              layoutData: data,
               controller: controller,
               pageController: _pageController,
               kenBurnsController: _kenBurnsController,
@@ -137,113 +141,62 @@ class _BreakOverlayState extends State<BreakOverlay>
   }
 }
 
-class _BreakOverlayContent extends StatefulWidget {
+class _BreakLayoutData {
   final BreakModel breakInfo;
   final SettingsModel settings;
-  final TimerEngine timerEngine;
+
+  const _BreakLayoutData({required this.breakInfo, required this.settings});
+
+  @override
+  bool operator ==(Object other) =>
+      other is _BreakLayoutData &&
+      other.breakInfo == breakInfo &&
+      other.settings == settings;
+
+  @override
+  int get hashCode => Object.hash(breakInfo, settings);
+}
+
+class _BreakOverlayContent extends StatelessWidget {
+  final _BreakLayoutData layoutData;
   final BreakController controller;
   final PageController pageController;
   final AnimationController kenBurnsController;
 
   const _BreakOverlayContent({
-    required this.breakInfo,
-    required this.settings,
-    required this.timerEngine,
+    required this.layoutData,
     required this.controller,
     required this.pageController,
     required this.kenBurnsController,
   });
 
   @override
-  State<_BreakOverlayContent> createState() => _BreakOverlayContentState();
-}
-
-class _BreakOverlayContentState extends State<_BreakOverlayContent> {
-  @override
   Widget build(BuildContext context) {
-    final remaining = widget.timerEngine.countdownSeconds;
-    final total = widget.breakInfo.type == BreakType.short
-        ? widget.settings.shortBreakDurationSeconds
-        : widget.settings.longBreakDurationMinutes * 60;
-    void onSkip() => widget.controller.skipCurrentBreak();
-
-    Widget templateWidget;
-    switch (widget.settings.breakTemplate) {
-      case 'classic':
-        templateWidget = ClassicSlideshowTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-          pageController: widget.pageController,
-          kenBurnsController: widget.kenBurnsController,
-          exerciseTitle: widget.controller.currentExerciseTitle,
-          exerciseInstructions: widget.controller.currentExerciseInstructions,
-        );
-        break;
-      case 'companion':
-        templateWidget = CompanionInteractiveTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'zen':
-        templateWidget = ZenModeTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'hud':
-        templateWidget = ProductivityHudTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'floating':
-        templateWidget = SoftFloatingWidgetTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'activities':
-        templateWidget = ActivitiesBreakTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'minimal':
-      default:
-        templateWidget = MinimalFocusTemplate(
-          breakInfo: widget.breakInfo,
-          settings: widget.settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-    }
+    final settings = layoutData.settings;
+    final breakInfo = layoutData.breakInfo;
+    final total = breakInfo.type == BreakType.short
+        ? settings.shortBreakDurationSeconds
+        : settings.longBreakDurationMinutes * 60;
+    void onSkip() => controller.skipCurrentBreak();
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        templateWidget,
-        if (!widget.settings.strictMode)
+        // RepaintBoundary isolates the high-frequency countdown region from
+        // the static overlay chrome (skip button, swipe hint).
+        RepaintBoundary(
+          child: Selector<BreakController, int>(
+            selector: (_, c) => c.timerEngine.countdownSeconds,
+            builder: (_, remaining, _) => _buildTemplate(
+              settings: settings,
+              breakInfo: breakInfo,
+              remaining: remaining,
+              total: total,
+              onSkip: onSkip,
+            ),
+          ),
+        ),
+        if (!settings.strictMode)
           Positioned(
             top: 28,
             right: 28,
@@ -266,8 +219,7 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
               ),
             ),
           ),
-        // Global visual indicator to swipe up to dismiss
-        if (!widget.settings.strictMode)
+        if (!settings.strictMode)
           Positioned(
             bottom: 24,
             left: 0,
@@ -288,7 +240,7 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 1.0,
-                      fontFamily: 'Satoshi',
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ],
@@ -297,5 +249,77 @@ class _BreakOverlayContentState extends State<_BreakOverlayContent> {
           ),
       ],
     );
+  }
+
+  Widget _buildTemplate({
+    required SettingsModel settings,
+    required BreakModel breakInfo,
+    required int remaining,
+    required int total,
+    required VoidCallback onSkip,
+  }) {
+    switch (settings.breakTemplate) {
+      case 'classic':
+        return ClassicSlideshowTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+          pageController: pageController,
+          kenBurnsController: kenBurnsController,
+          exerciseTitle: controller.currentExerciseTitle,
+          exerciseInstructions: controller.currentExerciseInstructions,
+        );
+      case 'companion':
+        return CompanionInteractiveTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'zen':
+        return ZenModeTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'hud':
+        return ProductivityHudTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'floating':
+        return SoftFloatingWidgetTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'activities':
+        return ActivitiesBreakTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'minimal':
+      default:
+        return MinimalFocusTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+    }
   }
 }
