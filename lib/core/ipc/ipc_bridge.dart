@@ -8,8 +8,15 @@ class IpcBridge {
   IpcBridge._();
   static final IpcBridge instance = IpcBridge._();
   final _logger = AppLogger();
+  final Map<String, DateTime> _lastSuccessfulEventByName = {};
 
-  void setEventHandler(void Function(String event, Map<String, dynamic> data) handler) {
+  DateTime? lastSuccessfulEvent(String eventName) {
+    return _lastSuccessfulEventByName[eventName];
+  }
+
+  void setEventHandler(
+    void Function(String event, Map<String, dynamic> data) handler,
+  ) {
     _ipcChannel.setMethodCallHandler((call) async {
       _logger.info('IPC event: ${call.method}');
       try {
@@ -22,6 +29,12 @@ class IpcBridge {
     });
   }
 
+  void setTypedEventHandler(void Function(IpcEvent event) handler) {
+    setEventHandler((event, data) {
+      handler(IpcEvent.parse(event, data));
+    });
+  }
+
   Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
     int retries = 3;
     while (retries > 0) {
@@ -30,6 +43,7 @@ class IpcBridge {
           'event': event,
           'data': data ?? {},
         });
+        _lastSuccessfulEventByName[event] = DateTime.now();
         return;
       } catch (e) {
         retries--;
@@ -50,11 +64,14 @@ class IpcBridge {
           'event': event.eventName,
           'data': event.payload,
         });
+        _lastSuccessfulEventByName[event.eventName] = DateTime.now();
         return;
       } catch (e) {
         retries--;
         if (retries == 0) {
-          _logger.error('Failed to dispatch typed IPC event ${event.eventName}: $e');
+          _logger.error(
+            'Failed to dispatch typed IPC event ${event.eventName}: $e',
+          );
         } else {
           await Future.delayed(const Duration(milliseconds: 50));
         }
@@ -66,17 +83,21 @@ class IpcBridge {
     await sendEvent('companion.stateChanged', {'state': state});
   }
 
-  Future<void> notifyCompanionPosition({required double x, required double y}) async {
+  Future<void> notifyCompanionPosition({
+    required double x,
+    required double y,
+  }) async {
     await sendEvent('companion.positionChanged', {'x': x, 'y': y});
   }
 
-  Future<void> notifyTimerStateChanged(String state, {
+  Future<void> notifyTimerStateChanged(
+    String state, {
     required int countdownSeconds,
     required int workElapsedSeconds,
     int? targetEndTime,
     int? totalWorkTodaySeconds,
   }) async {
-    await sendEvent('timer.stateChanged', {
+    await sendEvent(IpcEventNames.timerStateChanged, {
       'state': state,
       'countdownSeconds': countdownSeconds,
       'workElapsedSeconds': workElapsedSeconds,

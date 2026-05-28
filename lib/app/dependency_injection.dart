@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -195,7 +196,7 @@ void _setupIpcBridge() {
 
   ipc.setEventHandler((event, data) {
     switch (event) {
-      case 'timer.stateChanged':
+      case IpcEventNames.timerStateChanged:
         final state = data['state'] as String?;
         final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
         final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
@@ -226,7 +227,7 @@ void _setupIpcBridge() {
             ),
           );
         }
-      case 'timer.breakStarted':
+      case IpcEventNames.breakStarted:
         eventBus.emit(
           BreakStartedEvent(
             isLongBreak: data['isLongBreak'] as bool? ?? false,
@@ -234,7 +235,7 @@ void _setupIpcBridge() {
             title: data['title'] as String? ?? 'Break',
           ),
         );
-      case 'timer.breakEnded':
+      case IpcEventNames.breakEnded:
         eventBus.emit(
           BreakEndedEvent(skipped: data['skipped'] as bool? ?? false),
         );
@@ -274,7 +275,7 @@ void _setupIpcBridge() {
             ),
           ),
         );
-      case 'companion.interaction':
+      case IpcEventNames.companionInteraction:
         eventBus.emit(
           CompanionInteractionEvent(
             interactionType: data['interactionType'] as String? ?? 'click',

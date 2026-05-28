@@ -25,6 +25,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/utils/frame_timing_logger.dart';
@@ -308,7 +309,7 @@ void _setupMinimalIpc() {
   final eventBus = EventBus.instance;
   IpcBridge.instance.setEventHandler((event, data) {
     switch (event) {
-      case 'timer.stateChanged':
+      case IpcEventNames.timerStateChanged:
         final stateStr = data['state'] as String?;
         final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
         final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
@@ -347,7 +348,7 @@ void _setupMinimalIpc() {
             bundleId: data['bundleId'] as String? ?? '',
           ),
         );
-      case 'companion.interaction':
+      case IpcEventNames.companionInteraction:
         eventBus.emit(
           CompanionInteractionEvent(
             interactionType: data['interactionType'] as String? ?? 'click',

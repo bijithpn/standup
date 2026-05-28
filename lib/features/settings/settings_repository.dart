@@ -133,8 +133,11 @@ class SettingsRepository {
         defaultValue: true,
       ),
       companionPetTheme: _storage.getString(
-        'companion_cat_theme',
-        defaultValue: 'grey_cat',
+        AppConstants.keyCompanionPetTheme,
+        defaultValue: _storage.getString(
+          AppConstants.legacyKeyCompanionCatTheme,
+          defaultValue: 'grey_cat',
+        ),
       ),
       companionPetName: _storage.getString(
         'companion_pet_name',
@@ -227,7 +230,10 @@ class SettingsRepository {
         settings.remindClockOutEnabled,
       ),
       _storage.setBool('companion_enabled', settings.companionEnabled),
-      _storage.setString('companion_cat_theme', settings.companionPetTheme),
+      _storage.setString(
+        AppConstants.keyCompanionPetTheme,
+        settings.companionPetTheme,
+      ),
       _storage.setString('companion_pet_name', settings.companionPetName),
       _storage.setDouble('companion_scale', settings.companionScale),
       _storage.setBool(
