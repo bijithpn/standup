@@ -60,17 +60,30 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-    if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
-      let registrar = controller.registrar(forPlugin: "AppBridges")
-      
-      meetingBridge = MeetingDetectionBridge(registrar: registrar)
+  if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
+    let registrar = controller.registrar(forPlugin: "AppBridges")
+
+    let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"
+    let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "unknown"
+    NSLog("Sparkle: App Version: \(version) (\(build))")
+
+    let feedUrl = Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") as? String ?? "NOT FOUND"
+
+    let publicKey = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? "NOT FOUND"
+    NSLog("Sparkle: Configured with Feed URL: \(feedUrl)")
+    NSLog("Sparkle: Configured with Public Key: \(publicKey)")
+
+    meetingBridge = MeetingDetectionBridge(registrar: registrar)
+
       focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)
       windowBridge = WindowBridge(registrar: registrar)
       sparkleBridge = SparkleBridge(registrar: registrar, updater: updaterController.updater)
+      NSLog("Sparkle: Initialized SparkleBridge with updater: \(updaterController.updater)")
     }
     
     super.applicationDidFinishLaunching(notification)
+    NSLog("Sparkle: applicationDidFinishLaunching completed")
     
     if let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu {
       let checkForUpdatesItem = NSMenuItem(
@@ -83,18 +96,44 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     }
   }
 
-  // MARK: - SPUUpdaterDelegate
-  func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
-    sparkleBridge?.updater(updater, didFindValidUpdate: item)
-  }
+    // MARK: - SPUUpdaterDelegate
+    func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
+        NSLog("Sparkle: Found valid update: \(item.displayVersionString) (\(item.versionString))")
+        sparkleBridge?.updater(updater, didFindValidUpdate: item)
+    }
 
-  func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
-    sparkleBridge?.updaterDidNotFindUpdate(updater)
-  }
+    func updaterDidNotFindUpdate(_ updater: SPUUpdater) {
+        NSLog("Sparkle: Did not find update")
+        sparkleBridge?.updaterDidNotFindUpdate(updater)
+    }
 
-  func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
-    sparkleBridge?.updater(updater, didAbortWithError: error)
-  }
+    func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+        NSLog("Sparkle: Update aborted with error: \(error.localizedDescription)")
+        sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
+    
+    func updater(_ updater: SPUUpdater, didFailToRegisterUpdateWithItem item: SUAppcastItem, error: Error) {
+        NSLog("Sparkle: Failed to register update \(item.displayVersionString): \(error.localizedDescription)")
+        sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
+    
+    func updater(_ updater: SPUUpdater, failedToDownloadUpdate item: SUAppcastItem, error: Error) {
+        NSLog("Sparkle: Failed to download update \(item.displayVersionString): \(error.localizedDescription)")
+        sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
+    
+    func updater(_ updater: SPUUpdater, didFailToInstallUpdate item: SUAppcastItem, error: Error) {
+        NSLog("Sparkle: Failed to install update \(item.displayVersionString): \(error.localizedDescription)")
+        sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
+
+    func updater(_ updater: SPUUpdater, willScheduleUpdateCheckAfterDelay delay: TimeInterval) {
+        NSLog("Sparkle: Next update check scheduled in \(delay) seconds")
+    }
+
+    func updater(_ updater: SPUUpdater, didFinishLoading appcast: SUAppcast) {
+        NSLog("Sparkle: Finished loading appcast with \(appcast.items.count) items")
+    }
 }
 
 // MARK: - WindowBridge
@@ -282,6 +321,7 @@ class SparkleBridge: NSObject {
     private let updater: SPUUpdater
     
     init(registrar: FlutterPluginRegistrar, updater: SPUUpdater) {
+        NSLog("SparkleBridge: Initializing channel com.breakmate/sparkle")
         self.channel = FlutterMethodChannel(
             name: "com.breakmate/sparkle",
             binaryMessenger: registrar.messenger
@@ -290,15 +330,19 @@ class SparkleBridge: NSObject {
         super.init()
         
         channel.setMethodCallHandler { [weak self] (call, result) in
+            NSLog("SparkleBridge: Received method call: \(call.method)")
             switch call.method {
             case "checkForUpdates":
+                NSLog("SparkleBridge: Triggering checkForUpdatesInBackground")
                 self?.updater.checkForUpdatesInBackground()
                 result(nil)
             case "startUpdate":
+                NSLog("SparkleBridge: Triggering checkForUpdates (User-facing)")
                 // Standard Sparkle user-facing update check and installation flow
                 self?.updater.checkForUpdates()
                 result(nil)
             default:
+                NSLog("SparkleBridge: Method not implemented: \(call.method)")
                 result(FlutterMethodNotImplemented)
             }
         }

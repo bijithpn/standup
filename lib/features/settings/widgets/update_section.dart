@@ -36,11 +36,13 @@ class _UpdateSectionState extends State<UpdateSection> {
   void initState() {
     super.initState();
     _channel.setMethodCallHandler((call) async {
+      debugPrint('UpdateSection: Received method channel call: ${call.method}');
       if (call.method == 'onUpdateResult') {
         final args = Map<String, dynamic>.from(call.arguments);
         final hasUpdate = args['hasUpdate'] as bool? ?? false;
         final version = args['version'] as String? ?? '';
         final notes = args['notes'] as String? ?? '';
+        debugPrint('UpdateSection: onUpdateResult: hasUpdate=$hasUpdate, version=$version');
         if (mounted) {
           setState(() {
             _isChecking = false;
@@ -54,6 +56,7 @@ class _UpdateSectionState extends State<UpdateSection> {
       } else if (call.method == 'onUpdateError') {
         final args = Map<String, dynamic>.from(call.arguments);
         final error = args['error'] as String? ?? 'Failed to check for updates';
+        debugPrint('UpdateSection: onUpdateError: $error');
         final normalizedError = error.toLowerCase();
 
         String displayError = error;
@@ -91,7 +94,11 @@ class _UpdateSectionState extends State<UpdateSection> {
   }
 
   Future<void> _checkForUpdates() async {
-    if (_isChecking) return;
+    debugPrint('UpdateSection: _checkForUpdates called');
+    if (_isChecking) {
+      debugPrint('UpdateSection: Already checking, ignoring');
+      return;
+    }
     setState(() {
       _isChecking = true;
       _checked = false;
@@ -99,8 +106,10 @@ class _UpdateSectionState extends State<UpdateSection> {
       _errorMessage = '';
     });
     try {
+      debugPrint('UpdateSection: Invoking checkForUpdates method channel');
       await _channel.invokeMethod('checkForUpdates');
     } catch (e) {
+      debugPrint('UpdateSection: Error invoking checkForUpdates: $e');
       if (mounted) {
         setState(() {
           _isChecking = false;
@@ -112,9 +121,12 @@ class _UpdateSectionState extends State<UpdateSection> {
   }
 
   Future<void> _startUpdate() async {
+    debugPrint('UpdateSection: _startUpdate called');
     try {
       await _channel.invokeMethod('startUpdate');
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('UpdateSection: Error invoking startUpdate: $e');
+    }
   }
 
   String _formatReleaseNotes(String rawNotes) {
