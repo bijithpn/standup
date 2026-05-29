@@ -6,17 +6,17 @@ import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 Widget sectionHeader(String title, {String? subtitle}) {
   return Padding(
-    padding: const EdgeInsets.only(bottom: 12, left: 0, top: 8),
+    padding: const EdgeInsets.only(bottom: 12, left: 4, top: 12),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
           style: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
-            letterSpacing: -0.2,
+            letterSpacing: -0.1,
             fontFamily: 'Inter',
           ),
         ),
@@ -24,9 +24,9 @@ Widget sectionHeader(String title, {String? subtitle}) {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.textSecondary.withValues(alpha: 0.7),
+            style: const TextStyle(
+              fontSize: 13,
+              color: AppTheme.textSecondary,
               fontFamily: 'Inter',
             ),
           ),
@@ -38,11 +38,8 @@ Widget sectionHeader(String title, {String? subtitle}) {
 
 Widget buildCard(List<Widget> children) {
   return Container(
-    margin: const EdgeInsets.only(bottom: 24),
-    decoration: AppTheme.cleanCardDecoration.copyWith(
-      color: AppTheme.cardBackground.withValues(alpha: 0.4),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-    ),
+    margin: const EdgeInsets.only(bottom: 32),
+    decoration: AppTheme.cardDecoration(),
     clipBehavior: Clip.antiAlias,
     child: Column(children: children),
   );
