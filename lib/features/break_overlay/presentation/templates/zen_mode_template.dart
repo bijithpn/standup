@@ -115,100 +115,101 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                   child: AnimatedBuilder(
                     animation: _breathingController,
                     builder: (context, child) {
-                    final val = _breathingController.value;
-                    double scale = 0.5;
-                    String text = 'Breathe In';
+                      final val = _breathingController.value;
+                      double scale = 0.5;
+                      String text = 'Breathe In';
 
-                    if (val < 0.25) {
-                      final t = val / 0.25;
-                      scale = 0.5 + (t * 0.5);
-                      text = 'Breathe In';
-                    } else if (val < 0.5) {
-                      scale = 1.0;
-                      text = 'Hold';
-                    } else if (val < 0.75) {
-                      final t = (val - 0.5) / 0.25;
-                      scale = 1.0 - (t * 0.5);
-                      text = 'Breathe Out';
-                    } else {
-                      scale = 0.5;
-                      text = 'Hold';
-                    }
+                      if (val < 0.25) {
+                        final t = val / 0.25;
+                        scale = 0.5 + (t * 0.5);
+                        text = 'Breathe In';
+                      } else if (val < 0.5) {
+                        scale = 1.0;
+                        text = 'Hold';
+                      } else if (val < 0.75) {
+                        final t = (val - 0.5) / 0.25;
+                        scale = 1.0 - (t * 0.5);
+                        text = 'Breathe Out';
+                      } else {
+                        scale = 0.5;
+                        text = 'Hold';
+                      }
 
-                    return Column(
-                      children: [
-                        SizedBox(
-                          width: 280,
-                          height: 280,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Outer ring
-                              Container(
-                                width: 280,
-                                height: 280,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppTheme.gray800,
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              // Breathing circle
-                              Transform.scale(
-                                scale: scale,
-                                child: Container(
-                                  width: 260,
-                                  height: 260,
+                      return Column(
+                        children: [
+                          SizedBox(
+                            width: 280,
+                            height: 280,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                // Outer ring
+                                Container(
+                                  width: 280,
+                                  height: 280,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: const Color(
-                                      0xFFA7F3D0,
-                                    ).withValues(alpha: 0.05),
                                     border: Border.all(
-                                      color: const Color(
-                                        0xFFA7F3D0,
-                                      ).withValues(alpha: 0.3),
-                                      width: 2,
+                                      color: AppTheme.gray800,
+                                      width: 1,
                                     ),
                                   ),
                                 ),
-                              ),
-                              // Text
-                              Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    text,
-                                    style: const TextStyle(
-                                      color: AppTheme.textPrimary,
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.w300,
-                                      letterSpacing: -0.5,
+                                // Breathing circle
+                                Transform.scale(
+                                  scale: scale,
+                                  child: Container(
+                                    width: 260,
+                                    height: 260,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(
+                                        0xFFA7F3D0,
+                                      ).withValues(alpha: 0.05),
+                                      border: Border.all(
+                                        color: const Color(
+                                          0xFFA7F3D0,
+                                        ).withValues(alpha: 0.3),
+                                        width: 2,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    _formatTime(widget.remainingSeconds),
-                                    style: const TextStyle(
-                                      color: AppTheme.textMuted,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      fontFeatures: [
-                                        FontFeature.tabularFigures(),
-                                      ],
+                                ),
+                                // Text
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      text,
+                                      style: const TextStyle(
+                                        color: AppTheme.textPrimary,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.w300,
+                                        letterSpacing: -0.5,
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _formatTime(widget.remainingSeconds),
+                                      style: const TextStyle(
+                                        color: AppTheme.textMuted,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                ),),
+                        ],
+                      );
+                    },
+                  ),
+                ),
                 const SizedBox(height: 48),
 
                 // Quote

@@ -18,7 +18,8 @@ class PressableButton extends StatefulWidget {
   State<PressableButton> createState() => _PressableButtonState();
 }
 
-class _PressableButtonState extends State<PressableButton> with SingleTickerProviderStateMixin {
+class _PressableButtonState extends State<PressableButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -46,9 +47,10 @@ class _PressableButtonState extends State<PressableButton> with SingleTickerProv
       onTapUp: _handleTapUp,
       onTap: widget.onPressed,
       child: ScaleTransition(
-        scale: Tween<double>(begin: 1.0, end: widget.scaleFactor).animate(
-          CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-        ),
+        scale: Tween<double>(
+          begin: 1.0,
+          end: widget.scaleFactor,
+        ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut)),
         child: Transform.translate(
           offset: Offset(0, _controller.value * widget.translateOffset),
           child: widget.child,

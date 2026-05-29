@@ -33,7 +33,9 @@ class OverlayWindowService extends ChangeNotifier {
 
     if (!_isOverlayVisible) {
       _wasMainVisibleBeforeOverlay = await windowManager.isVisible();
-      _logger.info('Main window visibility status before overlay: $_wasMainVisibleBeforeOverlay');
+      _logger.info(
+        'Main window visibility status before overlay: $_wasMainVisibleBeforeOverlay',
+      );
     }
 
     try {
@@ -78,7 +80,7 @@ class OverlayWindowService extends ChangeNotifier {
               hideMenu: true,
             );
           }
-          
+
           // Only hide the main window for the full break screen.
           // Quick reminders should not interfere with the main window's visibility.
           if (type == OverlayType.breakScreen) {
@@ -115,7 +117,9 @@ class OverlayWindowService extends ChangeNotifier {
       }
 
       if (!_wasMainVisibleBeforeOverlay && !forceShow) {
-        _logger.info('Bypassing dashboard focus/activation because main window was hidden/closed before overlay');
+        _logger.info(
+          'Bypassing dashboard focus/activation because main window was hidden/closed before overlay',
+        );
         return;
       }
 
@@ -176,7 +180,9 @@ class OverlayWindowService extends ChangeNotifier {
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
       } else if (Platform.isMacOS) {
-        await NativeBridge.hideOverlay(restoreMainWindow: _wasMainVisibleBeforeOverlay);
+        await NativeBridge.hideOverlay(
+          restoreMainWindow: _wasMainVisibleBeforeOverlay,
+        );
         await NativeBridge.setPresentationOptions(
           hideDock: false,
           hideMenu: false,

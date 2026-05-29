@@ -105,7 +105,8 @@ class ProductivityTrendChart extends StatelessWidget {
         ],
         lineTouchData: LineTouchData(
           touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (touchedSpot) => Colors.black.withValues(alpha: 0.8),
+            getTooltipColor: (touchedSpot) =>
+                Colors.black.withValues(alpha: 0.8),
             tooltipBorderRadius: BorderRadius.circular(8),
             tooltipPadding: const EdgeInsets.all(8),
 

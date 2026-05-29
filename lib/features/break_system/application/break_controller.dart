@@ -69,7 +69,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
       if (_fadeTimer != null && _fadeTimer!.isActive) {
         _fadeTimer!.cancel();
         // Snap to target volume
@@ -289,7 +290,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
       // Only one track remains after optimization
       final track = 1;
-      
+
       await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
       _currentVolume = 0.0;
       await _audioPlayer!.setVolume(_currentVolume);

@@ -4,7 +4,9 @@ import 'package:breakmate/core/native/native_bridge.dart';
 
 /// Windows implementation of the platform native bridge interface.
 class WindowsBridge implements NativeBridgePlatform {
-  static const MethodChannel _channel = MethodChannel('com.breakmate.desktop/bridge');
+  static const MethodChannel _channel = MethodChannel(
+    'com.breakmate.desktop/bridge',
+  );
   static final Set<String> _loggedMissingMethods = {};
 
   @override
@@ -14,7 +16,9 @@ class WindowsBridge implements NativeBridgePlatform {
 
   @override
   Future<void> hideOverlay({bool restoreMainWindow = true}) async {
-    await _invokeSafely('hideOverlay', {'restoreMainWindow': restoreMainWindow});
+    await _invokeSafely('hideOverlay', {
+      'restoreMainWindow': restoreMainWindow,
+    });
   }
 
   @override
@@ -26,7 +30,10 @@ class WindowsBridge implements NativeBridgePlatform {
   @override
   Future<void> setVisualEffect(String material) async {
     // Windows fallback: no-op / graceful log
-    developer.log('setVisualEffect not supported on Windows', name: 'BreakMate');
+    developer.log(
+      'setVisualEffect not supported on Windows',
+      name: 'BreakMate',
+    );
   }
 
   @override
@@ -40,9 +47,15 @@ class WindowsBridge implements NativeBridgePlatform {
   }
 
   @override
-  Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu}) async {
+  Future<void> setPresentationOptions({
+    required bool hideDock,
+    required bool hideMenu,
+  }) async {
     // Windows fallback: no-op / graceful log
-    developer.log('setPresentationOptions not supported on Windows', name: 'BreakMate');
+    developer.log(
+      'setPresentationOptions not supported on Windows',
+      name: 'BreakMate',
+    );
   }
 
   @override

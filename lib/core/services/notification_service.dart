@@ -28,7 +28,10 @@ class NotificationService {
       await requestPermission();
       _logger.info('Notification service initialized');
     } catch (e, stackTrace) {
-      _logger.error('Notification service unavailable: $e', stackTrace: stackTrace);
+      _logger.error(
+        'Notification service unavailable: $e',
+        stackTrace: stackTrace,
+      );
     }
   }
 
@@ -36,12 +39,16 @@ class NotificationService {
     try {
       final granted = await _plugin
           .resolvePlatformSpecificImplementation<
-              MacOSFlutterLocalNotificationsPlugin>()
+            MacOSFlutterLocalNotificationsPlugin
+          >()
           ?.requestPermissions(alert: true, badge: true, sound: true);
       _logger.info('Notification permission: $granted');
       return granted ?? false;
     } catch (e, stackTrace) {
-      _logger.error('Notification permission request failed: $e', stackTrace: stackTrace);
+      _logger.error(
+        'Notification permission request failed: $e',
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -71,11 +78,7 @@ class NotificationService {
   }
 
   Future<void> showBreakStarted({required String breakTitle}) async {
-    await _show(
-      id: 2,
-      title: 'Time for a break',
-      body: breakTitle,
-    );
+    await _show(id: 2, title: 'Time for a break', body: breakTitle);
   }
 
   Future<void> showBreakFinished() async {
@@ -121,7 +124,7 @@ class NotificationService {
         final settingsRepo = sl<SettingsRepository>();
         final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
         final theme = PetTheme.getTheme(selectedThemeId);
-        
+
         // Extract the icon for the selected companion theme
         final iconPath = await PetAssetLoader.extractPetIconPath(theme);
 

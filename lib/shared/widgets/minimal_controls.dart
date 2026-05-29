@@ -25,27 +25,32 @@ class MinimalButton extends StatefulWidget {
   State<MinimalButton> createState() => _MinimalButtonState();
 }
 
-class _MinimalButtonState extends State<MinimalButton> with SingleTickerProviderStateMixin {
+class _MinimalButtonState extends State<MinimalButton>
+    with SingleTickerProviderStateMixin {
   bool _isHovering = false;
   bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
     final bool isDisabled = widget.onPressed == null;
-    
-    Color defaultBg = widget.isSecondary 
+
+    Color defaultBg = widget.isSecondary
         ? Colors.white.withValues(alpha: 0.05)
         : (widget.backgroundColor ?? AppTheme.primary);
-        
-    Color activeColor = isDisabled 
+
+    Color activeColor = isDisabled
         ? (widget.disabledColor ?? defaultBg.withValues(alpha: 0.5))
         : defaultBg;
 
     if (!isDisabled) {
       if (_isPressed) {
-        activeColor = activeColor.withValues(alpha: widget.isSecondary ? 0.15 : 0.8);
+        activeColor = activeColor.withValues(
+          alpha: widget.isSecondary ? 0.15 : 0.8,
+        );
       } else if (_isHovering) {
-        activeColor = activeColor.withValues(alpha: widget.isSecondary ? 0.1 : 0.9);
+        activeColor = activeColor.withValues(
+          alpha: widget.isSecondary ? 0.1 : 0.9,
+        );
       }
     }
 
@@ -56,7 +61,9 @@ class _MinimalButtonState extends State<MinimalButton> with SingleTickerProvider
       child: GestureDetector(
         onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
         onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
-        onTapCancel: isDisabled ? null : () => setState(() => _isPressed = false),
+        onTapCancel: isDisabled
+            ? null
+            : () => setState(() => _isPressed = false),
         onTap: widget.onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),
@@ -65,8 +72,11 @@ class _MinimalButtonState extends State<MinimalButton> with SingleTickerProvider
           decoration: BoxDecoration(
             color: activeColor,
             borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
-            border: widget.isSecondary 
-                ? Border.all(color: Colors.white.withValues(alpha: 0.1), width: 1)
+            border: widget.isSecondary
+                ? Border.all(
+                    color: Colors.white.withValues(alpha: 0.1),
+                    width: 1,
+                  )
                 : null,
             boxShadow: (!isDisabled && !widget.isSecondary && _isHovering)
                 ? [
@@ -74,7 +84,7 @@ class _MinimalButtonState extends State<MinimalButton> with SingleTickerProvider
                       color: activeColor.withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
-                    )
+                    ),
                   ]
                 : [],
           ),
@@ -127,7 +137,8 @@ class _MinimalSliderState extends State<MinimalSlider> {
   @override
   Widget build(BuildContext context) {
     final activeColor = widget.activeColor ?? AppTheme.primary;
-    final percent = ((widget.value - widget.min) / (widget.max - widget.min)).clamp(0.0, 1.0);
+    final percent = ((widget.value - widget.min) / (widget.max - widget.min))
+        .clamp(0.0, 1.0);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -141,7 +152,8 @@ class _MinimalSliderState extends State<MinimalSlider> {
               setState(() => _isDragging = true);
               _updateValue(details.localPosition, width);
             },
-            onPanUpdate: (details) => _updateValue(details.localPosition, width),
+            onPanUpdate: (details) =>
+                _updateValue(details.localPosition, width),
             onPanEnd: (_) => setState(() => _isDragging = false),
             onPanCancel: () => setState(() => _isDragging = false),
             onTapDown: (details) => _updateValue(details.localPosition, width),

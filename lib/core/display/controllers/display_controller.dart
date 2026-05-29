@@ -7,9 +7,9 @@ import 'package:breakmate/core/events/app_events.dart';
 class DisplayController extends ChangeNotifier {
   final DisplayManager _displayManager;
   final EventBus _eventBus;
-  
+
   List<DisplayInfo> _displays = [];
-  
+
   List<DisplayInfo> get displays => _displays;
 
   DisplayController(this._displayManager, this._eventBus) {

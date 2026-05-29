@@ -1,9 +1,4 @@
-enum OverlayFitMode {
-  fill,
-  contain,
-  cover,
-  adaptive,
-}
+enum OverlayFitMode { fill, contain, cover, adaptive }
 
 class OverlayDisplayConfig {
   final String displayId;

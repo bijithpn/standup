@@ -47,7 +47,8 @@ class FloatingWindowService {
       // Default position: top-right corner of screen
       final defaultX = screenWidth - windowWidth - 20;
       final defaultY = 20;
-      final defaultPosition = position ?? Offset(defaultX.toDouble(), defaultY.toDouble());
+      final defaultPosition =
+          position ?? Offset(defaultX.toDouble(), defaultY.toDouble());
 
       _logger.info(
         'Showing floating window: $type at ${defaultPosition.dx}x${defaultPosition.dy} (${windowWidth}x$windowHeight) on screen height $screenHeight',
@@ -60,7 +61,7 @@ class FloatingWindowService {
       await windowManager.setResizable(resizable);
       await windowManager.setMinimizable(resizable);
       await windowManager.setClosable(resizable);
-      
+
       // Don't show in dock if it's a small floating window
       if (!showInDock) {
         await windowManager.setSkipTaskbar(true);
@@ -74,10 +75,7 @@ class FloatingWindowService {
       _isFloating = true;
       _currentType = type;
 
-      _stateController?.add(FloatingWindowState(
-        isVisible: true,
-        type: type,
-      ));
+      _stateController?.add(FloatingWindowState(isVisible: true, type: type));
 
       _logger.info('Floating window shown successfully');
     } catch (e) {
@@ -102,10 +100,7 @@ class FloatingWindowService {
       _isFloating = false;
       _currentType = null;
 
-      _stateController?.add(FloatingWindowState(
-        isVisible: false,
-        type: null,
-      ));
+      _stateController?.add(FloatingWindowState(isVisible: false, type: null));
 
       _logger.info('Floating window hidden successfully');
     } catch (e) {
@@ -137,8 +132,6 @@ enum FloatingWindowType {
   /// Timer countdown display
   timer,
 
-
-
   /// Break countdown display
   breakCountdown,
 
@@ -151,10 +144,7 @@ class FloatingWindowState {
   final bool isVisible;
   final FloatingWindowType? type;
 
-  FloatingWindowState({
-    required this.isVisible,
-    required this.type,
-  });
+  FloatingWindowState({required this.isVisible, required this.type});
 
   @override
   String toString() => 'FloatingWindowState(visible: $isVisible, type: $type)';

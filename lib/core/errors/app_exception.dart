@@ -1,10 +1,4 @@
-enum ErrorType {
-  timer,
-  notification,
-  storage,
-  activityMonitor,
-  general,
-}
+enum ErrorType { timer, notification, storage, activityMonitor, general }
 
 class AppException implements Exception {
   final String message;

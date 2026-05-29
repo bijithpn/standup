@@ -5,12 +5,10 @@ import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
 class CompanionWindowController {
-  CompanionWindowController({
-    WindowService? windowService,
-    EventBus? eventBus,
-  })  : _windowService = windowService ?? WindowService.instance,
-        _eventBus = eventBus ?? EventBus.instance,
-        _logger = AppLogger();
+  CompanionWindowController({WindowService? windowService, EventBus? eventBus})
+    : _windowService = windowService ?? WindowService.instance,
+      _eventBus = eventBus ?? EventBus.instance,
+      _logger = AppLogger();
 
   final WindowService _windowService;
   final EventBus _eventBus;

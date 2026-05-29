@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 
 /// Windows-specific overlay window plugin for native window manipulation
 class WindowsOverlayPlugin {
-  static const MethodChannel _channel = MethodChannel('com.breakmate/overlay_window');
+  static const MethodChannel _channel = MethodChannel(
+    'com.breakmate/overlay_window',
+  );
 
   /// Configure the window as a full-screen overlay (always on top, no borders)
   static Future<void> configureAsOverlay() async {

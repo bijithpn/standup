@@ -160,7 +160,9 @@ class _SettingsPageState extends State<SettingsPage> {
           },
         );
       case 'Companion':
-        return CompanionSettingsSection(controller: sl<CompanionOverlayController>());
+        return CompanionSettingsSection(
+          controller: sl<CompanionOverlayController>(),
+        );
       case 'Data & Backup':
         return const DataManagementSection();
       default:

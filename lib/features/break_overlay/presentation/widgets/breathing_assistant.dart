@@ -9,7 +9,8 @@ class BreathingAssistant extends StatefulWidget {
   State<BreathingAssistant> createState() => _BreathingAssistantState();
 }
 
-class _BreathingAssistantState extends State<BreathingAssistant> with SingleTickerProviderStateMixin {
+class _BreathingAssistantState extends State<BreathingAssistant>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
   late Animation<double> _opacityAnimation;
@@ -39,8 +40,10 @@ class _BreathingAssistantState extends State<BreathingAssistant> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final color = widget.isShortBreak ? AppTheme.shortBreak : AppTheme.longBreak;
-    
+    final color = widget.isShortBreak
+        ? AppTheme.shortBreak
+        : AppTheme.longBreak;
+
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, child) {

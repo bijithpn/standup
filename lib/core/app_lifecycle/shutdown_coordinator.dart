@@ -9,7 +9,7 @@ import 'package:breakmate/core/utils/logger.dart';
 class ShutdownCoordinator {
   ShutdownCoordinator._();
   static final ShutdownCoordinator instance = ShutdownCoordinator._();
-  
+
   final AppLogger _logger = AppLogger();
 
   Future<void> shutdown() async {

@@ -57,7 +57,8 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
       } else {
         final command = message['command'] as String?;
         if (command == 'setIdleThreshold') {
-          idleThresholdMinutes = message['minutes'] as int? ?? idleThresholdMinutes;
+          idleThresholdMinutes =
+              message['minutes'] as int? ?? idleThresholdMinutes;
         } else if (command == 'stop') {
           idleTimer?.cancel();
           smartTimer?.cancel();
@@ -74,7 +75,8 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   // 1. Idle status polling (every 5 seconds)
   idleTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
     try {
-      final double? idleSeconds = (await invokeMethodProxy('getIdleTime')) as double?;
+      final double? idleSeconds =
+          (await invokeMethodProxy('getIdleTime')) as double?;
       if (idleSeconds != null) {
         final thresholdSeconds = idleThresholdMinutes * 60;
         final newIsIdle = idleSeconds >= thresholdSeconds;
@@ -97,7 +99,8 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   smartTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
     try {
       // Check Video Call
-      final String? frontApp = (await invokeMethodProxy('getFrontmostApp')) as String?;
+      final String? frontApp =
+          (await invokeMethodProxy('getFrontmostApp')) as String?;
       bool newVideoCallActive = false;
       if (frontApp != null) {
         const videoCallApps = [
@@ -116,10 +119,12 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
       }
 
       // Check Focus Mode
-      final bool? activeFocus = (await invokeMethodProxy('isFocusModeActive')) as bool?;
+      final bool? activeFocus =
+          (await invokeMethodProxy('isFocusModeActive')) as bool?;
       final newFocusActive = activeFocus ?? false;
 
-      if (newVideoCallActive != isVideoCallActive || newFocusActive != isFocusModeActive) {
+      if (newVideoCallActive != isVideoCallActive ||
+          newFocusActive != isFocusModeActive) {
         isVideoCallActive = newVideoCallActive;
         isFocusModeActive = newFocusActive;
         sendPort.send({
@@ -156,13 +161,11 @@ class BackgroundPollingService {
     _receivePort = ReceivePort();
 
     try {
-      _isolate = await Isolate.spawn(
-        _backgroundPollingEntry,
-        {
-          'sendPort': _receivePort!.sendPort,
-          'idleThresholdMinutes': sl<SettingsRepository>().currentSettings.pauseTimerAfterMinutes,
-        },
-      );
+      _isolate = await Isolate.spawn(_backgroundPollingEntry, {
+        'sendPort': _receivePort!.sendPort,
+        'idleThresholdMinutes':
+            sl<SettingsRepository>().currentSettings.pauseTimerAfterMinutes,
+      });
 
       _receivePort!.listen((message) {
         if (message is SendPort) {
@@ -180,7 +183,11 @@ class BackgroundPollingService {
             final isFocusModeActive = message['isFocusModeActive'] as bool;
             final frontApp = message['frontApp'] as String?;
             try {
-              sl<SmartDetectionService>().updateDetectionStatus(isVideoCallActive, isFocusModeActive, frontApp);
+              sl<SmartDetectionService>().updateDetectionStatus(
+                isVideoCallActive,
+                isFocusModeActive,
+                frontApp,
+              );
             } catch (_) {}
           } else if (type == 'invokeMethod') {
             final id = message['id'] as int;
@@ -216,10 +223,7 @@ class BackgroundPollingService {
 
   void updateIdleThreshold(int minutes) {
     if (!_isRunning) return;
-    _sendPort?.send({
-      'command': 'setIdleThreshold',
-      'minutes': minutes,
-    });
+    _sendPort?.send({'command': 'setIdleThreshold', 'minutes': minutes});
   }
 
   void stop() {

@@ -17,7 +17,7 @@ class SettingsRepository {
   void load() {
     final snapshot = _storage.settingsBox.get(1);
     final companionPrefs = _storage.companionPreferencesBox.get(1);
-    
+
     if (snapshot != null) {
       _current = _fromSnapshot(snapshot, companionPrefs);
     } else {
@@ -55,7 +55,9 @@ class SettingsRepository {
       breakTemplate: s.breakTemplate,
       showExercisesInBreak: s.showExercisesInBreak,
       lastExerciseDate: s.lastExerciseDate,
-      shownExercisesToday: List<String>.from(jsonDecode(s.shownExercisesTodayJson)),
+      shownExercisesToday: List<String>.from(
+        jsonDecode(s.shownExercisesTodayJson),
+      ),
       playMusicDuringBreak: s.playMusicDuringBreak,
       autoPauseMedia: s.autoPauseMedia,
       clockFaceTextColorHex: s.clockFaceTextColorHex,
@@ -71,7 +73,9 @@ class SettingsRepository {
       respectFocusMode: s.respectFocusMode,
       enableClockOut: s.enableClockOut,
       clockOutTime: s.clockOutTime,
-      exercises: (jsonDecode(s.exercisesJson) as List).map((e) => ExerciseModel.fromMap(e)).toList(),
+      exercises: (jsonDecode(s.exercisesJson) as List)
+          .map((e) => ExerciseModel.fromMap(e))
+          .toList(),
       autoSuggestExercises: s.autoSuggestExercises,
       useCursorCountdown: s.useCursorCountdown,
       enableAnimations: s.enableAnimations,
@@ -87,54 +91,148 @@ class SettingsRepository {
 
   SettingsModel _loadFromLegacy() {
     return SettingsModel(
-      shortBreakIntervalMinutes: _storage.getInt(AppConstants.keyShortBreakInterval, defaultValue: AppConstants.defaultShortBreakIntervalMinutes),
-      shortBreakDurationSeconds: _storage.getInt(AppConstants.keyShortBreakDuration, defaultValue: AppConstants.defaultShortBreakDurationSeconds),
-      preBreakWarningSeconds: _storage.getInt(AppConstants.keyPreBreakWarningSeconds, defaultValue: AppConstants.defaultPreBreakWarningSeconds),
-      longBreakIntervalMinutes: _storage.getInt(AppConstants.keyLongBreakInterval, defaultValue: AppConstants.defaultLongBreakIntervalMinutes),
-      longBreakDurationMinutes: _storage.getInt(AppConstants.keyLongBreakDuration, defaultValue: AppConstants.defaultLongBreakDurationMinutes),
-      soundEnabled: _storage.getBool(AppConstants.keySoundEnabled, defaultValue: true),
+      shortBreakIntervalMinutes: _storage.getInt(
+        AppConstants.keyShortBreakInterval,
+        defaultValue: AppConstants.defaultShortBreakIntervalMinutes,
+      ),
+      shortBreakDurationSeconds: _storage.getInt(
+        AppConstants.keyShortBreakDuration,
+        defaultValue: AppConstants.defaultShortBreakDurationSeconds,
+      ),
+      preBreakWarningSeconds: _storage.getInt(
+        AppConstants.keyPreBreakWarningSeconds,
+        defaultValue: AppConstants.defaultPreBreakWarningSeconds,
+      ),
+      longBreakIntervalMinutes: _storage.getInt(
+        AppConstants.keyLongBreakInterval,
+        defaultValue: AppConstants.defaultLongBreakIntervalMinutes,
+      ),
+      longBreakDurationMinutes: _storage.getInt(
+        AppConstants.keyLongBreakDuration,
+        defaultValue: AppConstants.defaultLongBreakDurationMinutes,
+      ),
+      soundEnabled: _storage.getBool(
+        AppConstants.keySoundEnabled,
+        defaultValue: true,
+      ),
       autoStart: _storage.getBool(AppConstants.keyAutoStart),
       strictMode: _storage.getBool(AppConstants.keyStrictMode),
-      selectedProfileId: _storage.getString('selected_profile_id', defaultValue: 'health'),
-      menuBarStyle: _storage.getString('menu_bar_style', defaultValue: 'countdown'),
-      notificationsEnabled: _storage.getBool('notifications_enabled', defaultValue: true),
-      showOnAllDisplays: _storage.getBool('show_on_all_displays', defaultValue: true),
+      selectedProfileId: _storage.getString(
+        'selected_profile_id',
+        defaultValue: 'health',
+      ),
+      menuBarStyle: _storage.getString(
+        'menu_bar_style',
+        defaultValue: 'countdown',
+      ),
+      notificationsEnabled: _storage.getBool(
+        'notifications_enabled',
+        defaultValue: true,
+      ),
+      showOnAllDisplays: _storage.getBool(
+        'show_on_all_displays',
+        defaultValue: true,
+      ),
       breakTheme: _storage.getString('break_theme', defaultValue: 'random'),
-      breakTemplate: _storage.getString('break_template', defaultValue: 'minimal'),
+      breakTemplate: _storage.getString(
+        'break_template',
+        defaultValue: 'minimal',
+      ),
       focusModeEnabled: _storage.getBool('focus_mode_enabled'),
-      clockFaceStyle: _storage.getString('clock_face_style', defaultValue: 'breakloop'),
-      clockFaceTextColorHex: _storage.getInt('clock_face_text_color_hex', defaultValue: 0xFFFFFFFF),
-      clockFaceBlurEnabled: _storage.getBool('clock_face_blur_enabled', defaultValue: true),
+      clockFaceStyle: _storage.getString(
+        'clock_face_style',
+        defaultValue: 'breakloop',
+      ),
+      clockFaceTextColorHex: _storage.getInt(
+        'clock_face_text_color_hex',
+        defaultValue: 0xFFFFFFFF,
+      ),
+      clockFaceBlurEnabled: _storage.getBool(
+        'clock_face_blur_enabled',
+        defaultValue: true,
+      ),
       customImagePath: _storage.getString('custom_image_path'),
-      pauseTimerAfterMinutes: _storage.getInt('pause_timer_after_minutes', defaultValue: 5),
-      resetTimerAfterMinutes: _storage.getInt('reset_timer_after_minutes', defaultValue: 15),
+      pauseTimerAfterMinutes: _storage.getInt(
+        'pause_timer_after_minutes',
+        defaultValue: 5,
+      ),
+      resetTimerAfterMinutes: _storage.getInt(
+        'reset_timer_after_minutes',
+        defaultValue: 15,
+      ),
       workingHoursEnabled: _storage.getBool('working_hours_enabled'),
-      workingDays: _decodeIntList(_storage.getString('working_days'), fallback: const [1, 2, 3, 4, 5]),
-      workStartTime: _storage.getString('work_start_time', defaultValue: '09:00'),
+      workingDays: _decodeIntList(
+        _storage.getString('working_days'),
+        fallback: const [1, 2, 3, 4, 5],
+      ),
+      workStartTime: _storage.getString(
+        'work_start_time',
+        defaultValue: '09:00',
+      ),
       workEndTime: _storage.getString('work_end_time', defaultValue: '18:00'),
-      detectVideoCalls: _storage.getBool('detect_video_calls', defaultValue: true),
+      detectVideoCalls: _storage.getBool(
+        'detect_video_calls',
+        defaultValue: true,
+      ),
       detectMeetings: _storage.getBool('detect_meetings', defaultValue: true),
-      respectFocusMode: _storage.getBool('respect_focus_mode', defaultValue: true),
+      respectFocusMode: _storage.getBool(
+        'respect_focus_mode',
+        defaultValue: true,
+      ),
       enableClockOut: _storage.getBool('enable_clock_out', defaultValue: false),
       clockOutTime: _storage.getString('clock_out_time', defaultValue: '17:00'),
       exercises: _loadExercises(),
-      autoSuggestExercises: _storage.getBool('auto_suggest_exercises', defaultValue: true),
-      useCursorCountdown: _storage.getBool('use_cursor_countdown', defaultValue: true),
-      trayIconStyle: _storage.getString('tray_icon_style', defaultValue: 'companion') == 'cat' ? 'companion' : _storage.getString('tray_icon_style', defaultValue: 'companion'),
-      dailyWorkGoalHours: _storage.getInt('daily_work_goal_hours', defaultValue: 8),
-      remindClockOutEnabled: _storage.getBool('remind_clock_out_enabled', defaultValue: true),
-      companionEnabled: _storage.getBool('companion_enabled', defaultValue: true),
-      companionPetTheme: _storage.getString(AppConstants.keyCompanionPetTheme, defaultValue: _storage.getString(AppConstants.legacyKeyCompanionCatTheme, defaultValue: 'grey_cat')),
-      companionPetName: _storage.getString('companion_pet_name', defaultValue: 'Mochi'),
+      autoSuggestExercises: _storage.getBool(
+        'auto_suggest_exercises',
+        defaultValue: true,
+      ),
+      useCursorCountdown: _storage.getBool(
+        'use_cursor_countdown',
+        defaultValue: true,
+      ),
+      trayIconStyle:
+          _storage.getString('tray_icon_style', defaultValue: 'companion') ==
+              'cat'
+          ? 'companion'
+          : _storage.getString('tray_icon_style', defaultValue: 'companion'),
+      dailyWorkGoalHours: _storage.getInt(
+        'daily_work_goal_hours',
+        defaultValue: 8,
+      ),
+      remindClockOutEnabled: _storage.getBool(
+        'remind_clock_out_enabled',
+        defaultValue: true,
+      ),
+      companionEnabled: _storage.getBool(
+        'companion_enabled',
+        defaultValue: true,
+      ),
+      companionPetTheme: _storage.getString(
+        AppConstants.keyCompanionPetTheme,
+        defaultValue: _storage.getString(
+          AppConstants.legacyKeyCompanionCatTheme,
+          defaultValue: 'grey_cat',
+        ),
+      ),
+      companionPetName: _storage.getString(
+        'companion_pet_name',
+        defaultValue: 'Mochi',
+      ),
       companionScale: _storage.getDouble('companion_scale', defaultValue: 1.5),
-      companionClickThrough: _storage.getBool('companion_click_through', defaultValue: false),
-      companionFollowMouse: _storage.getBool('companion_follow_mouse', defaultValue: false),
+      companionClickThrough: _storage.getBool(
+        'companion_click_through',
+        defaultValue: false,
+      ),
+      companionFollowMouse: _storage.getBool(
+        'companion_follow_mouse',
+        defaultValue: false,
+      ),
     );
   }
 
   Future<void> save(SettingsModel settings) async {
     _current = settings;
-    
+
     final snapshot = SettingsSnapshot(
       id: 1,
       autoStart: settings.autoStart,
@@ -180,15 +278,17 @@ class SettingsRepository {
       respectFocusMode: settings.respectFocusMode,
       enableClockOut: settings.enableClockOut,
       clockOutTime: settings.clockOutTime,
-      exercisesJson: jsonEncode(settings.exercises.map((e) => e.toMap()).toList()),
+      exercisesJson: jsonEncode(
+        settings.exercises.map((e) => e.toMap()).toList(),
+      ),
       autoSuggestExercises: settings.autoSuggestExercises,
       useCursorCountdown: settings.useCursorCountdown,
       enableAnimations: settings.enableAnimations,
       trayIconStyle: settings.trayIconStyle,
     );
-    
+
     _storage.settingsBox.put(snapshot);
-    
+
     final companionPrefs = CompanionPreferences(
       id: 1,
       companionEnabled: settings.companionEnabled,
@@ -198,7 +298,7 @@ class SettingsRepository {
       companionClickThrough: settings.companionClickThrough,
       companionFollowMouse: settings.companionFollowMouse,
     );
-    
+
     _storage.companionPreferencesBox.put(companionPrefs);
   }
 
@@ -219,7 +319,10 @@ class SettingsRepository {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return ExerciseModel.defaults;
-      final exercises = decoded.whereType<Map<String, dynamic>>().map(ExerciseModel.fromMap).toList();
+      final exercises = decoded
+          .whereType<Map<String, dynamic>>()
+          .map(ExerciseModel.fromMap)
+          .toList();
       return exercises.isEmpty ? ExerciseModel.defaults : exercises;
     } catch (_) {
       return ExerciseModel.defaults;

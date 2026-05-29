@@ -18,10 +18,7 @@ class BreakActivityGraph extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: CustomPaint(
-        painter: _GraphPainter(
-          dataPoints: dataPoints,
-          color: color,
-        ),
+        painter: _GraphPainter(dataPoints: dataPoints, color: color),
       ),
     );
   }
@@ -31,10 +28,7 @@ class _GraphPainter extends CustomPainter {
   final List<int> dataPoints;
   final Color color;
 
-  _GraphPainter({
-    required this.dataPoints,
-    required this.color,
-  });
+  _GraphPainter({required this.dataPoints, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -52,8 +46,11 @@ class _GraphPainter extends CustomPainter {
 
     final path = Path();
     final stepX = size.width / (dataPoints.length - 1);
-    final maxVal = dataPoints.reduce(max).toDouble().clamp(5.0, double.infinity);
-    
+    final maxVal = dataPoints
+        .reduce(max)
+        .toDouble()
+        .clamp(5.0, double.infinity);
+
     // Normalize data points to height
     List<Offset> points = [];
     for (int i = 0; i < dataPoints.length; i++) {
@@ -70,9 +67,12 @@ class _GraphPainter extends CustomPainter {
       final controlPoint1 = Offset(p0.dx + (p1.dx - p0.dx) / 2, p0.dy);
       final controlPoint2 = Offset(p0.dx + (p1.dx - p0.dx) / 2, p1.dy);
       path.cubicTo(
-        controlPoint1.dx, controlPoint1.dy,
-        controlPoint2.dx, controlPoint2.dy,
-        p1.dx, p1.dy,
+        controlPoint1.dx,
+        controlPoint1.dy,
+        controlPoint2.dx,
+        controlPoint2.dy,
+        p1.dx,
+        p1.dy,
       );
     }
 
@@ -88,9 +88,9 @@ class _GraphPainter extends CustomPainter {
     final iconPaint = Paint()
       ..color = color
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawCircle(lastPoint, 10, iconPaint);
-    
+
     // Simplified fire icon drawing (Triangle-ish)
     final iconPath = Path()
       ..moveTo(lastPoint.dx, lastPoint.dy - 5)

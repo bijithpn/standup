@@ -211,7 +211,8 @@ class StatsCalculator {
         ? weeklyData[todayIndex].breaksCompleted
         : breaksCompletedDelta;
 
-    if (previousTodayBreaks < breaksPerDayForStreak && updatedTodayBreaks >= breaksPerDayForStreak) {
+    if (previousTodayBreaks < breaksPerDayForStreak &&
+        updatedTodayBreaks >= breaksPerDayForStreak) {
       currentStreak += 1;
       if (currentStreak > longestStreak) {
         longestStreak = currentStreak;

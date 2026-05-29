@@ -86,7 +86,11 @@ class CompanionPositionChangedEvent extends AppEvent {
 class MeetingDetectedEvent extends AppEvent {
   final bool isActive;
   final String? bundleId;
-  MeetingDetectedEvent({required this.isActive, this.bundleId, super.timestamp});
+  MeetingDetectedEvent({
+    required this.isActive,
+    this.bundleId,
+    super.timestamp,
+  });
 }
 
 class FocusModeEvent extends AppEvent {
@@ -107,7 +111,11 @@ class TrayActionEvent extends AppEvent {
 class SettingsChangedEvent extends AppEvent {
   final String key;
   final dynamic value;
-  SettingsChangedEvent({required this.key, required this.value, super.timestamp});
+  SettingsChangedEvent({
+    required this.key,
+    required this.value,
+    super.timestamp,
+  });
 }
 
 class OverlayShownEvent extends AppEvent {

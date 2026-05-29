@@ -34,7 +34,8 @@ class PetMoodState {
     final currentTime = now ?? DateTime.now();
     final elapsed = currentTime.difference(since);
     if (elapsed >= decayDuration) return 0.0;
-    return intensity * (1.0 - elapsed.inMilliseconds / decayDuration.inMilliseconds);
+    return intensity *
+        (1.0 - elapsed.inMilliseconds / decayDuration.inMilliseconds);
   }
 
   /// Whether this mood is still active.
@@ -68,7 +69,9 @@ class PetMoodState {
       mood: PetMood.values.byName(map['mood'] as String),
       intensity: (map['intensity'] as num?)?.toDouble() ?? 0.5,
       since: DateTime.parse(map['since'] as String),
-      decayDuration: Duration(milliseconds: map['decayDuration'] as int? ?? 300000),
+      decayDuration: Duration(
+        milliseconds: map['decayDuration'] as int? ?? 300000,
+      ),
     );
   }
 }

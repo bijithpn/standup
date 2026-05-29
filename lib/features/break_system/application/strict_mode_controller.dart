@@ -38,7 +38,7 @@ class StrictModeController {
 
     _isStrictModeActive = true;
     debugPrint('Enabling Strict Mode overlay');
-    
+
     try {
       await _overlayChannel.invokeMethod('setStrictMode', true);
     } catch (e) {

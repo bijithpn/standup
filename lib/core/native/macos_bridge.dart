@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
 class MacOSBridge implements NativeBridgePlatform {
-  final MethodChannel _channel = const MethodChannel('com.breakmate.desktop/bridge');
+  final MethodChannel _channel = const MethodChannel(
+    'com.breakmate.desktop/bridge',
+  );
   static final Set<String> _loggedMissingMethods = {};
 
   /// Show the native multi-monitor overlay
@@ -16,7 +18,9 @@ class MacOSBridge implements NativeBridgePlatform {
   /// Hide the native multi-monitor overlay
   @override
   Future<void> hideOverlay({bool restoreMainWindow = true}) async {
-    await _invokeSafely('hideOverlay', {'restoreMainWindow': restoreMainWindow});
+    await _invokeSafely('hideOverlay', {
+      'restoreMainWindow': restoreMainWindow,
+    });
   }
 
   /// Skip the current break from the overlay and sync to main engine
@@ -45,7 +49,10 @@ class MacOSBridge implements NativeBridgePlatform {
 
   /// Set presentation options for the application
   @override
-  Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu}) async {
+  Future<void> setPresentationOptions({
+    required bool hideDock,
+    required bool hideMenu,
+  }) async {
     await _invokeSafely('setPresentationOptions', {
       'hideDock': hideDock,
       'hideMenu': hideMenu,

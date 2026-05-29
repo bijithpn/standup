@@ -32,7 +32,8 @@ class CompanionInteractiveTemplate extends StatefulWidget {
 }
 
 class _CompanionInteractiveTemplateState
-    extends State<CompanionInteractiveTemplate> with WidgetsBindingObserver {
+    extends State<CompanionInteractiveTemplate>
+    with WidgetsBindingObserver {
   // Companion placement and physics snapping
   double? _x;
   double? _y;
@@ -67,7 +68,8 @@ class _CompanionInteractiveTemplateState
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
       _aiBehaviorTimer?.cancel();
       _speechBubbleTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
@@ -222,7 +224,8 @@ class _CompanionInteractiveTemplateState
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final species = petTheme.species;
     const double widgetSize = 130.0;
-    final bool enableAnimations = widget.settings.enableAnimations &&
+    final bool enableAnimations =
+        widget.settings.enableAnimations &&
         !MediaQuery.of(context).disableAnimations;
 
     return Material(
@@ -364,7 +367,9 @@ class _CompanionInteractiveTemplateState
                           child: Center(
                             child: AnimatedOpacity(
                               opacity: 1.0,
-                              duration: enableAnimations ? const Duration(milliseconds: 300) : Duration.zero,
+                              duration: enableAnimations
+                                  ? const Duration(milliseconds: 300)
+                                  : Duration.zero,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 14,

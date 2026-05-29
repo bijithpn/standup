@@ -10,7 +10,11 @@ class Toast {
     _showToast(context, message, Colors.green.shade700);
   }
 
-  static void _showToast(BuildContext context, String message, Color backgroundColor) {
+  static void _showToast(
+    BuildContext context,
+    String message,
+    Color backgroundColor,
+  ) {
     final overlay = Overlay.of(context);
     final entry = OverlayEntry(
       builder: (context) => Positioned(
@@ -60,7 +64,7 @@ class Toast {
     );
 
     overlay.insert(entry);
-    
+
     // Remove after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       entry.remove();

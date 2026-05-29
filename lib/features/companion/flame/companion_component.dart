@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
- 
+
 class _FireParticle {
   Offset position;
   Offset velocity;
@@ -23,16 +23,17 @@ class _FireParticle {
   }) : age = 0.0;
 }
 
-class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState>
+class CompanionComponent
+    extends SpriteAnimationGroupComponent<PetAnimationState>
     with HasGameReference<CompanionGame>, TapCallbacks, HoverCallbacks {
-
   double _direction = 1.0;
   double _stateElapsed = 0.0;
   PetAnimationState? _previousState;
   final Random _rng = Random();
 
   // Snout offset for Dragon fire breathing particle origin
-  Offset get _snoutOffset => Offset(_direction * (size.x * 0.35), -size.y * 0.12);
+  Offset get _snoutOffset =>
+      Offset(_direction * (size.x * 0.35), -size.y * 0.12);
 
   // Active fire particles
   final List<_FireParticle> _particles = [];
@@ -41,12 +42,13 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
     required Map<PetAnimationState, SpriteAnimation> animations,
     PetAnimationState initialState = PetAnimationState.idle,
   }) : super(
-          animations: animations,
-          current: initialState,
-          anchor: Anchor.center,
-        );
+         animations: animations,
+         current: initialState,
+         anchor: Anchor.center,
+       );
 
-  double get _strideFrequency => game.currentTheme.species.defaultProfile.strideFrequency;
+  double get _strideFrequency =>
+      game.currentTheme.species.defaultProfile.strideFrequency;
 
   @override
   void onMount() {
@@ -61,7 +63,8 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
     var target = newState;
 
     // Directional walk fallback to side walk
-    if (target == PetAnimationState.walkUp || target == PetAnimationState.walkDown) {
+    if (target == PetAnimationState.walkUp ||
+        target == PetAnimationState.walkDown) {
       if (animations?.containsKey(target) != true) {
         target = PetAnimationState.walkSide;
       }
@@ -167,7 +170,9 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
         ticker.reset();
         game.petService.handleEvent(PetEvent.animationComplete);
         final newAnim = animations?[current];
-        if (newAnim != null && !newAnim.loop && current != (_previousState ?? PetAnimationState.idle)) {
+        if (newAnim != null &&
+            !newAnim.loop &&
+            current != (_previousState ?? PetAnimationState.idle)) {
           return; // FSM chained to another non-looping anim — let it play
         }
         changeState(_previousState ?? PetAnimationState.idle);
@@ -225,7 +230,11 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
     final bool isUsingFallbackWalk = current == PetAnimationState.walkSide;
     final profile = game.currentTheme.species.defaultProfile;
 
-    if (isMovingVertically && (isUsingFallbackWalk || current == PetAnimationState.run || current == PetAnimationState.excited || current == PetAnimationState.fly)) {
+    if (isMovingVertically &&
+        (isUsingFallbackWalk ||
+            current == PetAnimationState.run ||
+            current == PetAnimationState.excited ||
+            current == PetAnimationState.fly)) {
       // 3D Tilt: Rotate sprite based on vertical speed and orientation
       final double maxSpeed = profile.movementSpeed;
       final double maxTilt = profile.maxTilt; // species specific tilt limit
@@ -238,8 +247,11 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
     } else {
       angle = 0.0;
       // Idle breathing / celebration micro-bob
-      if (current == PetAnimationState.idle || current == PetAnimationState.celebrate) {
-        scale.y = scale.x.abs() * (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
+      if (current == PetAnimationState.idle ||
+          current == PetAnimationState.celebrate) {
+        scale.y =
+            scale.x.abs() *
+            (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
       } else if (isMovingVertically && _isMovementState(current)) {
         final double bob = sin(_stateElapsed * 10.0) * profile.bobIntensity;
         scale.y = scale.x.abs() * (1.0 + bob);
@@ -299,15 +311,15 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
     if (game.petService.context.isMeetingDetected) {
       final double spriteSize = game.currentTheme.spriteSize.toDouble();
       final Offset badgePos = Offset(spriteSize * 0.3, -spriteSize * 0.4);
-      
+
       final paint = Paint()
         ..color = const Color(0xFFFF3B30)
         ..style = PaintingStyle.fill;
-      
+
       // Draw a small pulsating red dot
       final double pulse = 1.0 + sin(_stateElapsed * 4.0) * 0.2;
       canvas.drawCircle(badgePos, 3.0 * pulse, paint);
-      
+
       // Draw "ON AIR" text badge if space permits
       const textStyle = TextStyle(
         color: Colors.white,
@@ -329,11 +341,7 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
       for (final p in _particles) {
         final double ratio = (p.age / p.maxAge).clamp(0.0, 1.0);
         paint.color = p.color.withValues(alpha: 1.0 - ratio);
-        canvas.drawCircle(
-          p.position,
-          p.size * (1.0 - 0.5 * ratio),
-          paint,
-        );
+        canvas.drawCircle(p.position, p.size * (1.0 - 0.5 * ratio), paint);
       }
     }
   }
@@ -345,7 +353,8 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
   @override
   void onTapDown(TapDownEvent event) {
     final now = DateTime.now();
-    if (_lastTapTime != null && now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
+    if (_lastTapTime != null &&
+        now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
       _lastTapTime = null;
       game.onUserInteraction('doubleTap');
     } else {
@@ -370,7 +379,10 @@ class CompanionComponent extends SpriteAnimationGroupComponent<PetAnimationState
     final double? mx = (data['mouseX'] as num?)?.toDouble();
     final double? my = (data['mouseY'] as num?)?.toDouble();
     if (mx != null && my != null) {
-      game.petService.updateCursorPosition(Offset(mx, my), forceFollowing: enabled);
+      game.petService.updateCursorPosition(
+        Offset(mx, my),
+        forceFollowing: enabled,
+      );
     }
 
     if (!enabled) {

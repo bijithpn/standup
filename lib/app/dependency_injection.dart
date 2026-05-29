@@ -204,7 +204,8 @@ void _setupIpcBridge() {
         final targetEndTime = targetEndMs != null
             ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
             : null;
-        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)?.toInt();
+        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)
+            ?.toInt();
         TimerStateEvent? timerState;
         switch (state) {
           case 'running':

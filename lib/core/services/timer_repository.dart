@@ -36,10 +36,7 @@ class TimerRepository {
         'timer_short_break_duration',
         shortBreakDurationSeconds,
       );
-      _storageService.setInt(
-        'timer_pre_break_warning',
-        preBreakWarningSeconds,
-      );
+      _storageService.setInt('timer_pre_break_warning', preBreakWarningSeconds);
       _storageService.setInt(
         'timer_long_break_interval',
         longBreakIntervalMinutes,
@@ -53,8 +50,14 @@ class TimerRepository {
       _storageService.setBool('timer_is_completion', state.isCompletionState);
 
       _storageService.setBool('timer_is_pre_break', state.isPreBreak);
-      _storageService.setBool('timer_clock_out_triggered', state.clockOutTriggered);
-      _storageService.setInt('timer_posture_elapsed', state.postureElapsedSeconds);
+      _storageService.setBool(
+        'timer_clock_out_triggered',
+        state.clockOutTriggered,
+      );
+      _storageService.setInt(
+        'timer_posture_elapsed',
+        state.postureElapsedSeconds,
+      );
       _storageService.setInt(
         'timer_eye_blink_elapsed',
         state.eyeBlinkElapsedSeconds,
@@ -94,7 +97,8 @@ class TimerRepository {
       int longDuration,
       int pauseAfter,
       int resetAfter,
-    ) onSettingsRestored,
+    )
+    onSettingsRestored,
   }) {
     try {
       final stateStr = _storageService.getString(
@@ -172,7 +176,9 @@ class TimerRepository {
 
       // Prevent pre-break warnings from showing immediately on application launch
       state.isPreBreak = false;
-      state.clockOutTriggered = _storageService.getBool('timer_clock_out_triggered');
+      state.clockOutTriggered = _storageService.getBool(
+        'timer_clock_out_triggered',
+      );
       state.postureElapsedSeconds = _storageService.getInt(
         'timer_posture_elapsed',
         defaultValue: 0,
@@ -197,7 +203,9 @@ class TimerRepository {
         defaultValue: 0,
       );
       if (lastBreakMs > 0) {
-        state.lastBreakFinishedAt = DateTime.fromMillisecondsSinceEpoch(lastBreakMs);
+        state.lastBreakFinishedAt = DateTime.fromMillisecondsSinceEpoch(
+          lastBreakMs,
+        );
       }
 
       _logger.info(

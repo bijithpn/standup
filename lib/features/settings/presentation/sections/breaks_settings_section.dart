@@ -638,9 +638,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
     );
   }
 
-
-
-
   Widget _subTabButton(
     String label,
     int index, {
@@ -692,7 +689,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
       ),
     );
   }
-
 
   Widget _actionRow({
     required String label,
@@ -753,7 +749,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
       ),
     );
   }
-
 
   Widget _buildBreakTemplateMock(String id) {
     switch (id) {
@@ -1115,8 +1110,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
     }
   }
 
-
-
   Widget _colorRow(String label, Color color) {
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -1137,7 +1130,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
       ),
     );
   }
-
 
   Widget _breakTemplatePreview(
     String name,
@@ -1227,7 +1219,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
     );
   }
 
-
   void _showBreakTemplatePreview() {
     try {
       // Show a demo break overlay with current template style
@@ -1257,5 +1248,4 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
       }
     }
   }
-
 }
