@@ -42,10 +42,19 @@ class _ExercisesSectionState extends State<ExercisesSection> {
         const SizedBox(height: 24),
         buildCard([
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                const Expanded(child: Text('Exercise Library')),
+                const Expanded(
+                  child: Text(
+                    'Exercise Library',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
                 MinimalButton(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -54,9 +63,23 @@ class _ExercisesSectionState extends State<ExercisesSection> {
                   backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                   onPressed: () => _showExerciseEditor(),
-                  child: Text(
-                    'Add Exercise',
-                    style: TextStyle(color: AppTheme.accentColor, fontSize: 13),
+                  child: Row(
+                    children: [
+                      Icon(
+                        CupertinoIcons.plus,
+                        size: 14,
+                        color: AppTheme.accentColor,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Add Exercise',
+                        style: TextStyle(
+                          color: AppTheme.accentColor,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -210,68 +233,135 @@ class _ExercisesSectionState extends State<ExercisesSection> {
 
   Widget _exerciseSettingsItem(ExerciseModel exercise) {
     return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            _exerciseIcon(exercise.category),
-            color: AppTheme.accentColor,
-            size: 20,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _exerciseIcon(exercise.category),
+                  color: AppTheme.accentColor,
+                  size: 18,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
                   exercise.title,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'Inter',
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  '${exercise.durationSeconds}s ΓÇó ${exercise.category.name} ΓÇó ${exercise.instructions}',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 12,
-                  ),
+              ),
+              CupertinoSwitch(
+                value: exercise.enabled,
+                activeTrackColor: AppTheme.accentColor,
+                onChanged: (enabled) =>
+                    _upsertExercise(exercise.copyWith(enabled: enabled)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                '${exercise.durationSeconds}s',
+                style: TextStyle(
+                  color: AppTheme.accentColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
-              ],
+              ),
+              const SizedBox(width: 8),
+              const Text('•', style: TextStyle(color: AppTheme.textMuted),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                exercise.category.name.toUpperCase(),
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            exercise.instructions,
+            style: TextStyle(
+              color: AppTheme.textSecondary.withValues(alpha: 0.8),
+              fontSize: 13,
+              height: 1.4,
+              fontFamily: 'Inter',
             ),
           ),
-          Transform.scale(
-            scale: 0.8,
-            alignment: Alignment.centerRight,
-            child: CupertinoSwitch(
-              value: exercise.enabled,
-              activeTrackColor: AppTheme.accentColor,
-              onChanged: (enabled) =>
-                  _upsertExercise(exercise.copyWith(enabled: enabled)),
-            ),
-          ),
-          MinimalButton(
-            padding: EdgeInsets.zero,
-            backgroundColor: Colors.transparent,
-            onPressed: () => _showExerciseEditor(existing: exercise),
-            child: const Icon(
-              CupertinoIcons.pencil,
-              size: 18,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          MinimalButton(
-            padding: EdgeInsets.zero,
-            backgroundColor: Colors.transparent,
-            onPressed: () => _deleteExercise(exercise),
-            child: const Icon(
-              CupertinoIcons.delete,
-              size: 18,
-              color: CupertinoColors.systemRed,
-            ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              MinimalButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                backgroundColor: AppTheme.surfaceElevated,
+                onPressed: () => _showExerciseEditor(existing: exercise),
+                child: const Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.pencil,
+                      size: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                    SizedBox(width: 6),
+                    Text(
+                      'Edit',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              MinimalButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                backgroundColor: Colors.transparent,
+                onPressed: () => _deleteExercise(exercise),
+                child: Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.delete,
+                      size: 14,
+                      color: CupertinoColors.systemRed.withValues(alpha: 0.8),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Delete',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: CupertinoColors.systemRed,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

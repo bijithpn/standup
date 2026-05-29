@@ -327,7 +327,13 @@ class PetAssetLoader {
     double targetSize = 44.0,
   }) async {
     try {
-      final file = File(outputPath);
+      final tempDir = await getTemporaryDirectory();
+      
+      // Use temporary directory and standard macOS template naming
+      // No theme suffix needed for template icons
+      final fileName = assetPath.split('/').last.replaceAll('.png', '');
+      final file = File('${tempDir.path}/bm_icon_${fileName}Template@2x.png');
+      
       if (await file.exists()) {
         return file.path;
       }
@@ -335,15 +341,13 @@ class PetAssetLoader {
       final sourceImage = await loadImage(assetPath);
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
-      final isDark =
-          ui.PlatformDispatcher.instance.platformBrightness ==
-          ui.Brightness.dark;
-      final tintColor = isDark
-          ? const ui.Color(0xFFFFFFFF)
-          : const ui.Color(0xFF000000);
+      
+      // Template icons MUST be solid black with alpha.
+      // macOS will tint them automatically.
+      const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
+        ..colorFilter = const ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
 
       final rawBytes = await sourceImage.toByteData(
         format: ui.ImageByteFormat.rawRgba,
@@ -363,7 +367,7 @@ class PetAssetLoader {
             final offset = (y * width + x) * 4;
             if (offset + 3 < bytes.length) {
               final alpha = bytes[offset + 3];
-              if (alpha > 10) {
+              if (alpha > 15) {
                 // Ignore transparent pixels
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
@@ -448,12 +452,9 @@ class PetAssetLoader {
     required PetAnimationState state,
     required int frameIndex,
   }) async {
-    final tempDir = await getApplicationSupportDirectory();
-    final isDark =
-        ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
-    final themeSuffix = isDark ? '_dark' : '_light';
+    final tempDir = await getTemporaryDirectory();
     final file = File(
-      '${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex${themeSuffix}Template@2x.png',
+      '${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex' 'Template@2x.png',
     );
 
     if (await file.exists()) {
@@ -556,15 +557,12 @@ class PetAssetLoader {
       const double targetSize = 44.0;
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
-      final isDark =
-          ui.PlatformDispatcher.instance.platformBrightness ==
-          ui.Brightness.dark;
-      final tintColor = isDark
-          ? const ui.Color(0xFFFFFFFF)
-          : const ui.Color(0xFF000000);
+      
+      // Use Black for template icons
+      const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
+        ..colorFilter = const ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
 
       double contentWidth = (maxX - minX + 1).toDouble();
       double contentHeight = (maxY - minY + 1).toDouble();
@@ -603,7 +601,12 @@ class PetAssetLoader {
       } else {
         canvas.drawImageRect(
           sourceImage,
-          ui.Rect.fromLTWH(sourceX, sourceY, cropW, cropH),
+          ui.Rect.fromLTWH(
+            sourceX,
+            sourceY,
+            cropW,
+            cropH,
+          ),
           const ui.Rect.fromLTWH(2.0, 2.0, targetSize - 4.0, targetSize - 4.0),
           paint,
         );

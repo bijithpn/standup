@@ -138,10 +138,11 @@ void main() async {
 
   // If we are in an overlay or companion isolate, jump to the correct entry point.
   // This is a safety layer for when the Flutter engine runs main() by default.
-  if (isolateName.contains('overlayMain')) {
+  debugPrint('[Main] Isolate name: "$isolateName"');
+  if (isolateName.toLowerCase().contains('overlaymain')) {
     overlayMain();
     return;
-  } else if (isolateName.contains('companionMain')) {
+  } else if (isolateName.toLowerCase().contains('companionmain')) {
     companionMain();
     return;
   }
@@ -159,17 +160,7 @@ void main() async {
 
         WidgetsFlutterBinding.ensureInitialized();
         logStartup('WidgetsFlutterBinding.ensureInitialized');
-        FrameTimingLogger.instance.start();
-        MemoryCheckpoints.instance.logCheckpoint('startup');
-        _setupGlobalErrors();
-
-        // Initialize flutter_acrylic for glassmorphic effect
-        if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
-          await Window.initialize();
-        }
-
-        ServerSocket? singleInstanceServer;
-
+        
         bool isActualMain = true;
         if (Platform.isMacOS) {
           try {
@@ -182,35 +173,74 @@ void main() async {
           }
         }
 
-        // ONLY the main isolate should perform the port check and potentially call exit().
-        if (isMainIsolate && isActualMain) {
-          try {
-            singleInstanceServer = await ServerSocket.bind(
-              InternetAddress.loopbackIPv4,
-              10425,
-            );
-            debugPrint('Startup: Port 10425 bound (Main Instance)');
-          } catch (e) {
-            debugPrint('Startup: Port 10425 already in use');
+        debugPrint('[Main] Is actual main engine: $isActualMain');
 
-            // Signal existing instance and EXIT the process
+        if (!isActualMain) {
+          debugPrint('[Main] Secondary engine detected in main(). Redirecting...');
+          // On macOS, secondary engines should have their own entry points.
+          // If we reach here, it means the isolate name didn't match but it's not the main engine.
+          // We must NOT call initDependencies() here.
+          return;
+        }
+
+        FrameTimingLogger.instance.start();
+        MemoryCheckpoints.instance.logCheckpoint('startup');
+        _setupGlobalErrors();
+
+        // Initialize flutter_acrylic for glassmorphic effect
+        if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
+          await Window.initialize();
+        }
+
+        ServerSocket? singleInstanceServer;
+
+        // ONLY the main isolate should perform the port check and potentially call exit().
+        if (isMainIsolate) {
+          int startPort = 10425;
+          int endPort = kDebugMode ? 10430 : 10425;
+          bool bound = false;
+
+          for (int port = startPort; port <= endPort; port++) {
             try {
-              final socket = await Socket.connect(
+              singleInstanceServer = await ServerSocket.bind(
                 InternetAddress.loopbackIPv4,
-                10425,
-                timeout: const Duration(milliseconds: 500),
+                port,
               );
-              socket.write('showDashboard\n');
-              await socket.flush();
-              await socket.close();
-              debugPrint('Startup: Signaled existing instance. Exiting.');
-              exit(0);
-            } catch (signalError) {
-              debugPrint(
-                'Startup: Could not signal existing instance (Port stuck)',
-              );
-              exit(1);
+              debugPrint('Startup: Port $port bound (Main Instance)');
+              bound = true;
+              break;
+            } catch (e) {
+              if (port == startPort) {
+                debugPrint('Startup: Primary port $port in use');
+                
+                // Signal existing instance
+                try {
+                  final socket = await Socket.connect(
+                    InternetAddress.loopbackIPv4,
+                    port,
+                    timeout: const Duration(milliseconds: 500),
+                  );
+                  socket.write('showDashboard\n');
+                  await socket.flush();
+                  await socket.close();
+                  debugPrint('Startup: Signaled existing instance.');
+                  
+                  if (!kDebugMode) {
+                    debugPrint('Startup: Exiting (Single Instance enforced)');
+                    exit(0);
+                  } else {
+                    debugPrint('Startup: Continuing in Debug Mode on fallback port...');
+                  }
+                } catch (signalError) {
+                  debugPrint('Startup: Existing instance not responding (Port stuck).');
+                }
+              }
             }
+          }
+          
+          if (!bound && !kDebugMode) {
+             debugPrint('Startup: Could not bind any single-instance port. Exiting.');
+             exit(1);
           }
         }
 
