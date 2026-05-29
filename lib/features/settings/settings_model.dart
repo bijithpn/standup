@@ -76,6 +76,14 @@ class SettingsModel {
   final bool companionClickThrough;
   final bool companionFollowMouse;
 
+  // UX & Onboarding
+  final bool hasCompletedOnboarding;
+  final bool quietModeEnabled;
+  final String
+  quietModePreset; // 'none', 'presenting', 'meeting', 'deep_work', 'low_battery'
+  final int lastSnoozeDurationMinutes;
+  final String intensityLevel; // 'gentle', 'standard', 'strict', 'locked'
+
   const SettingsModel({
     this.autoStart = true,
     this.clockFaceStyle = 'breakloop',
@@ -132,6 +140,11 @@ class SettingsModel {
     this.companionScale = 6.0,
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
+    this.hasCompletedOnboarding = false,
+    this.quietModeEnabled = false,
+    this.quietModePreset = 'none',
+    this.lastSnoozeDurationMinutes = 5,
+    this.intensityLevel = 'standard',
   });
 
   SettingsModel copyWith({
@@ -190,6 +203,11 @@ class SettingsModel {
     double? companionScale,
     bool? companionClickThrough,
     bool? companionFollowMouse,
+    bool? hasCompletedOnboarding,
+    bool? quietModeEnabled,
+    String? quietModePreset,
+    int? lastSnoozeDurationMinutes,
+    String? intensityLevel,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -262,6 +280,13 @@ class SettingsModel {
       companionClickThrough:
           companionClickThrough ?? this.companionClickThrough,
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
+      hasCompletedOnboarding:
+          hasCompletedOnboarding ?? this.hasCompletedOnboarding,
+      quietModeEnabled: quietModeEnabled ?? this.quietModeEnabled,
+      quietModePreset: quietModePreset ?? this.quietModePreset,
+      lastSnoozeDurationMinutes:
+          lastSnoozeDurationMinutes ?? this.lastSnoozeDurationMinutes,
+      intensityLevel: intensityLevel ?? this.intensityLevel,
     );
   }
 
@@ -321,6 +346,11 @@ class SettingsModel {
     'companionScale': companionScale,
     'companionClickThrough': companionClickThrough,
     'companionFollowMouse': companionFollowMouse,
+    'hasCompletedOnboarding': hasCompletedOnboarding,
+    'quietModeEnabled': quietModeEnabled,
+    'quietModePreset': quietModePreset,
+    'lastSnoozeDurationMinutes': lastSnoozeDurationMinutes,
+    'intensityLevel': intensityLevel,
   };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -403,6 +433,11 @@ class SettingsModel {
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
+      hasCompletedOnboarding: map['hasCompletedOnboarding'] as bool? ?? false,
+      quietModeEnabled: map['quietModeEnabled'] as bool? ?? false,
+      quietModePreset: map['quietModePreset'] as String? ?? 'none',
+      lastSnoozeDurationMinutes: map['lastSnoozeDurationMinutes'] as int? ?? 5,
+      intensityLevel: map['intensityLevel'] as String? ?? 'standard',
     );
   }
 }

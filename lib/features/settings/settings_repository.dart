@@ -80,6 +80,11 @@ class SettingsRepository {
       useCursorCountdown: s.useCursorCountdown,
       enableAnimations: s.enableAnimations,
       trayIconStyle: s.trayIconStyle,
+      hasCompletedOnboarding: s.hasCompletedOnboarding,
+      quietModeEnabled: s.quietModeEnabled,
+      quietModePreset: s.quietModePreset,
+      lastSnoozeDurationMinutes: s.lastSnoozeDurationMinutes,
+      intensityLevel: s.intensityLevel,
       companionEnabled: cp?.companionEnabled ?? false,
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
@@ -285,6 +290,11 @@ class SettingsRepository {
       useCursorCountdown: settings.useCursorCountdown,
       enableAnimations: settings.enableAnimations,
       trayIconStyle: settings.trayIconStyle,
+      hasCompletedOnboarding: settings.hasCompletedOnboarding,
+      quietModeEnabled: settings.quietModeEnabled,
+      quietModePreset: settings.quietModePreset,
+      lastSnoozeDurationMinutes: settings.lastSnoozeDurationMinutes,
+      intensityLevel: settings.intensityLevel,
     );
 
     _storage.settingsBox.put(snapshot);

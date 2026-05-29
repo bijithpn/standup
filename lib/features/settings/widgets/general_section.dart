@@ -33,6 +33,8 @@ class GeneralSection extends StatelessWidget {
           divider(),
           _buildStrictMode(),
           divider(),
+          _buildQuietModePresets(),
+          divider(),
           _buildAutoPauseMedia(),
         ]),
         const SizedBox(height: 48),
@@ -142,6 +144,24 @@ class GeneralSection extends StatelessWidget {
         onSave(settings.copyWith(strictMode: v));
         sl<TrayManagerService>().triggerActionAnimation();
       },
+    );
+  }
+
+  Widget _buildQuietModePresets() {
+    return buildListRow(
+      'Quiet Mode Preset',
+      'Choose a behavior for silences (e.g. Deep Work blocks all)',
+      null,
+      CupertinoIcons.moon_zzz,
+      null,
+      trailing: inlineDropdown(
+        settings.quietModePreset,
+        ['none', 'presenting', 'meeting', 'deep_work', 'low_battery'],
+        (v) {
+          onSave(settings.copyWith(quietModePreset: v ?? 'none'));
+          sl<TrayManagerService>().triggerActionAnimation();
+        },
+      ),
     );
   }
 

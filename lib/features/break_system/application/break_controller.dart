@@ -95,8 +95,12 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     if (shouldShowBreak) {
       final breakInfo = _timerEngine.activeBreak;
 
-      // Attempt to enable native strict mode if requested
-      if (settings.strictMode && !strictModeController.isStrictModeActive) {
+      // Auto-enable strict mode for high intensity levels
+      final isHighIntensity =
+          settings.intensityLevel == 'strict' ||
+          settings.intensityLevel == 'locked';
+      if ((settings.strictMode || isHighIntensity) &&
+          !strictModeController.isStrictModeActive) {
         strictModeController.enableStrictMode();
       }
 
@@ -358,6 +362,50 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
   }
 
+  // --- Snooze Logic ---
+
+  void snooze({int? minutes}) {
+    final snoozeMins =
+        minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes;
+    _timerEngine.pauseTimers(isManual: true);
+
+    // Schedule resume
+    Timer(Duration(minutes: snoozeMins), () {
+      if (isPaused) {
+        _timerEngine.resumeTimers();
+      }
+    });
+
+    _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        lastSnoozeDurationMinutes: snoozeMins,
+      ),
+    );
+    notifyListeners();
+  }
+
+  // --- Quiet Mode Logic ---
+
+  bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
+  String get quietModePreset => _settingsRepo.currentSettings.quietModePreset;
+
+  void toggleQuietMode() {
+    final current = _settingsRepo.currentSettings;
+    final newValue = !current.quietModeEnabled;
+    _settingsRepo.save(current.copyWith(quietModeEnabled: newValue));
+    notifyListeners();
+  }
+
+  void setQuietModePreset(String preset) {
+    _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        quietModePreset: preset,
+        quietModeEnabled: true,
+      ),
+    );
+    notifyListeners();
+  }
+
   void togglePause() {
     _logger.info('Toggling pause state. Current state: ${_timerEngine.state}');
     if (_timerEngine.state == TimerState.breakActive) {
@@ -453,6 +501,13 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void skipNextBreak() {
+    final settings = _settingsRepo.currentSettings;
+    if (settings.intensityLevel == 'locked' ||
+        settings.intensityLevel == 'strict' ||
+        settings.strictMode) {
+      _logger.info('Skip next break denied: High intensity');
+      return;
+    }
     _logger.info('Manually skipping next break');
     _timerEngine.skipNextBreak();
     notifyListeners();
@@ -460,12 +515,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> skipCurrentBreak() async {
     _isPreviewMode = false;
-    if (!_settingsRepo.currentSettings.strictMode) {
-      await _timerEngine.finishBreak(skipped: true);
-      sl<TrayManagerService>().setBreakActive(false);
-      sl<OverlayWindowService>().showDashboard();
-      _stopMusicWithFadeOut();
+    final settings = _settingsRepo.currentSettings;
+    if (settings.intensityLevel == 'locked' || settings.strictMode) {
+      _logger.info('Skip current break denied: Locked/Strict mode');
+      return;
     }
+    await _timerEngine.finishBreak(skipped: true);
+    sl<TrayManagerService>().setBreakActive(false);
+    sl<OverlayWindowService>().showDashboard();
+    _stopMusicWithFadeOut();
   }
 
   void postponeCurrentBreak() {

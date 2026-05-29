@@ -155,7 +155,7 @@
     },
     {
       "id": "5:6076095419739285712",
-      "lastPropertyId": "49:1739643195762079014",
+      "lastPropertyId": "54:8146101068931357580",
       "name": "SettingsSnapshot",
       "properties": [
         {
@@ -402,6 +402,31 @@
         {
           "id": "49:1739643195762079014",
           "name": "trayIconStyle",
+          "type": 9
+        },
+        {
+          "id": "50:9078543523635347036",
+          "name": "hasCompletedOnboarding",
+          "type": 1
+        },
+        {
+          "id": "51:855756831092322044",
+          "name": "quietModeEnabled",
+          "type": 1
+        },
+        {
+          "id": "52:6237677684402454224",
+          "name": "quietModePreset",
+          "type": 9
+        },
+        {
+          "id": "53:4412515844275065062",
+          "name": "lastSnoozeDurationMinutes",
+          "type": 6
+        },
+        {
+          "id": "54:8146101068931357580",
+          "name": "intensityLevel",
           "type": 9
         }
       ],

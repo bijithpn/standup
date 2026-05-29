@@ -333,6 +333,17 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void _checkBreakConditions() {
+    final settings = _settingsRepository.currentSettings;
+    if (settings.quietModeEnabled) {
+      if (settings.quietModePreset == 'presenting' ||
+          settings.quietModePreset == 'deep_work') {
+        _logger.info(
+          'Break suppressed by quiet mode preset: \${settings.quietModePreset}',
+        );
+        return;
+      }
+    }
+
     final interval = Duration(minutes: _shortBreakIntervalMinutes);
     final remaining = interval - _stateData.workElapsed;
 
@@ -360,20 +371,31 @@ class TimerEngine extends ChangeNotifier {
 
   void _checkHealthReminders() {
     final settings = _settingsRepository.currentSettings;
+    if (settings.quietModeEnabled) {
+      if (settings.quietModePreset == 'presenting' ||
+          settings.quietModePreset == 'deep_work') {
+        return;
+      }
+    }
 
-    if (settings.postureReminderEnabled &&
-        settings.postureReminderIntervalMinutes > 0) {
-      if (_stateData.postureElapsedSeconds >=
-          settings.postureReminderIntervalMinutes * 60) {
+    int postureInterval = settings.postureReminderIntervalMinutes;
+    int eyeblinkInterval = settings.eyeBlinkReminderIntervalMinutes;
+
+    if (settings.quietModeEnabled &&
+        settings.quietModePreset == 'low_battery') {
+      postureInterval *= 2;
+      eyeblinkInterval *= 2;
+    }
+
+    if (settings.postureReminderEnabled && postureInterval > 0) {
+      if (_stateData.postureElapsedSeconds >= postureInterval * 60) {
         _stateData.postureElapsedSeconds = 0;
         _triggerHealthReminder('posture', settings.postureReminderType);
       }
     }
 
-    if (settings.eyeBlinkReminderEnabled &&
-        settings.eyeBlinkReminderIntervalMinutes > 0) {
-      if (_stateData.eyeBlinkElapsedSeconds >=
-          settings.eyeBlinkReminderIntervalMinutes * 60) {
+    if (settings.eyeBlinkReminderEnabled && eyeblinkInterval > 0) {
+      if (_stateData.eyeBlinkElapsedSeconds >= eyeblinkInterval * 60) {
         _stateData.eyeBlinkElapsedSeconds = 0;
         _triggerHealthReminder('eyeblink', settings.eyeBlinkReminderType);
       }
@@ -473,6 +495,7 @@ class TimerEngine extends ChangeNotifier {
         title: 'LONG BREAK',
         tip:
             'Time to stand, stretch, and mentally reset. Step away from your desk.',
+        triggerReason: 'Long focus session completed',
       );
       _stateData.longBreakWindowStartedAt = DateTime.now();
     } else {
@@ -485,6 +508,7 @@ class TimerEngine extends ChangeNotifier {
         durationSeconds: countdownSeconds,
         title: 'Eye Rest',
         tip: _randomTip(AppConstants.shortBreakTips),
+        triggerReason: '20-minute interval reached',
       );
     }
 
@@ -820,10 +844,23 @@ class TimerEngine extends ChangeNotifier {
 
   void handleSystemWake() {
     _logger.info(
-      'System wake or screen unlock detected: resuming break/work timers',
+      'System wake or screen unlock detected: checking recovery flow',
     );
     _stateData.systemSleepPaused = false;
-    _stateData.lastTickTime = DateTime.now();
+
+    final lastTick = _stateData.lastTickTime ?? DateTime.now();
+    final durationAway = DateTime.now().difference(lastTick);
+
+    if (durationAway.inMinutes >= _shortBreakIntervalMinutes) {
+      _logger.info(
+        'Away for ${durationAway.inMinutes}m. Resetting focus session.',
+      );
+      resetTimers();
+    } else {
+      _stateData.lastTickTime = DateTime.now();
+      resumeTimers();
+    }
+
     saveState();
     notifyListeners();
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
@@ -7,8 +8,10 @@ import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:breakmate/core/constants/app_strings.dart';
 
-// ─── Nav item model ────────────────────────────────────────────────────────
+// --- Nav item model ---
 
 class _NavItem {
   final String label;
@@ -24,7 +27,17 @@ class _NavItem {
   });
 }
 
-// ─── Main Layout ──────────────────────────────────────────────────────────
+// --- Intent classes ---
+
+class _TogglePauseIntent extends Intent {
+  const _TogglePauseIntent();
+}
+
+class _BreakNowIntent extends Intent {
+  const _BreakNowIntent();
+}
+
+// --- Main Layout ---
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -40,39 +53,43 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Primary nav items (shown in the main list)
   static const List<_NavItem> _mainNavItems = [
-    _NavItem(label: 'Today', icon: CupertinoIcons.home, section: 'Today'),
     _NavItem(
-      label: 'Breaks',
+      label: AppStrings.today,
+      icon: CupertinoIcons.home,
+      section: 'Today',
+    ),
+    _NavItem(
+      label: AppStrings.navBreaks,
       icon: CupertinoIcons.timer,
       section: 'Breaks & Profiles',
     ),
     _NavItem(
-      label: 'Focus mode',
+      label: AppStrings.navFocusMode,
       icon: CupertinoIcons.eye,
       section: 'Intelligent Detection',
     ),
     _NavItem(
-      label: 'Exercises',
+      label: AppStrings.navExercises,
       icon: CupertinoIcons.person_crop_circle,
       section: 'Exercises',
     ),
     _NavItem(
-      label: 'Notifications',
+      label: AppStrings.navNotifications,
       icon: CupertinoIcons.bell,
       section: 'Notifications',
     ),
     _NavItem(
-      label: 'Companion',
+      label: AppStrings.navCompanion,
       icon: CupertinoIcons.paw,
       section: 'Companion',
     ),
     _NavItem(
-      label: 'Statistics',
+      label: AppStrings.navStatistics,
       icon: CupertinoIcons.chart_bar,
       section: 'Statistics',
     ),
     _NavItem(
-      label: 'General Settings',
+      label: AppStrings.navGeneralSettings,
       icon: CupertinoIcons.settings,
       section: 'General',
     ),
@@ -81,19 +98,19 @@ class _MainLayoutState extends State<MainLayout> {
   // Bottom nav items (shown at the footer of the sidebar)
   static const List<_NavItem> _bottomNavItems = [
     _NavItem(
-      label: 'Data & Backup',
+      label: AppStrings.navDataBackup,
       icon: CupertinoIcons.folder,
       section: 'Data & Backup',
       isBottom: true,
     ),
     _NavItem(
-      label: 'Software Update',
+      label: AppStrings.navSoftwareUpdate,
       icon: CupertinoIcons.arrow_down_circle,
       section: 'Updates',
       isBottom: true,
     ),
     _NavItem(
-      label: 'About',
+      label: AppStrings.navAbout,
       icon: CupertinoIcons.info_circle,
       section: 'About',
       isBottom: true,
@@ -128,23 +145,48 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 750;
-
-        return AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          transitionBuilder: (child, animation) =>
-              FadeTransition(opacity: animation, child: child),
-          child: isNarrow
-              ? _buildNarrowLayout(key: const ValueKey('narrow'))
-              : _buildWideLayout(key: const ValueKey('wide')),
-        );
+    return Shortcuts(
+      shortcuts: <LogicalKeySet, Intent>{
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyP):
+            const _TogglePauseIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyP):
+            const _TogglePauseIntent(),
+        LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyB):
+            const _BreakNowIntent(),
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
+            const _BreakNowIntent(),
       },
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          _TogglePauseIntent: CallbackAction<_TogglePauseIntent>(
+            onInvoke: (_) => sl<BreakController>().togglePause(),
+          ),
+          _BreakNowIntent: CallbackAction<_BreakNowIntent>(
+            onInvoke: (_) => sl<BreakController>().takeBreakNow(),
+          ),
+        },
+        child: Focus(
+          autofocus: true,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 750;
+
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) =>
+                    FadeTransition(opacity: animation, child: child),
+                child: isNarrow
+                    ? _buildNarrowLayout(key: const ValueKey('narrow'))
+                    : _buildWideLayout(key: const ValueKey('wide')),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 
-  // ─── Wide layout ──────────────────────────────────────────────────────────
+  // --- Wide layout ---
 
   Widget _buildWideLayout({Key? key}) {
     return MacosWindow(
@@ -174,7 +216,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // ─── Narrow layout ────────────────────────────────────────────────────────
+  // --- Narrow layout ---
 
   Widget _buildNarrowLayout({Key? key}) {
     return Stack(
@@ -264,7 +306,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // ─── Content area ─────────────────────────────────────────────────────────
+  // --- Content area ---
 
   Widget _buildMainContent() {
     return AnimatedSwitcher(
@@ -322,7 +364,7 @@ class _MainLayoutState extends State<MainLayout> {
   }
 }
 
-// ─── Sidebar Content Widget ────────────────────────────────────────────────
+// --- Sidebar Content Widget ---
 
 class _SidebarContent extends StatelessWidget {
   final int selectedIndex;
@@ -342,11 +384,11 @@ class _SidebarContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── App brand header ──────────────────────────────────
+        // --- App brand header ---
         _buildBrandHeader(),
         const SizedBox(height: 8),
 
-        // ── Primary nav items ─────────────────────────────────
+        // --- Primary nav items ---
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -365,7 +407,7 @@ class _SidebarContent extends StatelessWidget {
           ),
         ),
 
-        // ── Separator ─────────────────────────────────────────
+        // --- Separator ---
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Divider(
@@ -375,7 +417,7 @@ class _SidebarContent extends StatelessWidget {
           ),
         ),
 
-        // ── Bottom nav items ──────────────────────────────────
+        // --- Bottom nav items ---
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
           child: Column(
@@ -461,7 +503,7 @@ class _SidebarContent extends StatelessWidget {
   }
 }
 
-// ─── Sidebar Nav Item Widget ───────────────────────────────────────────────
+// --- Sidebar Nav Item Widget ---
 
 class _SidebarNavItem extends StatefulWidget {
   final _NavItem item;

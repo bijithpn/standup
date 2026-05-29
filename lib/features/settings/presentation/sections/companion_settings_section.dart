@@ -36,7 +36,7 @@ class CompanionSettingsSection extends StatelessWidget {
                 style: TextStyle(
                   color: AppTheme.textSecondary.withValues(alpha: 0.8),
                   fontSize: 13,
-                  fontFamily: 'Satoshi',
+                  fontFamily: 'Inter',
                 ),
               ),
             ),
@@ -50,7 +50,7 @@ class CompanionSettingsSection extends StatelessWidget {
             ]),
             if (controller.companionEnabled) ...[
               const SizedBox(height: 32),
-              sectionHeader('Companion'),
+              sectionHeader('Pet Selection'),
               Padding(
                 padding: const EdgeInsets.only(left: 4, bottom: 16),
                 child: Text(
@@ -58,10 +58,11 @@ class CompanionSettingsSection extends StatelessWidget {
                   style: TextStyle(
                     color: AppTheme.textSecondary.withValues(alpha: 0.8),
                     fontSize: 13,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
+              _buildPetSpeciesPreview(controller),
               _buildCompanionThemeDropdown(controller),
               const SizedBox(height: 32),
               sectionHeader('Overlay Settings'),
@@ -155,7 +156,7 @@ class CompanionSettingsSection extends StatelessWidget {
                   style: TextStyle(
                     color: AppTheme.textSecondary.withValues(alpha: 0.8),
                     fontSize: 13,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),
@@ -164,6 +165,47 @@ class CompanionSettingsSection extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildPetSpeciesPreview(CompanionOverlayController controller) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _speciesIcon(PetSpecies.cat, CupertinoIcons.paw),
+          _speciesIcon(PetSpecies.dog, Icons.pets_rounded),
+          _speciesIcon(PetSpecies.rabbit, Icons.cruelty_free_rounded),
+          _speciesIcon(PetSpecies.dragon, Icons.auto_awesome_rounded),
+          _speciesIcon(PetSpecies.fox, Icons.forest_rounded),
+        ],
+      ),
+    );
+  }
+
+  Widget _speciesIcon(PetSpecies species, IconData icon) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceElevated,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: Icon(icon, color: AppTheme.accent, size: 20),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          species.name.toUpperCase(),
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textMuted,
+          ),
+        ),
+      ],
     );
   }
 
@@ -192,7 +234,7 @@ class CompanionSettingsSection extends StatelessWidget {
                     fontSize: 12,
                     color: AppTheme.accentColor,
                     fontWeight: FontWeight.w600,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -262,7 +304,7 @@ class CompanionSettingsSection extends StatelessWidget {
                           fontWeight: isSelected
                               ? FontWeight.w700
                               : FontWeight.w600,
-                          fontFamily: 'Satoshi',
+                          fontFamily: 'Inter',
                         ),
                       ),
                     ],
@@ -562,7 +604,7 @@ class CompanionSettingsSection extends StatelessWidget {
                 fontSize: 12,
                 color: AppTheme.textPrimary,
                 fontWeight: FontWeight.w500,
-                fontFamily: 'Satoshi',
+                fontFamily: 'Inter',
               ),
             ),
           ],

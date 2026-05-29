@@ -14,6 +14,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:breakmate/app/main_layout.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
+import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
 
 class BreakMateApp extends StatefulWidget {
   const BreakMateApp({super.key});
@@ -75,6 +76,11 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                   listenable: overlayService,
                   builder: (context, _) {
                     final isOverlayVisible = overlayService.isOverlayVisible;
+
+                    final settings = sl<SettingsRepository>().currentSettings;
+                    if (!settings.hasCompletedOnboarding) {
+                      return const OnboardingPage();
+                    }
 
                     return Stack(
                       children: [

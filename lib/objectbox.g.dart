@@ -199,7 +199,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 6076095419739285712),
     name: 'SettingsSnapshot',
-    lastPropertyId: const obx_int.IdUid(49, 1739643195762079014),
+    lastPropertyId: const obx_int.IdUid(54, 8146101068931357580),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -493,6 +493,36 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(49, 1739643195762079014),
         name: 'trayIconStyle',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(50, 9078543523635347036),
+        name: 'hasCompletedOnboarding',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(51, 855756831092322044),
+        name: 'quietModeEnabled',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(52, 6237677684402454224),
+        name: 'quietModePreset',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(53, 4412515844275065062),
+        name: 'lastSnoozeDurationMinutes',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(54, 8146101068931357580),
+        name: 'intensityLevel',
         type: 9,
         flags: 0,
       ),
@@ -846,7 +876,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final clockOutTimeOffset = fbb.writeString(object.clockOutTime);
         final exercisesJsonOffset = fbb.writeString(object.exercisesJson);
         final trayIconStyleOffset = fbb.writeString(object.trayIconStyle);
-        fbb.startTable(50);
+        final quietModePresetOffset = fbb.writeString(object.quietModePreset);
+        final intensityLevelOffset = fbb.writeString(object.intensityLevel);
+        fbb.startTable(55);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.autoStart);
         fbb.addOffset(2, clockFaceStyleOffset);
@@ -896,6 +928,11 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addBool(46, object.useCursorCountdown);
         fbb.addBool(47, object.enableAnimations);
         fbb.addOffset(48, trayIconStyleOffset);
+        fbb.addBool(49, object.hasCompletedOnboarding);
+        fbb.addBool(50, object.quietModeEnabled);
+        fbb.addOffset(51, quietModePresetOffset);
+        fbb.addInt64(52, object.lastSnoozeDurationMinutes);
+        fbb.addOffset(53, intensityLevelOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1140,6 +1177,30 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final trayIconStyleParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 100, '');
+        final hasCompletedOnboardingParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          102,
+          false,
+        );
+        final quietModeEnabledParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          104,
+          false,
+        );
+        final quietModePresetParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 106, '');
+        final lastSnoozeDurationMinutesParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          108,
+          0,
+        );
+        final intensityLevelParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 110, '');
         final object = SettingsSnapshot(
           id: idParam,
           autoStart: autoStartParam,
@@ -1190,6 +1251,11 @@ obx_int.ModelDefinition getObjectBoxModel() {
           useCursorCountdown: useCursorCountdownParam,
           enableAnimations: enableAnimationsParam,
           trayIconStyle: trayIconStyleParam,
+          hasCompletedOnboarding: hasCompletedOnboardingParam,
+          quietModeEnabled: quietModeEnabledParam,
+          quietModePreset: quietModePresetParam,
+          lastSnoozeDurationMinutes: lastSnoozeDurationMinutesParam,
+          intensityLevel: intensityLevelParam,
         );
 
         return object;
@@ -1550,5 +1616,28 @@ class SettingsSnapshot_ {
   /// See [SettingsSnapshot.trayIconStyle].
   static final trayIconStyle = obx.QueryStringProperty<SettingsSnapshot>(
     _entities[4].properties[48],
+  );
+
+  /// See [SettingsSnapshot.hasCompletedOnboarding].
+  static final hasCompletedOnboarding =
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[49]);
+
+  /// See [SettingsSnapshot.quietModeEnabled].
+  static final quietModeEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
+    _entities[4].properties[50],
+  );
+
+  /// See [SettingsSnapshot.quietModePreset].
+  static final quietModePreset = obx.QueryStringProperty<SettingsSnapshot>(
+    _entities[4].properties[51],
+  );
+
+  /// See [SettingsSnapshot.lastSnoozeDurationMinutes].
+  static final lastSnoozeDurationMinutes =
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[52]);
+
+  /// See [SettingsSnapshot.intensityLevel].
+  static final intensityLevel = obx.QueryStringProperty<SettingsSnapshot>(
+    _entities[4].properties[53],
   );
 }

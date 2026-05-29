@@ -103,6 +103,54 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        sectionHeader('Break Intensity'),
+        buildCard([
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Strictness Level',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Gentle allows easy skips; Locked requires full focus.',
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AppDropdown<String>(
+                  value: _settings.intensityLevel,
+                  onChanged: (v) {
+                    if (v != null) {
+                      _save(_settings.copyWith(intensityLevel: v));
+                    }
+                  },
+                  items: const [
+                    AppDropdownItem(value: 'gentle', label: 'GENTLE'),
+                    AppDropdownItem(value: 'standard', label: 'STANDARD'),
+                    AppDropdownItem(value: 'strict', label: 'STRICT'),
+                    AppDropdownItem(value: 'locked', label: 'LOCKED'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ]),
+        const SizedBox(height: 32),
         sectionHeader('Display Options'),
         buildCard([
           toggleRow(
@@ -146,7 +194,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                           color: AppTheme.textPrimary,
-                          fontFamily: 'Satoshi',
+                          fontFamily: 'Inter',
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -156,7 +204,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                           color: AppTheme.textSecondary,
                           fontSize: 12,
                           letterSpacing: 0,
-                          fontFamily: 'Satoshi',
+                          fontFamily: 'Inter',
                         ),
                       ),
                     ],
@@ -244,7 +292,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                     'No external displays detected or plugin not fully initialized.',
                     style: TextStyle(
                       color: AppTheme.textSecondary,
-                      fontFamily: 'Satoshi',
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ),
@@ -679,7 +727,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                 fontSize: isSmall ? 10 : 12,
                 letterSpacing: -0.1,
-                fontFamily: 'Satoshi',
+                fontFamily: 'Inter',
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -712,7 +760,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: AppTheme.textPrimary,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -722,7 +770,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                     color: AppTheme.textSecondary,
                     fontSize: 12,
                     letterSpacing: 0,
-                    fontFamily: 'Satoshi',
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -741,7 +789,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: textColor ?? Colors.white,
-                fontFamily: 'Satoshi',
+                fontFamily: 'Inter',
               ),
             ),
           ),
@@ -1195,7 +1243,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                 color: isSelected ? AppTheme.accentColor : Colors.white,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                 fontSize: 13,
-                fontFamily: 'Satoshi',
+                fontFamily: 'Inter',
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1208,7 +1256,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                 color: AppTheme.textSecondary.withValues(alpha: 0.8),
                 fontSize: 10.5,
                 height: 1.3,
-                fontFamily: 'Satoshi',
+                fontFamily: 'Inter',
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
