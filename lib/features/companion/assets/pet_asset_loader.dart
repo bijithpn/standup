@@ -15,6 +15,7 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/companion_
 
 class PetAssetLoader {
   static final Map<String, ui.Image> _imageCache = {};
+  static final Set<String> _failedAssets = {};
   static final Map<String, Map<PetAnimationState, SpriteAnimation>>
   _animationCache = {};
   static final Map<String, ui.Rect> _boundingBoxCache = {};
@@ -22,6 +23,9 @@ class PetAssetLoader {
   static Future<ui.Image> loadImage(String path) async {
     if (_imageCache.containsKey(path)) {
       return _imageCache[path]!;
+    }
+    if (_failedAssets.contains(path)) {
+      throw Exception('Asset previously failed to load: $path');
     }
     try {
       final ByteData data = await rootBundle.load(path);
@@ -32,6 +36,8 @@ class PetAssetLoader {
       _imageCache[path] = fi.image;
       return fi.image;
     } catch (e) {
+      _failedAssets.add(path);
+      debugPrint('Warning: Failed to load asset $path. Caching failure. Error: $e');
       throw Exception('Failed to load pet asset: $path, error: $e');
     }
   }

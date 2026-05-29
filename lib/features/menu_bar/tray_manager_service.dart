@@ -205,15 +205,22 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           } else {
             path = _defaultIconPath;
           }
-          if (path != null) {
+          if (path != null && File(path).existsSync()) {
             await trayManager.setIcon(path, isTemplate: true);
+          } else if (_defaultIconPath != null && File(_defaultIconPath!).existsSync()) {
+            _logger.warning('Missing primary tray icon asset: $path. Using fallback.');
+            await trayManager.setIcon(_defaultIconPath!, isTemplate: true);
+          } else {
+            _logger.warning('Missing both primary and fallback tray icon assets: $path, $_defaultIconPath');
           }
           break;
         case TrayIconMode.defaultIcon:
         case TrayIconMode.minimal:
         case TrayIconMode.countdownOnly:
-          if (_defaultIconPath != null) {
+          if (_defaultIconPath != null && File(_defaultIconPath!).existsSync()) {
             await trayManager.setIcon(_defaultIconPath!, isTemplate: true);
+          } else {
+            _logger.warning('Missing default tray icon asset: $_defaultIconPath');
           }
           break;
       }

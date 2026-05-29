@@ -79,7 +79,6 @@ flutter:
     - assets/animations/dogs/dalmatian.png
     - assets/animations/dogs/husky.png
     - assets/animations/dogs/labrador.png
-    - assets/animations/dogs/goldie/
     # Modular pets framework
     - assets/animations/pets/pets.json
     - assets/animations/pets/
