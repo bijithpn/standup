@@ -158,8 +158,8 @@ class StorageService {
 
   Future<int> getDatabaseSize() async {
     try {
-      final supportDir = await getApplicationSupportDirectory();
-      final storeDir = p.join(supportDir.path, 'breakmate_v1');
+      final docsDir = await getApplicationDocumentsDirectory();
+      final storeDir = p.join(docsDir.path, 'breakmate_db');
       final file = File(p.join(storeDir, 'data.mdb'));
       if (await file.exists()) {
         return await file.length();

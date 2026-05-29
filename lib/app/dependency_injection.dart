@@ -94,6 +94,7 @@ Future<void> initDependencies() async {
   sl.registerSingleton<SmartDetectionService>(smartDetectionService);
 
   final statsService = StatsService(storage: sl());
+  await statsService.initialize();
   sl.registerSingleton<StatsService>(statsService);
 
   // TimerEngine with EventBus integration

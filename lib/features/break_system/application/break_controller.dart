@@ -54,6 +54,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   SettingsRepository get settingsRepository => _settingsRepo;
   bool get isPaused => _timerEngine.state == TimerState.paused;
   bool get isBreakActive => _timerEngine.state == TimerState.breakActive;
+  Duration get totalWorkToday => _timerEngine.totalWorkToday;
   String? get currentExerciseTitle => _currentExerciseTitle;
   String? get currentExerciseInstructions => _currentExerciseInstructions;
 

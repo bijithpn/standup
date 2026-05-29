@@ -231,13 +231,21 @@ class DashboardPage extends StatelessWidget {
     return Consumer<StatsService>(
       builder: (context, statsService, child) {
         final stats = statsService.load();
-        final todayStats = stats.weeklyData.isNotEmpty
-            ? stats.weeklyData.last
-            : null;
+        final todayStr = _todayString();
+        final todayStats = stats.weeklyData.lastWhere(
+          (d) => d.date == todayStr,
+          orElse: () => DailyStats(
+            date: todayStr,
+            breaksCompleted: 0,
+            breaksSkipped: 0,
+            usageMinutes: 0,
+          ),
+        );
 
         final hasData =
-            todayStats != null &&
-            (todayStats.breaksCompleted > 0 || todayStats.breaksSkipped > 0);
+            todayStats.breaksCompleted > 0 ||
+            todayStats.breaksSkipped > 0 ||
+            todayStats.usageMinutes > 0;
 
         return Container(
           padding: const EdgeInsets.all(24),
@@ -271,31 +279,54 @@ class DashboardPage extends StatelessWidget {
                   ),
                 )
               else
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _StatItem(
-                      label: AppStrings.completed,
-                      value: '${todayStats.breaksCompleted}',
-                      color: AppTheme.success,
-                    ),
-                    _StatItem(
-                      label: AppStrings.skipped,
-                      value: '${todayStats.breaksSkipped}',
-                      color: AppTheme.error,
-                    ),
-                    _StatItem(
-                      label: AppStrings.focusTimeMins,
-                      value: '${todayStats.usageMinutes}',
-                      color: AppTheme.warning,
-                    ),
-                  ],
+                Consumer<BreakController>(
+                  builder: (context, controller, _) {
+                    final workToday = controller.totalWorkToday;
+                    final hours = workToday.inHours;
+                    final minutes = workToday.inMinutes % 60;
+                    final seconds = workToday.inSeconds % 60;
+
+                    String focusTimeStr;
+                    if (hours > 0) {
+                      focusTimeStr = '${hours}h ${minutes}m';
+                    } else if (minutes > 0) {
+                      focusTimeStr = '${minutes}m ${seconds}s';
+                    } else {
+                      focusTimeStr = '${seconds}s';
+                    }
+
+                    return Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _StatItem(
+                          label: AppStrings.completed,
+                          value: '${todayStats.breaksCompleted}',
+                          color: AppTheme.success,
+                        ),
+                        _StatItem(
+                          label: AppStrings.skipped,
+                          value: '${todayStats.breaksSkipped}',
+                          color: AppTheme.error,
+                        ),
+                        _StatItem(
+                          label: AppStrings.focusTimeMins,
+                          value: focusTimeStr,
+                          color: AppTheme.warning,
+                        ),
+                      ],
+                    );
+                  },
                 ),
             ],
           ),
         );
       },
     );
+  }
+
+  String _todayString() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 }
 
