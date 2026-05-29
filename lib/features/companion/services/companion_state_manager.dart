@@ -7,8 +7,8 @@ import 'package:breakmate/core/native/native_bridge.dart';
 
 class CompanionStateManager {
   CompanionStateManager({EventBus? eventBus})
-      : _eventBus = eventBus ?? EventBus.instance,
-        _logger = AppLogger();
+    : _eventBus = eventBus ?? EventBus.instance,
+      _logger = AppLogger();
 
   final EventBus _eventBus;
   final AppLogger _logger;

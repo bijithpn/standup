@@ -77,12 +77,13 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
     final fromX = _orbX;
     final fromY = _orbY;
 
-    _orbAnimation = Tween<Offset>(
-      begin: Offset(fromX, fromY),
-      end: Offset(_targetX, _targetY),
-    ).animate(
-      CurvedAnimation(parent: _orbController, curve: Curves.easeInOutCubic),
-    );
+    _orbAnimation =
+        Tween<Offset>(
+          begin: Offset(fromX, fromY),
+          end: Offset(_targetX, _targetY),
+        ).animate(
+          CurvedAnimation(parent: _orbController, curve: Curves.easeInOutCubic),
+        );
 
     _orbController
       ..reset()
@@ -208,8 +209,11 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
             ),
           ),
           child: const Center(
-            child: Icon(Icons.visibility_rounded,
-                color: Color(0xFF38BDF8), size: 34),
+            child: Icon(
+              Icons.visibility_rounded,
+              color: Color(0xFF38BDF8),
+              size: 34,
+            ),
           ),
         ),
         const SizedBox(height: 24),

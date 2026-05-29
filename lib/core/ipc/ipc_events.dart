@@ -8,11 +8,7 @@ abstract class IpcEvent {
   const IpcEvent(this.eventName, this.payload, {this.version = currentVersion});
 
   Map<String, dynamic> toJson() {
-    return {
-      'eventName': eventName,
-      'payload': payload,
-      'version': version,
-    };
+    return {'eventName': eventName, 'payload': payload, 'version': version};
   }
 
   static IpcEvent parse(String eventName, Map<String, dynamic> payload) {
@@ -60,12 +56,12 @@ class TimerStateChangedIpcEvent extends IpcEvent {
     required this.targetEndTime,
     required this.totalWorkTodaySeconds,
   }) : super(IpcEventNames.timerStateChanged, {
-          'state': stateName,
-          'countdownSeconds': countdownSeconds,
-          'workElapsedSeconds': workElapsedSeconds,
-          'targetEndTime': ?targetEndTime,
-          'totalWorkTodaySeconds': totalWorkTodaySeconds,
-        });
+         'state': stateName,
+         'countdownSeconds': countdownSeconds,
+         'workElapsedSeconds': workElapsedSeconds,
+         'targetEndTime': ?targetEndTime,
+         'totalWorkTodaySeconds': totalWorkTodaySeconds,
+       });
 
   factory TimerStateChangedIpcEvent.fromJson(Map<String, dynamic> payload) {
     return TimerStateChangedIpcEvent(
@@ -91,10 +87,10 @@ class BreakStartedIpcEvent extends IpcEvent {
     required this.durationSeconds,
     required this.title,
   }) : super(IpcEventNames.breakStarted, {
-          'isLongBreak': isLongBreak,
-          'durationSeconds': durationSeconds,
-          'title': title,
-        });
+         'isLongBreak': isLongBreak,
+         'durationSeconds': durationSeconds,
+         'title': title,
+       });
 
   factory BreakStartedIpcEvent.fromJson(Map<String, dynamic> payload) {
     return BreakStartedIpcEvent(
@@ -108,27 +104,21 @@ class BreakStartedIpcEvent extends IpcEvent {
 class BreakEndedIpcEvent extends IpcEvent {
   final bool skipped;
 
-  BreakEndedIpcEvent({
-    required this.skipped,
-  }) : super(IpcEventNames.breakEnded, {
-          'skipped': skipped,
-        });
+  BreakEndedIpcEvent({required this.skipped})
+    : super(IpcEventNames.breakEnded, {'skipped': skipped});
 
   factory BreakEndedIpcEvent.fromJson(Map<String, dynamic> payload) {
-    return BreakEndedIpcEvent(
-      skipped: _readRequired<bool>(payload, 'skipped'),
-    );
+    return BreakEndedIpcEvent(skipped: _readRequired<bool>(payload, 'skipped'));
   }
 }
 
 class CompanionInteractionIpcEvent extends IpcEvent {
   final String interactionType;
 
-  CompanionInteractionIpcEvent({
-    required this.interactionType,
-  }) : super(IpcEventNames.companionInteraction, {
-          'interactionType': interactionType,
-        });
+  CompanionInteractionIpcEvent({required this.interactionType})
+    : super(IpcEventNames.companionInteraction, {
+        'interactionType': interactionType,
+      });
 
   factory CompanionInteractionIpcEvent.fromJson(Map<String, dynamic> payload) {
     return CompanionInteractionIpcEvent(

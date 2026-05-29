@@ -94,9 +94,12 @@ class NotificationsSection extends StatelessWidget {
           _buildReminderOptions(
             interval: settings.postureReminderIntervalMinutes,
             type: settings.postureReminderType,
-            onIntervalChanged: (v) => onSave(settings.copyWith(postureReminderIntervalMinutes: v)),
-            onTypeChanged: (v) => onSave(settings.copyWith(postureReminderType: v)),
-            onPreview: () => _showPreview(settings.postureReminderType, 'posture'),
+            onIntervalChanged: (v) =>
+                onSave(settings.copyWith(postureReminderIntervalMinutes: v)),
+            onTypeChanged: (v) =>
+                onSave(settings.copyWith(postureReminderType: v)),
+            onPreview: () =>
+                _showPreview(settings.postureReminderType, 'posture'),
           ),
         ],
       ],
@@ -117,8 +120,10 @@ class NotificationsSection extends StatelessWidget {
           _buildReminderOptions(
             interval: settings.eyeBlinkReminderIntervalMinutes,
             type: settings.eyeBlinkReminderType,
-            onIntervalChanged: (v) => onSave(settings.copyWith(eyeBlinkReminderIntervalMinutes: v)),
-            onTypeChanged: (v) => onSave(settings.copyWith(eyeBlinkReminderType: v)),
+            onIntervalChanged: (v) =>
+                onSave(settings.copyWith(eyeBlinkReminderIntervalMinutes: v)),
+            onTypeChanged: (v) =>
+                onSave(settings.copyWith(eyeBlinkReminderType: v)),
             onPreview: () => _showPreview(settings.eyeBlinkReminderType, 'eye'),
           ),
         ],
@@ -137,11 +142,24 @@ class NotificationsSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          const Expanded(child: Text('Interval & Display', style: TextStyle(color: Colors.white70, fontSize: 13))),
+          const Expanded(
+            child: Text(
+              'Interval & Display',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+          ),
           AppDropdown<int>(
             value: [10, 20, 30, 45, 60].contains(interval) ? interval : 30,
-            items: [10, 20, 30, 45, 60].map((v) => AppDropdownItem(value: v, label: '$v min')).toList(),
-            onChanged: (v) { if (v != null) onIntervalChanged(v); },
+            items: [
+              10,
+              20,
+              30,
+              45,
+              60,
+            ].map((v) => AppDropdownItem(value: v, label: '$v min')).toList(),
+            onChanged: (v) {
+              if (v != null) onIntervalChanged(v);
+            },
           ),
           const SizedBox(width: 8),
           AppDropdown<String>(
@@ -150,7 +168,9 @@ class NotificationsSection extends StatelessWidget {
               AppDropdownItem(value: 'native', label: 'Native'),
               AppDropdownItem(value: 'overlay', label: 'Overlay'),
             ],
-            onChanged: (v) { if (v != null) onTypeChanged(v); },
+            onChanged: (v) {
+              if (v != null) onTypeChanged(v);
+            },
           ),
           const SizedBox(width: 12),
           GestureDetector(
@@ -158,7 +178,10 @@ class NotificationsSection extends StatelessWidget {
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -166,9 +189,21 @@ class NotificationsSection extends StatelessWidget {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(CupertinoIcons.play_fill, size: 14, color: Colors.white),
+                    Icon(
+                      CupertinoIcons.play_fill,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 6),
-                    Text('Preview', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+                    Text(
+                      'Preview',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
                   ],
                 ),
               ),

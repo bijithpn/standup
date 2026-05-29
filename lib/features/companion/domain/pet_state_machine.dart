@@ -73,9 +73,11 @@ class PetTransition {
   final PetEvent event;
   final PetState targetState;
   final double weight; // Higher = more likely when multiple transitions match
-  final Duration? minDuration; // Minimum time in current state before this transition
+  final Duration?
+  minDuration; // Minimum time in current state before this transition
   final Duration? cooldown; // Cooldown after this transition fires
-  final bool Function(PetMoodState? currentMood, PetPersonality personality)? condition;
+  final bool Function(PetMoodState? currentMood, PetPersonality personality)?
+  condition;
 
   const PetTransition({
     required this.event,
@@ -92,8 +94,8 @@ class PetStateMachine extends ChangeNotifier {
   PetStateMachine({
     PetPersonality? personality,
     void Function(PetState)? onStateChanged,
-  })  : personality = personality ?? const PetPersonality(),
-        _onStateChanged = onStateChanged;
+  }) : personality = personality ?? const PetPersonality(),
+       _onStateChanged = onStateChanged;
 
   final PetPersonality personality;
   final void Function(PetState)? _onStateChanged;
@@ -107,12 +109,14 @@ class PetStateMachine extends ChangeNotifier {
   static final _rng = Random();
 
   PetState get currentState => _currentState;
-  Duration get timeInState =>
-      _stateEnteredAt != null ? DateTime.now().difference(_stateEnteredAt!) : Duration.zero;
+  Duration get timeInState => _stateEnteredAt != null
+      ? DateTime.now().difference(_stateEnteredAt!)
+      : Duration.zero;
   PetMoodState? get currentMood => _currentMood;
 
   Stream<PetState> get stateStream => _stateController.stream;
-  final StreamController<PetState> _stateController = StreamController<PetState>.broadcast();
+  final StreamController<PetState> _stateController =
+      StreamController<PetState>.broadcast();
 
   void setMood(PetMoodState mood) {
     _currentMood = mood;
@@ -139,7 +143,8 @@ class PetStateMachine extends ChangeNotifier {
         final last = _lastTriggered[t];
         if (last != null && now.difference(last) < t.cooldown!) continue;
       }
-      if (t.condition != null && !t.condition!(_currentMood, personality)) continue;
+      if (t.condition != null && !t.condition!(_currentMood, personality))
+        continue;
       matched.add(t);
       totalWeight += t.weight;
     }
@@ -152,7 +157,10 @@ class PetStateMachine extends ChangeNotifier {
       double threshold = _rng.nextDouble() * totalWeight;
       for (final t in matched) {
         threshold -= t.weight;
-        if (threshold <= 0) { selected = t; break; }
+        if (threshold <= 0) {
+          selected = t;
+          break;
+        }
       }
       selected ??= matched.last;
     }
@@ -191,193 +199,627 @@ class PetStateMachine extends ChangeNotifier {
   ///   are present on every interruptible state so they always win.
   static final Map<PetState, List<PetTransition>> _baseTransitions = {
     PetState.idle: [
-      PetTransition(event: PetEvent.userClick, targetState: PetState.alert, weight: 1.0, minDuration: const Duration(milliseconds: 500)),
-      PetTransition(event: PetEvent.userDoubleClick, targetState: PetState.happy, weight: 1.0, minDuration: const Duration(milliseconds: 500)),
-      PetTransition(event: PetEvent.userHover, targetState: PetState.alert, weight: 0.8, minDuration: const Duration(milliseconds: 200)),
-      PetTransition(event: PetEvent.userDragStart, targetState: PetState.drag, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
-      PetTransition(event: PetEvent.focusModeOn, targetState: PetState.focusMode, weight: 1.0),
-      PetTransition(event: PetEvent.idleTimeout, targetState: PetState.sleep, weight: 1.0),
-      PetTransition(event: PetEvent.cursorNearby, targetState: PetState.curious, weight: 1.5),
+      PetTransition(
+        event: PetEvent.userClick,
+        targetState: PetState.alert,
+        weight: 1.0,
+        minDuration: const Duration(milliseconds: 500),
+      ),
+      PetTransition(
+        event: PetEvent.userDoubleClick,
+        targetState: PetState.happy,
+        weight: 1.0,
+        minDuration: const Duration(milliseconds: 500),
+      ),
+      PetTransition(
+        event: PetEvent.userHover,
+        targetState: PetState.alert,
+        weight: 0.8,
+        minDuration: const Duration(milliseconds: 200),
+      ),
+      PetTransition(
+        event: PetEvent.userDragStart,
+        targetState: PetState.drag,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.focusModeOn,
+        targetState: PetState.focusMode,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.idleTimeout,
+        targetState: PetState.sleep,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorNearby,
+        targetState: PetState.curious,
+        weight: 1.5,
+      ),
       // Ambient AI-driven behaviors — only fire from idle
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.blink, weight: 3.0,
-          cooldown: const Duration(seconds: 8)),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.stretch, weight: 1.5,
-          cooldown: const Duration(seconds: 30),
-          condition: (mood, personality) => personality.activityLevel > 0.3),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.walk, weight: 2.5,
-          cooldown: const Duration(seconds: 10),
-          condition: (mood, personality) => personality.activityLevel > 0.2),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.run, weight: 1.0,
-          cooldown: const Duration(seconds: 25),
-          condition: (mood, personality) => personality.activityLevel > 0.5),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.grooming, weight: 1.2,
-          cooldown: const Duration(seconds: 20),
-          condition: (mood, personality) => personality.independence > 0.4),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.exploring, weight: 1.8,
-          cooldown: const Duration(seconds: 15),
-          condition: (mood, personality) => personality.curiosity > 0.5),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.bored, weight: 0.8,
-          cooldown: const Duration(seconds: 20),
-          condition: (mood, personality) => personality.playfulness > 0.7),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.blink,
+        weight: 3.0,
+        cooldown: const Duration(seconds: 8),
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.stretch,
+        weight: 1.5,
+        cooldown: const Duration(seconds: 30),
+        condition: (mood, personality) => personality.activityLevel > 0.3,
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.walk,
+        weight: 2.5,
+        cooldown: const Duration(seconds: 10),
+        condition: (mood, personality) => personality.activityLevel > 0.2,
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.run,
+        weight: 1.0,
+        cooldown: const Duration(seconds: 25),
+        condition: (mood, personality) => personality.activityLevel > 0.5,
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.grooming,
+        weight: 1.2,
+        cooldown: const Duration(seconds: 20),
+        condition: (mood, personality) => personality.independence > 0.4,
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.exploring,
+        weight: 1.8,
+        cooldown: const Duration(seconds: 15),
+        condition: (mood, personality) => personality.curiosity > 0.5,
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.bored,
+        weight: 0.8,
+        cooldown: const Duration(seconds: 20),
+        condition: (mood, personality) => personality.playfulness > 0.7,
+      ),
     ],
     PetState.blink: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(milliseconds: 500)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(milliseconds: 500),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.stretch: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.walk: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 5)),
-      PetTransition(event: PetEvent.userClick, targetState: PetState.alert, weight: 1.0),
-      PetTransition(event: PetEvent.cursorNearby, targetState: PetState.following, weight: 1.2),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 5),
+      ),
+      PetTransition(
+        event: PetEvent.userClick,
+        targetState: PetState.alert,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorNearby,
+        targetState: PetState.following,
+        weight: 1.2,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.run: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.sleep: [
-      PetTransition(event: PetEvent.activityDetected, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.userClick, targetState: PetState.alert, weight: 0.8, minDuration: const Duration(seconds: 2)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.activityDetected,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.userClick,
+        targetState: PetState.alert,
+        weight: 0.8,
+        minDuration: const Duration(seconds: 2),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.alert: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(milliseconds: 2000)),
-      PetTransition(event: PetEvent.userDoubleClick, targetState: PetState.happy, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(milliseconds: 2000),
+      ),
+      PetTransition(
+        event: PetEvent.userDoubleClick,
+        targetState: PetState.happy,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.happy: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.curious: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.cursorLeft, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.userClick, targetState: PetState.happy, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.cursorLeft,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.userClick,
+        targetState: PetState.happy,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.exploring: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 6)),
-      PetTransition(event: PetEvent.cursorNearby, targetState: PetState.curious, weight: 1.5),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 6),
+      ),
+      PetTransition(
+        event: PetEvent.cursorNearby,
+        targetState: PetState.curious,
+        weight: 1.5,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
       // Can chain into another walk from exploring
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.walk, weight: 1.0,
-          cooldown: const Duration(seconds: 10)),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.walk,
+        weight: 1.0,
+        cooldown: const Duration(seconds: 10),
+      ),
     ],
     PetState.grooming: [
       // animationComplete fires when lick1 finishes — chain to lick2 (grooming2)
-      PetTransition(event: PetEvent.animationComplete, targetState: PetState.grooming, weight: 1.0,
-          minDuration: const Duration(milliseconds: 100)),
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
-      PetTransition(event: PetEvent.activityDetected, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.animationComplete,
+        targetState: PetState.grooming,
+        weight: 1.0,
+        minDuration: const Duration(milliseconds: 100),
+      ),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
+      PetTransition(
+        event: PetEvent.activityDetected,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.bored: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.walk, weight: 1.5,
-          cooldown: const Duration(seconds: 8)),
-      PetTransition(event: PetEvent.randomBehavior, targetState: PetState.playing, weight: 0.8,
-          cooldown: const Duration(seconds: 15),
-          condition: (mood, personality) => personality.playfulness > 0.5),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.walk,
+        weight: 1.5,
+        cooldown: const Duration(seconds: 8),
+      ),
+      PetTransition(
+        event: PetEvent.randomBehavior,
+        targetState: PetState.playing,
+        weight: 0.8,
+        cooldown: const Duration(seconds: 15),
+        condition: (mood, personality) => personality.playfulness > 0.5,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.following: [
-      PetTransition(event: PetEvent.cursorLeft, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 1)),
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 0.5, minDuration: const Duration(seconds: 10)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.cursorLeft,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 1),
+      ),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 0.5,
+        minDuration: const Duration(seconds: 10),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.drag: [
-      PetTransition(event: PetEvent.userDragEnd, targetState: PetState.idle, weight: 1.0),
+      PetTransition(
+        event: PetEvent.userDragEnd,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
     ],
     PetState.breakReminder: [
-      PetTransition(event: PetEvent.breakEnded, targetState: PetState.happy, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.breakEnded,
+        targetState: PetState.happy,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.meetingPaused: [
-      PetTransition(event: PetEvent.meetingEnded, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.meetingEnded,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.focusMode: [
-      PetTransition(event: PetEvent.focusModeOff, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.focusModeOff,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.excited: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.sad: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
-      PetTransition(event: PetEvent.petPlayed, targetState: PetState.happy, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
+      PetTransition(
+        event: PetEvent.petPlayed,
+        targetState: PetState.happy,
+        weight: 1.0,
+      ),
     ],
     PetState.playing: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 5)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
-      PetTransition(event: PetEvent.meetingDetected, targetState: PetState.meetingPaused, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 5),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.meetingDetected,
+        targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
     ],
     PetState.eating: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
     ],
     PetState.jumping: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 2)),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 2),
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.celebrating: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.happy, weight: 1.0, minDuration: const Duration(seconds: 3)),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.happy,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
     ],
     PetState.dancing: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.happy, weight: 1.0, minDuration: const Duration(seconds: 4)),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.happy,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
     ],
     PetState.hiding: [
-      PetTransition(event: PetEvent.meetingEnded, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 0.5, minDuration: const Duration(seconds: 8)),
+      PetTransition(
+        event: PetEvent.meetingEnded,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 0.5,
+        minDuration: const Duration(seconds: 8),
+      ),
     ],
     PetState.quiet: [
-      PetTransition(event: PetEvent.meetingEnded, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 0.5, minDuration: const Duration(seconds: 6)),
+      PetTransition(
+        event: PetEvent.meetingEnded,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 0.5,
+        minDuration: const Duration(seconds: 6),
+      ),
     ],
     PetState.interacting: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.cursorLeft, targetState: PetState.idle, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.cursorLeft,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
     ],
     PetState.affectionate: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
     ],
     PetState.turning: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.walk, weight: 1.0, minDuration: const Duration(milliseconds: 800)),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.walk,
+        weight: 1.0,
+        minDuration: const Duration(milliseconds: 800),
+      ),
     ],
     PetState.resting: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 5)),
-      PetTransition(event: PetEvent.activityDetected, targetState: PetState.idle, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 5),
+      ),
+      PetTransition(
+        event: PetEvent.activityDetected,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
     ],
     PetState.angry: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 2)),
-      PetTransition(event: PetEvent.cursorLeft, targetState: PetState.idle, weight: 1.0),
-      PetTransition(event: PetEvent.breakStarted, targetState: PetState.breakReminder, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 2),
+      ),
+      PetTransition(
+        event: PetEvent.cursorLeft,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.breakStarted,
+        targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
     ],
     PetState.scared: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 3)),
-      PetTransition(event: PetEvent.activityDetected, targetState: PetState.alert, weight: 1.0),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.activityDetected,
+        targetState: PetState.alert,
+        weight: 1.0,
+      ),
     ],
     PetState.breatheFire: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 4)),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 4),
+      ),
     ],
     PetState.fly: [
-      PetTransition(event: PetEvent.tick, targetState: PetState.idle, weight: 1.0, minDuration: const Duration(seconds: 6)),
-      PetTransition(event: PetEvent.cursorNearby, targetState: PetState.following, weight: 1.5),
+      PetTransition(
+        event: PetEvent.tick,
+        targetState: PetState.idle,
+        weight: 1.0,
+        minDuration: const Duration(seconds: 6),
+      ),
+      PetTransition(
+        event: PetEvent.cursorNearby,
+        targetState: PetState.following,
+        weight: 1.5,
+      ),
     ],
   };
 }

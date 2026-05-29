@@ -60,7 +60,9 @@ class WindowService {
 
   Future<void> setAcceptsMouseMovedEvents(bool accept) async {
     try {
-      await _channel.invokeMethod('setAcceptsMouseMovedEvents', {'accept': accept});
+      await _channel.invokeMethod('setAcceptsMouseMovedEvents', {
+        'accept': accept,
+      });
     } catch (e) {
       _logger.error('Failed to set accepts mouse moved: $e');
     }

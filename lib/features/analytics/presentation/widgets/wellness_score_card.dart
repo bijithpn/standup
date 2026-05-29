@@ -5,9 +5,9 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 class WellnessScoreCard extends StatelessWidget {
   final int productivityScore;
   final int wellnessScore;
-  
+
   const WellnessScoreCard({
-    super.key, 
+    super.key,
     required this.productivityScore,
     required this.wellnessScore,
   });
@@ -18,8 +18,8 @@ class WellnessScoreCard extends StatelessWidget {
       children: [
         Expanded(
           child: _scoreItem(
-            'Productivity', 
-            productivityScore, 
+            'Productivity',
+            productivityScore,
             AppTheme.accentColor,
             CupertinoIcons.bolt_fill,
           ),
@@ -27,8 +27,8 @@ class WellnessScoreCard extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           child: _scoreItem(
-            'Wellness', 
-            wellnessScore, 
+            'Wellness',
+            wellnessScore,
             const Color(0xFF10B981),
             CupertinoIcons.heart_fill,
           ),

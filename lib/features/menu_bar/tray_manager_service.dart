@@ -481,7 +481,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
       _animTimer?.cancel();
       _actionAnimTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {

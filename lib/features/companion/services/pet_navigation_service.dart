@@ -2,8 +2,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 
-
-
 /// Navigation service for autonomous pet movement and cursor following.
 /// Uses a spring-damper model for natural, organic motion.
 class PetNavigationService {
@@ -46,7 +44,8 @@ class PetNavigationService {
   // Getters
   Offset get currentPosition => _pos + Offset(0, _hopY + _flyY);
   Offset get velocity => _vel;
-  double get speed => _vel.distance; // px/s — used by component to pick walk/run anim
+  double get speed =>
+      _vel.distance; // px/s — used by component to pick walk/run anim
   bool get isCursorFollowing => _isCursorFollowing;
   bool get isWanderingEnabled => _isWanderingEnabled;
   bool get isAnnoyed => _cursorMoveCount > _annoyanceThreshold;
@@ -136,22 +135,26 @@ class PetNavigationService {
       return;
     }
     final m = _edgeMargin;
-    
+
     // Rabbit edge-seeking wandering target logic
     if (_species == PetSpecies.rabbit && _rng.nextDouble() < 0.70) {
       final double edge = _rng.nextInt(4).toDouble();
       double tx = m;
       double ty = m;
-      if (edge == 0) { // Left edge
+      if (edge == 0) {
+        // Left edge
         tx = m + _rng.nextDouble() * 20.0;
         ty = m + _rng.nextDouble() * (_screen.height - m * 2);
-      } else if (edge == 1) { // Right edge
+      } else if (edge == 1) {
+        // Right edge
         tx = _screen.width - m - _rng.nextDouble() * 20.0;
         ty = m + _rng.nextDouble() * (_screen.height - m * 2);
-      } else if (edge == 2) { // Top edge
+      } else if (edge == 2) {
+        // Top edge
         tx = m + _rng.nextDouble() * (_screen.width - m * 2);
         ty = m + _rng.nextDouble() * 20.0;
-      } else { // Bottom edge
+      } else {
+        // Bottom edge
         tx = m + _rng.nextDouble() * (_screen.width - m * 2);
         ty = _screen.height - m - _rng.nextDouble() * 20.0;
       }
@@ -168,15 +171,21 @@ class PetNavigationService {
         // Local wander within 100 to 250 pixels of current position
         final double distance = 100.0 + _rng.nextDouble() * 150.0;
         final double angle = _rng.nextDouble() * 2 * pi;
-        final double targetX = (_pos.dx + cos(angle) * distance).clamp(m, _screen.width - m);
-        final double targetY = (_pos.dy + sin(angle) * distance).clamp(m, _screen.height - m);
+        final double targetX = (_pos.dx + cos(angle) * distance).clamp(
+          m,
+          _screen.width - m,
+        );
+        final double targetY = (_pos.dy + sin(angle) * distance).clamp(
+          m,
+          _screen.height - m,
+        );
         _wanderTarget = Offset(targetX, targetY);
       }
     }
-    
+
     _hasWanderTarget = true;
     _lastWanderTime = now;
-    
+
     // Dynamic unpredictable cooldown: 2 to 7 seconds
     _currentWanderCooldown = Duration(seconds: 2 + _rng.nextInt(6));
   }
@@ -201,10 +210,7 @@ class PetNavigationService {
       _updateWander(dt);
     }
 
-    _pos = Offset(
-      _pos.dx + _vel.dx * dt,
-      _pos.dy + _vel.dy * dt,
-    );
+    _pos = Offset(_pos.dx + _vel.dx * dt, _pos.dy + _vel.dy * dt);
 
     _clampToBounds();
 
@@ -278,7 +284,10 @@ class PetNavigationService {
 
     // Spring-damper: F = stiffness * displacement - damping * velocity
     final dir = toTarget / dist;
-    final targetSpeed = (profile.acceleration * dist).clamp(0.0, profile.movementSpeed);
+    final targetSpeed = (profile.acceleration * dist).clamp(
+      0.0,
+      profile.movementSpeed,
+    );
     final targetVel = dir * targetSpeed;
 
     // Critically-damped spring integration

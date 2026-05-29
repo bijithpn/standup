@@ -16,8 +16,9 @@ class CompanionOverlayWindow extends StatefulWidget {
 }
 
 class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
-  static const MethodChannel _channel =
-      MethodChannel('com.breakmate.desktop/companion_data');
+  static const MethodChannel _channel = MethodChannel(
+    'com.breakmate.desktop/companion_data',
+  );
 
   CompanionGame? _game;
   String _themeId = 'grey_cat';
@@ -57,14 +58,17 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   /// Falls back to default grey-cat if the channel is unavailable.
   Future<void> _fetchAndApplyInitialSettings() async {
     try {
-      final result = await _channel
-          .invokeMethod<Map<dynamic, dynamic>>('getInitialSettings');
+      final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
+        'getInitialSettings',
+      );
       if (result != null) {
         _applySettings(Map<String, dynamic>.from(result));
-        EventBus.instance.emit(CompanionInteractionEvent(
-          interactionType: 'init',
-          metadata: {'themeId': _themeId, 'petName': _petName},
-        ));
+        EventBus.instance.emit(
+          CompanionInteractionEvent(
+            interactionType: 'init',
+            metadata: {'themeId': _themeId, 'petName': _petName},
+          ),
+        );
         return;
       }
     } catch (_) {
@@ -80,10 +84,12 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         );
         _gameInitialized = true;
       });
-      EventBus.instance.emit(CompanionInteractionEvent(
-        interactionType: 'init',
-        metadata: {'themeId': _themeId, 'petName': _petName},
-      ));
+      EventBus.instance.emit(
+        CompanionInteractionEvent(
+          interactionType: 'init',
+          metadata: {'themeId': _themeId, 'petName': _petName},
+        ),
+      );
     }
   }
 
@@ -210,18 +216,21 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     // (window_manager.startDragging() works on macOS and Windows)
     try {
       // Attempt platform drag; ignore errors (e.g., in unit tests)
-      const MethodChannel('com.leanflutter.plugins/window_manager')
-          .invokeMethod<void>('startDragging');
+      const MethodChannel(
+        'com.leanflutter.plugins/window_manager',
+      ).invokeMethod<void>('startDragging');
     } catch (_) {}
     _isDragging = true;
     _game?.onUserInteraction('dragStart');
-    EventBus.instance.emit(CompanionInteractionEvent(
-      interactionType: 'dragStart',
-      metadata: {
-        'x': details.globalPosition.dx,
-        'y': details.globalPosition.dy,
-      },
-    ));
+    EventBus.instance.emit(
+      CompanionInteractionEvent(
+        interactionType: 'dragStart',
+        metadata: {
+          'x': details.globalPosition.dx,
+          'y': details.globalPosition.dy,
+        },
+      ),
+    );
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
@@ -231,9 +240,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   void _onPanEnd(DragEndDetails details) {
     _isDragging = false;
     _game?.onUserInteraction('dragEnd');
-    EventBus.instance.emit(CompanionInteractionEvent(
-      interactionType: 'dragEnd',
-    ));
+    EventBus.instance.emit(
+      CompanionInteractionEvent(interactionType: 'dragEnd'),
+    );
   }
 
   // ──────────────────────────────────────────────────────────────

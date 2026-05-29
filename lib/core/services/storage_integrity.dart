@@ -8,10 +8,6 @@ class StorageIntegrityCheck {
   }
 
   Map<String, dynamic> restoreDefaults() {
-    return {
-      'schema_version': 2,
-      'companion_enabled': true,
-      'stats': {},
-    };
+    return {'schema_version': 2, 'companion_enabled': true, 'stats': {}};
   }
 }

@@ -9,8 +9,8 @@ class TimerContextManager {
   TimerContextManager({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
-  })  : _settingsRepository = settingsRepository,
-        _smartDetectionService = smartDetectionService;
+  }) : _settingsRepository = settingsRepository,
+       _smartDetectionService = smartDetectionService;
 
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;

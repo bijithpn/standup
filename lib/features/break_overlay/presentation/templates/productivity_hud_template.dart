@@ -81,7 +81,9 @@ class ProductivityHudTemplate extends StatelessWidget {
                               height: 0.9,
                               fontWeight: FontWeight.w300,
                               fontFamily: 'Inter',
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 28),

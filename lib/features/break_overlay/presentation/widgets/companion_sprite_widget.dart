@@ -57,7 +57,10 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     _animationController = AnimationController(vsync: this);
     _animationController.addListener(() {
       final int frameIndex = _lastFrameCount > 1
-          ? (_animationController.value * _lastFrameCount).floor().clamp(0, _lastFrameCount - 1)
+          ? (_animationController.value * _lastFrameCount).floor().clamp(
+              0,
+              _lastFrameCount - 1,
+            )
           : 0;
       if (_frameIndexNotifier.value != frameIndex) {
         _frameIndexNotifier.value = frameIndex;
@@ -122,7 +125,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         widget.petTheme.animations[widget.animationState] ??
         widget.petTheme.animations[PetAnimationState.idle] ??
         widget.petTheme.animations.values.first;
- 
+
     if (widget.petTheme.type == PetType.composite) {
       return widget.petTheme.basePath;
     } else {
@@ -138,11 +141,11 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         widget.petTheme.animations[widget.animationState] ??
         widget.petTheme.animations[PetAnimationState.idle] ??
         widget.petTheme.animations.values.first;
- 
+
     int frameCount = 1;
     double stepTime = 0.15;
     bool loop = true;
- 
+
     if (widget.petTheme.type == PetType.composite) {
       if (anim is AnimationRowConfig) {
         frameCount = anim.frameCount;
@@ -194,15 +197,15 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         height: widget.petTheme.spriteSize * widget.scale,
       );
     }
- 
+
     final dynamic anim =
         widget.petTheme.animations[widget.animationState] ??
         widget.petTheme.animations[PetAnimationState.idle] ??
         widget.petTheme.animations.values.first;
- 
+
     int row = 0;
     int frameCount = 1;
- 
+
     if (widget.petTheme.type == PetType.composite) {
       if (anim is AnimationRowConfig) {
         row = anim.row;
@@ -223,7 +226,11 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         builder: (context, frameIndex, child) {
           return Transform(
             alignment: Alignment.center,
-            transform: Matrix4.diagonal3Values(widget.flipX ? -1.0 : 1.0, 1.0, 1.0),
+            transform: Matrix4.diagonal3Values(
+              widget.flipX ? -1.0 : 1.0,
+              1.0,
+              1.0,
+            ),
             child: CustomPaint(
               size: Size(
                 widget.petTheme.spriteSize * widget.scale,

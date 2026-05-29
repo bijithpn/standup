@@ -3,8 +3,12 @@ import 'package:flutter/material.dart';
 class TemplateControls extends StatelessWidget {
   final VoidCallback onSkip;
   final VoidCallback onPostpone;
-  
-  const TemplateControls({super.key, required this.onSkip, required this.onPostpone});
+
+  const TemplateControls({
+    super.key,
+    required this.onSkip,
+    required this.onPostpone,
+  });
 
   @override
   Widget build(BuildContext context) {

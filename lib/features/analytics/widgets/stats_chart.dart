@@ -5,7 +5,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 
 class DailyStatsChart extends StatelessWidget {
   final StatsModel stats;
-  
+
   const DailyStatsChart({super.key, required this.stats});
 
   @override
@@ -154,7 +154,10 @@ class DailyStatsChart extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary)),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+        ),
       ],
     );
   }

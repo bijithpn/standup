@@ -39,26 +39,26 @@ class PetCompanionService extends ChangeNotifier {
     required PetBehaviorBrain brain,
     required PetNavigationService navigation,
     required PetProfile profile,
-  })  : _stateMachine = stateMachine,
-        _brain = brain,
-        _navigation = navigation,
-        _profile = profile,
-        _mood = PetMoodState(
-          mood: profile.initialMood ?? PetMood.relaxed,
-          since: DateTime.now(),
-        ),
-        _context = PetBehaviorContext(
-          profile: profile,
-          currentMood: PetMoodState(
-            mood: profile.initialMood ?? PetMood.relaxed,
-            since: DateTime.now(),
-          ),
-          lastStateChange: DateTime.now(),
-          timeInCurrentState: Duration.zero,
-          curiosity: 0.5,
-          fatigue: 0.0,
-          boredom: 0.0,
-        ) {
+  }) : _stateMachine = stateMachine,
+       _brain = brain,
+       _navigation = navigation,
+       _profile = profile,
+       _mood = PetMoodState(
+         mood: profile.initialMood ?? PetMood.relaxed,
+         since: DateTime.now(),
+       ),
+       _context = PetBehaviorContext(
+         profile: profile,
+         currentMood: PetMoodState(
+           mood: profile.initialMood ?? PetMood.relaxed,
+           since: DateTime.now(),
+         ),
+         lastStateChange: DateTime.now(),
+         timeInCurrentState: Duration.zero,
+         curiosity: 0.5,
+         fatigue: 0.0,
+         boredom: 0.0,
+       ) {
     _navigation.setSpecies(profile.species);
   }
 
@@ -72,15 +72,24 @@ class PetCompanionService extends ChangeNotifier {
 
   void updateProfile(PetProfile newProfile) {
     _profile = newProfile;
-    _mood = PetMoodState(mood: newProfile.initialMood ?? PetMood.relaxed, since: DateTime.now());
+    _mood = PetMoodState(
+      mood: newProfile.initialMood ?? PetMood.relaxed,
+      since: DateTime.now(),
+    );
     _navigation.setSpecies(newProfile.species);
     _context = _context.copyWith(profile: newProfile, currentMood: _mood);
     notifyListeners(); // Profile change is a real UI event — notify is correct here
   }
 
   void initialize({required Size screenSize, Offset? startPosition}) {
-    _navigation.initialize(screenSize: screenSize, startPosition: startPosition);
-    _context = _context.copyWith(screenSize: screenSize, petPosition: startPosition);
+    _navigation.initialize(
+      screenSize: screenSize,
+      startPosition: startPosition,
+    );
+    _context = _context.copyWith(
+      screenSize: screenSize,
+      petPosition: startPosition,
+    );
   }
 
   void syncContextFlags({
@@ -137,14 +146,16 @@ class PetCompanionService extends ChangeNotifier {
           _stateMachine.currentState == PetState.playing) {
         rate = 0.035;
       }
-      _fatigue = (_fatigue + rate * profileMultiplier.sleepLikelihood * dt).clamp(0.0, 1.0);
+      _fatigue = (_fatigue + rate * profileMultiplier.sleepLikelihood * dt)
+          .clamp(0.0, 1.0);
     }
 
     if (_stateMachine.currentState == PetState.following ||
         _stateMachine.currentState == PetState.playing) {
       _curiosity = (_curiosity - 0.02 * dt).clamp(0.0, 1.0);
     } else {
-      _curiosity = (_curiosity + 0.005 * profileMultiplier.mouseAttraction * dt).clamp(0.0, 1.0);
+      _curiosity = (_curiosity + 0.005 * profileMultiplier.mouseAttraction * dt)
+          .clamp(0.0, 1.0);
     }
 
     if (_stateMachine.currentState == PetState.idle ||
@@ -187,13 +198,15 @@ class PetCompanionService extends ChangeNotifier {
     final double dist = (_navigation.currentPosition - cursorPos).distance;
     if (dist > 10.0) {
       final profileMultiplier = _profile.species.defaultProfile;
-      _curiosity = (_curiosity + 0.02 * profileMultiplier.mouseAttraction).clamp(0.0, 1.0);
+      _curiosity = (_curiosity + 0.02 * profileMultiplier.mouseAttraction)
+          .clamp(0.0, 1.0);
     }
 
     _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
 
     // Check if cat is annoyed by excessive cursor movement
-    if (_navigation.isAnnoyed && _stateMachine.currentState == PetState.following) {
+    if (_navigation.isAnnoyed &&
+        _stateMachine.currentState == PetState.following) {
       _stateMachine.transitionTo(PetState.angry);
       return;
     }
@@ -204,11 +217,16 @@ class PetCompanionService extends ChangeNotifier {
     if (isNowFollowing) {
       // Only follow if not in a non-looping animation (lick, stretch, etc.)
       final cur = _stateMachine.currentState;
-      if (cur == PetState.grooming || cur == PetState.stretch || 
-          cur == PetState.celebrating || cur == PetState.alert ||
-          cur == PetState.angry || cur == PetState.breakReminder ||
-          cur == PetState.meetingPaused || cur == PetState.focusMode ||
-          cur == PetState.drag || cur == PetState.sleep) {
+      if (cur == PetState.grooming ||
+          cur == PetState.stretch ||
+          cur == PetState.celebrating ||
+          cur == PetState.alert ||
+          cur == PetState.angry ||
+          cur == PetState.breakReminder ||
+          cur == PetState.meetingPaused ||
+          cur == PetState.focusMode ||
+          cur == PetState.drag ||
+          cur == PetState.sleep) {
         return; // Don't interrupt these states
       }
 
@@ -235,7 +253,10 @@ class PetCompanionService extends ChangeNotifier {
   void _makeBehaviorDecision() {
     final cur = _stateMachine.currentState;
     // Only transition spontaneously if currently in an ambient/relaxed state
-    if (cur == PetState.idle || cur == PetState.resting || cur == PetState.bored || cur == PetState.exploring) {
+    if (cur == PetState.idle ||
+        cur == PetState.resting ||
+        cur == PetState.bored ||
+        cur == PetState.exploring) {
       final suggestedState = _brain.decideNextState(_context);
       _brain.recordStateSelection(suggestedState);
       _stateMachine.transitionTo(suggestedState);

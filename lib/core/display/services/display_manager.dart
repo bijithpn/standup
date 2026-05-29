@@ -8,8 +8,12 @@ import 'package:breakmate/app/dependency_injection.dart';
 
 class DisplayManager {
   final AppLogger _logger = AppLogger();
-  static const MethodChannel _channel = MethodChannel('com.breakmate/display_bridge');
-  static const EventChannel _eventChannel = EventChannel('com.breakmate/display_events');
+  static const MethodChannel _channel = MethodChannel(
+    'com.breakmate/display_bridge',
+  );
+  static const EventChannel _eventChannel = EventChannel(
+    'com.breakmate/display_events',
+  );
 
   final List<DisplayInfo> _activeDisplays = [];
   StreamSubscription? _eventSubscription;
@@ -27,20 +31,27 @@ class DisplayManager {
   }
 
   void _setupEventListeners() {
-    _eventSubscription = _eventChannel.receiveBroadcastStream().listen((dynamic event) {
-      _handleNativeEvent(event);
-    }, onError: (dynamic error) {
-      _logger.error('Display event stream error: $error');
-    });
+    _eventSubscription = _eventChannel.receiveBroadcastStream().listen(
+      (dynamic event) {
+        _handleNativeEvent(event);
+      },
+      onError: (dynamic error) {
+        _logger.error('Display event stream error: $error');
+      },
+    );
   }
 
   Future<void> refreshDisplays() async {
     try {
-      final List<dynamic>? displayData = await _channel.invokeMethod('getDisplays');
+      final List<dynamic>? displayData = await _channel.invokeMethod(
+        'getDisplays',
+      );
       if (displayData != null) {
         _activeDisplays.clear();
         for (var data in displayData) {
-          _activeDisplays.add(DisplayInfo.fromMap(Map<String, dynamic>.from(data)));
+          _activeDisplays.add(
+            DisplayInfo.fromMap(Map<String, dynamic>.from(data)),
+          );
         }
         _logger.info('Refreshed displays: ${_activeDisplays.length} detected');
         sl<EventBus>().emit(DisplayChangedEvent());

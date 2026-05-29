@@ -42,7 +42,9 @@ class _UpdateSectionState extends State<UpdateSection> {
         final hasUpdate = args['hasUpdate'] as bool? ?? false;
         final version = args['version'] as String? ?? '';
         final notes = args['notes'] as String? ?? '';
-        debugPrint('UpdateSection: onUpdateResult: hasUpdate=$hasUpdate, version=$version');
+        debugPrint(
+          'UpdateSection: onUpdateResult: hasUpdate=$hasUpdate, version=$version',
+        );
         if (mounted) {
           setState(() {
             _isChecking = false;
@@ -190,12 +192,12 @@ class _UpdateSectionState extends State<UpdateSection> {
                             _errorMessage.isNotEmpty
                                 ? 'Update Check Failed'
                                 : (_hasUpdate
-                                    ? 'Version $_updateVersion Available'
-                                    : (_isChecking
-                                        ? 'Checking for Updates...'
-                                        : (_checked
-                                            ? 'BreakMate is Up to Date'
-                                            : 'Software Update'))),
+                                      ? 'Version $_updateVersion Available'
+                                      : (_isChecking
+                                            ? 'Checking for Updates...'
+                                            : (_checked
+                                                  ? 'BreakMate is Up to Date'
+                                                  : 'Software Update'))),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -209,12 +211,12 @@ class _UpdateSectionState extends State<UpdateSection> {
                             _errorMessage.isNotEmpty
                                 ? 'An error occurred while connecting to the server.'
                                 : (_hasUpdate
-                                    ? 'A newer version is ready to be installed.'
-                                    : (_isChecking
-                                        ? 'Connecting to update server...'
-                                        : (_checked
-                                            ? 'Everything is running smoothly.'
-                                            : 'Keep your app modern and stable.'))),
+                                      ? 'A newer version is ready to be installed.'
+                                      : (_isChecking
+                                            ? 'Connecting to update server...'
+                                            : (_checked
+                                                  ? 'Everything is running smoothly.'
+                                                  : 'Keep your app modern and stable.'))),
                             style: const TextStyle(
                               fontSize: 13,
                               color: AppTheme.textSecondary,
@@ -331,9 +333,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                             };
                           }
                           if (element.localName == 'p') {
-                            return {
-                              'margin-bottom': '16px',
-                            };
+                            return {'margin-bottom': '16px'};
                           }
                           return null;
                         },

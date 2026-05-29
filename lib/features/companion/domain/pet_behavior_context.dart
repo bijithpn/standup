@@ -48,9 +48,9 @@ class PetBehaviorContext {
     this.fatigue = 0.0,
     this.boredom = 0.0,
     this.totalWorkToday = Duration.zero,
-  })  : cursorPosition = cursorPosition ?? Offset.zero,
-        petPosition = petPosition ?? Offset.zero,
-        screenSize = screenSize ?? Size.zero;
+  }) : cursorPosition = cursorPosition ?? Offset.zero,
+       petPosition = petPosition ?? Offset.zero,
+       screenSize = screenSize ?? Size.zero;
 
   PetBehaviorContext copyWith({
     PetProfile? profile,
@@ -119,6 +119,6 @@ class PetBehaviorContext {
     return profile.personality.sociability > 0.6 &&
         !isUserInteracting &&
         (currentMood.mood == PetMood.affectionate ||
-        currentMood.mood == PetMood.playful);
+            currentMood.mood == PetMood.playful);
   }
 }

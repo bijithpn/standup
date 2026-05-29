@@ -9,8 +9,8 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 
 class CompanionBehaviorEngine with WidgetsBindingObserver {
   CompanionBehaviorEngine({EventBus? eventBus})
-      : _eventBus = eventBus ?? EventBus.instance,
-        _logger = AppLogger() {
+    : _eventBus = eventBus ?? EventBus.instance,
+      _logger = AppLogger() {
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -20,7 +20,8 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
 
   Timer? _behaviorTimer;
   Timer? _wanderTimer;
-  bool _isEnabled = true; // Default true; disabled only when explicitly set or settings say so
+  bool _isEnabled =
+      true; // Default true; disabled only when explicitly set or settings say so
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
@@ -83,7 +84,8 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
   void _triggerRandomBehavior() {
     final behavior = _random.nextDouble();
 
-    if (behavior < 0.4) { // Increased blink frequency
+    if (behavior < 0.4) {
+      // Increased blink frequency
       _triggerBlink();
     } else if (behavior < 0.6) {
       _triggerStretch();
@@ -97,42 +99,52 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
   }
 
   void _triggerBlink() {
-    _eventBus.emit(CompanionInteractionEvent(
-      interactionType: 'blink',
-      metadata: {'source': 'behavior_engine'},
-    ));
+    _eventBus.emit(
+      CompanionInteractionEvent(
+        interactionType: 'blink',
+        metadata: {'source': 'behavior_engine'},
+      ),
+    );
     _logger.info('Companion: blink behavior');
   }
 
   void _triggerStretch() {
-    _eventBus.emit(CompanionInteractionEvent(
-      interactionType: 'stretch',
-      metadata: {'source': 'behavior_engine'},
-    ));
+    _eventBus.emit(
+      CompanionInteractionEvent(
+        interactionType: 'stretch',
+        metadata: {'source': 'behavior_engine'},
+      ),
+    );
     _logger.info('Companion: stretch behavior');
   }
 
   void _triggerLookAround() {
-    _eventBus.emit(CompanionInteractionEvent(
-      interactionType: 'lookAround',
-      metadata: {'source': 'behavior_engine'},
-    ));
+    _eventBus.emit(
+      CompanionInteractionEvent(
+        interactionType: 'lookAround',
+        metadata: {'source': 'behavior_engine'},
+      ),
+    );
     _logger.info('Companion: look around behavior');
   }
 
   void _triggerYawn() {
-    _eventBus.emit(CompanionInteractionEvent(
-      interactionType: 'yawn',
-      metadata: {'source': 'behavior_engine'},
-    ));
+    _eventBus.emit(
+      CompanionInteractionEvent(
+        interactionType: 'yawn',
+        metadata: {'source': 'behavior_engine'},
+      ),
+    );
     _logger.info('Companion: yawn behavior');
   }
 
   void _triggerHappy() {
-    _eventBus.emit(CompanionInteractionEvent(
-      interactionType: 'happy',
-      metadata: {'source': 'behavior_engine'},
-    ));
+    _eventBus.emit(
+      CompanionInteractionEvent(
+        interactionType: 'happy',
+        metadata: {'source': 'behavior_engine'},
+      ),
+    );
     _logger.info('Companion: happy behavior');
   }
 
@@ -142,7 +154,8 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.hidden || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
       stop();
     } else if (state == AppLifecycleState.resumed) {
       start();

@@ -119,7 +119,8 @@ class _SoftFloatingWidgetTemplateState
     final double closedWidth = 180.0;
     final double openWidth = 320.0;
     final double height = 80.0;
-    final bool enableAnimations = widget.settings.enableAnimations &&
+    final bool enableAnimations =
+        widget.settings.enableAnimations &&
         !MediaQuery.of(context).disableAnimations;
 
     return Material(
@@ -188,7 +189,9 @@ class _SoftFloatingWidgetTemplateState
                       );
                     },
                     child: AnimatedContainer(
-                      duration: enableAnimations ? const Duration(milliseconds: 250) : Duration.zero,
+                      duration: enableAnimations
+                          ? const Duration(milliseconds: 250)
+                          : Duration.zero,
                       curve: Curves.easeOutBack,
                       width: currentWidth,
                       height: height,
@@ -272,7 +275,9 @@ class _SoftFloatingWidgetTemplateState
                               Expanded(
                                 child: AnimatedOpacity(
                                   opacity: _isHovered ? 1.0 : 0.0,
-                                  duration: enableAnimations ? const Duration(milliseconds: 150) : Duration.zero,
+                                  duration: enableAnimations
+                                      ? const Duration(milliseconds: 150)
+                                      : Duration.zero,
                                   child: Row(
                                     children: [
                                       Container(

@@ -26,10 +26,7 @@ class ColorPaletteShowcase extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Minimal Modern Design System',
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
             ),
             const SizedBox(height: 48),
 
@@ -47,7 +44,11 @@ class ColorPaletteShowcase extends StatelessWidget {
             _buildSection('Surfaces', [
               _ColorItem('Surface', AppTheme.surface, '#18181B'),
               _ColorItem('Surface Card', AppTheme.surfaceCard, '#1F1F23'),
-              _ColorItem('Surface Elevated', AppTheme.surfaceElevated, '#27272A'),
+              _ColorItem(
+                'Surface Elevated',
+                AppTheme.surfaceElevated,
+                '#27272A',
+              ),
             ]),
 
             _buildSection('Borders', [

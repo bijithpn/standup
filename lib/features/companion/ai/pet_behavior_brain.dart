@@ -159,7 +159,9 @@ class PetBehaviorBrain {
         score *= (1.0 + (context.fatigue - 0.6) * 10.0);
       } else if (state == PetState.resting) {
         score *= (1.0 + (context.fatigue - 0.6) * 5.0);
-      } else if (state == PetState.run || state == PetState.playing || state == PetState.jumping) {
+      } else if (state == PetState.run ||
+          state == PetState.playing ||
+          state == PetState.jumping) {
         score *= (1.0 - context.fatigue); // heavily penalize high energy states
       }
     }
@@ -173,30 +175,40 @@ class PetBehaviorBrain {
         score *= (1.5 * fatigueMultiplier);
       } else if (state == PetState.resting) {
         score *= (1.2 * fatigueMultiplier);
-      } else if (state == PetState.run || state == PetState.playing || state == PetState.jumping) {
+      } else if (state == PetState.run ||
+          state == PetState.playing ||
+          state == PetState.jumping) {
         score /= (1.2 * fatigueMultiplier); // heavily penalize active states
       }
     }
 
     // Curiosity Impact
     if (context.curiosity > 0.6) {
-      if (state == PetState.following || state == PetState.interacting || state == PetState.curious || state == PetState.exploring) {
+      if (state == PetState.following ||
+          state == PetState.interacting ||
+          state == PetState.curious ||
+          state == PetState.exploring) {
         score *= (1.0 + (context.curiosity - 0.6) * 6.0);
       }
     }
 
     // Boredom Impact
     if (context.boredom > 0.5) {
-      if (state == PetState.exploring || state == PetState.walk || state == PetState.playing || state == PetState.bored) {
+      if (state == PetState.exploring ||
+          state == PetState.walk ||
+          state == PetState.playing ||
+          state == PetState.bored) {
         score *= (1.0 + (context.boredom - 0.5) * 4.0);
       }
     }
 
     // --- Species Profile Modifiers ---
     // Rabbit edge-seeking preference
-    if (context.profile.species == PetSpecies.rabbit && context.isNearScreenEdge) {
+    if (context.profile.species == PetSpecies.rabbit &&
+        context.isNearScreenEdge) {
       if (state == PetState.resting || state == PetState.idle) {
-        score *= 3.0; // Rabbits feel safe and love resting near screen boundaries
+        score *=
+            3.0; // Rabbits feel safe and love resting near screen boundaries
       }
     }
 

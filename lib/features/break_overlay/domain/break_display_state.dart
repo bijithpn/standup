@@ -1,4 +1,3 @@
-
 import 'template_model.dart';
 
 class BreakDisplayState {

@@ -32,7 +32,9 @@ class ActivityMonitor {
     _isIdle = isIdle;
 
     if (wasIdle != _isIdle) {
-      _logger.info(_isIdle ? 'User went idle ($idleSeconds s)' : 'User activity resumed');
+      _logger.info(
+        _isIdle ? 'User went idle ($idleSeconds s)' : 'User activity resumed',
+      );
       _onActivityChanged?.call(!_isIdle);
     }
   }

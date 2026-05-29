@@ -41,7 +41,10 @@ class AppDropdown<T> extends StatelessWidget {
           elevation: 12,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
-            side: BorderSide(color: Colors.white.withValues(alpha: 0.05), width: 0.8),
+            side: BorderSide(
+              color: Colors.white.withValues(alpha: 0.05),
+              width: 0.8,
+            ),
           ),
           color: const Color(0xFF161616),
           itemBuilder: (context) => items.map((item) {

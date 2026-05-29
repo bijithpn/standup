@@ -13,7 +13,8 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/companion_
 
 class PetAssetLoader {
   static final Map<String, ui.Image> _imageCache = {};
-  static final Map<String, Map<PetAnimationState, SpriteAnimation>> _animationCache = {};
+  static final Map<String, Map<PetAnimationState, SpriteAnimation>>
+  _animationCache = {};
   static final Map<String, ui.Rect> _boundingBoxCache = {};
 
   static Future<ui.Image> loadImage(String path) async {
@@ -79,7 +80,9 @@ class PetAssetLoader {
         sourceY = row * size;
       } else {
         final config = theme.animations[PetAnimationState.idle];
-        final String fileName = config is SeparateAnimationConfig ? config.fileName : 'idle.png';
+        final String fileName = config is SeparateAnimationConfig
+            ? config.fileName
+            : 'idle.png';
         sourceImage = await loadImage('${theme.basePath}$fileName');
       }
 
@@ -141,8 +144,11 @@ class PetAssetLoader {
         orElse: () => PetTheme.themes.first,
       );
 
-      final isSpriteSheet = variantConfig?['isSpriteSheet'] ?? (matchingTheme.type == PetType.composite);
-      final spriteSize = (variantConfig?['spriteSize'] ?? matchingTheme.spriteSize).toDouble();
+      final isSpriteSheet =
+          variantConfig?['isSpriteSheet'] ??
+          (matchingTheme.type == PetType.composite);
+      final spriteSize =
+          (variantConfig?['spriteSize'] ?? matchingTheme.spriteSize).toDouble();
 
       if (isSpriteSheet) {
         final sheetPath = variantConfig?['assetPath'] ?? matchingTheme.basePath;
@@ -150,7 +156,7 @@ class PetAssetLoader {
 
         for (final state in PetAnimationState.values) {
           final stateName = state.name;
-          
+
           int row = 0;
           int frameCount = 1;
           double stepTime = 0.1;
@@ -164,8 +170,12 @@ class PetAssetLoader {
             loop = themeAnim.loop;
           } else if (variantConfig?['rows']?[stateName] != null) {
             row = (variantConfig['rows'][stateName] as num).toInt();
-            frameCount = (variantConfig['frameCounts']?[stateName] as num?)?.toInt() ?? 1;
-            stepTime = (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ?? 0.1;
+            frameCount =
+                (variantConfig['frameCounts']?[stateName] as num?)?.toInt() ??
+                1;
+            stepTime =
+                (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ??
+                0.1;
           }
 
           final maxFrames = sheetImage.width ~/ spriteSize;
@@ -183,7 +193,7 @@ class PetAssetLoader {
       } else {
         for (final state in PetAnimationState.values) {
           final stateName = state.name;
-          
+
           String fileName = '$stateName.png';
           int frameCount = 1;
           double stepTime = 0.1;
@@ -197,8 +207,12 @@ class PetAssetLoader {
             loop = themeAnim.loop;
           } else if (variantConfig?['fileNames']?[stateName] != null) {
             fileName = variantConfig['fileNames'][stateName] as String;
-            frameCount = (variantConfig['frameCounts']?[stateName] as num?)?.toInt() ?? 1;
-            stepTime = (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ?? 0.1;
+            frameCount =
+                (variantConfig['frameCounts']?[stateName] as num?)?.toInt() ??
+                1;
+            stepTime =
+                (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ??
+                0.1;
           }
 
           final filePath = '$basePath$fileName';
@@ -232,7 +246,8 @@ class PetAssetLoader {
             final fallbackPath = '$basePath$fallbackFileName';
             try {
               final ui.Image fallbackImage = await loadImage(fallbackPath);
-              final fallbackFrameWidth = fallbackImage.width / fallbackFrameCount;
+              final fallbackFrameWidth =
+                  fallbackImage.width / fallbackFrameCount;
               final fallbackFrameHeight = fallbackImage.height.toDouble();
 
               final data = SpriteAnimationData.sequenced(
@@ -242,7 +257,10 @@ class PetAssetLoader {
                 texturePosition: Vector2.zero(),
                 loop: fallbackLoop,
               );
-              loaded[state] = SpriteAnimation.fromFrameData(fallbackImage, data);
+              loaded[state] = SpriteAnimation.fromFrameData(
+                fallbackImage,
+                data,
+              );
             } catch (fallbackError) {
               // Silently ignore or fallback to empty
             }
@@ -296,37 +314,40 @@ class PetAssetLoader {
       }
 
       for (int i = 0; i < frameCount; i++) {
-        await extractPetFramePath(
-          theme: theme,
-          state: state,
-          frameIndex: i,
-        );
+        await extractPetFramePath(theme: theme, state: state, frameIndex: i);
       }
     }
   }
 
   /// Loads a static asset file, auto-crops, resizes to targetSize x targetSize (default 44.0 px @2x template)
   /// with template-white color filter, and writes to target path.
-  static Future<String> extractAndWhitenAsset(String assetPath, String outputPath, {double targetSize = 44.0}) async {
+  static Future<String> extractAndWhitenAsset(
+    String assetPath,
+    String outputPath, {
+    double targetSize = 44.0,
+  }) async {
     try {
       final file = File(outputPath);
       if (await file.exists()) {
         return file.path;
       }
-      
+
       final sourceImage = await loadImage(assetPath);
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
-      final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
-      final tintColor = isDark ? const ui.Color(0xFFFFFFFF) : const ui.Color(0xFF000000);
+      final isDark =
+          ui.PlatformDispatcher.instance.platformBrightness ==
+          ui.Brightness.dark;
+      final tintColor = isDark
+          ? const ui.Color(0xFFFFFFFF)
+          : const ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = ui.ColorFilter.mode(
-          tintColor,
-          ui.BlendMode.srcIn,
-        );
+        ..colorFilter = ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
 
-      final rawBytes = await sourceImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+      final rawBytes = await sourceImage.toByteData(
+        format: ui.ImageByteFormat.rawRgba,
+      );
       int minX = sourceImage.width;
       int maxX = 0;
       int minY = sourceImage.height;
@@ -342,7 +363,8 @@ class PetAssetLoader {
             final offset = (y * width + x) * 4;
             if (offset + 3 < bytes.length) {
               final alpha = bytes[offset + 3];
-              if (alpha > 10) { // Ignore transparent pixels
+              if (alpha > 10) {
+                // Ignore transparent pixels
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
                 if (y < minY) minY = y;
@@ -356,9 +378,13 @@ class PetAssetLoader {
       double contentWidth = (maxX - minX + 1).toDouble();
       double contentHeight = (maxY - minY + 1).toDouble();
 
-      if (contentWidth > 0 && contentHeight > 0 && minX <= maxX && minY <= maxY) {
+      if (contentWidth > 0 &&
+          contentHeight > 0 &&
+          minX <= maxX &&
+          minY <= maxY) {
         const double padding = 1.0;
-        final double activeSize = targetSize - 2 * padding; // 42.0 px active area
+        final double activeSize =
+            targetSize - 2 * padding; // 42.0 px active area
 
         double drawW, drawH;
         if (contentWidth > contentHeight) {
@@ -374,14 +400,24 @@ class PetAssetLoader {
 
         canvas.drawImageRect(
           sourceImage,
-          ui.Rect.fromLTWH(minX.toDouble(), minY.toDouble(), contentWidth, contentHeight),
+          ui.Rect.fromLTWH(
+            minX.toDouble(),
+            minY.toDouble(),
+            contentWidth,
+            contentHeight,
+          ),
           ui.Rect.fromLTWH(destX, destY, drawW, drawH),
           paint,
         );
       } else {
         canvas.drawImageRect(
           sourceImage,
-          ui.Rect.fromLTWH(0, 0, sourceImage.width.toDouble(), sourceImage.height.toDouble()),
+          ui.Rect.fromLTWH(
+            0,
+            0,
+            sourceImage.width.toDouble(),
+            sourceImage.height.toDouble(),
+          ),
           ui.Rect.fromLTWH(2.0, 2.0, targetSize - 4.0, targetSize - 4.0),
           paint,
         );
@@ -413,9 +449,12 @@ class PetAssetLoader {
     required int frameIndex,
   }) async {
     final tempDir = await getApplicationSupportDirectory();
-    final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
+    final isDark =
+        ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
     final themeSuffix = isDark ? '_dark' : '_light';
-    final file = File('${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex${themeSuffix}Template@2x.png');
+    final file = File(
+      '${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex${themeSuffix}Template@2x.png',
+    );
 
     if (await file.exists()) {
       return file.path;
@@ -431,15 +470,19 @@ class PetAssetLoader {
 
       if (theme.type == PetType.composite) {
         sourceImage = await loadImage(theme.basePath);
-        final config = theme.animations[state] ?? theme.animations[PetAnimationState.idle];
+        final config =
+            theme.animations[state] ?? theme.animations[PetAnimationState.idle];
         double row = config is AnimationRowConfig ? config.row.toDouble() : 1.0;
         sourceY = row * size;
         int maxFrames = sourceImage.width ~/ size;
         int safeFrameIndex = maxFrames > 0 ? (frameIndex % maxFrames) : 0;
         sourceX = safeFrameIndex * size;
       } else {
-        final config = theme.animations[state] ?? theme.animations[PetAnimationState.idle];
-        final String fileName = config is SeparateAnimationConfig ? config.fileName : 'idle.png';
+        final config =
+            theme.animations[state] ?? theme.animations[PetAnimationState.idle];
+        final String fileName = config is SeparateAnimationConfig
+            ? config.fileName
+            : 'idle.png';
         sourceImage = await loadImage('${theme.basePath}$fileName');
 
         int frameCount = 1;
@@ -463,16 +506,18 @@ class PetAssetLoader {
       // Auto-crop: Scan alpha channel inside the frame region to find content bounding box
       final String bbCacheKey = '${theme.id}_${state.name}_$frameIndex';
       ui.Rect? cachedBB = _boundingBoxCache[bbCacheKey];
-      
+
       int minX, maxX, minY, maxY;
-      
+
       if (cachedBB != null) {
         minX = cachedBB.left.toInt();
         maxX = cachedBB.right.toInt();
         minY = cachedBB.top.toInt();
         maxY = cachedBB.bottom.toInt();
       } else {
-        final rawBytes = await sourceImage.toByteData(format: ui.ImageByteFormat.rawRgba);
+        final rawBytes = await sourceImage.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        );
         minX = (sourceX + cropW).toInt();
         maxX = sourceX.toInt();
         minY = (sourceY + cropH).toInt();
@@ -488,7 +533,8 @@ class PetAssetLoader {
               final offset = yOffset + (x * 4);
               if (offset + 3 < bytes.length) {
                 final alpha = bytes[offset + 3];
-                if (alpha > 15) { // Ignore transparent/near-transparent pixels
+                if (alpha > 15) {
+                  // Ignore transparent/near-transparent pixels
                   if (x < minX) minX = x;
                   if (x > maxX) maxX = x;
                   if (y < minY) minY = y;
@@ -498,33 +544,38 @@ class PetAssetLoader {
             }
           }
         }
-        
+
         _boundingBoxCache[bbCacheKey] = ui.Rect.fromLTRB(
-          minX.toDouble(), 
-          minY.toDouble(), 
-          maxX.toDouble(), 
-          maxY.toDouble()
+          minX.toDouble(),
+          minY.toDouble(),
+          maxX.toDouble(),
+          maxY.toDouble(),
         );
       }
 
       const double targetSize = 44.0;
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
-      final isDark = ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
-      final tintColor = isDark ? const ui.Color(0xFFFFFFFF) : const ui.Color(0xFF000000);
+      final isDark =
+          ui.PlatformDispatcher.instance.platformBrightness ==
+          ui.Brightness.dark;
+      final tintColor = isDark
+          ? const ui.Color(0xFFFFFFFF)
+          : const ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = ui.ColorFilter.mode(
-          tintColor,
-          ui.BlendMode.srcIn,
-        );
+        ..colorFilter = ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
 
       double contentWidth = (maxX - minX + 1).toDouble();
       double contentHeight = (maxY - minY + 1).toDouble();
 
-      if (contentWidth > 0 && contentHeight > 0 && minX <= maxX && minY <= maxY) {
+      if (contentWidth > 0 &&
+          contentHeight > 0 &&
+          minX <= maxX &&
+          minY <= maxY) {
         const double padding = 1.0;
-        const double activeSize = targetSize - 2 * padding; // 42.0 px active area
+        const double activeSize =
+            targetSize - 2 * padding; // 42.0 px active area
 
         double drawW, drawH;
         if (contentWidth > contentHeight) {
@@ -540,7 +591,12 @@ class PetAssetLoader {
 
         canvas.drawImageRect(
           sourceImage,
-          ui.Rect.fromLTWH(minX.toDouble(), minY.toDouble(), contentWidth, contentHeight),
+          ui.Rect.fromLTWH(
+            minX.toDouble(),
+            minY.toDouble(),
+            contentWidth,
+            contentHeight,
+          ),
           ui.Rect.fromLTWH(destX, destY, drawW, drawH),
           paint,
         );

@@ -10,7 +10,10 @@ abstract class NativeBridgePlatform {
   Future<void> setVisualEffect(String material);
   Future<void> focusApp();
   Future<void> setWindowLevel(String level);
-  Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu});
+  Future<void> setPresentationOptions({
+    required bool hideDock,
+    required bool hideMenu,
+  });
   Future<double> getIdleTime();
   Future<String> getAppearance();
   Future<void> setIgnoreMouseEvents(bool ignore);
@@ -49,7 +52,10 @@ class FallbackBridge implements NativeBridgePlatform {
   Future<void> setWindowLevel(String level) async {}
 
   @override
-  Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu}) async {}
+  Future<void> setPresentationOptions({
+    required bool hideDock,
+    required bool hideMenu,
+  }) async {}
 
   @override
   Future<double> getIdleTime() async => 0.0;
@@ -106,25 +112,42 @@ class NativeBridge {
     }
   }
 
-  static Future<void> showOverlay([Map<String, dynamic>? args]) => _platform.showOverlay(args);
-  static Future<void> hideOverlay({bool restoreMainWindow = true}) => _platform.hideOverlay(restoreMainWindow: restoreMainWindow);
+  static Future<void> showOverlay([Map<String, dynamic>? args]) =>
+      _platform.showOverlay(args);
+  static Future<void> hideOverlay({bool restoreMainWindow = true}) =>
+      _platform.hideOverlay(restoreMainWindow: restoreMainWindow);
   static Future<void> skipBreak() => _platform.skipBreak();
-  static Future<void> setVisualEffect(String material) => _platform.setVisualEffect(material);
+  static Future<void> setVisualEffect(String material) =>
+      _platform.setVisualEffect(material);
   static Future<void> focusApp() => _platform.focusApp();
-  static Future<void> setWindowLevel(String level) => _platform.setWindowLevel(level);
-  static Future<void> setPresentationOptions({required bool hideDock, required bool hideMenu}) =>
+  static Future<void> setWindowLevel(String level) =>
+      _platform.setWindowLevel(level);
+  static Future<void> setPresentationOptions({
+    required bool hideDock,
+    required bool hideMenu,
+  }) =>
       _platform.setPresentationOptions(hideDock: hideDock, hideMenu: hideMenu);
   static Future<double> getIdleTime() => _platform.getIdleTime();
   static Future<String> getAppearance() => _platform.getAppearance();
-  static Future<void> setIgnoreMouseEvents(bool ignore) => _platform.setIgnoreMouseEvents(ignore);
-  static Future<void> updateOverlayData(Map<String, dynamic> data) => _platform.updateOverlayData(data);
-  static Future<void> showCompanion(Map<String, dynamic> args) => _platform.showCompanion(args);
+  static Future<void> setIgnoreMouseEvents(bool ignore) =>
+      _platform.setIgnoreMouseEvents(ignore);
+  static Future<void> updateOverlayData(Map<String, dynamic> data) =>
+      _platform.updateOverlayData(data);
+  static Future<void> showCompanion(Map<String, dynamic> args) =>
+      _platform.showCompanion(args);
   static Future<void> hideCompanion() => _platform.hideCompanion();
-  static Future<void> setCompanionClickThrough(bool ignore) => _platform.setCompanionClickThrough(ignore);
-  static Future<void> updateCompanionScale(double scale) => _platform.updateCompanionScale(scale);
-  static Future<void> updateCompanionTheme(String themeId) => _platform.updateCompanionTheme(themeId);
-  static Future<void> updateCompanionName(String petName) => _platform.updateCompanionName(petName);
-  static Future<void> triggerCompanionState(String stateName) => _platform.triggerCompanionState(stateName);
-  static Future<void> setCompanionWandering(bool enabled) => _platform.setCompanionWandering(enabled);
-  static Future<void> setCompanionFollowMouse(bool enabled) => _platform.setCompanionFollowMouse(enabled);
+  static Future<void> setCompanionClickThrough(bool ignore) =>
+      _platform.setCompanionClickThrough(ignore);
+  static Future<void> updateCompanionScale(double scale) =>
+      _platform.updateCompanionScale(scale);
+  static Future<void> updateCompanionTheme(String themeId) =>
+      _platform.updateCompanionTheme(themeId);
+  static Future<void> updateCompanionName(String petName) =>
+      _platform.updateCompanionName(petName);
+  static Future<void> triggerCompanionState(String stateName) =>
+      _platform.triggerCompanionState(stateName);
+  static Future<void> setCompanionWandering(bool enabled) =>
+      _platform.setCompanionWandering(enabled);
+  static Future<void> setCompanionFollowMouse(bool enabled) =>
+      _platform.setCompanionFollowMouse(enabled);
 }

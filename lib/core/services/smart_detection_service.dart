@@ -14,14 +14,20 @@ class SmartDetectionService {
 
   void start() {
     BackgroundPollingService.instance.start();
-    _logger.info('SmartDetectionService started delegating to background isolate');
+    _logger.info(
+      'SmartDetectionService started delegating to background isolate',
+    );
   }
 
   void stop() {
     _logger.info('SmartDetectionService stopped');
   }
 
-  void updateDetectionStatus(bool isVideoCallActive, bool isFocusModeActive, String? frontApp) {
+  void updateDetectionStatus(
+    bool isVideoCallActive,
+    bool isFocusModeActive,
+    String? frontApp,
+  ) {
     final wasVideoCallActive = _isVideoCallActive;
     final wasFocusModeActive = _isFocusModeActive;
 
@@ -29,15 +35,17 @@ class SmartDetectionService {
     _isFocusModeActive = isFocusModeActive;
 
     if (wasVideoCallActive != _isVideoCallActive) {
-      _logger.info(_isVideoCallActive
-          ? 'Video call detected: $frontApp'
-          : 'Video call ended');
+      _logger.info(
+        _isVideoCallActive
+            ? 'Video call detected: $frontApp'
+            : 'Video call ended',
+      );
     }
 
     if (wasFocusModeActive != _isFocusModeActive) {
-      _logger.info(_isFocusModeActive
-          ? 'Focus/DND mode active'
-          : 'Focus/DND mode ended');
+      _logger.info(
+        _isFocusModeActive ? 'Focus/DND mode active' : 'Focus/DND mode ended',
+      );
     }
   }
 

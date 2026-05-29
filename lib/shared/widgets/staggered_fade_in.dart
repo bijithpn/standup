@@ -18,7 +18,8 @@ class StaggeredFadeIn extends StatefulWidget {
   State<StaggeredFadeIn> createState() => _StaggeredFadeInState();
 }
 
-class _StaggeredFadeInState extends State<StaggeredFadeIn> with SingleTickerProviderStateMixin {
+class _StaggeredFadeInState extends State<StaggeredFadeIn>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
@@ -39,10 +40,7 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn> with SingleTickerProv
     _slideAnimation = Tween<Offset>(
       begin: widget.startOffset,
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
     _startAnimation();
   }
@@ -64,10 +62,7 @@ class _StaggeredFadeInState extends State<StaggeredFadeIn> with SingleTickerProv
   Widget build(BuildContext context) {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: SlideTransition(
-        position: _slideAnimation,
-        child: widget.child,
-      ),
+      child: SlideTransition(position: _slideAnimation, child: widget.child),
     );
   }
 }

@@ -10,7 +10,7 @@ class WellnessArticlesPage extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 750;
-        
+
         return CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
@@ -57,7 +57,8 @@ class WellnessArticlesPage extends StatelessWidget {
                 delegate: SliverChildListDelegate([
                   _buildArticleCard(
                     title: 'The 20-20-20 Rule',
-                    subtitle: 'Reduce eye strain by looking 20 feet away every 20 minutes for 20 seconds.',
+                    subtitle:
+                        'Reduce eye strain by looking 20 feet away every 20 minutes for 20 seconds.',
                     icon: LucideIcons.eye,
                     color: AppTheme.shortBreak,
                     isNarrow: isNarrow,
@@ -65,7 +66,8 @@ class WellnessArticlesPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildArticleCard(
                     title: 'Perfect Sitting Posture',
-                    subtitle: 'Keep your back straight, shoulders back, and feet flat on the floor.',
+                    subtitle:
+                        'Keep your back straight, shoulders back, and feet flat on the floor.',
                     icon: LucideIcons.user,
                     color: AppTheme.success,
                     isNarrow: isNarrow,
@@ -73,7 +75,8 @@ class WellnessArticlesPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildArticleCard(
                     title: 'Hydration & Productivity',
-                    subtitle: 'Drinking water regularly helps maintain focus and energy levels.',
+                    subtitle:
+                        'Drinking water regularly helps maintain focus and energy levels.',
                     icon: LucideIcons.droplet,
                     color: AppTheme.info,
                     isNarrow: isNarrow,
@@ -81,7 +84,8 @@ class WellnessArticlesPage extends StatelessWidget {
                   const SizedBox(height: 12),
                   _buildArticleCard(
                     title: 'Micro-breaks Matter',
-                    subtitle: 'Short, frequent breaks are more effective than long, infrequent ones.',
+                    subtitle:
+                        'Short, frequent breaks are more effective than long, infrequent ones.',
                     icon: LucideIcons.clock,
                     color: AppTheme.warning,
                     isNarrow: isNarrow,

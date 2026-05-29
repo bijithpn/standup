@@ -109,24 +109,26 @@ class TimerEngine extends ChangeNotifier {
         _lastIpcState = state;
         _lastIpcTargetEndTime = targetEndTime;
 
-        IpcBridge.instance.dispatch(TimerStateChangedIpcEvent(
-          stateName: event.state.name,
-          countdownSeconds: event.countdownSeconds,
-          workElapsedSeconds: event.workElapsedSeconds,
-          targetEndTime: targetEndTime?.millisecondsSinceEpoch,
-          totalWorkTodaySeconds: _stateData.totalWorkToday.inSeconds,
-        ));
+        IpcBridge.instance.dispatch(
+          TimerStateChangedIpcEvent(
+            stateName: event.state.name,
+            countdownSeconds: event.countdownSeconds,
+            workElapsedSeconds: event.workElapsedSeconds,
+            targetEndTime: targetEndTime?.millisecondsSinceEpoch,
+            totalWorkTodaySeconds: _stateData.totalWorkToday.inSeconds,
+          ),
+        );
       }
     } else if (event is BreakStartedEvent) {
-      IpcBridge.instance.dispatch(BreakStartedIpcEvent(
-        isLongBreak: event.isLongBreak,
-        durationSeconds: event.durationSeconds,
-        title: event.title,
-      ));
+      IpcBridge.instance.dispatch(
+        BreakStartedIpcEvent(
+          isLongBreak: event.isLongBreak,
+          durationSeconds: event.durationSeconds,
+          title: event.title,
+        ),
+      );
     } else if (event is BreakEndedEvent) {
-      IpcBridge.instance.dispatch(BreakEndedIpcEvent(
-        skipped: event.skipped,
-      ));
+      IpcBridge.instance.dispatch(BreakEndedIpcEvent(skipped: event.skipped));
     }
   }
 
@@ -303,10 +305,12 @@ class TimerEngine extends ChangeNotifier {
       );
 
       // Auto-save state every 30 seconds during work session or active break
-      final isRunningSave = state == TimerState.running &&
+      final isRunningSave =
+          state == TimerState.running &&
           _stateData.workElapsed.inSeconds > 0 &&
           _stateData.workElapsed.inSeconds % 30 == 0;
-      final isBreakSave = state == TimerState.breakActive &&
+      final isBreakSave =
+          state == TimerState.breakActive &&
           countdownSeconds > 0 &&
           countdownSeconds % 30 == 0;
 
@@ -390,9 +394,9 @@ class TimerEngine extends ChangeNotifier {
       sl<StatsService>().recordWellnessAction();
 
       // Also notify other isolates via IPC
-      IpcBridge.instance.dispatch(CompanionInteractionIpcEvent(
-        interactionType: interactionType,
-      ));
+      IpcBridge.instance.dispatch(
+        CompanionInteractionIpcEvent(interactionType: interactionType),
+      );
 
       return;
     }

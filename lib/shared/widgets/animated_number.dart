@@ -18,7 +18,8 @@ class AnimatedNumber extends StatefulWidget {
   State<AnimatedNumber> createState() => _AnimatedNumberState();
 }
 
-class _AnimatedNumberState extends State<AnimatedNumber> with SingleTickerProviderStateMixin {
+class _AnimatedNumberState extends State<AnimatedNumber>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
   double _previousValue = 0;
@@ -28,7 +29,10 @@ class _AnimatedNumberState extends State<AnimatedNumber> with SingleTickerProvid
   void initState() {
     super.initState();
     _controller = AnimationController(vsync: this, duration: widget.duration);
-    _animation = Tween<double>(begin: 0, end: widget.value).animate(_controller);
+    _animation = Tween<double>(
+      begin: 0,
+      end: widget.value,
+    ).animate(_controller);
     _targetValue = widget.value;
     _controller.forward();
   }
@@ -39,7 +43,10 @@ class _AnimatedNumberState extends State<AnimatedNumber> with SingleTickerProvid
     if (oldWidget.value != widget.value) {
       _previousValue = _targetValue;
       _targetValue = widget.value;
-      _animation = Tween<double>(begin: _previousValue, end: _targetValue).animate(_controller);
+      _animation = Tween<double>(
+        begin: _previousValue,
+        end: _targetValue,
+      ).animate(_controller);
       _controller.reset();
       _controller.forward();
     }

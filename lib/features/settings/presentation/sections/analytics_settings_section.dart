@@ -6,20 +6,19 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/wellness_score_card.dart';
 import 'package:breakmate/features/analytics/widgets/productivity_wellness_chart.dart';
 
-
 class AnalyticsSettingsSection extends StatefulWidget {
   final StatsModel stats;
 
   const AnalyticsSettingsSection({super.key, required this.stats});
 
   @override
-  State<AnalyticsSettingsSection> createState() => _AnalyticsSettingsSectionState();
+  State<AnalyticsSettingsSection> createState() =>
+      _AnalyticsSettingsSectionState();
 }
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _statsSubTab = 0;
   int _selectedStatsTab = 0;
-
 
   StatsModel get _stats => widget.stats;
 
@@ -148,7 +147,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-Widget _buildWellnessDashboard() {
+  Widget _buildWellnessDashboard() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -180,7 +179,7 @@ Widget _buildWellnessDashboard() {
     );
   }
 
-Widget _buildHeatmapMonthLabels() {
+  Widget _buildHeatmapMonthLabels() {
     const months = [
       'Jan',
       'Feb',
@@ -212,7 +211,7 @@ Widget _buildHeatmapMonthLabels() {
     );
   }
 
-Widget _buildHeatmapGrid() {
+  Widget _buildHeatmapGrid() {
     // 5 rows ├ù 52 columns
     final weeklyStats = _stats.weeklyData;
     // Pre-map for O(1) lookup performance (avoids O(N^2) total lookups in the grid)
@@ -262,7 +261,7 @@ Widget _buildHeatmapGrid() {
     );
   }
 
-Widget _buildBreakStatisticsCard() {
+  Widget _buildBreakStatisticsCard() {
     return Container(
       decoration: AppTheme.cleanCardDecoration.copyWith(
         color: Colors.transparent,
@@ -334,7 +333,7 @@ Widget _buildBreakStatisticsCard() {
     );
   }
 
-Widget _buildSegmentedFilter(
+  Widget _buildSegmentedFilter(
     List<String> options,
     int selected,
     ValueChanged<int> onSelected,
@@ -377,8 +376,7 @@ Widget _buildSegmentedFilter(
     );
   }
 
-
-Widget _subTabButton(
+  Widget _subTabButton(
     String label,
     int index, {
     bool isSmall = false,
@@ -430,7 +428,7 @@ Widget _subTabButton(
     );
   }
 
-Widget _heatSquare(Color color) {
+  Widget _heatSquare(Color color) {
     return Container(
       width: 9,
       height: 9,
@@ -441,7 +439,7 @@ Widget _heatSquare(Color color) {
     );
   }
 
-Widget _statsMetricRow(
+  Widget _statsMetricRow(
     IconData icon,
     Color color,
     String label,
@@ -493,7 +491,7 @@ Widget _statsMetricRow(
     );
   }
 
-int get _calculatedBreaks {
+  int get _calculatedBreaks {
     switch (_selectedStatsTab) {
       case 0: // Today
         if (_stats.weeklyData.isNotEmpty) {

@@ -1,28 +1,24 @@
 /// Defines the species and variant types for pet companions.
-enum MovementType {
-  walk,
-  hop,
-  fly,
-}
+enum MovementType { walk, hop, fly }
 
 /// Species-specific behavior parameters.
 class PetBehaviorProfile {
   final double mouseAttraction; // Curiosity multiplier
   final double sleepLikelihood; // Fatigue rate multiplier
-  final double edgePreference;  // Likelihood to stay near boundaries
+  final double edgePreference; // Likelihood to stay near boundaries
   final List<String> customActions;
-  
+
   // Decoupled physics & render traits
-  final double movementSpeed;              // max follow/wander speed
-  final double acceleration;               // stiffness rate (springStiffness)
-  final double damping;                    // damping factor for spring system
-  final double lookDelay;                  // seconds of "looking" before moving
-  final double wanderRadius;               // local prowl radius limit
-  final double specialAbilityProbability;  // chance to trigger custom actions
-  final double strideFrequency;            // foot step frequency multiplier
-  final double maxTilt;                    // max lean angle in radians for flying/climbing
-  final double bobIntensity;               // breathing/movement vertical scaling factor
-  final double stopRadius;                 // stop this many px away from cursor
+  final double movementSpeed; // max follow/wander speed
+  final double acceleration; // stiffness rate (springStiffness)
+  final double damping; // damping factor for spring system
+  final double lookDelay; // seconds of "looking" before moving
+  final double wanderRadius; // local prowl radius limit
+  final double specialAbilityProbability; // chance to trigger custom actions
+  final double strideFrequency; // foot step frequency multiplier
+  final double maxTilt; // max lean angle in radians for flying/climbing
+  final double bobIntensity; // breathing/movement vertical scaling factor
+  final double stopRadius; // stop this many px away from cursor
 
   const PetBehaviorProfile({
     this.mouseAttraction = 1.0,

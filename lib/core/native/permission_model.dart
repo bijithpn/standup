@@ -18,10 +18,13 @@ class NativePermissionStatus {
     bool? isLaunchAtStartupEnabled,
   }) {
     return NativePermissionStatus(
-      isMeetingDetectionAvailable: isMeetingDetectionAvailable ?? this.isMeetingDetectionAvailable,
+      isMeetingDetectionAvailable:
+          isMeetingDetectionAvailable ?? this.isMeetingDetectionAvailable,
       isFocusModeAvailable: isFocusModeAvailable ?? this.isFocusModeAvailable,
-      isNotificationsAllowed: isNotificationsAllowed ?? this.isNotificationsAllowed,
-      isLaunchAtStartupEnabled: isLaunchAtStartupEnabled ?? this.isLaunchAtStartupEnabled,
+      isNotificationsAllowed:
+          isNotificationsAllowed ?? this.isNotificationsAllowed,
+      isLaunchAtStartupEnabled:
+          isLaunchAtStartupEnabled ?? this.isLaunchAtStartupEnabled,
     );
   }
 }

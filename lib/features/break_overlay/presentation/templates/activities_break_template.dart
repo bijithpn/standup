@@ -105,8 +105,7 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                         duration: const Duration(milliseconds: 350),
                         switchInCurve: Curves.easeOutCubic,
                         switchOutCurve: Curves.easeInCubic,
-                        transitionBuilder: (child, animation) =>
-                            FadeTransition(
+                        transitionBuilder: (child, animation) => FadeTransition(
                           opacity: animation,
                           child: SlideTransition(
                             position: Tween<Offset>(
@@ -169,8 +168,9 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
-    final accentColor =
-        isShort ? const Color(0xFF38BDF8) : const Color(0xFF7DD3FC);
+    final accentColor = isShort
+        ? const Color(0xFF38BDF8)
+        : const Color(0xFF7DD3FC);
 
     return Row(
       children: [
@@ -315,8 +315,7 @@ class _ActivityTab extends StatelessWidget {
                       ? Colors.white
                       : Colors.white.withValues(alpha: 0.45),
                   fontSize: 13,
-                  fontWeight:
-                      isSelected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                   fontFamily: 'Inter',
                 ),
               ),
@@ -405,8 +404,7 @@ class _ActivitiesBackdropPainter extends CustomPainter {
     );
 
     // Subtle dot grid
-    final dotPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04);
+    final dotPaint = Paint()..color = Colors.white.withValues(alpha: 0.04);
     const gap = 48.0;
     for (double x = gap; x < size.width; x += gap) {
       for (double y = gap; y < size.height; y += gap) {
@@ -416,17 +414,18 @@ class _ActivitiesBackdropPainter extends CustomPainter {
 
     // Soft center radial glow
     final glowPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFF0EA5E9).withValues(alpha: 0.07),
-          Colors.transparent,
-        ],
-      ).createShader(
-        Rect.fromCircle(
-          center: Offset(size.width * 0.5, size.height * 0.45),
-          radius: size.shortestSide * 0.55,
-        ),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFF0EA5E9).withValues(alpha: 0.07),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * 0.5, size.height * 0.45),
+              radius: size.shortestSide * 0.55,
+            ),
+          );
     canvas.drawRect(Offset.zero & size, glowPaint);
   }
 
