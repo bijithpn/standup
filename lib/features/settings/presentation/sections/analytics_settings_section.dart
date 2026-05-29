@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -69,7 +69,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
             ],
           ),
         ),
-        _buildSegmentedFilter(
+        segmentedControl(
           ['Today', 'This Week'],
           _selectedFilter,
           (i) => setState(() => _selectedFilter = i),
@@ -288,44 +288,4 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
-  Widget _buildSegmentedFilter(
-    List<String> options,
-    int selected,
-    ValueChanged<int> onSelected,
-  ) {
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        children: options.asMap().entries.map((e) {
-          final isSelected = e.key == selected;
-          return GestureDetector(
-            onTap: () => onSelected(e.key),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: isSelected ? AppTheme.gray800 : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                e.value,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                  color: isSelected
-                      ? AppTheme.textPrimary
-                      : AppTheme.textSecondary,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
 }

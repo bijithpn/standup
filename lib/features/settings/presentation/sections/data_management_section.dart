@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:path_provider/path_provider.dart';
@@ -235,7 +234,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           subtitle: 'Irreversible data actions.',
         ),
         buildCard([
-          _actionRow(
+          actionRow(
             label: 'Clear All Data',
             subtitle: 'Delete all settings and local analytics history.',
             buttonText: 'Reset',
@@ -273,62 +272,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
               fontSize: 14,
               fontWeight: FontWeight.w600,
               fontFamily: 'Inter',
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _actionRow({
-    required String label,
-    required String subtitle,
-    required String buttonText,
-    required VoidCallback onPressed,
-    bool isDestructive = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isDestructive ? AppTheme.error : AppTheme.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          MinimalButton(
-            onPressed: onPressed,
-            backgroundColor: isDestructive 
-                ? AppTheme.error.withValues(alpha: 0.1) 
-                : AppTheme.accentColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              buttonText,
-              style: TextStyle(
-                color: isDestructive ? AppTheme.error : AppTheme.accentColor,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
             ),
           ),
         ],

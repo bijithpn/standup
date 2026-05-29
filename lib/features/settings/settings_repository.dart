@@ -21,12 +21,35 @@ class SettingsRepository extends ChangeNotifier {
 
     if (snapshot != null) {
       _current = _fromSnapshot(snapshot, companionPrefs);
+      
+      // Critical fix: Always override with primitive storage if it's more definitive
+      // This prevents the onboarding loop if the database snapshot is stale
+      final completedOnboarding = _storage.getBool('has_completed_onboarding');
+      if (completedOnboarding && !_current.hasCompletedOnboarding) {
+        _current = _current.copyWith(hasCompletedOnboarding: true);
+        save(_current); // Resync back to snapshot for consistency
+      }
     } else {
       _current = _loadFromLegacy();
       if (_storage.isReady) {
         save(_current);
       }
     }
+  }
+
+  List<ExerciseModel> getExercises() {
+    if (_storage.settingsBox != null) {
+      final snapshot = _storage.settingsBox?.get(1);
+      if (snapshot != null && snapshot.exercisesJson.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(snapshot.exercisesJson);
+          if (decoded is List) {
+            return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
+          }
+        } catch (_) {}
+      }
+    }
+    return _loadExercises();
   }
 
   SettingsModel _fromSnapshot(SettingsSnapshot s, CompanionPreferences? cp) {

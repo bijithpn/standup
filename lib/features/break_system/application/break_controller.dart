@@ -4,18 +4,16 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
-import 'package:breakmate/core/services/system_media_service.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/break_profile.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
-import 'package:breakmate/features/settings/exercise_model.dart';
-import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:math';
+
+import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
@@ -33,12 +31,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   String _currentTemplate = '';
 
-  String _currentThemeName = 'random';
-  bool _isPreviewMode = false;
-  bool _preBreakWarningShown = false;
-
   TimerState? _lastOverlayState;
-  DateTime? _lastOverlayTargetEndTime;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -48,6 +41,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
        _settingsRepo = settingsRepo,
        _statsService = statsService {
     _timerEngine.addListener(_onTimerChanged);
+    _settingsRepo.addListener(_onSettingsChanged);
   }
 
   TimerEngine get timerEngine => _timerEngine;
@@ -57,6 +51,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   Duration get totalWorkToday => _timerEngine.totalWorkToday;
   String? get currentExerciseTitle => _currentExerciseTitle;
   String? get currentExerciseInstructions => _currentExerciseInstructions;
+
+  void _onSettingsChanged() {
+    _applySettings();
+    notifyListeners();
+  }
+
+  void _onTimerChanged() {
+    notifyListeners();
+  }
 
   void initialize() {
     _applySettings();
@@ -93,254 +96,62 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
     bool shouldShowWarning = _timerEngine.isPreBreak;
 
-    if (shouldShowBreak) {
-      final breakInfo = _timerEngine.activeBreak;
+    if (shouldShowBreak && _lastOverlayState != TimerState.breakActive) {
+      _lastOverlayState = TimerState.breakActive;
 
-      // Auto-enable strict mode for high intensity levels
-      final isHighIntensity =
-          settings.intensityLevel == 'strict' ||
-          settings.intensityLevel == 'locked';
-      if ((settings.strictMode || isHighIntensity) &&
-          !strictModeController.isStrictModeActive) {
+      final isLong = _timerEngine.activeBreak?.type == BreakType.long;
+      _currentTemplate = settings.breakTemplate;
+
+      if (_currentTemplate == 'activities') {
+        _pickRandomExercise();
+      }
+
+      overlayService.showOverlay(
+        type: OverlayType.breakScreen,
+        builder: (_) => const SizedBox.shrink(), // Overlay UI is rendered in separate window
+        strictMode: settings.strictMode,
+        breakTheme: settings.breakTheme,
+        overlayData: {
+          'isLong': isLong,
+          'template': _currentTemplate,
+          'exerciseTitle': _currentExerciseTitle,
+          'exerciseInstructions': _currentExerciseInstructions,
+        },
+      );
+
+      if (settings.strictMode) {
         strictModeController.enableStrictMode();
       }
 
-      if (overlayService.currentOverlayType != OverlayType.breakScreen) {
-        _preBreakWarningShown = false;
-        if (strictModeController.isInMeeting) {
-          debugPrint('Auto-postponing break due to active meeting.');
-          _timerEngine.postponeBreak();
-          return;
-        }
-        String? exerciseTitle;
-        String? exerciseInstructions;
-
-        if (settings.showExercisesInBreak) {
-          final now = DateTime.now();
-          final today = '${now.year}-${now.month}-${now.day}';
-          List<String> shownToday = List.from(settings.shownExercisesToday);
-
-          if (settings.lastExerciseDate != today) {
-            shownToday.clear();
-          }
-
-          final availableExercises = settings.exercises.isEmpty
-              ? ExerciseModel.defaults
-              : settings.exercises;
-          final enabledExercises = availableExercises
-              .where((e) => e.enabled)
-              .toList();
-          final unshown = enabledExercises
-              .where((e) => !shownToday.contains(e.id))
-              .toList();
-
-          if (unshown.isNotEmpty) {
-            unshown.shuffle();
-            final selected = unshown.first;
-            exerciseTitle = selected.title;
-            exerciseInstructions = selected.instructions;
-
-            shownToday.add(selected.id);
-            _settingsRepo.save(
-              settings.copyWith(
-                lastExerciseDate: today,
-                shownExercisesToday: shownToday,
-              ),
-            );
-          }
-        }
-
-        // Determine universal template and theme for all displays
-        _currentTemplate =
-            AppConstants.wellnessSlideshow[Random().nextInt(
-              AppConstants.wellnessSlideshow.length,
-            )];
-        if (settings.breakTheme == 'random') {
-          const themes = [
-            'image',
-            'ocean',
-            'forest',
-            'minimal',
-            'sunset',
-            'nebula',
-            'midnight',
-            'cyberpunk',
-            'zen',
-          ];
-          _currentThemeName = themes[Random().nextInt(themes.length)];
-        } else {
-          _currentThemeName = settings.breakTheme;
-        }
-
-        // Store these so we can pass them in updateOverlayData
-        _currentExerciseTitle = exerciseTitle;
-        _currentExerciseInstructions = exerciseInstructions;
-
-        final targetEndTime = _timerEngine.targetEndTime;
-        _lastOverlayState = _timerEngine.state;
-        _lastOverlayTargetEndTime = targetEndTime;
-
-        overlayService.showOverlay(
-          type: OverlayType.breakScreen,
-          builder: (context) => const SizedBox.shrink(),
-          strictMode: settings.strictMode,
-          showOnAllDisplays: settings.showOnAllDisplays,
-          breakTheme: _currentThemeName,
-          overlayData: {
-            'title': breakInfo?.title,
-            'tip': breakInfo?.tip,
-            'durationSeconds': breakInfo?.durationSeconds,
-            'remainingSeconds': _timerEngine.countdownSeconds,
-            'targetEndTime': targetEndTime?.millisecondsSinceEpoch,
-            'strictMode': settings.strictMode,
-            'exerciseTitle': _currentExerciseTitle,
-            'exerciseInstructions': _currentExerciseInstructions,
-            'playMusic': settings.playMusicDuringBreak,
-            'template': _currentTemplate,
-            'theme': _currentThemeName,
-            'breakTemplate': settings.breakTemplate,
-            'companionPetTheme': settings.companionPetTheme,
-            'companionCatTheme': settings.companionPetTheme,
-          },
-        );
-
-        // Start background music if enabled
-        if (settings.playMusicDuringBreak && !_isPlayingMusic) {
-          _playLofiMusic();
-        }
+      if (settings.playMusicDuringBreak) {
+        _startMusic();
       }
-
-      // Update all overlay engines with the current timer state
-      if (breakInfo != null) {
-        final targetEndTime = _timerEngine.targetEndTime;
-        final stateChanged = _lastOverlayState != _timerEngine.state;
-        final targetEndTimeChanged =
-            _lastOverlayTargetEndTime == null && targetEndTime != null ||
-            _lastOverlayTargetEndTime != null && targetEndTime == null ||
-            (_lastOverlayTargetEndTime != null &&
-                targetEndTime != null &&
-                (_lastOverlayTargetEndTime!
-                        .difference(targetEndTime)
-                        .abs()
-                        .inSeconds >
-                    1));
-
-        if (stateChanged || targetEndTimeChanged) {
-          _lastOverlayState = _timerEngine.state;
-          _lastOverlayTargetEndTime = targetEndTime;
-
-          // Phase 4.2: Auto-pause Spotify/Apple Music when break starts
-          if (_timerEngine.state == TimerState.breakActive &&
-              settings.autoPauseMedia &&
-              !_isPreviewMode) {
-            sl<SystemMediaService>().pauseMedia();
-          }
-
-          NativeBridge.updateOverlayData({
-            'title': breakInfo.title,
-            'tip': breakInfo.tip,
-            'durationSeconds': breakInfo.durationSeconds,
-            'remainingSeconds': _timerEngine.countdownSeconds,
-            'targetEndTime': targetEndTime?.millisecondsSinceEpoch,
-            'strictMode': settings.strictMode,
-            'exerciseTitle': _currentExerciseTitle,
-            'exerciseInstructions': _currentExerciseInstructions,
-            'playMusic': settings.playMusicDuringBreak,
-            'template': _currentTemplate,
-            'theme': _currentThemeName,
-            'breakTemplate': settings.breakTemplate,
-            'companionPetTheme': settings.companionPetTheme,
-            'companionCatTheme': settings.companionPetTheme,
-          });
-        }
-      }
-    } else if (shouldShowWarning) {
-      if (!_preBreakWarningShown) {
-        _preBreakWarningShown = true;
-        final isLong = _timerEngine.activeBreak?.isLong ?? false;
-        sl<NotificationService>().showBreakReminder(isLong: isLong);
-
-        // Start pre-break music fade-in if enabled
-        if (settings.playMusicDuringBreak && !_isPlayingMusic) {
-          _playLofiMusicWithFadeIn(
-            trackIndex: 1,
-          ); // Use lofi_1.mp3 as per roadmap
-        }
-      }
-    } else if (overlayService.isOverlayVisible &&
-        !_isPreviewMode &&
-        (overlayService.currentOverlayType == OverlayType.breakScreen ||
-            overlayService.currentOverlayType == OverlayType.preBreakWarning)) {
-      if (strictModeController.isStrictModeActive) {
-        strictModeController.disableStrictMode();
-      }
-      overlayService.showDashboard();
-      _stopMusicWithFadeOut();
+    } else if (shouldShowWarning && !overlayService.isOverlayVisible) {
+      overlayService.showOverlay(
+        type: OverlayType.preBreakWarning,
+        builder: (_) => const SizedBox.shrink(),
+        overlayData: {
+          'secondsRemaining': _timerEngine.countdownSeconds,
+        },
+      );
+    } else if (!shouldShowBreak &&
+        !shouldShowWarning &&
+        _lastOverlayState != null) {
       _lastOverlayState = null;
-      _lastOverlayTargetEndTime = null;
-    } else if (!shouldShowWarning) {
-      if (_preBreakWarningShown && !shouldShowBreak && !_isPreviewMode) {
-        _stopMusicWithFadeOut();
-      }
-      _preBreakWarningShown = false;
-    }
-
-    notifyListeners();
-  }
-
-  void _playLofiMusicWithFadeIn({int? trackIndex}) async {
-    try {
-      _fadeTimer?.cancel();
-      _audioPlayer ??= AudioPlayer();
-
-      // Only one track remains after optimization
-      final track = 1;
-
-      await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-      _currentVolume = 0.0;
-      await _audioPlayer!.setVolume(_currentVolume);
-      await _audioPlayer!.play(AssetSource('music/lofi_$track.mp3'));
-      _isPlayingMusic = true;
-
-      // Fade in over 3 seconds (10 steps of 0.1 volume every 300ms)
-      _fadeTimer = Timer.periodic(const Duration(milliseconds: 300), (timer) {
-        _currentVolume += 0.1;
-        if (_currentVolume >= 1.0) {
-          _currentVolume = 1.0;
-          _audioPlayer?.setVolume(_currentVolume);
-          timer.cancel();
-        } else {
-          _audioPlayer?.setVolume(_currentVolume);
-        }
-      });
-    } catch (e) {
-      debugPrint("Failed to play lofi music with fade in: $e");
+      overlayService.hideOverlay();
+      strictModeController.disableStrictMode();
+      _stopMusic();
     }
   }
 
-  void _stopMusicWithFadeOut() async {
-    if (!_isPlayingMusic) return;
-    _fadeTimer?.cancel();
+  void _pickRandomExercise() {
+    final exercises = _settingsRepo.getExercises().where((e) => e.enabled).toList();
+    if (exercises.isEmpty) return;
 
-    // Fade out over 2 seconds (10 steps of 0.1 volume every 200ms)
-    _fadeTimer = Timer.periodic(const Duration(milliseconds: 200), (timer) {
-      _currentVolume -= 0.1;
-      if (_currentVolume <= 0.0) {
-        _currentVolume = 0.0;
-        _audioPlayer?.setVolume(_currentVolume);
-        _audioPlayer?.stop();
-        _audioPlayer?.dispose();
-        _audioPlayer = null;
-        _isPlayingMusic = false;
-        timer.cancel();
-      } else {
-        _audioPlayer?.setVolume(_currentVolume);
-      }
-    });
-  }
-
-  void _playLofiMusic() async {
-    _playLofiMusicWithFadeIn();
+    final random = Random();
+    final exercise = exercises[random.nextInt(exercises.length)];
+    _currentExerciseTitle = exercise.title;
+    _currentExerciseInstructions = exercise.instructions;
   }
 
   void _applySettings() {
@@ -361,6 +172,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     );
     sl<NotificationService>().setSoundEnabled(settings.soundEnabled);
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
+
+    try {
+      sl<CompanionBehaviorEngine>().setEnabled(settings.companionEnabled);
+    } catch (_) {}
   }
 
   // --- Snooze Logic ---
@@ -390,194 +205,140 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
   String get quietModePreset => _settingsRepo.currentSettings.quietModePreset;
 
+  bool get companionEnabled => _settingsRepo.currentSettings.companionEnabled;
+
+  void toggleCompanion() {
+    final current = _settingsRepo.currentSettings;
+    final newValue = !current.companionEnabled;
+    _settingsRepo.save(current.copyWith(companionEnabled: newValue));
+    _applySettings();
+    notifyListeners();
+  }
+
   void toggleQuietMode() {
     final current = _settingsRepo.currentSettings;
     final newValue = !current.quietModeEnabled;
     _settingsRepo.save(current.copyWith(quietModeEnabled: newValue));
+    _applySettings();
     notifyListeners();
   }
 
   void setQuietModePreset(String preset) {
     _settingsRepo.save(
-      _settingsRepo.currentSettings.copyWith(
-        quietModePreset: preset,
-        quietModeEnabled: true,
-      ),
+      _settingsRepo.currentSettings.copyWith(quietModePreset: preset),
     );
     notifyListeners();
   }
 
+  // --- Break Actions ---
+
+  void takeBreakNow() {
+    _timerEngine.triggerBreakNow(isLong: false);
+    notifyListeners();
+  }
+
+  Future<void> completeCurrentBreak() async {
+    await _timerEngine.finishBreak(skipped: false);
+    notifyListeners();
+  }
+
+  Future<void> skipCurrentBreak() async {
+    await _timerEngine.finishBreak(skipped: true);
+    notifyListeners();
+  }
+
+  void skipNextBreak() {
+    _timerEngine.skipNextBreak();
+    notifyListeners();
+  }
+
+  void postponeCurrentBreak() {
+    _timerEngine.postponeBreak();
+    notifyListeners();
+  }
+
   void togglePause() {
-    _logger.info('Toggling pause state. Current state: ${_timerEngine.state}');
-    if (_timerEngine.state == TimerState.breakActive) {
-      _logger.info('Cannot pause during active break');
-      return;
-    }
     if (isPaused) {
       _timerEngine.resumeTimers();
     } else {
       _timerEngine.pauseTimers(isManual: true);
     }
-    final paused = _timerEngine.state == TimerState.paused;
-    _logger.info('New pause state: $paused');
-    sl<TrayManagerService>().updatePauseState(paused);
     notifyListeners();
-  }
-
-  void takeBreakNow() {
-    _logger.info('Manually triggering break now');
-    _timerEngine.triggerBreakNow();
-    sl<TrayManagerService>().setBreakActive(true);
-    notifyListeners();
-  }
-
-  void startTestBreak() {
-    final overlayService = sl<OverlayWindowService>();
-    final settings = _settingsRepo.currentSettings;
-    _isPreviewMode = true;
-
-    if (settings.showExercisesInBreak) {
-      final availableExercises = settings.exercises.isEmpty
-          ? ExerciseModel.defaults
-          : settings.exercises;
-      final enabledExercises = availableExercises
-          .where((e) => e.enabled)
-          .toList();
-      if (enabledExercises.isNotEmpty) {
-        enabledExercises.shuffle();
-      }
-    }
-
-    _currentTemplate =
-        AppConstants.wellnessSlideshow[Random().nextInt(
-          AppConstants.wellnessSlideshow.length,
-        )];
-    if (settings.breakTheme == 'random') {
-      const themes = [
-        'image',
-        'ocean',
-        'forest',
-        'minimal',
-        'sunset',
-        'nebula',
-        'midnight',
-        'cyberpunk',
-        'zen',
-      ];
-      _currentThemeName = themes[Random().nextInt(themes.length)];
-    } else {
-      _currentThemeName = settings.breakTheme;
-    }
-
-    final previewData = {
-      'title': 'Test Break',
-      'tip': 'This is a preview of your break screen.',
-      'durationSeconds': 60,
-      'remainingSeconds': 60,
-      'strictMode': settings.strictMode,
-      'type': OverlayType.breakScreen.name,
-      'isPreview': true,
-      'playMusic': settings.playMusicDuringBreak,
-      'template': _currentTemplate,
-      'theme': _currentThemeName,
-      'breakTemplate': settings.breakTemplate,
-      'companionPetTheme': settings.companionPetTheme,
-      'companionCatTheme': settings.companionPetTheme,
-    };
-
-    overlayService.showOverlay(
-      type: OverlayType.breakScreen,
-      builder: (context) => const SizedBox.shrink(),
-      strictMode: settings.strictMode,
-      showOnAllDisplays: settings.showOnAllDisplays,
-      breakTheme: _currentThemeName,
-      overlayData: previewData,
-    );
-
-    NativeBridge.updateOverlayData(previewData);
-
-    if (settings.playMusicDuringBreak && !_isPlayingMusic) {
-      _playLofiMusic();
-    }
-  }
-
-  void skipNextBreak() {
-    final settings = _settingsRepo.currentSettings;
-    if (settings.intensityLevel == 'locked' ||
-        settings.intensityLevel == 'strict' ||
-        settings.strictMode) {
-      _logger.info('Skip next break denied: High intensity');
-      return;
-    }
-    _logger.info('Manually skipping next break');
-    _timerEngine.skipNextBreak();
-    notifyListeners();
-  }
-
-  Future<void> skipCurrentBreak() async {
-    _isPreviewMode = false;
-    final settings = _settingsRepo.currentSettings;
-    if (settings.intensityLevel == 'locked' || settings.strictMode) {
-      _logger.info('Skip current break denied: Locked/Strict mode');
-      return;
-    }
-    await _timerEngine.finishBreak(skipped: true);
-    sl<TrayManagerService>().setBreakActive(false);
-    sl<OverlayWindowService>().showDashboard();
-    _stopMusicWithFadeOut();
-  }
-
-  void postponeCurrentBreak() {
-    if (_timerEngine.canPostpone && !_settingsRepo.currentSettings.strictMode) {
-      _timerEngine.postponeBreak();
-    }
-  }
-
-  Future<void> completeCurrentBreak() async {
-    _isPreviewMode = false;
-    await _timerEngine.finishBreak(skipped: false);
-    sl<TrayManagerService>().setBreakActive(false);
-  }
-
-  void onBreakCompleted() {
-    // Force save timer state to persist the completed break
-    _timerEngine.saveState();
-    sl<TrayManagerService>().setBreakActive(false);
   }
 
   void refreshSettings() {
     _applySettings();
+    notifyListeners();
   }
 
   void changeProfile(BreakProfile profile) {
-    final updated = _settingsRepo.currentSettings.copyWith(
+    _timerEngine.updateSettings(
+      shortIntervalMinutes: profile.shortIntervalMinutes,
+      shortDurationSeconds: profile.shortDurationSeconds,
+      longIntervalMinutes: profile.longIntervalMinutes,
+      longDurationSeconds: profile.longDurationMinutes * 60,
+    );
+    _settingsRepo.save(_settingsRepo.currentSettings.copyWith(
       selectedProfileId: profile.id,
       shortBreakIntervalMinutes: profile.shortIntervalMinutes,
       shortBreakDurationSeconds: profile.shortDurationSeconds,
       longBreakIntervalMinutes: profile.longIntervalMinutes,
       longBreakDurationMinutes: profile.longDurationMinutes,
-    );
-    _settingsRepo.save(updated);
-    _applySettings();
+    ));
     notifyListeners();
   }
 
-  void _onTimerChanged() {
-    // Sync tray pause state if it changed externally (e.g. idle detection)
-    sl<TrayManagerService>().updatePauseState(isPaused);
+  // --- Music Logic ---
 
-    // Track completed breaks when countdown reaches zero naturally
-    if (_timerEngine.state == TimerState.running &&
-        _timerEngine.activeBreak == null) {
-      // Break just finished normally — already handled in finishBreak
+  Future<void> _startMusic() async {
+    if (_isPlayingMusic) return;
+    _isPlayingMusic = true;
+
+    try {
+      if (_audioPlayer == null) {
+        _audioPlayer = AudioPlayer();
+        await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
+      }
+
+      await _audioPlayer!.play(AssetSource('music/lofi_1.mp3'));
+      _audioPlayer!.setVolume(0);
+      _fadeVolume(1.0);
+    } catch (e) {
+      _logger.error('Failed to play music: $e');
     }
-    notifyListeners();
+  }
+
+  Future<void> _stopMusic() async {
+    if (!_isPlayingMusic) return;
+    _isPlayingMusic = false;
+
+    _fadeVolume(0.0, onComplete: () {
+      _audioPlayer?.stop();
+    });
+  }
+
+  void _fadeVolume(double target, {VoidCallback? onComplete}) {
+    _fadeTimer?.cancel();
+    const steps = 20;
+    final delta = (target - _currentVolume) / steps;
+
+    _fadeTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      _currentVolume += delta;
+      if ((delta > 0 && _currentVolume >= target) ||
+          (delta < 0 && _currentVolume <= target)) {
+        _currentVolume = target;
+        timer.cancel();
+        onComplete?.call();
+      }
+      _audioPlayer?.setVolume(_currentVolume);
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _timerEngine.removeListener(_onTimerChanged);
+    _settingsRepo.removeListener(_onSettingsChanged);
     _audioPlayer?.dispose();
     super.dispose();
   }

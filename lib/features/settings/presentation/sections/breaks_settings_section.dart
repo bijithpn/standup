@@ -45,50 +45,26 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            sectionHeader('Break Configuration'),
-            const SizedBox(height: 8),
-            // Tab-like segmented control for sub-sections
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              child: isSmallScreen
-                  ? Column(
-                      children: [
-                        Row(
-                          children: [
-                            _subTabButton('Profiles', 0, isSmall: true),
-                            _subTabButton('Intervals', 1, isSmall: true),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            _subTabButton('Controls', 4, isSmall: true),
-                            _subTabButton('Appearance', 2, isSmall: true),
-                          ],
-                        ),
-                      ],
-                    )
-                  : Row(
-                      children: [
-                        _subTabButton('Profiles', 0),
-                        _subTabButton('Intervals', 1),
-                        _subTabButton('Controls', 4),
-                        _subTabButton('Appearance', 2),
-                      ],
-                    ),
+            sectionHeader(
+              'Break Configuration',
+              subtitle: 'Customize your rhythm, focus intensity, and break aesthetics.',
             ),
+            const SizedBox(height: 12),
+            
+            // Modern segmented control for sub-sections
+            segmentedControl(
+              ['Profiles', 'Custom', 'Intensity', 'Themes'],
+              _breaksSubTab,
+              (i) => setState(() => _breaksSubTab = i),
+              isSmall: isSmallScreen,
+            ),
+            
             SizedBox(height: isSmallScreen ? 24 : 32),
+            
             if (_breaksSubTab == 0) _buildProfileSelector(),
             if (_breaksSubTab == 1) _buildCustomIntervals(),
-            if (_breaksSubTab == 2) _buildAppearanceSettings(),
-
-            if (_breaksSubTab == 4) _buildBreakManualControls(),
+            if (_breaksSubTab == 2) _buildBreakManualControls(),
+            if (_breaksSubTab == 3) _buildAppearanceSettings(),
           ],
         );
       },
@@ -150,7 +126,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             ),
           ),
         ]),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         sectionHeader('Display Options'),
         buildCard([
           toggleRow(
@@ -238,10 +214,10 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             ),
           ),
         ]),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         sectionHeader('Manual Controls'),
         buildCard([
-          _actionRow(
+          actionRow(
             label: isPaused ? 'Timer is Paused' : 'Timer is Running',
             subtitle: isPaused
                 ? 'Resume to continue your focus session.'
@@ -253,7 +229,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             onPressed: () => controller.togglePause(),
           ),
           divider(),
-          _actionRow(
+          actionRow(
             label: 'Take Break Now',
             subtitle: 'Manually trigger a rest session immediately.',
             buttonText: 'Start Break',
@@ -261,14 +237,13 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             onPressed: isBreak ? null : () => controller.takeBreakNow(),
           ),
           divider(),
-          _actionRow(
+          actionRow(
             label: isBreak ? 'Skip Current Break' : 'Skip Next Break',
             subtitle: isBreak
                 ? 'End the active break session early.'
                 : 'Bypass the upcoming scheduled rest.',
             buttonText: 'Skip',
-            buttonColor: Colors.white.withValues(alpha: 0.1),
-            textColor: Colors.white,
+            buttonColor: AppTheme.textSecondary,
             onPressed: () {
               if (isBreak) {
                 controller.skipCurrentBreak();
@@ -278,7 +253,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             },
           ),
         ]),
-        const SizedBox(height: 32),
+        const SizedBox(height: 16),
         sectionHeader('Connected Displays'),
         ListenableBuilder(
           listenable: sl<DisplayController>(),
@@ -300,13 +275,12 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             }
             return buildCard(
               displays.map((display) {
-                return _actionRow(
+                return actionRow(
                   label: display.id,
                   subtitle:
                       'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
                   buttonText: 'Active',
-                  buttonColor: AppTheme.accentColor.withValues(alpha: 0.2),
-                  textColor: AppTheme.accentColor,
+                  buttonColor: AppTheme.accentColor,
                   onPressed: () {},
                 );
               }).toList(),
@@ -321,121 +295,82 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Duration & Frequency'),
+        sectionHeader(
+          'Custom Rhythm',
+          subtitle: 'Fine-tune your break frequency and duration for maximum productivity.',
+        ),
         buildCard([
           inputRow(
             'Short Break Every',
-            '',
-            trailing: inlineDropdown(
-              '${_settings.shortBreakIntervalMinutes} min',
-              List.generate(180, (i) => '${i + 1} min'),
-              (v) {
-                if (v != null) {
-                  _save(
-                    _settings.copyWith(
-                      shortBreakIntervalMinutes: int.parse(
-                        v.replaceAll(' min', ''),
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
+            '${_settings.shortBreakIntervalMinutes} min',
+            onTap: () {
+               showPicker(
+                context: context,
+                title: 'Short Break Interval',
+                options: List.generate(180, (i) => '${i + 1}'),
+                suffix: ' min',
+                onSelected: (v) => _save(_settings.copyWith(shortBreakIntervalMinutes: int.parse(v))),
+              );
+            },
           ),
           divider(),
           inputRow(
             'Short Break Duration',
-            '',
-            trailing: inlineDropdown(
-              '${_settings.shortBreakDurationSeconds} sec',
-              [
-                ...List.generate(12, (i) => '${(i + 1) * 5} sec'),
-                '75 sec',
-                '90 sec',
-                '120 sec',
-                '180 sec',
-                '300 sec',
-              ],
-              (v) {
-                if (v != null) {
-                  _save(
-                    _settings.copyWith(
-                      shortBreakDurationSeconds: int.parse(
-                        v.replaceAll(' sec', ''),
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
+            '${_settings.shortBreakDurationSeconds} sec',
+             onTap: () {
+               showPicker(
+                context: context,
+                title: 'Short Break Duration',
+                options: [
+                  ...List.generate(12, (i) => '${(i + 1) * 5}'),
+                  '75', '90', '120', '180', '300',
+                ],
+                suffix: ' sec',
+                onSelected: (v) => _save(_settings.copyWith(shortBreakDurationSeconds: int.parse(v))),
+              );
+            },
           ),
           divider(),
           inputRow(
-            'Heads-up Before Break',
-            'Show a small wrap-up reminder before the overlay opens.',
-            trailing: inlineDropdown(
-              '${_settings.preBreakWarningSeconds} sec',
-              [
-                '0 sec',
-                '10 sec',
-                '15 sec',
-                '20 sec',
-                '30 sec',
-                '45 sec',
-                '60 sec',
-              ],
-              (v) {
-                if (v != null) {
-                  _save(
-                    _settings.copyWith(
-                      preBreakWarningSeconds: int.parse(
-                        v.replaceAll(' sec', ''),
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
+            'Preparation Warning',
+            '${_settings.preBreakWarningSeconds} sec',
+             onTap: () {
+               showPicker(
+                context: context,
+                title: 'Heads-up Notification',
+                options: ['0', '10', '15', '20', '30', '45', '60'],
+                suffix: ' sec',
+                onSelected: (v) => _save(_settings.copyWith(preBreakWarningSeconds: int.parse(v))),
+              );
+            },
           ),
           divider(),
           inputRow(
             'Long Break Every',
-            '',
-            trailing: inlineDropdown(
-              '${_settings.longBreakIntervalMinutes} min',
-              List.generate(46, (i) => '${15 + (i * 5)} min'),
-              (v) {
-                if (v != null) {
-                  _save(
-                    _settings.copyWith(
-                      longBreakIntervalMinutes: int.parse(
-                        v.replaceAll(' min', ''),
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
+            '${_settings.longBreakIntervalMinutes} min',
+             onTap: () {
+               showPicker(
+                context: context,
+                title: 'Long Break Interval',
+                options: List.generate(46, (i) => '${15 + (i * 5)}'),
+                suffix: ' min',
+                onSelected: (v) => _save(_settings.copyWith(longBreakIntervalMinutes: int.parse(v))),
+              );
+            },
           ),
           divider(),
           inputRow(
             'Long Break Duration',
-            '',
-            trailing: inlineDropdown(
-              '${_settings.longBreakDurationMinutes} min',
-              List.generate(30, (i) => '${i + 1} min'),
-              (v) {
-                if (v != null) {
-                  _save(
-                    _settings.copyWith(
-                      longBreakDurationMinutes: int.parse(
-                        v.replaceAll(' min', ''),
-                      ),
-                    ),
-                  );
-                }
-              },
-            ),
+            '${_settings.longBreakDurationMinutes} min',
+             onTap: () {
+               showPicker(
+                context: context,
+                title: 'Long Break Duration',
+                options: List.generate(30, (i) => '${i + 1}'),
+                suffix: ' min',
+                onSelected: (v) => _save(_settings.copyWith(longBreakDurationMinutes: int.parse(v))),
+              );
+            },
           ),
         ]),
       ],
@@ -483,7 +418,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
         sectionHeader('Colors & Effects'),
         const SizedBox(height: 16),
         buildCard([
-          _colorRow('Clock Text Color', Color(_settings.clockFaceTextColorHex)),
+          colorRow('Clock Text Color', Color(_settings.clockFaceTextColorHex)),
           divider(),
           sliderRow(
             'Background Blur',
@@ -503,18 +438,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           ),
         ]),
       ],
-    );
-  }
-
-  Widget buildCard(List<Widget> children) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: AppTheme.cleanCardDecoration.copyWith(
-        color: AppTheme.cardBackground.withValues(alpha: 0.4),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(children: children),
     );
   }
 
@@ -600,202 +523,125 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
   }
 
   Widget _buildProfileSelector() {
-    return buildCard(
-      BreakProfile.presets.map((p) {
-        final isSelected = _settings.selectedProfileId == p.id;
-        return Column(
-          children: [
-            CupertinoButton(
-              padding: EdgeInsets.zero,
-              onPressed: () {
-                Provider.of<BreakController>(
-                  context,
-                  listen: false,
-                ).changeProfile(p);
-                _save(_settings.copyWith(selectedProfileId: p.id));
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.accentColor.withValues(alpha: 0.1)
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSelected
-                        ? AppTheme.accentColor
-                        : Colors.transparent,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isSelected
-                          ? CupertinoIcons.checkmark_circle_fill
-                          : CupertinoIcons.circle,
-                      color: isSelected
-                          ? AppTheme.accentColor
-                          : AppTheme.textMuted,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sectionHeader(
+          'Recommended Presets',
+          subtitle: 'Choose a scientifically-backed rhythm for your work day.',
+        ),
+        buildCard(
+          BreakProfile.presets.map((p) {
+            final isSelected = _settings.selectedProfileId == p.id;
+            return Column(
+              children: [
+                Material(
+                  type: MaterialType.transparency,
+                  child: InkWell(
+                    onTap: () {
+                      Provider.of<BreakController>(
+                        context,
+                        listen: false,
+                      ).changeProfile(p);
+                      _save(_settings.copyWith(selectedProfileId: p.id));
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppTheme.accentColor.withValues(alpha: 0.08)
+                            : Colors.transparent,
+                      ),
+                      child: Row(
                         children: [
-                          Text(
-                            p.name,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 15,
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                  ? AppTheme.accentColor.withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.05),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isSelected
+                                  ? CupertinoIcons.checkmark_alt
+                                  : _getProfileIcon(p.id),
                               color: isSelected
-                                  ? Colors.white
-                                  : AppTheme.textSecondary,
+                                  ? AppTheme.accentColor
+                                  : AppTheme.textMuted,
+                              size: 16,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${p.shortIntervalMinutes}m interval • ${p.shortDurationSeconds}s duration',
-                            style: const TextStyle(
-                              color: AppTheme.textMuted,
-                              fontSize: 12,
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  p.name,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 15,
+                                    color: isSelected
+                                        ? AppTheme.textPrimary
+                                        : AppTheme.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${p.shortIntervalMinutes}m interval • ${p.shortDurationSeconds}s duration',
+                                  style: TextStyle(
+                                    color: isSelected 
+                                        ? AppTheme.textSecondary.withValues(alpha: 0.7) 
+                                        : AppTheme.textMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
+                          if (isSelected)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentColor,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'ACTIVE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
-                    if (isSelected)
-                      const Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 14,
-                        color: Colors.white24,
-                      ),
-                  ],
-                ),
-              ),
-            ),
-            if (p != BreakProfile.presets.last) divider(),
-          ],
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _subTabButton(
-    String label,
-    int index, {
-    bool isSmall = false,
-    int? currentTab,
-    ValueChanged<int>? onTabChanged,
-  }) {
-    final selectedIdx = currentTab ?? _breaksSubTab;
-    final isSelected = selectedIdx == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          if (onTabChanged != null) {
-            onTabChanged(index);
-          } else {
-            setState(() => _breaksSubTab = index);
-          }
-        },
-        child: Container(
-          padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 10),
-          decoration: BoxDecoration(
-            color: isSelected ? AppTheme.accentColor : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: AppTheme.accentColor.withValues(alpha: 0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                fontSize: isSmall ? 10 : 12,
-                letterSpacing: -0.1,
-                fontFamily: 'Inter',
-              ),
-              overflow: TextOverflow.ellipsis,
-              maxLines: 1,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _actionRow({
-    required String label,
-    required String subtitle,
-    required String buttonText,
-    required Color buttonColor,
-    Color? textColor,
-    VoidCallback? onPressed,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppTheme.textPrimary,
-                    fontFamily: 'Inter',
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 12,
-                    letterSpacing: 0,
-                    fontFamily: 'Inter',
-                  ),
-                ),
+                if (p != BreakProfile.presets.last) divider(),
               ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          MinimalButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            backgroundColor: buttonColor,
-            disabledColor: buttonColor.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(8),
-            onPressed: onPressed,
-            child: Text(
-              buttonText,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: textColor ?? Colors.white,
-                fontFamily: 'Inter',
-              ),
-            ),
-          ),
-        ],
-      ),
+            );
+          }).toList(),
+        ),
+      ],
     );
+  }
+
+  IconData _getProfileIcon(String id) {
+    switch (id) {
+      case 'balanced': return CupertinoIcons.infinite;
+      case 'deep_work': return CupertinoIcons.flame;
+      case 'pomodoro': return CupertinoIcons.timer;
+      default: return CupertinoIcons.layers;
+    }
   }
 
   Widget _buildBreakTemplateMock(String id) {
@@ -850,7 +696,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                   border: Border.all(color: Colors.white24, width: 0.5),
                 ),
                 child: const Text(
-                  'Time to stretch! ≡ƒÉ╛',
+                  'Time to stretch! 🐾',
                   style: TextStyle(fontSize: 8, color: Colors.white),
                   textAlign: TextAlign.center,
                 ),
@@ -1156,27 +1002,6 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
       default:
         return const SizedBox();
     }
-  }
-
-  Widget _colorRow(String label, Color color) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Container(
-            width: 40,
-            height: 24,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(color: Colors.white24),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _breakTemplatePreview(
