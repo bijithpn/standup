@@ -63,6 +63,9 @@ class MenuBarController {
       case 'open_companion':
         await openSection('Companion');
         break;
+      case 'open_notifications':
+        await openSection('Notifications');
+        break;
       case 'quit':
         await _quitApp();
         break;

@@ -108,12 +108,6 @@ class _CompanionInteractiveTemplateState
           _animationState = PetAnimationState.stretch;
           if (species == PetSpecies.dog) {
             _speechText = 'A big dog stretch! Ready for action!';
-          } else if (species == PetSpecies.rabbit) {
-            _speechText = 'Hop stretch! Warming up my hind legs!';
-          } else if (species == PetSpecies.fox) {
-            _speechText = 'Sly fox stretch! Stay alert!';
-          } else if (species == PetSpecies.dragon) {
-            _speechText = 'Spreading my wings for a grand stretch!';
           } else {
             _speechText = 'Mmm, cat stretching feels incredible...';
           }
@@ -121,12 +115,6 @@ class _CompanionInteractiveTemplateState
           _animationState = PetAnimationState.sleep;
           if (species == PetSpecies.dog) {
             _speechText = 'Zzz... Cozy puppy dreams...';
-          } else if (species == PetSpecies.rabbit) {
-            _speechText = 'Zzz... Dreaming of clover fields...';
-          } else if (species == PetSpecies.fox) {
-            _speechText = 'Zzz... Curl up in a warm den...';
-          } else if (species == PetSpecies.dragon) {
-            _speechText = 'Zzz... Resting on a pile of gold...';
           } else {
             _speechText = 'Zzz... Perfect cozy catnap...';
           }
@@ -134,12 +122,6 @@ class _CompanionInteractiveTemplateState
           _animationState = PetAnimationState.lick1;
           if (species == PetSpecies.dog) {
             _speechText = 'Cleaning up my puppy paws!';
-          } else if (species == PetSpecies.rabbit) {
-            _speechText = '*Twitching nose and cleaning long ears...*';
-          } else if (species == PetSpecies.fox) {
-            _speechText = '*Grooming its fluffy tail...*';
-          } else if (species == PetSpecies.dragon) {
-            _speechText = '*Polishing shiny dragon scales...*';
           } else {
             _speechText = '*Carefully grooming its soft whiskers...*';
           }
@@ -147,12 +129,6 @@ class _CompanionInteractiveTemplateState
           _animationState = PetAnimationState.walkSide;
           if (species == PetSpecies.dog) {
             _speechText = 'Walking around! Zoom zoom!';
-          } else if (species == PetSpecies.rabbit) {
-            _speechText = 'Hop hop! Exploring new territory!';
-          } else if (species == PetSpecies.fox) {
-            _speechText = 'Prowling silently... What was that?';
-          } else if (species == PetSpecies.dragon) {
-            _speechText = 'Gliding through the air currents...';
           } else {
             _speechText = 'Prowling around. I see a bug!';
           }
@@ -160,12 +136,6 @@ class _CompanionInteractiveTemplateState
           _animationState = PetAnimationState.breakMode;
           if (species == PetSpecies.dog) {
             _speechText = 'Let\'s take a break together! Woof!';
-          } else if (species == PetSpecies.rabbit) {
-            _speechText = 'Rest time is the best time! *wiggle nose*';
-          } else if (species == PetSpecies.fox) {
-            _speechText = 'Time to rest in the woods.';
-          } else if (species == PetSpecies.dragon) {
-            _speechText = 'Relax, mortal. Let\'s enjoy this quiet moment.';
           } else {
             _speechText = 'Purr... Time to relax and recharge.';
           }
@@ -457,18 +427,6 @@ class _CompanionInteractiveTemplateState
                                           if (species == PetSpecies.dog) {
                                             _speechText =
                                                 'A big dog stretch! Ready for action!';
-                                          } else if (species ==
-                                              PetSpecies.rabbit) {
-                                            _speechText =
-                                                'Hop stretch! Warming up my hind legs!';
-                                          } else if (species ==
-                                              PetSpecies.fox) {
-                                            _speechText =
-                                                'Sly fox stretch! Stay alert!';
-                                          } else if (species ==
-                                              PetSpecies.dragon) {
-                                            _speechText =
-                                                'Spreading my wings for a grand stretch!';
                                           } else {
                                             _speechText =
                                                 'Mmm, cat stretching feels incredible...';
@@ -488,18 +446,6 @@ class _CompanionInteractiveTemplateState
                                           if (species == PetSpecies.dog) {
                                             _speechText =
                                                 'Happily licking your screen! Slurp!';
-                                          } else if (species ==
-                                              PetSpecies.rabbit) {
-                                            _speechText =
-                                                '*Twitching nose and cleaning long ears...*';
-                                          } else if (species ==
-                                              PetSpecies.fox) {
-                                            _speechText =
-                                                '*Grooming its fluffy tail...*';
-                                          } else if (species ==
-                                              PetSpecies.dragon) {
-                                            _speechText =
-                                                '*Polishing shiny dragon scales...*';
                                           } else {
                                             _speechText =
                                                 '*Carefully grooming its soft whiskers...*';
@@ -519,18 +465,6 @@ class _CompanionInteractiveTemplateState
                                           if (species == PetSpecies.dog) {
                                             _speechText =
                                                 'Zooms around hyperactively!';
-                                          } else if (species ==
-                                              PetSpecies.rabbit) {
-                                            _speechText =
-                                                'Hop hop! Exploring new territory!';
-                                          } else if (species ==
-                                              PetSpecies.fox) {
-                                            _speechText =
-                                                'Prowling silently... What was that?';
-                                          } else if (species ==
-                                              PetSpecies.dragon) {
-                                            _speechText =
-                                                'Gliding through the air currents...';
                                           } else {
                                             _speechText =
                                                 'Stalking a phantom laser pointer...';
@@ -550,18 +484,6 @@ class _CompanionInteractiveTemplateState
                                           if (species == PetSpecies.dog) {
                                             _speechText =
                                                 'Happy barks and tail wags! Woof!';
-                                          } else if (species ==
-                                              PetSpecies.rabbit) {
-                                            _speechText =
-                                                '*Excited nose wiggles and tiny binkies!*';
-                                          } else if (species ==
-                                              PetSpecies.fox) {
-                                            _speechText =
-                                                '*Happy yips and playful pounces!*';
-                                          } else if (species ==
-                                              PetSpecies.dragon) {
-                                            _speechText =
-                                                '*Roars softly and breathes tiny heart sparks!*';
                                           } else {
                                             _speechText =
                                                 '*Happy purrs and headbutts! Meow!*';
@@ -581,18 +503,6 @@ class _CompanionInteractiveTemplateState
                                           if (species == PetSpecies.dog) {
                                             _speechText =
                                                 'Soft puppy snores... Zzz.';
-                                          } else if (species ==
-                                              PetSpecies.rabbit) {
-                                            _speechText =
-                                                'Napping snugly... Zzz.';
-                                          } else if (species ==
-                                              PetSpecies.fox) {
-                                            _speechText =
-                                                'Sleeping in a curl... Zzz.';
-                                          } else if (species ==
-                                              PetSpecies.dragon) {
-                                            _speechText =
-                                                'Resting on a pile of gold... Zzz.';
                                           } else {
                                             _speechText =
                                                 'Cozy catnap mode: activated.';

@@ -1,30 +1,25 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
   final PetAnimationState animationState;
   final double scale;
   final bool flipX;
-
-  static final Map<String, ui.Image> _imageCache = {};
+  final bool isStatic;
 
   static void clearCache() {
-    _imageCache.clear();
+    // PetAssetLoader handles the byte cache now
   }
 
   static Future<void> precacheSpriteSheet(String path) async {
-    if (_imageCache.containsKey(path)) return;
     try {
-      final data = await rootBundle.load(path);
-      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-      final frame = await codec.getNextFrame();
-      _imageCache[path] = frame.image;
+      await PetAssetLoader.loadImage(path);
     } catch (e) {
       debugPrint('CompanionSpriteWidget: Precache error for $path: $e');
     }
@@ -36,6 +31,7 @@ class CompanionSpriteWidget extends StatefulWidget {
     required this.animationState,
     this.scale = 3.0,
     this.flipX = false,
+    this.isStatic = false,
   });
 
   @override
@@ -82,6 +78,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   void dispose() {
     _animationController.dispose();
     _frameIndexNotifier.dispose();
+    _loadedImage?.dispose();
     super.dispose();
   }
 
@@ -101,15 +98,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
 
     try {
-      final ui.Image img = await _loadImage(path);
-      if (mounted) {
-        setState(() {
-          _loadedImage = img;
-          _currentLoadedPath = path;
-          _isLoading = false;
-        });
-        _setupTicker();
-      }
+      await _loadImage(path);
     } catch (e) {
       debugPrint('CompanionSpriteWidget: Error loading asset $path: $e');
       if (mounted) {
@@ -166,7 +155,10 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     );
     _lastFrameCount = frameCount;
 
-    if (frameCount > 1) {
+    if (widget.isStatic) {
+      _animationController.value = 0.0;
+      _frameIndexNotifier.value = 0;
+    } else if (frameCount > 1) {
       if (loop) {
         _animationController.repeat();
       } else {
@@ -178,15 +170,22 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
   }
 
-  Future<ui.Image> _loadImage(String path) async {
-    if (CompanionSpriteWidget._imageCache.containsKey(path)) {
-      return CompanionSpriteWidget._imageCache[path]!;
+  Future<void> _loadImage(String path) async {
+    final ui.Image img = await PetAssetLoader.loadImage(path);
+    if (mounted) {
+      // Dispose old image if it exists and is different
+      if (_loadedImage != null && _loadedImage != img) {
+        // We don't dispose here because PetAssetLoader might return the same image if it was cached locally (but it's not)
+        // Actually, since we now instantiate every time in PetAssetLoader.loadImage, we SHOULD dispose.
+        _loadedImage?.dispose();
+      }
+      setState(() {
+        _loadedImage = img;
+        _currentLoadedPath = path;
+        _isLoading = false;
+      });
+      _setupTicker();
     }
-    final data = await rootBundle.load(path);
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-    final frame = await codec.getNextFrame();
-    CompanionSpriteWidget._imageCache[path] = frame.image;
-    return frame.image;
   }
 
   @override

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:breakmate/features/companion/services/pet_registry_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
@@ -113,6 +115,10 @@ Future<void> initDependencies() async {
   final trayManager = TrayManagerService();
 
   // Run tray manager init and companion controller init in parallel
+  final petRegistry = PetRegistryService();
+  sl.registerSingleton<PetRegistryService>(petRegistry);
+  unawaited(petRegistry.discoverFromLegacyAssets());
+
   final companionOverlayController = CompanionOverlayController(
     settingsRepo: sl(),
   );

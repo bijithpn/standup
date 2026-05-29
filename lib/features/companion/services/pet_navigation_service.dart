@@ -27,9 +27,7 @@ class PetNavigationService {
   double _lookTimer = 0.0; // Cat look-before-move delay
 
   // Hopping and Flying procedural math offsets
-  double _hopTimer = 0.0;
   double _hopY = 0.0;
-  double _flyTime = 0.0;
   double _flyY = 0.0;
 
   // Annoyance tracking: if cursor moves too much, pet gets angry
@@ -80,9 +78,7 @@ class PetNavigationService {
     _hasWanderTarget = false;
     _lastWanderTime = null;
     _lookTimer = 0.0;
-    _hopTimer = 0.0;
     _hopY = 0.0;
-    _flyTime = 0.0;
     _flyY = 0.0;
   }
 
@@ -136,51 +132,26 @@ class PetNavigationService {
     }
     final m = _edgeMargin;
 
-    // Rabbit edge-seeking wandering target logic
-    if (_species == PetSpecies.rabbit && _rng.nextDouble() < 0.70) {
-      final double edge = _rng.nextInt(4).toDouble();
-      double tx = m;
-      double ty = m;
-      if (edge == 0) {
-        // Left edge
-        tx = m + _rng.nextDouble() * 20.0;
-        ty = m + _rng.nextDouble() * (_screen.height - m * 2);
-      } else if (edge == 1) {
-        // Right edge
-        tx = _screen.width - m - _rng.nextDouble() * 20.0;
-        ty = m + _rng.nextDouble() * (_screen.height - m * 2);
-      } else if (edge == 2) {
-        // Top edge
-        tx = m + _rng.nextDouble() * (_screen.width - m * 2);
-        ty = m + _rng.nextDouble() * 20.0;
-      } else {
-        // Bottom edge
-        tx = m + _rng.nextDouble() * (_screen.width - m * 2);
-        ty = _screen.height - m - _rng.nextDouble() * 20.0;
-      }
-      _wanderTarget = Offset(tx, ty);
+    // Unpredictable movement: 75% chance of short local wanders, 25% chance of long-distance prowls
+    final bool isProwl = _rng.nextDouble() < 0.25;
+    if (isProwl) {
+      _wanderTarget = Offset(
+        m + _rng.nextDouble() * (_screen.width - m * 2),
+        m + _rng.nextDouble() * (_screen.height - m * 2),
+      );
     } else {
-      // Unpredictable movement: 75% chance of short local wanders, 25% chance of long-distance prowls
-      final bool isProwl = _rng.nextDouble() < 0.25;
-      if (isProwl) {
-        _wanderTarget = Offset(
-          m + _rng.nextDouble() * (_screen.width - m * 2),
-          m + _rng.nextDouble() * (_screen.height - m * 2),
-        );
-      } else {
-        // Local wander within 100 to 250 pixels of current position
-        final double distance = 100.0 + _rng.nextDouble() * 150.0;
-        final double angle = _rng.nextDouble() * 2 * pi;
-        final double targetX = (_pos.dx + cos(angle) * distance).clamp(
-          m,
-          _screen.width - m,
-        );
-        final double targetY = (_pos.dy + sin(angle) * distance).clamp(
-          m,
-          _screen.height - m,
-        );
-        _wanderTarget = Offset(targetX, targetY);
-      }
+      // Local wander within 100 to 250 pixels of current position
+      final double distance = 100.0 + _rng.nextDouble() * 150.0;
+      final double angle = _rng.nextDouble() * 2 * pi;
+      final double targetX = (_pos.dx + cos(angle) * distance).clamp(
+        m,
+        _screen.width - m,
+      );
+      final double targetY = (_pos.dy + sin(angle) * distance).clamp(
+        m,
+        _screen.height - m,
+      );
+      _wanderTarget = Offset(targetX, targetY);
     }
 
     _hasWanderTarget = true;
@@ -214,51 +185,10 @@ class PetNavigationService {
 
     _clampToBounds();
 
-    // Procedural movement calculations (doesn't affect horizontal clamps/physics)
-    if (_species == PetSpecies.rabbit) {
-      _updateHopPhysics(dt);
-    } else {
-      _hopY = 0.0;
-      _hopTimer = 0.0;
-    }
-
-    if (_species == PetSpecies.dragon) {
-      _updateFlyPhysics(dt);
-    } else {
-      _flyY = 0.0;
-      _flyTime = 0.0;
-    }
+    _hopY = 0.0;
+    _flyY = 0.0;
 
     return _pos;
-  }
-
-  void _updateHopPhysics(double dt) {
-    const double hopDuration = 0.6; // single hop length (s)
-    const double hopInterval = 0.45; // wait before next hop (s)
-
-    if (speed > 5.0) {
-      _hopTimer += dt;
-      if (_hopTimer < hopDuration) {
-        final double progress = _hopTimer / hopDuration;
-        _hopY = -22.0 * sin(progress * pi); // Parabolic curve
-      } else {
-        _hopY = 0.0;
-        // Dampen velocity to zero during rest interval
-        _vel = Offset(_vel.dx * 0.1, _vel.dy * 0.1);
-        if (_hopTimer >= hopDuration + hopInterval) {
-          _hopTimer = 0.0;
-        }
-      }
-    } else {
-      _hopY = 0.0;
-      _hopTimer = 0.0;
-    }
-  }
-
-  void _updateFlyPhysics(double dt) {
-    _flyTime += dt;
-    // Sinusoidal floating hover effect
-    _flyY = sin(_flyTime * 3.2) * 10.0;
   }
 
   void _updateCursorFollow(double dt) {

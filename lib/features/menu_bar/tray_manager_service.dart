@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/widgets.dart';
@@ -49,7 +51,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
 
     final supportDir = await getApplicationSupportDirectory();
-    final defaultFile = p.join(supportDir.path, 'bm_ctray_defaultTemplate@2x.png');
+    final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
 
     // Show initial icon and menu as fast as possible
     try {
@@ -57,7 +59,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         'assets/icons/tray_icon.png',
         defaultFile,
       );
-    } catch (_) {}
+    } catch (_) {
+      // Fallback to asset if extraction fails
+      _defaultIconPath = 'assets/icons/tray_icon.png';
+    }
     
     _defaultIconPath ??= defaultFile;
     
@@ -117,18 +122,23 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   Future<void> _extractIcons() async {
     final supportDir = await getApplicationSupportDirectory();
 
-    final defaultFile = p.join(supportDir.path, 'bm_ctray_defaultTemplate@2x.png');
-    _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
-      'assets/icons/tray_icon.png',
-      defaultFile,
-    );
+    final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
+    try {
+      _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
+        'assets/icons/tray_icon.png',
+        defaultFile,
+      );
+    } catch (_) {
+      _defaultIconPath = 'assets/icons/tray_icon.png';
+    }
+
     if (_defaultIconPath == null || _defaultIconPath!.isEmpty) {
       _defaultIconPath = defaultFile;
     }
 
     // Use raw absolute paths for tray_manager
     if (_defaultIconPath != null) {
-      debugPrint('[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync()})');
+      debugPrint('[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync() || !_defaultIconPath!.startsWith('/')})');
     }
 
     final settingsRepo = sl<SettingsRepository>();
@@ -184,7 +194,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
               iconName = 'idle';
               break;
           }
-          final fallbackFile = p.join(supportDir.path, 'bm_ccat_${state.name}Template@2x.png');
+          final fallbackFile = p.join(supportDir.path, 'bm_cat_${state.name}.png');
           final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,
@@ -192,7 +202,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           if (fallbackPath.isNotEmpty) {
             _stateFramePaths[state] = [fallbackPath];
           } else {
-            _stateFramePaths[state] = [_defaultIconPath!];
+            // Ultimate fallback to bundled asset
+            _stateFramePaths[state] = ['assets/icons/cat/cat_$iconName.png'];
           }
         }
       } catch (e) {
@@ -227,11 +238,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           } else {
             path = _defaultIconPath;
           }
-          if (path != null && File(path).existsSync()) {
-            await trayManager.setIcon(path, isTemplate: true);
-          } else if (_defaultIconPath != null && File(_defaultIconPath!).existsSync()) {
+          if (path != null && (path.startsWith('assets/') || File(path).existsSync())) {
+            await _setTrayIconSafe(path, isTemplate: true);
+          } else if (_defaultIconPath != null && (_defaultIconPath!.startsWith('assets/') || File(_defaultIconPath!).existsSync())) {
             _logger.warning('Missing primary tray icon asset: $path. Using fallback.');
-            await trayManager.setIcon(_defaultIconPath!, isTemplate: true);
+            await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
           } else {
             _logger.warning('Missing both primary and fallback tray icon assets: $path, $_defaultIconPath');
           }
@@ -240,23 +251,79 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         case TrayIconMode.minimal:
         case TrayIconMode.countdownOnly:
           if (_defaultIconPath != null) {
-            await trayManager.setIcon(_defaultIconPath!, isTemplate: true);
+            await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
           }
           break;
       }
 
-      if (path != null && path != _lastAppliedIconPath) {
+      bool isPathValid = false;
+      if (path != null) {
+        if (!path.startsWith('assets/')) {
+          final file = File(path);
+          if (file.existsSync() && file.lengthSync() > 0) {
+            isPathValid = true;
+          } else {
+            _logger.warning('Tray icon file at $path is missing or empty.');
+          }
+        } else {
+          isPathValid = true; // Asset paths are validated by Flutter bundle
+        }
+      }
+
+      if (isPathValid && path != _lastAppliedIconPath) {
         _lastAppliedIconPath = path;
-        await trayManager.setIcon(path, isTemplate: true);
+        await _setTrayIconSafe(path!, isTemplate: true);
         
         // On macOS, setting the icon sometimes clears the title depending on implementation.
         // Re-apply current title if it exists.
         if (_currentTitle.isNotEmpty) {
           await trayManager.setTitle(_currentTitle);
         }
+      } else if (!isPathValid && _defaultIconPath != null) {
+        // Fallback to default if primary failed
+        if (_lastAppliedIconPath != _defaultIconPath) {
+           _lastAppliedIconPath = _defaultIconPath;
+           await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
+        }
       }
     } catch (e) {
       _logger.error('Failed to set tray icon: $e');
+    }
+  }
+
+  Future<void> _setTrayIconSafe(String path, {bool isTemplate = true}) async {
+    try {
+      if (Platform.isMacOS) {
+        Uint8List bytes;
+        if (!path.startsWith('assets/')) {
+          final file = File(path);
+          if (await file.exists()) {
+            bytes = await file.readAsBytes();
+          } else {
+            _logger.error('Tray icon file not found on disk: $path');
+            return;
+          }
+        } else {
+          final byteData = await rootBundle.load(path);
+          bytes = byteData.buffer.asUint8List();
+        }
+
+        final base64Icon = base64Encode(bytes);
+        const channel = MethodChannel('tray_manager');
+        final arguments = {
+          'id': 'bm_tray_${DateTime.now().millisecondsSinceEpoch}',
+          'iconPath': path,
+          'base64Icon': base64Icon,
+          'isTemplate': isTemplate,
+          'iconPosition': 'left',
+          'iconSize': 18,
+        };
+        await channel.invokeMethod('setIcon', arguments);
+      } else {
+        await trayManager.setIcon(path, isTemplate: isTemplate);
+      }
+    } catch (e) {
+      _logger.error('Error in _setTrayIconSafe: $e');
     }
   }
 
@@ -423,6 +490,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     items.addAll([
       MenuItem(key: 'open_app', label: 'Open Dashboard'),
       MenuItem(key: 'open_companion', label: 'Companion Settings'),
+      MenuItem(key: 'open_notifications', label: 'Notification Settings'),
       MenuItem(key: 'open_stats', label: 'View Statistics'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Quit BreakMate'),
