@@ -85,6 +85,18 @@ class MinimalFocusTemplate extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 14),
+                        if (breakInfo.triggerReason != null) ...[
+                          Text(
+                            'Reason: ${breakInfo.triggerReason}',
+                            style: TextStyle(
+                              color: accent.withValues(alpha: 0.6),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         Text(
                           breakInfo.tip,
                           textAlign: TextAlign.center,
