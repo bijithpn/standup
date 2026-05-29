@@ -330,11 +330,7 @@ class PetAssetLoader {
     double targetSize = 44.0,
   }) async {
     try {
-      final supportDir = await getApplicationSupportDirectory();
-      
-      // Use stable support directory and standard macOS template naming
-      final fileName = assetPath.split('/').last.replaceAll('.png', '');
-      final file = File(p.join(supportDir.path, 'bm_icon_${fileName}Template@2x.png'));
+      final file = File(outputPath);
       
       if (await file.exists()) {
         return file.path;
