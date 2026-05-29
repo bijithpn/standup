@@ -4,8 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
@@ -18,7 +16,6 @@ class MenuBarPopover extends StatelessWidget {
     return Consumer<BreakController>(
       builder: (context, controller, _) {
         final timerEngine = controller.timerEngine;
-        final stats = sl<StatsService>().load();
         final timeUntilBreak = timerEngine.timeUntilNextShortBreak;
 
         return Container(
@@ -30,9 +27,9 @@ class MenuBarPopover extends StatelessWidget {
             border: Border.all(color: AppTheme.border, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.6),
-                blurRadius: 40,
-                offset: const Offset(0, 20),
+                color: Colors.black.withValues(alpha: 0.8),
+                blurRadius: 32,
+                offset: const Offset(0, 16),
               ),
             ],
           ),
@@ -46,8 +43,6 @@ class MenuBarPopover extends StatelessWidget {
               const SizedBox(height: 16),
               _buildQuickActions(controller),
               const SizedBox(height: 16),
-              _buildStatsPreview(stats),
-              const SizedBox(height: 16),
               _buildBottomActions(),
             ],
           ),
@@ -58,20 +53,19 @@ class MenuBarPopover extends StatelessWidget {
 
   Widget _buildHeader(TimerEngine timerEngine) {
     final isBreak = timerEngine.state == TimerState.breakActive;
-    
+
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [AppTheme.primary, AppTheme.primaryDark],
-            ),
+            color: AppTheme.surfaceElevated,
             borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            border: Border.all(color: AppTheme.border),
           ),
           child: const Icon(
             LucideIcons.coffee,
-            color: Colors.white,
+            color: AppTheme.textPrimary,
             size: 14,
           ),
         ),
@@ -113,46 +107,47 @@ class MenuBarPopover extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.gray900,
+          color: AppTheme.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          border: Border.all(color: AppTheme.borderSubtle),
+          border: Border.all(color: AppTheme.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-          Text(
-            isBreak ? 'BREAK IN PROGRESS' : 'NEXT BREAK IN',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textMuted,
-              letterSpacing: 1,
+            Text(
+              isBreak ? 'BREAK IN PROGRESS' : 'NEXT BREAK IN',
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textMuted,
+                letterSpacing: 1,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Text(
-                '$mins:$secs',
-                style: TextStyle(
-                  color: isBreak ? AppTheme.shortBreak : AppTheme.textPrimary,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w300,
-                  letterSpacing: -1,
-                  fontFeatures: const [FontFeature.tabularFigures()],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text(
+                  '$mins:$secs',
+                  style: TextStyle(
+                    color: isBreak ? AppTheme.shortBreak : AppTheme.textPrimary,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w400,
+                    letterSpacing: -1,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Icon(
-                isBreak ? LucideIcons.coffee : LucideIcons.clock,
-                size: 20,
-                color: isBreak ? AppTheme.shortBreak : AppTheme.primary,
-              ),
-            ],
-          ),
-        ],
+                const Spacer(),
+                Icon(
+                  isBreak ? LucideIcons.coffee : LucideIcons.clock,
+                  size: 20,
+                  color: isBreak ? AppTheme.shortBreak : AppTheme.textSecondary,
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),);
+    );
   }
 
   Widget _buildQuickActions(BreakController controller) {
@@ -175,9 +170,11 @@ class MenuBarPopover extends StatelessWidget {
           children: [
             Expanded(
               child: _ActionButton(
-                icon: controller.isPaused ? LucideIcons.play : LucideIcons.pause,
+                icon: controller.isPaused
+                    ? LucideIcons.play
+                    : LucideIcons.pause,
                 label: controller.isPaused ? 'Resume' : 'Pause',
-                color: isBreak ? AppTheme.textMuted : AppTheme.primary,
+                color: isBreak ? AppTheme.textMuted : AppTheme.textPrimary,
                 onTap: isBreak ? () {} : () => controller.togglePause(),
               ),
             ),
@@ -193,51 +190,35 @@ class MenuBarPopover extends StatelessWidget {
                   : _ActionButton(
                       icon: LucideIcons.zap,
                       label: 'Break Now',
-                      color: AppTheme.shortBreak,
+                      color: AppTheme.accent,
                       onTap: () => controller.takeBreakNow(),
                     ),
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildStatsPreview(StatsModel stats) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Today\'s Progress',
-          style: TextStyle(
-            color: AppTheme.textMuted,
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
         const SizedBox(height: 8),
         Row(
           children: [
-            _StatCard(
-              icon: LucideIcons.checkCircle,
-              value: stats.breaksCompleted.toString(),
-              label: 'Done',
-              color: AppTheme.success,
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.moon,
+                label: 'Quiet Mode',
+                color: AppTheme.textPrimary,
+                onTap: () {
+                  // Toggle quiet mode logic
+                },
+              ),
             ),
             const SizedBox(width: 8),
-            _StatCard(
-              icon: LucideIcons.flame,
-              value: stats.currentStreak.toString(),
-              label: 'Streak',
-              color: AppTheme.warning,
-            ),
-            const SizedBox(width: 8),
-            _StatCard(
-              icon: LucideIcons.target,
-              value: '${stats.productivityScore}%',
-              label: 'Score',
-              color: AppTheme.primary,
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.cat,
+                label: 'Companion',
+                color: AppTheme.textPrimary,
+                onTap: () {
+                  // Toggle companion logic
+                },
+              ),
             ),
           ],
         ),
@@ -260,17 +241,21 @@ class MenuBarPopover extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.gray800,
+                  color: AppTheme.surfaceElevated,
                   borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   border: Border.all(color: AppTheme.border),
                 ),
                 child: const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(LucideIcons.settings, size: 14, color: AppTheme.textSecondary),
+                    Icon(
+                      LucideIcons.settings,
+                      size: 14,
+                      color: AppTheme.textSecondary,
+                    ),
                     SizedBox(width: 6),
                     Text(
-                      'Settings',
+                      'Dashboard & Settings',
                       style: TextStyle(
                         color: AppTheme.textSecondary,
                         fontSize: 13,
@@ -294,7 +279,7 @@ class MenuBarPopover extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.gray800,
+                color: AppTheme.surfaceElevated,
                 borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 border: Border.all(color: AppTheme.border),
               ),
@@ -311,7 +296,7 @@ class MenuBarPopover extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final Color color;
@@ -325,85 +310,49 @@ class _ActionButton extends StatelessWidget {
   });
 
   @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
     return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
-        onTap: onTap,
-        child: Container(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.1),
+            color: _isHovered
+                ? widget.color.withValues(alpha: 0.15)
+                : AppTheme.surfaceElevated,
             borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-            border: Border.all(color: color.withValues(alpha: 0.2)),
+            border: Border.all(
+              color: _isHovered
+                  ? widget.color.withValues(alpha: 0.3)
+                  : AppTheme.border,
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 14, color: color),
+              Icon(widget.icon, size: 14, color: widget.color),
               const SizedBox(width: 6),
               Text(
-                label,
+                widget.label,
                 style: TextStyle(
-                  color: color,
+                  color: widget.color,
                   fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-
-  const _StatCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppTheme.gray900,
-          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-          border: Border.all(color: AppTheme.borderSubtle),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppTheme.textMuted,
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
         ),
       ),
     );

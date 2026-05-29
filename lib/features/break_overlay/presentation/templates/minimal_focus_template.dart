@@ -333,20 +333,54 @@ class _BottomRail extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        if (onSkip != null)
-          IconButton(
-            tooltip: 'Skip break',
-            onPressed: onSkip,
-            icon: const Icon(LucideIcons.chevronRight),
-            color: Colors.white.withValues(alpha: 0.72),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              fixedSize: const Size.square(42),
+        if (onSkip != null) ...[
+          TextButton.icon(
+            onPressed:
+                onSkip, // Assuming postpone might route to same for now or separate
+            icon: Icon(
+              LucideIcons.clock,
+              size: 14,
+              color: Colors.white.withValues(alpha: 0.72),
+            ),
+            label: Text(
+              'Postpone 5m',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.72),
+                fontFamily: 'Inter',
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.04),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
+          const SizedBox(width: 8),
+          TextButton.icon(
+            onPressed: onSkip,
+            icon: Icon(
+              LucideIcons.skipForward,
+              size: 14,
+              color: Colors.white.withValues(alpha: 0.72),
+            ),
+            label: Text(
+              'Skip Break',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.72),
+                fontFamily: 'Inter',
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.08),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

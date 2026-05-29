@@ -6,7 +6,10 @@ class AppNavigationService {
   late final ValueNotifier<String> selectedSection;
 
   AppNavigationService(this.storageService) {
-    final lastSection = storageService.getString('last_opened_section', defaultValue: 'General');
+    final lastSection = storageService.getString(
+      'last_opened_section',
+      defaultValue: 'Today',
+    );
     selectedSection = ValueNotifier<String>(lastSection);
   }
 

@@ -6,6 +6,7 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
+import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 
 // ─── Nav item model ────────────────────────────────────────────────────────
 
@@ -39,11 +40,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   // Primary nav items (shown in the main list)
   static const List<_NavItem> _mainNavItems = [
-    _NavItem(
-      label: 'General',
-      icon: CupertinoIcons.settings,
-      section: 'General',
-    ),
+    _NavItem(label: 'Today', icon: CupertinoIcons.home, section: 'Today'),
     _NavItem(
       label: 'Breaks',
       icon: CupertinoIcons.timer,
@@ -54,7 +51,6 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.eye,
       section: 'Intelligent Detection',
     ),
-
     _NavItem(
       label: 'Exercises',
       icon: CupertinoIcons.person_crop_circle,
@@ -66,11 +62,6 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Notifications',
     ),
     _NavItem(
-      label: 'Clock Out',
-      icon: CupertinoIcons.moon,
-      section: 'Clock Out',
-    ),
-    _NavItem(
       label: 'Companion',
       icon: CupertinoIcons.paw,
       section: 'Companion',
@@ -79,6 +70,11 @@ class _MainLayoutState extends State<MainLayout> {
       label: 'Statistics',
       icon: CupertinoIcons.chart_bar,
       section: 'Statistics',
+    ),
+    _NavItem(
+      label: 'General Settings',
+      icon: CupertinoIcons.settings,
+      section: 'General',
     ),
   ];
 
@@ -299,7 +295,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _getPageForIndex(int index) {
     switch (index) {
       case 0:
-        return const SettingsPage(section: 'General');
+        return const DashboardPage();
       case 1:
         return const SettingsPage(section: 'Breaks & Profiles');
       case 2:
@@ -309,11 +305,11 @@ class _MainLayoutState extends State<MainLayout> {
       case 4:
         return const SettingsPage(section: 'Notifications');
       case 5:
-        return const SettingsPage(section: 'Clock Out');
-      case 6:
         return const SettingsPage(section: 'Companion');
-      case 7:
+      case 6:
         return const SettingsPage(section: 'Statistics');
+      case 7:
+        return const SettingsPage(section: 'General');
       case 8:
         return const SettingsPage(section: 'Data & Backup');
       case 9:
@@ -321,7 +317,7 @@ class _MainLayoutState extends State<MainLayout> {
       case 10:
         return const SettingsPage(section: 'About');
       default:
-        return const SettingsPage(section: 'General');
+        return const DashboardPage();
     }
   }
 }
@@ -414,15 +410,15 @@ class _SidebarContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.accentColor.withValues(alpha: 0.35),
-                  blurRadius: 22,
-                  offset: const Offset(0, 8),
+                  color: AppTheme.accentColor.withValues(alpha: 0.25),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
-            padding: const EdgeInsets.all(2.5), // Premium gradient border
+            padding: const EdgeInsets.all(2.0),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(17.5),
+              borderRadius: BorderRadius.circular(18),
               child: Image.asset(
                 'assets/icons/app_icon.jpeg',
                 width: 60,
@@ -440,8 +436,8 @@ class _SidebarContent extends StatelessWidget {
                   text: 'Break',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
                     letterSpacing: -0.3,
                     fontFamily: 'Inter',
                   ),
@@ -450,7 +446,7 @@ class _SidebarContent extends StatelessWidget {
                   text: 'Mate',
                   style: TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppTheme.accentColor,
                     letterSpacing: -0.3,
                     fontFamily: 'Inter',
@@ -496,20 +492,24 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: const Duration(milliseconds: 150),
           margin: const EdgeInsets.only(bottom: 4),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: _isHovered && !isSelected
-                ? Colors.white.withValues(alpha: 0.04)
+                ? AppTheme.surfaceElevated.withValues(alpha: 0.5)
+                : isSelected
+                ? AppTheme.surfaceElevated
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
+            border: isSelected
+                ? Border.all(color: AppTheme.border, width: 0.5)
+                : Border.all(color: Colors.transparent, width: 0.5),
           ),
           child: Row(
             children: [
-              // Custom selection indicator
               AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
+                duration: const Duration(milliseconds: 150),
                 width: 3,
                 height: isSelected ? 18 : 0,
                 decoration: BoxDecoration(
@@ -518,20 +518,19 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                 ),
               ),
               SizedBox(width: isSelected ? 12 : 0),
-
               Icon(
                 widget.item.icon,
                 size: 16,
                 color: isSelected
                     ? AppTheme.accentColor
-                    : AppTheme.textSecondary.withValues(alpha: 0.8),
+                    : AppTheme.textSecondary,
               ),
               const SizedBox(width: 12),
               Text(
                 widget.item.label,
                 style: TextStyle(
                   fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
                   color: isSelected
                       ? AppTheme.textPrimary
                       : AppTheme.textSecondary,
