@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -10,6 +11,9 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:flame/flame.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/services/timer_engine.dart';
 
 /// Controls the desktop companion pet window.
 class CompanionOverlayController extends ChangeNotifier {
@@ -112,7 +116,35 @@ class CompanionOverlayController extends ChangeNotifier {
   ];
 
   CompanionOverlayController({required SettingsRepository settingsRepo})
-    : _settingsRepo = settingsRepo;
+      : _settingsRepo = settingsRepo {
+    _settingsRepo.addListener(_handleSettingsChanged);
+    _listenToEvents();
+  }
+
+  bool _isBreakActive = false;
+  StreamSubscription<AppEvent>? _eventSub;
+
+  void _listenToEvents() {
+    _eventSub = sl<EventBus>().stream.listen((event) {
+      if (event is TimerStateChangedEvent) {
+        _handleTimerStateChanged(event);
+      }
+    });
+  }
+
+  void _handleTimerStateChanged(TimerStateChangedEvent event) {
+    final isBreak = event.state == TimerStateEvent.breakActive;
+    if (_isBreakActive == isBreak) return;
+    _isBreakActive = isBreak;
+
+    if (!_companionEnabled) return;
+
+    if (isBreak) {
+      NativeBridge.hideCompanion();
+    } else {
+      _showNativeCompanion();
+    }
+  }
 
   bool get companionEnabled => _companionEnabled;
   String get companionPetTheme => _companionPetTheme;
@@ -131,8 +163,72 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
 
-    if (_companionEnabled) {
-      await _showNativeCompanion();
+    // Check initial break state if possible, though TimerEngine usually starts later
+    try {
+      _isBreakActive = sl<TimerEngine>().state == TimerState.breakActive;
+    } catch (_) {}
+
+    if (_companionEnabled && !_isBreakActive) {
+      unawaited(_showNativeCompanion());
+    }
+  }
+
+  void _handleSettingsChanged() {
+    final settings = _settingsRepo.currentSettings;
+
+    final oldEnabled = _companionEnabled;
+    final themeChanged = _companionPetTheme != settings.companionPetTheme;
+    final nameChanged = _companionPetName != settings.companionPetName;
+    final scaleChanged = _companionScale != settings.companionScale;
+    final clickChanged =
+        _companionClickThrough != settings.companionClickThrough;
+    final followChanged = _companionFollowMouse != settings.companionFollowMouse;
+
+    _companionEnabled = settings.companionEnabled;
+    _companionPetTheme = settings.companionPetTheme;
+    _companionPetName = settings.companionPetName;
+    _companionScale = settings.companionScale;
+    _companionClickThrough = settings.companionClickThrough;
+    _companionFollowMouse = settings.companionFollowMouse;
+
+    // Check if enabled state changed
+    if (oldEnabled != _companionEnabled) {
+      if (_companionEnabled && !_isBreakActive) {
+        _showNativeCompanion();
+      } else {
+        NativeBridge.hideCompanion();
+      }
+
+      try {
+        sl<CompanionBehaviorEngine>().setEnabled(_companionEnabled);
+      } catch (_) {}
+
+      notifyListeners();
+      return; // If enabled state changed, we don't need to check individual params here as _showNativeCompanion handles them
+    }
+
+    // Check if other settings changed and we are enabled and not in a break
+    if (_companionEnabled && !_isBreakActive) {
+      if (themeChanged) {
+        NativeBridge.updateCompanionTheme(_companionPetTheme);
+        notifyListeners();
+      }
+      if (nameChanged) {
+        NativeBridge.updateCompanionName(_companionPetName);
+        notifyListeners();
+      }
+      if (scaleChanged) {
+        NativeBridge.updateCompanionScale(_companionScale);
+        notifyListeners();
+      }
+      if (clickChanged) {
+        NativeBridge.setCompanionClickThrough(_companionClickThrough);
+        notifyListeners();
+      }
+      if (followChanged) {
+        NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
+        notifyListeners();
+      }
     }
   }
 
@@ -150,23 +246,12 @@ class CompanionOverlayController extends ChangeNotifier {
   /// Toggles whether the desktop pet companion window is visible.
   Future<void> toggleCompanion(bool enabled) async {
     if (_companionEnabled == enabled) return;
-    _companionEnabled = enabled;
 
+    // Just update settings, _handleSettingsChanged will handle the rest
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
     );
     await _settingsRepo.save(updated);
-
-    try {
-      sl<CompanionBehaviorEngine>().setEnabled(enabled);
-    } catch (_) {}
-
-    if (enabled) {
-      await _showNativeCompanion();
-    } else {
-      await NativeBridge.hideCompanion();
-    }
-    notifyListeners();
   }
 
   /// Dynamic updater for switching companion themes.
@@ -196,87 +281,55 @@ class CompanionOverlayController extends ChangeNotifier {
     }
 
     final randomName = names[random.nextInt(names.length)];
-    _companionPetName = randomName;
-
+    
+    // Update settings, listener will handle native updates
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetTheme: themeId,
       companionPetName: randomName,
     );
     await _settingsRepo.save(updated);
 
-    if (_companionEnabled) {
-      await NativeBridge.updateCompanionTheme(themeId);
-      await NativeBridge.updateCompanionName(randomName);
-    }
-
     try {
       await sl<TrayManagerService>().updateSelectedBreed(themeId);
     } catch (_) {}
-
-    notifyListeners();
   }
 
   Future<void> changePetName(String petName) async {
     final trimmedName = petName.trim();
     final nextName = trimmedName.isEmpty ? 'Mochi' : trimmedName;
     if (_companionPetName == nextName) return;
-    _companionPetName = nextName;
-
+    
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetName: nextName,
     );
     await _settingsRepo.save(updated);
-
-    if (_companionEnabled) {
-      await NativeBridge.updateCompanionName(nextName);
-    }
-
-    notifyListeners();
   }
 
   Future<void> changeScale(double scale) async {
     if (_companionScale == scale) return;
-    _companionScale = scale;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionScale: scale,
     );
     await _settingsRepo.save(updated);
-
-    if (_companionEnabled) {
-      await NativeBridge.updateCompanionScale(scale);
-    }
-    notifyListeners();
   }
 
   Future<void> changeClickThrough(bool enabled) async {
     if (_companionClickThrough == enabled) return;
-    _companionClickThrough = enabled;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionClickThrough: enabled,
     );
     await _settingsRepo.save(updated);
-
-    if (_companionEnabled) {
-      await NativeBridge.setCompanionClickThrough(enabled);
-    }
-    notifyListeners();
   }
 
   Future<void> changeFollowMouse(bool enabled) async {
     if (_companionFollowMouse == enabled) return;
-    _companionFollowMouse = enabled;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionFollowMouse: enabled,
     );
     await _settingsRepo.save(updated);
-
-    if (_companionEnabled) {
-      await NativeBridge.setCompanionFollowMouse(enabled);
-    }
-    notifyListeners();
   }
 
   Future<void> refreshCompanion() async {
@@ -288,6 +341,8 @@ class CompanionOverlayController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _settingsRepo.removeListener(_handleSettingsChanged);
+    _eventSub?.cancel();
     if (_companionEnabled) {
       NativeBridge.hideCompanion();
     }

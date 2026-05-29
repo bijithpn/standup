@@ -37,6 +37,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   final Map<PetAnimationState, List<String>> _stateFramePaths = {};
   String? _defaultIconPath;
+  String? _lastAppliedIconPath;
+  String _currentTitle = '';
 
   Future<void> init() async {
     trayManager.addListener(this);
@@ -46,29 +48,25 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final settingsRepo = sl<SettingsRepository>();
     setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
 
-    // Clean up older cached white/legacy tray icons from stable directory
-    try {
-      final supportDir = await getApplicationSupportDirectory();
-      if (supportDir.existsSync()) {
-        final list = supportDir.listSync();
-        for (final file in list) {
-          if (file is File) {
-            final filename = p.basename(file.path);
-            // Only delete icon frame caches, never touch database or metadata
-            if (filename.startsWith('bm_pframe_') || 
-                filename.startsWith('bm_ccat_') ||
-                filename.startsWith('bm_ctray_')) {
-              file.deleteSync();
-            }
-          }
-        }
-      }
-    } catch (_) {}
+    final supportDir = await getApplicationSupportDirectory();
+    final defaultFile = p.join(supportDir.path, 'bm_ctray_defaultTemplate@2x.png');
 
-    await _extractIcons();
+    // Show initial icon and menu as fast as possible
+    try {
+      _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
+        'assets/icons/tray_icon.png',
+        defaultFile,
+      );
+    } catch (_) {}
+    
+    _defaultIconPath ??= defaultFile;
+    
     await _applyIcon();
     await _buildMenu();
-    _startCatAnimation();
+
+    // Perform cleanup and frame extraction in background to avoid blocking main isolate startup
+    unawaited(_initializeFramesInBackground());
+
     _logger.info('Tray manager initialized (mode: $_iconMode)');
 
     // Listen for meeting events from the main isolate's event bus
@@ -78,6 +76,30 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         _scheduleMenuRebuild();
       }
     });
+  }
+
+  Future<void> _initializeFramesInBackground() async {
+    try {
+      final supportDir = await getApplicationSupportDirectory();
+      if (supportDir.existsSync()) {
+        final list = supportDir.listSync();
+        for (final file in list) {
+          if (file is File) {
+            final filename = p.basename(file.path);
+            // Only delete icon frame caches, never touch database or metadata
+            if (filename.startsWith('bm_pframe_') || 
+                filename.startsWith('bm_ccat_')) {
+              file.deleteSync();
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    await _extractIcons();
+    _currentFrameIndex = 0;
+    _updateTimerSpeed();
+    await _applyIcon();
   }
 
   void setMenuBarController(MenuBarController controller) {
@@ -194,11 +216,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   Future<void> _applyIcon() async {
     try {
+      String? path;
       switch (_iconMode) {
         case TrayIconMode.companion:
           final activeState = _determineActiveState();
           final paths = _stateFramePaths[activeState] ?? [];
-          String? path;
           if (paths.isNotEmpty) {
             final safeIndex = _currentFrameIndex % paths.length;
             path = paths[safeIndex];
@@ -217,21 +239,25 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         case TrayIconMode.defaultIcon:
         case TrayIconMode.minimal:
         case TrayIconMode.countdownOnly:
-          if (_defaultIconPath != null && File(_defaultIconPath!).existsSync()) {
+          if (_defaultIconPath != null) {
             await trayManager.setIcon(_defaultIconPath!, isTemplate: true);
-          } else {
-            _logger.warning('Missing default tray icon asset: $_defaultIconPath');
           }
           break;
+      }
+
+      if (path != null && path != _lastAppliedIconPath) {
+        _lastAppliedIconPath = path;
+        await trayManager.setIcon(path, isTemplate: true);
+        
+        // On macOS, setting the icon sometimes clears the title depending on implementation.
+        // Re-apply current title if it exists.
+        if (_currentTitle.isNotEmpty) {
+          await trayManager.setTitle(_currentTitle);
+        }
       }
     } catch (e) {
       _logger.error('Failed to set tray icon: $e');
     }
-  }
-
-  void _startCatAnimation() {
-    _currentFrameIndex = 0;
-    _updateTimerSpeed();
   }
 
   void _updateTimerSpeed() {
@@ -456,6 +482,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> setTrayTitle(String title) async {
+    _currentTitle = title;
     try {
       await trayManager.setTitle(title);
     } catch (_) {}
