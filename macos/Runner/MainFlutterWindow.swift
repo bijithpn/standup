@@ -86,7 +86,7 @@ class OverlayWindowManager: NSObject {
                 instance.window.contentViewController = nil
                 instance.window.contentView = nil
                 
-                let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: instance.engine.binaryMessenger)
+                let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
                 channel.setMethodCallHandler(nil)
                 
                 IpcBridgeManager.shared.unregister(engine: instance.engine)
@@ -105,7 +105,7 @@ class OverlayWindowManager: NSObject {
     
     func updateData(_ data: [String: Any]) {
         for instance in overlayInstances.values {
-            let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: instance.engine.binaryMessenger)
+            let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
             channel.invokeMethod("updateOverlayData", arguments: data)
         }
     }
@@ -163,7 +163,7 @@ class OverlayWindowManager: NSObject {
         window.setFrame(screen.frame, display: true)
         
         // Setup MethodChannel for this overlay
-        let channel = FlutterMethodChannel(name: "com.breakmate.macos/bridge", binaryMessenger: engine.binaryMessenger)
+        let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: engine.binaryMessenger)
         
         // Pass initial data if available
         var initialArgs = args ?? [:]
@@ -282,7 +282,7 @@ class MainFlutterWindow: NSWindow {
 
   private func configureBridge(binaryMessenger: FlutterBinaryMessenger) {
     bridgeChannel = FlutterMethodChannel(
-      name: "com.breakmate.macos/bridge",
+      name: "com.breakmate.desktop/bridge",
       binaryMessenger: binaryMessenger
     )
 

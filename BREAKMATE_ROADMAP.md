@@ -56,7 +56,7 @@ Still incomplete or not fully verified:
   - Active countdown.
   - Break overlay.
   - Companion active and throttled.
-- [ ] Investigate why `flutter analyze` takes longer than 120 seconds.
+- [x] Investigate why `flutter analyze` takes longer than 120 seconds.
   - Exclude generated/cache output such as `graphify-out/` if analyzer is scanning it.
   - Confirm `analysis_options.yaml` excludes build artifacts and generated folders.
   - Add a fast CI check that fails if analysis exceeds a reasonable timeout.
@@ -192,23 +192,23 @@ Still incomplete or not fully verified:
 
 ## Priority 3: Reliability And Architecture
 
-- [ ] Implement ObjectBox as the app's local storage engine.
+- [x] Implement ObjectBox as the app's local storage engine.
   - Use ObjectBox for analytics, sessions, exercises, settings snapshots, companion preferences, and future search/export.
   - Verify current ObjectBox package support for macOS and Windows before implementation.
   - Record the decision in `docs/architecture.md` with migration risks and rollback plan.
-- [ ] Replace raw `SharedPreferences` storage access with typed repositories.
+- [x] Replace raw `SharedPreferences` storage access with typed repositories.
   - Settings repository.
   - Stats repository.
   - Break session repository.
   - Exercise repository.
   - Companion preferences repository.
   - Cache metadata repository.
-- [ ] Add storage abstraction before migrating data.
+- [x] Add storage abstraction before migrating data.
   - Define `LocalStore` or `AppDatabase` interface.
   - Keep storage engine details out of widgets and feature services.
   - Provide an in-memory fake for unit tests.
   - Keep legacy `StorageService` as an adapter during migration.
-- [ ] Add database schemas/models with explicit versions.
+- [x] Add database schemas/models with explicit versions.
   - Settings snapshot.
   - Daily stats.
   - Weekly/monthly/yearly aggregates.
@@ -216,24 +216,24 @@ Still incomplete or not fully verified:
   - Wellness actions and exercises.
   - Companion preferences and theme cache metadata.
   - App metadata and migration state.
-- [ ] Add a safe migration from existing key/value data.
+- [x] Add a safe migration from existing key/value data.
   - Read old keys once.
   - Write typed records.
   - Mark migration complete.
   - Keep old keys for one release as rollback safety.
   - Add a manual repair path if migration fails.
-- [ ] Improve storage performance.
+- [x] Improve storage performance.
   - Batch writes for analytics and settings sliders.
   - Use lazy boxes or indexes where supported.
   - Avoid synchronous heavy JSON parsing on startup.
   - Cache hot settings in memory and persist in the background.
   - Flush pending writes on shutdown.
-- [ ] Add storage observability.
+- [x] Add storage observability.
   - Log migration duration in debug builds.
   - Log slow reads/writes above a threshold.
   - Track database size.
   - Add a local storage health report in settings.
-- [ ] Add backup/export/import support on top of the new storage layer.
+- [x] Add backup/export/import support on top of the new storage layer.
   - JSON backup.
   - CSV analytics export.
   - Restore from backup.
@@ -292,7 +292,7 @@ Still incomplete or not fully verified:
   - Focus mode available/unavailable.
   - Notifications allowed/denied.
   - Launch at startup enabled/failed.
-- [ ] Unify native channel names.
+- [x] Unify native channel names.
   - Avoid macOS-named channels in Windows bridge code unless the native side requires it.
   - Document every channel in `docs/native-channels.md`.
 - [x] Add platform capability checks before invoking native methods.

@@ -17,7 +17,7 @@ class CompanionOverlayWindow extends StatefulWidget {
 
 class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   static const MethodChannel _channel =
-      MethodChannel('com.breakmate.macos/companion_data');
+      MethodChannel('com.breakmate.desktop/companion_data');
 
   CompanionGame? _game;
   String _themeId = 'grey_cat';
