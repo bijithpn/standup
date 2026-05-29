@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/core/constants/app_strings.dart';
 
 class WellnessScoreCard extends StatelessWidget {
   final int productivityScore;
@@ -50,7 +51,7 @@ class WellnessScoreCard extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 label.toUpperCase(),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   color: AppTheme.textSecondary,
@@ -76,7 +77,7 @@ class WellnessScoreCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              Text(
+              const Text(
                 '/ 100',
                 style: TextStyle(
                   fontSize: 14,
@@ -97,8 +98,30 @@ class WellnessScoreCard extends StatelessWidget {
               minHeight: 6,
             ),
           ),
+          const SizedBox(height: 12),
+          Text(
+            _getScoreInsight(label, score),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppTheme.textSecondary,
+              fontFamily: 'Inter',
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  String _getScoreInsight(String label, int score) {
+    if (label == 'Productivity') {
+      if (score > 80) return AppStrings.productivityInsightHigh;
+      if (score > 50) return AppStrings.productivityInsightMed;
+      return AppStrings.productivityInsightLow;
+    } else {
+      if (score > 80) return AppStrings.wellnessInsightHigh;
+      if (score > 50) return AppStrings.wellnessInsightMed;
+      return AppStrings.wellnessInsightLow;
+    }
   }
 }

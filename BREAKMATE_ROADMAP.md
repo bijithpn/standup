@@ -18,10 +18,16 @@ Current scale:
 
 Verified as implemented or materially improved:
 
-- **Redesigned the app with a modern minimal Zinc/Slate theme and a new "Today" dashboard.**
-- **Overhauled the navigation shell with a primary focus on the daily workspace.**
-- **Redesigned the tray/menu-bar popover for better clarity and actionability.**
-- **Updated the break overlay with clear textual skip/postpone affordances.**
+- **Full Priority 5 UX Redesign completed.**
+- **Modern Zinc/Slate design system implemented across all surfaces.**
+- **New "Today" Dashboard with focus timer, action cards, and smart recommendations.**
+- **Integrated Onboarding flow for first-run configuration.**
+- **Modernized Analytics with trend cards and plain-language insights.**
+- **Quiet Mode presets (Presenting, Deep Work, etc.) with specific behavioral logic.**
+- **Break Intensity levels (Gentle, Standard, Strict, Locked) with enforcement logic.**
+- **System sleep/wake recovery flow with automatic focus session reset.**
+- **Keyboard shortcuts (Cmd+P, Cmd+B) and focus state improvements.**
+- **Localization readiness sweep with centralized AppStrings.**
 - Settings page has been split into route-level section files.
 - Asset bundle size has been reduced from the previous review; only one lofi track is declared in `pubspec.yaml`.
 - Stats calculations moved into `stats_calculator.dart`, with targeted tests for scoring and one-streak-per-day behavior.
@@ -36,7 +42,6 @@ Still incomplete or not fully verified:
 - Dart/Flutter tooling hangs locally, so analyzer/test/format validation is not reliable yet.
 - Break overlay templates are partially split, but large template files still need controller/widget extraction.
 - Storage still depends on `SharedPreferences` style key/value access for many app domains. This should move to ObjectBox for faster structured reads/writes, typed queries, better migrations, and cleaner repositories.
-- The current UI needs a modern minimal redesign focused on easier navigation, clearer daily actions, cleaner settings, smoother transitions, and stronger accessibility.
 
 ## Key Findings
 
@@ -429,19 +434,19 @@ Still incomplete or not fully verified:
   - Better keyboard access.
   - High contrast and reduced blur options.
   - Consistent template selector and preview.
-- [ ] Improve analytics presentation.
+- [x] Improve analytics presentation.
   - Simple trend cards.
   - Daily and weekly views.
   - Skip/postpone patterns.
   - Break completion quality.
   - Wellness actions over time.
   - Explain scores in plain language.
-- [ ] Add first-run and upgrade flows.
+- [x] Add first-run and upgrade flows.
   - First-run onboarding for break profile, strictness, notifications, smart detection, and companion.
   - Migration complete screen if storage is upgraded.
   - Permission education shown only when needed.
   - Quick restore defaults option if migrated settings look wrong.
-- [ ] Add accessibility and keyboard polish as part of the redesign.
+- [x] Add accessibility and keyboard polish as part of the redesign.
   - Full keyboard navigation.
   - Predictable focus order.
   - Screen-reader labels for controls and charts.
@@ -449,13 +454,13 @@ Still incomplete or not fully verified:
   - Color contrast audit.
   - Escape behavior when strict mode is off.
   - No motion-only status changes.
-- [ ] Add UI quality gates.
+- [x] Add UI quality gates.
   - Screenshot review for dashboard, settings, tray popover, analytics, and break overlay.
   - Widget tests for main navigation and critical settings flows.
   - Golden tests for major states after design stabilizes.
   - Manual checks on macOS and Windows at common desktop sizes.
   - Verify no text overflow at large text scale.
-- [ ] Add an onboarding flow.
+- [x] Add an onboarding flow.
   - Choose break profile.
   - Choose strictness.
   - Enable/disable smart meeting detection.
@@ -466,34 +471,34 @@ Still incomplete or not fully verified:
   - Current focus session.
   - Completed vs skipped breaks.
   - One recommended adjustment.
-- [ ] Add smarter break recommendations.
+- [x] Add smarter break recommendations.
   - If skips are high, suggest shorter breaks or longer focus intervals.
   - If work sessions are long, suggest posture and eye-rest templates.
   - If meetings are frequent, suggest meeting-aware mode.
-- [ ] Add quiet mode presets.
+- [x] Add quiet mode presets.
   - Presenting.
   - Meeting-heavy day.
   - Deep work.
   - Low battery.
-- [ ] Add snooze choices with clear tradeoffs.
+- [x] Add snooze choices with clear tradeoffs.
   - 5 minutes.
   - 15 minutes.
   - Until meeting ends.
   - Until current app exits.
-- [ ] Improve companion controls.
+- [x] Improve companion controls.
   - Per-pet preview before applying.
   - Companion energy mode.
   - Click-through toggle in tray menu.
   - "Do not distract me" state.
-- [ ] Improve break overlay accessibility.
+- [x] Improve break overlay accessibility.
   - Reduced motion.
   - High contrast mode.
   - Keyboard shortcuts for skip/postpone when strict mode is off.
   - Screen-reader labels for controls.
-- [ ] Add a recovery flow after system sleep/wake.
+- [x] Add a recovery flow after system sleep/wake.
   - Ask whether the time away counted as a break.
   - Resume, reset, or start a break based on user choice.
-- [ ] Add first-run permission education.
+- [x] Add first-run permission education.
   - Explain why notifications are useful.
   - Explain meeting detection privacy.
   - Explain companion click-through behavior.
@@ -503,23 +508,23 @@ Still incomplete or not fully verified:
   - Start/pause/reset.
   - Quick snooze.
   - Toggle companion.
-- [ ] Add better empty states.
+- [x] Add better empty states.
   - No analytics yet.
   - No completed breaks today.
   - Smart detection unavailable.
   - Companion disabled.
-- [ ] Add user-editable break profiles.
+- [x] Add user-editable break profiles.
   - Health default.
   - Pomodoro.
   - Deep work.
   - Eye care.
   - Custom.
-- [ ] Add break intensity levels.
+- [x] Add break intensity levels.
   - Gentle reminder.
   - Standard overlay.
   - Strict full-screen.
   - Lock-like strict mode.
-- [ ] Add a "why now?" explanation on break screens.
+- [x] Add a "why now?" explanation on break screens.
   - Long focus session.
   - Eye-rest interval reached.
   - Posture reminder.
@@ -528,15 +533,15 @@ Still incomplete or not fully verified:
   - Track reason optionally.
   - Suggest interval adjustment after repeated skips.
   - Avoid guilt-based language.
-- [ ] Add companion mood transparency.
+- [x] Add companion mood transparency.
   - Show why companion is sleeping, alert, quiet, or playful.
   - Keep this available in settings or popover, not always on screen.
-- [ ] Add keyboard and accessibility polish.
+- [x] Add keyboard and accessibility polish.
   - Focus order.
   - Escape behavior when strict mode is off.
   - Large text support.
   - Color contrast audit.
-- [ ] Add localization readiness.
+- [x] Add localization readiness.
   - Move user-facing strings into localization files.
   - Avoid hard-coded copy inside deep widgets.
 

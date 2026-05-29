@@ -74,6 +74,13 @@ class SettingsSnapshot {
   bool enableAnimations;
   String trayIconStyle;
 
+  // UX & Onboarding
+  bool hasCompletedOnboarding;
+  bool quietModeEnabled;
+  String quietModePreset;
+  int lastSnoozeDurationMinutes;
+  String intensityLevel;
+
   SettingsSnapshot({
     this.id = 0,
     required this.autoStart,
@@ -124,6 +131,11 @@ class SettingsSnapshot {
     required this.useCursorCountdown,
     required this.enableAnimations,
     required this.trayIconStyle,
+    this.hasCompletedOnboarding = false,
+    this.quietModeEnabled = false,
+    this.quietModePreset = 'none',
+    this.lastSnoozeDurationMinutes = 5,
+    this.intensityLevel = 'standard',
   });
 
   Map<String, dynamic> toMap() {
@@ -176,6 +188,11 @@ class SettingsSnapshot {
       'useCursorCountdown': useCursorCountdown,
       'enableAnimations': enableAnimations,
       'trayIconStyle': trayIconStyle,
+      'hasCompletedOnboarding': hasCompletedOnboarding,
+      'quietModeEnabled': quietModeEnabled,
+      'quietModePreset': quietModePreset,
+      'lastSnoozeDurationMinutes': lastSnoozeDurationMinutes,
+      'intensityLevel': intensityLevel,
     };
   }
 }
