@@ -50,15 +50,37 @@ class StatsService extends ChangeNotifier {
     final today = _todayString();
     final lastDate = _storage.getString(AppConstants.keyLastActiveDate);
 
+    // Ensure all required keys exist first
+    _ensureStorageKeys();
+
     // Reset daily stats if it's a new day
     if (lastDate != today) {
       _storage.setString(AppConstants.keyLastActiveDate, today);
       _storage.setInt(AppConstants.keyDailyUsageMinutes, 0);
       _checkAndUpdateStreak(today);
+      
+      // Also ensure weeklyData has today's entry
+      final weeklyDataJson = _storage.getString(AppConstants.keyWeeklyStats);
+      if (weeklyDataJson.isNotEmpty) {
+        try {
+          final List<dynamic> jsonData = jsonDecode(weeklyDataJson);
+          final List<DailyStats> weeklyData = jsonData.map((e) => DailyStats.fromJson(e)).toList();
+          
+          if (!weeklyData.any((d) => d.date == today)) {
+            weeklyData.add(DailyStats(
+              date: today,
+              breaksCompleted: 0,
+              breaksSkipped: 0,
+              usageMinutes: 0,
+            ));
+            if (weeklyData.length > 365) weeklyData.removeAt(0);
+            _storage.setString(AppConstants.keyWeeklyStats, jsonEncode(weeklyData.map((e) => e.toJson()).toList()));
+          }
+        } catch (e) {
+          debugPrint('Error migrating weekly data: $e');
+        }
+      }
     }
-
-    // Ensure all required keys exist
-    _ensureStorageKeys();
 
     await _refreshStatsAsync();
   }

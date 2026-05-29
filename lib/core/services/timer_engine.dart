@@ -147,7 +147,12 @@ class TimerEngine extends ChangeNotifier {
   TimerState get state => _stateData.state;
   WorkMode get mode => _stateData.mode;
   BreakModel? get activeBreak => _stateData.activeBreak;
-  int get countdownSeconds => _stateData.countdownSeconds;
+  int get countdownSeconds {
+    if (state == TimerState.running) {
+      return timeUntilNextShortBreak.inSeconds;
+    }
+    return _stateData.countdownSeconds;
+  }
   bool get isCompletionState => _stateData.isCompletionState;
   bool get isPreBreak => _stateData.isPreBreak;
   Duration get totalWorkToday => _stateData.totalWorkToday;

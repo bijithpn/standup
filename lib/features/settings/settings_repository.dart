@@ -203,6 +203,7 @@ class SettingsRepository extends ChangeNotifier {
               'cat'
           ? 'companion'
           : _storage.getString('tray_icon_style', defaultValue: 'companion'),
+      hasCompletedOnboarding: _storage.getBool('has_completed_onboarding'),
       dailyWorkGoalHours: _storage.getInt(
         'daily_work_goal_hours',
         defaultValue: 8,
@@ -301,6 +302,12 @@ class SettingsRepository extends ChangeNotifier {
     );
 
     _storage.settingsBox?.put(snapshot);
+    
+    // Mirror critical onboarding state to primitives for reliability
+    _storage.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
+    _storage.setInt('short_break_interval', settings.shortBreakIntervalMinutes);
+    _storage.setBool('strict_mode', settings.strictMode);
+    _storage.setBool('companion_enabled', settings.companionEnabled);
 
     final companionPrefs = CompanionPreferences(
       id: 1,
