@@ -57,7 +57,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: sl<BreakController>()),
-        Provider.value(value: sl<SettingsRepository>()),
+        ChangeNotifierProvider.value(value: sl<SettingsRepository>()),
         ChangeNotifierProvider.value(value: sl<StatsService>()),
       ],
       child: MacosApp(
@@ -65,6 +65,9 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         title: 'BreakMate',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.macosTheme,
+        routes: {
+          '/main': (context) => const MainLayout(),
+        },
         home: Builder(
           builder: (context) {
             final overlayService = sl<OverlayWindowService>();
@@ -75,22 +78,30 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                 return ListenableBuilder(
                   listenable: overlayService,
                   builder: (context, _) {
-                    final isOverlayVisible = overlayService.isOverlayVisible;
+                    return Consumer<SettingsRepository>(
+                      builder: (context, settingsRepo, _) {
+                        final isOverlayVisible =
+                            overlayService.isOverlayVisible;
+                        final settings = settingsRepo.currentSettings;
 
-                    final settings = sl<SettingsRepository>().currentSettings;
-                    if (!settings.hasCompletedOnboarding) {
-                      return const OnboardingPage();
-                    }
+                        if (!settings.hasCompletedOnboarding) {
+                          return const OnboardingPage();
+                        }
 
-                    return Stack(
-                      children: [
-                        Offstage(
-                          offstage: isOverlayVisible || isBreakActive,
-                          child: const MainLayout(),
-                        ),
-                        const BreakOverlay(),
-                        const PreBreakWarningOverlay(),
-                      ],
+                        return Material(
+                          type: MaterialType.transparency,
+                          child: Stack(
+                            children: [
+                              Offstage(
+                                offstage: isOverlayVisible || isBreakActive,
+                                child: const MainLayout(),
+                              ),
+                              const BreakOverlay(),
+                              const PreBreakWarningOverlay(),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
                 );

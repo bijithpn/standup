@@ -212,97 +212,103 @@ class _MainLayoutState extends State<MainLayout> {
           );
         },
       ),
-      child: _buildMainContent(),
+      child: Material(
+        type: MaterialType.transparency,
+        child: _buildMainContent(),
+      ),
     );
   }
 
   // --- Narrow layout ---
 
   Widget _buildNarrowLayout({Key? key}) {
-    return Stack(
-      key: key,
-      children: [
-        _buildMainContent(),
-        // Top bar
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Container(
-            height: 52,
-            decoration: BoxDecoration(
-              color: AppTheme.sidebarBackground.withValues(alpha: 0.95),
-              border: Border(
-                bottom: BorderSide(color: AppTheme.separatorColor, width: 0.5),
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () => setState(() => _isMenuOpen = !_isMenuOpen),
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.05),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Icon(
-                          CupertinoIcons.bars,
-                          color: AppTheme.textPrimary,
-                          size: 18,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _allItems[_pageIndex].label,
-                      style: AppTheme.headerStyle.copyWith(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Drawer overlay
-        if (_isMenuOpen) ...[
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: () => setState(() => _isMenuOpen = false),
-              child: Container(color: Colors.black.withValues(alpha: 0.4)),
-            ),
-          ),
+    return Material(
+      type: MaterialType.transparency,
+      child: Stack(
+        key: key,
+        children: [
+          _buildMainContent(),
+          // Top bar
           Positioned(
             top: 0,
-            bottom: 0,
             left: 0,
+            right: 0,
             child: Container(
-              width: 240,
-              color: AppTheme.sidebarBackground,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppTheme.sidebarBackground.withValues(alpha: 0.95),
+                border: Border(
+                  bottom: BorderSide(color: AppTheme.separatorColor, width: 0.5),
+                ),
+              ),
               child: SafeArea(
-                child: _SidebarContent(
-                  selectedIndex: _pageIndex,
-                  mainItems: _mainNavItems,
-                  bottomItems: _bottomNavItems,
-                  onItemSelected: (i) {
-                    setState(() {
-                      _pageIndex = i;
-                      _isMenuOpen = false;
-                    });
-                    _navigationService.openSection(_allItems[i].section);
-                  },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => setState(() => _isMenuOpen = !_isMenuOpen),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            CupertinoIcons.bars,
+                            color: AppTheme.textPrimary,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _allItems[_pageIndex].label,
+                        style: AppTheme.headerStyle.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+          // Drawer overlay
+          if (_isMenuOpen) ...[
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _isMenuOpen = false),
+                child: Container(color: Colors.black.withValues(alpha: 0.4)),
+              ),
+            ),
+            Positioned(
+              top: 0,
+              bottom: 0,
+              left: 0,
+              child: Container(
+                width: 240,
+                color: AppTheme.sidebarBackground,
+                child: SafeArea(
+                  child: _SidebarContent(
+                    selectedIndex: _pageIndex,
+                    mainItems: _mainNavItems,
+                    bottomItems: _bottomNavItems,
+                    onItemSelected: (i) {
+                      setState(() {
+                        _pageIndex = i;
+                        _isMenuOpen = false;
+                      });
+                      _navigationService.openSection(_allItems[i].section);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

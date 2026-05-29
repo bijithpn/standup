@@ -10,6 +10,15 @@ class ProductivityTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (weeklyData.isEmpty) {
+      return const Center(
+        child: Text(
+          'No data available yet',
+          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+        ),
+      );
+    }
+
     final spots = weeklyData.asMap().entries.map((e) {
       return FlSpot(e.key.toDouble(), e.value.breaksCompleted.toDouble());
     }).toList();

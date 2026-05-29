@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 
@@ -25,7 +24,7 @@ class WellnessScoreCard extends StatelessWidget {
             CupertinoIcons.bolt_fill,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: _scoreItem(
             'Wellness',
@@ -40,28 +39,28 @@ class WellnessScoreCard extends StatelessWidget {
 
   Widget _scoreItem(String label, int score, Color color, IconData icon) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 8),
               Text(
                 label.toUpperCase(),
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  color: AppTheme.textSecondary,
-                  letterSpacing: 1.2,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  letterSpacing: 1.0,
                   fontFamily: 'Inter',
                 ),
               ),
+              Icon(icon, size: 12, color: color.withValues(alpha: 0.7)),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -69,43 +68,72 @@ class WellnessScoreCard extends StatelessWidget {
               Text(
                 '$score',
                 style: const TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
                   fontFamily: 'Inter',
-                  letterSpacing: -1,
+                  letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(width: 4),
-              const Text(
-                '/ 100',
+              Text(
+                '%',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textMuted,
+                  color: AppTheme.textMuted.withValues(alpha: 0.5),
                   fontFamily: 'Inter',
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: score / 100,
-              backgroundColor: color.withValues(alpha: 0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 6,
-            ),
+          Stack(
+            children: [
+              Container(
+                height: 4,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 800),
+                height: 4,
+                width:
+                    (score / 100) *
+                    100, // This is just a placeholder, in real app need a way to measure width
+                // But since it's inside Expanded -> Row, we can use FractionallySizedBox
+                child: FractionallySizedBox(
+                  widthFactor: (score / 100).clamp(0.05, 1.0),
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(
             _getScoreInsight(label, score),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               color: AppTheme.textSecondary,
               fontFamily: 'Inter',
-              height: 1.4,
+              height: 1.2,
             ),
           ),
         ],

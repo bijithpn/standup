@@ -63,12 +63,17 @@ class ErrorToastService {
       ),
     );
 
-    overlay.insert(overlayEntry);
+    // Use addPostFrameCallback to avoid "setState() or markNeedsBuild() called during build"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (overlay.mounted) {
+        overlay.insert(overlayEntry);
 
-    // Remove after 3.5 seconds
-    Timer(const Duration(milliseconds: 3500), () {
-      if (overlayEntry.mounted) {
-        overlayEntry.remove();
+        // Remove after 3.5 seconds
+        Timer(const Duration(milliseconds: 3500), () {
+          if (overlayEntry.mounted) {
+            overlayEntry.remove();
+          }
+        });
       }
     });
   }

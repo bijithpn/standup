@@ -5,8 +5,9 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:flutter/foundation.dart';
 
-class SettingsRepository {
+class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
   SettingsModel _current = const SettingsModel();
 
@@ -15,14 +16,16 @@ class SettingsRepository {
   SettingsModel get currentSettings => _current;
 
   void load() {
-    final snapshot = _storage.settingsBox.get(1);
-    final companionPrefs = _storage.companionPreferencesBox.get(1);
+    final snapshot = _storage.settingsBox?.get(1);
+    final companionPrefs = _storage.companionPreferencesBox?.get(1);
 
     if (snapshot != null) {
       _current = _fromSnapshot(snapshot, companionPrefs);
     } else {
       _current = _loadFromLegacy();
-      save(_current);
+      if (_storage.isReady) {
+        save(_current);
+      }
     }
   }
 
@@ -297,7 +300,7 @@ class SettingsRepository {
       intensityLevel: settings.intensityLevel,
     );
 
-    _storage.settingsBox.put(snapshot);
+    _storage.settingsBox?.put(snapshot);
 
     final companionPrefs = CompanionPreferences(
       id: 1,
@@ -309,7 +312,8 @@ class SettingsRepository {
       companionFollowMouse: settings.companionFollowMouse,
     );
 
-    _storage.companionPreferencesBox.put(companionPrefs);
+    _storage.companionPreferencesBox?.put(companionPrefs);
+    notifyListeners();
   }
 
   List<int> _decodeIntList(String raw, {required List<int> fallback}) {

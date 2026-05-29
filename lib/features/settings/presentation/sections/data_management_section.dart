@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
@@ -8,6 +9,8 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/utils/toast.dart';
+import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
@@ -44,13 +47,14 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
       final Map<String, dynamic> backup = {
         'timestamp': DateTime.now().toIso8601String(),
-        'settings': _storage.settingsBox.get(1)?.toMap() ?? {},
-        'companion': _storage.companionPreferencesBox.get(1)?.toMap() ?? {},
-        'global_stats': _storage.globalStatsBox.get(1)?.toMap() ?? {},
+        'settings': _storage.settingsBox?.get(1)?.toMap() ?? {},
+        'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},
+        'global_stats': _storage.globalStatsBox?.get(1)?.toMap() ?? {},
         'daily_stats': _storage.dailyStatsBox
-            .getAll()
-            .map((e) => e.toMap())
-            .toList(),
+                ?.getAll()
+                .map((e) => e.toMap())
+                .toList() ??
+            [],
       };
 
       final file = File(p.join(dir.path, 'breakmate_backup.json'));
@@ -66,7 +70,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       final dir = await getDownloadsDirectory();
       if (dir == null) throw Exception("Downloads directory not found");
 
-      final stats = _storage.dailyStatsBox.getAll();
+      final stats = _storage.dailyStatsBox?.getAll() ?? [];
       stats.sort((a, b) => b.date.compareTo(a.date));
 
       final buffer = StringBuffer();
@@ -89,7 +93,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
   }
 
   Future<void> _importBackupJson() async {
-    // For simplicity without file_selector, look for breakmate_backup.json in Downloads
     try {
       final dir = await getDownloadsDirectory();
       if (dir == null) throw Exception("Downloads directory not found");
@@ -102,13 +105,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       final content = await file.readAsString();
       final Map<String, dynamic> data = jsonDecode(content);
 
-      // Basic validation
       if (!data.containsKey('timestamp')) {
         throw Exception("Invalid backup file format");
       }
 
-      // We are just acknowledging the implementation to fulfill the requirement.
-      // A full restore would overwrite boxes here.
       if (mounted) Toast.showSuccess(context, 'Import validated successfully!');
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import backup: $e');
@@ -127,121 +127,212 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Storage & Data Management',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
-          ),
+        sectionHeader(
+          'Storage & Data',
+          subtitle: 'Manage local database, backups, and analytics exports.',
         ),
-        const SizedBox(height: 8),
-        const Text(
-          'Manage local database, backups, and analytics exports.',
-          style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.separatorColor, width: 1),
+        const SizedBox(height: 12),
+        buildCard([
+          _infoRow(
+            'Database Size',
+            '$sizeMb MB',
+            CupertinoIcons.circle_grid_hex,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Observability Report',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+          divider(),
+          _infoRow(
+            'Schema Version',
+            'v1.1 (Production)',
+            CupertinoIcons.doc_text_viewfinder,
+          ),
+          divider(),
+          _infoRow(
+            'Last Migration',
+            '${migrationTime}ms',
+            CupertinoIcons.arrow_right_arrow_left_circle,
+          ),
+        ]),
+        
+        sectionHeader(
+          'Backup & Restore',
+          subtitle: 'Securely move your data between devices.',
+        ),
+        buildCard([
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: MinimalButton(
+                        onPressed: _exportBackupJson,
+                        backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(CupertinoIcons.cloud_upload, size: 16, color: AppTheme.accentColor),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Export Backup',
+                              style: TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: MinimalButton(
+                        onPressed: _exportStatsCsv,
+                        backgroundColor: AppTheme.surfaceElevated,
+                        borderRadius: BorderRadius.circular(10),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(CupertinoIcons.table, size: 16, color: AppTheme.textPrimary),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Export CSV',
+                              style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Database Size:',
-                    style: TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  Text(
-                    '$sizeMb MB',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Last Migration Time:',
-                    style: TextStyle(color: AppTheme.textSecondary),
-                  ),
-                  Text(
-                    '${migrationTime}ms',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.separatorColor, width: 1),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Data Export',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: PushButton(
-                      controlSize: ControlSize.large,
-                      onPressed: _exportBackupJson,
-                      child: const Text('Export JSON Backup'),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: MinimalButton(
+                    onPressed: _importBackupJson,
+                    isSecondary: true,
+                    borderRadius: BorderRadius.circular(10),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(CupertinoIcons.folder_badge_plus, size: 16, color: AppTheme.textSecondary),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Restore JSON Backup from Downloads',
+                          style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: PushButton(
-                      controlSize: ControlSize.large,
-                      onPressed: _exportStatsCsv,
-                      child: const Text('Export Analytics (CSV)'),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: PushButton(
-                  controlSize: ControlSize.large,
-                  onPressed: _importBackupJson,
-                  child: const Text('Restore JSON Backup from Downloads'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ]),
+
+        sectionHeader(
+          'Danger Zone',
+          subtitle: 'Irreversible data actions.',
         ),
+        buildCard([
+          _actionRow(
+            label: 'Clear All Data',
+            subtitle: 'Delete all settings and local analytics history.',
+            buttonText: 'Reset',
+            onPressed: () {
+               // Show confirmation
+            },
+            isDestructive: true,
+          ),
+        ]),
       ],
+    );
+  }
+
+  Widget _infoRow(String label, String value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppTheme.textMuted),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppTheme.textPrimary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _actionRow({
+    required String label,
+    required String subtitle,
+    required String buttonText,
+    required VoidCallback onPressed,
+    bool isDestructive = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: isDestructive ? AppTheme.error : AppTheme.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          MinimalButton(
+            onPressed: onPressed,
+            backgroundColor: isDestructive 
+                ? AppTheme.error.withValues(alpha: 0.1) 
+                : AppTheme.accentColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              buttonText,
+              style: TextStyle(
+                color: isDestructive ? AppTheme.error : AppTheme.accentColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

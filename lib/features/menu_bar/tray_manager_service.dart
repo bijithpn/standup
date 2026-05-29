@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui' as ui;
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/widgets.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/logger.dart';
@@ -47,7 +47,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     // Clean up older cached white/legacy tray icons from system temp directory
     try {
-      final tempDir = Directory.systemTemp;
+      final tempDir = await getTemporaryDirectory();
       if (tempDir.existsSync()) {
         final list = tempDir.listSync();
         for (final file in list) {
@@ -89,19 +89,21 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _extractIcons() async {
-    final tempDir = Directory.systemTemp;
-    final isDark =
-        ui.PlatformDispatcher.instance.platformBrightness == ui.Brightness.dark;
-    final themeSuffix = isDark ? '_dark' : '_light';
+    final tempDir = await getTemporaryDirectory();
 
     final defaultFile =
-        '${tempDir.path}/bm_ctray_default${themeSuffix}Template@2x.png';
+        '${tempDir.path}/bm_ctray_defaultTemplate@2x.png';
     _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
       'assets/icons/tray_icon.png',
       defaultFile,
     );
     if (_defaultIconPath == null || _defaultIconPath!.isEmpty) {
       _defaultIconPath = defaultFile;
+    }
+
+    // Use raw absolute paths for tray_manager
+    if (_defaultIconPath != null) {
+      debugPrint('[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync()})');
     }
 
     final settingsRepo = sl<SettingsRepository>();
@@ -158,7 +160,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
               break;
           }
           final fallbackFile =
-              '${tempDir.path}/bm_ccat_${state.name}${themeSuffix}Template@2x.png';
+              '${tempDir.path}/bm_ccat_${state.name}Template@2x.png';
           final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,
@@ -201,7 +203,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           } else {
             path = _defaultIconPath;
           }
-          if (path != null) await trayManager.setIcon(path, isTemplate: true);
+          if (path != null) {
+            await trayManager.setIcon(path, isTemplate: true);
+          }
           break;
         case TrayIconMode.defaultIcon:
         case TrayIconMode.minimal:
@@ -297,14 +301,18 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       case 'companion':
       case 'cat':
         setIconMode(TrayIconMode.companion);
+        break;
       case 'minimal':
         setIconMode(TrayIconMode.minimal);
+        break;
       case 'countdown':
       case 'countdown only':
         setIconMode(TrayIconMode.countdownOnly);
+        break;
       case 'default':
       default:
         setIconMode(TrayIconMode.defaultIcon);
+        break;
     }
   }
 

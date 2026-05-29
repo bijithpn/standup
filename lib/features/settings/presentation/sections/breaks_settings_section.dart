@@ -303,7 +303,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                 return _actionRow(
                   label: display.id,
                   subtitle:
-                      'Resolution: ${display.width.toInt()}x${display.height.toInt()} ΓÇó Primary: ${display.isPrimary}',
+                      'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
                   buttonText: 'Active',
                   buttonColor: AppTheme.accentColor.withValues(alpha: 0.2),
                   textColor: AppTheme.accentColor,
@@ -660,7 +660,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '${p.shortIntervalMinutes}m interval ΓÇó ${p.shortDurationSeconds}s duration',
+                            '${p.shortIntervalMinutes}m interval • ${p.shortDurationSeconds}s duration',
                             style: const TextStyle(
                               color: AppTheme.textMuted,
                               fontSize: 12,

@@ -40,35 +40,36 @@ class _OnboardingPageState extends State<OnboardingPage> {
       hasCompletedOnboarding: true,
     );
     await sl<SettingsRepository>().save(finalSettings);
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/main');
-    }
+    // Rebuild is handled by Consumer in lib/app/app.dart
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.surface,
-      body: Stack(
-        children: [
-          PageView(
-            controller: _pageController,
-            onPageChanged: (i) => setState(() => _currentPage = i),
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildIntroStep(),
-              _buildBreakProfileStep(),
-              _buildStrictnessStep(),
-              _buildCompanionStep(),
-            ],
-          ),
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Center(child: _buildNavigation()),
-          ),
-        ],
+    return Material(
+      type: MaterialType.transparency,
+      child: Scaffold(
+        backgroundColor: AppTheme.surface,
+        body: Stack(
+          children: [
+            PageView(
+              controller: _pageController,
+              onPageChanged: (i) => setState(() => _currentPage = i),
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                _buildIntroStep(),
+                _buildBreakProfileStep(),
+                _buildStrictnessStep(),
+                _buildCompanionStep(),
+              ],
+            ),
+            Positioned(
+              bottom: 40,
+              left: 0,
+              right: 0,
+              child: Center(child: _buildNavigation()),
+            ),
+          ],
+        ),
       ),
     );
   }
