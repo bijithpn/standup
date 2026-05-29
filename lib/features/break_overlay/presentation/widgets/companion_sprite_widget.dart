@@ -12,6 +12,7 @@ class CompanionSpriteWidget extends StatefulWidget {
   final double scale;
   final bool flipX;
   final bool isStatic;
+  final String? backgroundImagePath;
 
   static void clearCache() {
     // PetAssetLoader handles the byte cache now
@@ -32,6 +33,7 @@ class CompanionSpriteWidget extends StatefulWidget {
     this.scale = 3.0,
     this.flipX = false,
     this.isStatic = false,
+    this.backgroundImagePath,
   });
 
   @override
@@ -44,8 +46,10 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   final ValueNotifier<int> _frameIndexNotifier = ValueNotifier<int>(0);
   int _lastFrameCount = 1;
   ui.Image? _loadedImage;
+  ui.Image? _backgroundImage;
   bool _isLoading = false;
   String _currentLoadedPath = '';
+  String? _currentBackgroundPath;
 
   @override
   void initState() {
@@ -69,7 +73,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   void didUpdateWidget(covariant CompanionSpriteWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.petTheme.id != widget.petTheme.id ||
-        oldWidget.animationState != widget.animationState) {
+        oldWidget.animationState != widget.animationState ||
+        oldWidget.backgroundImagePath != widget.backgroundImagePath) {
       _loadAndSetup();
     }
   }
@@ -79,6 +84,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     _animationController.dispose();
     _frameIndexNotifier.dispose();
     _loadedImage?.dispose();
+    _backgroundImage?.dispose();
     super.dispose();
   }
 
@@ -86,7 +92,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     final path = _getAssetPath();
     if (path.isEmpty) return;
 
-    if (path == _currentLoadedPath && _loadedImage != null) {
+    if (path == _currentLoadedPath && _loadedImage != null && widget.backgroundImagePath == _currentBackgroundPath) {
       _setupTicker();
       return;
     }
@@ -99,6 +105,19 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     try {
       await _loadImage(path);
+      if (widget.backgroundImagePath != null && widget.backgroundImagePath != _currentBackgroundPath) {
+        await _loadBackground(widget.backgroundImagePath!);
+      } else if (widget.backgroundImagePath == null && _backgroundImage != null) {
+        _backgroundImage?.dispose();
+        _backgroundImage = null;
+        _currentBackgroundPath = null;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       debugPrint('CompanionSpriteWidget: Error loading asset $path: $e');
       if (mounted) {
@@ -108,6 +127,24 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       }
     }
   }
+
+  Future<void> _loadBackground(String path) async {
+    try {
+      final ui.Image bg = await PetAssetLoader.loadImage(path);
+      if (mounted) {
+        if (_backgroundImage != null && _backgroundImage != bg) {
+          _backgroundImage?.dispose();
+        }
+        setState(() {
+          _backgroundImage = bg;
+          _currentBackgroundPath = path;
+        });
+      }
+    } catch (e) {
+      debugPrint('CompanionSpriteWidget: Error loading background $path: $e');
+    }
+  }
+
 
   String _getAssetPath() {
     final dynamic anim =
@@ -182,7 +219,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       setState(() {
         _loadedImage = img;
         _currentLoadedPath = path;
-        _isLoading = false;
       });
       _setupTicker();
     }
@@ -240,6 +276,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
                 spriteSize: widget.petTheme.spriteSize,
                 row: row,
                 frameIndex: frameIndex,
+                backgroundImage: _backgroundImage,
+                scale: widget.scale,
               ),
             ),
           );
@@ -254,27 +292,52 @@ class _SpritePainter extends CustomPainter {
   final int spriteSize;
   final int row;
   final int frameIndex;
+  final ui.Image? backgroundImage;
+  final double scale;
 
   _SpritePainter({
     required this.image,
     required this.spriteSize,
     required this.row,
     required this.frameIndex,
+    this.backgroundImage,
+    required this.scale,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final srcX = frameIndex * spriteSize;
-    final srcY = row * spriteSize;
+    if (backgroundImage != null) {
+      paintImage(
+        canvas: canvas,
+        rect: Rect.fromLTWH(0, 0, size.width, size.height),
+        image: backgroundImage!,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        filterQuality: FilterQuality.none,
+      );
+    }
+
+    final double srcX = (frameIndex * spriteSize).toDouble();
+    final double srcY = (row * spriteSize).toDouble();
 
     final src = Rect.fromLTWH(
-      srcX.toDouble(),
-      srcY.toDouble(),
+      srcX,
+      srcY,
       spriteSize.toDouble(),
       spriteSize.toDouble(),
     );
 
-    final dst = Rect.fromLTWH(0, 0, size.width, size.height);
+    // Calculate actual pixel size based on scale
+    final double drawWidth = spriteSize * scale;
+    final double drawHeight = spriteSize * scale;
+
+    // Position the pet at the bottom of the available space, centered horizontally
+    final dst = Rect.fromLTWH(
+      (size.width - drawWidth) / 2,
+      size.height - drawHeight,
+      drawWidth,
+      drawHeight,
+    );
 
     final paint = Paint()
       ..filterQuality = FilterQuality.none; // Pixel-perfect rendering style

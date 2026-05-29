@@ -81,6 +81,11 @@ flutter:
     # Modular pets framework
     - assets/animations/pets/pets.json
     - assets/animations/pets/
+    # Backgrounds
+    - assets/background/autumn/
+    - assets/background/beach/
+    - assets/background/forest/
+    - assets/background/winter/
     # Lofi musics
     - assets/music/lofi_1.mp3
 
