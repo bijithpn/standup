@@ -261,7 +261,7 @@ void FlutterWindow::SetupWindowBridge() {
 
 void FlutterWindow::SetupCompanionBridge() {
   companion_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      flutter_controller_->engine()->messenger(), "com.breakmate.macos/companion_data",
+      flutter_controller_->engine()->messenger(), "com.breakmate.desktop/companion_data",
       &flutter::StandardMethodCodec::GetInstance());
 
   companion_channel_->SetMethodCallHandler(
@@ -299,7 +299,7 @@ void FlutterWindow::SetupEventChannels() {
 
 void FlutterWindow::SetupBridge() {
   bridge_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-      flutter_controller_->engine()->messenger(), "com.breakmate.macos/bridge",
+      flutter_controller_->engine()->messenger(), "com.breakmate.desktop/bridge",
       &flutter::StandardMethodCodec::GetInstance());
 
   bridge_channel_->SetMethodCallHandler(

@@ -85,6 +85,12 @@ class _MainLayoutState extends State<MainLayout> {
   // Bottom nav items (shown at the footer of the sidebar)
   static const List<_NavItem> _bottomNavItems = [
     _NavItem(
+      label: 'Data & Backup',
+      icon: CupertinoIcons.folder,
+      section: 'Data & Backup',
+      isBottom: true,
+    ),
+    _NavItem(
       label: 'Software Update',
       icon: CupertinoIcons.arrow_down_circle,
       section: 'Updates',
@@ -309,8 +315,10 @@ class _MainLayoutState extends State<MainLayout> {
       case 7:
         return const SettingsPage(section: 'Statistics');
       case 8:
-        return const SettingsPage(section: 'Updates');
+        return const SettingsPage(section: 'Data & Backup');
       case 9:
+        return const SettingsPage(section: 'Updates');
+      case 10:
         return const SettingsPage(section: 'About');
       default:
         return const SettingsPage(section: 'General');

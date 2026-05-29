@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
 class MacOSBridge implements NativeBridgePlatform {
-  final MethodChannel _channel = const MethodChannel('com.breakmate.macos/bridge');
+  final MethodChannel _channel = const MethodChannel('com.breakmate.desktop/bridge');
   static final Set<String> _loggedMissingMethods = {};
 
   /// Show the native multi-monitor overlay

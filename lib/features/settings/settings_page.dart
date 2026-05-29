@@ -21,6 +21,7 @@ import 'package:breakmate/features/settings/widgets/update_section.dart';
 import 'package:breakmate/features/settings/widgets/about_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/analytics_settings_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/companion_settings_section.dart';
+import 'package:breakmate/features/settings/presentation/sections/data_management_section.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -160,6 +161,8 @@ class _SettingsPageState extends State<SettingsPage> {
         );
       case 'Companion':
         return CompanionSettingsSection(controller: sl<CompanionOverlayController>());
+      case 'Data & Backup':
+        return const DataManagementSection();
       default:
         return Center(
           child: Text(

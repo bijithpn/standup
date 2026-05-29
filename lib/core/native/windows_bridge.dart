@@ -4,7 +4,7 @@ import 'package:breakmate/core/native/native_bridge.dart';
 
 /// Windows implementation of the platform native bridge interface.
 class WindowsBridge implements NativeBridgePlatform {
-  static const MethodChannel _channel = MethodChannel('com.breakmate.macos/bridge');
+  static const MethodChannel _channel = MethodChannel('com.breakmate.desktop/bridge');
   static final Set<String> _loggedMissingMethods = {};
 
   @override

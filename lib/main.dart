@@ -174,7 +174,7 @@ void main() async {
         if (Platform.isMacOS) {
           try {
             final res = await const MethodChannel(
-              'com.breakmate.macos/bridge',
+              'com.breakmate.desktop/bridge',
             ).invokeMethod<bool>('checkIsMainEngine');
             isActualMain = res ?? true;
           } catch (_) {
@@ -242,7 +242,7 @@ void main() async {
           await windowManager.hide();
         });
 
-        MethodChannel('com.breakmate.macos/bridge').setMethodCallHandler((
+        MethodChannel('com.breakmate.desktop/bridge').setMethodCallHandler((
           call,
         ) async {
           if (call.method == 'handleReopen') {

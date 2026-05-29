@@ -121,7 +121,7 @@ class CompanionWindowManager: NSObject {
         
         // Setup MethodChannel for native drag tracking and overlay synchronization
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: engine.binaryMessenger
         )
         channel.setMethodCallHandler { [weak self] (call, result) in
@@ -202,7 +202,7 @@ class CompanionWindowManager: NSObject {
         }
         
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: instance.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: args)
@@ -216,7 +216,7 @@ class CompanionWindowManager: NSObject {
         inst.window.contentViewController = nil
         inst.window.contentView = nil
         
-        let channel = FlutterMethodChannel(name: "com.breakmate.macos/companion_data", binaryMessenger: inst.engine.binaryMessenger)
+        let channel = FlutterMethodChannel(name: "com.breakmate.desktop/companion_data", binaryMessenger: inst.engine.binaryMessenger)
         channel.setMethodCallHandler(nil)
         
         IpcBridgeManager.shared.unregister(engine: inst.engine)
@@ -245,7 +245,7 @@ class CompanionWindowManager: NSObject {
     func updateTheme(_ themeId: String) {
         guard let inst = instance else { return }
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: inst.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["themeId": themeId])
@@ -255,7 +255,7 @@ class CompanionWindowManager: NSObject {
     func updatePetName(_ petName: String) {
         guard let inst = instance else { return }
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: inst.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["petName": petName])
@@ -265,7 +265,7 @@ class CompanionWindowManager: NSObject {
     func updateScale(_ scale: Double) {
         guard let inst = instance else { return }
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: inst.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["scale": scale])
@@ -275,7 +275,7 @@ class CompanionWindowManager: NSObject {
     func triggerState(_ state: String) {
         guard let inst = instance else { return }
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: inst.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["state": state])
@@ -285,7 +285,7 @@ class CompanionWindowManager: NSObject {
     func setWanderingEnabled(_ enabled: Bool) {
         guard let inst = instance else { return }
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: inst.engine.binaryMessenger
         )
         channel.invokeMethod("syncCompanionSettings", arguments: ["wanderingEnabled": enabled])
@@ -330,7 +330,7 @@ class CompanionWindowManager: NSObject {
             // Notify Flame that cursor chase mode is inactive
             if let inst = instance {
                 let channel = FlutterMethodChannel(
-                    name: "com.breakmate.macos/companion_data",
+                    name: "com.breakmate.desktop/companion_data",
                     binaryMessenger: inst.engine.binaryMessenger
                 )
                 channel.invokeMethod("syncCompanionSettings", arguments: [
@@ -376,7 +376,7 @@ class CompanionWindowManager: NSObject {
         let localMouseY = screenFrame.height - relativeMouseY
         
         let channel = FlutterMethodChannel(
-            name: "com.breakmate.macos/companion_data",
+            name: "com.breakmate.desktop/companion_data",
             binaryMessenger: inst.engine.binaryMessenger
         )
         
@@ -442,7 +442,7 @@ class CompanionWindowManager: NSObject {
             lastEnergyStatus = status
             
             let channel = FlutterMethodChannel(
-                name: "com.breakmate.macos/companion_data",
+                name: "com.breakmate.desktop/companion_data",
                 binaryMessenger: inst.engine.binaryMessenger
             )
             channel.invokeMethod("syncCompanionSettings", arguments: status)

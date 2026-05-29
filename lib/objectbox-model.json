@@ -1,0 +1,422 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:8601537166470336041",
+      "lastPropertyId": "7:1967460204486061299",
+      "name": "CompanionPreferences",
+      "properties": [
+        {
+          "id": "1:561582106938530622",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3176015101061414740",
+          "name": "companionEnabled",
+          "type": 1
+        },
+        {
+          "id": "3:3082819211238351866",
+          "name": "companionPetTheme",
+          "type": 9
+        },
+        {
+          "id": "4:2285641345220792625",
+          "name": "companionPetName",
+          "type": 9
+        },
+        {
+          "id": "5:4234193143061577156",
+          "name": "companionScale",
+          "type": 8
+        },
+        {
+          "id": "6:4890119968795250589",
+          "name": "companionClickThrough",
+          "type": 1
+        },
+        {
+          "id": "7:1967460204486061299",
+          "name": "companionFollowMouse",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:4231668446017709870",
+      "lastPropertyId": "6:38697472760514570",
+      "name": "DailyStats",
+      "properties": [
+        {
+          "id": "1:7469918333687636201",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:4124886124346065946",
+          "name": "date",
+          "indexId": "1:4449660378392014449",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:5721677675982810464",
+          "name": "breaksCompleted",
+          "type": 6
+        },
+        {
+          "id": "4:4254018422420056187",
+          "name": "breaksSkipped",
+          "type": 6
+        },
+        {
+          "id": "5:2854465106285032287",
+          "name": "usageMinutes",
+          "type": 6
+        },
+        {
+          "id": "6:38697472760514570",
+          "name": "wellnessActions",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:2873735817583147659",
+      "lastPropertyId": "5:1468628661224166678",
+      "name": "GlobalStats",
+      "properties": [
+        {
+          "id": "1:7582808391765282076",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8482229876198574784",
+          "name": "currentStreak",
+          "type": 6
+        },
+        {
+          "id": "3:3620105247496086583",
+          "name": "longestStreak",
+          "type": 6
+        },
+        {
+          "id": "4:1555709293778116137",
+          "name": "totalWorkSessions",
+          "type": 6
+        },
+        {
+          "id": "5:1468628661224166678",
+          "name": "lastActiveDate",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:8378390878724889362",
+      "lastPropertyId": "4:3642944870836259948",
+      "name": "KeyValueRecord",
+      "properties": [
+        {
+          "id": "1:5336749369618827183",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8162861934257211585",
+          "name": "key",
+          "indexId": "2:2404533075128465752",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:5556767761389473471",
+          "name": "value",
+          "type": 9
+        },
+        {
+          "id": "4:3642944870836259948",
+          "name": "type",
+          "type": 9
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "5:6076095419739285712",
+      "lastPropertyId": "49:1739643195762079014",
+      "name": "SettingsSnapshot",
+      "properties": [
+        {
+          "id": "1:7025269475707297862",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3576524802837026149",
+          "name": "autoStart",
+          "type": 1
+        },
+        {
+          "id": "3:8536603958722006143",
+          "name": "clockFaceStyle",
+          "type": 9
+        },
+        {
+          "id": "4:2642594123830132924",
+          "name": "selectedProfileId",
+          "type": 9
+        },
+        {
+          "id": "5:4653491339572888685",
+          "name": "strictMode",
+          "type": 1
+        },
+        {
+          "id": "6:5198079204830661742",
+          "name": "remindClockOutEnabled",
+          "type": 1
+        },
+        {
+          "id": "7:9023362059922625681",
+          "name": "dailyWorkGoalHours",
+          "type": 6
+        },
+        {
+          "id": "8:1132712089788213557",
+          "name": "pauseTimerAfterMinutes",
+          "type": 6
+        },
+        {
+          "id": "9:6499840118854768064",
+          "name": "menuBarStyle",
+          "type": 9
+        },
+        {
+          "id": "10:8841369957436756813",
+          "name": "focusModeEnabled",
+          "type": 1
+        },
+        {
+          "id": "11:1964609736912734259",
+          "name": "shortBreakIntervalMinutes",
+          "type": 6
+        },
+        {
+          "id": "12:1757195928756627398",
+          "name": "shortBreakDurationSeconds",
+          "type": 6
+        },
+        {
+          "id": "13:5479348226108451680",
+          "name": "preBreakWarningSeconds",
+          "type": 6
+        },
+        {
+          "id": "14:3286539882323972017",
+          "name": "longBreakIntervalMinutes",
+          "type": 6
+        },
+        {
+          "id": "15:6820745269693774409",
+          "name": "longBreakDurationMinutes",
+          "type": 6
+        },
+        {
+          "id": "16:5155124536169826331",
+          "name": "soundEnabled",
+          "type": 1
+        },
+        {
+          "id": "17:8278205537887989910",
+          "name": "notificationsEnabled",
+          "type": 1
+        },
+        {
+          "id": "18:7178737153594667175",
+          "name": "postureReminderEnabled",
+          "type": 1
+        },
+        {
+          "id": "19:1165804530343755232",
+          "name": "postureReminderIntervalMinutes",
+          "type": 6
+        },
+        {
+          "id": "20:7359192108771522662",
+          "name": "postureReminderType",
+          "type": 9
+        },
+        {
+          "id": "21:2807876718631705563",
+          "name": "eyeBlinkReminderEnabled",
+          "type": 1
+        },
+        {
+          "id": "22:8363102211408397294",
+          "name": "eyeBlinkReminderIntervalMinutes",
+          "type": 6
+        },
+        {
+          "id": "23:3850482135322666280",
+          "name": "eyeBlinkReminderType",
+          "type": 9
+        },
+        {
+          "id": "24:2148287829343130241",
+          "name": "showOnAllDisplays",
+          "type": 1
+        },
+        {
+          "id": "25:407082954958839985",
+          "name": "breakTheme",
+          "type": 9
+        },
+        {
+          "id": "26:5302612942570688447",
+          "name": "breakTemplate",
+          "type": 9
+        },
+        {
+          "id": "27:2292500703789816923",
+          "name": "showExercisesInBreak",
+          "type": 1
+        },
+        {
+          "id": "28:3853271466716287670",
+          "name": "lastExerciseDate",
+          "type": 9
+        },
+        {
+          "id": "29:3487058537314845083",
+          "name": "shownExercisesTodayJson",
+          "type": 9
+        },
+        {
+          "id": "30:8974856374404386764",
+          "name": "playMusicDuringBreak",
+          "type": 1
+        },
+        {
+          "id": "31:14593405915534589",
+          "name": "autoPauseMedia",
+          "type": 1
+        },
+        {
+          "id": "32:8012697506876902784",
+          "name": "clockFaceTextColorHex",
+          "type": 6
+        },
+        {
+          "id": "33:5384423847949875656",
+          "name": "clockFaceBlurEnabled",
+          "type": 1
+        },
+        {
+          "id": "34:1311437187598325998",
+          "name": "customImagePath",
+          "type": 9
+        },
+        {
+          "id": "35:3980426174617299616",
+          "name": "resetTimerAfterMinutes",
+          "type": 6
+        },
+        {
+          "id": "36:6823904780100928682",
+          "name": "workingHoursEnabled",
+          "type": 1
+        },
+        {
+          "id": "37:7595245596022528265",
+          "name": "workingDaysJson",
+          "type": 9
+        },
+        {
+          "id": "38:3012114378753528632",
+          "name": "workStartTime",
+          "type": 9
+        },
+        {
+          "id": "39:6447330822807659458",
+          "name": "workEndTime",
+          "type": 9
+        },
+        {
+          "id": "40:5067291865333100918",
+          "name": "detectVideoCalls",
+          "type": 1
+        },
+        {
+          "id": "41:2911141618608597720",
+          "name": "detectMeetings",
+          "type": 1
+        },
+        {
+          "id": "42:2914338189209368645",
+          "name": "respectFocusMode",
+          "type": 1
+        },
+        {
+          "id": "43:6818937916481303422",
+          "name": "enableClockOut",
+          "type": 1
+        },
+        {
+          "id": "44:6824778355074014378",
+          "name": "clockOutTime",
+          "type": 9
+        },
+        {
+          "id": "45:1379731186354671361",
+          "name": "exercisesJson",
+          "type": 9
+        },
+        {
+          "id": "46:7453729540588730015",
+          "name": "autoSuggestExercises",
+          "type": 1
+        },
+        {
+          "id": "47:8637581450696989426",
+          "name": "useCursorCountdown",
+          "type": 1
+        },
+        {
+          "id": "48:652782083627815226",
+          "name": "enableAnimations",
+          "type": 1
+        },
+        {
+          "id": "49:1739643195762079014",
+          "name": "trayIconStyle",
+          "type": 9
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "5:6076095419739285712",
+  "lastIndexId": "2:2404533075128465752",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [],
+  "retiredRelationUids": [],
+  "version": 1
+}

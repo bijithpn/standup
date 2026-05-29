@@ -90,7 +90,7 @@ void CompanionWindowManager::UpdateMousePosition() {
             auto engine = companion_window_->GetEngine();
             if (engine) {
                 auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-                    engine->messenger(), "com.breakmate.macos/companion_data",
+                    engine->messenger(), "com.breakmate.desktop/companion_data",
                     &flutter::StandardMethodCodec::GetInstance());
 
                 flutter::EncodableMap mouse_follow;
@@ -121,7 +121,7 @@ void CompanionWindowManager::UpdateParams(const std::map<std::string, flutter::E
   auto engine = companion_window_->GetEngine();
   if (engine) {
       auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          engine->messenger(), "com.breakmate.macos/companion_data",
+          engine->messenger(), "com.breakmate.desktop/companion_data",
           &flutter::StandardMethodCodec::GetInstance());
       
       flutter::EncodableMap args;

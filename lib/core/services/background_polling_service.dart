@@ -197,7 +197,7 @@ class BackgroundPollingService {
   }
 
   void _handleInvokeMethodProxy(int id, String method, dynamic args) async {
-    const bridgeChannel = MethodChannel('com.breakmate.macos/bridge');
+    const bridgeChannel = MethodChannel('com.breakmate.desktop/bridge');
     try {
       final result = await bridgeChannel.invokeMethod(method, args);
       _sendPort?.send({

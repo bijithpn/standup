@@ -48,7 +48,7 @@ class StandaloneBreakOverlay extends StatefulWidget {
 class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     with TickerProviderStateMixin {
   static const MethodChannel _bridge = MethodChannel(
-    'com.breakmate.macos/bridge',
+    'com.breakmate.desktop/bridge',
   );
 
   late String _currentTemplate;
