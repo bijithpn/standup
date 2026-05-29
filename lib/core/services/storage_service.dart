@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/daily_stats.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
@@ -116,8 +115,6 @@ class StorageService {
         globalStatsBox = _store!.box<GlobalStats>();
         companionPreferencesBox = _store!.box<CompanionPreferences>();
         kvBox = _store!.box<KeyValueRecord>();
-
-        await _migrateFromSharedPreferences();
       } else {
         _failed = true;
       }
@@ -166,39 +163,6 @@ class StorageService {
       }
     } catch (_) {}
     return 0;
-  }
-
-  Future<void> _migrateFromSharedPreferences() async {
-    if (kvBox == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final isMigrated = prefs.getBool('objectbox_migrated') ?? false;
-    if (isMigrated) return;
-
-    final stopwatch = Stopwatch()..start();
-    // Migrate all keys to KeyValueRecord as a fallback
-    final keys = prefs.getKeys();
-    for (final key in keys) {
-      final value = prefs.get(key);
-      if (value is int) {
-        kvBox?.put(
-          KeyValueRecord(key: key, value: value.toString(), type: 'int'),
-        );
-      } else if (value is bool) {
-        kvBox?.put(
-          KeyValueRecord(key: key, value: value.toString(), type: 'bool'),
-        );
-      } else if (value is double) {
-        kvBox?.put(
-          KeyValueRecord(key: key, value: value.toString(), type: 'double'),
-        );
-      } else if (value is String) {
-        kvBox?.put(KeyValueRecord(key: key, value: value, type: 'string'));
-      }
-    }
-
-    await prefs.setBool('objectbox_migrated', true);
-    stopwatch.stop();
-    migrationDurationMs = stopwatch.elapsedMilliseconds;
   }
 
   // --- KeyValue Compatibility Layer ---

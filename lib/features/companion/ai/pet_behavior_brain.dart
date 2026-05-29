@@ -2,7 +2,6 @@ import 'dart:math';
 import '../domain/pet_behavior_context.dart';
 import '../domain/pet_state_machine.dart';
 import '../domain/pet_mood.dart';
-import '../domain/pet_type.dart';
 
 /// AI decision engine that evaluates context and determines optimal pet behavior.
 /// Uses weighted scoring across multiple factors to avoid repetitive actions.
@@ -112,11 +111,6 @@ class PetBehaviorBrain {
       candidates.add(PetState.playing);
     }
 
-    // Species-specific candidates
-    if (context.profile.species == PetSpecies.dragon) {
-      candidates.addAll([PetState.fly, PetState.breatheFire]);
-    }
-
     return candidates.toSet().toList();
   }
 
@@ -199,25 +193,6 @@ class PetBehaviorBrain {
           state == PetState.playing ||
           state == PetState.bored) {
         score *= (1.0 + (context.boredom - 0.5) * 4.0);
-      }
-    }
-
-    // --- Species Profile Modifiers ---
-    // Rabbit edge-seeking preference
-    if (context.profile.species == PetSpecies.rabbit &&
-        context.isNearScreenEdge) {
-      if (state == PetState.resting || state == PetState.idle) {
-        score *=
-            3.0; // Rabbits feel safe and love resting near screen boundaries
-      }
-    }
-
-    // Dragon custom actions
-    if (context.profile.species == PetSpecies.dragon) {
-      if (state == PetState.fly) {
-        score *= (1.0 + context.profile.personality.activityLevel * 1.5);
-      } else if (state == PetState.breatheFire) {
-        score *= (1.0 + context.profile.personality.playfulness * 1.2);
       }
     }
 

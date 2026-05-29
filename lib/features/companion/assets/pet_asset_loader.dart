@@ -14,26 +14,25 @@ import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class PetAssetLoader {
-  static final Map<String, ui.Image> _imageCache = {};
+  static final Map<String, ByteData> _byteCache = {};
   static final Set<String> _failedAssets = {};
-  static final Map<String, Map<PetAnimationState, SpriteAnimation>>
-  _animationCache = {};
   static final Map<String, ui.Rect> _boundingBoxCache = {};
 
   static Future<ui.Image> loadImage(String path) async {
-    if (_imageCache.containsKey(path)) {
-      return _imageCache[path]!;
-    }
     if (_failedAssets.contains(path)) {
       throw Exception('Asset previously failed to load: $path');
     }
     try {
-      final ByteData data = await rootBundle.load(path);
+      ByteData? data = _byteCache[path];
+      if (data == null) {
+        data = await rootBundle.load(path);
+        _byteCache[path] = data;
+      }
+
       final ui.Codec codec = await ui.instantiateImageCodec(
         data.buffer.asUint8List(),
       );
       final ui.FrameInfo fi = await codec.getNextFrame();
-      _imageCache[path] = fi.image;
       return fi.image;
     } catch (e) {
       _failedAssets.add(path);
@@ -110,9 +109,12 @@ class PetAssetLoader {
       final img = await picture.toImage(targetSize.toInt(), targetSize.toInt());
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
+      img.dispose();
+      picture.dispose();
+
       if (pngBytes != null) {
-        if (!await file.parent.exists()) await file.parent.create(recursive: true);
-        await file.writeAsBytes(pngBytes.buffer.asUint8List(), flush: true);
+        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(pngBytes.buffer.asUint8List(), flush: true);
         return file.path;
       }
     } catch (e) {
@@ -131,11 +133,6 @@ class PetAssetLoader {
   static Future<Map<PetAnimationState, SpriteAnimation>> loadAnimations(
     PetProfile profile,
   ) async {
-    final cacheKey = '${profile.species.name}_${profile.variant.id}';
-    if (_animationCache.containsKey(cacheKey)) {
-      return _animationCache[cacheKey]!;
-    }
-
     try {
       final Map<PetAnimationState, SpriteAnimation> loaded = {};
       final basePath = buildAssetPath(profile);
@@ -276,8 +273,6 @@ class PetAssetLoader {
           }
         }
       }
-
-      _animationCache[cacheKey] = loaded;
 
       // Directional walk fallback: if walkUp/walkDown/walkSide are missing, assign them to walkSide
       final walkAnim = loaded[PetAnimationState.walkSide];
@@ -432,9 +427,12 @@ class PetAssetLoader {
       final img = await picture.toImage(targetSize.toInt(), targetSize.toInt());
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
+      img.dispose();
+      picture.dispose();
+
       if (pngBytes != null) {
-        if (!await file.parent.exists()) await file.parent.create(recursive: true);
-        await file.writeAsBytes(pngBytes.buffer.asUint8List(), flush: true);
+        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(pngBytes.buffer.asUint8List(), flush: true);
         return file.path;
       }
     } catch (e) {
@@ -442,8 +440,8 @@ class PetAssetLoader {
       try {
         final bytes = await rootBundle.load(assetPath);
         final file = File(outputPath);
-        if (!await file.parent.exists()) await file.parent.create(recursive: true);
-        await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
         return file.path;
       } catch (_) {}
     }
@@ -615,9 +613,12 @@ class PetAssetLoader {
       final img = await picture.toImage(targetSize.toInt(), targetSize.toInt());
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
+      img.dispose();
+      picture.dispose();
+
       if (pngBytes != null) {
-        if (!await file.parent.exists()) await file.parent.create(recursive: true);
-        await file.writeAsBytes(pngBytes.buffer.asUint8List(), flush: true);
+        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(pngBytes.buffer.asUint8List(), flush: true);
         return file.path;
       }
     } catch (e) {
@@ -628,8 +629,8 @@ class PetAssetLoader {
   }
 
   static void clearCache() {
-    _imageCache.clear();
-    _animationCache.clear();
+    _byteCache.clear();
+    _failedAssets.clear();
     _boundingBoxCache.clear();
     CompanionSpriteWidget.clearCache();
   }
