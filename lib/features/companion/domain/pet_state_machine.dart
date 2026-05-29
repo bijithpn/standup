@@ -143,8 +143,9 @@ class PetStateMachine extends ChangeNotifier {
         final last = _lastTriggered[t];
         if (last != null && now.difference(last) < t.cooldown!) continue;
       }
-      if (t.condition != null && !t.condition!(_currentMood, personality))
+      if (t.condition != null && !t.condition!(_currentMood, personality)) {
         continue;
+      }
       matched.add(t);
       totalWeight += t.weight;
     }
