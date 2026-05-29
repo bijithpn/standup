@@ -193,19 +193,22 @@ class DashboardPage extends StatelessWidget {
   Widget _buildActionGrid(BuildContext context) {
     return Consumer<BreakController>(
       builder: (context, controller, _) {
+        final companionActive = controller.companionEnabled;
+        
         return Row(
           children: [
             Expanded(
               child: _ActionCard(
                 title: AppStrings.companion,
-                subtitle: controller.timerEngine.state == TimerState.running
-                    ? 'Active and watching'
-                    : 'Resting',
+                subtitle: companionActive
+                    ? (controller.timerEngine.state == TimerState.running 
+                        ? 'Active and watching' 
+                        : 'Resting')
+                    : 'Disabled in settings',
                 icon: Icons.pets_rounded,
-                isActive: controller.timerEngine.state == TimerState.running,
-                onTap: () {
-                  // Action logic
-                },
+                isActive: companionActive,
+                onTap: () => controller.toggleCompanion(),
+                semanticsLabel: 'Toggle desktop companion',
               ),
             ),
             const SizedBox(width: 16),

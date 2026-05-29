@@ -4,6 +4,7 @@ import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:tray_manager/tray_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/logger.dart';
@@ -45,15 +46,18 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final settingsRepo = sl<SettingsRepository>();
     setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
 
-    // Clean up older cached white/legacy tray icons from system temp directory
+    // Clean up older cached white/legacy tray icons from stable directory
     try {
-      final tempDir = await getTemporaryDirectory();
-      if (tempDir.existsSync()) {
-        final list = tempDir.listSync();
+      final supportDir = await getApplicationSupportDirectory();
+      if (supportDir.existsSync()) {
+        final list = supportDir.listSync();
         for (final file in list) {
           if (file is File) {
-            final filename = file.path.split(Platform.pathSeparator).last;
-            if (filename.startsWith('bm_')) {
+            final filename = p.basename(file.path);
+            // Only delete icon frame caches, never touch database or metadata
+            if (filename.startsWith('bm_pframe_') || 
+                filename.startsWith('bm_ccat_') ||
+                filename.startsWith('bm_ctray_')) {
               file.deleteSync();
             }
           }
@@ -89,10 +93,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _extractIcons() async {
-    final tempDir = await getTemporaryDirectory();
+    final supportDir = await getApplicationSupportDirectory();
 
-    final defaultFile =
-        '${tempDir.path}/bm_ctray_defaultTemplate@2x.png';
+    final defaultFile = p.join(supportDir.path, 'bm_ctray_defaultTemplate@2x.png');
     _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
       'assets/icons/tray_icon.png',
       defaultFile,
@@ -159,8 +162,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
               iconName = 'idle';
               break;
           }
-          final fallbackFile =
-              '${tempDir.path}/bm_ccat_${state.name}Template@2x.png';
+          final fallbackFile = p.join(supportDir.path, 'bm_ccat_${state.name}Template@2x.png');
           final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,

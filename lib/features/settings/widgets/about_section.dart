@@ -98,6 +98,7 @@ class _AboutSectionState extends State<AboutSection> {
                     fontSize: 26,
                     fontWeight: FontWeight.w900,
                     fontFamily: 'Inter',
+                    color: AppTheme.textPrimary,
                     letterSpacing: -0.5,
                   ),
                 ),

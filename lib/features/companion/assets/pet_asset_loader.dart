@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
@@ -59,8 +61,8 @@ class PetAssetLoader {
   }
 
   static Future<String> extractPetIconPath(PetTheme theme) async {
-    final tempDir = await getApplicationSupportDirectory();
-    final file = File('${tempDir.path}/bm_selected_pet_${theme.id}.png');
+    final supportDir = await getApplicationSupportDirectory();
+    final file = File(p.join(supportDir.path, 'bm_selected_pet_${theme.id}.png'));
 
     // If already extracted, return cached path
     if (await file.exists()) {
@@ -103,11 +105,12 @@ class PetAssetLoader {
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
       if (pngBytes != null) {
-        await file.writeAsBytes(pngBytes.buffer.asUint8List());
+        if (!await file.parent.exists()) await file.parent.create(recursive: true);
+        await file.writeAsBytes(pngBytes.buffer.asUint8List(), flush: true);
         return file.path;
       }
     } catch (e) {
-      // Fallback
+      debugPrint('Failed to extract pet icon: $e');
     }
 
     return '';
@@ -327,12 +330,11 @@ class PetAssetLoader {
     double targetSize = 44.0,
   }) async {
     try {
-      final tempDir = await getTemporaryDirectory();
+      final supportDir = await getApplicationSupportDirectory();
       
-      // Use temporary directory and standard macOS template naming
-      // No theme suffix needed for template icons
+      // Use stable support directory and standard macOS template naming
       final fileName = assetPath.split('/').last.replaceAll('.png', '');
-      final file = File('${tempDir.path}/bm_icon_${fileName}Template@2x.png');
+      final file = File(p.join(supportDir.path, 'bm_icon_${fileName}Template@2x.png'));
       
       if (await file.exists()) {
         return file.path;
@@ -343,7 +345,6 @@ class PetAssetLoader {
       final canvas = ui.Canvas(recorder);
       
       // Template icons MUST be solid black with alpha.
-      // macOS will tint them automatically.
       const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
@@ -368,7 +369,6 @@ class PetAssetLoader {
             if (offset + 3 < bytes.length) {
               final alpha = bytes[offset + 3];
               if (alpha > 15) {
-                // Ignore transparent pixels
                 if (x < minX) minX = x;
                 if (x > maxX) maxX = x;
                 if (y < minY) minY = y;
@@ -387,8 +387,7 @@ class PetAssetLoader {
           minX <= maxX &&
           minY <= maxY) {
         const double padding = 1.0;
-        final double activeSize =
-            targetSize - 2 * padding; // 42.0 px active area
+        final double activeSize = targetSize - 2 * padding;
 
         double drawW, drawH;
         if (contentWidth > contentHeight) {
@@ -432,14 +431,17 @@ class PetAssetLoader {
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
       if (pngBytes != null) {
-        await file.writeAsBytes(pngBytes.buffer.asUint8List());
+        if (!await file.parent.exists()) await file.parent.create(recursive: true);
+        await file.writeAsBytes(pngBytes.buffer.asUint8List(), flush: true);
         return file.path;
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Failed to extract whiten asset: $e');
       try {
         final bytes = await rootBundle.load(assetPath);
         final file = File(outputPath);
-        await file.writeAsBytes(bytes.buffer.asUint8List());
+        if (!await file.parent.exists()) await file.parent.create(recursive: true);
+        await file.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
         return file.path;
       } catch (_) {}
     }
@@ -452,9 +454,9 @@ class PetAssetLoader {
     required PetAnimationState state,
     required int frameIndex,
   }) async {
-    final tempDir = await getTemporaryDirectory();
+    final supportDir = await getApplicationSupportDirectory();
     final file = File(
-      '${tempDir.path}/bm_pframe_${theme.id}_${state.name}_$frameIndex' 'Template@2x.png',
+      p.join(supportDir.path, 'bm_pframe_${theme.id}_${state.name}_${frameIndex}Template@2x.png'),
     );
 
     if (await file.exists()) {
@@ -499,12 +501,10 @@ class PetAssetLoader {
         cropH = frameHeight;
       }
 
-      // Check boundaries
       if (sourceX + cropW > sourceImage.width) {
         sourceX = 0;
       }
 
-      // Auto-crop: Scan alpha channel inside the frame region to find content bounding box
       final String bbCacheKey = '${theme.id}_${state.name}_$frameIndex';
       ui.Rect? cachedBB = _boundingBoxCache[bbCacheKey];
 
@@ -535,7 +535,6 @@ class PetAssetLoader {
               if (offset + 3 < bytes.length) {
                 final alpha = bytes[offset + 3];
                 if (alpha > 15) {
-                  // Ignore transparent/near-transparent pixels
                   if (x < minX) minX = x;
                   if (x > maxX) maxX = x;
                   if (y < minY) minY = y;
@@ -558,7 +557,6 @@ class PetAssetLoader {
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
       
-      // Use Black for template icons
       const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
@@ -572,8 +570,7 @@ class PetAssetLoader {
           minX <= maxX &&
           minY <= maxY) {
         const double padding = 1.0;
-        const double activeSize =
-            targetSize - 2 * padding; // 42.0 px active area
+        const double activeSize = targetSize - 2 * padding;
 
         double drawW, drawH;
         if (contentWidth > contentHeight) {
@@ -617,11 +614,12 @@ class PetAssetLoader {
       final pngBytes = await img.toByteData(format: ui.ImageByteFormat.png);
 
       if (pngBytes != null) {
-        await file.writeAsBytes(pngBytes.buffer.asUint8List());
+        if (!await file.parent.exists()) await file.parent.create(recursive: true);
+        await file.writeAsBytes(pngBytes.buffer.asUint8List(), flush: true);
         return file.path;
       }
     } catch (e) {
-      // Fallback
+      debugPrint('Failed to extract pet frame: $e');
     }
 
     return '';
@@ -634,3 +632,4 @@ class PetAssetLoader {
     CompanionSpriteWidget.clearCache();
   }
 }
+
