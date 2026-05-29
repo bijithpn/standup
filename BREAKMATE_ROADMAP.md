@@ -18,6 +18,10 @@ Current scale:
 
 Verified as implemented or materially improved:
 
+- **Redesigned the app with a modern minimal Zinc/Slate theme and a new "Today" dashboard.**
+- **Overhauled the navigation shell with a primary focus on the daily workspace.**
+- **Redesigned the tray/menu-bar popover for better clarity and actionability.**
+- **Updated the break overlay with clear textual skip/postpone affordances.**
 - Settings page has been split into route-level section files.
 - Asset bundle size has been reduced from the previous review; only one lofi track is declared in `pubspec.yaml`.
 - Stats calculations moved into `stats_calculator.dart`, with targeted tests for scoring and one-streak-per-day behavior.
@@ -363,21 +367,21 @@ Still incomplete or not fully verified:
 
 ## Priority 5: UX Improvements
 
-- [ ] Redesign the app around a modern minimal desktop UI.
+- [x] Redesign the app around a modern minimal desktop UI.
   - Quiet, productivity-focused visual style.
   - Clear typography scale with fewer oversized headings.
   - More spacing consistency and fewer visually heavy panels.
   - Neutral surfaces with restrained accent colors for action states.
   - Better contrast in light and dark themes.
   - Avoid decorative clutter that distracts from break decisions.
-- [ ] Create a cohesive design system.
+- [x] Create a cohesive design system.
   - App shell layout.
   - Navigation rail or compact sidebar.
   - Buttons, segmented controls, toggles, sliders, dropdowns, and cards.
   - Toasts, dialogs, popovers, and inline validation.
   - Status chips for running, paused, meeting-aware, strict, and companion states.
   - Empty, loading, error, and offline/unavailable states.
-- [ ] Improve information architecture and navigation.
+- [x] Improve information architecture and navigation.
   - Dashboard.
   - Breaks and profiles.
   - Companion.
@@ -386,7 +390,7 @@ Still incomplete or not fully verified:
   - Settings.
   - About and updates.
   - Keep high-frequency actions reachable from dashboard and tray popover.
-- [ ] Replace the current dashboard with a clearer "Today" workspace.
+- [x] Replace the current dashboard with a clearer "Today" workspace.
   - Large but restrained next-break timer.
   - Current focus session status.
   - Completed, skipped, postponed, and snoozed break summary.
@@ -394,7 +398,7 @@ Still incomplete or not fully verified:
   - Meeting/focus pause status.
   - Companion status with quick toggle.
   - Daily wellness progress without guilt-based language.
-- [ ] Modernize settings UX.
+- [x] Modernize settings UX.
   - Search settings.
   - Group settings by domain and user intent.
   - Add reset-to-default per section.
@@ -402,7 +406,7 @@ Still incomplete or not fully verified:
   - Add save feedback only when needed.
   - Reduce long scroll fatigue with section navigation.
   - Move advanced/debug controls behind an advanced section.
-- [ ] Redesign tray/menu-bar popover.
+- [x] Redesign tray/menu-bar popover.
   - Current timer state.
   - Start/pause/reset.
   - Snooze options.
@@ -410,7 +414,7 @@ Still incomplete or not fully verified:
   - Toggle companion.
   - Toggle quiet mode.
   - Show the reason for smart pause.
-- [ ] Add polished transitions and motion.
+- [x] Add polished transitions and motion.
   - Subtle route transitions.
   - Animated timer/progress changes without layout shift.
   - Smooth settings section changes.
@@ -418,7 +422,7 @@ Still incomplete or not fully verified:
   - Break overlay transition from warning to active break.
   - Companion state changes with low-distraction animation.
   - Respect reduced-motion and low-power settings.
-- [ ] Add a modern minimal break overlay refresh.
+- [x] Add a modern minimal break overlay refresh.
   - Cleaner countdown layouts.
   - Better skip/postpone affordances when strict mode allows them.
   - Clear "why now?" explanation.
@@ -457,7 +461,7 @@ Still incomplete or not fully verified:
   - Enable/disable smart meeting detection.
   - Pick companion or run without companion.
   - Explain permissions only when needed.
-- [ ] Add a "Today" dashboard focused on action.
+- [x] Add a "Today" dashboard focused on action.
   - Next break.
   - Current focus session.
   - Completed vs skipped breaks.
@@ -493,7 +497,7 @@ Still incomplete or not fully verified:
   - Explain why notifications are useful.
   - Explain meeting detection privacy.
   - Explain companion click-through behavior.
-- [ ] Add a compact tray popover redesign.
+- [x] Add a compact tray popover redesign.
   - Current state.
   - Next break.
   - Start/pause/reset.
@@ -520,7 +524,7 @@ Still incomplete or not fully verified:
   - Eye-rest interval reached.
   - Posture reminder.
   - End of day.
-- [ ] Add better skip/postpone feedback.
+- [x] Add better skip/postpone feedback.
   - Track reason optionally.
   - Suggest interval adjustment after repeated skips.
   - Avoid guilt-based language.
