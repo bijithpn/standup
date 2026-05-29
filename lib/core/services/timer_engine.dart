@@ -670,9 +670,7 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void updateMenuStyle(String style) {
-    sl<TrayManagerService>().setIconModeFromStyle(
-      _settingsRepository.currentSettings.trayIconStyle,
-    );
+    sl<TrayManagerService>().setIconModeFromStyle(style);
     _updateTray();
   }
 
