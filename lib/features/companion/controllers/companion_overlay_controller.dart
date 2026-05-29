@@ -30,6 +30,7 @@ class CompanionOverlayController extends ChangeNotifier {
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
   bool _companionFollowMouse = false;
+  String _companionPreviewBackground = 'assets/background/forest/background.png';
   bool _isCompanionShown = false;
   bool _isPreviewMode = false; // Hides native companion when viewing settings UI
 
@@ -126,6 +127,7 @@ class CompanionOverlayController extends ChangeNotifier {
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
   bool get companionFollowMouse => _companionFollowMouse;
+  String get companionPreviewBackground => _companionPreviewBackground;
 
   Future<void> init() async {
     final settings = _settingsRepo.currentSettings;
@@ -136,6 +138,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
+    _companionPreviewBackground = settings.companionPreviewBackground;
 
     // Check initial break state if possible, though TimerEngine usually starts later
     try {
@@ -158,13 +161,15 @@ class CompanionOverlayController extends ChangeNotifier {
     final clickChanged =
         _companionClickThrough != settings.companionClickThrough;
     final followChanged = _companionFollowMouse != settings.companionFollowMouse;
+    final backgroundChanged = _companionPreviewBackground != settings.companionPreviewBackground;
 
     if (!enabledChanged &&
         !themeChanged &&
         !nameChanged &&
         !scaleChanged &&
         !clickChanged &&
-        !followChanged) {
+        !followChanged &&
+        !backgroundChanged) {
       return; // Exit early if no companion settings have changed
     }
 
@@ -174,6 +179,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
+    _companionPreviewBackground = settings.companionPreviewBackground;
 
     try {
       sl<CompanionBehaviorEngine>().setEnabled(_companionEnabled);
@@ -321,6 +327,15 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionFollowMouse: enabled,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changePreviewBackground(String path) async {
+    if (_companionPreviewBackground == path) return;
+
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionPreviewBackground: path,
     );
     await _settingsRepo.save(updated);
   }
