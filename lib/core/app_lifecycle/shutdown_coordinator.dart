@@ -1,5 +1,5 @@
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/core/services/background_polling_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
@@ -17,14 +17,13 @@ class ShutdownCoordinator {
 
     try {
       // 1. Save timer state and stop timers
-      if (sl.isRegistered<TimerEngine>()) {
-        final timerEngine = sl<TimerEngine>();
-        timerEngine.pauseTimers(isManual: true);
-        timerEngine.saveState();
-        _logger.info('TimerEngine state saved and paused.');
+      if (sl.isRegistered<TimerOrchestrator>()) {
+        final orchestrator = sl<TimerOrchestrator>();
+        orchestrator.shutdown();
+        _logger.info('TimerOrchestrator saved state, paused and shut down.');
       }
     } catch (e) {
-      _logger.error('Failed to shutdown TimerEngine: $e');
+      _logger.error('Failed to shutdown TimerOrchestrator: $e');
     }
 
     try {

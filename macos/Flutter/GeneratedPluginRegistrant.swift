@@ -8,6 +8,7 @@ import Foundation
 import appkit_ui_element_colors
 import audio_session
 import audioplayers_darwin
+import file_picker
 import flutter_local_notifications
 import just_audio
 import macos_ui
@@ -28,6 +29,7 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AppkitUiElementColorsPlugin.register(with: registry.registrar(forPlugin: "AppkitUiElementColorsPlugin"))
   AudioSessionPlugin.register(with: registry.registrar(forPlugin: "AudioSessionPlugin"))
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
+  FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
   FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
   JustAudioPlugin.register(with: registry.registrar(forPlugin: "JustAudioPlugin"))
   MacOSUiPlugin.register(with: registry.registrar(forPlugin: "MacOSUiPlugin"))
