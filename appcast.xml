@@ -4,7 +4,64 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-        <item>
+                <item>
+            <title>Version 1.1.4</title>
+            <pubDate>Sun, 31 May 2026 10:34:42 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.1.4</h3>
+                <p>## BreakMate v1.1.4 — Onboarding Persistence &amp; Storage Stability
+
+This update addresses a long-standing issue where user onboarding data was not persisting correctly across application restarts. I've overhauled the storage architecture to ensure a more reliable experience on macOS.
+
+### 🛠️ Core Fixes &amp; Enhancements
+
+- **Onboarding Persistence Fix:**
+  - Resolved the "Onboarding Loop" where users were repeatedly prompted to complete onboarding after each app restart.
+  - Implemented a **Dual-Sync** mechanism: Critical flags (onboarding, interval, strict mode) are now mirrored to a separate, high-stability Key-Value store. If the main settings snapshot is ever stale or fails to load, the app automatically recovers state from this mirror.
+
+- **Storage Architecture Overhaul (macOS):**
+  - **Path Relocation:** Moved the internal database from `~/Documents/breakmate_db` to `~/Library/Application Support/breakmate_db`. This aligns with macOS best practices and prevents data loss from manual user file management.
+  - **Automatic Migration:** Added logic to detect legacy databases in the Documents folder and seamlessly move them to the new Application Support location on the first run of v1.1.4.
+  - **Lock File Self-Healing:** Implemented automatic cleanup of stale `lock.mdb` files. This prevents the app from failing to start if a previous instance crashed or didn't release the database lock properly.
+
+- **Resilient Data Loading:**
+  - Added robust `try-catch` blocks to the `SettingsRepository` load sequence.
+  - Enhanced JSON decoding for complex fields (Exercises, Activity Patterns) to handle nulls or malformed strings without crashing the entire settings load.
+  - Added explicit debug logging across the storage lifecycle for better traceability.
+
+- **Developer Experience:**
+  - Fixed a compilation error regarding `unawaited` futures by properly importing `dart:async`.
+  - Incremented build version to `29` for Sparkle update compatibility.
+
+### 📄 Documentation Updates
+- Updated `README.md` with a new **Storage &amp; Persistence Architecture** section.
+- Added project credits: "Built with Flutter by Bijith P N".
+
+### 📦 Version Information
+- **Version:** 1.1.4
+- **Build:** 29
+- **Release Date:** May 31, 2026
+
+### Installation Note (macOS)
+
+Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
+
+1. Double-click the `BreakMate-Installer.dmg` and drag BreakMate to your Applications folder.
+2. Right-click (or Control-click) the BreakMate app and select Open.
+3. If it still blocks, go to **System Settings &gt; Privacy &amp; Security** and click **Allow Anyway** next to BreakMate.</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.1.4/BreakMate-Installer.dmg"
+                       sparkle:version="29"
+                       sparkle:shortVersionString="1.1.4"
+                       sparkle:edSignature="RE35NdLPIG/bUGRh8leRQ3lIEqYh/M1iTqOyj3ZdEbPDVB8HMVyBVtykvRWUwsjDl3shKoEznfy3cJws14bqDQ=="
+                       length="51168283"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.1.3</title>
             <pubDate>Wed, 27 May 2026 16:30:00 +0000</pubDate>
             <description><![CDATA[
