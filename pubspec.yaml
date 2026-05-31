@@ -39,6 +39,10 @@ dependencies:
   objectbox: ^5.3.2
   objectbox_flutter_libs: ^5.3.2
   file_picker: ^11.0.2
+  device_calendar_plus: ^0.4.0
+
+dependency_overrides:
+  timezone: ^0.11.0
 
 dev_dependencies:
   flutter_test:

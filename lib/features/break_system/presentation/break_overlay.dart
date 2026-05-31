@@ -14,6 +14,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/producti
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 
 class BreakOverlay extends StatefulWidget {
   const BreakOverlay({super.key});
@@ -274,6 +275,10 @@ class _BreakOverlayContent extends StatelessWidget {
     required int total,
     required VoidCallback onSkip,
   }) {
+    if (breakInfo.type == BreakType.windDown) {
+      return const WindDownTemplate();
+    }
+
     switch (settings.breakTemplate) {
       case 'classic':
         return ClassicSlideshowTemplate(

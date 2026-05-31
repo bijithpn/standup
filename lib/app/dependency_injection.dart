@@ -16,8 +16,12 @@ import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/core/services/system_media_service.dart';
+import 'package:breakmate/core/native/app_tracking_service.dart';
+import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
+import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -35,6 +39,7 @@ import 'package:breakmate/features/companion/services/companion_state_manager.da
 import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 final sl = GetIt.instance;
 
@@ -80,11 +85,29 @@ Future<void> initDependencies() async {
   );
 
   // Adaptive Break Service for smart timing
-  final adaptiveBreakService = AdaptiveBreakService(storage: storage);
+  final wellnessEngine = WellnessEngine(appTracking: AppTrackingService());
+  sl.registerSingleton<WellnessEngine>(wellnessEngine);
+
+  final adaptiveBreakService = AdaptiveBreakService(
+    storage: storage,
+    wellnessEngine: wellnessEngine,
+  );
   sl.registerSingleton<AdaptiveBreakService>(adaptiveBreakService);
 
   // Feature Services
-  final settingsRepo = SettingsRepository(storage: sl());
+  // Initialize Hive BEFORE settings repo — Hive is the definitive persistence
+  // layer for critical flags (hasCompletedOnboarding, breakTemplate, etc.).
+  await Hive.initFlutter();
+  Box criticalPrefsBox;
+  try {
+    criticalPrefsBox = await Hive.openBox('breakmate_critical_prefs');
+    debugPrint('[DI] Hive box opened. Keys: ${criticalPrefsBox.keys.toList()}');
+  } catch (e) {
+    debugPrint('[DI] Hive init failed: $e. Critical prefs will not persist via Hive.');
+    criticalPrefsBox = await Hive.openBox('breakmate_critical_prefs');
+  }
+
+  final settingsRepo = SettingsRepository(storage: sl(), hiveBox: criticalPrefsBox);
   settingsRepo.load();
   sl.registerSingleton<SettingsRepository>(settingsRepo);
 
@@ -97,6 +120,9 @@ Future<void> initDependencies() async {
   smartDetectionService.start();
   sl.registerSingleton<SmartDetectionService>(smartDetectionService);
 
+  final calendarService = CalendarService();
+  sl.registerSingleton<CalendarService>(calendarService);
+
   final statsService = StatsService(storage: sl());
   await statsService.initialize();
   sl.registerSingleton<StatsService>(statsService);
@@ -105,6 +131,7 @@ Future<void> initDependencies() async {
   final timerEngine = TimerEngine(
     settingsRepository: sl(),
     smartDetectionService: sl(),
+    calendarService: sl(),
     eventBus: sl(),
   );
   sl.registerSingleton<TimerEngine>(timerEngine);
@@ -143,6 +170,9 @@ Future<void> initDependencies() async {
   // Application Controllers
   final meetingDetectionService = MeetingDetectionService();
   sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
+
+  sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
+  sl.registerLazySingleton<WellnessLibraryRepository>(() => WellnessLibraryRepository(settingsRepo: sl()));
 
   // Listen for meeting events and broadcast via IPC to all isolates
   meetingDetectionService.isMeetingActiveStream.listen((isActive) {

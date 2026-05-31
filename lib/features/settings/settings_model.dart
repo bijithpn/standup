@@ -76,6 +76,7 @@ class SettingsModel {
   final bool companionClickThrough;
   final bool companionFollowMouse;
   final String companionPreviewBackground;
+  final List<String> unlockedPets;
 
   // UX & Onboarding
   final bool hasCompletedOnboarding;
@@ -84,6 +85,12 @@ class SettingsModel {
   quietModePreset; // 'none', 'presenting', 'meeting', 'deep_work', 'low_battery'
   final int lastSnoozeDurationMinutes;
   final String intensityLevel; // 'gentle', 'standard', 'strict', 'locked'
+
+  // Goals & Contextual
+  final int dailyBreakGoalCount;
+  final int maxContinuousSittingMinutes;
+  final int weeklyConsistencyTargetDays;
+  final bool calendarEnabled;
 
   const SettingsModel({
     this.autoStart = true,
@@ -142,11 +149,17 @@ class SettingsModel {
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
     this.companionPreviewBackground = 'assets/background/forest/background.png',
+    this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
     this.hasCompletedOnboarding = false,
     this.quietModeEnabled = false,
     this.quietModePreset = 'none',
     this.lastSnoozeDurationMinutes = 5,
     this.intensityLevel = 'standard',
+    
+    this.dailyBreakGoalCount = 10,
+    this.maxContinuousSittingMinutes = 60,
+    this.weeklyConsistencyTargetDays = 5,
+    this.calendarEnabled = false,
   });
 
   SettingsModel copyWith({
@@ -206,11 +219,16 @@ class SettingsModel {
     bool? companionClickThrough,
     bool? companionFollowMouse,
     String? companionPreviewBackground,
+    List<String>? unlockedPets,
     bool? hasCompletedOnboarding,
     bool? quietModeEnabled,
     String? quietModePreset,
     int? lastSnoozeDurationMinutes,
     String? intensityLevel,
+    int? dailyBreakGoalCount,
+    int? maxContinuousSittingMinutes,
+    int? weeklyConsistencyTargetDays,
+    bool? calendarEnabled,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -285,6 +303,7 @@ class SettingsModel {
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
+      unlockedPets: unlockedPets ?? this.unlockedPets,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       quietModeEnabled: quietModeEnabled ?? this.quietModeEnabled,
@@ -292,6 +311,12 @@ class SettingsModel {
       lastSnoozeDurationMinutes:
           lastSnoozeDurationMinutes ?? this.lastSnoozeDurationMinutes,
       intensityLevel: intensityLevel ?? this.intensityLevel,
+      dailyBreakGoalCount: dailyBreakGoalCount ?? this.dailyBreakGoalCount,
+      maxContinuousSittingMinutes:
+          maxContinuousSittingMinutes ?? this.maxContinuousSittingMinutes,
+      weeklyConsistencyTargetDays:
+          weeklyConsistencyTargetDays ?? this.weeklyConsistencyTargetDays,
+      calendarEnabled: calendarEnabled ?? this.calendarEnabled,
     );
   }
 
@@ -352,11 +377,16 @@ class SettingsModel {
     'companionClickThrough': companionClickThrough,
     'companionFollowMouse': companionFollowMouse,
     'companionPreviewBackground': companionPreviewBackground,
+    'unlockedPets': unlockedPets,
     'hasCompletedOnboarding': hasCompletedOnboarding,
     'quietModeEnabled': quietModeEnabled,
     'quietModePreset': quietModePreset,
     'lastSnoozeDurationMinutes': lastSnoozeDurationMinutes,
     'intensityLevel': intensityLevel,
+    'dailyBreakGoalCount': dailyBreakGoalCount,
+    'maxContinuousSittingMinutes': maxContinuousSittingMinutes,
+    'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
+    'calendarEnabled': calendarEnabled,
   };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -441,11 +471,22 @@ class SettingsModel {
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
       companionPreviewBackground: map['companionPreviewBackground'] as String? ??
           'assets/background/forest/background.png',
+      unlockedPets:
+          (map['unlockedPets'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const ['grey_cat', 'orange_cat', 'black_cat'],
       hasCompletedOnboarding: map['hasCompletedOnboarding'] as bool? ?? false,
       quietModeEnabled: map['quietModeEnabled'] as bool? ?? false,
       quietModePreset: map['quietModePreset'] as String? ?? 'none',
       lastSnoozeDurationMinutes: map['lastSnoozeDurationMinutes'] as int? ?? 5,
       intensityLevel: map['intensityLevel'] as String? ?? 'standard',
+      dailyBreakGoalCount: map['dailyBreakGoalCount'] as int? ?? 10,
+      maxContinuousSittingMinutes:
+          map['maxContinuousSittingMinutes'] as int? ?? 60,
+      weeklyConsistencyTargetDays:
+          map['weeklyConsistencyTargetDays'] as int? ?? 5,
+      calendarEnabled: map['calendarEnabled'] as bool? ?? false,
     );
   }
 }

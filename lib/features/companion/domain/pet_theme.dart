@@ -12,6 +12,7 @@ class PetTheme {
   final int spriteSize;
   final Map<PetAnimationState, dynamic> animations;
   final PetSpecies species;
+  final int requiredConsistencyDays;
 
   const PetTheme({
     required this.id,
@@ -21,6 +22,7 @@ class PetTheme {
     required this.spriteSize,
     required this.animations,
     this.species = PetSpecies.cat,
+    this.requiredConsistencyDays = 0,
   });
 
   static const String keyGreyCat = 'grey_cat';
@@ -434,6 +436,7 @@ class PetTheme {
         ),
       },
       species: PetSpecies.cat,
+      requiredConsistencyDays: 3,
     ),
     PetTheme(
       id: keyPixelCat,
@@ -503,6 +506,7 @@ class PetTheme {
         ),
       },
       species: PetSpecies.cat,
+      requiredConsistencyDays: 7,
     ),
     PetTheme(
       id: keyCat1,
@@ -512,6 +516,7 @@ class PetTheme {
       spriteSize: 50,
       animations: _petPackAnimations,
       species: PetSpecies.cat,
+      requiredConsistencyDays: 10,
     ),
     PetTheme(
       id: keyCat2,
@@ -521,6 +526,7 @@ class PetTheme {
       spriteSize: 50,
       animations: _petPackAnimations,
       species: PetSpecies.cat,
+      requiredConsistencyDays: 14,
     ),
     PetTheme(
       id: keyCat3,
@@ -575,6 +581,7 @@ class PetTheme {
       spriteSize: 64,
       animations: _dogSheetAnimations,
       species: PetSpecies.dog,
+      requiredConsistencyDays: 5,
     ),
     PetTheme(
       id: keyCorgi,
@@ -584,6 +591,7 @@ class PetTheme {
       spriteSize: 64,
       animations: _dogSheetAnimations,
       species: PetSpecies.dog,
+      requiredConsistencyDays: 15,
     ),
     PetTheme(
       id: keyDalmatian,

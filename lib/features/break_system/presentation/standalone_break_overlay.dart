@@ -192,11 +192,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 orElse: () => _currentTheme,
               );
             }
-            if (args['template'] != null) {
-              _currentTemplate = args['template'];
-            }
             if (args['breakTemplate'] != null) {
               _breakTemplate = args['breakTemplate'];
+            } else if (args['template'] != null) {
+              _breakTemplate = args['template'];
             }
             _syncClassicEffects(_breakTemplate == 'classic');
             if (args['companionPetTheme'] != null) {

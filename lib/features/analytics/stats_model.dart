@@ -13,6 +13,7 @@ class StatsModel {
   final int productivityScore;
   final int wellnessScore;
   final int totalWellnessActions;
+  final int consistencyDays;
 
   const StatsModel({
     this.breaksCompleted = 0,
@@ -27,6 +28,7 @@ class StatsModel {
     this.productivityScore = 0,
     this.wellnessScore = 0,
     this.totalWellnessActions = 0,
+    this.consistencyDays = 0,
   });
 
   double get completionRate {
@@ -48,6 +50,7 @@ class StatsModel {
     int? productivityScore,
     int? wellnessScore,
     int? totalWellnessActions,
+    int? consistencyDays,
   }) {
     return StatsModel(
       breaksCompleted: breaksCompleted ?? this.breaksCompleted,
@@ -62,6 +65,7 @@ class StatsModel {
       productivityScore: productivityScore ?? this.productivityScore,
       wellnessScore: wellnessScore ?? this.wellnessScore,
       totalWellnessActions: totalWellnessActions ?? this.totalWellnessActions,
+      consistencyDays: consistencyDays ?? this.consistencyDays,
     );
   }
 }
