@@ -2,6 +2,9 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/display/controllers/display_controller.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'dart:ui';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +14,15 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/features/settings/break_profile.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/companion_interactive_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
 
 class BreaksSettingsSection extends StatefulWidget {
   final SettingsModel settings;
@@ -28,6 +40,7 @@ class BreaksSettingsSection extends StatefulWidget {
 
 class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
   int _breaksSubTab = 0;
+  String? _hoveredId;
 
   SettingsModel get _settings => widget.settings;
   void _save(SettingsModel s) => widget.onSave(s);
@@ -378,6 +391,21 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
   }
 
   Widget _buildAppearanceSettings() {
+    final currentColor = Color(_settings.clockFaceTextColorHex);
+    final currentOpacity = currentColor.a;
+    final baseColor = currentColor.withValues(alpha: 1.0);
+
+    final colorPresets = [
+      (color: const Color(0xFFF4F4F5), name: 'Pure Zinc'),
+      (color: const Color(0xFFEF4444), name: 'Crimson Ember'),
+      (color: const Color(0xFF38BDF8), name: 'Ocean Depth'),
+      (color: const Color(0xFF34D399), name: 'Emerald Jade'),
+      (color: const Color(0xFFF97316), name: 'Sunset Orange'),
+      (color: const Color(0xFFC084FC), name: 'Radiant Purple'),
+      (color: const Color(0xFFF59E0B), name: 'Amber Glow'),
+      (color: const Color(0xFFFFFFFF), name: 'Contrast White'),
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -415,13 +443,101 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           ),
         ),
         const SizedBox(height: 32),
-        sectionHeader('Colors & Effects'),
+        sectionHeader(
+          'Colors & Customization',
+          subtitle: 'Fine-tune clock accent colors, text opacity, and blur intensity.',
+        ),
         const SizedBox(height: 16),
         buildCard([
-          colorRow('Clock Text Color', Color(_settings.clockFaceTextColorHex)),
+          // Custom color swatches row
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(CupertinoIcons.color_filter, size: 16, color: AppTheme.textMuted),
+                    SizedBox(width: 8),
+                    Text(
+                      'Clock Face Theme Color',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: colorPresets.map((preset) {
+                    final isSelected = baseColor.toARGB32() == preset.color.toARGB32();
+                    return GestureDetector(
+                      onTap: () {
+                        final newColorHex = preset.color.withValues(alpha: currentOpacity).toARGB32();
+                        _save(_settings.copyWith(clockFaceTextColorHex: newColorHex));
+                      },
+                      child: Tooltip(
+                        message: preset.name,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: preset.color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppTheme.accentColor
+                                  : Colors.white.withValues(alpha: 0.15),
+                              width: isSelected ? 3.5 : 1.5,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: preset.color.withValues(alpha: 0.4),
+                                      blurRadius: 8,
+                                      spreadRadius: 1,
+                                    )
+                                  ]
+                                : [],
+                          ),
+                          child: isSelected
+                              ? const Center(
+                                  child: Icon(
+                                    CupertinoIcons.checkmark,
+                                    size: 14,
+                                    color: Colors.black87,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
           divider(),
+          // Fine-grained Opacity Customizer
           sliderRow(
-            'Background Blur',
+            'Clock Text Opacity',
+            currentOpacity,
+            (v) {
+              final newColorHex = baseColor.withValues(alpha: v).toARGB32();
+              _save(_settings.copyWith(clockFaceTextColorHex: newColorHex));
+            },
+            min: 0.2,
+            max: 1.0,
+          ),
+          divider(),
+          // Background Blur
+          sliderRow(
+            'Background Blur Intensity',
             _settings.clockFaceBlurEnabled ? 1.0 : 0.0,
             (v) => _save(_settings.copyWith(clockFaceBlurEnabled: v > 0.5)),
             min: 0.0,
@@ -429,13 +545,116 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           ),
           divider(),
           toggleRow(
-            'Custom Wallpaper',
-            'Use your own image background',
+            'Custom Wallpaper Background',
+            'Use high-fidelity static image backdrop',
             _settings.customImagePath != null,
-            (v) => _save(
-              _settings.copyWith(customImagePath: v ? 'default_path' : null),
-            ),
+            (v) async {
+              if (v) {
+                try {
+                  final result = await FilePicker.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                  );
+                  if (result != null && result.files.single.path != null) {
+                    _save(_settings.copyWith(customImagePath: result.files.single.path));
+                    if (mounted) {
+                      Toast.showSuccess(context, 'Custom wallpaper background updated!');
+                    }
+                  } else {
+                    // Do nothing if they cancel, or leave it off if it was off
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    Toast.showError(context, 'Failed to select image: ${e.toString()}');
+                  }
+                }
+              } else {
+                _save(_settings.copyWith(customImagePath: null));
+              }
+            },
           ),
+          if (_settings.customImagePath != null) ...[
+            divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Wallpaper Path',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _settings.customImagePath!,
+                          style: const TextStyle(
+                            color: AppTheme.textMuted,
+                            fontSize: 11,
+                            fontFamily: 'Inter',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  if (File(_settings.customImagePath!).existsSync())
+                    Container(
+                      width: 50,
+                      height: 35,
+                      margin: const EdgeInsets.only(right: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                        image: DecorationImage(
+                          image: FileImage(File(_settings.customImagePath!)),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  MinimalButton(
+                    backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    borderRadius: BorderRadius.circular(8),
+                    onPressed: () async {
+                      try {
+                        final result = await FilePicker.pickFiles(
+                          type: FileType.custom,
+                          allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                        );
+                        if (result != null && result.files.single.path != null) {
+                          _save(_settings.copyWith(customImagePath: result.files.single.path));
+                          if (mounted) {
+                            Toast.showSuccess(context, 'Wallpaper updated!');
+                          }
+                        }
+                      } catch (e) {
+                        if (mounted) {
+                          Toast.showError(context, 'Failed to select image: ${e.toString()}');
+                        }
+                      }
+                    },
+                    child: Text(
+                      'Change',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ]),
       ],
     );
@@ -500,22 +719,25 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           );
         }
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: templates.map((t) {
-              return Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: _breakTemplatePreview(
-                  t.name,
-                  t.id,
-                  t.desc,
-                  _settings.breakTemplate == t.id,
-                  () => _save(_settings.copyWith(breakTemplate: t.id)),
-                ),
-              );
-            }).toList(),
+        return ScrollConfiguration(
+          behavior: DesktopDragScrollBehavior(),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: templates.map((t) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: _breakTemplatePreview(
+                    t.name,
+                    t.id,
+                    t.desc,
+                    _settings.breakTemplate == t.id,
+                    () => _save(_settings.copyWith(breakTemplate: t.id)),
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         );
       },
@@ -645,363 +867,7 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
   }
 
   Widget _buildBreakTemplateMock(String id) {
-    switch (id) {
-      case 'minimal':
-        return Center(
-          child: Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white24, width: 1.5),
-            ),
-            child: Center(
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accentColor.withValues(alpha: 0.6),
-                    width: 3.5,
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    '05:00',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      case 'companion':
-        return Stack(
-          children: [
-            Positioned.fill(child: Container(color: Colors.black38)),
-            Positioned(
-              top: 20,
-              left: 15,
-              right: 15,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.white24, width: 0.5),
-                ),
-                child: const Text(
-                  'Time to stretch! 🐾',
-                  style: TextStyle(fontSize: 8, color: Colors.white),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 10,
-              left: 0,
-              right: 0,
-              child: Icon(
-                CupertinoIcons.paw_solid,
-                size: 22,
-                color: AppTheme.accentColor.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        );
-      case 'zen':
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE0C3FC), Color(0xFF8EC5FC)],
-            ),
-          ),
-          child: Center(
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                    border: Border.all(color: Colors.white30, width: 1),
-                  ),
-                ),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.25),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      CupertinoIcons.wind,
-                      color: Colors.white,
-                      size: 14,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      case 'hud':
-        return Container(
-          color: const Color(0xFF0F172A),
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    width: 35,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppTheme.accentColor.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                  Container(
-                    width: 15,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.cyan.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(1),
-                    ),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              SizedBox(
-                height: 25,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      width: 4,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentColor.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    Container(
-                      width: 4,
-                      height: 20,
-                      decoration: BoxDecoration(
-                        color: AppTheme.accentColor.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    Container(
-                      width: 4,
-                      height: 15,
-                      decoration: BoxDecoration(
-                        color: Colors.cyan.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    Container(
-                      width: 4,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: Colors.cyan.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    Container(
-                      width: 4,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.cyan.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Spacer(),
-              const Row(
-                children: [
-                  Icon(CupertinoIcons.bolt_fill, size: 8, color: Colors.amber),
-                  SizedBox(width: 2),
-                  Text(
-                    'HUD ACTIVE',
-                    style: TextStyle(
-                      fontSize: 6,
-                      color: Colors.white30,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      case 'floating':
-        return Stack(
-          children: [
-            Positioned.fill(child: Container(color: Colors.black26)),
-            Positioned(
-              bottom: 8,
-              right: 8,
-              child: Container(
-                width: 65,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1E293B),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.accentColor.withValues(alpha: 0.6),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentColor.withValues(alpha: 0.3),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.accentColor,
-                      ),
-                    ),
-                    const Text(
-                      '04:59 SKIP',
-                      style: TextStyle(
-                        fontSize: 6,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-      case 'activities':
-        return Container(
-          color: const Color(0xFF070A0D),
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Segmented tab mock
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF38BDF8).withValues(alpha: 0.18),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            CupertinoIcons.wind,
-                            size: 7,
-                            color: Color(0xFF38BDF8),
-                          ),
-                          SizedBox(width: 3),
-                          Text(
-                            'Breathe',
-                            style: TextStyle(
-                              fontSize: 6,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            CupertinoIcons.eye,
-                            size: 7,
-                            color: Colors.white54,
-                          ),
-                          SizedBox(width: 3),
-                          Text(
-                            'Eye Sync',
-                            style: TextStyle(
-                              fontSize: 6,
-                              color: Colors.white54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // Breathing ring mock
-                Container(
-                  width: 34,
-                  height: 34,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFF7DD3FC).withValues(alpha: 0.6),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'In',
-                      style: TextStyle(
-                        color: Color(0xFF7DD3FC),
-                        fontSize: 7,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      default:
-        return const SizedBox();
-    }
+    return _BreakTemplateRealPreview(id: id, settings: _settings);
   }
 
   Widget _breakTemplatePreview(
@@ -1011,82 +877,115 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
     bool isSelected,
     VoidCallback onTap,
   ) {
-    return GestureDetector(
-      onTap: onTap,
-      child: SizedBox(
-        width: 150,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 150,
-              height: 100,
-              decoration: BoxDecoration(
-                color: AppTheme.contentBackground,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
+    final isHovered = _hoveredId == id;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hoveredId = id),
+      onExit: (_) => setState(() => _hoveredId = null),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: onTap,
+        child: SizedBox(
+          width: 190,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              AnimatedScale(
+                scale: isHovered ? 1.03 : 1.0,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 190,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: AppTheme.contentBackground,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected
+                          ? AppTheme.accentColor
+                          : isHovered
+                              ? AppTheme.accentColor.withValues(alpha: 0.5)
+                              : AppTheme.borderColor.withValues(alpha: 0.8),
+                      width: isSelected ? 2.5 : 1.5,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.accentColor.withValues(alpha: 0.35),
+                              blurRadius: 16,
+                              offset: const Offset(0, 6),
+                            ),
+                          ]
+                        : isHovered
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.accentColor.withValues(alpha: 0.15),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : [],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Stack(
+                      children: [
+                        _buildBreakTemplateMock(id),
+                        if (isSelected)
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.black45,
+                              ),
+                              padding: const EdgeInsets.all(2),
+                              child: Icon(
+                                CupertinoIcons.checkmark_circle_fill,
+                                color: AppTheme.accentColor,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
                   color: isSelected
                       ? AppTheme.accentColor
-                      : AppTheme.borderColor.withValues(alpha: 0.8),
-                  width: isSelected ? 2.5 : 1.5,
+                      : isHovered
+                          ? Colors.white
+                          : AppTheme.textPrimary.withValues(alpha: 0.9),
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  fontSize: 14,
+                  fontFamily: 'Inter',
                 ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color: AppTheme.accentColor.withValues(alpha: 0.25),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: Stack(
-                  children: [
-                    _buildBreakTemplateMock(id),
-                    if (isSelected)
-                      Positioned(
-                        top: 6,
-                        right: 6,
-                        child: Icon(
-                          CupertinoIcons.checkmark_circle_fill,
-                          color: AppTheme.accentColor,
-                          size: 20,
-                        ),
-                      ),
-                  ],
+              const SizedBox(height: 4),
+              Text(
+                description,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.7),
+                  fontSize: 11,
+                  height: 1.3,
+                  fontFamily: 'Inter',
                 ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              name,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isSelected ? AppTheme.accentColor : Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                fontSize: 13,
-                fontFamily: 'Inter',
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              description,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppTheme.textSecondary.withValues(alpha: 0.8),
-                fontSize: 10.5,
-                height: 1.3,
-                fontFamily: 'Inter',
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1121,4 +1020,153 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
       }
     }
   }
+}
+
+class _BreakTemplateRealPreview extends StatefulWidget {
+  final String id;
+  final SettingsModel settings;
+
+  const _BreakTemplateRealPreview({required this.id, required this.settings});
+
+  @override
+  State<_BreakTemplateRealPreview> createState() => _BreakTemplateRealPreviewState();
+}
+
+class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
+    with TickerProviderStateMixin {
+  late AnimationController _kenBurnsController;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _kenBurnsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    );
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _kenBurnsController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final breakInfo = BreakModel(
+      type: BreakType.short,
+      durationSeconds: 300,
+      title: widget.id == 'activities' ? 'Activity Room' : 'Eye Rest',
+      tip: widget.id == 'zen'
+          ? 'Slowly breathe in as the visual cue expands...'
+          : 'Look away at something 20 feet away.',
+      triggerReason: '20-minute focus threshold',
+    );
+
+    Widget templateWidget;
+
+    switch (widget.id) {
+      case 'classic':
+        templateWidget = ClassicSlideshowTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 200,
+          totalSeconds: 300,
+          onSkip: () {},
+          pageController: _pageController,
+          kenBurnsController: _kenBurnsController,
+          singleImage: AppConstants.wellnessSlideshow.first,
+        );
+        break;
+      case 'companion':
+        templateWidget = CompanionInteractiveTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 150,
+          totalSeconds: 300,
+          onSkip: () {},
+        );
+        break;
+      case 'zen':
+        templateWidget = ZenModeTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 180,
+          totalSeconds: 300,
+          onSkip: () {},
+        );
+        break;
+      case 'hud':
+        templateWidget = ProductivityHudTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 120,
+          totalSeconds: 300,
+          onSkip: () {},
+        );
+        break;
+      case 'floating':
+        templateWidget = SoftFloatingWidgetTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 100,
+          totalSeconds: 300,
+          onSkip: () {},
+        );
+        break;
+      case 'activities':
+        templateWidget = ActivitiesBreakTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 240,
+          totalSeconds: 300,
+          onSkip: () {},
+        );
+        break;
+      case 'minimal':
+      default:
+        templateWidget = MinimalFocusTemplate(
+          breakInfo: breakInfo,
+          settings: widget.settings,
+          remainingSeconds: 200,
+          totalSeconds: 300,
+          onSkip: () {},
+        );
+        break;
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: 1000,
+            height: 650,
+            child: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(1000, 650),
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              ),
+              child: Theme(
+                data: ThemeData.dark(),
+                child: templateWidget,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class DesktopDragScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+      };
 }

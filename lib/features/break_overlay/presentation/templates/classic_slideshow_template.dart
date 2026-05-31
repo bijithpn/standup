@@ -7,6 +7,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_activity_graph.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'dart:io';
 
 class ClassicSlideshowTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -79,40 +80,62 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     // Renders either a dynamic sliding PageView or a static single random image fallback
+    Widget buildAssetBackground() {
+      if (widget.pageController != null) {
+        return PageView.builder(
+          controller: widget.pageController,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: AppConstants.wellnessSlideshow.length,
+          itemBuilder: (context, index) {
+            return AnimatedBuilder(
+              animation: widget.kenBurnsController,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: 1.05 + (0.1 * widget.kenBurnsController.value),
+                  child: Image.asset(
+                    AppConstants.wellnessSlideshow[index],
+                    fit: BoxFit.cover,
+                    cacheWidth: screenWidth.toInt().clamp(100, 1920),
+                    cacheHeight: screenHeight.toInt().clamp(100, 1080),
+                    filterQuality: FilterQuality.low,
+                  ),
+                );
+              },
+            );
+          },
+        );
+      } else {
+        final fallbackImg =
+            widget.singleImage ?? AppConstants.wellnessSlideshow.first;
+        return AnimatedBuilder(
+          animation: widget.kenBurnsController,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: 1.05 + (0.1 * widget.kenBurnsController.value),
+              child: Image.asset(
+                fallbackImg,
+                fit: BoxFit.cover,
+                cacheWidth: screenWidth.toInt().clamp(100, 1920),
+                cacheHeight: screenHeight.toInt().clamp(100, 1080),
+                filterQuality: FilterQuality.low,
+              ),
+            );
+          },
+        );
+      }
+    }
+
     Widget backgroundWidget;
-    if (widget.pageController != null) {
-      backgroundWidget = PageView.builder(
-        controller: widget.pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: AppConstants.wellnessSlideshow.length,
-        itemBuilder: (context, index) {
-          return AnimatedBuilder(
-            animation: widget.kenBurnsController,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: 1.05 + (0.1 * widget.kenBurnsController.value),
-                child: Image.asset(
-                  AppConstants.wellnessSlideshow[index],
-                  fit: BoxFit.cover,
-                  cacheWidth: screenWidth.toInt().clamp(100, 1920),
-                  cacheHeight: screenHeight.toInt().clamp(100, 1080),
-                  filterQuality: FilterQuality.low,
-                ),
-              );
-            },
-          );
-        },
-      );
-    } else {
-      final fallbackImg =
-          widget.singleImage ?? AppConstants.wellnessSlideshow.first;
+    if (widget.settings.customImagePath != null &&
+        widget.settings.customImagePath != 'default_path' &&
+        File(widget.settings.customImagePath!).existsSync()) {
       backgroundWidget = AnimatedBuilder(
         animation: widget.kenBurnsController,
         builder: (context, child) {
           return Transform.scale(
             scale: 1.05 + (0.1 * widget.kenBurnsController.value),
-            child: Image.asset(
-              fallbackImg,
+            child: Image.file(
+              File(widget.settings.customImagePath!),
               fit: BoxFit.cover,
               cacheWidth: screenWidth.toInt().clamp(100, 1920),
               cacheHeight: screenHeight.toInt().clamp(100, 1080),
@@ -121,6 +144,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
           );
         },
       );
+    } else {
+      backgroundWidget = buildAssetBackground();
     }
 
     return Material(
