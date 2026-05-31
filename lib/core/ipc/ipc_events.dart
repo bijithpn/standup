@@ -59,7 +59,7 @@ class TimerStateChangedIpcEvent extends IpcEvent {
          'state': stateName,
          'countdownSeconds': countdownSeconds,
          'workElapsedSeconds': workElapsedSeconds,
-         'targetEndTime': ?targetEndTime,
+         'targetEndTime': targetEndTime,
          'totalWorkTodaySeconds': totalWorkTodaySeconds,
        });
 

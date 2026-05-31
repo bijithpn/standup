@@ -219,6 +219,10 @@ class MainFlutterWindow: NSWindow {
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
+    flutterViewController.backgroundColor = .clear
+    flutterViewController.view.wantsLayer = true
+    flutterViewController.view.layer?.backgroundColor = NSColor.clear.cgColor
+    
     let windowFrame = self.frame
     self.contentViewController = flutterViewController
     self.setFrame(windowFrame, display: true)

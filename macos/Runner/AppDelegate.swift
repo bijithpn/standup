@@ -8,7 +8,6 @@ import macos_ui
 import macos_window_utils
 import package_info_plus
 import screen_retriever_macos
-import shared_preferences_foundation
 import url_launcher_macos
 import window_manager
 
@@ -20,7 +19,6 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
     MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
     FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
     ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
-    SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
     UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
     WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
 }
@@ -32,6 +30,46 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
   var sparkleBridge: SparkleBridge?
+  
+  override func applicationWillFinishLaunching(_ notification: Notification) {
+    // Aggressively terminate any stale running instances of BreakMate (e.g. background menu bar process from a previous debug run)
+    // to unlock the ObjectBox database, clean up the status bar, and enforce single-instance execution.
+    let currentApp = NSRunningApplication.current
+    let runningApps = NSWorkspace.shared.runningApplications
+    let currentBundleId = currentApp.bundleIdentifier
+    let currentLocalizedName = currentApp.localizedName
+    let currentBundleName = currentApp.bundleURL?.lastPathComponent
+    let currentProcessId = currentApp.processIdentifier
+    
+    var terminatedAny = false
+    
+    for app in runningApps {
+      if app.processIdentifier == currentProcessId { continue }
+      
+      let isSameBundle = currentBundleId != nil && app.bundleIdentifier == currentBundleId
+      let isSameName = currentLocalizedName != nil && app.localizedName == currentLocalizedName
+      let isSameBundleName = currentBundleName != nil && app.bundleURL?.lastPathComponent == currentBundleName
+      
+      // Specifically target "com.bijith.breakmate" or "BreakMate" as additional safety fallbacks
+      let isTargetBundle = app.bundleIdentifier == "com.bijith.breakmate"
+      let isTargetName = app.localizedName?.lowercased().contains("breakmate") == true || app.localizedName?.lowercased().contains("break-mate") == true
+      let isTargetBundleName = app.bundleURL?.lastPathComponent.lowercased().contains("breakmate") == true || app.bundleURL?.lastPathComponent.lowercased().contains("break-mate") == true
+      
+      if isSameBundle || isSameName || isSameBundleName || isTargetBundle || isTargetName || isTargetBundleName {
+        NSLog("Terminating stale running instance of BreakMate (PID: \(app.processIdentifier), Name: \(app.localizedName ?? "unknown")) to release database lock")
+        app.forceTerminate()
+        terminatedAny = true
+      }
+    }
+    
+    // If we terminated another instance, wait briefly (500ms) to allow the OS kernel to fully clean up
+    // the process and release POSIX file locks on the ObjectBox database files.
+    if terminatedAny {
+      Thread.sleep(forTimeInterval: 0.5)
+    }
+    
+    super.applicationWillFinishLaunching(notification)
+  }
   
   lazy var updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
 

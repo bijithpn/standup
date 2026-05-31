@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
+import 'package:breakmate/features/companion/services/pet_registry_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
@@ -10,6 +12,8 @@ import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/core/services/timer_orchestrator.dart';
+import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
@@ -99,11 +103,7 @@ Future<void> initDependencies() async {
 
   // TimerEngine with EventBus integration
   final timerEngine = TimerEngine(
-    activityMonitor: sl(),
-    notificationService: sl(),
     settingsRepository: sl(),
-    storageService: sl(),
-    adaptiveBreakService: sl(),
     smartDetectionService: sl(),
     eventBus: sl(),
   );
@@ -113,6 +113,10 @@ Future<void> initDependencies() async {
   final trayManager = TrayManagerService();
 
   // Run tray manager init and companion controller init in parallel
+  final petRegistry = PetRegistryService();
+  sl.registerSingleton<PetRegistryService>(petRegistry);
+  unawaited(petRegistry.discoverFromLegacyAssets());
+
   final companionOverlayController = CompanionOverlayController(
     settingsRepo: sl(),
   );
@@ -120,6 +124,21 @@ Future<void> initDependencies() async {
   await Future.wait([trayManager.init(), companionOverlayController.init()]);
 
   sl.registerSingleton<TrayManagerService>(trayManager);
+
+  // TimerOrchestrator to handle persistence and side effects
+  final timerOrchestrator = TimerOrchestrator(
+    timerEngine: sl(),
+    timerRepository: TimerRepository(sl()),
+    activityMonitor: sl(),
+    notificationService: sl(),
+    statsService: sl(),
+    trayManagerService: sl(),
+    adaptiveBreakService: sl(),
+    settingsRepository: sl(),
+    eventBus: sl(),
+  );
+  timerOrchestrator.initialize();
+  sl.registerSingleton<TimerOrchestrator>(timerOrchestrator);
 
   // Application Controllers
   final meetingDetectionService = MeetingDetectionService();

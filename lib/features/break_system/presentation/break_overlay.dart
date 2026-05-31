@@ -41,7 +41,7 @@ class _BreakOverlayState extends State<BreakOverlay>
     );
     _fadeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 260),
+      duration: const Duration(milliseconds: 500),
     );
   }
 
@@ -116,23 +116,39 @@ class _BreakOverlayState extends State<BreakOverlay>
 
         final controller = context.read<BreakController>();
 
-        return FadeTransition(
-          opacity: CurvedAnimation(
+        final slideAnimation = Tween<Offset>(
+          begin: const Offset(0.0, 1.0),
+          end: Offset.zero,
+        ).animate(
+          CurvedAnimation(
             parent: _fadeController,
-            curve: Curves.easeOutCubic,
+            curve: Curves.easeOutQuart,
+            reverseCurve: Curves.easeInQuart,
           ),
-          child: GestureDetector(
-            onVerticalDragUpdate: (details) {
-              if (!data.settings.strictMode && details.primaryDelta! < -10) {
-                controller.skipCurrentBreak();
-              }
-            },
-            onHorizontalDragUpdate: (_) {},
-            child: _BreakOverlayContent(
-              layoutData: data,
-              controller: controller,
-              pageController: _pageController,
-              kenBurnsController: _kenBurnsController,
+        );
+
+        final fadeAnimation = CurvedAnimation(
+          parent: _fadeController,
+          curve: Curves.easeOut,
+        );
+
+        return SlideTransition(
+          position: slideAnimation,
+          child: FadeTransition(
+            opacity: fadeAnimation,
+            child: GestureDetector(
+              onVerticalDragUpdate: (details) {
+                if (!data.settings.strictMode && details.primaryDelta! < -10) {
+                  controller.skipCurrentBreak();
+                }
+              },
+              onHorizontalDragUpdate: (_) {},
+              child: _BreakOverlayContent(
+                layoutData: data,
+                controller: controller,
+                pageController: _pageController,
+                kenBurnsController: _kenBurnsController,
+              ),
             ),
           ),
         );

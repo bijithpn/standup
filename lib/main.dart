@@ -133,8 +133,8 @@ void _setupGlobalErrors() {
 void main() async {
   final isolateName = Isolate.current.debugName ?? '';
   // On macOS desktop, secondary engines often have names like "OverlayEngine-..."
-  final isMainIsolate =
-      isolateName == 'main' || isolateName == 'root' || isolateName.isEmpty;
+  final isMainIsolate = !isolateName.toLowerCase().contains('overlay') &&
+      !isolateName.toLowerCase().contains('companion');
 
   // If we are in an overlay or companion isolate, jump to the correct entry point.
   // This is a safety layer for when the Flutter engine runs main() by default.
