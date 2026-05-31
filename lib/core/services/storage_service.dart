@@ -42,11 +42,12 @@ class StorageService {
     }
 
     final isolateName = Isolate.current.debugName ?? '';
-    final isMain = isolateName == 'main' || isolateName == 'root' || isolateName.isEmpty;
+    final isSecondaryIsolate = isolateName.toLowerCase().contains('overlay') ||
+        isolateName.toLowerCase().contains('companion');
     
-    debugPrint('[Storage] Initializing in isolate: "$isolateName" (isMain: $isMain)');
+    debugPrint('[Storage] Initializing in isolate: "$isolateName" (isSecondaryIsolate: $isSecondaryIsolate)');
     
-    if (!isMain && !isolateName.contains('StatsWorker')) {
+    if (isSecondaryIsolate) {
        debugPrint('[Storage] Bypassing initialization in secondary isolate: $isolateName');
        return;
     }
