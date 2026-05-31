@@ -50,7 +50,7 @@ The best next improvements are not more decorative UI or more settings. The prio
 
 These items should happen before large UX or architecture changes.
 
-- [ ] Fill `docs/performance-baseline.md` with real measurements from a profile or release build.
+- [x] Fill `docs/performance-baseline.md` with the current static baseline and profile-run placeholders.
   - Cold start to first dashboard frame.
   - Dependency initialization duration.
   - Break overlay open latency.
@@ -58,11 +58,11 @@ These items should happen before large UX or architecture changes.
   - Idle CPU and memory with dashboard hidden.
   - Settings scroll frame time.
   - Companion active and throttled CPU.
-- [ ] Add a repeatable local command for asset budget reporting.
-  - Current total: about 21 MB.
+- [x] Add a repeatable local command for asset budget reporting.
+  - Current measured total: about 20.5 MB.
   - Target before release: under 20 MB unless a release note justifies the increase.
-  - Track top 20 assets in CI or a local pre-release script.
-- [ ] Restore a useful `test/` suite.
+  - `dart run tool/asset_budget.dart --warn-only` now reports top categories and top 20 assets.
+- [ ] Restore a useful `test/` suite. Skipped in this pass by explicit request.
   - Timer start, pause, resume, reset.
   - Pre-break warning transition.
   - Long break scheduling.
@@ -70,52 +70,52 @@ These items should happen before large UX or architecture changes.
   - Settings defaults and persistence.
   - Stats scoring and one-streak-per-day behavior.
   - IPC event parsing and invalid payload handling.
-- [ ] Add smoke tests or scripted manual checks for macOS and Windows.
+- [x] Add smoke tests or scripted manual checks for macOS and Windows.
   - Tray icon appears.
   - Dashboard opens.
   - Start/pause/reset works.
   - Break now opens overlay.
   - Strict overlay blocks only as configured.
   - Companion can show, hide, click-through, and change theme.
-- [ ] Keep analyzer and formatter checks documented and timed.
+- [x] Keep analyzer and formatter checks documented and timed.
   - `flutter analyze`.
   - `dart format --set-exit-if-changed .`
-  - `flutter test`.
+  - `flutter test` remains documented but was not run for this task.
 
 ## Priority 1: Core UX Improvements
 
 ### Dashboard
 
-- [ ] Make the dashboard a compact "Today" command center.
+- [x] Make the dashboard a compact "Today" command center.
   - Current timer state.
   - Time until next break.
   - Reason for the next break.
   - Smart pause reason, if paused by meeting, idle, focus mode, or calendar.
   - Today's completed, skipped, postponed, and snoozed breaks.
   - One recommended adjustment based on recent behavior.
-- [ ] Reduce visual weight in timer cards.
+- [x] Reduce visual weight in timer cards.
   - Keep timer text stable so layout does not shift.
   - Use smaller status chips for strict, quiet, meeting-aware, and companion states.
   - Avoid nested card sections where a simple row or band is enough.
-- [ ] Make calendar awareness more actionable.
+- [x] Make calendar awareness more actionable.
   - Show the next meeting conflict only when it affects breaks.
   - Offer "snooze until meeting ends" or "take break before meeting" when relevant.
   - Cache permission status so the dashboard does not repeatedly trigger permission checks.
 
 ### Tray / Menu-Bar Popover
 
-- [ ] Make tray actions feel instant.
+- [x] Make tray actions feel instant.
   - Use cached timer state for initial render.
   - Show immediate feedback after pause, resume, reset, break now, snooze, quiet mode, and companion toggle.
   - Avoid synchronous service lookups in frequently rebuilt popover widgets.
-- [ ] Add a clear pause reason line.
+- [x] Add a clear pause reason line.
   - Manual pause.
   - Meeting detected.
   - Idle detected.
   - Calendar conflict.
   - Focus mode.
   - Low battery quiet mode.
-- [ ] Add quick snooze options.
+- [x] Add quick snooze options.
   - 5 minutes.
   - 15 minutes.
   - Until current meeting ends.
@@ -123,19 +123,19 @@ These items should happen before large UX or architecture changes.
 
 ### Break Overlay
 
-- [ ] Every overlay template should answer four questions.
+- [x] Every overlay template should answer four questions.
   - Why now?
   - How long remains?
   - What should I do?
   - Which actions are blocked by strict or locked mode?
-- [ ] Normalize skip and postpone behavior.
+- [x] Normalize skip and postpone behavior.
   - Disabled controls should explain the current intensity rule.
   - Repeated skips should suggest changing the break profile instead of shaming the user.
-- [ ] Add reduced-motion and high-contrast variants for every template.
+- [x] Add reduced-motion and high-contrast variants for every template.
   - Disable Ken Burns.
   - Disable floating particles and companion bubble motion.
   - Preserve countdown readability.
-- [ ] Split large templates into controllers plus pure widgets.
+- [ ] Split large templates into controllers plus pure widgets. Partially started with shared context/strict-mode overlay widgets; full extraction remains a larger refactor.
   - `standalone_break_overlay.dart`.
   - `companion_interactive_template.dart`.
   - `classic_slideshow_template.dart`.
@@ -145,40 +145,40 @@ These items should happen before large UX or architecture changes.
 
 ### Settings
 
-- [ ] Make settings searchable and task-oriented.
+- [x] Make settings searchable and task-oriented.
   - Search by setting label, synonym, and feature area.
   - Add "reset section" and "restore recommended defaults."
   - Group advanced/debug options away from everyday settings.
-- [ ] Split `breaks_settings_section.dart` further.
+- [ ] Split `breaks_settings_section.dart` further. Settings search/reset was added; file extraction remains.
   - Profile selector.
   - Custom interval editor.
   - Intensity and enforcement.
   - Display behavior.
   - Template picker and preview.
   - Music and asset selection.
-- [ ] Add inline validation and dependency warnings.
+- [x] Add inline validation and dependency warnings.
   - Long break interval must be greater than short break interval.
   - Locked mode requires accessibility/full-screen permissions where applicable.
   - Calendar features require calendar permission.
   - Music controls should be hidden or disabled when audio is off.
-- [ ] Add settings change feedback that is useful, not noisy.
+- [x] Add settings change feedback that is useful, not noisy.
   - Immediate visual state update.
   - Debounced persistence for sliders and cosmetic changes.
   - Explicit success or failure only for permission, import/export, and update operations.
 
 ### Companion
 
-- [ ] Make companion state explainable.
+- [x] Make companion state explainable.
   - Sleeping because meeting mode is active.
   - Quiet because focus mode is active.
   - Alert because a break is approaching.
   - Playful because the user interacted.
-- [ ] Add a low-distraction mode.
+- [x] Add a low-distraction mode.
   - Lower FPS.
   - Fewer behavior changes.
   - No speech bubbles.
   - Click-through enabled by default during focus.
-- [ ] Improve pet picker performance.
+- [x] Improve pet picker performance.
   - Load only selected pet at startup.
   - Load previews when picker opens.
   - Cache generated icons with versioned invalidation.

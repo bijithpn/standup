@@ -23,6 +23,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<CalendarEvent>? _calendarEvents;
   bool _calendarLoading = false;
   bool _calendarPermissionGranted = false;
+  DateTime? _lastCalendarPermissionCheck;
   Timer? _refreshTimer;
 
   @override
@@ -55,7 +56,14 @@ class _DashboardPageState extends State<DashboardPage> {
     setState(() => _calendarLoading = true);
 
     try {
-      final hasPermission = await calendarService.checkPermissions();
+      final shouldRefreshPermission =
+          _lastCalendarPermissionCheck == null ||
+          DateTime.now().difference(_lastCalendarPermissionCheck!) >
+              const Duration(minutes: 10);
+      final hasPermission = shouldRefreshPermission
+          ? await calendarService.checkPermissions()
+          : _calendarPermissionGranted;
+      _lastCalendarPermissionCheck = DateTime.now();
       if (!hasPermission) {
         if (mounted) {
           setState(() {
@@ -204,11 +212,13 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildTimerSection(BuildContext context) {
-    return Consumer<BreakController>(
-      builder: (context, controller, child) {
+    return Consumer2<BreakController, SettingsRepository>(
+      builder: (context, controller, settingsRepo, child) {
         final engine = controller.timerEngine;
+        final settings = settingsRepo.currentSettings;
         final isRunning = engine.state == TimerState.running;
         final isPaused = engine.state == TimerState.paused;
+        final isBreak = engine.state == TimerState.breakActive;
 
         final duration = Duration(seconds: engine.countdownSeconds);
         final minutes = duration.inMinutes.toString().padLeft(2, '0');
@@ -218,37 +228,75 @@ class _DashboardPageState extends State<DashboardPage> {
         if (isRunning) statusText = AppStrings.focusing;
         if (isPaused) statusText = AppStrings.paused;
         if (engine.isPreBreak) statusText = AppStrings.breakComingUp;
+        if (isBreak) statusText = 'Break active';
+
+        final nextReason = _nextBreakReason(engine, settingsRepo);
+        final statusChips = <_StatusChipData>[
+          _StatusChipData(
+            settings.intensityLevel.toUpperCase(),
+            AppTheme.accent,
+          ),
+          if (settings.quietModeEnabled)
+            _StatusChipData('QUIET', AppTheme.warning),
+          if (settings.calendarEnabled)
+            _StatusChipData('CALENDAR', const Color(0xFF6366F1)),
+          if (settings.companionEnabled)
+            _StatusChipData('COMPANION', AppTheme.success),
+        ];
 
         return Container(
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(24),
           decoration: AppTheme.cardDecoration(elevated: true),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            runSpacing: 24,
+            spacing: 24,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    statusText,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.accent,
-                      letterSpacing: 0.5,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 280, maxWidth: 440),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _StatusChip(label: statusText, color: AppTheme.accent),
+                        for (final chip in statusChips)
+                          _StatusChip(label: chip.label, color: chip.color),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '$minutes:$seconds',
-                    style: const TextStyle(
-                      fontSize: 64,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                      letterSpacing: -2,
-                      fontFeatures: [FontFeature.tabularFigures()],
+                    const SizedBox(height: 12),
+                    Text(
+                      '$minutes:$seconds',
+                      style: const TextStyle(
+                        fontSize: 56,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -2,
+                        fontFeatures: [FontFeature.tabularFigures()],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      nextReason,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        height: 1.35,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      controller.pauseReason,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -263,8 +311,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       const SizedBox(width: 8),
                       _PrimaryButton(
                         onTap: () => controller.togglePause(),
-                        label:
-                            isPaused ? AppStrings.resume : AppStrings.pause,
+                        label: isPaused ? AppStrings.resume : AppStrings.pause,
                         icon: isPaused
                             ? Icons.play_arrow_rounded
                             : Icons.pause_rounded,
@@ -291,6 +338,45 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  String _nextBreakReason(TimerEngine engine, SettingsRepository settingsRepo) {
+    final settings = settingsRepo.currentSettings;
+    final conflict = _nextCalendarConflict();
+    if (engine.state == TimerState.breakActive) {
+      return settings.strictMode
+          ? 'This break is enforcing your selected recovery intensity.'
+          : 'This break started from your current rhythm and can be skipped if needed.';
+    }
+    if (engine.isPreBreak) {
+      return 'Wrap up now. Your configured pre-break warning is active.';
+    }
+    if (conflict != null) {
+      final minutes = conflict.start.difference(DateTime.now()).inMinutes;
+      if (minutes <= 0) {
+        return 'Calendar conflict: a meeting is active, so breaks can wait until it ends.';
+      }
+      return 'Calendar conflict in ${minutes}m. Take a short reset before it starts.';
+    }
+    if (settings.quietModeEnabled) {
+      return 'Quiet mode is on, so BreakMate will keep interruptions restrained.';
+    }
+    return 'Next break follows your ${settings.shortBreakIntervalMinutes}-minute focus interval.';
+  }
+
+  CalendarEvent? _nextCalendarConflict() {
+    final events = _calendarEvents;
+    if (events == null || events.isEmpty) return null;
+    final now = DateTime.now();
+    for (final event in events) {
+      if (event.isAllDay) continue;
+      final isLive = event.start.isBefore(now) && event.end.isAfter(now);
+      final startsSoon =
+          event.start.isAfter(now) &&
+          event.start.difference(now) <= const Duration(minutes: 20);
+      if (isLive || startsSoon) return event;
+    }
+    return null;
+  }
+
   Widget _buildActionGrid(BuildContext context) {
     return Consumer<BreakController>(
       builder: (context, controller, _) {
@@ -303,8 +389,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 title: AppStrings.companion,
                 subtitle: companionActive
                     ? (controller.timerEngine.state == TimerState.running
-                        ? 'Active and watching'
-                        : 'Resting')
+                          ? 'Active and watching'
+                          : 'Resting')
                     : 'Disabled in settings',
                 icon: Icons.pets_rounded,
                 isActive: companionActive,
@@ -421,21 +507,24 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(width: 10),
             Text(
               'No events in the next 8 hours — focus time!',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppTheme.textMuted,
-              ),
+              style: const TextStyle(fontSize: 13, color: AppTheme.textMuted),
             ),
           ],
         ),
       );
     }
 
+    final conflict = _nextCalendarConflict();
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (conflict != null) ...[
+          _CalendarActionCard(event: conflict),
+          const SizedBox(height: 12),
+        ],
         for (int i = 0; i < events.length; i++) ...[
-          if (i > 0)
-            const Divider(height: 1, color: AppTheme.border),
+          if (i > 0) const Divider(height: 1, color: AppTheme.border),
           _CalendarEventRow(event: events[i]),
         ],
       ],
@@ -471,8 +560,7 @@ class _DashboardPageState extends State<DashboardPage> {
           onTap: _requestCalendarAccess,
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
               color: const Color(0xFF6366F1).withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
@@ -579,8 +667,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
                       AppStrings.noActivityRecorded,
-                      style:
-                          TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                     ),
                   ),
                 )
@@ -640,6 +727,146 @@ class _DashboardPageState extends State<DashboardPage> {
 // Calendar Event Row Widget
 // ---------------------------------------------------------------------------
 
+class _StatusChipData {
+  final String label;
+  final Color color;
+
+  const _StatusChipData(this.label, this.color);
+}
+
+class _StatusChip extends StatelessWidget {
+  final String label;
+  final Color color;
+
+  const _StatusChip({required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: color.withValues(alpha: 0.22)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0.6,
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarActionCard extends StatelessWidget {
+  final CalendarEvent event;
+
+  const _CalendarActionCard({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isLive = event.start.isBefore(now) && event.end.isAfter(now);
+    final title = isLive
+        ? 'Meeting is active'
+        : 'Meeting starts in ${event.start.difference(now).inMinutes.clamp(1, 999)}m';
+    final actionLabel = isLive
+        ? 'Snooze until meeting ends'
+        : 'Take break before meeting';
+
+    return Consumer<BreakController>(
+      builder: (context, controller, _) {
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.16),
+            ),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.event_available_rounded,
+                color: Color(0xFF6366F1),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      event.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              _SmallActionButton(
+                label: actionLabel,
+                onTap: isLive
+                    ? () => controller.snoozeUntil(event.end)
+                    : () => controller.takeBreakNow(),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SmallActionButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _SmallActionButton({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.accent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _CalendarEventRow extends StatelessWidget {
   final CalendarEvent event;
 
@@ -649,9 +876,7 @@ class _CalendarEventRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final isHappeningNow =
-        !event.isAllDay &&
-        event.start.isBefore(now) &&
-        event.end.isAfter(now);
+        !event.isAllDay && event.start.isBefore(now) && event.end.isAfter(now);
     final isUpcoming = event.start.isAfter(now);
     final minutesUntil = event.start.difference(now).inMinutes;
 
@@ -691,9 +916,7 @@ class _CalendarEventRow extends StatelessWidget {
                   ? Icons.fiber_manual_record_rounded
                   : Icons.event_rounded,
               size: 20,
-              color: isHappeningNow
-                  ? AppTheme.error
-                  : const Color(0xFF6366F1),
+              color: isHappeningNow ? AppTheme.error : const Color(0xFF6366F1),
             ),
           ),
           const SizedBox(width: 12),

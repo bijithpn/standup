@@ -22,7 +22,8 @@ import 'package:breakmate/features/companion/services/pet_registry_service.dart'
 class CompanionOverlayController extends ChangeNotifier {
   final SettingsRepository _settingsRepo;
 
-  List<PetProfile> get availablePets => sl<PetRegistryService>().getEnabledProfiles();
+  List<PetProfile> get availablePets =>
+      sl<PetRegistryService>().getEnabledProfiles();
 
   bool _companionEnabled = false;
   String _companionPetTheme = 'grey_cat';
@@ -30,9 +31,12 @@ class CompanionOverlayController extends ChangeNotifier {
   double _companionScale = 6.0;
   bool _companionClickThrough = false;
   bool _companionFollowMouse = false;
-  String _companionPreviewBackground = 'assets/background/forest/background.png';
+  bool _enableAnimations = true;
+  String _companionPreviewBackground =
+      'assets/background/forest/background.png';
   bool _isCompanionShown = false;
-  bool _isPreviewMode = false; // Hides native companion when viewing settings UI
+  bool _isPreviewMode =
+      false; // Hides native companion when viewing settings UI
 
   static const List<String> catNames = [
     'Mochi',
@@ -91,7 +95,7 @@ class CompanionOverlayController extends ChangeNotifier {
   ];
 
   CompanionOverlayController({required SettingsRepository settingsRepo})
-      : _settingsRepo = settingsRepo {
+    : _settingsRepo = settingsRepo {
     _settingsRepo.addListener(_handleSettingsChanged);
     _listenToEvents();
   }
@@ -127,6 +131,27 @@ class CompanionOverlayController extends ChangeNotifier {
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
   bool get companionFollowMouse => _companionFollowMouse;
+  bool get isLowDistractionMode =>
+      _companionClickThrough && !_companionFollowMouse && !_enableAnimations;
+  String get companionStateExplanation {
+    if (!_companionEnabled) {
+      return 'Companion is disabled in settings.';
+    }
+    if (_isBreakActive) {
+      return 'Companion is hidden while a break overlay is active.';
+    }
+    if (isLowDistractionMode) {
+      return 'Companion is quiet, click-through, and throttled for focus.';
+    }
+    if (_companionFollowMouse) {
+      return 'Companion is actively following your cursor.';
+    }
+    if (_companionClickThrough) {
+      return 'Companion is visible but ignoring mouse input.';
+    }
+    return 'Companion is active and available for interaction.';
+  }
+
   String get companionPreviewBackground => _companionPreviewBackground;
 
   Future<void> init() async {
@@ -138,6 +163,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
+    _enableAnimations = settings.enableAnimations;
     _companionPreviewBackground = settings.companionPreviewBackground;
 
     // Check initial break state if possible, though TimerEngine usually starts later
@@ -145,7 +171,8 @@ class CompanionOverlayController extends ChangeNotifier {
       _isBreakActive = sl<TimerEngine>().state == TimerState.breakActive;
     } catch (_) {}
 
-    final shouldShow = _companionEnabled && !_isBreakActive && settings.hasCompletedOnboarding;
+    final shouldShow =
+        _companionEnabled && !_isBreakActive && settings.hasCompletedOnboarding;
     if (shouldShow) {
       unawaited(_showNativeCompanion());
     }
@@ -160,8 +187,11 @@ class CompanionOverlayController extends ChangeNotifier {
     final scaleChanged = _companionScale != settings.companionScale;
     final clickChanged =
         _companionClickThrough != settings.companionClickThrough;
-    final followChanged = _companionFollowMouse != settings.companionFollowMouse;
-    final backgroundChanged = _companionPreviewBackground != settings.companionPreviewBackground;
+    final followChanged =
+        _companionFollowMouse != settings.companionFollowMouse;
+    final animationsChanged = _enableAnimations != settings.enableAnimations;
+    final backgroundChanged =
+        _companionPreviewBackground != settings.companionPreviewBackground;
 
     if (!enabledChanged &&
         !themeChanged &&
@@ -169,6 +199,7 @@ class CompanionOverlayController extends ChangeNotifier {
         !scaleChanged &&
         !clickChanged &&
         !followChanged &&
+        !animationsChanged &&
         !backgroundChanged) {
       return; // Exit early if no companion settings have changed
     }
@@ -179,13 +210,18 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
+    _enableAnimations = settings.enableAnimations;
     _companionPreviewBackground = settings.companionPreviewBackground;
 
     try {
       sl<CompanionBehaviorEngine>().setEnabled(_companionEnabled);
     } catch (_) {}
 
-    final shouldShow = _companionEnabled && !_isBreakActive && settings.hasCompletedOnboarding && !_isPreviewMode;
+    final shouldShow =
+        _companionEnabled &&
+        !_isBreakActive &&
+        settings.hasCompletedOnboarding &&
+        !_isPreviewMode;
 
     if (shouldShow) {
       if (!_isCompanionShown) {
@@ -206,6 +242,9 @@ class CompanionOverlayController extends ChangeNotifier {
         if (followChanged) {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
+        if (animationsChanged) {
+          NativeBridge.showCompanion(_companionPayload());
+        }
       }
     } else {
       if (_isCompanionShown) {
@@ -220,22 +259,28 @@ class CompanionOverlayController extends ChangeNotifier {
   Future<void> _showNativeCompanion() async {
     if (_isCompanionShown) return;
     if (_isPreviewMode) return;
-    
+
     _isCompanionShown = true;
-    await NativeBridge.showCompanion({
+    await NativeBridge.showCompanion(_companionPayload());
+  }
+
+  Map<String, dynamic> _companionPayload() {
+    return {
       'themeId': _companionPetTheme,
       'petName': _companionPetName,
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
       'followMouse': _companionFollowMouse,
-    });
+      'wanderingEnabled': _enableAnimations,
+      'isLowPowerMode': !_enableAnimations,
+    };
   }
 
   /// Toggles preview mode. When true, the native companion is hidden.
   void setPreviewMode(bool isPreview) {
     if (_isPreviewMode == isPreview) return;
     _isPreviewMode = isPreview;
-    
+
     if (_isPreviewMode) {
       if (_isCompanionShown) {
         _isCompanionShown = false;
@@ -243,7 +288,10 @@ class CompanionOverlayController extends ChangeNotifier {
       }
     } else {
       final settings = _settingsRepo.currentSettings;
-      final shouldShow = _companionEnabled && !_isBreakActive && settings.hasCompletedOnboarding;
+      final shouldShow =
+          _companionEnabled &&
+          !_isBreakActive &&
+          settings.hasCompletedOnboarding;
       if (shouldShow && !_isCompanionShown) {
         _showNativeCompanion();
       }
@@ -280,7 +328,7 @@ class CompanionOverlayController extends ChangeNotifier {
     }
 
     final randomName = names[random.nextInt(names.length)];
-    
+
     // Update settings, listener will handle native updates
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetTheme: themeId,
@@ -297,7 +345,7 @@ class CompanionOverlayController extends ChangeNotifier {
     final trimmedName = petName.trim();
     final nextName = trimmedName.isEmpty ? 'Mochi' : trimmedName;
     if (_companionPetName == nextName) return;
-    
+
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetName: nextName,
     );
@@ -327,6 +375,16 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionFollowMouse: enabled,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> setLowDistractionMode(bool enabled) async {
+    final current = _settingsRepo.currentSettings;
+    final updated = current.copyWith(
+      companionClickThrough: enabled ? true : current.companionClickThrough,
+      companionFollowMouse: enabled ? false : current.companionFollowMouse,
+      enableAnimations: enabled ? false : true,
     );
     await _settingsRepo.save(updated);
   }

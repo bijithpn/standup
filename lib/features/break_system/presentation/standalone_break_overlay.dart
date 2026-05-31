@@ -67,6 +67,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   double _displayHeight = 0;
   int _screenId = 0;
   bool _strictMode = false;
+  bool _enableAnimations = true;
+  String _intensityLevel = 'standard';
   String? _reminderType;
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
@@ -173,6 +175,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             }
             _overlayType = args['type'] ?? _overlayType;
             _strictMode = args['strictMode'] ?? _strictMode;
+            _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
+            _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
             _isInternalPreview = args['isPreview'] ?? false;
 
             // Display Context
@@ -197,7 +201,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             } else if (args['template'] != null) {
               _breakTemplate = args['template'];
             }
-            _syncClassicEffects(_breakTemplate == 'classic');
+            _syncClassicEffects(
+              _breakTemplate == 'classic' && _enableAnimations,
+            );
             if (args['companionPetTheme'] != null) {
               _companionPetTheme = args['companionPetTheme'];
             } else if (args['companionCatTheme'] != null) {
@@ -300,6 +306,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     final settings = SettingsModel(
       strictMode: _strictMode,
+      enableAnimations: _enableAnimations,
       companionPetTheme: _companionPetTheme,
       breakTemplate: _breakTemplate,
       showExercisesInBreak: _exerciseTitle != null,
@@ -419,6 +426,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       fit: StackFit.expand,
       children: [
         templateWidget,
+        Positioned(
+          top: 28,
+          left: 28,
+          child: SafeArea(child: _buildBreakContextPill()),
+        ),
         if (!_strictMode)
           Positioned(
             top: 28,
@@ -471,7 +483,79 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
+        if (_strictMode)
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
+            child: IgnorePointer(child: _buildStrictModeNote()),
+          ),
       ],
+    );
+  }
+
+  Widget _buildBreakContextPill() {
+    final whyNow = _title.toUpperCase().contains('EYE')
+        ? 'Why now: eye-rest interval reached'
+        : _title.toUpperCase().contains('LONG')
+        ? 'Why now: long focus block completed'
+        : 'Why now: scheduled recovery break';
+    final action = _exerciseTitle != null
+        ? 'Do: ${_exerciseTitle!}'
+        : _durationSeconds <= 30
+        ? 'Do: look away and reset your posture'
+        : 'Do: stand, breathe, and move gently';
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 420),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.32),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: DefaultTextStyle(
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.78),
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          fontFamily: 'Inter',
+          height: 1.35,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [Text(whyNow), const SizedBox(height: 3), Text(action)],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStrictModeNote() {
+    final isLocked = _intensityLevel == 'locked';
+    return Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.34),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        ),
+        child: Text(
+          isLocked
+              ? 'Locked mode is active. Skip and postpone are unavailable until this break finishes.'
+              : 'Strict mode is active. Skip is hidden for this break intensity.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.64),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            fontFamily: 'Inter',
+            height: 1.35,
+          ),
+        ),
+      ),
     );
   }
 
@@ -719,7 +803,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           children: [
             // Optimized image loading
             // Only use transform if NOT in preview to save 100% of that CPU cost
-            _isInternalPreview
+            (_isInternalPreview || !_enableAnimations)
                 ? Image.asset(
                     _currentTemplate,
                     fit: BoxFit.cover,
