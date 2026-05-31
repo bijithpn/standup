@@ -2,7 +2,7 @@ import 'package:objectbox/objectbox.dart';
 
 @Entity()
 class SettingsSnapshot {
-  @Id()
+  @Id(assignable: true)
   int id; // Will always be 1 for a singleton
 
   bool autoStart;
