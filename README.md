@@ -70,6 +70,13 @@ The app is split into three distinct Flutter instances to maximize performance:
 - **CompanionStateManager**: Listens to the EventBus and maintains the Finite State Machine (FSM) for the pet, transitioning between `idle`, `sleeping`, `alert`, and `happy` states based on system events.
 - **IPC Bridge**: A custom `MethodChannel` layer (`com.breakmate/ipc`) that synchronizes state across the three separate isolates. It ensures the Companion knows the Timer's state and the Overlay knows when a meeting starts.
 
+### 💾 Storage & Persistence Architecture
+To ensure maximum reliability, BreakMate employs a multi-layered storage strategy:
+1. **ObjectBox (Primary)**: A high-performance NoSQL database used for complex objects like `SettingsSnapshot`, `DailyStats`, and `CompanionPreferences`.
+2. **Key-Value Mirror (Resilience)**: Critical flags (like onboarding completion) are mirrored to a stable primitive `KeyValueRecord` table. This acts as a "source of truth" if complex snapshots fail to decode.
+3. **Automatic Migration**: On macOS, the database was moved from `~/Documents` to `~/Library/Application Support` for better stability. The app automatically detects legacy data and migrates it to the new location on first launch.
+4. **Isolate Safety**: Storage initialization is restricted to the main isolate to prevent database locking issues across multiple engines.
+
 ---
 
 ## 🔌 Plugin & Dependency Directory
@@ -141,4 +148,4 @@ The app is split into three distinct Flutter instances to maximize performance:
 MIT License - See the `LICENSE` file for details.
 
 ---
-*Built with Flutter, ❤️, and a very active cat.*
+*Built with Flutter by Bijith P N*
