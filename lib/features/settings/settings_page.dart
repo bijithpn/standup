@@ -36,6 +36,7 @@ class SettingsPage extends StatefulWidget {
 class _SettingsPageState extends State<SettingsPage> {
   late SettingsModel _settings;
   Timer? _saveDebounceTimer;
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -88,7 +89,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 constraints: BoxConstraints(
                   maxWidth: isSmallScreen ? double.infinity : 760,
                 ),
-                child: _buildContent(),
+                child: _buildContentShell(),
               ),
             ),
           );
@@ -118,7 +119,8 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           children: [
             ContentArea(
-              builder: (context, scrollController) => buildContent(scrollController),
+              builder: (context, scrollController) =>
+                  buildContent(scrollController),
             ),
           ],
         );
@@ -184,5 +186,276 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         );
     }
+  }
+
+  Widget _buildContentShell() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSettingsTools(),
+        if (_settingsWarnings.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildSettingsWarnings(),
+        ],
+        const SizedBox(height: 20),
+        if (_searchQuery.trim().isNotEmpty) ...[
+          _buildSearchSummary(),
+          const SizedBox(height: 20),
+        ],
+        _buildContent(),
+      ],
+    );
+  }
+
+  Widget _buildSettingsTools() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: AppTheme.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            onChanged: (value) => setState(() => _searchQuery = value),
+            decoration: InputDecoration(
+              hintText: 'Search settings, permissions, companion, breaks...',
+              prefixIcon: const Icon(Icons.search_rounded, size: 18),
+              filled: true,
+              fillColor: AppTheme.surfaceElevated,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: AppTheme.accent),
+              ),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Current section: ${_sectionDisplayName(widget.section)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: _resetCurrentSection,
+                icon: const Icon(Icons.restore_rounded, size: 16),
+                label: const Text('Reset section'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchSummary() {
+    final query = _searchQuery.trim().toLowerCase();
+    final matches = _settingsSearchIndex.entries
+        .where((entry) {
+          final haystack = '${entry.key} ${entry.value.join(' ')}'
+              .toLowerCase();
+          return haystack.contains(query);
+        })
+        .map((entry) => entry.key)
+        .toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.16)),
+      ),
+      child: Text(
+        matches.isEmpty
+            ? 'No exact settings match for "$_searchQuery". Try words like break, strict, calendar, companion, notification, privacy, or backup.'
+            : 'Matching sections: ${matches.join(', ')}',
+        style: const TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 13,
+          height: 1.35,
+        ),
+      ),
+    );
+  }
+
+  List<String> get _settingsWarnings {
+    final warnings = <String>[];
+    if (_settings.longBreakIntervalMinutes <=
+        _settings.shortBreakIntervalMinutes) {
+      warnings.add(
+        'Long break interval should be greater than the short break interval.',
+      );
+    }
+    if (_settings.intensityLevel == 'locked' && !_settings.strictMode) {
+      warnings.add('Locked intensity works best with strict mode enabled.');
+    }
+    if (_settings.calendarEnabled &&
+        (!_settings.detectMeetings && !_settings.detectVideoCalls)) {
+      warnings.add(
+        'Calendar planning is enabled, but meeting detection is disabled.',
+      );
+    }
+    if (!_settings.soundEnabled && _settings.playMusicDuringBreak) {
+      warnings.add('Break music is enabled while app sound is disabled.');
+    }
+    return warnings;
+  }
+
+  Widget _buildSettingsWarnings() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.warning.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 16,
+                color: AppTheme.warning,
+              ),
+              SizedBox(width: 8),
+              Text(
+                'Settings need attention',
+                style: TextStyle(
+                  color: AppTheme.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          for (final warning in _settingsWarnings)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                warning,
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, List<String>> get _settingsSearchIndex => const {
+    'General': ['startup', 'quiet mode', 'idle', 'reset', 'focus'],
+    'Breaks': [
+      'profile',
+      'interval',
+      'duration',
+      'strict',
+      'locked',
+      'template',
+      'music',
+    ],
+    'Focus Mode': ['meeting', 'calendar', 'detection', 'video call', 'focus'],
+    'Notifications': ['sound', 'notification', 'posture', 'eye blink'],
+    'Exercises': ['stretch', 'breathing', 'eye rest', 'wellness'],
+    'Clock Out': ['work hours', 'wind down', 'end of day'],
+    'Companion': ['pet', 'cat', 'dog', 'click-through', 'low-distraction'],
+    'Goals': ['daily focus', 'break target', 'sitting', 'consistency'],
+    'Privacy': ['local data', 'permissions', 'tracking'],
+    'Data & Backup': ['export', 'import', 'backup', 'restore'],
+    'Updates': ['release', 'sparkle', 'version'],
+    'About': ['license', 'credits'],
+  };
+
+  void _resetCurrentSection() {
+    const defaults = SettingsModel();
+    final section = _sectionDisplayName(widget.section);
+
+    if (section == 'Companion') {
+      final controller = sl<CompanionOverlayController>();
+      unawaited(controller.toggleCompanion(defaults.companionEnabled));
+      unawaited(controller.changeTheme(defaults.companionPetTheme));
+      unawaited(controller.changePetName(defaults.companionPetName));
+      unawaited(controller.changeScale(defaults.companionScale));
+      unawaited(controller.setLowDistractionMode(false));
+      unawaited(controller.changeClickThrough(defaults.companionClickThrough));
+      unawaited(controller.changeFollowMouse(defaults.companionFollowMouse));
+      unawaited(
+        controller.changePreviewBackground(defaults.companionPreviewBackground),
+      );
+      if (mounted) Toast.showSuccess(context, 'Companion settings reset');
+      return;
+    }
+
+    SettingsModel updated = _settings;
+    switch (section) {
+      case 'General':
+        updated = _settings.copyWith(
+          autoStart: defaults.autoStart,
+          quietModeEnabled: defaults.quietModeEnabled,
+          quietModePreset: defaults.quietModePreset,
+          pauseTimerAfterMinutes: defaults.pauseTimerAfterMinutes,
+          resetTimerAfterMinutes: defaults.resetTimerAfterMinutes,
+        );
+        break;
+      case 'Breaks':
+        updated = _settings.copyWith(
+          selectedProfileId: defaults.selectedProfileId,
+          shortBreakIntervalMinutes: defaults.shortBreakIntervalMinutes,
+          shortBreakDurationSeconds: defaults.shortBreakDurationSeconds,
+          preBreakWarningSeconds: defaults.preBreakWarningSeconds,
+          longBreakIntervalMinutes: defaults.longBreakIntervalMinutes,
+          longBreakDurationMinutes: defaults.longBreakDurationMinutes,
+          intensityLevel: defaults.intensityLevel,
+          strictMode: defaults.strictMode,
+          showOnAllDisplays: defaults.showOnAllDisplays,
+          breakTheme: defaults.breakTheme,
+          breakTemplate: defaults.breakTemplate,
+          playMusicDuringBreak: defaults.playMusicDuringBreak,
+        );
+        break;
+      case 'Focus mode':
+        updated = _settings.copyWith(
+          detectMeetings: defaults.detectMeetings,
+          detectVideoCalls: defaults.detectVideoCalls,
+          respectFocusMode: defaults.respectFocusMode,
+          focusModeEnabled: defaults.focusModeEnabled,
+          calendarEnabled: defaults.calendarEnabled,
+        );
+        break;
+      case 'Notifications':
+        updated = _settings.copyWith(
+          notificationsEnabled: defaults.notificationsEnabled,
+          soundEnabled: defaults.soundEnabled,
+          postureReminderEnabled: defaults.postureReminderEnabled,
+          eyeBlinkReminderEnabled: defaults.eyeBlinkReminderEnabled,
+        );
+        break;
+      default:
+        Toast.showSuccess(context, 'No reset defaults for $section');
+        return;
+    }
+
+    _save(updated);
+    Toast.showSuccess(context, '$section settings reset');
   }
 }

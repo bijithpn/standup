@@ -109,7 +109,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
-        builder: (_) => const SizedBox.shrink(), // Overlay UI is rendered in separate window
+        builder: (_) =>
+            const SizedBox.shrink(), // Overlay UI is rendered in separate window
         strictMode: settings.strictMode,
         breakTheme: settings.breakTheme,
         overlayData: {
@@ -117,6 +118,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'template': _currentTemplate,
           'breakTemplate': _currentTemplate,
           'companionPetTheme': settings.companionPetTheme,
+          'enableAnimations': settings.enableAnimations,
+          'intensityLevel': settings.intensityLevel,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
         },
@@ -133,9 +136,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       overlayService.showOverlay(
         type: OverlayType.preBreakWarning,
         builder: (_) => const SizedBox.shrink(),
-        overlayData: {
-          'secondsRemaining': _timerEngine.countdownSeconds,
-        },
+        overlayData: {'secondsRemaining': _timerEngine.countdownSeconds},
       );
     } else if (!shouldShowBreak &&
         !shouldShowWarning &&
@@ -148,7 +149,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _pickRandomExercise() {
-    final exercises = _settingsRepo.getExercises().where((e) => e.enabled).toList();
+    final exercises = _settingsRepo
+        .getExercises()
+        .where((e) => e.enabled)
+        .toList();
     if (exercises.isEmpty) return;
 
     final random = Random();
@@ -199,12 +203,54 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  void snoozeUntil(DateTime endTime) {
+    final minutes = endTime.difference(DateTime.now()).inMinutes.clamp(1, 240);
+    snooze(minutes: minutes);
+  }
+
   // --- Quiet Mode Logic ---
 
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
   String get quietModePreset => _settingsRepo.currentSettings.quietModePreset;
 
   bool get companionEnabled => _settingsRepo.currentSettings.companionEnabled;
+
+  String get pauseReason {
+    final settings = _settingsRepo.currentSettings;
+    if (_timerEngine.state == TimerState.breakActive) {
+      return settings.strictMode
+          ? 'Break active. Strict controls are enforced.'
+          : 'Break active. Skip is available from the overlay.';
+    }
+    if (_timerEngine.state == TimerState.paused) {
+      if (settings.quietModeEnabled) {
+        return _quietModeLabel(settings.quietModePreset);
+      }
+      return 'Paused manually.';
+    }
+    if (settings.calendarEnabled) {
+      return 'Calendar-aware planning is watching for meeting conflicts.';
+    }
+    if (settings.detectMeetings || settings.detectVideoCalls) {
+      return 'Meeting-aware mode is ready.';
+    }
+    return 'Running on your selected break profile.';
+  }
+
+  String _quietModeLabel(String preset) {
+    switch (preset) {
+      case 'presenting':
+        return 'Quiet mode: presenting.';
+      case 'meeting':
+        return 'Quiet mode: meeting-heavy day.';
+      case 'deep_work':
+        return 'Quiet mode: deep work.';
+      case 'low_battery':
+        return 'Quiet mode: low battery.';
+      default:
+        return 'Quiet mode is enabled.';
+    }
+  }
 
   void toggleCompanion() {
     sl<CompanionOverlayController>().toggleCompanion(!companionEnabled);
@@ -283,6 +329,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'template': settings.breakTemplate,
           'breakTemplate': settings.breakTemplate,
           'companionPetTheme': settings.companionPetTheme,
+          'enableAnimations': settings.enableAnimations,
+          'intensityLevel': settings.intensityLevel,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
         },
@@ -297,13 +345,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       longIntervalMinutes: profile.longIntervalMinutes,
       longDurationSeconds: profile.longDurationMinutes * 60,
     );
-    _settingsRepo.save(_settingsRepo.currentSettings.copyWith(
-      selectedProfileId: profile.id,
-      shortBreakIntervalMinutes: profile.shortIntervalMinutes,
-      shortBreakDurationSeconds: profile.shortDurationSeconds,
-      longBreakIntervalMinutes: profile.longIntervalMinutes,
-      longBreakDurationMinutes: profile.longDurationMinutes,
-    ));
+    _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        selectedProfileId: profile.id,
+        shortBreakIntervalMinutes: profile.shortIntervalMinutes,
+        shortBreakDurationSeconds: profile.shortDurationSeconds,
+        longBreakIntervalMinutes: profile.longIntervalMinutes,
+        longBreakDurationMinutes: profile.longDurationMinutes,
+      ),
+    );
     notifyListeners();
   }
 
@@ -331,9 +381,12 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     if (!_isPlayingMusic) return;
     _isPlayingMusic = false;
 
-    _fadeVolume(0.0, onComplete: () {
-      _audioPlayer?.stop();
-    });
+    _fadeVolume(
+      0.0,
+      onComplete: () {
+        _audioPlayer?.stop();
+      },
+    );
   }
 
   void _fadeVolume(double target, {VoidCallback? onComplete}) {

@@ -25,6 +25,14 @@ Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.
 - Rebuilt `BREAKMATE_ROADMAP.md` from the current project state.
 - Updated project metrics in the roadmap: 160 Dart files, about 21 MB of assets, no active `test/` files found, and slideshow assets as the largest bundle-size target.
 - Reorganized future work around measurement, release confidence, UX, runtime performance, asset optimization, architecture, accessibility, and feature roadmap priorities.
+- Added a static performance baseline and repeatable asset budget report with category breakdowns.
+- Added manual macOS and Windows smoke-check documentation for cases where tests are intentionally skipped.
+- Improved the dashboard with compact status chips, next-break reasoning, pause context, and actionable calendar conflict controls.
+- Improved tray/menu-bar quick actions with pause reason, quiet/companion toggles, feedback, and 5/15 minute snooze actions.
+- Added break overlay context explaining why the break started, expected action, and strict/locked mode restrictions.
+- Added settings search, section reset controls, and inline dependency warnings.
+- Added companion low-distraction mode and visible companion state explanations.
+- Updated Graphify graph artifacts after the code changes.
 
 ## [1.2.0] - 2026-05-31
 
