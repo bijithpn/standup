@@ -4,6 +4,29 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
+        <item>
+            <title>Version 1.2.0</title>
+            <pubDate>Sun, 31 May 2026 12:00:00 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.2.0 — Contextual Intelligence & Personal Wellness</h3>
+                <p>This update introduces the Contextual Wellness Engine, making BreakMate an intelligent partner that understands your work context.</p>
+                <ul>
+                    <li>Contextual Tips: Advice tailored to your active app, like posture checks for coding or eye rest for browsing.</li>
+                    <li>Calendar Sync: Automatically delays breaks if you are in a meeting.</li>
+                    <li>End-of-Day Wind-Down: A daily summary triggered at your clock-out time.</li>
+                    <li>Personal Goals: Set targets for focus, breaks, and movement.</li>
+                    <li>Wellness Library: Easily manage and favorite your preferred exercises.</li>
+                    <li>Companion Progression: Unlock new pets based on regular use, not just streaks.</li>
+                    <li>Privacy Report: Clear details on how your data stays local on your machine.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.2.0/BreakMate-Installer.dmg"
+                       sparkle:version="30"
+                       sparkle:shortVersionString="1.2.0"
+                       sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
+                       length="0"
+                       type="application/octet-stream" />
+        </item>
                 <item>
             <title>Version 1.1.4</title>
             <pubDate>Sun, 31 May 2026 10:34:42 +0000</pubDate>
