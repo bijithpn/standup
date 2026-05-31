@@ -68,63 +68,11 @@ class PetBehaviorProfile {
     bobIntensity: 0.02,
     stopRadius: 8.0,
   );
-
-  static const rabbit = PetBehaviorProfile(
-    mouseAttraction: 0.5,
-    sleepLikelihood: 0.8,
-    edgePreference: 0.8, // Heavy edge preference
-    movementSpeed: 100.0,
-    acceleration: 8.0,
-    damping: 0.90,
-    lookDelay: 0.2,
-    wanderRadius: 150.0,
-    specialAbilityProbability: 0.4,
-    strideFrequency: 1.0,
-    maxTilt: 0.15,
-    bobIntensity: 0.03,
-    stopRadius: 30.0,
-  );
-
-  static const fox = PetBehaviorProfile(
-    mouseAttraction: 1.5,
-    sleepLikelihood: 0.9,
-    edgePreference: 0.3,
-    movementSpeed: 170.0,
-    acceleration: 12.0,
-    damping: 0.75,
-    lookDelay: 0.1,
-    wanderRadius: 300.0,
-    specialAbilityProbability: 0.2,
-    strideFrequency: 1.15,
-    maxTilt: 0.22,
-    bobIntensity: 0.04,
-    stopRadius: 20.0,
-  );
-
-  static const dragon = PetBehaviorProfile(
-    mouseAttraction: 1.2,
-    sleepLikelihood: 0.7,
-    edgePreference: 0.4,
-    customActions: ['breatheFire', 'fly'],
-    movementSpeed: 150.0,
-    acceleration: 10.0,
-    damping: 0.80,
-    lookDelay: 0.3,
-    wanderRadius: 400.0,
-    specialAbilityProbability: 0.3,
-    strideFrequency: 1.15,
-    maxTilt: 0.22,
-    bobIntensity: 0.05,
-    stopRadius: 35.0,
-  );
 }
 
 enum PetSpecies {
   cat(MovementType.walk, PetBehaviorProfile.cat),
-  dog(MovementType.walk, PetBehaviorProfile.dog),
-  rabbit(MovementType.hop, PetBehaviorProfile.rabbit),
-  fox(MovementType.walk, PetBehaviorProfile.fox),
-  dragon(MovementType.fly, PetBehaviorProfile.dragon);
+  dog(MovementType.walk, PetBehaviorProfile.dog);
 
   final MovementType movementType;
   final PetBehaviorProfile defaultProfile;

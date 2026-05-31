@@ -161,7 +161,7 @@ check_tool() {
 
 export PATH="/opt/homebrew/bin:$PATH"
 check_tool "flutter"    "Install from https://flutter.dev"
-check_tool "create-dmg" "Run: brew install create-dmg"
+check_tool "appdmg"     "Run: npm install -g appdmg"
 [[ "$SKIP_GITHUB" == false ]] && check_tool "gh" "Run: brew install gh && gh auth login"
 
 # Verify gh is authenticated
@@ -218,17 +218,7 @@ if [[ "$DRY_RUN" == true ]]; then
   warn "[DRY-RUN] Would create DMG at $DMG_PATH"
 else
   cd "$PROJECT_ROOT"
-  create-dmg \
-    --volname "${APP_NAME} Installer" \
-    --background "assets/icons/tray_icon.png" \
-    --window-pos 200 120 \
-    --window-size 600 400 \
-    --icon-size 100 \
-    --icon "${APP_NAME}.app" 150 190 \
-    --hide-extension "${APP_NAME}.app" \
-    --app-drop-link 450 190 \
-    "$DMG_PATH" \
-    "$APP_BUILD_DIR"
+  appdmg scripts/appdmg.json "$DMG_PATH"
   success "DMG created: $DMG_PATH"
 fi
 

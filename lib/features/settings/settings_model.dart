@@ -75,6 +75,7 @@ class SettingsModel {
   final double companionScale;
   final bool companionClickThrough;
   final bool companionFollowMouse;
+  final String companionPreviewBackground;
 
   // UX & Onboarding
   final bool hasCompletedOnboarding;
@@ -140,6 +141,7 @@ class SettingsModel {
     this.companionScale = 6.0,
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
+    this.companionPreviewBackground = 'assets/background/forest/background.png',
     this.hasCompletedOnboarding = false,
     this.quietModeEnabled = false,
     this.quietModePreset = 'none',
@@ -203,6 +205,7 @@ class SettingsModel {
     double? companionScale,
     bool? companionClickThrough,
     bool? companionFollowMouse,
+    String? companionPreviewBackground,
     bool? hasCompletedOnboarding,
     bool? quietModeEnabled,
     String? quietModePreset,
@@ -256,7 +259,7 @@ class SettingsModel {
       clockFaceTextColorHex:
           clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
-      customImagePath: customImagePath ?? this.customImagePath,
+      customImagePath: customImagePath != null ? (customImagePath == "" ? null : customImagePath) : this.customImagePath,
       resetTimerAfterMinutes:
           resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,
@@ -280,6 +283,8 @@ class SettingsModel {
       companionClickThrough:
           companionClickThrough ?? this.companionClickThrough,
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
+      companionPreviewBackground:
+          companionPreviewBackground ?? this.companionPreviewBackground,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       quietModeEnabled: quietModeEnabled ?? this.quietModeEnabled,
@@ -346,6 +351,7 @@ class SettingsModel {
     'companionScale': companionScale,
     'companionClickThrough': companionClickThrough,
     'companionFollowMouse': companionFollowMouse,
+    'companionPreviewBackground': companionPreviewBackground,
     'hasCompletedOnboarding': hasCompletedOnboarding,
     'quietModeEnabled': quietModeEnabled,
     'quietModePreset': quietModePreset,
@@ -433,6 +439,8 @@ class SettingsModel {
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
+      companionPreviewBackground: map['companionPreviewBackground'] as String? ??
+          'assets/background/forest/background.png',
       hasCompletedOnboarding: map['hasCompletedOnboarding'] as bool? ?? false,
       quietModeEnabled: map['quietModeEnabled'] as bool? ?? false,
       quietModePreset: map['quietModePreset'] as String? ?? 'none',

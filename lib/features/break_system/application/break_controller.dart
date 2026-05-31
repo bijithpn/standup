@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -10,10 +12,8 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
+import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'dart:math';
-
-import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
@@ -172,10 +172,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     );
     sl<NotificationService>().setSoundEnabled(settings.soundEnabled);
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
-
-    try {
-      sl<CompanionBehaviorEngine>().setEnabled(settings.companionEnabled);
-    } catch (_) {}
   }
 
   // --- Snooze Logic ---
@@ -208,11 +204,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   bool get companionEnabled => _settingsRepo.currentSettings.companionEnabled;
 
   void toggleCompanion() {
-    final current = _settingsRepo.currentSettings;
-    final newValue = !current.companionEnabled;
-    _settingsRepo.save(current.copyWith(companionEnabled: newValue));
-    _applySettings();
-    notifyListeners();
+    sl<CompanionOverlayController>().toggleCompanion(!companionEnabled);
   }
 
   void toggleQuietMode() {

@@ -40,9 +40,6 @@ class PetTheme {
   static const String keyDalmatian = 'dalmatian';
   static const String keyHusky = 'husky';
   static const String keyLabrador = 'labrador';
-  static const String keyRabbit = 'rabbit_hop_01';
-  static const String keyFox = 'fox_firefox_01';
-  static const String keyDragon = 'dragon_shadow_01';
 
   static const Map<PetAnimationState, SeparateAnimationConfig>
   _petPackAnimations = {
@@ -614,34 +611,6 @@ class PetTheme {
       spriteSize: 64,
       animations: _dogSheetAnimations,
       species: PetSpecies.dog,
-    ),
-    // --- New Species Themes ---
-    PetTheme(
-      id: keyRabbit,
-      name: 'Ginger Hop Rabbit',
-      basePath: 'assets/animations/cats/cat_1/',
-      type: PetType.separate,
-      spriteSize: 50,
-      animations: _petPackAnimations,
-      species: PetSpecies.rabbit,
-    ),
-    PetTheme(
-      id: keyFox,
-      name: 'Firefox Fox',
-      basePath: 'assets/animations/cats/orange_cat/sprite_sheet.png',
-      type: PetType.composite,
-      spriteSize: 32,
-      animations: _petSheetAnimations,
-      species: PetSpecies.fox,
-    ),
-    PetTheme(
-      id: keyDragon,
-      name: 'Shadow Wing Dragon',
-      basePath: 'assets/animations/cats/black_cat/sprite_sheet.png',
-      type: PetType.composite,
-      spriteSize: 32,
-      animations: _petSheetAnimations,
-      species: PetSpecies.dragon,
     ),
   ];
 

@@ -1,0 +1,16 @@
+{
+  "title": "BreakMate Installer",
+  "icon": "/Users/intersamrt/Documents/Flutter-Projects/standup/assets/icons/app_icon.jpeg",
+  "background": "/Users/intersamrt/Documents/Flutter-Projects/standup/assets/dmg/dmg.png",
+   "icon-size": 100,
+   "window": {
+     "size": {
+       "width": 847,
+       "height": 600
+     }
+   },
+   "contents": [
+     { "x": 213, "y": 288, "type": "file", "path": "/Users/intersamrt/Documents/Flutter-Projects/standup/build/macos/Build/Products/Release/BreakMate.app" },
+     { "x": 633, "y": 288, "type": "link", "path": "/Applications" }
+   ]
+ }

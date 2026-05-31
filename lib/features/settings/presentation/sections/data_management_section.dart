@@ -10,6 +10,9 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/core/storage/models/daily_stats.dart';
 
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
@@ -41,8 +44,16 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _exportBackupJson() async {
     try {
-      final dir = await getDownloadsDirectory();
-      if (dir == null) throw Exception("Downloads directory not found");
+      Directory? dir;
+      bool isDownloads = true;
+      try {
+        dir = await getDownloadsDirectory();
+      } catch (_) {}
+
+      if (dir == null) {
+        dir = await getApplicationDocumentsDirectory();
+        isDownloads = false;
+      }
 
       final Map<String, dynamic> backup = {
         'timestamp': DateTime.now().toIso8601String(),
@@ -56,9 +67,28 @@ class _DataManagementSectionState extends State<DataManagementSection> {
             [],
       };
 
-      final file = File(p.join(dir.path, 'breakmate_backup.json'));
-      await file.writeAsString(jsonEncode(backup));
-      if (mounted) Toast.showSuccess(context, 'Backup saved to Downloads');
+      File file = File(p.join(dir.path, 'breakmate_backup.json'));
+      try {
+        await file.writeAsString(jsonEncode(backup));
+      } catch (e) {
+        if (isDownloads) {
+          dir = await getApplicationDocumentsDirectory();
+          isDownloads = false;
+          file = File(p.join(dir.path, 'breakmate_backup.json'));
+          await file.writeAsString(jsonEncode(backup));
+        } else {
+          rethrow;
+        }
+      }
+
+      if (mounted) {
+        Toast.showSuccess(
+          context,
+          isDownloads
+              ? 'Backup saved to Downloads'
+              : 'Backup saved to Documents (Downloads restricted)',
+        );
+      }
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to export backup: $e');
     }
@@ -66,8 +96,16 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _exportStatsCsv() async {
     try {
-      final dir = await getDownloadsDirectory();
-      if (dir == null) throw Exception("Downloads directory not found");
+      Directory? dir;
+      bool isDownloads = true;
+      try {
+        dir = await getDownloadsDirectory();
+      } catch (_) {}
+
+      if (dir == null) {
+        dir = await getApplicationDocumentsDirectory();
+        isDownloads = false;
+      }
 
       final stats = _storage.dailyStatsBox?.getAll() ?? [];
       stats.sort((a, b) => b.date.compareTo(a.date));
@@ -83,9 +121,28 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         );
       }
 
-      final file = File(p.join(dir.path, 'breakmate_stats.csv'));
-      await file.writeAsString(buffer.toString());
-      if (mounted) Toast.showSuccess(context, 'Stats exported to Downloads');
+      File file = File(p.join(dir.path, 'breakmate_stats.csv'));
+      try {
+        await file.writeAsString(buffer.toString());
+      } catch (e) {
+        if (isDownloads) {
+          dir = await getApplicationDocumentsDirectory();
+          isDownloads = false;
+          file = File(p.join(dir.path, 'breakmate_stats.csv'));
+          await file.writeAsString(buffer.toString());
+        } else {
+          rethrow;
+        }
+      }
+
+      if (mounted) {
+        Toast.showSuccess(
+          context,
+          isDownloads
+              ? 'Stats exported to Downloads'
+              : 'Stats exported to Documents (Downloads restricted)',
+        );
+      }
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to export CSV: $e');
     }
@@ -93,12 +150,29 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _importBackupJson() async {
     try {
-      final dir = await getDownloadsDirectory();
-      if (dir == null) throw Exception("Downloads directory not found");
+      Directory? dir;
+      try {
+        dir = await getDownloadsDirectory();
+      } catch (_) {}
 
-      final file = File(p.join(dir.path, 'breakmate_backup.json'));
+      dir ??= await getApplicationDocumentsDirectory();
+
+      File file = File(p.join(dir.path, 'breakmate_backup.json'));
       if (!await file.exists()) {
-        throw Exception("breakmate_backup.json not found in Downloads");
+        final altDir = dir.path.contains('Downloads')
+            ? await getApplicationDocumentsDirectory()
+            : await getDownloadsDirectory();
+        if (altDir != null) {
+          final altFile = File(p.join(altDir.path, 'breakmate_backup.json'));
+          if (await altFile.exists()) {
+            file = altFile;
+            dir = altDir;
+          }
+        }
+      }
+
+      if (!await file.exists()) {
+        throw Exception("breakmate_backup.json not found in Downloads or Documents");
       }
 
       final content = await file.readAsString();
@@ -108,7 +182,56 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         throw Exception("Invalid backup file format");
       }
 
-      if (mounted) Toast.showSuccess(context, 'Import validated successfully!');
+      // Restore settings
+      if (data.containsKey('settings') && data['settings'] is Map) {
+        final settingsMap = Map<String, dynamic>.from(data['settings']);
+        if (settingsMap.isNotEmpty) {
+          final settingsModel = SettingsModel.fromMap(settingsMap);
+          final repository = sl<SettingsRepository>();
+          await repository.save(settingsModel);
+        }
+      }
+
+      // Restore global stats
+      if (data.containsKey('global_stats') && data['global_stats'] is Map) {
+        final globalStatsMap = Map<String, dynamic>.from(data['global_stats']);
+        if (globalStatsMap.isNotEmpty) {
+          final globalStats = GlobalStats(
+            id: 1,
+            currentStreak: globalStatsMap['currentStreak'] ?? 0,
+            longestStreak: globalStatsMap['longestStreak'] ?? 0,
+            totalWorkSessions: globalStatsMap['totalWorkSessions'] ?? 0,
+            lastActiveDate: globalStatsMap['lastActiveDate'] ?? '',
+          );
+          _storage.globalStatsBox?.put(globalStats);
+        }
+      }
+
+      // Restore daily stats
+      if (data.containsKey('daily_stats') && data['daily_stats'] is List) {
+        final dailyList = data['daily_stats'] as List;
+        _storage.dailyStatsBox?.removeAll();
+        for (final item in dailyList) {
+          if (item is Map) {
+            final dailyStatsMap = Map<String, dynamic>.from(item);
+            final dailyStats = DailyStats(
+              id: 0,
+              date: dailyStatsMap['date'] ?? '',
+              breaksCompleted: dailyStatsMap['breaksCompleted'] ?? 0,
+              breaksSkipped: dailyStatsMap['breaksSkipped'] ?? 0,
+              usageMinutes: dailyStatsMap['usageMinutes'] ?? 0,
+              wellnessActions: dailyStatsMap['wellnessActions'] ?? 0,
+            );
+            _storage.dailyStatsBox?.put(dailyStats);
+          }
+        }
+      }
+
+      // Reload settings repository to apply to UI immediately
+      sl<SettingsRepository>().load();
+      await _loadStats();
+
+      if (mounted) Toast.showSuccess(context, 'Backup restored successfully!');
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import backup: $e');
     }

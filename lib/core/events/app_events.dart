@@ -147,3 +147,14 @@ class OverlayLayoutChangedEvent extends AppEvent {
   final String displayId;
   OverlayLayoutChangedEvent({required this.displayId, super.timestamp});
 }
+
+class HealthReminderEvent extends AppEvent {
+  final String reminderType; // 'posture' or 'eyeblink'
+  final String displayType;  // 'native' or 'overlay'
+  HealthReminderEvent({
+    required this.reminderType,
+    required this.displayType,
+    super.timestamp,
+  });
+}
+

@@ -16,6 +16,7 @@ class CompanionWindowManager: NSObject {
     static let shared = CompanionWindowManager()
     
     private var instance: CompanionInstance?
+    private var isSettingUp = false
     
     private var userClickThrough = false
     private var followMouseEnabled = false
@@ -44,11 +45,22 @@ class CompanionWindowManager: NSObject {
     
     /// Spawns the transparent, borderless floating companion panel on screen.
     func showCompanion(args: [String: Any]?) {
-        guard instance == nil else {
+        guard instance == nil && !isSettingUp else {
             if let args = args {
                 updateCompanionParams(args: args)
             }
             return
+        }
+        
+        isSettingUp = true
+        
+        // Aggressively close any orphaned CompanionPanel windows before creating a new one
+        for w in NSApp.windows {
+            if let panel = w as? CompanionPanel {
+                panel.orderOut(nil)
+                panel.contentViewController = nil
+                panel.contentView = nil
+            }
         }
         
         guard let screen = NSScreen.main else { return }
@@ -103,6 +115,8 @@ class CompanionWindowManager: NSObject {
         frame: NSRect,
         args: [String: Any]?
     ) {
+        isSettingUp = false
+        
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
         controller.backgroundColor = .clear
         controller.view.wantsLayer = true
@@ -146,8 +160,19 @@ class CompanionWindowManager: NSObject {
             updateCompanionParams(args: args)
         }
         
+        window.alphaValue = 0.0
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        
+        // Fades in the window after a brief delay (150ms) to ensure the Flutter engine
+        // has finished warm-up and drawn its initial transparent state.
+        // This avoids a solid black full-screen flash at startup!
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.25
+                window.animator().alphaValue = 1.0
+            }
+        }
         
         // Start the energy status tracking timer
         startEnergyStatusTimer()
@@ -210,6 +235,7 @@ class CompanionWindowManager: NSObject {
     
     /// Hides and terminates the companion overlay processes cleanly.
     func hideCompanion() {
+        isSettingUp = false
         guard let inst = instance else { return }
         
         inst.window.orderOut(nil)
