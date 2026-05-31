@@ -378,7 +378,7 @@ Still incomplete or not fully verified:
 - [x] Split break overlay templates into smaller widgets.
   - Separate stateful behavior timers from pure UI components.
   - Move copy/text/activity data into models.
-- [ ] Extract `TimerEngine` orchestration from persistence and side effects.
+- [x] Extract `TimerEngine` orchestration from persistence and side effects.
   - Keep timer state transitions pure.
   - Move tray, notification, stats, and IPC reactions into listeners or coordinators.
 - [x] Create a native bridge facade per platform with the same method names.
