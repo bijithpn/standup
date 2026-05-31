@@ -55,38 +55,58 @@ class StorageService {
     _initializing = true;
     _failed = false;
     try {
+      final supportDir = await getApplicationSupportDirectory();
       final docsDir = await getApplicationDocumentsDirectory();
       
-      // Prefer Documents inside sandbox container if Application Support fails
-      // In macOS Sandbox, both are mapped to private container folders.
-      final storeDir = p.join(docsDir.path, 'breakmate_db');
+      debugPrint('[Storage] Support Dir: ${supportDir.path}');
+      debugPrint('[Storage] Docs Dir: ${docsDir.path}');
+      
+      // New primary location
+      final storeDir = p.join(supportDir.path, 'breakmate_db');
+      // Old location (legacy)
+      final legacyStoreDir = p.join(docsDir.path, 'breakmate_db');
 
-      await diagnoseStorage(storeDir);
+      // Simple migration: if legacy exists and new doesn't, move it.
+      if (Directory(legacyStoreDir).existsSync() && !Directory(storeDir).existsSync()) {
+        debugPrint('[Storage] Migrating database from legacy location: $legacyStoreDir to $storeDir');
+        try {
+          Directory(storeDir).parent.createSync(recursive: true);
+          Directory(legacyStoreDir).renameSync(storeDir);
+          debugPrint('[Storage] Migration successful.');
+        } catch (e) {
+          debugPrint('[Storage] Migration failed: $e. Staying with existing paths.');
+        }
+      }
+
+      final activeStoreDir = Directory(storeDir).existsSync() ? storeDir : 
+                             (Directory(legacyStoreDir).existsSync() ? legacyStoreDir : storeDir);
+
+      await diagnoseStorage(activeStoreDir);
 
       // Ensure the directory exists
-      final dir = Directory(storeDir);
+      final dir = Directory(activeStoreDir);
       if (!dir.existsSync()) {
-        debugPrint('[Storage] Creating store directory: $storeDir');
+        debugPrint('[Storage] Creating store directory: $activeStoreDir');
         dir.createSync(recursive: true);
       }
 
-      debugPrint('[Storage] Opening ObjectBox store at $storeDir...');
+      debugPrint('[Storage] Opening ObjectBox store at $activeStoreDir...');
       try {
-        _store = await openStore(directory: storeDir);
+        _store = await openStore(directory: activeStoreDir);
         debugPrint('[Storage] Store opened successfully.');
       } catch (e) {
         debugPrint('[Storage] Failed to open store: $e');
         
         // Attempt cleanup if it looks like a locking issue
-        if (e.toString().contains('Operation not permitted')) {
+        if (e.toString().contains('Operation not permitted') || e.toString().contains('Lock')) {
           debugPrint('[Storage] Attempting to clean up stale lock files...');
           try {
-            final lockFile = File(p.join(storeDir, 'lock.mdb'));
+            final lockFile = File(p.join(activeStoreDir, 'lock.mdb'));
             if (lockFile.existsSync()) {
               lockFile.deleteSync();
               debugPrint('[Storage] Deleted stale lock.mdb');
             }
-            _store = await openStore(directory: storeDir);
+            _store = await openStore(directory: activeStoreDir);
             debugPrint('[Storage] Store opened after cleanup.');
           } catch (retryError) {
             debugPrint('[Storage] Cleanup retry failed: $retryError');
@@ -94,18 +114,29 @@ class StorageService {
         }
 
         if (_store == null) {
-          // Fallback: try temporary directory
-          try {
-            final tempDir = await getTemporaryDirectory();
-            final fallbackPath = p.join(tempDir.path, 'breakmate_fallback');
-            debugPrint('[Storage] Attempting fallback to $fallbackPath...');
-            Directory(fallbackPath).createSync(recursive: true);
-            _store = await openStore(directory: fallbackPath);
-            debugPrint('[Storage] Fallback store opened successfully.');
-          } catch (fallbackError) {
-            debugPrint('[Storage] FATAL: Fallback also failed: $fallbackError');
-            _failed = true;
-            return;
+          // Fallback: try Documents directory if Support failed (for some reason)
+          if (activeStoreDir != legacyStoreDir) {
+             debugPrint('[Storage] Attempting fallback to legacy location $legacyStoreDir...');
+             try {
+                Directory(legacyStoreDir).createSync(recursive: true);
+                _store = await openStore(directory: legacyStoreDir);
+             } catch (_) {}
+          }
+          
+          if (_store == null) {
+            // Last resort: temporary directory (will lose data on OS cleanup)
+            try {
+              final tempDir = await getTemporaryDirectory();
+              final fallbackPath = p.join(tempDir.path, 'breakmate_fallback');
+              debugPrint('[Storage] WARNING: Falling back to temporary storage at $fallbackPath. Data will not persist reliably.');
+              Directory(fallbackPath).createSync(recursive: true);
+              _store = await openStore(directory: fallbackPath);
+              debugPrint('[Storage] Fallback store opened successfully.');
+            } catch (fallbackError) {
+              debugPrint('[Storage] FATAL: All storage options failed: $fallbackError');
+              _failed = true;
+              return;
+            }
           }
         }
       }
