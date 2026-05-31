@@ -2,7 +2,7 @@ import 'package:objectbox/objectbox.dart';
 
 @Entity()
 class CompanionPreferences {
-  @Id()
+  @Id(assignable: true)
   int id;
 
   bool companionEnabled;
