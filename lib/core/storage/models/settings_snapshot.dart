@@ -81,6 +81,12 @@ class SettingsSnapshot {
   int lastSnoozeDurationMinutes;
   String intensityLevel;
 
+  // Goals & Contextual
+  int dailyBreakGoalCount;
+  int maxContinuousSittingMinutes;
+  int weeklyConsistencyTargetDays;
+  bool calendarEnabled;
+
   SettingsSnapshot({
     this.id = 0,
     required this.autoStart,
@@ -136,6 +142,10 @@ class SettingsSnapshot {
     this.quietModePreset = 'none',
     this.lastSnoozeDurationMinutes = 5,
     this.intensityLevel = 'standard',
+    this.dailyBreakGoalCount = 10,
+    this.maxContinuousSittingMinutes = 60,
+    this.weeklyConsistencyTargetDays = 5,
+    this.calendarEnabled = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -193,6 +203,10 @@ class SettingsSnapshot {
       'quietModePreset': quietModePreset,
       'lastSnoozeDurationMinutes': lastSnoozeDurationMinutes,
       'intensityLevel': intensityLevel,
+      'dailyBreakGoalCount': dailyBreakGoalCount,
+      'maxContinuousSittingMinutes': maxContinuousSittingMinutes,
+      'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
+      'calendarEnabled': calendarEnabled,
     };
   }
 }

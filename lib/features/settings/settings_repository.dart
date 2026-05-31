@@ -7,12 +7,24 @@ import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
+  // Hive box: a completely independent persistence mechanism used as the
+  // definitive source of truth for critical flags that MUST survive restarts.
+  // ObjectBox can fail silently; Hive is our bulletproof fallback.
+  Box? _hiveBox;
   SettingsModel _current = const SettingsModel();
 
-  SettingsRepository({required StorageService storage}) : _storage = storage;
+  SettingsRepository({required StorageService storage, Box? hiveBox})
+      : _storage = storage,
+        _hiveBox = hiveBox;
+
+  /// Call this BEFORE load() if Hive wasn't available at construction time.
+  void setHiveBox(Box box) {
+    _hiveBox = box;
+  }
 
   SettingsModel get currentSettings => _current;
 
@@ -31,16 +43,13 @@ class SettingsRepository extends ChangeNotifier {
           debugPrint('[SettingsRepo] Error decoding snapshot: $e. Falling back to legacy/defaults.');
           _current = _loadFromLegacy();
         }
-        
-        // Critical fix: Always override with primitive storage if it's more definitive
-        // This prevents the onboarding loop if the database snapshot is stale
-        final completedOnboarding = _storage.getBool('has_completed_onboarding');
-        debugPrint('[SettingsRepo] Definitive storage check: $completedOnboarding');
-        
-        if (completedOnboarding && !_current.hasCompletedOnboarding) {
-          debugPrint('[SettingsRepo] Fix applied: forcing hasCompletedOnboarding to true');
+
+        // Layer 1: ObjectBox KV override
+        final kvOnboarding = _storage.getBool('has_completed_onboarding');
+        debugPrint('[SettingsRepo] ObjectBox KV check: $kvOnboarding');
+        if (kvOnboarding && !_current.hasCompletedOnboarding) {
+          debugPrint('[SettingsRepo] ObjectBox KV override: setting hasCompletedOnboarding=true');
           _current = _current.copyWith(hasCompletedOnboarding: true);
-          unawaited(save(_current)); // Resync back to snapshot for consistency
         }
       } else {
         _current = _loadFromLegacy();
@@ -48,6 +57,48 @@ class SettingsRepository extends ChangeNotifier {
         if (_storage.isReady) {
           unawaited(save(_current));
         }
+      }
+
+      // Layer 2: Hive override — this is the DEFINITIVE authority.
+      // Hive uses a completely separate file/mechanism from ObjectBox.
+      // If ObjectBox was corrupted, unavailable, or used the wrong path,
+      // Hive will still have the correct values.
+      if (_hiveBox != null) {
+        final hiveOnboarding = _hiveBox!.get('hasCompletedOnboarding') as bool?;
+        final hiveTemplate = _hiveBox!.get('breakTemplate') as String?;
+        final hiveTheme = _hiveBox!.get('breakTheme') as String?;
+        final hiveClockFace = _hiveBox!.get('clockFaceStyle') as String?;
+        final hiveMenuBar = _hiveBox!.get('menuBarStyle') as String?;
+        final hiveProfileId = _hiveBox!.get('selectedProfileId') as String?;
+        final hiveCompanionEnabled = _hiveBox!.get('companionEnabled') as bool?;
+        final hiveCompanionPetTheme = _hiveBox!.get('companionPetTheme') as String?;
+        debugPrint('[SettingsRepo] Hive check: hasCompletedOnboarding=$hiveOnboarding, breakTemplate=$hiveTemplate');
+
+        if (hiveOnboarding == true) {
+          _current = _current.copyWith(hasCompletedOnboarding: true);
+        }
+        if (hiveTemplate != null && hiveTemplate.isNotEmpty) {
+          _current = _current.copyWith(breakTemplate: hiveTemplate);
+        }
+        if (hiveTheme != null && hiveTheme.isNotEmpty) {
+          _current = _current.copyWith(breakTheme: hiveTheme);
+        }
+        if (hiveClockFace != null && hiveClockFace.isNotEmpty) {
+          _current = _current.copyWith(clockFaceStyle: hiveClockFace);
+        }
+        if (hiveMenuBar != null && hiveMenuBar.isNotEmpty) {
+          _current = _current.copyWith(menuBarStyle: hiveMenuBar);
+        }
+        if (hiveProfileId != null && hiveProfileId.isNotEmpty) {
+          _current = _current.copyWith(selectedProfileId: hiveProfileId);
+        }
+        if (hiveCompanionEnabled != null) {
+          _current = _current.copyWith(companionEnabled: hiveCompanionEnabled);
+        }
+        if (hiveCompanionPetTheme != null && hiveCompanionPetTheme.isNotEmpty) {
+          _current = _current.copyWith(companionPetTheme: hiveCompanionPetTheme);
+        }
+        debugPrint('[SettingsRepo] After Hive override: hasCompletedOnboarding=${_current.hasCompletedOnboarding}, breakTemplate=${_current.breakTemplate}');
       }
     } catch (e) {
       debugPrint('[SettingsRepo] Fatal error in load(): $e');
@@ -126,12 +177,17 @@ class SettingsRepository extends ChangeNotifier {
       quietModePreset: s.quietModePreset,
       lastSnoozeDurationMinutes: s.lastSnoozeDurationMinutes,
       intensityLevel: s.intensityLevel,
+      dailyBreakGoalCount: s.dailyBreakGoalCount,
+      maxContinuousSittingMinutes: s.maxContinuousSittingMinutes,
+      weeklyConsistencyTargetDays: s.weeklyConsistencyTargetDays,
+      calendarEnabled: s.calendarEnabled,
       companionEnabled: cp?.companionEnabled ?? false,
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
       companionScale: cp?.companionScale ?? 1.5,
       companionClickThrough: cp?.companionClickThrough ?? false,
       companionFollowMouse: cp?.companionFollowMouse ?? false,
+      unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
     );
   }
 
@@ -294,14 +350,19 @@ class SettingsRepository extends ChangeNotifier {
         'companion_follow_mouse',
         defaultValue: false,
       ),
+      calendarEnabled: _storage.getBool('calendar_enabled', defaultValue: false),
     );
   }
 
   Future<void> completeOnboarding() async {
     debugPrint('[SettingsRepo] Explicitly completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
+    // Write the KV flag SYNCHRONOUSLY first so even a fast quit cannot lose it.
+    // StorageService.setBool() performs a synchronous ObjectBox put internally.
+    await _storage.setBool('has_completed_onboarding', true);
+    debugPrint('[SettingsRepo] KV flag written. Persisting full snapshot...');
     await save(_current);
-    debugPrint('[SettingsRepo] Onboarding completion persisted.');
+    debugPrint('[SettingsRepo] Onboarding completion fully persisted.');
   }
 
   Future<void> save(SettingsModel settings) async {
@@ -365,14 +426,49 @@ class SettingsRepository extends ChangeNotifier {
       quietModePreset: settings.quietModePreset,
       lastSnoozeDurationMinutes: settings.lastSnoozeDurationMinutes,
       intensityLevel: settings.intensityLevel,
+      dailyBreakGoalCount: settings.dailyBreakGoalCount,
+      maxContinuousSittingMinutes: settings.maxContinuousSittingMinutes,
+      weeklyConsistencyTargetDays: settings.weeklyConsistencyTargetDays,
+      calendarEnabled: settings.calendarEnabled,
     );
 
-    // Mirror critical onboarding state to primitives for reliability FIRST
-    // This is because KeyValueRecords are often more stable than complex snapshots
+    // Mirror ALL critical settings to the KV store for reliability.
+    // This is a belt-and-suspenders approach: ObjectBox is the primary store,
+    // but if it fails on next launch, _loadFromLegacy() will read these KV values
+    // and correctly restore the user's choices instead of falling back to defaults.
     await _storage.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
     await _storage.setInt('short_break_interval', settings.shortBreakIntervalMinutes);
     await _storage.setBool('strict_mode', settings.strictMode);
     await _storage.setBool('companion_enabled', settings.companionEnabled);
+
+    // Break settings
+    await _storage.setString('break_template', settings.breakTemplate);
+    await _storage.setString('break_theme', settings.breakTheme);
+    await _storage.setString('clock_face_style', settings.clockFaceStyle);
+    await _storage.setString('menu_bar_style', settings.menuBarStyle);
+    await _storage.setString('selected_profile_id', settings.selectedProfileId);
+    await _storage.setString('tray_icon_style', settings.trayIconStyle);
+
+    // Timer intervals
+    await _storage.setInt(AppConstants.keyShortBreakInterval, settings.shortBreakIntervalMinutes);
+    await _storage.setInt(AppConstants.keyShortBreakDuration, settings.shortBreakDurationSeconds);
+    await _storage.setInt(AppConstants.keyPreBreakWarningSeconds, settings.preBreakWarningSeconds);
+    await _storage.setInt(AppConstants.keyLongBreakInterval, settings.longBreakIntervalMinutes);
+    await _storage.setInt(AppConstants.keyLongBreakDuration, settings.longBreakDurationMinutes);
+
+    // Notifications
+    await _storage.setBool(AppConstants.keySoundEnabled, settings.soundEnabled);
+    await _storage.setBool('notifications_enabled', settings.notificationsEnabled);
+
+    // Smart detection
+    await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
+    await _storage.setBool('detect_meetings', settings.detectMeetings);
+    await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
+    await _storage.setBool('calendar_enabled', settings.calendarEnabled);
+
+    // Companion
+    await _storage.setString(AppConstants.keyCompanionPetTheme, settings.companionPetTheme);
+    await _storage.setDouble('companion_scale', settings.companionScale);
 
     // Then save the full snapshot
     if (_storage.settingsBox != null) {
@@ -387,12 +483,30 @@ class SettingsRepository extends ChangeNotifier {
       companionScale: settings.companionScale,
       companionClickThrough: settings.companionClickThrough,
       companionFollowMouse: settings.companionFollowMouse,
+      unlockedPetsJson: jsonEncode(settings.unlockedPets),
     );
 
     if (_storage.companionPreferencesBox != null) {
       _storage.companionPreferencesBox!.put(companionPrefs);
     }
-    
+
+    // Hive writes: these are the DEFINITIVE source of truth.
+    // Written synchronously here (Hive put is sync after box is open).
+    // These override ObjectBox values in load() on the next restart.
+    if (_hiveBox != null) {
+      _hiveBox!.put('hasCompletedOnboarding', settings.hasCompletedOnboarding);
+      _hiveBox!.put('breakTemplate', settings.breakTemplate);
+      _hiveBox!.put('breakTheme', settings.breakTheme);
+      _hiveBox!.put('clockFaceStyle', settings.clockFaceStyle);
+      _hiveBox!.put('menuBarStyle', settings.menuBarStyle);
+      _hiveBox!.put('selectedProfileId', settings.selectedProfileId);
+      _hiveBox!.put('companionEnabled', settings.companionEnabled);
+      _hiveBox!.put('companionPetTheme', settings.companionPetTheme);
+      debugPrint('[SettingsRepo] Hive written: hasCompletedOnboarding=${settings.hasCompletedOnboarding}, breakTemplate=${settings.breakTemplate}');
+    } else {
+      debugPrint('[SettingsRepo] WARNING: Hive box not set – critical flags may not persist!');
+    }
+
     notifyListeners();
   }
 

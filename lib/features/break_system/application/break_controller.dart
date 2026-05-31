@@ -54,6 +54,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   void _onSettingsChanged() {
     _applySettings();
+    _updateActiveOverlay();
     notifyListeners();
   }
 
@@ -114,6 +115,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         overlayData: {
           'isLong': isLong,
           'template': _currentTemplate,
+          'breakTemplate': _currentTemplate,
+          'companionPetTheme': settings.companionPetTheme,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
         },
@@ -260,7 +263,31 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   void refreshSettings() {
     _applySettings();
+    _updateActiveOverlay();
     notifyListeners();
+  }
+
+  void _updateActiveOverlay() {
+    if (_timerEngine.state == TimerState.breakActive) {
+      final overlayService = sl<OverlayWindowService>();
+      final settings = _settingsRepo.currentSettings;
+      final isLong = _timerEngine.activeBreak?.type == BreakType.long;
+
+      overlayService.showOverlay(
+        type: OverlayType.breakScreen,
+        builder: (_) => const SizedBox.shrink(),
+        strictMode: settings.strictMode,
+        breakTheme: settings.breakTheme,
+        overlayData: {
+          'isLong': isLong,
+          'template': settings.breakTemplate,
+          'breakTemplate': settings.breakTemplate,
+          'companionPetTheme': settings.companionPetTheme,
+          'exerciseTitle': _currentExerciseTitle,
+          'exerciseInstructions': _currentExerciseInstructions,
+        },
+      );
+    }
   }
 
   void changeProfile(BreakProfile profile) {

@@ -15,6 +15,7 @@ import 'package:breakmate/app/main_layout.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
+import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
 
 class BreakMateApp extends StatefulWidget {
   const BreakMateApp({super.key});
@@ -59,6 +60,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<BreakController>()),
         ChangeNotifierProvider.value(value: sl<SettingsRepository>()),
         ChangeNotifierProvider.value(value: sl<StatsService>()),
+        ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
       child: MacosApp(
         navigatorKey: ErrorToastService.navigatorKey,

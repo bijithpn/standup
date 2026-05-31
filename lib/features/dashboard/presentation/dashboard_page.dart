@@ -1,15 +1,98 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
+import 'package:breakmate/app/dependency_injection.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  List<CalendarEvent>? _calendarEvents;
+  bool _calendarLoading = false;
+  bool _calendarPermissionGranted = false;
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCalendarEvents();
+    // Refresh calendar events every 2 minutes
+    _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
+      _loadCalendarEvents();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadCalendarEvents() async {
+    final settings = sl<SettingsRepository>().currentSettings;
+    if (!settings.calendarEnabled) {
+      setState(() {
+        _calendarEvents = null;
+        _calendarLoading = false;
+      });
+      return;
+    }
+
+    final calendarService = sl<CalendarService>();
+    setState(() => _calendarLoading = true);
+
+    try {
+      final hasPermission = await calendarService.checkPermissions();
+      if (!hasPermission) {
+        if (mounted) {
+          setState(() {
+            _calendarPermissionGranted = false;
+            _calendarLoading = false;
+          });
+        }
+        return;
+      }
+
+      _calendarPermissionGranted = true;
+      final events = await calendarService.getUpcomingEvents(
+        window: const Duration(hours: 8),
+      );
+      if (mounted) {
+        setState(() {
+          _calendarEvents = events;
+          _calendarLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _calendarLoading = false);
+      }
+    }
+  }
+
+  Future<void> _requestCalendarAccess() async {
+    final calendarService = sl<CalendarService>();
+    final granted = await calendarService.requestPermissions();
+    if (granted) {
+      setState(() => _calendarPermissionGranted = true);
+      await _loadCalendarEvents();
+    } else {
+      if (mounted) setState(() => _calendarPermissionGranted = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,32 +101,46 @@ class DashboardPage extends StatelessWidget {
         final isSmall = constraints.maxWidth < 600;
         final padding = isSmall ? 20.0 : 40.0;
 
-        final content = SingleChildScrollView(
-          padding: EdgeInsets.all(padding),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  _buildHeader(context),
-                  const SizedBox(height: 40),
-                  _buildTimerSection(context),
-                  const SizedBox(height: 40),
-                  _buildActionGrid(context),
-                  const SizedBox(height: 40),
-                  _buildSummarySection(context),
-                ],
+        Widget buildContent(ScrollController? scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: EdgeInsets.all(padding),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Consumer<SettingsRepository>(
+                  builder: (context, settingsRepo, _) {
+                    final calendarEnabled =
+                        settingsRepo.currentSettings.calendarEnabled;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 10),
+                        _buildHeader(context),
+                        const SizedBox(height: 40),
+                        _buildTimerSection(context),
+                        const SizedBox(height: 40),
+                        _buildActionGrid(context),
+                        if (calendarEnabled) ...[
+                          const SizedBox(height: 40),
+                          _buildCalendarSection(context),
+                        ],
+                        const SizedBox(height: 40),
+                        _buildSummarySection(context),
+                        const SizedBox(height: 20),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        );
+          );
+        }
 
         if (isSmall) {
           return Scaffold(
             backgroundColor: AppTheme.surface,
-            body: SafeArea(child: content),
+            body: SafeArea(child: buildContent(null)),
           );
         }
 
@@ -63,7 +160,10 @@ class DashboardPage extends StatelessWidget {
             actions: [],
           ),
           children: [
-            ContentArea(builder: (context, scrollController) => content),
+            ContentArea(
+              builder: (context, scrollController) =>
+                  buildContent(scrollController),
+            ),
           ],
         );
       },
@@ -163,7 +263,8 @@ class DashboardPage extends StatelessWidget {
                       const SizedBox(width: 8),
                       _PrimaryButton(
                         onTap: () => controller.togglePause(),
-                        label: isPaused ? AppStrings.resume : AppStrings.pause,
+                        label:
+                            isPaused ? AppStrings.resume : AppStrings.pause,
                         icon: isPaused
                             ? Icons.play_arrow_rounded
                             : Icons.pause_rounded,
@@ -194,15 +295,15 @@ class DashboardPage extends StatelessWidget {
     return Consumer<BreakController>(
       builder: (context, controller, _) {
         final companionActive = controller.companionEnabled;
-        
+
         return Row(
           children: [
             Expanded(
               child: _ActionCard(
                 title: AppStrings.companion,
                 subtitle: companionActive
-                    ? (controller.timerEngine.state == TimerState.running 
-                        ? 'Active and watching' 
+                    ? (controller.timerEngine.state == TimerState.running
+                        ? 'Active and watching'
                         : 'Resting')
                     : 'Disabled in settings',
                 icon: Icons.pets_rounded,
@@ -227,6 +328,207 @@ class DashboardPage extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Calendar Events Section
+  // ---------------------------------------------------------------------------
+
+  Widget _buildCalendarSection(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: AppTheme.cardDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today_rounded,
+                      size: 16,
+                      color: Color(0xFF6366F1),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Upcoming Events',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              if (_calendarLoading)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.accent,
+                  ),
+                )
+              else
+                GestureDetector(
+                  onTap: _loadCalendarEvents,
+                  child: const Icon(
+                    Icons.refresh_rounded,
+                    size: 18,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildCalendarContent(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCalendarContent() {
+    if (_calendarLoading) {
+      return _buildCalendarSkeleton();
+    }
+
+    if (!_calendarPermissionGranted) {
+      return _buildCalendarPermissionPrompt();
+    }
+
+    final events = _calendarEvents;
+
+    if (events == null || events.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline_rounded,
+              size: 18,
+              color: AppTheme.textMuted,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'No events in the next 8 hours — focus time!',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppTheme.textMuted,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (int i = 0; i < events.length; i++) ...[
+          if (i > 0)
+            const Divider(height: 1, color: AppTheme.border),
+          _CalendarEventRow(event: events[i]),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCalendarPermissionPrompt() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.lock_outline_rounded,
+              size: 16,
+              color: AppTheme.warning,
+            ),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'Calendar access required to show upcoming events and avoid interrupting your meetings.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        InkWell(
+          onTap: _requestCalendarAccess,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: const Color(0xFF6366F1).withValues(alpha: 0.3),
+              ),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_month_rounded,
+                  size: 16,
+                  color: Color(0xFF6366F1),
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Grant Calendar Access',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6366F1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCalendarSkeleton() {
+    return Column(
+      children: List.generate(
+        2,
+        (i) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              _SkeletonBox(width: 40, height: 40, radius: 8),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SkeletonBox(width: double.infinity, height: 14, radius: 4),
+                    const SizedBox(height: 6),
+                    _SkeletonBox(width: 120, height: 11, radius: 4),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -277,7 +579,8 @@ class DashboardPage extends StatelessWidget {
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
                       AppStrings.noActivityRecorded,
-                      style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
+                      style:
+                          TextStyle(color: AppTheme.textMuted, fontSize: 13),
                     ),
                   ),
                 )
@@ -332,6 +635,167 @@ class DashboardPage extends StatelessWidget {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 }
+
+// ---------------------------------------------------------------------------
+// Calendar Event Row Widget
+// ---------------------------------------------------------------------------
+
+class _CalendarEventRow extends StatelessWidget {
+  final CalendarEvent event;
+
+  const _CalendarEventRow({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isHappeningNow =
+        !event.isAllDay &&
+        event.start.isBefore(now) &&
+        event.end.isAfter(now);
+    final isUpcoming = event.start.isAfter(now);
+    final minutesUntil = event.start.difference(now).inMinutes;
+
+    final timeLabel = event.isAllDay
+        ? 'All day'
+        : '${_formatTime(event.start)} – ${_formatTime(event.end)}';
+
+    String? badge;
+    Color badgeColor = AppTheme.accent;
+    if (isHappeningNow) {
+      badge = 'Live';
+      badgeColor = AppTheme.error;
+    } else if (isUpcoming && minutesUntil <= 15) {
+      badge = 'In ${minutesUntil}m';
+      badgeColor = AppTheme.warning;
+    } else if (isUpcoming && minutesUntil <= 60) {
+      badge = 'In ${minutesUntil}m';
+      badgeColor = const Color(0xFF6366F1);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          // Time indicator
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isHappeningNow
+                  ? AppTheme.error.withValues(alpha: 0.1)
+                  : const Color(0xFF6366F1).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              isHappeningNow
+                  ? Icons.fiber_manual_record_rounded
+                  : Icons.event_rounded,
+              size: 20,
+              color: isHappeningNow
+                  ? AppTheme.error
+                  : const Color(0xFF6366F1),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        event.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: isHappeningNow
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                          color: AppTheme.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (badge != null) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          badge,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: badgeColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  timeLabel,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    final h = dt.hour;
+    final m = dt.minute.toString().padLeft(2, '0');
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour12 = h % 12 == 0 ? 12 : h % 12;
+    return '$hour12:$m $period';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Skeleton loading box
+// ---------------------------------------------------------------------------
+
+class _SkeletonBox extends StatelessWidget {
+  final double width;
+  final double height;
+  final double radius;
+
+  const _SkeletonBox({
+    required this.width,
+    required this.height,
+    required this.radius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: AppTheme.border.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(radius),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Shared small widgets
+// ---------------------------------------------------------------------------
 
 class _RecommendationChip extends StatelessWidget {
   final StatsModel stats;

@@ -19,6 +19,8 @@ import 'package:breakmate/features/settings/presentation/sections/exercises_sect
 import 'package:breakmate/features/settings/presentation/sections/clock_out_section.dart';
 import 'package:breakmate/features/settings/widgets/update_section.dart';
 import 'package:breakmate/features/settings/widgets/about_section.dart';
+import 'package:breakmate/features/settings/widgets/goals_section.dart';
+import 'package:breakmate/features/settings/widgets/privacy_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/analytics_settings_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/companion_settings_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/data_management_section.dart';
@@ -74,25 +76,28 @@ class _SettingsPageState extends State<SettingsPage> {
         final horizontalPadding = isSmallScreen ? 16.0 : 40.0;
         final verticalPadding = isSmallScreen ? 20.0 : 32.0;
 
-        final content = SingleChildScrollView(
-          padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: verticalPadding,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isSmallScreen ? double.infinity : 760,
-              ),
-              child: _buildContent(),
+        Widget buildContent(ScrollController? scrollController) {
+          return SingleChildScrollView(
+            controller: scrollController,
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
             ),
-          ),
-        );
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isSmallScreen ? double.infinity : 760,
+                ),
+                child: _buildContent(),
+              ),
+            ),
+          );
+        }
 
         if (isSmallScreen) {
           return Scaffold(
             backgroundColor: AppTheme.contentBackground,
-            body: content,
+            body: buildContent(null),
           );
         }
 
@@ -112,7 +117,9 @@ class _SettingsPageState extends State<SettingsPage> {
             actions: [],
           ),
           children: [
-            ContentArea(builder: (context, scrollController) => content),
+            ContentArea(
+              builder: (context, scrollController) => buildContent(scrollController),
+            ),
           ],
         );
       },
@@ -163,6 +170,10 @@ class _SettingsPageState extends State<SettingsPage> {
         return CompanionSettingsSection(
           controller: sl<CompanionOverlayController>(),
         );
+      case 'Goals':
+        return const GoalsSection();
+      case 'Privacy':
+        return const PrivacySection();
       case 'Data & Backup':
         return const DataManagementSection();
       default:

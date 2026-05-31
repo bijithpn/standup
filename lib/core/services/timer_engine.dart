@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -43,6 +44,7 @@ class TimerEngine extends ChangeNotifier {
   TimerEngine({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
+    CalendarService? calendarService,
     EventBus? eventBus,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
@@ -50,6 +52,7 @@ class TimerEngine extends ChangeNotifier {
     _contextManager = TimerContextManager(
       settingsRepository: _settingsRepository,
       smartDetectionService: _smartDetectionService,
+      calendarService: calendarService,
     );
     _syncSettingsFromRepo();
   }
@@ -312,7 +315,17 @@ class TimerEngine extends ChangeNotifier {
 
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
-      _triggerBreak();
+      
+      // Calendar awareness
+      _contextManager.isMeetingUpcoming().then((isMeeting) {
+        if (isMeeting) {
+          _logger.info('Delaying break due to imminent meeting');
+          _stateData.workElapsed = interval - const Duration(minutes: 5);
+          notifyListeners();
+        } else {
+          _triggerBreak();
+        }
+      });
     }
   }
 
@@ -360,19 +373,21 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void _triggerClockOut() {
-    _stateData.state = TimerState.breakActive;
+    _stateData.state = TimerState.windDown;
     _stateData.workElapsed = Duration.zero;
-    _stateData.countdownSeconds = 60;
+    _stateData.countdownSeconds = 300; // 5 minutes wind down
     _stateData.breakEndTime = DateTime.now().add(
       Duration(seconds: countdownSeconds),
     );
     _stateData.workEndTime = null;
 
     _stateData.activeBreak = BreakModel(
-      type: BreakType.long,
+      type: BreakType.windDown,
       durationSeconds: countdownSeconds,
-      title: 'CLOCK OUT',
-      tip: 'Your workday is over. Time to step away and live your life.',
+      title: 'Workday Wrap-up',
+      tip:
+          'Great job today! Let\'s wind down and review your highlights before you head out.',
+      triggerReason: 'Clock-out time reached',
     );
 
     _emit(
@@ -383,7 +398,7 @@ class TimerEngine extends ChangeNotifier {
       ),
     );
 
-    _logger.info('Clock out triggered');
+    _logger.info('Wind-down triggered');
     notifyListeners();
   }
 

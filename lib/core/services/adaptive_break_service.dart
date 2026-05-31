@@ -2,11 +2,14 @@ import 'dart:convert';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
 
 /// Adaptive break timing service that learns from user activity patterns
 /// and suggests optimal break times based on historical data
 class AdaptiveBreakService {
   final StorageService _storage;
+  final WellnessEngine _wellnessEngine;
   final AppLogger _logger = AppLogger();
 
   // Activity patterns: hour of day -> activity level (0-10)
@@ -19,7 +22,11 @@ class AdaptiveBreakService {
   int _todaySessionCount = 0;
   String _lastActiveDate = '';
 
-  AdaptiveBreakService({required StorageService storage}) : _storage = storage {
+  AdaptiveBreakService({
+    required StorageService storage,
+    required WellnessEngine wellnessEngine,
+  }) : _storage = storage,
+       _wellnessEngine = wellnessEngine {
     _loadActivityPatterns();
     _checkNewDay();
   }
@@ -246,6 +253,10 @@ class AdaptiveBreakService {
   String _getTodayString() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<String> getContextualTip(BreakType type) async {
+    return _wellnessEngine.getSuggestedBreakTip(type);
   }
 }
 
