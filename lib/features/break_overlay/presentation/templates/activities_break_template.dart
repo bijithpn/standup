@@ -4,6 +4,7 @@ import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/guided_breathing_widget.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/eye_sync_game_widget.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
 // ── Activity enum ─────────────────────────────────────────────────────────────
 
@@ -123,10 +124,11 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   const SizedBox(height: 24),
 
                   // ── Bottom rail ───────────────────────────────────────────
-                  _BottomRail(
-                    strictMode: widget.settings.strictMode,
-                    onSkip: widget.onSkip,
-                  ),
+                  if (!widget.settings.strictMode && widget.onSkip != null)
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: SkipBreakButton(onSkip: widget.onSkip!),
+                    ),
                 ],
               ),
             ),
@@ -323,62 +325,6 @@ class _ActivityTab extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _BottomRail extends StatelessWidget {
-  final bool strictMode;
-  final VoidCallback? onSkip;
-
-  const _BottomRail({required this.strictMode, required this.onSkip});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        if (!strictMode && onSkip != null)
-          GestureDetector(
-            onTap: onSkip,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 9,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Skip',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      LucideIcons.chevronRight,
-                      size: 13,
-                      color: Colors.white.withValues(alpha: 0.45),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

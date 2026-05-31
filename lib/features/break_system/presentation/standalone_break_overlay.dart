@@ -16,6 +16,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/producti
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
 enum BreakTheme {
   image,
@@ -429,7 +430,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         Positioned(
           top: 28,
           left: 28,
-          child: SafeArea(child: _buildBreakContextPill()),
+          child: SafeArea(
+            child: BreakContextPill(
+              breakInfo: breakInfo,
+              exerciseTitle: _exerciseTitle,
+            ),
+          ),
         ),
         if (!_strictMode)
           Positioned(
@@ -460,27 +466,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             bottom: 24,
             left: 0,
             right: 0,
-            child: IgnorePointer(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    CupertinoIcons.chevron_up,
-                    size: 20,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  Text(
-                    'Swipe up to dismiss',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 1.0,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              ),
+            child: const IgnorePointer(
+              child: SwipeToDismissHint(),
             ),
           ),
         if (_strictMode)
@@ -488,74 +475,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             bottom: 24,
             left: 24,
             right: 24,
-            child: IgnorePointer(child: _buildStrictModeNote()),
+            child: IgnorePointer(
+              child: StrictModeNote(intensityLevel: _intensityLevel),
+            ),
           ),
       ],
-    );
-  }
-
-  Widget _buildBreakContextPill() {
-    final whyNow = _title.toUpperCase().contains('EYE')
-        ? 'Why now: eye-rest interval reached'
-        : _title.toUpperCase().contains('LONG')
-        ? 'Why now: long focus block completed'
-        : 'Why now: scheduled recovery break';
-    final action = _exerciseTitle != null
-        ? 'Do: ${_exerciseTitle!}'
-        : _durationSeconds <= 30
-        ? 'Do: look away and reset your posture'
-        : 'Do: stand, breathe, and move gently';
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 420),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.32),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
-      child: DefaultTextStyle(
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.78),
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          fontFamily: 'Inter',
-          height: 1.35,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [Text(whyNow), const SizedBox(height: 3), Text(action)],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStrictModeNote() {
-    final isLocked = _intensityLevel == 'locked';
-    return Center(
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 560),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.34),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        ),
-        child: Text(
-          isLocked
-              ? 'Locked mode is active. Skip and postpone are unavailable until this break finishes.'
-              : 'Strict mode is active. Skip is hidden for this break intensity.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.64),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Inter',
-            height: 1.35,
-          ),
-        ),
-      ),
     );
   }
 
@@ -966,40 +890,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   Widget _buildSkipButton() {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: _skipBreak,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Skip Break',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                CupertinoIcons.arrow_right,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return SkipBreakButton(onSkip: _skipBreak);
   }
 
   String _formatTime(int seconds) {

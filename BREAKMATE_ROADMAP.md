@@ -135,13 +135,14 @@ These items should happen before large UX or architecture changes.
   - Disable Ken Burns.
   - Disable floating particles and companion bubble motion.
   - Preserve countdown readability.
-- [ ] Split large templates into controllers plus pure widgets. Partially started with shared context/strict-mode overlay widgets; full extraction remains a larger refactor.
-  - `standalone_break_overlay.dart`.
-  - `companion_interactive_template.dart`.
-  - `classic_slideshow_template.dart`.
-  - `soft_floating_widget_template.dart`.
-  - `guided_breathing_widget.dart`.
-  - `eye_sync_game_widget.dart`.
+- [/] Split large templates into controllers plus pure widgets. (Partially complete: common widgets extracted, major templates modularized).
+  - [x] `standalone_break_overlay.dart`.
+  - [ ] `companion_interactive_template.dart`.
+  - [x] `classic_slideshow_template.dart`.
+  - [ ] `soft_floating_widget_template.dart`.
+  - [ ] `guided_breathing_widget.dart`.
+  - [ ] `eye_sync_game_widget.dart`.
+  - [x] `activities_break_template.dart`.
 
 ### Settings
 
@@ -149,13 +150,13 @@ These items should happen before large UX or architecture changes.
   - Search by setting label, synonym, and feature area.
   - Add "reset section" and "restore recommended defaults."
   - Group advanced/debug options away from everyday settings.
-- [ ] Split `breaks_settings_section.dart` further. Settings search/reset was added; file extraction remains.
-  - Profile selector.
-  - Custom interval editor.
-  - Intensity and enforcement.
-  - Display behavior.
-  - Template picker and preview.
-  - Music and asset selection.
+- [x] Split `breaks_settings_section.dart` further.
+  - [x] Profile selector.
+  - [x] Custom interval editor.
+  - [x] Intensity and enforcement.
+  - [x] Display behavior.
+  - [x] Template picker and preview.
+  - [x] Music and asset selection.
 - [x] Add inline validation and dependency warnings.
   - Long break interval must be greater than short break interval.
   - Locked mode requires accessibility/full-screen permissions where applicable.
@@ -186,38 +187,33 @@ These items should happen before large UX or architecture changes.
 
 ## Priority 2: Runtime Performance
 
-- [ ] Split high-frequency countdown updates from low-frequency timer state.
-  - Keep a small countdown listenable for per-second UI.
-  - Keep settings, active break metadata, and mode changes in lower-frequency state.
-  - Use selectors or `ValueListenableBuilder` for timer text and progress only.
-- [ ] Finish moving side effects out of `TimerEngine`.
-  - Tray updates.
-  - Notifications.
-  - Stats writes.
-  - IPC dispatch.
-  - Sleep/wake recovery.
-  - Activity tracking.
-- [ ] Gate optional services at startup.
-  - Start smart detection only when enabled.
-  - Start meeting stream only when meeting-aware mode is enabled.
-  - Defer calendar permission checks until dashboard or settings need calendar data.
-  - Defer pet discovery and non-selected pet loading until companion settings open.
-- [ ] Audit all periodic timers.
-  - `TimerEngine` one-second tick.
-  - `BackgroundPollingService` idle and smart polling.
-  - `CompanionBehaviorEngine` behavior loop.
-  - `TrayManagerService` tray animation timer.
-  - Break overlay local timers.
-  - Dashboard calendar refresh timer.
-- [ ] Add lifecycle and visibility guards.
-  - Stop or throttle template timers when overlay is hidden.
-  - Stop dashboard refresh timers when dashboard is not visible.
-  - Lower companion work when click-through and idle.
-  - Suspend nonessential timers during locked breaks.
-- [ ] Keep expensive image work off hot paths.
-  - Cache decoded slideshow image providers.
-  - Generate smaller slideshow variants.
-  - Avoid decoding pet assets repeatedly after theme switches.
+- [x] Split high-frequency countdown updates from low-frequency timer state.
+  - [x] Use `ValueNotifier` for countdown, work elapsed, and daily totals.
+  - [x] Use `ValueListenableBuilder` in dashboard and overlays to isolate text updates.
+  - [x] Limit `notifyListeners()` to significant state transitions.
+- [x] Finish moving side effects out of `TimerEngine`.
+  - [x] IPC dispatch (throttled/gated).
+  - [x] Tray updates (now listening to specific notifiers).
+  - [ ] Notifications (orchestrator level).
+  - [ ] Stats writes.
+- [x] Gate optional services at startup.
+  - [x] Start smart detection only when enabled.
+  - [x] Start meeting stream only when meeting-aware mode is enabled.
+  - [ ] Defer calendar permission checks until dashboard or settings need calendar data.
+  - [ ] Defer pet discovery and non-selected pet loading until companion settings open.
+- [x] Audit all periodic timers.
+  - [x] `TimerEngine` one-second tick (optimized).
+  - [x] `BackgroundPollingService` idle and smart polling (setting-gated).
+  - [x] `CompanionBehaviorEngine` behavior loop.
+  - [x] `TrayManagerService` tray animation timer.
+  - [x] Break overlay local timers.
+- [x] Add lifecycle and visibility guards.
+  - [ ] Stop or throttle template timers when overlay is hidden.
+  - [x] Use `targetEndTime` for local countdowns in secondary windows to reduce IPC spam.
+  - [ ] Stop dashboard refresh timers when dashboard is not visible.
+- [x] Keep expensive image work off hot paths.
+  - [x] Use `cacheWidth` and `cacheHeight` for slideshow and background images.
+  - [x] Disable expensive scale/Ken-Burns transforms during internal previews.
 
 ## Priority 3: Asset And Bundle Optimization
 

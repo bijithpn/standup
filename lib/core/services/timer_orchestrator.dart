@@ -57,7 +57,11 @@ class TimerOrchestrator {
     // 2. Start listening to EventBus
     _eventSubscription = eventBus.stream.listen(_handleEvent);
 
-    // 3. Start listening to TimerEngine notifier for tray updates & state saving
+    // 3. Listen to high-frequency notifiers for tray updates
+    timerEngine.countdownNotifier.addListener(_updateTray);
+    timerEngine.workElapsedNotifier.addListener(_updateTray);
+    
+    // Listen for low-frequency changes (state, mode, etc.) for state saving
     timerEngine.addListener(_onTimerEngineChanged);
 
     // 4. Setup ActivityMonitor callback

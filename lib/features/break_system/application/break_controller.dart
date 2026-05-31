@@ -13,6 +13,8 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
@@ -166,7 +168,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _timerEngine.updateSettings(
       shortIntervalMinutes: settings.shortBreakIntervalMinutes,
       shortDurationSeconds: settings.shortBreakDurationSeconds,
-      preBreakWarningSeconds: settings.preBreakWarningSeconds,
       longIntervalMinutes: settings.longBreakIntervalMinutes,
       longDurationSeconds: settings.longBreakDurationMinutes * 60,
       pauseAfterMinutes: settings.pauseTimerAfterMinutes,
@@ -179,6 +180,21 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     );
     sl<NotificationService>().setSoundEnabled(settings.soundEnabled);
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
+
+    // Dynamic service gating
+    final smartDetection = sl<SmartDetectionService>();
+    if (settings.detectVideoCalls || settings.respectFocusMode) {
+      smartDetection.start();
+    } else {
+      smartDetection.stop();
+    }
+
+    final meetingDetection = sl<MeetingDetectionService>();
+    if (settings.detectMeetings) {
+      meetingDetection.start();
+    } else {
+      meetingDetection.stop();
+    }
   }
 
   // --- Snooze Logic ---
