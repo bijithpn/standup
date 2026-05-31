@@ -117,7 +117,6 @@ Future<void> initDependencies() async {
   notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
 
   final smartDetectionService = SmartDetectionService();
-  smartDetectionService.start();
   sl.registerSingleton<SmartDetectionService>(smartDetectionService);
 
   final calendarService = CalendarService();
@@ -173,11 +172,6 @@ Future<void> initDependencies() async {
 
   sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
   sl.registerLazySingleton<WellnessLibraryRepository>(() => WellnessLibraryRepository(settingsRepo: sl()));
-
-  // Listen for meeting events and broadcast via IPC to all isolates
-  meetingDetectionService.isMeetingActiveStream.listen((isActive) {
-    IpcBridge.instance.notifyMeetingDetected(isActive);
-  });
 
   final focusModeService = FocusModeService();
   sl.registerSingleton<FocusModeService>(focusModeService);

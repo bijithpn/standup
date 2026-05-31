@@ -15,6 +15,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/soft_flo
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
 class BreakOverlay extends StatefulWidget {
   const BreakOverlay({super.key});
@@ -202,14 +203,24 @@ class _BreakOverlayContent extends StatelessWidget {
         // RepaintBoundary isolates the high-frequency countdown region from
         // the static overlay chrome (skip button, swipe hint).
         RepaintBoundary(
-          child: Selector<BreakController, int>(
-            selector: (_, c) => c.timerEngine.countdownSeconds,
+          child: ValueListenableBuilder<int>(
+            valueListenable: controller.timerEngine.countdownNotifier,
             builder: (_, remaining, _) => _buildTemplate(
               settings: settings,
               breakInfo: breakInfo,
               remaining: remaining,
               total: total,
               onSkip: onSkip,
+            ),
+          ),
+        ),
+        Positioned(
+          top: 28,
+          left: 28,
+          child: SafeArea(
+            child: BreakContextPill(
+              breakInfo: breakInfo,
+              exerciseTitle: controller.currentExerciseTitle,
             ),
           ),
         ),
@@ -241,27 +252,17 @@ class _BreakOverlayContent extends StatelessWidget {
             bottom: 24,
             left: 0,
             right: 0,
+            child: const IgnorePointer(
+              child: SwipeToDismissHint(),
+            ),
+          ),
+        if (settings.strictMode)
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
             child: IgnorePointer(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    CupertinoIcons.chevron_up,
-                    size: 20,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  Text(
-                    'Swipe up to dismiss',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 1.0,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              ),
+              child: StrictModeNote(intensityLevel: settings.intensityLevel),
             ),
           ),
       ],

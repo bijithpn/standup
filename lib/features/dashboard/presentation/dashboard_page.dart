@@ -220,11 +220,8 @@ class _DashboardPageState extends State<DashboardPage> {
         final isPaused = engine.state == TimerState.paused;
         final isBreak = engine.state == TimerState.breakActive;
 
-        final duration = Duration(seconds: engine.countdownSeconds);
-        final minutes = duration.inMinutes.toString().padLeft(2, '0');
-        final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
-
         String statusText = AppStrings.readyToFocus;
+
         if (isRunning) statusText = AppStrings.focusing;
         if (isPaused) statusText = AppStrings.paused;
         if (engine.isPreBreak) statusText = AppStrings.breakComingUp;
@@ -267,15 +264,28 @@ class _DashboardPageState extends State<DashboardPage> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      '$minutes:$seconds',
-                      style: const TextStyle(
-                        fontSize: 56,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                        letterSpacing: -2,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                      ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: engine.countdownNotifier,
+                      builder: (context, seconds, _) {
+                        final duration = Duration(seconds: seconds);
+                        final mins = duration.inMinutes.toString().padLeft(
+                          2,
+                          '0',
+                        );
+                        final secs = (duration.inSeconds % 60)
+                            .toString()
+                            .padLeft(2, '0');
+                        return Text(
+                          '$mins:$secs',
+                          style: const TextStyle(
+                            fontSize: 56,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                            letterSpacing: -2,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -672,9 +682,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                 )
               else
-                Consumer<BreakController>(
-                  builder: (context, controller, _) {
-                    final workToday = controller.totalWorkToday;
+                ValueListenableBuilder<Duration>(
+                  valueListenable: sl<TimerEngine>().totalWorkTodayNotifier,
+                  builder: (context, workToday, _) {
                     final hours = workToday.inHours;
                     final minutes = workToday.inMinutes % 60;
                     final seconds = workToday.inSeconds % 60;
