@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -16,24 +17,42 @@ class SettingsRepository extends ChangeNotifier {
   SettingsModel get currentSettings => _current;
 
   void load() {
-    final snapshot = _storage.settingsBox?.get(1);
-    final companionPrefs = _storage.companionPreferencesBox?.get(1);
+    try {
+      final snapshot = _storage.settingsBox?.get(1);
+      final companionPrefs = _storage.companionPreferencesBox?.get(1);
 
-    if (snapshot != null) {
-      _current = _fromSnapshot(snapshot, companionPrefs);
-      
-      // Critical fix: Always override with primitive storage if it's more definitive
-      // This prevents the onboarding loop if the database snapshot is stale
-      final completedOnboarding = _storage.getBool('has_completed_onboarding');
-      if (completedOnboarding && !_current.hasCompletedOnboarding) {
-        _current = _current.copyWith(hasCompletedOnboarding: true);
-        save(_current); // Resync back to snapshot for consistency
+      debugPrint('[SettingsRepo] Loading settings. Snapshot exists: ${snapshot != null}');
+
+      if (snapshot != null) {
+        try {
+          _current = _fromSnapshot(snapshot, companionPrefs);
+          debugPrint('[SettingsRepo] Loaded from snapshot. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}');
+        } catch (e) {
+          debugPrint('[SettingsRepo] Error decoding snapshot: $e. Falling back to legacy/defaults.');
+          _current = _loadFromLegacy();
+        }
+        
+        // Critical fix: Always override with primitive storage if it's more definitive
+        // This prevents the onboarding loop if the database snapshot is stale
+        final completedOnboarding = _storage.getBool('has_completed_onboarding');
+        debugPrint('[SettingsRepo] Definitive storage check: $completedOnboarding');
+        
+        if (completedOnboarding && !_current.hasCompletedOnboarding) {
+          debugPrint('[SettingsRepo] Fix applied: forcing hasCompletedOnboarding to true');
+          _current = _current.copyWith(hasCompletedOnboarding: true);
+          unawaited(save(_current)); // Resync back to snapshot for consistency
+        }
+      } else {
+        _current = _loadFromLegacy();
+        debugPrint('[SettingsRepo] Loaded from legacy. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}');
+        if (_storage.isReady) {
+          unawaited(save(_current));
+        }
       }
-    } else {
-      _current = _loadFromLegacy();
-      if (_storage.isReady) {
-        save(_current);
-      }
+    } catch (e) {
+      debugPrint('[SettingsRepo] Fatal error in load(): $e');
+      // Ensure we have at least defaults
+      _current = const SettingsModel();
     }
   }
 
@@ -81,9 +100,7 @@ class SettingsRepository extends ChangeNotifier {
       breakTemplate: s.breakTemplate,
       showExercisesInBreak: s.showExercisesInBreak,
       lastExerciseDate: s.lastExerciseDate,
-      shownExercisesToday: List<String>.from(
-        jsonDecode(s.shownExercisesTodayJson),
-      ),
+      shownExercisesToday: _decodeStringList(s.shownExercisesTodayJson),
       playMusicDuringBreak: s.playMusicDuringBreak,
       autoPauseMedia: s.autoPauseMedia,
       clockFaceTextColorHex: s.clockFaceTextColorHex,
@@ -91,7 +108,7 @@ class SettingsRepository extends ChangeNotifier {
       customImagePath: s.customImagePath,
       resetTimerAfterMinutes: s.resetTimerAfterMinutes,
       workingHoursEnabled: s.workingHoursEnabled,
-      workingDays: List<int>.from(jsonDecode(s.workingDaysJson)),
+      workingDays: _decodeIntList(s.workingDaysJson, fallback: const [1, 2, 3, 4, 5]),
       workStartTime: s.workStartTime,
       workEndTime: s.workEndTime,
       detectVideoCalls: s.detectVideoCalls,
@@ -99,9 +116,7 @@ class SettingsRepository extends ChangeNotifier {
       respectFocusMode: s.respectFocusMode,
       enableClockOut: s.enableClockOut,
       clockOutTime: s.clockOutTime,
-      exercises: (jsonDecode(s.exercisesJson) as List)
-          .map((e) => ExerciseModel.fromMap(e))
-          .toList(),
+      exercises: _decodeExercises(s.exercisesJson),
       autoSuggestExercises: s.autoSuggestExercises,
       useCursorCountdown: s.useCursorCountdown,
       enableAnimations: s.enableAnimations,
@@ -118,6 +133,26 @@ class SettingsRepository extends ChangeNotifier {
       companionClickThrough: cp?.companionClickThrough ?? false,
       companionFollowMouse: cp?.companionFollowMouse ?? false,
     );
+  }
+
+  List<String> _decodeStringList(String raw) {
+    if (raw.isEmpty) return [];
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) return List<String>.from(decoded);
+    } catch (_) {}
+    return [];
+  }
+
+  List<ExerciseModel> _decodeExercises(String raw) {
+    if (raw.isEmpty) return ExerciseModel.defaults;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
+      }
+    } catch (_) {}
+    return ExerciseModel.defaults;
   }
 
   SettingsModel _loadFromLegacy() {
@@ -262,8 +297,16 @@ class SettingsRepository extends ChangeNotifier {
     );
   }
 
+  Future<void> completeOnboarding() async {
+    debugPrint('[SettingsRepo] Explicitly completing onboarding...');
+    _current = _current.copyWith(hasCompletedOnboarding: true);
+    await save(_current);
+    debugPrint('[SettingsRepo] Onboarding completion persisted.');
+  }
+
   Future<void> save(SettingsModel settings) async {
     _current = settings;
+    debugPrint('[SettingsRepo] Saving settings. hasCompletedOnboarding: ${settings.hasCompletedOnboarding}');
 
     final snapshot = SettingsSnapshot(
       id: 1,
@@ -324,13 +367,17 @@ class SettingsRepository extends ChangeNotifier {
       intensityLevel: settings.intensityLevel,
     );
 
-    _storage.settingsBox?.put(snapshot);
-    
-    // Mirror critical onboarding state to primitives for reliability
-    _storage.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
-    _storage.setInt('short_break_interval', settings.shortBreakIntervalMinutes);
-    _storage.setBool('strict_mode', settings.strictMode);
-    _storage.setBool('companion_enabled', settings.companionEnabled);
+    // Mirror critical onboarding state to primitives for reliability FIRST
+    // This is because KeyValueRecords are often more stable than complex snapshots
+    await _storage.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
+    await _storage.setInt('short_break_interval', settings.shortBreakIntervalMinutes);
+    await _storage.setBool('strict_mode', settings.strictMode);
+    await _storage.setBool('companion_enabled', settings.companionEnabled);
+
+    // Then save the full snapshot
+    if (_storage.settingsBox != null) {
+      _storage.settingsBox!.put(snapshot);
+    }
 
     final companionPrefs = CompanionPreferences(
       id: 1,
@@ -342,7 +389,10 @@ class SettingsRepository extends ChangeNotifier {
       companionFollowMouse: settings.companionFollowMouse,
     );
 
-    _storage.companionPreferencesBox?.put(companionPrefs);
+    if (_storage.companionPreferencesBox != null) {
+      _storage.companionPreferencesBox!.put(companionPrefs);
+    }
+    
     notifyListeners();
   }
 
