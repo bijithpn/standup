@@ -126,16 +126,21 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     }
 
     Widget backgroundWidget;
-    if (widget.settings.customImagePath != null &&
-        widget.settings.customImagePath != 'default_path' &&
-        File(widget.settings.customImagePath!).existsSync()) {
+    final path = widget.settings.customImagePath;
+    final isCustomEnabled = path != null && !path.startsWith("disabled:");
+    final actualPath = path != null && path.startsWith("disabled:") ? path.substring(9) : path;
+
+    if (isCustomEnabled &&
+        actualPath != 'default_path' &&
+        actualPath != null &&
+        File(actualPath).existsSync()) {
       backgroundWidget = AnimatedBuilder(
         animation: widget.kenBurnsController,
         builder: (context, child) {
           return Transform.scale(
             scale: 1.05 + (0.1 * widget.kenBurnsController.value),
             child: Image.file(
-              File(widget.settings.customImagePath!),
+              File(actualPath),
               fit: BoxFit.cover,
               cacheWidth: screenWidth.toInt().clamp(100, 1920),
               cacheHeight: screenHeight.toInt().clamp(100, 1080),

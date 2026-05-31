@@ -259,7 +259,7 @@ class SettingsModel {
       clockFaceTextColorHex:
           clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
-      customImagePath: customImagePath ?? this.customImagePath,
+      customImagePath: customImagePath != null ? (customImagePath == "" ? null : customImagePath) : this.customImagePath,
       resetTimerAfterMinutes:
           resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,

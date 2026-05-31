@@ -546,30 +546,44 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           divider(),
           toggleRow(
             'Custom Wallpaper Background',
-            'Use high-fidelity static image backdrop',
-            _settings.customImagePath != null,
+            'Use high-fidelity static image backdrop during breaks',
+            _settings.customImagePath != null && !_settings.customImagePath!.startsWith("disabled:"),
             (v) async {
               if (v) {
-                try {
-                  final result = await FilePicker.pickFiles(
-                    type: FileType.custom,
-                    allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
-                  );
-                  if (result != null && result.files.single.path != null) {
-                    _save(_settings.copyWith(customImagePath: result.files.single.path));
-                    if (mounted) {
-                      Toast.showSuccess(context, 'Custom wallpaper background updated!');
-                    }
-                  } else {
-                    // Do nothing if they cancel, or leave it off if it was off
-                  }
-                } catch (e) {
+                if (_settings.customImagePath != null && _settings.customImagePath!.startsWith("disabled:")) {
+                  // Re-enable existing path by removing the prefix
+                  final actualPath = _settings.customImagePath!.substring(9);
+                  _save(_settings.copyWith(customImagePath: actualPath));
                   if (mounted) {
-                    Toast.showError(context, 'Failed to select image: ${e.toString()}');
+                    Toast.showSuccess(context, 'Custom wallpaper background enabled!');
+                  }
+                } else {
+                  // No path exists, pick a new file
+                  try {
+                    final result = await FilePicker.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+                    );
+                    if (result != null && result.files.single.path != null) {
+                      _save(_settings.copyWith(customImagePath: result.files.single.path));
+                      if (mounted) {
+                        Toast.showSuccess(context, 'Custom wallpaper background enabled!');
+                      }
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      Toast.showError(context, 'Failed to select image: ${e.toString()}');
+                    }
                   }
                 }
               } else {
-                _save(_settings.copyWith(customImagePath: null));
+                // Disable by adding "disabled:" prefix (only if a path exists)
+                if (_settings.customImagePath != null && !_settings.customImagePath!.startsWith("disabled:")) {
+                  _save(_settings.copyWith(customImagePath: 'disabled:${_settings.customImagePath}'));
+                  if (mounted) {
+                    Toast.showSuccess(context, 'Custom wallpaper background disabled.');
+                  }
+                }
               }
             },
           ),
@@ -592,34 +606,66 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          _settings.customImagePath!,
-                          style: const TextStyle(
-                            color: AppTheme.textMuted,
-                            fontSize: 11,
-                            fontFamily: 'Inter',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Builder(
+                          builder: (context) {
+                            final path = _settings.customImagePath;
+                            final actualPath = path != null && path.startsWith("disabled:") ? path.substring(9) : path;
+                            return Text(
+                              actualPath ?? '',
+                              style: const TextStyle(
+                                color: AppTheme.textMuted,
+                                fontSize: 11,
+                                fontFamily: 'Inter',
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            );
+                          }
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 16),
-                  if (File(_settings.customImagePath!).existsSync())
-                    Container(
-                      width: 50,
-                      height: 35,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-                        image: DecorationImage(
-                          image: FileImage(File(_settings.customImagePath!)),
-                          fit: BoxFit.cover,
-                        ),
+                  Builder(
+                    builder: (context) {
+                      final path = _settings.customImagePath;
+                      final actualPath = path != null && path.startsWith("disabled:") ? path.substring(9) : path;
+                      if (actualPath != null && File(actualPath).existsSync()) {
+                        return Container(
+                          width: 50,
+                          height: 35,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                            image: DecorationImage(
+                              image: FileImage(File(actualPath)),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    }
+                  ),
+                  MinimalButton(
+                    backgroundColor: AppTheme.longBreakColor.withValues(alpha: 0.1),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    borderRadius: BorderRadius.circular(8),
+                    onPressed: () {
+                      _save(_settings.copyWith(customImagePath: ""));
+                      Toast.showSuccess(context, 'Custom wallpaper removed completely.');
+                    },
+                    child: Text(
+                      'Remove',
+                      style: TextStyle(
+                        color: AppTheme.longBreakColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),
                   MinimalButton(
                     backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
