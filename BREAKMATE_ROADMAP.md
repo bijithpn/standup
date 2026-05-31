@@ -1,18 +1,64 @@
 # BreakMate Roadmap
 
-Last reviewed: 2026-05-29
+Last reviewed: 2026-05-31
 
-## Project Snapshot
+ ## Project Snapshot
 
 BreakMate is a desktop Flutter wellness app for macOS and Windows. The app uses a main dashboard engine, break overlays, native platform bridges, tray/menu-bar controls, analytics, smart pause detection, and a Flame-powered companion. The product direction is strong, but the next improvements should focus on startup time, frame stability, battery use, settings complexity, and confidence from tests.
 
 Current scale:
 
-- 143 Dart files under `lib/`.
-- About 7.4 MB of files under `assets/`.
-- Largest Dart files: `breaks_settings_section.dart` (~42.5 KB), `companion_interactive_template.dart` (~33 KB), `standalone_break_overlay.dart` (~29.6 KB), `timer_engine.dart` (~29.2 KB), `pet_asset_loader.dart` (~21 KB), `companion_settings_section.dart` (~19.9 KB), `pet_theme.dart` (~18.8 KB), and `classic_slideshow_template.dart` (~18.4 KB).
-- Largest assets are `assets/music/lofi_1.mp3` (~4.0 MB), full Inter font files (~400 KB each), `assets/icons/tray_icon.png` (~366 KB), source reference image `Frame_indexes.png` (~190 KB), and companion tray PNGs.
-- `flutter analyze`, `flutter test`, `dart analyze`, and `dart format` did not complete within 120-180 seconds during the 2026-05-29 review, so Dart/Flutter tool startup or analyzer project hygiene remains an active blocker.
+- 152 Dart files under `lib/`.
+- About 7.2 MB of files under `assets/`.
+- 2 Dart test files under `test/`.
+- Existing Graphify output: `graphify-out/GRAPH_REPORT.md`, `graphify-out/graph.json`, and `graphify-out/graph.html`. The local `graphify` CLI is not available in this Windows environment, so this review used the checked-in graph artifacts rather than regenerating the graph.
+- Graphify scale: 1,854 nodes, 2,390 edges, and 169 communities in the 2026-05-27 graph report.
+- Graphify god nodes / project hubs: `CompanionWindowManager`, `WindowBridge`, `TimerEngine`, `settings_page.dart`, `flutter/services.dart`, `app_theme.dart`, and `toast.dart`.
+- Largest non-generated Dart files: `breaks_settings_section.dart` (~39.9 KB), `timer_engine.dart` (~30.5 KB), `standalone_break_overlay.dart` (~29.6 KB), `companion_interactive_template.dart` (~27.2 KB), `pet_state_machine.dart` (~22.1 KB), `pet_asset_loader.dart` (~21.7 KB), `settings_widgets.dart` (~19.6 KB), `settings_model.dart` (~19.1 KB), `tray_manager_service.dart` (~18.9 KB), and `dashboard_page.dart` (~18.6 KB).
+- Largest assets are `assets/music/lofi_1.mp3` (~4.0 MB), full Inter font files (~400 KB each), `assets/icons/tray_icon.png` (~366 KB), companion tray PNGs, slideshow JPEGs, and seasonal background PNGs.
+- `analysis_options.yaml` now excludes `graphify-out/`, `build/`, `.dart_tool/`, and generated Dart files, but analyzer/test performance still needs a fresh timed verification on this machine.
+
+## 2026-05-31 Graphify-Backed Review
+
+The Graphify output shows a feature-rich app with clear domains, but the highest-risk areas are still the same runtime and UX hubs that users touch constantly: timer orchestration, overlay rendering, companion rendering, settings, tray/menu-bar integration, and native bridges.
+
+Project structure from the graph:
+
+- App shell: `lib/app/app.dart`, `lib/app/main_layout.dart`, and `lib/app/dependency_injection.dart` own startup, provider wiring, routing, and service graph construction.
+- Core runtime: `lib/core/services/` owns timer state, persistence, native overlay service, polling, notifications, storage, shutdown, and adaptive break behavior.
+- Native boundary: `lib/core/native/`, `lib/core/ipc/`, `macos/Runner/Bridges/`, and `windows/runner/` connect Flutter to platform overlay, tray, display, focus, meeting, and companion windows.
+- Break experience: `lib/features/break_system/` and `lib/features/break_overlay/` own break lifecycle, strict mode, standalone overlay, templates, countdown widgets, guided breathing, and activity widgets.
+- Companion: `lib/features/companion/` owns pet domain state, asset loading, Flame rendering, overlay control, behavior decisions, and window synchronization.
+- Settings and analytics: `lib/features/settings/` and `lib/features/analytics/` own the heaviest configuration UI and local progress reporting.
+- Shared design layer: `lib/shared/theme/` and `lib/shared/widgets/` provide the visual primitives, but some feature screens still contain local button/card/control implementations.
+
+Main performance improvement targets:
+
+- Reduce `TimerEngine` blast radius. It still combines countdown state, persistence, tray updates, notification decisions, overlay triggering, stats updates, IPC dispatch, sleep/wake recovery, and activity tracking. Split this into a lifecycle orchestrator plus small controllers for countdown, persistence, side effects, and IPC.
+- Convert high-frequency UI from broad `ChangeNotifier` rebuilds to small `ValueListenable` or selector-based models. The dashboard timer, tray popover timer, break overlay countdown, and pre-break warning should update only their text/progress regions each second.
+- Defer optional startup work. `initDependencies()` starts storage, notifications, display manager, smart detection, stats, tray, companion controller, pet discovery, and tray icon pre-cache during app initialization. Gate companion discovery/pre-cache, smart detection, meeting/focus streams, and update checks behind settings and first visible use.
+- Audit all timer-driven widgets again after the recent optimizations. `companion_interactive_template.dart`, `soft_floating_widget_template.dart`, `guided_breathing_widget.dart`, `eye_sync_game_widget.dart`, `break_overlay.dart`, `standalone_break_overlay.dart`, `tray_manager_service.dart`, and `background_polling_service.dart` still contain periodic timers that need visibility, lifecycle, and reduced-motion guards.
+- Add real baseline numbers to `docs/performance-baseline.md`. The file currently describes the process but does not contain actual measurements. Capture cold start, first frame, idle CPU, companion active/throttled CPU, overlay open latency, settings scroll frame time, and memory after repeated theme switches.
+- Keep asset work focused. Total asset size is reasonable, but the single MP3 and four full Inter font files dominate the bundle. Font subsetting and optional audio pack work should happen only after measuring installer size and cold start impact.
+
+Main UI/UX improvement targets:
+
+- Make settings searchable and task-oriented. `breaks_settings_section.dart` remains the largest feature UI file and mixes profiles, custom intervals, intensity, appearance, display selection, preview actions, and controller calls. Split it into smaller panels with local section search, reset-to-default, and inline validation.
+- Unify interaction components. Dashboard, settings, tray popover, onboarding, and overlays still define several local button/card/chip patterns. Promote the stable versions into `shared/widgets` so hover, focus, disabled, loading, keyboard, and high-contrast behavior are consistent.
+- Improve the dashboard for daily decision-making. `dashboard_page.dart` is visually simpler now, but it should show the next break reason, quiet-mode state, meeting/focus pause reason, companion state, and today's progress without nesting multiple broad consumers.
+- Improve break overlay clarity. Each template should answer: why this break started, how long remains, what action is expected, and what is blocked by strict/locked mode. Keep skip/postpone affordances explicit and disabled states understandable.
+- Make tray/menu-bar behavior feel instant. The tray popover should use cached state, avoid synchronous service lookups in build paths, and show clear feedback after pause, break-now, snooze, companion toggle, and quiet-mode changes.
+- Add accessibility verification. The roadmap already mentions keyboard and reduced-motion support, but the next pass should include text scale, screen-reader labels, focus order, high contrast, and no-overflow checks for dashboard, settings, tray popover, onboarding, and all break templates.
+- Add screenshot/golden coverage once the component set stabilizes. Prioritize dashboard, settings search, tray popover, strict break overlay, companion settings, and analytics summary in light/dark modes.
+
+Immediate execution order from this review:
+
+1. Record real baseline metrics in `docs/performance-baseline.md`.
+2. Refactor `TimerEngine` into smaller testable collaborators.
+3. Split `breaks_settings_section.dart` and add settings search/reset UX.
+4. Gate optional startup services and companion asset pre-cache behind settings/first use.
+5. Normalize shared buttons/cards/chips and remove local duplicates from dashboard/settings/tray.
+6. Add focused tests for timer transitions, settings persistence, ObjectBox migration, IPC parsing, and strict-mode skip blocking.
 
 ## 2026-05-29 Status Correction
 
