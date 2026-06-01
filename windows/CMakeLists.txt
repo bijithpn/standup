@@ -4,7 +4,17 @@ project(BreakMate LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "BreakMate")
+if(FLUTTER_FLAVOR STREQUAL "dev")
+  set(BINARY_NAME "BreakMate-Dev")
+  set(FLAVOR_APP_NAME "BreakMate Dev")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon_dev.ico" "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico" COPYONLY)
+else()
+  set(BINARY_NAME "BreakMate")
+  set(FLAVOR_APP_NAME "BreakMate")
+  configure_file("${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon_prod.ico" "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico" COPYONLY)
+endif()
+
+add_compile_definitions("FLAVOR_APP_NAME=\"${FLAVOR_APP_NAME}\"")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

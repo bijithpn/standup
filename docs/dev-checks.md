@@ -19,6 +19,21 @@ flutter test
 
 Run all unit and widget tests. All should pass before merging.
 
+For task work where tests are explicitly out of scope, do not run this command.
+Record that tests were intentionally skipped in the final note or release checklist.
+
+## Format And Analyzer Timing
+
+```bash
+time dart format --set-exit-if-changed lib tool
+time flutter analyze
+```
+
+Expected: no formatting changes and no analyzer errors. `flutter analyze` should
+complete within 30 seconds on a warm machine. If it exceeds 60 seconds, verify
+`analysis_options.yaml` excludes are in effect for `graphify-out/`, `build/`,
+`.dart_tool/`, and generated files.
+
 ## macOS Debug Run
 
 ```bash
@@ -60,6 +75,9 @@ Target: keep the app bundle under 150 MB. Alert if it grows unexpectedly.
 ## Asset Size Report
 
 ```bash
+# Repeatable budget report
+dart run tool/asset_budget.dart --warn-only
+
 # List top assets by size (macOS/Linux)
 find assets/ -type f | xargs ls -lS | head -30
 
@@ -73,6 +91,32 @@ Key budget:
 - Fonts: currently ~1.6 MB total; subset before release if installer size grows
 - Tray/source images: keep oversized source/reference images out of Flutter asset declarations
 - Pet animations: load only the selected pet at startup where possible
+
+## Manual Smoke Checks
+
+Use these checks when automated integration tests are intentionally skipped.
+
+### macOS
+
+- Launch the app from a debug or release build.
+- Confirm the tray/menu-bar icon appears.
+- Open the dashboard from the tray/menu-bar popover.
+- Start, pause, resume, reset, and snooze the timer.
+- Trigger Break Now and confirm the overlay opens.
+- Confirm strict or locked mode hides skip/postpone actions as configured.
+- Toggle companion on/off, click-through, low-distraction mode, and pet theme.
+- Enable calendar support and confirm the dashboard shows meeting conflicts only when actionable.
+
+### Windows
+
+- Launch the app from a debug or release build.
+- Confirm the system tray icon appears.
+- Open the dashboard from the tray popover.
+- Start, pause, resume, reset, and snooze the timer.
+- Trigger Break Now and confirm the topmost overlay opens on the expected display.
+- Confirm strict or locked mode cannot be bypassed through the overlay controls.
+- Toggle companion on/off, click-through, low-distraction mode, and pet theme.
+- Confirm DPI scaling keeps the tray popover, overlay, and companion readable.
 
 ## Flutter DevTools Performance Snapshots
 

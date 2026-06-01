@@ -9,7 +9,7 @@ class AppTheme {
   static const Color primaryLight = Color(0xFF3F3F46); // Zinc 700
   static const Color primaryDark = Color(0xFF09090B); // Zinc 950
 
-  static const Color accent = Color(0xFF3B82F6); // Clean Blue for actions
+  static const Color accent = Color(0xFF5f68e9);
 
   // Neutral Grays
   static const Color gray50 = Color(0xFFFAFAFA);

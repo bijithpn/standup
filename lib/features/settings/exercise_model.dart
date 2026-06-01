@@ -9,6 +9,8 @@ class ExerciseModel {
   final ExerciseCategory category;
   final String instructions;
   final bool enabled;
+  final bool isFavorite;
+  final bool isHidden;
 
   const ExerciseModel({
     required this.id,
@@ -17,6 +19,8 @@ class ExerciseModel {
     required this.category,
     required this.instructions,
     this.enabled = true,
+    this.isFavorite = false,
+    this.isHidden = false,
   });
 
   ExerciseModel copyWith({
@@ -26,6 +30,8 @@ class ExerciseModel {
     ExerciseCategory? category,
     String? instructions,
     bool? enabled,
+    bool? isFavorite,
+    bool? isHidden,
   }) {
     return ExerciseModel(
       id: id ?? this.id,
@@ -34,6 +40,8 @@ class ExerciseModel {
       category: category ?? this.category,
       instructions: instructions ?? this.instructions,
       enabled: enabled ?? this.enabled,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isHidden: isHidden ?? this.isHidden,
     );
   }
 
@@ -44,6 +52,8 @@ class ExerciseModel {
     'category': category.name,
     'instructions': instructions,
     'enabled': enabled,
+    'isFavorite': isFavorite,
+    'isHidden': isHidden,
   };
 
   factory ExerciseModel.fromMap(Map<String, dynamic> map) => ExerciseModel(
@@ -56,6 +66,8 @@ class ExerciseModel {
     ),
     instructions: map['instructions'] as String,
     enabled: map['enabled'] as bool? ?? true,
+    isFavorite: map['isFavorite'] as bool? ?? false,
+    isHidden: map['isHidden'] as bool? ?? false,
   );
 
   String toJson() => jsonEncode(toMap());

@@ -20,6 +20,7 @@ class SmartDetectionService {
   }
 
   void stop() {
+    BackgroundPollingService.instance.stop();
     _logger.info('SmartDetectionService stopped');
   }
 

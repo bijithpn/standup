@@ -1,3 +1,4 @@
+import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,7 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
+import 'package:breakmate/features/wellness/presentation/wellness_library_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
@@ -52,7 +54,7 @@ class _MainLayoutState extends State<MainLayout> {
   late final AppNavigationService _navigationService;
 
   // Primary nav items (shown in the main list)
-  static const List<_NavItem> _mainNavItems = [
+  static final List<_NavItem> _mainNavItems = [
     _NavItem(
       label: AppStrings.today,
       icon: CupertinoIcons.home,
@@ -87,6 +89,16 @@ class _MainLayoutState extends State<MainLayout> {
       label: AppStrings.navStatistics,
       icon: CupertinoIcons.chart_bar,
       section: 'Statistics',
+    ),
+    _NavItem(
+      label: 'Personal Goals',
+      icon: CupertinoIcons.forward_fill,
+      section: 'Goals',
+    ),
+    _NavItem(
+      label: 'Wellness Library',
+      icon: CupertinoIcons.book,
+      section: 'Wellness Library',
     ),
     _NavItem(
       label: AppStrings.navGeneralSettings,
@@ -202,6 +214,7 @@ class _MainLayoutState extends State<MainLayout> {
         maxWidth: 240,
         builder: (context, scrollController) {
           return _SidebarContent(
+            scrollController: scrollController,
             selectedIndex: _pageIndex,
             mainItems: _mainNavItems,
             bottomItems: _bottomNavItems,
@@ -292,6 +305,7 @@ class _MainLayoutState extends State<MainLayout> {
                 color: AppTheme.sidebarBackground,
                 child: SafeArea(
                   child: _SidebarContent(
+                    scrollController: null,
                     selectedIndex: _pageIndex,
                     mainItems: _mainNavItems,
                     bottomItems: _bottomNavItems,
@@ -357,12 +371,16 @@ class _MainLayoutState extends State<MainLayout> {
       case 6:
         return const SettingsPage(section: 'Statistics');
       case 7:
-        return const SettingsPage(section: 'General');
+        return const SettingsPage(section: 'Goals');
       case 8:
-        return const SettingsPage(section: 'Data & Backup');
+        return const WellnessLibraryPage();
       case 9:
-        return const SettingsPage(section: 'Updates');
+        return const SettingsPage(section: 'General');
       case 10:
+        return const SettingsPage(section: 'Data & Backup');
+      case 11:
+        return const SettingsPage(section: 'Updates');
+      case 12:
         return const SettingsPage(section: 'About');
       default:
         return const DashboardPage();
@@ -373,12 +391,14 @@ class _MainLayoutState extends State<MainLayout> {
 // --- Sidebar Content Widget ---
 
 class _SidebarContent extends StatelessWidget {
+  final ScrollController? scrollController;
   final int selectedIndex;
   final List<_NavItem> mainItems;
   final List<_NavItem> bottomItems;
   final ValueChanged<int> onItemSelected;
 
   const _SidebarContent({
+    this.scrollController,
     required this.selectedIndex,
     required this.mainItems,
     required this.bottomItems,
@@ -397,6 +417,7 @@ class _SidebarContent extends StatelessWidget {
         // --- Primary nav items ---
         Expanded(
           child: ListView.builder(
+            controller: scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             itemCount: mainItems.length,
             itemBuilder: (context, i) {
@@ -468,7 +489,9 @@ class _SidebarContent extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Image.asset(
-                'assets/icons/app_icon.jpeg',
+                FlavorConfig.instance.isDev
+                    ? 'assets/icons/app_icon_dev.png'
+                    : 'assets/icons/app_icon.jpeg',
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
@@ -500,6 +523,17 @@ class _SidebarContent extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
+                if (FlavorConfig.instance.isDev)
+                  TextSpan(
+                    text: ' DEV',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.error,
+                      letterSpacing: -0.3,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
               ],
             ),
           ),

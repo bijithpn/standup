@@ -36,7 +36,7 @@ class DailyStats {
 
 @Entity()
 class GlobalStats {
-  @Id()
+  @Id(assignable: true)
   int id; // Always 1 for singleton
 
   int currentStreak;

@@ -1,4 +1,4 @@
-enum BreakType { short, long }
+enum BreakType { short, long, windDown }
 
 class BreakModel {
   final BreakType type;
@@ -16,4 +16,5 @@ class BreakModel {
   });
 
   bool get isLong => type == BreakType.long;
+  bool get isWindDown => type == BreakType.windDown;
 }

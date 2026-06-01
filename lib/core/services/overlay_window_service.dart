@@ -28,6 +28,19 @@ class OverlayWindowService extends ChangeNotifier {
     Map<String, dynamic>? overlayData,
   }) async {
     if (_isOverlayVisible && _currentOverlayType == type) {
+      if (type != OverlayType.clockPreview) {
+        // If the overlay is already showing, we can still update its data in real-time
+        final args = <String, dynamic>{
+          'type': type.name,
+          'showOnAllDisplays': showOnAllDisplays,
+          'theme': breakTheme,
+          'isTransparent': type == OverlayType.quickReminder,
+          'ignoreMouseEvents': type == OverlayType.quickReminder,
+          ...?overlayData,
+        };
+        if (reminderType != null) args['reminderType'] = reminderType;
+        await NativeBridge.showOverlay(args);
+      }
       return;
     }
 

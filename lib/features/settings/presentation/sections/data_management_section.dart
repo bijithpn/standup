@@ -228,7 +228,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       // Reload settings repository to apply to UI immediately
-      sl<SettingsRepository>().load();
+      await sl<SettingsRepository>().load();
       await _loadStats();
 
       if (mounted) Toast.showSuccess(context, 'Backup restored successfully!');

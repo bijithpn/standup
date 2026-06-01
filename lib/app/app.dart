@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/break_system/presentation/break_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/pre_break_warning_overlay.dart';
@@ -15,6 +18,7 @@ import 'package:breakmate/app/main_layout.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
+import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
 
 class BreakMateApp extends StatefulWidget {
   const BreakMateApp({super.key});
@@ -29,6 +33,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     super.initState();
     windowManager.addListener(this);
     _setupTrayActions();
+    _listenToEvents();
   }
 
   @override
@@ -36,6 +41,18 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     windowManager.removeListener(this);
 
     super.dispose();
+  }
+
+  void _listenToEvents() {
+    sl<EventBus>().on<NotificationPermissionDeniedEvent>().listen((event) {
+      if (mounted) {
+        sl<AppNavigationService>().openSection('Notifications');
+        
+        ErrorToastService.showInfo(
+          'Notifications are disabled. Please enable them in settings to receive reminders.',
+        );
+      }
+    });
   }
 
   void _setupTrayActions() {
@@ -59,6 +76,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<BreakController>()),
         ChangeNotifierProvider.value(value: sl<SettingsRepository>()),
         ChangeNotifierProvider.value(value: sl<StatsService>()),
+        ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
       child: MacosApp(
         navigatorKey: ErrorToastService.navigatorKey,

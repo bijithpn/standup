@@ -6,9 +6,11 @@
 
 // The application's name. By default this is also the title of the Flutter window.
 PRODUCT_NAME = BreakMate
+PRODUCT_NAME[config=*-dev] = BreakMate Dev
 
 // The application's bundle identifier
 PRODUCT_BUNDLE_IDENTIFIER = com.bijith.breakmate
+PRODUCT_BUNDLE_IDENTIFIER[config=*-dev] = com.bijith.breakmate.dev
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 Bijith P N. All rights reserved.

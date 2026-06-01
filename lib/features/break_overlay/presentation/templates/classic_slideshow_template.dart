@@ -8,6 +8,7 @@ import 'package:breakmate/features/break_system/presentation/widgets/break_activ
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'dart:io';
+import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
 class ClassicSlideshowTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -426,45 +427,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
 
                       // Skip Button
                       if (widget.onSkip != null)
-                        GestureDetector(
-                          onTap: widget.onSkip,
-                          child: MouseRegion(
-                            cursor: SystemMouseCursors.click,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 22,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.05),
-                                borderRadius: BorderRadius.circular(24),
-                                border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                    'Skip Break',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      fontFamily: 'Inter',
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Icon(
-                                    CupertinoIcons.arrow_right,
-                                    size: 13,
-                                    color: Colors.white.withValues(alpha: 0.8),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        SkipBreakButton(onSkip: widget.onSkip!),
                     ],
                   ),
                 ),

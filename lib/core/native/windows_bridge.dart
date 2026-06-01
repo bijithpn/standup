@@ -125,6 +125,24 @@ class WindowsBridge implements NativeBridgePlatform {
     await _invokeSafely('setCompanionFollowMouse', {'enabled': enabled});
   }
 
+  @override
+  Future<bool> requestCalendarPermissions() async {
+    // Windows implementation pending
+    return false;
+  }
+
+  @override
+  Future<bool> hasCalendarPermissions() async {
+    // Windows implementation pending
+    return false;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(int windowMinutes) async {
+    // Windows implementation pending
+    return [];
+  }
+
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);
@@ -145,5 +163,11 @@ class WindowsBridge implements NativeBridgePlatform {
       );
       return null;
     }
+  }
+  
+  @override
+  Future<void> openCalendarSettings() async {
+    // Windows implementation pending
+    return;
   }
 }

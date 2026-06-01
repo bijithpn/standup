@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -40,9 +41,16 @@ class TimerEngine extends ChangeNotifier {
   int _pauseTimerAfterMinutes = 5;
   int _resetTimerAfterMinutes = 15;
 
+  final ValueNotifier<int> countdownNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<Duration> workElapsedNotifier =
+      ValueNotifier<Duration>(Duration.zero);
+  final ValueNotifier<Duration> totalWorkTodayNotifier =
+      ValueNotifier<Duration>(Duration.zero);
+
   TimerEngine({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
+    CalendarService? calendarService,
     EventBus? eventBus,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
@@ -50,8 +58,14 @@ class TimerEngine extends ChangeNotifier {
     _contextManager = TimerContextManager(
       settingsRepository: _settingsRepository,
       smartDetectionService: _smartDetectionService,
+      calendarService: calendarService,
     );
     _syncSettingsFromRepo();
+    
+    // Initialize notifiers
+    countdownNotifier.value = _stateData.countdownSeconds;
+    workElapsedNotifier.value = _stateData.workElapsed;
+    totalWorkTodayNotifier.value = _stateData.totalWorkToday;
   }
 
   void _emit(AppEvent event) {
@@ -72,6 +86,15 @@ class TimerEngine extends ChangeNotifier {
   // Exposed getters and setters for the coordinator/orchestrator
   TimerStateData get stateData => _stateData;
   TimerContextManager get contextManager => _contextManager;
+
+  void syncNotifiersFromState() {
+    if (state == TimerState.running || state == TimerState.idle) {
+      _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
+    }
+    countdownNotifier.value = _stateData.countdownSeconds;
+    workElapsedNotifier.value = _stateData.workElapsed;
+    totalWorkTodayNotifier.value = _stateData.totalWorkToday;
+  }
 
   int get shortBreakIntervalMinutes => _shortBreakIntervalMinutes;
   set shortBreakIntervalMinutes(int val) {
@@ -215,12 +238,14 @@ class TimerEngine extends ChangeNotifier {
       }
 
       if (state == TimerState.paused || state == TimerState.idle) {
-        notifyListeners();
+        // notifyListeners(); // REMOVED: redundant as state is stable
         return;
       }
 
       final delta = now.difference(_stateData.lastTickTime ?? now);
       _stateData.lastTickTime = now;
+
+      bool significantChange = false;
 
       if (state == TimerState.running) {
         if (_checkClockOut(now)) return;
@@ -236,15 +261,29 @@ class TimerEngine extends ChangeNotifier {
         _stateData.totalWorkToday += delta;
         _stateData.postureElapsedSeconds += delta.inSeconds;
         _stateData.eyeBlinkElapsedSeconds += delta.inSeconds;
+        
+        final wasPreBreak = isPreBreak;
         _checkBreakConditions();
+        if (wasPreBreak != isPreBreak) significantChange = true;
+        
         _checkHealthReminders();
+        
+        workElapsedNotifier.value = _stateData.workElapsed;
+        totalWorkTodayNotifier.value = _stateData.totalWorkToday;
+        countdownNotifier.value = timeUntilNextShortBreak.inSeconds;
       } else if (state == TimerState.breakActive) {
         _stateData.countdownSeconds--;
+        countdownNotifier.value = _stateData.countdownSeconds;
+        
         if (countdownSeconds <= 0) {
           finishBreak(skipped: false);
           return;
         }
       }
+
+      // Update target times if they changed
+      final prevWorkEndTime = _stateData.workEndTime;
+      final prevBreakEndTime = _stateData.breakEndTime;
 
       if (state == TimerState.breakActive) {
         _stateData.breakEndTime ??= DateTime.now().add(
@@ -256,20 +295,27 @@ class TimerEngine extends ChangeNotifier {
         _stateData.breakEndTime = null;
       }
 
-      _emit(
-        TimerStateChangedEvent(
-          state: state == TimerState.breakActive
-              ? TimerStateEvent.breakActive
-              : TimerStateEvent.running,
-          countdownSeconds: countdownSeconds,
-          workElapsedSeconds: _stateData.workElapsed.inSeconds,
-          targetEndTime: targetEndTime,
-        ),
-      );
+      if (_stateData.workEndTime != prevWorkEndTime || 
+          _stateData.breakEndTime != prevBreakEndTime) {
+        significantChange = true;
+      }
 
-      notifyListeners();
+      if (significantChange) {
+        _emit(
+          TimerStateChangedEvent(
+            state: state == TimerState.breakActive
+                ? TimerStateEvent.breakActive
+                : TimerStateEvent.running,
+            countdownSeconds: countdownSeconds,
+            workElapsedSeconds: _stateData.workElapsed.inSeconds,
+            targetEndTime: targetEndTime,
+          ),
+        );
+        notifyListeners();
+      }
     });
   }
+
 
   bool _checkClockOut(DateTime now) {
     if (_contextManager.checkClockOut(now, _stateData.clockOutTriggered)) {
@@ -312,7 +358,17 @@ class TimerEngine extends ChangeNotifier {
 
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
-      _triggerBreak();
+      
+      // Calendar awareness
+      _contextManager.isMeetingUpcoming().then((isMeeting) {
+        if (isMeeting) {
+          _logger.info('Delaying break due to imminent meeting');
+          _stateData.workElapsed = interval - const Duration(minutes: 5);
+          notifyListeners();
+        } else {
+          _triggerBreak();
+        }
+      });
     }
   }
 
@@ -360,19 +416,21 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void _triggerClockOut() {
-    _stateData.state = TimerState.breakActive;
+    _stateData.state = TimerState.windDown;
     _stateData.workElapsed = Duration.zero;
-    _stateData.countdownSeconds = 60;
+    _stateData.countdownSeconds = 300; // 5 minutes wind down
     _stateData.breakEndTime = DateTime.now().add(
       Duration(seconds: countdownSeconds),
     );
     _stateData.workEndTime = null;
 
     _stateData.activeBreak = BreakModel(
-      type: BreakType.long,
+      type: BreakType.windDown,
       durationSeconds: countdownSeconds,
-      title: 'CLOCK OUT',
-      tip: 'Your workday is over. Time to step away and live your life.',
+      title: 'Workday Wrap-up',
+      tip:
+          'Great job today! Let\'s wind down and review your highlights before you head out.',
+      triggerReason: 'Clock-out time reached',
     );
 
     _emit(
@@ -383,7 +441,7 @@ class TimerEngine extends ChangeNotifier {
       ),
     );
 
-    _logger.info('Clock out triggered');
+    _logger.info('Wind-down triggered');
     notifyListeners();
   }
 

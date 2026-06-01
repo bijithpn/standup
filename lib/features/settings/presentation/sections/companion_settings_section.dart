@@ -14,11 +14,11 @@ class CompanionSettingsSection extends StatefulWidget {
   const CompanionSettingsSection({super.key, required this.controller});
 
   @override
-  State<CompanionSettingsSection> createState() => _CompanionSettingsSectionState();
+  State<CompanionSettingsSection> createState() =>
+      _CompanionSettingsSectionState();
 }
 
 class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
-
   @override
   void initState() {
     super.initState();
@@ -45,9 +45,36 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           children: [
             _buildHeroHeader(),
             const SizedBox(height: 32),
-            
+
             sectionHeader('Status'),
             buildCard([
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 14,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      CupertinoIcons.info_circle,
+                      size: 18,
+                      color: AppTheme.textSecondary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        widget.controller.companionStateExplanation,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                          height: 1.35,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              divider(),
               toggleRow(
                 'Show Companion',
                 'Enable your desktop pet to see it wandering around your screen.',
@@ -59,7 +86,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             if (widget.controller.companionEnabled) ...[
               _buildPetGallery(),
               const SizedBox(height: 32),
-              
+
               sectionHeader('Personalization'),
               buildCard([
                 textFieldRow(
@@ -83,6 +110,13 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               sectionHeader('Behavior'),
               buildCard([
                 toggleRow(
+                  'Low-distraction Focus Mode',
+                  'Reduces motion, disables cursor chasing, and makes the companion click-through.',
+                  widget.controller.isLowDistractionMode,
+                  (v) => widget.controller.setLowDistractionMode(v),
+                ),
+                divider(),
+                toggleRow(
                   'Ghost Mode (Click-through)',
                   'Let the pet stay visible but ignore all mouse interactions.',
                   widget.controller.companionClickThrough,
@@ -96,8 +130,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   (v) => widget.controller.changeFollowMouse(v),
                 ),
               ]),
-              
-            const SizedBox(height: 32),
+
+              const SizedBox(height: 32),
               sectionHeader('Animation Lab'),
               _buildInteractionGrid(),
             ],
@@ -110,7 +144,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
   Widget _buildHeroHeader() {
     final currentTheme = PetTheme.getTheme(widget.controller.companionPetTheme);
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,11 +173,12 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     petTheme: currentTheme,
                     animationState: PetAnimationState.idle,
                     scale: 6.0, // Large prominent pet
-                    backgroundImagePath: widget.controller.companionPreviewBackground,
+                    backgroundImagePath:
+                        widget.controller.companionPreviewBackground,
                     isStatic: false,
                   ),
                 ),
-                
+
                 // Vignette/Overlay for info
                 Positioned.fill(
                   child: Container(
@@ -175,7 +210,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppTheme.accentColor,
                                 borderRadius: BorderRadius.circular(20),
@@ -192,7 +230,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             ),
                             const SizedBox(height: 10),
                             Text(
-                              widget.controller.companionEnabled ? widget.controller.companionPetName : 'Companion',
+                              widget.controller.companionEnabled
+                                  ? widget.controller.companionPetName
+                                  : 'Companion',
                               style: const TextStyle(
                                 fontSize: 36, // Large bold name
                                 fontWeight: FontWeight.w900,
@@ -243,33 +283,48 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           physics: const BouncingScrollPhysics(),
           child: Row(
             children: backgrounds.map((bg) {
-              final isSelected = widget.controller.companionPreviewBackground == bg['path'];
+              final isSelected =
+                  widget.controller.companionPreviewBackground == bg['path'];
               return GestureDetector(
-                onTap: () => widget.controller.changePreviewBackground(bg['path']!),
+                onTap: () =>
+                    widget.controller.changePreviewBackground(bg['path']!),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.accentColor : AppTheme.surfaceElevated,
+                    color: isSelected
+                        ? AppTheme.accentColor
+                        : AppTheme.surfaceElevated,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(
-                      color: isSelected ? AppTheme.accentColor : AppTheme.border,
+                      color: isSelected
+                          ? AppTheme.accentColor
+                          : AppTheme.border,
                       width: isSelected ? 2 : 1,
                     ),
-                    boxShadow: isSelected ? [
-                      BoxShadow(
-                        color: AppTheme.accentColor.withValues(alpha: 0.25),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ] : [],
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.accentColor.withValues(
+                                alpha: 0.25,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
                   ),
                   child: Text(
                     bg['name']!,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: isSelected
+                          ? FontWeight.w800
+                          : FontWeight.w600,
                       color: isSelected ? Colors.white : AppTheme.textPrimary,
                     ),
                   ),
@@ -287,8 +342,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 32),
-        sectionHeader('Pet Gallery', subtitle: 'Select a variant to change your companion instantly'),
-        
+        sectionHeader(
+          'Pet Gallery',
+          subtitle: 'Select a variant to change your companion instantly',
+        ),
+
         const SizedBox(height: 12),
         GridView.builder(
           shrinkWrap: true,
@@ -303,15 +361,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           itemBuilder: (context, index) {
             final theme = PetTheme.themes[index];
             final isSelected = widget.controller.companionPetTheme == theme.id;
-            
+
             return GestureDetector(
               onTap: () => widget.controller.changeTheme(theme.id),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOutExpo,
                 decoration: BoxDecoration(
-                  color: isSelected 
-                      ? AppTheme.accentColor.withValues(alpha: 0.15) 
+                  color: isSelected
+                      ? AppTheme.accentColor.withValues(alpha: 0.15)
                       : AppTheme.surfaceElevated.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
@@ -326,12 +384,13 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     Positioned.fill(
                       child: CompanionSpriteWidget(
                         petTheme: theme,
-                        animationState: isSelected 
-                            ? PetAnimationState.excited 
+                        animationState: isSelected
+                            ? PetAnimationState.excited
                             : PetAnimationState.idle,
                         scale: 2.5, // Significantly larger to fill space
                         isStatic: true,
-                        backgroundImagePath: widget.controller.companionPreviewBackground,
+                        backgroundImagePath:
+                            widget.controller.companionPreviewBackground,
                       ),
                     ),
                   ],
@@ -353,7 +412,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(CupertinoIcons.arrow_2_circlepath, color: Colors.white, size: 18),
+          Icon(
+            CupertinoIcons.arrow_2_circlepath,
+            color: Colors.white,
+            size: 18,
+          ),
           SizedBox(width: 8),
           Text(
             'Sync Companion',
@@ -376,25 +439,53 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       interactions = [
         {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
         {'label': 'Run', 'icon': CupertinoIcons.wind, 'state': 'excited'},
-        {'label': 'Attack', 'icon': CupertinoIcons.shield_fill, 'state': 'angry'},
-        {'label': 'Alert', 'icon': CupertinoIcons.bell_fill, 'state': 'notification'},
+        {
+          'label': 'Attack',
+          'icon': CupertinoIcons.shield_fill,
+          'state': 'angry',
+        },
+        {
+          'label': 'Alert',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
         {'label': 'Hurt', 'icon': CupertinoIcons.bandage_fill, 'state': 'sad'},
         {'label': 'Win', 'icon': CupertinoIcons.sparkles, 'state': 'celebrate'},
       ];
     } else if (themeId == PetTheme.keyLargeCat) {
       interactions = [
         {'label': 'Run', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {'label': 'Fall', 'icon': CupertinoIcons.cloud_rain_fill, 'state': 'sad'},
-        {'label': 'Jump', 'icon': CupertinoIcons.bell_fill, 'state': 'notification'},
+        {
+          'label': 'Fall',
+          'icon': CupertinoIcons.cloud_rain_fill,
+          'state': 'sad',
+        },
+        {
+          'label': 'Jump',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
         {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
       ];
     } else {
       interactions = [
         {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {'label': 'Nap', 'icon': CupertinoIcons.moon_zzz_fill, 'state': 'sleep'},
-        {'label': 'Stretch', 'icon': CupertinoIcons.sparkles, 'state': 'celebrate'},
+        {
+          'label': 'Nap',
+          'icon': CupertinoIcons.moon_zzz_fill,
+          'state': 'sleep',
+        },
+        {
+          'label': 'Stretch',
+          'icon': CupertinoIcons.sparkles,
+          'state': 'celebrate',
+        },
         {'label': 'Angry', 'icon': CupertinoIcons.flame_fill, 'state': 'angry'},
-        {'label': 'Alert', 'icon': CupertinoIcons.bell_fill, 'state': 'notification'},
+        {
+          'label': 'Alert',
+          'icon': CupertinoIcons.bell_fill,
+          'state': 'notification',
+        },
         {'label': 'Lick', 'icon': CupertinoIcons.heart_fill, 'state': 'lick1'},
       ];
     }
@@ -414,7 +505,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => NativeBridge.triggerCompanionState(inter['state'] as String),
+            onTap: () =>
+                NativeBridge.triggerCompanionState(inter['state'] as String),
             borderRadius: BorderRadius.circular(12),
             child: Container(
               decoration: BoxDecoration(
@@ -425,7 +517,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(inter['icon'] as IconData, size: 16, color: AppTheme.accentColor),
+                  Icon(
+                    inter['icon'] as IconData,
+                    size: 16,
+                    color: AppTheme.accentColor,
+                  ),
                   const SizedBox(height: 6),
                   Text(
                     inter['label'] as String,

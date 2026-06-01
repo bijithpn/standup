@@ -158,3 +158,7 @@ class HealthReminderEvent extends AppEvent {
   });
 }
 
+class NotificationPermissionDeniedEvent extends AppEvent {
+  NotificationPermissionDeniedEvent({super.timestamp});
+}
+

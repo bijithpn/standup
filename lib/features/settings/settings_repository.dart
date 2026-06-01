@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
+import 'dart:isolate';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -7,6 +9,7 @@ import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
@@ -16,39 +19,117 @@ class SettingsRepository extends ChangeNotifier {
 
   SettingsModel get currentSettings => _current;
 
-  void load() {
+  Future<void> load() async {
+    if (!_storage.isReady) {
+      debugPrint(
+        '[SettingsRepo] StorageService is not ready. Attempting explicit initialization in load().',
+      );
+      try {
+        await _storage.init();
+      } catch (e) {
+        debugPrint(
+          '[SettingsRepo] Explicit StorageService.init() failed in load(): $e',
+        );
+      }
+    }
+
+    // Startup Diagnostics
+    debugPrint('=== STARTUP STORAGE DIAGNOSTICS ===');
+    debugPrint('storage.isReady: ${_storage.isReady}');
+    debugPrint('storage.hasFailed: ${_storage.hasFailed}');
+    debugPrint('settingsBox != null: ${_storage.settingsBox != null}');
+    debugPrint(
+      'companionPreferencesBox != null: ${_storage.companionPreferencesBox != null}',
+    );
+    debugPrint('kvBox != null: ${_storage.kvBox != null}');
+    debugPrint('active database path: ${_storage.activeDatabasePath}');
+    debugPrint('process id: $pid');
+    debugPrint('isolate name: "${Isolate.current.debugName ?? ''}"');
+    debugPrint('ObjectBox open duration: ${_storage.openDurationMs} ms');
+    debugPrint('startup duration: ${_storage.initDurationMs} ms');
+    debugPrint('====================================');
+
+    if (!_storage.isReady) {
+      debugPrint(
+        '[SettingsRepo] 🚨 ERROR: StorageService remains uninitialized after load() retry fallback! Falling back to default settings.',
+      );
+      _current = const SettingsModel();
+      return;
+    }
+
     try {
       final snapshot = _storage.settingsBox?.get(1);
       final companionPrefs = _storage.companionPreferencesBox?.get(1);
 
-      debugPrint('[SettingsRepo] Loading settings. Snapshot exists: ${snapshot != null}');
+      debugPrint(
+        '[SettingsRepo] Loading settings. Snapshot exists: ${snapshot != null}',
+      );
 
       if (snapshot != null) {
         try {
           _current = _fromSnapshot(snapshot, companionPrefs);
-          debugPrint('[SettingsRepo] Loaded from snapshot. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}');
+          debugPrint(
+            '[SettingsRepo] Loaded from snapshot. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
+          );
         } catch (e) {
-          debugPrint('[SettingsRepo] Error decoding snapshot: $e. Falling back to legacy/defaults.');
+          debugPrint(
+            '[SettingsRepo] Error decoding snapshot: $e. Falling back to legacy/defaults.',
+          );
           _current = _loadFromLegacy();
-        }
-        
-        // Critical fix: Always override with primitive storage if it's more definitive
-        // This prevents the onboarding loop if the database snapshot is stale
-        final completedOnboarding = _storage.getBool('has_completed_onboarding');
-        debugPrint('[SettingsRepo] Definitive storage check: $completedOnboarding');
-        
-        if (completedOnboarding && !_current.hasCompletedOnboarding) {
-          debugPrint('[SettingsRepo] Fix applied: forcing hasCompletedOnboarding to true');
-          _current = _current.copyWith(hasCompletedOnboarding: true);
-          unawaited(save(_current)); // Resync back to snapshot for consistency
         }
       } else {
         _current = _loadFromLegacy();
-        debugPrint('[SettingsRepo] Loaded from legacy. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}');
+        debugPrint(
+          '[SettingsRepo] Loaded from legacy. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
+        );
         if (_storage.isReady) {
           unawaited(save(_current));
         }
       }
+
+      // ── Critical flag reconciliation ─────────────────────────────────────
+      // hasCompletedOnboarding is a ONE-WAY flag (false → true, never back).
+      // We read from:
+      // 1. The ObjectBox snapshot
+      // 2. The ObjectBox KV store
+      // 3. The file-based SimplePrefs
+      // We take the OR so that the onboarding is NEVER shown again if any of them is true.
+      final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
+      final kvOnboarding = _storage.getBool('has_completed_onboarding');
+      final simplePrefsOnboarding = SimplePrefs.instance.getBool(
+        'has_completed_onboarding',
+      );
+      final onboardingDone =
+          snapshotOnboarding || kvOnboarding || simplePrefsOnboarding;
+
+      debugPrint(
+        '[SettingsRepo] Onboarding reconciliation: '
+        'snapshot=$snapshotOnboarding, kv=$kvOnboarding, simplePrefs=$simplePrefsOnboarding → resolved=$onboardingDone',
+      );
+
+      if (onboardingDone && !_current.hasCompletedOnboarding) {
+        _current = _current.copyWith(hasCompletedOnboarding: true);
+      }
+
+      // Back-fill whichever store was missing the flag so future launches
+      // don't need to rely on this reconciliation guard.
+      if (onboardingDone && !kvOnboarding) {
+        debugPrint('[SettingsRepo] Back-filling KV onboarding flag.');
+        unawaited(_storage.setBool('has_completed_onboarding', true));
+      }
+      if (onboardingDone && !simplePrefsOnboarding) {
+        debugPrint('[SettingsRepo] Back-filling SimplePrefs onboarding flag.');
+        SimplePrefs.instance.setBool('has_completed_onboarding', true);
+      }
+      if (onboardingDone && !snapshotOnboarding && snapshot != null) {
+        debugPrint('[SettingsRepo] Back-filling snapshot onboarding flag.');
+        unawaited(save(_current));
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
+      debugPrint(
+        '[SettingsRepo] Final hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
+      );
     } catch (e) {
       debugPrint('[SettingsRepo] Fatal error in load(): $e');
       // Ensure we have at least defaults
@@ -108,7 +189,10 @@ class SettingsRepository extends ChangeNotifier {
       customImagePath: s.customImagePath,
       resetTimerAfterMinutes: s.resetTimerAfterMinutes,
       workingHoursEnabled: s.workingHoursEnabled,
-      workingDays: _decodeIntList(s.workingDaysJson, fallback: const [1, 2, 3, 4, 5]),
+      workingDays: _decodeIntList(
+        s.workingDaysJson,
+        fallback: const [1, 2, 3, 4, 5],
+      ),
       workStartTime: s.workStartTime,
       workEndTime: s.workEndTime,
       detectVideoCalls: s.detectVideoCalls,
@@ -126,12 +210,18 @@ class SettingsRepository extends ChangeNotifier {
       quietModePreset: s.quietModePreset,
       lastSnoozeDurationMinutes: s.lastSnoozeDurationMinutes,
       intensityLevel: s.intensityLevel,
+      dailyBreakGoalCount: s.dailyBreakGoalCount,
+      maxContinuousSittingMinutes: s.maxContinuousSittingMinutes,
+      weeklyConsistencyTargetDays: s.weeklyConsistencyTargetDays,
+      calendarEnabled: s.calendarEnabled,
+      enableSessionResume: s.enableSessionResume,
       companionEnabled: cp?.companionEnabled ?? false,
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
       companionScale: cp?.companionScale ?? 1.5,
       companionClickThrough: cp?.companionClickThrough ?? false,
       companionFollowMouse: cp?.companionFollowMouse ?? false,
+      unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
     );
   }
 
@@ -261,7 +351,9 @@ class SettingsRepository extends ChangeNotifier {
               'cat'
           ? 'companion'
           : _storage.getString('tray_icon_style', defaultValue: 'companion'),
-      hasCompletedOnboarding: _storage.getBool('has_completed_onboarding'),
+      hasCompletedOnboarding:
+          _storage.getBool('has_completed_onboarding') ||
+          SimplePrefs.instance.getBool('has_completed_onboarding'),
       dailyWorkGoalHours: _storage.getInt(
         'daily_work_goal_hours',
         defaultValue: 8,
@@ -294,19 +386,70 @@ class SettingsRepository extends ChangeNotifier {
         'companion_follow_mouse',
         defaultValue: false,
       ),
+      calendarEnabled: _storage.getBool(
+        'calendar_enabled',
+        defaultValue: false,
+      ),
+      enableSessionResume: _storage.getBool(
+        'enable_session_resume',
+        defaultValue: true,
+      ),
     );
   }
 
   Future<void> completeOnboarding() async {
-    debugPrint('[SettingsRepo] Explicitly completing onboarding...');
+    debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
+    // Write the KV flag first — it is the fastest and most reliable path.
+    await _storage.setBool('has_completed_onboarding', true);
+    SimplePrefs.instance.setBool('has_completed_onboarding', true);
+    // Write the full snapshot so every field is up to date.
     await save(_current);
-    debugPrint('[SettingsRepo] Onboarding completion persisted.');
+    // Post-write verification so we can detect silent failures in the logs.
+    final kvVerify = _storage.getBool('has_completed_onboarding');
+    final simpleVerify = SimplePrefs.instance.getBool(
+      'has_completed_onboarding',
+    );
+    final snapVerify =
+        _storage.settingsBox?.get(1)?.hasCompletedOnboarding ?? false;
+    if (!kvVerify || !simpleVerify || !snapVerify) {
+      debugPrint(
+        '[SettingsRepo] ⚠️ Onboarding flag NOT fully persisted! '
+        'KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
+      );
+    } else {
+      debugPrint(
+        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify ✓',
+      );
+    }
   }
 
   Future<void> save(SettingsModel settings) async {
+    if (!_storage.isReady) {
+      debugPrint(
+        '[SettingsRepo] StorageService is not ready during save(). Attempting explicit initialization.',
+      );
+      try {
+        await _storage.init();
+      } catch (e) {
+        debugPrint(
+          '[SettingsRepo] Explicit StorageService.init() failed in save(): $e',
+        );
+      }
+    }
+
+    if (!_storage.isReady || _storage.settingsBox == null) {
+      debugPrint(
+        '[SettingsRepo] 🚨 FATAL: StorageService remains uninitialized during save()! settingsBox is null. Diagnostic details: '
+        'Storage ready: ${_storage.isReady}, settingsBox: ${_storage.settingsBox}, companionPrefsBox: ${_storage.companionPreferencesBox}, kvBox: ${_storage.kvBox}',
+      );
+      throw StateError('Storage unavailable');
+    }
+
     _current = settings;
-    debugPrint('[SettingsRepo] Saving settings. hasCompletedOnboarding: ${settings.hasCompletedOnboarding}');
+    debugPrint(
+      '[SettingsRepo] Saving settings. hasCompletedOnboarding: ${settings.hasCompletedOnboarding}',
+    );
 
     final snapshot = SettingsSnapshot(
       id: 1,
@@ -365,19 +508,89 @@ class SettingsRepository extends ChangeNotifier {
       quietModePreset: settings.quietModePreset,
       lastSnoozeDurationMinutes: settings.lastSnoozeDurationMinutes,
       intensityLevel: settings.intensityLevel,
+      dailyBreakGoalCount: settings.dailyBreakGoalCount,
+      maxContinuousSittingMinutes: settings.maxContinuousSittingMinutes,
+      weeklyConsistencyTargetDays: settings.weeklyConsistencyTargetDays,
+      calendarEnabled: settings.calendarEnabled,
+      enableSessionResume: settings.enableSessionResume,
     );
 
-    // Mirror critical onboarding state to primitives for reliability FIRST
-    // This is because KeyValueRecords are often more stable than complex snapshots
-    await _storage.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
-    await _storage.setInt('short_break_interval', settings.shortBreakIntervalMinutes);
+    // Mirror ALL critical settings to the KV store for reliability.
+    // This is a belt-and-suspenders approach: ObjectBox is the primary store,
+    // but if it fails on next launch, _loadFromLegacy() will read these KV values
+    // and correctly restore the user's choices instead of falling back to defaults.
+    await _storage.setBool(
+      'has_completed_onboarding',
+      settings.hasCompletedOnboarding,
+    );
+    SimplePrefs.instance.setBool(
+      'has_completed_onboarding',
+      settings.hasCompletedOnboarding,
+    );
+    await _storage.setInt(
+      'short_break_interval',
+      settings.shortBreakIntervalMinutes,
+    );
     await _storage.setBool('strict_mode', settings.strictMode);
     await _storage.setBool('companion_enabled', settings.companionEnabled);
 
-    // Then save the full snapshot
-    if (_storage.settingsBox != null) {
-      _storage.settingsBox!.put(snapshot);
-    }
+    // Break settings
+    await _storage.setString('break_template', settings.breakTemplate);
+    await _storage.setString('break_theme', settings.breakTheme);
+    await _storage.setString('clock_face_style', settings.clockFaceStyle);
+    await _storage.setString('menu_bar_style', settings.menuBarStyle);
+    await _storage.setString('selected_profile_id', settings.selectedProfileId);
+    await _storage.setString('tray_icon_style', settings.trayIconStyle);
+
+    // Timer intervals
+    await _storage.setInt(
+      AppConstants.keyShortBreakInterval,
+      settings.shortBreakIntervalMinutes,
+    );
+    await _storage.setInt(
+      AppConstants.keyShortBreakDuration,
+      settings.shortBreakDurationSeconds,
+    );
+    await _storage.setInt(
+      AppConstants.keyPreBreakWarningSeconds,
+      settings.preBreakWarningSeconds,
+    );
+    await _storage.setInt(
+      AppConstants.keyLongBreakInterval,
+      settings.longBreakIntervalMinutes,
+    );
+    await _storage.setInt(
+      AppConstants.keyLongBreakDuration,
+      settings.longBreakDurationMinutes,
+    );
+
+    // Notifications
+    await _storage.setBool(AppConstants.keySoundEnabled, settings.soundEnabled);
+    await _storage.setBool(
+      'notifications_enabled',
+      settings.notificationsEnabled,
+    );
+
+    // Smart detection
+    await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
+    await _storage.setBool('detect_meetings', settings.detectMeetings);
+    await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
+    await _storage.setBool('calendar_enabled', settings.calendarEnabled);
+    await _storage.setBool('enable_session_resume', settings.enableSessionResume);
+
+    // Companion
+    await _storage.setString(
+      AppConstants.keyCompanionPetTheme,
+      settings.companionPetTheme,
+    );
+    await _storage.setDouble('companion_scale', settings.companionScale);
+
+    // Write the full snapshot to ObjectBox.
+    _storage.settingsBox!.put(snapshot);
+    debugPrint(
+      '[SettingsRepo] Snapshot written. '
+      'hasCompletedOnboarding: ${snapshot.hasCompletedOnboarding}',
+    );
 
     final companionPrefs = CompanionPreferences(
       id: 1,
@@ -387,12 +600,11 @@ class SettingsRepository extends ChangeNotifier {
       companionScale: settings.companionScale,
       companionClickThrough: settings.companionClickThrough,
       companionFollowMouse: settings.companionFollowMouse,
+      unlockedPetsJson: jsonEncode(settings.unlockedPets),
     );
 
-    if (_storage.companionPreferencesBox != null) {
-      _storage.companionPreferencesBox!.put(companionPrefs);
-    }
-    
+    _storage.companionPreferencesBox!.put(companionPrefs);
+
     notifyListeners();
   }
 
