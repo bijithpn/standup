@@ -196,10 +196,10 @@ if [[ "$SKIP_BUILD" == true ]]; then
   [[ ! -d "$APP_BUILD_DIR" ]] && error "No build found at $APP_BUILD_DIR. Remove --skip-build."
 else
   if [[ "$DRY_RUN" == true ]]; then
-    warn "[DRY-RUN] Would run: flutter build macos --release"
+    warn "[DRY-RUN] Would run:  flutter build macos --flavor prod --release"
   else
     cd "$PROJECT_ROOT"
-    flutter build macos --release
+     flutter build macos --flavor prod --release
     success "Flutter build complete."
   fi
 fi

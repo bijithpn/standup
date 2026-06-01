@@ -2,11 +2,11 @@
 
 All notable changes to BreakMate are documented in this file.
 
-
 ## Tag And Version Index
 
 | Tag | Version | Build | Date | Summary |
 |---|---:|---:|---|---|
+| `v1.2.1` | 1.2.1 | 31 | 2026-06-01 | Native macOS Calendar and Permission Recovery |
 | `v1.2.0` | 1.2.0 | 30 | 2026-05-31 | Contextual Intelligence and Personal Wellness |
 | `v1.1.4` | 1.1.4 | 29 | 2026-05-31 | Onboarding persistence and macOS storage stability |
 | `v1.1.3` | 1.1.3 | 28 | 2026-05-27 | Startup stability, Sentry dev isolation, and Sparkle version alignment |
@@ -33,6 +33,26 @@ Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.
 - Added settings search, section reset controls, and inline dependency warnings.
 - Added companion low-distraction mode and visible companion state explanations.
 - Updated Graphify graph artifacts after the code changes.
+
+## [1.2.1] - 2026-06-01
+
+Tags: `v1.2.1`  
+Build: `31`  
+Release title: Native macOS Calendar & Permission Recovery
+
+### Added
+
+- **Native macOS Calendar Bridge:** I implemented a high-performance native bridge using Apple's EventKit framework. This replaces the previous plugin-based approach, ensuring stability on macOS.
+- **Advanced Permission Management:** I integrated `permission_handler` and added an explicit "Open Settings" button to the dashboard. This allows you to easily recover from denied calendar permissions by going directly to the OS Privacy settings.
+- **Grouped Calendar View:** I updated the Dashboard UI to group upcoming events by date (Today, Tomorrow, etc.) with better visual separators and date headers.
+- **Sonoma Privacy Support:** I added the required `NSCalendarsWriteOnlyAccessUsageDescription` and `com.apple.security.personal-information.calendars` entitlements for full compatibility with macOS 14+ Sonoma.
+- **Permission State Feedback:** I added success and error toast notifications to provide clear feedback when granting calendar access.
+
+### Fixed
+
+- **Initialization Crash:** I resolved a critical "Bad state" crash that occurred when the app tried to initialize the calendar plugin on macOS.
+- **Precision Lookup Bug:** I fixed a bug where the native bridge used hours instead of minutes for event window lookups, which was causing "active meeting" detection to fail.
+- **Silent Failure Path:** I fixed an issue where permission requests would fail silently without updating the UI state.
 
 ## [1.2.0] - 2026-05-31
 
@@ -250,7 +270,8 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
-[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1
 [1.2.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.0
 [1.1.4]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.4
 [1.1.3]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.3

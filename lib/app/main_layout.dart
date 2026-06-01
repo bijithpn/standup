@@ -179,6 +179,9 @@ class _MainLayoutState extends State<MainLayout> {
         },
         child: Focus(
           autofocus: true,
+          canRequestFocus: false,
+          descendantsAreFocusable: false,
+          onKeyEvent: (_, _) => KeyEventResult.ignored,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 750;
