@@ -5,6 +5,27 @@
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
         <item>
+            <title>Version 1.2.1</title>
+            <pubDate>Mon, 01 Jun 2026 10:30:00 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.2.1 — Native macOS Calendar & Permission Recovery</h3>
+                <p>In this update, I have focused on making the calendar integration robust and reliable for macOS users. I've replaced the generic calendar plugin with a high-performance native implementation and significantly improved the user experience around permission management.</p>
+                <ul>
+                    <li>Native macOS Calendar Support: Custom native bridge using Apple's EventKit framework for flawless performance.</li>
+                    <li>Advanced Permission Handling: Added clear recovery paths and direct system settings access when permissions are denied.</li>
+                    <li>Enhanced Dashboard Visualization: Grouped upcoming events by date for better schedule visibility.</li>
+                    <li>macOS Sonoma Compatibility: Added specific support for macOS 14+ privacy requirements and security entitlements.</li>
+                    <li>Stability Fixes: Resolved startup crashes and improved meeting detection precision.</li>
+                </ul>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.2.1/BreakMate-Installer.dmg"
+                       sparkle:version="31"
+                       sparkle:shortVersionString="1.2.1"
+                       sparkle:edSignature="srayMiUEKUPX2OCpdE+8yT18rVbyZcLJu542Trd6GV6Es8roRWe3u9C98KX7lNlCymyZSwFXfUPCnjzgeUYsDA=="
+                       length="51722428"
+                       type="application/octet-stream" />
+        </item>
+        <item>
             <title>Version 1.2.0</title>
             <pubDate>Sun, 31 May 2026 12:00:00 +0000</pubDate>
             <description><![CDATA[
