@@ -2,7 +2,7 @@ import 'package:objectbox/objectbox.dart';
 
 @Entity()
 class SettingsSnapshot {
-  @Id()
+  @Id(assignable: true)
   int id; // Will always be 1 for a singleton
 
   bool autoStart;
@@ -81,6 +81,15 @@ class SettingsSnapshot {
   int lastSnoozeDurationMinutes;
   String intensityLevel;
 
+  // Goals & Contextual
+  int dailyBreakGoalCount;
+  int maxContinuousSittingMinutes;
+  int weeklyConsistencyTargetDays;
+  bool calendarEnabled;
+
+  // Session Management
+  bool enableSessionResume;
+
   SettingsSnapshot({
     this.id = 0,
     required this.autoStart,
@@ -136,6 +145,11 @@ class SettingsSnapshot {
     this.quietModePreset = 'none',
     this.lastSnoozeDurationMinutes = 5,
     this.intensityLevel = 'standard',
+    this.dailyBreakGoalCount = 10,
+    this.maxContinuousSittingMinutes = 60,
+    this.weeklyConsistencyTargetDays = 5,
+    this.calendarEnabled = false,
+    this.enableSessionResume = true,
   });
 
   Map<String, dynamic> toMap() {
@@ -193,6 +207,11 @@ class SettingsSnapshot {
       'quietModePreset': quietModePreset,
       'lastSnoozeDurationMinutes': lastSnoozeDurationMinutes,
       'intensityLevel': intensityLevel,
+      'dailyBreakGoalCount': dailyBreakGoalCount,
+      'maxContinuousSittingMinutes': maxContinuousSittingMinutes,
+      'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
+      'calendarEnabled': calendarEnabled,
+      'enableSessionResume': enableSessionResume,
     };
   }
 }

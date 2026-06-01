@@ -8,6 +8,7 @@ import 'package:breakmate/core/storage/models/daily_stats.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/objectbox.g.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 
 class StorageService {
   static Store? _store;
@@ -17,7 +18,18 @@ class StorageService {
   bool get isReady => _store != null;
   bool get hasFailed => _failed;
 
+  String? activeDatabasePath;
+  int? openDurationMs;
+  int? initDurationMs;
+
   Store get store {
+    final isolateName = Isolate.current.debugName ?? '';
+    final isSecondaryIsolate = isolateName.toLowerCase().contains('overlay') ||
+        isolateName.toLowerCase().contains('companion');
+    if (isSecondaryIsolate) {
+      debugPrint('[Storage] 🚨 REJECTED: Secondary isolate "$isolateName" attempted to access ObjectBox store! Rejecting access to prevent corruption.');
+      throw StateError('Storage access rejected in secondary isolates.');
+    }
     if (_store == null) {
       throw StateError('StorageService not initialized. Call init() first and wait for completion.');
     }
@@ -54,6 +66,7 @@ class StorageService {
 
     _initializing = true;
     _failed = false;
+    final overallStopwatch = Stopwatch()..start();
     try {
       final supportDir = await getApplicationSupportDirectory();
       final docsDir = await getApplicationDocumentsDirectory();
@@ -81,6 +94,7 @@ class StorageService {
       final activeStoreDir = Directory(storeDir).existsSync() ? storeDir : 
                              (Directory(legacyStoreDir).existsSync() ? legacyStoreDir : storeDir);
 
+      activeDatabasePath = activeStoreDir;
       await diagnoseStorage(activeStoreDir);
 
       // Ensure the directory exists
@@ -91,25 +105,107 @@ class StorageService {
       }
 
       debugPrint('[Storage] Opening ObjectBox store at $activeStoreDir...');
+      final openStopwatch = Stopwatch()..start();
       try {
         _store = await openStore(directory: activeStoreDir);
-        debugPrint('[Storage] Store opened successfully.');
-      } catch (e) {
+        openDurationMs = openStopwatch.elapsedMilliseconds;
+        debugPrint('[Storage] Store opened successfully in ${openDurationMs}ms.');
+      } catch (e, stack) {
         debugPrint('[Storage] Failed to open store: $e');
+        debugPrint('[Storage] StackTrace: $stack');
         
-        // Attempt cleanup if it looks like a locking issue
-        if (e.toString().contains('Operation not permitted') || e.toString().contains('Lock')) {
-          debugPrint('[Storage] Attempting to clean up stale lock files...');
+        final errStr = e.toString().toLowerCase();
+        final isLockError = errStr.contains('operation not permitted') || 
+                            errStr.contains('lock') || 
+                            errStr.contains('10199') || 
+                            errStr.contains('10101');
+        final isSchemaError = errStr.contains('migration') || 
+                             errStr.contains('schema') || 
+                             errStr.contains('incompatible') || 
+                             errStr.contains('corrupt') ||
+                             errStr.contains('model');
+        
+        if (isLockError) {
+          debugPrint(
+            '[Storage] Attempting to clean up stale processes holding the database files...',
+          );
           try {
-            final lockFile = File(p.join(activeStoreDir, 'lock.mdb'));
-            if (lockFile.existsSync()) {
-              lockFile.deleteSync();
-              debugPrint('[Storage] Deleted stale lock.mdb');
+            final dbFilePath = p.join(activeStoreDir, 'data.mdb');
+            final lockFilePath = p.join(activeStoreDir, 'lock.mdb');
+
+            final pids = <int>{};
+            for (final path in [dbFilePath, lockFilePath, activeStoreDir]) {
+              try {
+                final result = await Process.run('lsof', ['-t', path]);
+                if (result.exitCode == 0) {
+                  final stdoutStr = result.stdout.toString().trim();
+                  if (stdoutStr.isNotEmpty) {
+                    for (final line in stdoutStr.split('\n')) {
+                      final parsedPid = int.tryParse(line.trim());
+                      if (parsedPid != null && parsedPid != pid) {
+                        pids.add(parsedPid);
+                      }
+                    }
+                  }
+                }
+              } catch (_) {}
             }
+
+            if (pids.isNotEmpty) {
+              debugPrint(
+                '[Storage] Found stale processes holding DB files: $pids. Terminating them...',
+              );
+              for (final stalePid in pids) {
+                try {
+                  await Process.run('kill', ['-9', stalePid.toString()]);
+                  debugPrint(
+                    '[Storage] Successfully terminated stale PID $stalePid.',
+                  );
+                } catch (killErr) {
+                  debugPrint(
+                    '[Storage] Failed to kill PID $stalePid: $killErr',
+                  );
+                }
+              }
+              // Wait for OS to release files
+              await Future.delayed(const Duration(milliseconds: 800));
+            }
+
+            final lockFile = File(lockFilePath);
+            if (lockFile.existsSync()) {
+              try {
+                lockFile.deleteSync();
+                debugPrint(
+                  '[Storage] Deleted stale lock.mdb after process cleanup.',
+                );
+              } catch (delErr) {
+                debugPrint('[Storage] Failed to delete lock.mdb: $delErr');
+              }
+            }
+            openStopwatch.reset();
             _store = await openStore(directory: activeStoreDir);
-            debugPrint('[Storage] Store opened after cleanup.');
+            openDurationMs = openStopwatch.elapsedMilliseconds;
+            debugPrint('[Storage] Store opened after cleanup in ${openDurationMs}ms.');
           } catch (retryError) {
             debugPrint('[Storage] Cleanup retry failed: $retryError');
+          }
+        }
+        
+        if (_store == null && isSchemaError) {
+          debugPrint('[Storage] Incompatible or corrupted database detected. Attempting database reset...');
+          try {
+            final dir = Directory(activeStoreDir);
+            if (dir.existsSync()) {
+              dir.deleteSync(recursive: true);
+              dir.createSync(recursive: true);
+              debugPrint('[Storage] Database directory deleted and recreated.');
+            }
+            openStopwatch.reset();
+            _store = await openStore(directory: activeStoreDir);
+            openDurationMs = openStopwatch.elapsedMilliseconds;
+            debugPrint('[Storage] Store opened successfully after database reset in ${openDurationMs}ms.');
+          } catch (resetError) {
+            debugPrint('[Storage] Database reset failed: $resetError');
           }
         }
 
@@ -119,7 +215,10 @@ class StorageService {
              debugPrint('[Storage] Attempting fallback to legacy location $legacyStoreDir...');
              try {
                 Directory(legacyStoreDir).createSync(recursive: true);
+                openStopwatch.reset();
                 _store = await openStore(directory: legacyStoreDir);
+                openDurationMs = openStopwatch.elapsedMilliseconds;
+                activeDatabasePath = legacyStoreDir;
              } catch (_) {}
           }
           
@@ -128,13 +227,17 @@ class StorageService {
             try {
               final tempDir = await getTemporaryDirectory();
               final fallbackPath = p.join(tempDir.path, 'breakmate_fallback');
-              debugPrint('[Storage] WARNING: Falling back to temporary storage at $fallbackPath. Data will not persist reliably.');
+              debugPrint('WARNING:\nRunning on temporary storage.\nSettings may not persist.');
               Directory(fallbackPath).createSync(recursive: true);
+              openStopwatch.reset();
               _store = await openStore(directory: fallbackPath);
+              openDurationMs = openStopwatch.elapsedMilliseconds;
+              activeDatabasePath = fallbackPath;
               debugPrint('[Storage] Fallback store opened successfully.');
             } catch (fallbackError) {
               debugPrint('[Storage] FATAL: All storage options failed: $fallbackError');
               _failed = true;
+              diagnoseAndLogFailure(activeStoreDir);
               return;
             }
           }
@@ -149,13 +252,90 @@ class StorageService {
         kvBox = _store!.box<KeyValueRecord>();
       } else {
         _failed = true;
+        diagnoseAndLogFailure(activeStoreDir);
       }
     } catch (e) {
       debugPrint('[Storage] Unexpected error during init: $e');
       _failed = true;
+      diagnoseAndLogFailure(activeDatabasePath ?? '');
     } finally {
       _initializing = false;
+      initDurationMs = overallStopwatch.elapsedMilliseconds;
     }
+  }
+
+  void close() {
+    if (_store != null) {
+      debugPrint('[Storage] Closing ObjectBox store cleanly...');
+      _store!.close();
+      _store = null;
+      settingsBox = null;
+      dailyStatsBox = null;
+      globalStatsBox = null;
+      companionPreferencesBox = null;
+      kvBox = null;
+      debugPrint('[Storage] Store closed cleanly.');
+    }
+  }
+
+  void diagnoseAndLogFailure(String storeDir) {
+    debugPrint('=== 🚨 STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
+    
+    // 1. Initialization order issue
+    debugPrint('[Diagnostics] 1. Initialization Order Check:');
+    debugPrint('   - StorageService._initializing: $_initializing');
+    debugPrint('   - StorageService._store != null: ${_store != null}');
+    
+    // 2. Existing process ownership
+    debugPrint('[Diagnostics] 2. Existing Process Ownership Check:');
+    debugPrint('   - Current Process ID: $pid');
+    
+    // 3. Secondary isolate access
+    final isolateName = Isolate.current.debugName ?? '';
+    final isSecondaryIsolate = isolateName.toLowerCase().contains('overlay') ||
+        isolateName.toLowerCase().contains('companion');
+    debugPrint('[Diagnostics] 3. Secondary Isolate Check:');
+    debugPrint('   - Isolate Name: "$isolateName"');
+    debugPrint('   - Is Secondary Isolate: $isSecondaryIsolate');
+    
+    // 4. Temporary storage fallback
+    debugPrint('[Diagnostics] 4. Temporary Storage Fallback Check:');
+    debugPrint('   - Active database path: $activeDatabasePath');
+    final isTemp = activeDatabasePath?.contains('temporary') ?? false;
+    debugPrint('   - Is Running on Temporary Storage: $isTemp');
+    if (isTemp) {
+      debugPrint('WARNING:\nRunning on temporary storage.\nSettings may not persist.');
+    }
+
+    // 5. ObjectBox open failure
+    debugPrint('[Diagnostics] 5. ObjectBox Open Failure Check:');
+    debugPrint('   - StorageService._failed: $_failed');
+    
+    // 6. Database corruption
+    debugPrint('[Diagnostics] 6. Database Corruption Check:');
+    if (storeDir.isNotEmpty) {
+      final dbFile = File(p.join(storeDir, 'data.mdb'));
+      debugPrint('   - Database file exists: ${dbFile.existsSync()}');
+      if (dbFile.existsSync()) {
+        try {
+          debugPrint('   - Database file size: ${dbFile.lengthSync()} bytes');
+        } catch (e) {
+          debugPrint('   - Database file read error: $e');
+        }
+      }
+    }
+    
+    // 7. Lock-file conflict
+    debugPrint('[Diagnostics] 7. Lock-file Conflict Check:');
+    if (storeDir.isNotEmpty) {
+      final lockFile = File(p.join(storeDir, 'lock.mdb'));
+      debugPrint('   - Lock file exists: ${lockFile.existsSync()}');
+      if (lockFile.existsSync()) {
+        debugPrint('   - Lock file is present, potential locking conflict with another running instance.');
+      }
+    }
+    
+    debugPrint('=====================================================');
   }
 
   Future<void> diagnoseStorage(String storeDir) async {
@@ -208,6 +388,9 @@ class StorageService {
   }
 
   Future<bool> setInt(String key, int value) async {
+    // Always mirror to SimplePrefs
+    SimplePrefs.instance.setInt(key, value);
+
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
@@ -220,14 +403,20 @@ class StorageService {
   }
 
   int getInt(String key, {int defaultValue = 0}) {
+    if (kvBox == null) {
+      return SimplePrefs.instance.getInt(key, defaultValue: defaultValue);
+    }
     final kv = _getKv(key);
     if (kv != null && kv.type == 'int') {
       return int.tryParse(kv.value) ?? defaultValue;
     }
-    return defaultValue;
+    return SimplePrefs.instance.getInt(key, defaultValue: defaultValue);
   }
 
   Future<bool> setBool(String key, bool value) async {
+    // Always mirror to SimplePrefs
+    SimplePrefs.instance.setBool(key, value);
+
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
@@ -242,14 +431,20 @@ class StorageService {
   }
 
   bool getBool(String key, {bool defaultValue = false}) {
+    if (kvBox == null) {
+      return SimplePrefs.instance.getBool(key, defaultValue: defaultValue);
+    }
     final kv = _getKv(key);
     if (kv != null && kv.type == 'bool') {
       return kv.value == 'true';
     }
-    return defaultValue;
+    return SimplePrefs.instance.getBool(key, defaultValue: defaultValue);
   }
 
   Future<bool> setString(String key, String value) async {
+    // Always mirror to SimplePrefs
+    SimplePrefs.instance.setString(key, value);
+
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
@@ -262,14 +457,20 @@ class StorageService {
   }
 
   String getString(String key, {String defaultValue = ''}) {
+    if (kvBox == null) {
+      return SimplePrefs.instance.getString(key, defaultValue: defaultValue);
+    }
     final kv = _getKv(key);
     if (kv != null && kv.type == 'string') {
       return kv.value;
     }
-    return defaultValue;
+    return SimplePrefs.instance.getString(key, defaultValue: defaultValue);
   }
 
   Future<bool> setDouble(String key, double value) async {
+    // Always mirror to SimplePrefs
+    SimplePrefs.instance.setDouble(key, value);
+
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
@@ -284,10 +485,13 @@ class StorageService {
   }
 
   double getDouble(String key, {double defaultValue = 0.0}) {
+    if (kvBox == null) {
+      return SimplePrefs.instance.getDouble(key, defaultValue: defaultValue);
+    }
     final kv = _getKv(key);
     if (kv != null && kv.type == 'double') {
       return double.tryParse(kv.value) ?? defaultValue;
     }
-    return defaultValue;
+    return SimplePrefs.instance.getDouble(key, defaultValue: defaultValue);
   }
 }

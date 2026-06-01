@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -19,7 +20,6 @@ class AboutSection extends StatefulWidget {
 class _AboutSectionState extends State<AboutSection> {
   String _version = '1.0.0';
   String _buildNumber = '1';
-  String _appName = 'BreakMate';
 
   @override
   void initState() {
@@ -34,7 +34,6 @@ class _AboutSectionState extends State<AboutSection> {
         setState(() {
           _version = info.version;
           _buildNumber = info.buildNumber;
-          _appName = info.appName;
         });
       }
     } catch (_) {}
@@ -77,7 +76,9 @@ class _AboutSectionState extends State<AboutSection> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(17.5),
                   child: Image.asset(
-                    'assets/icons/app_icon.jpeg',
+                    FlavorConfig.isDevelopment
+                        ? 'assets/icons/app_icon_dev.png'
+                        : 'assets/icons/app_icon.jpeg',
                     width: 67,
                     height: 67,
                     fit: BoxFit.cover,
@@ -92,14 +93,41 @@ class _AboutSectionState extends State<AboutSection> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                 ).createShader(bounds),
-                child: Text(
-                  _appName,
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w900,
-                    fontFamily: 'Inter',
-                    color: AppTheme.textPrimary,
-                    letterSpacing: -0.5,
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Break',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.3,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Mate',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.accentColor,
+                          letterSpacing: -0.3,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      if (FlavorConfig.isDevelopment)
+                        TextSpan(
+                          text: ' DEV',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.error,
+                            letterSpacing: -0.3,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),

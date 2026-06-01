@@ -16,6 +16,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/producti
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
 enum BreakTheme {
   image,
@@ -67,6 +68,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   double _displayHeight = 0;
   int _screenId = 0;
   bool _strictMode = false;
+  bool _enableAnimations = true;
+  String _intensityLevel = 'standard';
   String? _reminderType;
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
@@ -173,6 +176,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             }
             _overlayType = args['type'] ?? _overlayType;
             _strictMode = args['strictMode'] ?? _strictMode;
+            _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
+            _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
             _isInternalPreview = args['isPreview'] ?? false;
 
             // Display Context
@@ -192,13 +197,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 orElse: () => _currentTheme,
               );
             }
-            if (args['template'] != null) {
-              _currentTemplate = args['template'];
-            }
             if (args['breakTemplate'] != null) {
               _breakTemplate = args['breakTemplate'];
+            } else if (args['template'] != null) {
+              _breakTemplate = args['template'];
             }
-            _syncClassicEffects(_breakTemplate == 'classic');
+            _syncClassicEffects(
+              _breakTemplate == 'classic' && _enableAnimations,
+            );
             if (args['companionPetTheme'] != null) {
               _companionPetTheme = args['companionPetTheme'];
             } else if (args['companionCatTheme'] != null) {
@@ -301,6 +307,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     final settings = SettingsModel(
       strictMode: _strictMode,
+      enableAnimations: _enableAnimations,
       companionPetTheme: _companionPetTheme,
       breakTemplate: _breakTemplate,
       showExercisesInBreak: _exerciseTitle != null,
@@ -420,6 +427,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       fit: StackFit.expand,
       children: [
         templateWidget,
+        Positioned(
+          top: 28,
+          left: 28,
+          child: SafeArea(
+            child: BreakContextPill(
+              breakInfo: breakInfo,
+              exerciseTitle: _exerciseTitle,
+            ),
+          ),
+        ),
         if (!_strictMode)
           Positioned(
             top: 28,
@@ -449,27 +466,17 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             bottom: 24,
             left: 0,
             right: 0,
+            child: const IgnorePointer(
+              child: SwipeToDismissHint(),
+            ),
+          ),
+        if (_strictMode)
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
             child: IgnorePointer(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    CupertinoIcons.chevron_up,
-                    size: 20,
-                    color: Colors.white.withValues(alpha: 0.5),
-                  ),
-                  Text(
-                    'Swipe up to dismiss',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.5),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 1.0,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              ),
+              child: StrictModeNote(intensityLevel: _intensityLevel),
             ),
           ),
       ],
@@ -720,7 +727,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           children: [
             // Optimized image loading
             // Only use transform if NOT in preview to save 100% of that CPU cost
-            _isInternalPreview
+            (_isInternalPreview || !_enableAnimations)
                 ? Image.asset(
                     _currentTemplate,
                     fit: BoxFit.cover,
@@ -883,40 +890,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   Widget _buildSkipButton() {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: _skipBreak,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Skip Break',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                CupertinoIcons.arrow_right,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return SkipBreakButton(onSkip: _skipBreak);
   }
 
   String _formatTime(int seconds) {

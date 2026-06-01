@@ -30,6 +30,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
   var sparkleBridge: SparkleBridge?
+  var appTrackingBridge: AppTrackingBridge?
   
   override func applicationWillFinishLaunching(_ notification: Notification) {
     // Aggressively terminate any stale running instances of BreakMate (e.g. background menu bar process from a previous debug run)
@@ -117,6 +118,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
       overlayBridge = OverlayWindowBridge(registrar: registrar)
       windowBridge = WindowBridge(registrar: registrar)
       sparkleBridge = SparkleBridge(registrar: registrar, updater: updaterController.updater)
+      appTrackingBridge = AppTrackingBridge(registrar: registrar)
       NSLog("Sparkle: Initialized SparkleBridge with updater: \(updaterController.updater)")
     }
     

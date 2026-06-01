@@ -9,6 +9,7 @@ import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
@@ -16,8 +17,12 @@ import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/core/services/system_media_service.dart';
+import 'package:breakmate/core/native/app_tracking_service.dart';
+import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
+import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -44,17 +49,31 @@ Future<void> initDependencies() async {
 
   // Core Services
   final storage = StorageService();
+  await storage.init();
+
+  if (!storage.isReady) {
+    throw Exception('Storage initialization failed');
+  }
+
+  sl.registerSingleton<StorageService>(storage);
+
+  final sessionStateRepository = SessionStateRepository(storage);
+  sessionStateRepository.initialize();
+  sl.registerSingleton<SessionStateRepository>(sessionStateRepository);
+
+  final settingsRepo = SettingsRepository(storage: storage);
+  await settingsRepo.load();
+  sl.registerSingleton<SettingsRepository>(settingsRepo);
+
   final notifications = NotificationService();
   final displayManager = DisplayManager();
 
   // Parallelize independent initializations
   await Future.wait([
-    storage.init(),
     notifications.init(),
     displayManager.initialize(),
   ]);
 
-  sl.registerSingleton<StorageService>(storage);
   sl.registerSingleton<NotificationService>(notifications);
 
   final activityMonitor = ActivityMonitor();
@@ -80,13 +99,14 @@ Future<void> initDependencies() async {
   );
 
   // Adaptive Break Service for smart timing
-  final adaptiveBreakService = AdaptiveBreakService(storage: storage);
-  sl.registerSingleton<AdaptiveBreakService>(adaptiveBreakService);
+  final wellnessEngine = WellnessEngine(appTracking: AppTrackingService());
+  sl.registerSingleton<WellnessEngine>(wellnessEngine);
 
-  // Feature Services
-  final settingsRepo = SettingsRepository(storage: sl());
-  settingsRepo.load();
-  sl.registerSingleton<SettingsRepository>(settingsRepo);
+  final adaptiveBreakService = AdaptiveBreakService(
+    storage: storage,
+    wellnessEngine: wellnessEngine,
+  );
+  sl.registerSingleton<AdaptiveBreakService>(adaptiveBreakService);
 
   notifications.setNotificationsEnabled(
     settingsRepo.currentSettings.notificationsEnabled,
@@ -94,8 +114,10 @@ Future<void> initDependencies() async {
   notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
 
   final smartDetectionService = SmartDetectionService();
-  smartDetectionService.start();
   sl.registerSingleton<SmartDetectionService>(smartDetectionService);
+
+  final calendarService = CalendarService();
+  sl.registerSingleton<CalendarService>(calendarService);
 
   final statsService = StatsService(storage: sl());
   await statsService.initialize();
@@ -105,6 +127,7 @@ Future<void> initDependencies() async {
   final timerEngine = TimerEngine(
     settingsRepository: sl(),
     smartDetectionService: sl(),
+    calendarService: sl(),
     eventBus: sl(),
   );
   sl.registerSingleton<TimerEngine>(timerEngine);
@@ -129,6 +152,7 @@ Future<void> initDependencies() async {
   final timerOrchestrator = TimerOrchestrator(
     timerEngine: sl(),
     timerRepository: TimerRepository(sl()),
+    sessionStateRepository: sl(),
     activityMonitor: sl(),
     notificationService: sl(),
     statsService: sl(),
@@ -144,10 +168,8 @@ Future<void> initDependencies() async {
   final meetingDetectionService = MeetingDetectionService();
   sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
 
-  // Listen for meeting events and broadcast via IPC to all isolates
-  meetingDetectionService.isMeetingActiveStream.listen((isActive) {
-    IpcBridge.instance.notifyMeetingDetected(isActive);
-  });
+  sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
+  sl.registerLazySingleton<WellnessLibraryRepository>(() => WellnessLibraryRepository(settingsRepo: sl()));
 
   final focusModeService = FocusModeService();
   sl.registerSingleton<FocusModeService>(focusModeService);

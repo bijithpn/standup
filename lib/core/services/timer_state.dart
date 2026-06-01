@@ -1,6 +1,6 @@
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 
-enum TimerState { running, paused, idle, breakActive }
+enum TimerState { running, paused, idle, breakActive, windDown }
 
 enum WorkMode { pomodoro, deepWork, flexible, strict }
 

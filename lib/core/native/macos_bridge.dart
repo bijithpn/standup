@@ -139,6 +139,33 @@ class MacOSBridge implements NativeBridgePlatform {
     await _invokeSafely('setCompanionFollowMouse', {'enabled': enabled});
   }
 
+  @override
+  Future<bool> requestCalendarPermissions() async {
+    final bool? granted = await _invokeSafely<bool>('requestCalendarPermissions');
+    return granted ?? false;
+  }
+
+  @override
+  Future<bool> hasCalendarPermissions() async {
+    final bool? granted = await _invokeSafely<bool>('hasCalendarPermissions');
+    return granted ?? false;
+  }
+
+  @override
+  Future<void> openCalendarSettings() async {
+    await _invokeSafely('openCalendarSettings');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(int windowMinutes) async {
+    final List<dynamic>? events = await _invokeSafely<List<dynamic>>(
+      'getUpcomingCalendarEvents',
+      {'windowMinutes': windowMinutes},
+    );
+    if (events == null) return [];
+    return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
   Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

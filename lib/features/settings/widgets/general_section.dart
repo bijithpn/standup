@@ -33,6 +33,8 @@ class GeneralSection extends StatelessWidget {
           divider(),
           _buildStrictMode(),
           divider(),
+          _buildSessionResume(),
+          divider(),
           _buildQuietModePresets(),
           divider(),
           _buildAutoPauseMedia(),
@@ -312,6 +314,19 @@ class GeneralSection extends StatelessWidget {
           }
         }
       }),
+    );
+  }
+
+  Widget _buildSessionResume() {
+    return buildListRow(
+      'Resume Progress',
+      'Continue from where you left off on app restart (same day only)',
+      settings.enableSessionResume,
+      CupertinoIcons.arrow_counterclockwise,
+      (v) {
+        onSave(settings.copyWith(enableSessionResume: v));
+        sl<TrayManagerService>().triggerActionAnimation();
+      },
     );
   }
 }

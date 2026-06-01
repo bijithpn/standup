@@ -1,0 +1,9 @@
+flutter_launcher_icons:
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon_dev.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/icons/app_icon_dev.png"
+    icon_set_name: "AppIcon-dev"

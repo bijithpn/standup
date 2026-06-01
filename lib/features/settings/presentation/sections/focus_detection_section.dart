@@ -46,7 +46,9 @@ class FocusDetectionSection extends StatelessWidget {
             'Meeting Detection',
             'Sync with calendar to pause during meetings',
             _settings.detectMeetings,
-            (v) => _save(_settings.copyWith(detectMeetings: v)),
+            (v) => _save(
+              _settings.copyWith(detectMeetings: v, calendarEnabled: v),
+            ),
           ),
           divider(),
           toggleRow(

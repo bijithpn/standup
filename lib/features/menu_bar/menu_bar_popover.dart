@@ -41,7 +41,9 @@ class MenuBarPopover extends StatelessWidget {
               const SizedBox(height: 16),
               _buildTimerSection(timerEngine, timeUntilBreak),
               const SizedBox(height: 16),
-              _buildQuickActions(controller),
+              _buildPauseReason(controller),
+              const SizedBox(height: 12),
+              _buildQuickActions(context, controller),
               const SizedBox(height: 16),
               _buildBottomActions(),
             ],
@@ -150,8 +152,40 @@ class MenuBarPopover extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickActions(BreakController controller) {
+  Widget _buildPauseReason(BreakController controller) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(LucideIcons.info, size: 14, color: AppTheme.textMuted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              controller.pauseReason,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppTheme.textSecondary,
+                fontSize: 12,
+                height: 1.25,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context, BreakController controller) {
     final isBreak = controller.isBreakActive;
+    final quietModeEnabled = controller.quietModeEnabled;
+    final companionEnabled = controller.companionEnabled;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +209,17 @@ class MenuBarPopover extends StatelessWidget {
                     : LucideIcons.pause,
                 label: controller.isPaused ? 'Resume' : 'Pause',
                 color: isBreak ? AppTheme.textMuted : AppTheme.textPrimary,
-                onTap: isBreak ? () {} : () => controller.togglePause(),
+                onTap: isBreak
+                    ? null
+                    : () {
+                        controller.togglePause();
+                        _showFeedback(
+                          context,
+                          controller.isPaused
+                              ? 'Timer paused'
+                              : 'Timer resumed',
+                        );
+                      },
               ),
             ),
             const SizedBox(width: 8),
@@ -185,13 +229,19 @@ class MenuBarPopover extends StatelessWidget {
                       icon: LucideIcons.skipForward,
                       label: 'Skip',
                       color: AppTheme.shortBreak,
-                      onTap: () => controller.skipCurrentBreak(),
+                      onTap: () {
+                        controller.skipCurrentBreak();
+                        _showFeedback(context, 'Break skipped');
+                      },
                     )
                   : _ActionButton(
                       icon: LucideIcons.zap,
                       label: 'Break Now',
                       color: AppTheme.accent,
-                      onTap: () => controller.takeBreakNow(),
+                      onTap: () {
+                        controller.takeBreakNow();
+                        _showFeedback(context, 'Break started');
+                      },
                     ),
             ),
           ],
@@ -202,10 +252,18 @@ class MenuBarPopover extends StatelessWidget {
             Expanded(
               child: _ActionButton(
                 icon: LucideIcons.moon,
-                label: 'Quiet Mode',
-                color: AppTheme.textPrimary,
+                label: quietModeEnabled ? 'Quiet On' : 'Quiet Mode',
+                color: quietModeEnabled
+                    ? AppTheme.warning
+                    : AppTheme.textPrimary,
                 onTap: () {
-                  // Toggle quiet mode logic
+                  controller.toggleQuietMode();
+                  _showFeedback(
+                    context,
+                    controller.quietModeEnabled
+                        ? 'Quiet mode enabled'
+                        : 'Quiet mode disabled',
+                  );
                 },
               ),
             ),
@@ -213,17 +271,65 @@ class MenuBarPopover extends StatelessWidget {
             Expanded(
               child: _ActionButton(
                 icon: LucideIcons.cat,
-                label: 'Companion',
-                color: AppTheme.textPrimary,
+                label: companionEnabled ? 'Pet On' : 'Companion',
+                color: companionEnabled
+                    ? AppTheme.success
+                    : AppTheme.textPrimary,
                 onTap: () {
-                  // Toggle companion logic
+                  controller.toggleCompanion();
+                  _showFeedback(
+                    context,
+                    controller.companionEnabled
+                        ? 'Companion enabled'
+                        : 'Companion disabled',
+                  );
                 },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.clock3,
+                label: 'Snooze 5m',
+                color: AppTheme.textPrimary,
+                onTap: isBreak
+                    ? null
+                    : () {
+                        controller.snooze(minutes: 5);
+                        _showFeedback(context, 'Snoozed for 5 minutes');
+                      },
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.clock9,
+                label: 'Snooze 15m',
+                color: AppTheme.textPrimary,
+                onTap: isBreak
+                    ? null
+                    : () {
+                        controller.snooze(minutes: 15);
+                        _showFeedback(context, 'Snoozed for 15 minutes');
+                      },
               ),
             ),
           ],
         ),
       ],
     );
+  }
+
+  void _showFeedback(BuildContext context, String message) {
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+      );
   }
 
   Widget _buildBottomActions() {
@@ -300,7 +406,7 @@ class _ActionButton extends StatefulWidget {
   final IconData icon;
   final String label;
   final Color color;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ActionButton({
     required this.icon,
@@ -321,7 +427,9 @@ class _ActionButtonState extends State<_ActionButton> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
+      cursor: widget.onTap == null
+          ? SystemMouseCursors.basic
+          : SystemMouseCursors.click,
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
@@ -341,12 +449,18 @@ class _ActionButtonState extends State<_ActionButton> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(widget.icon, size: 14, color: widget.color),
+              Icon(
+                widget.icon,
+                size: 14,
+                color: widget.onTap == null ? AppTheme.textMuted : widget.color,
+              ),
               const SizedBox(width: 6),
               Text(
                 widget.label,
                 style: TextStyle(
-                  color: widget.color,
+                  color: widget.onTap == null
+                      ? AppTheme.textMuted
+                      : widget.color,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),

@@ -1,16 +1,20 @@
 import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 /// Context manager class responsible for evaluating environmental triggers (work hours, DND, active calls, clock-out).
 class TimerContextManager {
   final SettingsRepository _settingsRepository;
   final SmartDetectionService? _smartDetectionService;
+  final CalendarService? _calendarService;
 
   TimerContextManager({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
+    CalendarService? calendarService,
   }) : _settingsRepository = settingsRepository,
-       _smartDetectionService = smartDetectionService;
+       _smartDetectionService = smartDetectionService,
+       _calendarService = calendarService;
 
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;
@@ -68,5 +72,16 @@ class TimerContextManager {
       return true;
     }
     return false;
+  }
+
+  Future<bool> isMeetingUpcoming() async {
+    final settings = _settingsRepository.currentSettings;
+    if (!settings.calendarEnabled || _calendarService == null) return false;
+
+    final events = await _calendarService.getUpcomingEvents(
+      window: const Duration(minutes: 10),
+    );
+    // Return true if any meeting starts within next 10 mins or is active
+    return events.any((e) => !e.isAllDay);
   }
 }

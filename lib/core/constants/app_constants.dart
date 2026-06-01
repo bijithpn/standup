@@ -97,5 +97,5 @@ class AppConstants {
     'Sometimes the most productive thing you can do is relax.',
   ];
 
-  static const String trayIconPath = 'assets/icons/tray_icon.png';
+  static const String trayIconPath = 'assets/icons/app_icon_bg.png';
 }
