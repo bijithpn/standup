@@ -72,12 +72,49 @@ jobs:
           pod install --repo-update
 
       - name: Build macOS App
-        run: flutter build macos --release --verbose
+        run: |
+          flutter build macos \
+          --flavor prod \
+          --release \
+          --verbose
 
-      - name: Package DMG
+      - name: Verify Build Output
+        run: |
+          echo "Checking build output..."
+          ls -la build/macos/Build/Products/
+          ls -la build/macos/Build/Products/Release-prod/
+
+      - name: Create DMG
         run: |
           mkdir -p release_dmg
-          appdmg scripts/appdmg.json release_dmg/BreakMate-Installer.dmg
+
+          APP_PATH="build/macos/Build/Products/Release-prod/BreakMate.app"
+          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+
+          if [ ! -d "$APP_PATH" ]; then
+            echo "❌ App not found at $APP_PATH"
+            exit 1
+          fi
+
+          create-dmg \
+            --volname "BreakMate" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --icon-size 100 \
+            --app-drop-link 600 185 \
+            "$DMG_PATH" \
+            "$APP_PATH"
+
+          echo "✅ DMG created successfully"
+          ls -la release_dmg/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BreakMate-macOS
+          path: |
+            build/macos/Build/Products/Release-prod/BreakMate.app
+            release_dmg/BreakMate-Installer.dmg
 
       - name: Sign DMG
         id: signing
@@ -163,7 +200,8 @@ jobs:
         with:
           tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
           name: Release ${{ steps.version_info.outputs.TAG_NAME }}
-          files: release_dmg/BreakMate-Installer.dmg
+          files: |
+            release_dmg/BreakMate-Installer.dmg
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
