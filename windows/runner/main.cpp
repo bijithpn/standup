@@ -26,7 +26,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"BreakMate", origin, size)) {
+
+#ifndef FLAVOR_APP_NAME
+#define FLAVOR_APP_NAME "BreakMate"
+#endif
+
+  std::string app_name = FLAVOR_APP_NAME;
+  std::wstring w_app_name(app_name.begin(), app_name.end());
+
+  if (!window.Create(w_app_name.c_str(), origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

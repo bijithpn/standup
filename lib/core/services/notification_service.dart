@@ -1,8 +1,11 @@
+import 'dart:async';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -19,19 +22,43 @@ class NotificationService {
   Future<void> init() async {
     try {
       const macOS = DarwinInitializationSettings(
-        requestAlertPermission: true,
+        requestAlertPermission: false,
         requestBadgePermission: false,
-        requestSoundPermission: true,
+        requestSoundPermission: false,
       );
       const settings = InitializationSettings(macOS: macOS);
       await _plugin.initialize(settings: settings);
-      await requestPermission();
-      _logger.info('Notification service initialized');
+      
+      // Request permission asynchronously without blocking the app loader
+      unawaited(_checkAndRequestPermission());
+
+      _logger.info('Notification service initialized (async permission)');
     } catch (e, stackTrace) {
       _logger.error(
         'Notification service unavailable: $e',
         stackTrace: stackTrace,
       );
+    }
+  }
+
+  Future<void> _checkAndRequestPermission() async {
+    final granted = await requestPermission();
+    if (!granted) {
+      _notificationsEnabled = false;
+
+      try {
+        // Update settings repo to reflect that notifications are disabled
+        final settingsRepo = sl<SettingsRepository>();
+        final newSettings = settingsRepo.currentSettings.copyWith(
+          notificationsEnabled: false,
+        );
+        await settingsRepo.save(newSettings);
+      } catch (e) {
+        _logger.error('Failed to update notification settings: $e');
+      }
+
+      // Emit event so the UI can navigate the user to settings
+      sl<EventBus>().emit(NotificationPermissionDeniedEvent());
     }
   }
 
