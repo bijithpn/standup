@@ -37,6 +37,12 @@ class FlavorConfig {
     return _instance!;
   }
 
+  /// Convenience getter for current flavor type
+  static FlavorType get current => instance.flavorType;
+
+  /// Convenience check for dev flavor
+  static bool get isDevelopment => instance.isDev;
+
   bool get isDev => flavorType == FlavorType.dev;
   bool get isProd => flavorType == FlavorType.prod;
 }

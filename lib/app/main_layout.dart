@@ -1,3 +1,4 @@
+import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -488,7 +489,9 @@ class _SidebarContent extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(18),
               child: Image.asset(
-                'assets/icons/app_icon.jpeg',
+                FlavorConfig.instance.isDev
+                    ? 'assets/icons/app_icon_dev.png'
+                    : 'assets/icons/app_icon.jpeg',
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
@@ -520,6 +523,17 @@ class _SidebarContent extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
+                if (FlavorConfig.instance.isDev)
+                  TextSpan(
+                    text: ' DEV',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.error,
+                      letterSpacing: -0.3,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
               ],
             ),
           ),
