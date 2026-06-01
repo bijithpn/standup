@@ -50,7 +50,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 APPCAST="$PROJECT_ROOT/appcast.xml"
-GITHUB_REPO="bijithintersmart/standup"
+GITHUB_REPO="bijithintersmart/break-mate-update"
 
 # ── Colour helpers ─────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
