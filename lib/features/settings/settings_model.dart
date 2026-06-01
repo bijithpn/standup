@@ -92,6 +92,9 @@ class SettingsModel {
   final int weeklyConsistencyTargetDays;
   final bool calendarEnabled;
 
+  // Session Management
+  final bool enableSessionResume;
+
   const SettingsModel({
     this.autoStart = true,
     this.clockFaceStyle = 'breakloop',
@@ -160,6 +163,7 @@ class SettingsModel {
     this.maxContinuousSittingMinutes = 60,
     this.weeklyConsistencyTargetDays = 5,
     this.calendarEnabled = false,
+    this.enableSessionResume = true,
   });
 
   SettingsModel copyWith({
@@ -229,6 +233,7 @@ class SettingsModel {
     int? maxContinuousSittingMinutes,
     int? weeklyConsistencyTargetDays,
     bool? calendarEnabled,
+    bool? enableSessionResume,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -317,6 +322,7 @@ class SettingsModel {
       weeklyConsistencyTargetDays:
           weeklyConsistencyTargetDays ?? this.weeklyConsistencyTargetDays,
       calendarEnabled: calendarEnabled ?? this.calendarEnabled,
+      enableSessionResume: enableSessionResume ?? this.enableSessionResume,
     );
   }
 
@@ -387,6 +393,7 @@ class SettingsModel {
     'maxContinuousSittingMinutes': maxContinuousSittingMinutes,
     'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
     'calendarEnabled': calendarEnabled,
+    'enableSessionResume': enableSessionResume,
   };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -487,6 +494,7 @@ class SettingsModel {
       weeklyConsistencyTargetDays:
           map['weeklyConsistencyTargetDays'] as int? ?? 5,
       calendarEnabled: map['calendarEnabled'] as bool? ?? false,
+      enableSessionResume: map['enableSessionResume'] as bool? ?? true,
     );
   }
 }

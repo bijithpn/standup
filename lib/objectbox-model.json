@@ -160,7 +160,7 @@
     },
     {
       "id": "5:6076095419739285712",
-      "lastPropertyId": "58:5487283696595267110",
+      "lastPropertyId": "59:8964608160279676299",
       "name": "SettingsSnapshot",
       "properties": [
         {
@@ -453,12 +453,71 @@
           "id": "58:5487283696595267110",
           "name": "calendarEnabled",
           "type": 1
+        },
+        {
+          "id": "59:8964608160279676299",
+          "name": "enableSessionResume",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "6:5630062560298269937",
+      "lastPropertyId": "9:8753515179319583598",
+      "name": "SessionState",
+      "properties": [
+        {
+          "id": "1:4973175347655285085",
+          "name": "id",
+          "type": 6,
+          "flags": 129
+        },
+        {
+          "id": "2:7087066566450351952",
+          "name": "lastSessionDate",
+          "type": 9
+        },
+        {
+          "id": "3:1094241558638790030",
+          "name": "workElapsedSeconds",
+          "type": 6
+        },
+        {
+          "id": "4:3298376533059117067",
+          "name": "totalWorkTodaySeconds",
+          "type": 6
+        },
+        {
+          "id": "5:6148731079145155051",
+          "name": "postureElapsedSeconds",
+          "type": 6
+        },
+        {
+          "id": "6:2564736948471277823",
+          "name": "eyeBlinkElapsedSeconds",
+          "type": 6
+        },
+        {
+          "id": "7:7005388974072701085",
+          "name": "isPreBreak",
+          "type": 1
+        },
+        {
+          "id": "8:3730508736099858211",
+          "name": "timerState",
+          "type": 9
+        },
+        {
+          "id": "9:8753515179319583598",
+          "name": "longBreakWindowStartedAt",
+          "type": 10
         }
       ],
       "relations": []
     }
   ],
-  "lastEntityId": "5:6076095419739285712",
+  "lastEntityId": "6:5630062560298269937",
   "lastIndexId": "2:2404533075128465752",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",

@@ -8,6 +8,7 @@ import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 
@@ -20,6 +21,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 class TimerOrchestrator {
   final TimerEngine timerEngine;
   final TimerRepository timerRepository;
+  final SessionStateRepository sessionStateRepository;
   final ActivityMonitor activityMonitor;
   final NotificationService notificationService;
   final StatsService statsService;
@@ -32,6 +34,7 @@ class TimerOrchestrator {
   StreamSubscription? _eventSubscription;
   Timer? _usageTrackerTimer;
   Timer? _pauseAutoResumeTimer;
+  Timer? _autoSaveTimer;
 
   String? _lastTrayTitle;
   String? _lastTrayTooltip;
@@ -39,6 +42,7 @@ class TimerOrchestrator {
   TimerOrchestrator({
     required this.timerEngine,
     required this.timerRepository,
+    required this.sessionStateRepository,
     required this.activityMonitor,
     required this.notificationService,
     required this.statsService,
@@ -69,6 +73,16 @@ class TimerOrchestrator {
 
     // 5. Start usage tracking
     _startUsageTracking();
+
+    // 6. Perform initial update of the tray to reflect restored state immediately
+    _updateTray();
+
+    // 7. Start periodic state auto-saving for crash/restart resilience (every 10 seconds)
+    _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (timerEngine.state == TimerState.running || timerEngine.state == TimerState.breakActive) {
+        saveState();
+      }
+    });
   }
 
   void _onTimerEngineChanged() {
@@ -81,6 +95,7 @@ class TimerOrchestrator {
     // Handle IPC and side effects
     if (event is TimerStateChangedEvent) {
       _dispatchTimerStateIpc(event);
+      saveState(); // Immediately save state on pause/resume transitions
     } else if (event is BreakStartedEvent) {
       _handleBreakStarted(event);
     } else if (event is BreakEndedEvent) {
@@ -294,6 +309,20 @@ class TimerOrchestrator {
       pauseTimerAfterMinutes: timerEngine.pauseTimerAfterMinutes,
       resetTimerAfterMinutes: timerEngine.resetTimerAfterMinutes,
     );
+
+    // Save session state if feature is enabled
+    if (settingsRepository.currentSettings.enableSessionResume) {
+      sessionStateRepository.saveSession(
+        workElapsed: timerEngine.workElapsed,
+        totalWorkToday: timerEngine.totalWorkToday,
+        postureElapsedSeconds: timerEngine.stateData.postureElapsedSeconds,
+        eyeBlinkElapsedSeconds: timerEngine.stateData.eyeBlinkElapsedSeconds,
+        isPreBreak: timerEngine.isPreBreak,
+        timerState: timerEngine.state.toString().split('.').last,
+        longBreakWindowStartedAt:
+            timerEngine.stateData.longBreakWindowStartedAt,
+      );
+    }
   }
 
   void _restoreState() {
@@ -324,12 +353,65 @@ class TimerOrchestrator {
         timerEngine.resetTimerAfterMinutes = resetAfter;
       },
     );
+
+    // Restore session state if feature is enabled
+    if (settingsRepository.currentSettings.enableSessionResume) {
+      final savedSession = sessionStateRepository.getSessionForToday();
+      if (savedSession != null) {
+        timerEngine.stateData.workElapsed = Duration(
+          seconds: savedSession.workElapsedSeconds,
+        );
+        timerEngine.stateData.totalWorkToday = Duration(
+          seconds: savedSession.totalWorkTodaySeconds,
+        );
+        timerEngine.stateData.postureElapsedSeconds =
+            savedSession.postureElapsedSeconds;
+        timerEngine.stateData.eyeBlinkElapsedSeconds =
+            savedSession.eyeBlinkElapsedSeconds;
+        timerEngine.stateData.isPreBreak = savedSession.isPreBreak;
+        timerEngine.stateData.longBreakWindowStartedAt =
+            savedSession.longBreakWindowStartedAt;
+        _logger.info(
+          'Session restored from today: ${savedSession.workElapsedSeconds}s work elapsed',
+        );
+      } else {
+        // New day or no saved session exists - reset all progress to zero
+        timerEngine.stateData.workElapsed = Duration.zero;
+        timerEngine.stateData.totalWorkToday = Duration.zero;
+        timerEngine.stateData.postureElapsedSeconds = 0;
+        timerEngine.stateData.eyeBlinkElapsedSeconds = 0;
+        timerEngine.stateData.isPreBreak = false;
+        timerEngine.stateData.longBreakWindowStartedAt = null;
+        timerEngine.stateData.countdownSeconds = timerEngine.timeUntilNextShortBreak.inSeconds;
+        _logger.info('New day or no session found. Daily progress reset to zero.');
+      }
+    } else {
+      // Feature disabled - clear any saved session and start fresh from zero
+      sessionStateRepository.clearSession();
+      timerEngine.stateData.workElapsed = Duration.zero;
+      timerEngine.stateData.totalWorkToday = Duration.zero;
+      timerEngine.stateData.postureElapsedSeconds = 0;
+      timerEngine.stateData.eyeBlinkElapsedSeconds = 0;
+      timerEngine.stateData.isPreBreak = false;
+      timerEngine.stateData.longBreakWindowStartedAt = null;
+      timerEngine.stateData.countdownSeconds = timerEngine.timeUntilNextShortBreak.inSeconds;
+      _logger.info('Session resume disabled. Started fresh from zero.');
+    }
+
+    // Synchronize all value notifiers (visuals/GUI, tray) with the restored state
+    timerEngine.syncNotifiersFromState();
   }
 
   void shutdown() {
     _logger.info('Shutting down TimerOrchestrator...');
     timerEngine.pauseTimers(isManual: true);
     saveState();
+
+    // Clear session on shutdown if feature is disabled
+    if (!settingsRepository.currentSettings.enableSessionResume) {
+      sessionStateRepository.clearSession();
+    }
+
     dispose();
   }
 
@@ -337,6 +419,7 @@ class TimerOrchestrator {
     _eventSubscription?.cancel();
     _usageTrackerTimer?.cancel();
     _pauseAutoResumeTimer?.cancel();
+    _autoSaveTimer?.cancel();
     timerEngine.removeListener(_onTimerEngineChanged);
   }
 }

@@ -17,6 +17,7 @@ import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 import 'core/storage/models/companion_preferences.dart';
 import 'core/storage/models/daily_stats.dart';
 import 'core/storage/models/key_value_record.dart';
+import 'core/storage/models/session_state.dart';
 import 'core/storage/models/settings_snapshot.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
@@ -205,7 +206,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 6076095419739285712),
     name: 'SettingsSnapshot',
-    lastPropertyId: const obx_int.IdUid(58, 5487283696595267110),
+    lastPropertyId: const obx_int.IdUid(59, 8964608160279676299),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -556,6 +557,76 @@ final _entities = <obx_int.ModelEntity>[
         type: 1,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(59, 8964608160279676299),
+        name: 'enableSessionResume',
+        type: 1,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(6, 5630062560298269937),
+    name: 'SessionState',
+    lastPropertyId: const obx_int.IdUid(9, 8753515179319583598),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 4973175347655285085),
+        name: 'id',
+        type: 6,
+        flags: 129,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 7087066566450351952),
+        name: 'lastSessionDate',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 1094241558638790030),
+        name: 'workElapsedSeconds',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 3298376533059117067),
+        name: 'totalWorkTodaySeconds',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 6148731079145155051),
+        name: 'postureElapsedSeconds',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 2564736948471277823),
+        name: 'eyeBlinkElapsedSeconds',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 7005388974072701085),
+        name: 'isPreBreak',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3730508736099858211),
+        name: 'timerState',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 8753515179319583598),
+        name: 'longBreakWindowStartedAt',
+        type: 10,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -605,7 +676,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(5, 6076095419739285712),
+    lastEntityId: const obx_int.IdUid(6, 5630062560298269937),
     lastIndexId: const obx_int.IdUid(2, 2404533075128465752),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
@@ -914,7 +985,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final trayIconStyleOffset = fbb.writeString(object.trayIconStyle);
         final quietModePresetOffset = fbb.writeString(object.quietModePreset);
         final intensityLevelOffset = fbb.writeString(object.intensityLevel);
-        fbb.startTable(59);
+        fbb.startTable(60);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.autoStart);
         fbb.addOffset(2, clockFaceStyleOffset);
@@ -973,6 +1044,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(55, object.maxContinuousSittingMinutes);
         fbb.addInt64(56, object.weeklyConsistencyTargetDays);
         fbb.addBool(57, object.calendarEnabled);
+        fbb.addBool(58, object.enableSessionResume);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1257,6 +1329,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
           118,
           false,
         );
+        final enableSessionResumeParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          120,
+          false,
+        );
         final object = SettingsSnapshot(
           id: idParam,
           autoStart: autoStartParam,
@@ -1316,6 +1394,102 @@ obx_int.ModelDefinition getObjectBoxModel() {
           maxContinuousSittingMinutes: maxContinuousSittingMinutesParam,
           weeklyConsistencyTargetDays: weeklyConsistencyTargetDaysParam,
           calendarEnabled: calendarEnabledParam,
+          enableSessionResume: enableSessionResumeParam,
+        );
+
+        return object;
+      },
+    ),
+    SessionState: obx_int.EntityDefinition<SessionState>(
+      model: _entities[5],
+      toOneRelations: (SessionState object) => [],
+      toManyRelations: (SessionState object) => {},
+      getId: (SessionState object) => object.id,
+      setId: (SessionState object, int id) {
+        object.id = id;
+      },
+      objectToFB: (SessionState object, fb.Builder fbb) {
+        final lastSessionDateOffset = fbb.writeString(object.lastSessionDate);
+        final timerStateOffset = fbb.writeString(object.timerState);
+        fbb.startTable(10);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, lastSessionDateOffset);
+        fbb.addInt64(2, object.workElapsedSeconds);
+        fbb.addInt64(3, object.totalWorkTodaySeconds);
+        fbb.addInt64(4, object.postureElapsedSeconds);
+        fbb.addInt64(5, object.eyeBlinkElapsedSeconds);
+        fbb.addBool(6, object.isPreBreak);
+        fbb.addOffset(7, timerStateOffset);
+        fbb.addInt64(
+          8,
+          object.longBreakWindowStartedAt?.millisecondsSinceEpoch,
+        );
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final longBreakWindowStartedAtValue = const fb.Int64Reader()
+            .vTableGetNullable(buffer, rootOffset, 20);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final lastSessionDateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final workElapsedSecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          8,
+          0,
+        );
+        final totalWorkTodaySecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          10,
+          0,
+        );
+        final postureElapsedSecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          12,
+          0,
+        );
+        final eyeBlinkElapsedSecondsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final isPreBreakParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          false,
+        );
+        final timerStateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final longBreakWindowStartedAtParam =
+            longBreakWindowStartedAtValue == null
+            ? null
+            : DateTime.fromMillisecondsSinceEpoch(
+                longBreakWindowStartedAtValue,
+              );
+        final object = SessionState(
+          id: idParam,
+          lastSessionDate: lastSessionDateParam,
+          workElapsedSeconds: workElapsedSecondsParam,
+          totalWorkTodaySeconds: totalWorkTodaySecondsParam,
+          postureElapsedSeconds: postureElapsedSecondsParam,
+          eyeBlinkElapsedSeconds: eyeBlinkElapsedSecondsParam,
+          isPreBreak: isPreBreakParam,
+          timerState: timerStateParam,
+          longBreakWindowStartedAt: longBreakWindowStartedAtParam,
         );
 
         return object;
@@ -1722,5 +1896,58 @@ class SettingsSnapshot_ {
   /// See [SettingsSnapshot.calendarEnabled].
   static final calendarEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
     _entities[4].properties[57],
+  );
+
+  /// See [SettingsSnapshot.enableSessionResume].
+  static final enableSessionResume = obx.QueryBooleanProperty<SettingsSnapshot>(
+    _entities[4].properties[58],
+  );
+}
+
+/// [SessionState] entity fields to define ObjectBox queries.
+class SessionState_ {
+  /// See [SessionState.id].
+  static final id = obx.QueryIntegerProperty<SessionState>(
+    _entities[5].properties[0],
+  );
+
+  /// See [SessionState.lastSessionDate].
+  static final lastSessionDate = obx.QueryStringProperty<SessionState>(
+    _entities[5].properties[1],
+  );
+
+  /// See [SessionState.workElapsedSeconds].
+  static final workElapsedSeconds = obx.QueryIntegerProperty<SessionState>(
+    _entities[5].properties[2],
+  );
+
+  /// See [SessionState.totalWorkTodaySeconds].
+  static final totalWorkTodaySeconds = obx.QueryIntegerProperty<SessionState>(
+    _entities[5].properties[3],
+  );
+
+  /// See [SessionState.postureElapsedSeconds].
+  static final postureElapsedSeconds = obx.QueryIntegerProperty<SessionState>(
+    _entities[5].properties[4],
+  );
+
+  /// See [SessionState.eyeBlinkElapsedSeconds].
+  static final eyeBlinkElapsedSeconds = obx.QueryIntegerProperty<SessionState>(
+    _entities[5].properties[5],
+  );
+
+  /// See [SessionState.isPreBreak].
+  static final isPreBreak = obx.QueryBooleanProperty<SessionState>(
+    _entities[5].properties[6],
+  );
+
+  /// See [SessionState.timerState].
+  static final timerState = obx.QueryStringProperty<SessionState>(
+    _entities[5].properties[7],
+  );
+
+  /// See [SessionState.longBreakWindowStartedAt].
+  static final longBreakWindowStartedAt = obx.QueryDateProperty<SessionState>(
+    _entities[5].properties[8],
   );
 }

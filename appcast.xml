@@ -140,7 +140,7 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
                        sparkle:edSignature="MpQx+CuWh+TBZ9BIN2XzeLPBwMaAV9IA6baWhGqEii9DCp2L+XdOU5qODrQN4pWJ3JJubeqzYwqKVvXUzm1jAQ=="
                        length="59755429"
                        type="application/octet-stream" />
-        </item>
+        
                 <item>
             <title>Version 1.1.1</title>
             <pubDate>Wed, 27 May 2026 06:02:32 +0000</pubDate>
