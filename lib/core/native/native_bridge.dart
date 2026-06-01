@@ -27,6 +27,12 @@ abstract class NativeBridgePlatform {
   Future<void> triggerCompanionState(String stateName);
   Future<void> setCompanionWandering(bool enabled);
   Future<void> setCompanionFollowMouse(bool enabled);
+
+  // Calendar Support
+  Future<bool> requestCalendarPermissions();
+  Future<bool> hasCalendarPermissions();
+  Future<void> openCalendarSettings();
+  Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(int windowMinutes);
 }
 
 /// A fallback/no-op implementation for unsupported platforms
@@ -95,6 +101,21 @@ class FallbackBridge implements NativeBridgePlatform {
 
   @override
   Future<void> setCompanionFollowMouse(bool enabled) async {}
+
+  @override
+  Future<bool> requestCalendarPermissions() async => false;
+
+  @override
+  Future<bool> hasCalendarPermissions() async => false;
+
+  @override
+  Future<void> openCalendarSettings() async {}
+
+  @override
+  Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(
+    int windowMinutes,
+  ) async =>
+      [];
 }
 
 /// Unified entry point to call native bridge features.
@@ -150,4 +171,15 @@ class NativeBridge {
       _platform.setCompanionWandering(enabled);
   static Future<void> setCompanionFollowMouse(bool enabled) =>
       _platform.setCompanionFollowMouse(enabled);
+
+  static Future<bool> requestCalendarPermissions() =>
+      _platform.requestCalendarPermissions();
+  static Future<bool> hasCalendarPermissions() =>
+      _platform.hasCalendarPermissions();
+  static Future<void> openCalendarSettings() =>
+      _platform.openCalendarSettings();
+  static Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(
+    int windowMinutes,
+  ) =>
+      _platform.getUpcomingCalendarEvents(windowMinutes);
 }

@@ -18,17 +18,13 @@ dependencies:
   package_info_plus: ^9.0.1
   get_it: ^9.2.1
   provider: ^6.1.2
-  flutter_riverpod: ^3.3.1
   screen_retriever: ^0.2.0
   fl_chart: ^1.2.0
   intl: ^0.20.2
   flutter_acrylic: ^1.0.4
-  http: ^1.2.0
   flutter_markdown: ^0.7.7+1
-  hive_flutter: ^1.1.0
   path_provider: ^2.1.2
   audioplayers: ^6.1.0
-  animations: ^2.0.1
   flame: ^1.37.0
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.14+1
@@ -39,10 +35,6 @@ dependencies:
   objectbox: ^5.3.2
   objectbox_flutter_libs: ^5.3.2
   file_picker: ^11.0.2
-  device_calendar_plus: ^0.4.0
-
-dependency_overrides:
-  timezone: ^0.11.0
 
 dev_dependencies:
   flutter_test:

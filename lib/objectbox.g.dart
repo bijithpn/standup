@@ -25,7 +25,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 8601537166470336041),
     name: 'CompanionPreferences',
-    lastPropertyId: const obx_int.IdUid(7, 1967460204486061299),
+    lastPropertyId: const obx_int.IdUid(8, 3603219530667623359),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -68,6 +68,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(7, 1967460204486061299),
         name: 'companionFollowMouse',
         type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3603219530667623359),
+        name: 'unlockedPetsJson',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -199,7 +205,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 6076095419739285712),
     name: 'SettingsSnapshot',
-    lastPropertyId: const obx_int.IdUid(54, 8146101068931357580),
+    lastPropertyId: const obx_int.IdUid(58, 5487283696595267110),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -526,6 +532,30 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(55, 7350395918854661356),
+        name: 'dailyBreakGoalCount',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(56, 913960127255691831),
+        name: 'maxContinuousSittingMinutes',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(57, 692769245490754384),
+        name: 'weeklyConsistencyTargetDays',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(58, 5487283696595267110),
+        name: 'calendarEnabled',
+        type: 1,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -602,7 +632,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           object.companionPetTheme,
         );
         final companionPetNameOffset = fbb.writeString(object.companionPetName);
-        fbb.startTable(8);
+        final unlockedPetsJsonOffset = fbb.writeString(object.unlockedPetsJson);
+        fbb.startTable(9);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.companionEnabled);
         fbb.addOffset(2, companionPetThemeOffset);
@@ -610,6 +641,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addFloat64(4, object.companionScale);
         fbb.addBool(5, object.companionClickThrough);
         fbb.addBool(6, object.companionFollowMouse);
+        fbb.addOffset(7, unlockedPetsJsonOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -652,6 +684,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           16,
           false,
         );
+        final unlockedPetsJsonParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
         final object = CompanionPreferences(
           id: idParam,
           companionEnabled: companionEnabledParam,
@@ -660,6 +695,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
           companionScale: companionScaleParam,
           companionClickThrough: companionClickThroughParam,
           companionFollowMouse: companionFollowMouseParam,
+          unlockedPetsJson: unlockedPetsJsonParam,
         );
 
         return object;
@@ -878,7 +914,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final trayIconStyleOffset = fbb.writeString(object.trayIconStyle);
         final quietModePresetOffset = fbb.writeString(object.quietModePreset);
         final intensityLevelOffset = fbb.writeString(object.intensityLevel);
-        fbb.startTable(55);
+        fbb.startTable(59);
         fbb.addInt64(0, object.id);
         fbb.addBool(1, object.autoStart);
         fbb.addOffset(2, clockFaceStyleOffset);
@@ -933,6 +969,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(51, quietModePresetOffset);
         fbb.addInt64(52, object.lastSnoozeDurationMinutes);
         fbb.addOffset(53, intensityLevelOffset);
+        fbb.addInt64(54, object.dailyBreakGoalCount);
+        fbb.addInt64(55, object.maxContinuousSittingMinutes);
+        fbb.addInt64(56, object.weeklyConsistencyTargetDays);
+        fbb.addBool(57, object.calendarEnabled);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1201,6 +1241,22 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final intensityLevelParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 110, '');
+        final dailyBreakGoalCountParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          112,
+          0,
+        );
+        final maxContinuousSittingMinutesParam = const fb.Int64Reader()
+            .vTableGet(buffer, rootOffset, 114, 0);
+        final weeklyConsistencyTargetDaysParam = const fb.Int64Reader()
+            .vTableGet(buffer, rootOffset, 116, 0);
+        final calendarEnabledParam = const fb.BoolReader().vTableGet(
+          buffer,
+          rootOffset,
+          118,
+          false,
+        );
         final object = SettingsSnapshot(
           id: idParam,
           autoStart: autoStartParam,
@@ -1256,6 +1312,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
           quietModePreset: quietModePresetParam,
           lastSnoozeDurationMinutes: lastSnoozeDurationMinutesParam,
           intensityLevel: intensityLevelParam,
+          dailyBreakGoalCount: dailyBreakGoalCountParam,
+          maxContinuousSittingMinutes: maxContinuousSittingMinutesParam,
+          weeklyConsistencyTargetDays: weeklyConsistencyTargetDaysParam,
+          calendarEnabled: calendarEnabledParam,
         );
 
         return object;
@@ -1304,6 +1364,11 @@ class CompanionPreferences_ {
       obx.QueryBooleanProperty<CompanionPreferences>(
         _entities[0].properties[6],
       );
+
+  /// See [CompanionPreferences.unlockedPetsJson].
+  static final unlockedPetsJson = obx.QueryStringProperty<CompanionPreferences>(
+    _entities[0].properties[7],
+  );
 }
 
 /// [DailyStats] entity fields to define ObjectBox queries.
@@ -1639,5 +1704,23 @@ class SettingsSnapshot_ {
   /// See [SettingsSnapshot.intensityLevel].
   static final intensityLevel = obx.QueryStringProperty<SettingsSnapshot>(
     _entities[4].properties[53],
+  );
+
+  /// See [SettingsSnapshot.dailyBreakGoalCount].
+  static final dailyBreakGoalCount = obx.QueryIntegerProperty<SettingsSnapshot>(
+    _entities[4].properties[54],
+  );
+
+  /// See [SettingsSnapshot.maxContinuousSittingMinutes].
+  static final maxContinuousSittingMinutes =
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[55]);
+
+  /// See [SettingsSnapshot.weeklyConsistencyTargetDays].
+  static final weeklyConsistencyTargetDays =
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[56]);
+
+  /// See [SettingsSnapshot.calendarEnabled].
+  static final calendarEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
+    _entities[4].properties[57],
   );
 }

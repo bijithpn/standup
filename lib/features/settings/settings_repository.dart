@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
+import 'dart:isolate';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -7,99 +9,127 @@ import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
-  // Hive box: a completely independent persistence mechanism used as the
-  // definitive source of truth for critical flags that MUST survive restarts.
-  // ObjectBox can fail silently; Hive is our bulletproof fallback.
-  Box? _hiveBox;
   SettingsModel _current = const SettingsModel();
 
-  SettingsRepository({required StorageService storage, Box? hiveBox})
-      : _storage = storage,
-        _hiveBox = hiveBox;
-
-  /// Call this BEFORE load() if Hive wasn't available at construction time.
-  void setHiveBox(Box box) {
-    _hiveBox = box;
-  }
+  SettingsRepository({required StorageService storage}) : _storage = storage;
 
   SettingsModel get currentSettings => _current;
 
-  void load() {
+  Future<void> load() async {
+    if (!_storage.isReady) {
+      debugPrint(
+        '[SettingsRepo] StorageService is not ready. Attempting explicit initialization in load().',
+      );
+      try {
+        await _storage.init();
+      } catch (e) {
+        debugPrint(
+          '[SettingsRepo] Explicit StorageService.init() failed in load(): $e',
+        );
+      }
+    }
+
+    // Startup Diagnostics
+    debugPrint('=== STARTUP STORAGE DIAGNOSTICS ===');
+    debugPrint('storage.isReady: ${_storage.isReady}');
+    debugPrint('storage.hasFailed: ${_storage.hasFailed}');
+    debugPrint('settingsBox != null: ${_storage.settingsBox != null}');
+    debugPrint(
+      'companionPreferencesBox != null: ${_storage.companionPreferencesBox != null}',
+    );
+    debugPrint('kvBox != null: ${_storage.kvBox != null}');
+    debugPrint('active database path: ${_storage.activeDatabasePath}');
+    debugPrint('process id: $pid');
+    debugPrint('isolate name: "${Isolate.current.debugName ?? ''}"');
+    debugPrint('ObjectBox open duration: ${_storage.openDurationMs} ms');
+    debugPrint('startup duration: ${_storage.initDurationMs} ms');
+    debugPrint('====================================');
+
+    if (!_storage.isReady) {
+      debugPrint(
+        '[SettingsRepo] 🚨 ERROR: StorageService remains uninitialized after load() retry fallback! Falling back to default settings.',
+      );
+      _current = const SettingsModel();
+      return;
+    }
+
     try {
       final snapshot = _storage.settingsBox?.get(1);
       final companionPrefs = _storage.companionPreferencesBox?.get(1);
 
-      debugPrint('[SettingsRepo] Loading settings. Snapshot exists: ${snapshot != null}');
+      debugPrint(
+        '[SettingsRepo] Loading settings. Snapshot exists: ${snapshot != null}',
+      );
 
       if (snapshot != null) {
         try {
           _current = _fromSnapshot(snapshot, companionPrefs);
-          debugPrint('[SettingsRepo] Loaded from snapshot. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}');
+          debugPrint(
+            '[SettingsRepo] Loaded from snapshot. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
+          );
         } catch (e) {
-          debugPrint('[SettingsRepo] Error decoding snapshot: $e. Falling back to legacy/defaults.');
+          debugPrint(
+            '[SettingsRepo] Error decoding snapshot: $e. Falling back to legacy/defaults.',
+          );
           _current = _loadFromLegacy();
-        }
-
-        // Layer 1: ObjectBox KV override
-        final kvOnboarding = _storage.getBool('has_completed_onboarding');
-        debugPrint('[SettingsRepo] ObjectBox KV check: $kvOnboarding');
-        if (kvOnboarding && !_current.hasCompletedOnboarding) {
-          debugPrint('[SettingsRepo] ObjectBox KV override: setting hasCompletedOnboarding=true');
-          _current = _current.copyWith(hasCompletedOnboarding: true);
         }
       } else {
         _current = _loadFromLegacy();
-        debugPrint('[SettingsRepo] Loaded from legacy. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}');
+        debugPrint(
+          '[SettingsRepo] Loaded from legacy. hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
+        );
         if (_storage.isReady) {
           unawaited(save(_current));
         }
       }
 
-      // Layer 2: Hive override — this is the DEFINITIVE authority.
-      // Hive uses a completely separate file/mechanism from ObjectBox.
-      // If ObjectBox was corrupted, unavailable, or used the wrong path,
-      // Hive will still have the correct values.
-      if (_hiveBox != null) {
-        final hiveOnboarding = _hiveBox!.get('hasCompletedOnboarding') as bool?;
-        final hiveTemplate = _hiveBox!.get('breakTemplate') as String?;
-        final hiveTheme = _hiveBox!.get('breakTheme') as String?;
-        final hiveClockFace = _hiveBox!.get('clockFaceStyle') as String?;
-        final hiveMenuBar = _hiveBox!.get('menuBarStyle') as String?;
-        final hiveProfileId = _hiveBox!.get('selectedProfileId') as String?;
-        final hiveCompanionEnabled = _hiveBox!.get('companionEnabled') as bool?;
-        final hiveCompanionPetTheme = _hiveBox!.get('companionPetTheme') as String?;
-        debugPrint('[SettingsRepo] Hive check: hasCompletedOnboarding=$hiveOnboarding, breakTemplate=$hiveTemplate');
+      // ── Critical flag reconciliation ─────────────────────────────────────
+      // hasCompletedOnboarding is a ONE-WAY flag (false → true, never back).
+      // We read from:
+      // 1. The ObjectBox snapshot
+      // 2. The ObjectBox KV store
+      // 3. The file-based SimplePrefs
+      // We take the OR so that the onboarding is NEVER shown again if any of them is true.
+      final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
+      final kvOnboarding = _storage.getBool('has_completed_onboarding');
+      final simplePrefsOnboarding = SimplePrefs.instance.getBool(
+        'has_completed_onboarding',
+      );
+      final onboardingDone =
+          snapshotOnboarding || kvOnboarding || simplePrefsOnboarding;
 
-        if (hiveOnboarding == true) {
-          _current = _current.copyWith(hasCompletedOnboarding: true);
-        }
-        if (hiveTemplate != null && hiveTemplate.isNotEmpty) {
-          _current = _current.copyWith(breakTemplate: hiveTemplate);
-        }
-        if (hiveTheme != null && hiveTheme.isNotEmpty) {
-          _current = _current.copyWith(breakTheme: hiveTheme);
-        }
-        if (hiveClockFace != null && hiveClockFace.isNotEmpty) {
-          _current = _current.copyWith(clockFaceStyle: hiveClockFace);
-        }
-        if (hiveMenuBar != null && hiveMenuBar.isNotEmpty) {
-          _current = _current.copyWith(menuBarStyle: hiveMenuBar);
-        }
-        if (hiveProfileId != null && hiveProfileId.isNotEmpty) {
-          _current = _current.copyWith(selectedProfileId: hiveProfileId);
-        }
-        if (hiveCompanionEnabled != null) {
-          _current = _current.copyWith(companionEnabled: hiveCompanionEnabled);
-        }
-        if (hiveCompanionPetTheme != null && hiveCompanionPetTheme.isNotEmpty) {
-          _current = _current.copyWith(companionPetTheme: hiveCompanionPetTheme);
-        }
-        debugPrint('[SettingsRepo] After Hive override: hasCompletedOnboarding=${_current.hasCompletedOnboarding}, breakTemplate=${_current.breakTemplate}');
+      debugPrint(
+        '[SettingsRepo] Onboarding reconciliation: '
+        'snapshot=$snapshotOnboarding, kv=$kvOnboarding, simplePrefs=$simplePrefsOnboarding → resolved=$onboardingDone',
+      );
+
+      if (onboardingDone && !_current.hasCompletedOnboarding) {
+        _current = _current.copyWith(hasCompletedOnboarding: true);
       }
+
+      // Back-fill whichever store was missing the flag so future launches
+      // don't need to rely on this reconciliation guard.
+      if (onboardingDone && !kvOnboarding) {
+        debugPrint('[SettingsRepo] Back-filling KV onboarding flag.');
+        unawaited(_storage.setBool('has_completed_onboarding', true));
+      }
+      if (onboardingDone && !simplePrefsOnboarding) {
+        debugPrint('[SettingsRepo] Back-filling SimplePrefs onboarding flag.');
+        SimplePrefs.instance.setBool('has_completed_onboarding', true);
+      }
+      if (onboardingDone && !snapshotOnboarding && snapshot != null) {
+        debugPrint('[SettingsRepo] Back-filling snapshot onboarding flag.');
+        unawaited(save(_current));
+      }
+      // ─────────────────────────────────────────────────────────────────────
+
+      debugPrint(
+        '[SettingsRepo] Final hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
+      );
     } catch (e) {
       debugPrint('[SettingsRepo] Fatal error in load(): $e');
       // Ensure we have at least defaults
@@ -159,7 +189,10 @@ class SettingsRepository extends ChangeNotifier {
       customImagePath: s.customImagePath,
       resetTimerAfterMinutes: s.resetTimerAfterMinutes,
       workingHoursEnabled: s.workingHoursEnabled,
-      workingDays: _decodeIntList(s.workingDaysJson, fallback: const [1, 2, 3, 4, 5]),
+      workingDays: _decodeIntList(
+        s.workingDaysJson,
+        fallback: const [1, 2, 3, 4, 5],
+      ),
       workStartTime: s.workStartTime,
       workEndTime: s.workEndTime,
       detectVideoCalls: s.detectVideoCalls,
@@ -317,7 +350,9 @@ class SettingsRepository extends ChangeNotifier {
               'cat'
           ? 'companion'
           : _storage.getString('tray_icon_style', defaultValue: 'companion'),
-      hasCompletedOnboarding: _storage.getBool('has_completed_onboarding'),
+      hasCompletedOnboarding:
+          _storage.getBool('has_completed_onboarding') ||
+          SimplePrefs.instance.getBool('has_completed_onboarding'),
       dailyWorkGoalHours: _storage.getInt(
         'daily_work_goal_hours',
         defaultValue: 8,
@@ -350,24 +385,66 @@ class SettingsRepository extends ChangeNotifier {
         'companion_follow_mouse',
         defaultValue: false,
       ),
-      calendarEnabled: _storage.getBool('calendar_enabled', defaultValue: false),
+      calendarEnabled: _storage.getBool(
+        'calendar_enabled',
+        defaultValue: false,
+      ),
     );
   }
 
   Future<void> completeOnboarding() async {
-    debugPrint('[SettingsRepo] Explicitly completing onboarding...');
+    debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
-    // Write the KV flag SYNCHRONOUSLY first so even a fast quit cannot lose it.
-    // StorageService.setBool() performs a synchronous ObjectBox put internally.
+    // Write the KV flag first — it is the fastest and most reliable path.
     await _storage.setBool('has_completed_onboarding', true);
-    debugPrint('[SettingsRepo] KV flag written. Persisting full snapshot...');
+    SimplePrefs.instance.setBool('has_completed_onboarding', true);
+    // Write the full snapshot so every field is up to date.
     await save(_current);
-    debugPrint('[SettingsRepo] Onboarding completion fully persisted.');
+    // Post-write verification so we can detect silent failures in the logs.
+    final kvVerify = _storage.getBool('has_completed_onboarding');
+    final simpleVerify = SimplePrefs.instance.getBool(
+      'has_completed_onboarding',
+    );
+    final snapVerify =
+        _storage.settingsBox?.get(1)?.hasCompletedOnboarding ?? false;
+    if (!kvVerify || !simpleVerify || !snapVerify) {
+      debugPrint(
+        '[SettingsRepo] ⚠️ Onboarding flag NOT fully persisted! '
+        'KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
+      );
+    } else {
+      debugPrint(
+        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify ✓',
+      );
+    }
   }
 
   Future<void> save(SettingsModel settings) async {
+    if (!_storage.isReady) {
+      debugPrint(
+        '[SettingsRepo] StorageService is not ready during save(). Attempting explicit initialization.',
+      );
+      try {
+        await _storage.init();
+      } catch (e) {
+        debugPrint(
+          '[SettingsRepo] Explicit StorageService.init() failed in save(): $e',
+        );
+      }
+    }
+
+    if (!_storage.isReady || _storage.settingsBox == null) {
+      debugPrint(
+        '[SettingsRepo] 🚨 FATAL: StorageService remains uninitialized during save()! settingsBox is null. Diagnostic details: '
+        'Storage ready: ${_storage.isReady}, settingsBox: ${_storage.settingsBox}, companionPrefsBox: ${_storage.companionPreferencesBox}, kvBox: ${_storage.kvBox}',
+      );
+      throw StateError('Storage unavailable');
+    }
+
     _current = settings;
-    debugPrint('[SettingsRepo] Saving settings. hasCompletedOnboarding: ${settings.hasCompletedOnboarding}');
+    debugPrint(
+      '[SettingsRepo] Saving settings. hasCompletedOnboarding: ${settings.hasCompletedOnboarding}',
+    );
 
     final snapshot = SettingsSnapshot(
       id: 1,
@@ -436,8 +513,18 @@ class SettingsRepository extends ChangeNotifier {
     // This is a belt-and-suspenders approach: ObjectBox is the primary store,
     // but if it fails on next launch, _loadFromLegacy() will read these KV values
     // and correctly restore the user's choices instead of falling back to defaults.
-    await _storage.setBool('has_completed_onboarding', settings.hasCompletedOnboarding);
-    await _storage.setInt('short_break_interval', settings.shortBreakIntervalMinutes);
+    await _storage.setBool(
+      'has_completed_onboarding',
+      settings.hasCompletedOnboarding,
+    );
+    SimplePrefs.instance.setBool(
+      'has_completed_onboarding',
+      settings.hasCompletedOnboarding,
+    );
+    await _storage.setInt(
+      'short_break_interval',
+      settings.shortBreakIntervalMinutes,
+    );
     await _storage.setBool('strict_mode', settings.strictMode);
     await _storage.setBool('companion_enabled', settings.companionEnabled);
 
@@ -450,15 +537,33 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('tray_icon_style', settings.trayIconStyle);
 
     // Timer intervals
-    await _storage.setInt(AppConstants.keyShortBreakInterval, settings.shortBreakIntervalMinutes);
-    await _storage.setInt(AppConstants.keyShortBreakDuration, settings.shortBreakDurationSeconds);
-    await _storage.setInt(AppConstants.keyPreBreakWarningSeconds, settings.preBreakWarningSeconds);
-    await _storage.setInt(AppConstants.keyLongBreakInterval, settings.longBreakIntervalMinutes);
-    await _storage.setInt(AppConstants.keyLongBreakDuration, settings.longBreakDurationMinutes);
+    await _storage.setInt(
+      AppConstants.keyShortBreakInterval,
+      settings.shortBreakIntervalMinutes,
+    );
+    await _storage.setInt(
+      AppConstants.keyShortBreakDuration,
+      settings.shortBreakDurationSeconds,
+    );
+    await _storage.setInt(
+      AppConstants.keyPreBreakWarningSeconds,
+      settings.preBreakWarningSeconds,
+    );
+    await _storage.setInt(
+      AppConstants.keyLongBreakInterval,
+      settings.longBreakIntervalMinutes,
+    );
+    await _storage.setInt(
+      AppConstants.keyLongBreakDuration,
+      settings.longBreakDurationMinutes,
+    );
 
     // Notifications
     await _storage.setBool(AppConstants.keySoundEnabled, settings.soundEnabled);
-    await _storage.setBool('notifications_enabled', settings.notificationsEnabled);
+    await _storage.setBool(
+      'notifications_enabled',
+      settings.notificationsEnabled,
+    );
 
     // Smart detection
     await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
@@ -467,13 +572,18 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('calendar_enabled', settings.calendarEnabled);
 
     // Companion
-    await _storage.setString(AppConstants.keyCompanionPetTheme, settings.companionPetTheme);
+    await _storage.setString(
+      AppConstants.keyCompanionPetTheme,
+      settings.companionPetTheme,
+    );
     await _storage.setDouble('companion_scale', settings.companionScale);
 
-    // Then save the full snapshot
-    if (_storage.settingsBox != null) {
-      _storage.settingsBox!.put(snapshot);
-    }
+    // Write the full snapshot to ObjectBox.
+    _storage.settingsBox!.put(snapshot);
+    debugPrint(
+      '[SettingsRepo] Snapshot written. '
+      'hasCompletedOnboarding: ${snapshot.hasCompletedOnboarding}',
+    );
 
     final companionPrefs = CompanionPreferences(
       id: 1,
@@ -486,26 +596,7 @@ class SettingsRepository extends ChangeNotifier {
       unlockedPetsJson: jsonEncode(settings.unlockedPets),
     );
 
-    if (_storage.companionPreferencesBox != null) {
-      _storage.companionPreferencesBox!.put(companionPrefs);
-    }
-
-    // Hive writes: these are the DEFINITIVE source of truth.
-    // Written synchronously here (Hive put is sync after box is open).
-    // These override ObjectBox values in load() on the next restart.
-    if (_hiveBox != null) {
-      _hiveBox!.put('hasCompletedOnboarding', settings.hasCompletedOnboarding);
-      _hiveBox!.put('breakTemplate', settings.breakTemplate);
-      _hiveBox!.put('breakTheme', settings.breakTheme);
-      _hiveBox!.put('clockFaceStyle', settings.clockFaceStyle);
-      _hiveBox!.put('menuBarStyle', settings.menuBarStyle);
-      _hiveBox!.put('selectedProfileId', settings.selectedProfileId);
-      _hiveBox!.put('companionEnabled', settings.companionEnabled);
-      _hiveBox!.put('companionPetTheme', settings.companionPetTheme);
-      debugPrint('[SettingsRepo] Hive written: hasCompletedOnboarding=${settings.hasCompletedOnboarding}, breakTemplate=${settings.breakTemplate}');
-    } else {
-      debugPrint('[SettingsRepo] WARNING: Hive box not set – critical flags may not persist!');
-    }
+    _storage.companionPreferencesBox!.put(companionPrefs);
 
     notifyListeners();
   }

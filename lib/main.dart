@@ -30,7 +30,13 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/utils/frame_timing_logger.dart';
 import 'package:breakmate/core/utils/memory_checkpoints.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/timer_orchestrator.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/core/native/native_bridge.dart';
 
 void _setupGlobalErrors() {
   // 1. Log Flutter errors to console
@@ -130,6 +136,91 @@ void _setupGlobalErrors() {
   };
 }
 
+Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
+  debugPrint('[Shutdown] Starting graceful shutdown...');
+  
+  // 1. Close overlays
+  try {
+    if (sl.isRegistered<OverlayWindowService>()) {
+      await sl<OverlayWindowService>().reset();
+      debugPrint('[Shutdown] OverlayWindowService reset complete.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error resetting OverlayWindowService: $e');
+  }
+
+  // 2. Close companion windows
+  try {
+    await NativeBridge.hideCompanion();
+    debugPrint('[Shutdown] Companion hidden.');
+  } catch (e) {
+    debugPrint('[Shutdown] Error hiding companion: $e');
+  }
+
+  // 3. Stop timers
+  try {
+    if (sl.isRegistered<TimerEngine>()) {
+      sl<TimerEngine>().dispose();
+      debugPrint('[Shutdown] TimerEngine disposed.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error disposing TimerEngine: $e');
+  }
+
+  try {
+    if (sl.isRegistered<TimerOrchestrator>()) {
+      sl<TimerOrchestrator>().shutdown();
+      debugPrint('[Shutdown] TimerOrchestrator shutdown complete.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error shutting down TimerOrchestrator: $e');
+  }
+
+  // 4. Dispose smart detection
+  try {
+    if (sl.isRegistered<SmartDetectionService>()) {
+      sl<SmartDetectionService>().dispose();
+      debugPrint('[Shutdown] SmartDetectionService disposed.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error disposing SmartDetectionService: $e');
+  }
+
+  // 5. Close sockets
+  try {
+    if (serverSocket != null) {
+      await serverSocket.close();
+      debugPrint('[Shutdown] Single-instance server socket closed.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error closing server socket: $e');
+  }
+
+  // 6. Flush settings
+  try {
+    if (sl.isRegistered<SettingsRepository>()) {
+      final settingsRepo = sl<SettingsRepository>();
+      await settingsRepo.save(settingsRepo.currentSettings);
+      debugPrint('[Shutdown] Settings saved & flushed.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error saving settings: $e');
+  }
+
+  // 7. Close ObjectBox store cleanly
+  try {
+    if (sl.isRegistered<StorageService>()) {
+      sl<StorageService>().close();
+      debugPrint('[Shutdown] StorageService closed cleanly.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error closing StorageService: $e');
+  }
+
+  debugPrint('[Shutdown] Graceful shutdown complete. Exiting.');
+  exit(0);
+}
+
 void main() async {
   final isolateName = Isolate.current.debugName ?? '';
   // On macOS desktop, secondary engines often have names like "OverlayEngine-..."
@@ -196,44 +287,75 @@ void main() async {
 
         // ONLY the main isolate should perform the port check and potentially call exit().
         if (isMainIsolate) {
-          int startPort = 10425;
-          int endPort = kDebugMode ? 10430 : 10425;
+          int port = 10425;
           bool bound = false;
 
-          for (int port = startPort; port <= endPort; port++) {
+          try {
+            singleInstanceServer = await ServerSocket.bind(
+              InternetAddress.loopbackIPv4,
+              port,
+            );
+            debugPrint('Startup: Port $port bound (Main Instance)');
+            bound = true;
+          } catch (e) {
+            debugPrint('Startup: Primary port $port in use. Attempting process replacement...');
+            
+            // Connect to the existing instance and send 'shutdown\n'
             try {
-              singleInstanceServer = await ServerSocket.bind(
+              final socket = await Socket.connect(
                 InternetAddress.loopbackIPv4,
                 port,
+                timeout: const Duration(milliseconds: 500),
               );
-              debugPrint('Startup: Port $port bound (Main Instance)');
-              bound = true;
-              break;
-            } catch (e) {
-              if (port == startPort) {
-                debugPrint('Startup: Primary port $port in use');
-                
-                // Signal existing instance
+              socket.write('shutdown\n');
+              await socket.flush();
+              await socket.close();
+              debugPrint('Startup: Sent shutdown command to existing instance.');
+              
+              // Wait briefly (500ms to 3000ms) for shutdown completion.
+              // Check every 200ms by trying to bind to port 10425.
+              int elapsed = 0;
+              const int checkIntervalMs = 200;
+              const int maxWaitMs = 3000;
+              
+              await Future.delayed(const Duration(milliseconds: 500));
+              elapsed += 500;
+              
+              while (elapsed < maxWaitMs) {
                 try {
-                  final socket = await Socket.connect(
+                  singleInstanceServer = await ServerSocket.bind(
                     InternetAddress.loopbackIPv4,
                     port,
-                    timeout: const Duration(milliseconds: 500),
                   );
-                  socket.write('showDashboard\n');
-                  await socket.flush();
-                  await socket.close();
-                  debugPrint('Startup: Signaled existing instance.');
-                  
-                  if (!kDebugMode) {
-                    debugPrint('Startup: Exiting (Single Instance enforced)');
-                    exit(0);
-                  } else {
-                    debugPrint('Startup: Continuing in Debug Mode on fallback port...');
-                  }
-                } catch (signalError) {
-                  debugPrint('Startup: Existing instance not responding (Port stuck).');
+                  debugPrint('Startup: Port $port successfully bound after old instance shutdown at ${elapsed}ms.');
+                  bound = true;
+                  break;
+                } catch (_) {
+                  await Future.delayed(const Duration(milliseconds: checkIntervalMs));
+                  elapsed += checkIntervalMs;
                 }
+              }
+            } catch (connectErr) {
+              debugPrint('Startup: Failed to connect to existing instance: $connectErr. Process may be dead but port remains locked.');
+            }
+
+            if (!bound) {
+              debugPrint('Startup: Graceful shutdown failed. Force terminating stale process on port $port...');
+              try {
+                // Find and kill the process holding port 10425 on macOS
+                final result = await Process.run('sh', ['-c', 'kill -9 \$(lsof -t -i :$port)']);
+                debugPrint('Startup: Force terminate result: exitCode=${result.exitCode}');
+                
+                await Future.delayed(const Duration(milliseconds: 500));
+                
+                singleInstanceServer = await ServerSocket.bind(
+                  InternetAddress.loopbackIPv4,
+                  port,
+                );
+                debugPrint('Startup: Port $port successfully bound after force termination.');
+                bound = true;
+              } catch (killErr) {
+                debugPrint('Startup: Failed to force terminate process: $killErr');
               }
             }
           }
@@ -243,6 +365,11 @@ void main() async {
              exit(1);
           }
         }
+
+        // Initialize SimplePrefs (file-based) FIRST — it is the most reliable
+        // persistence layer and must be ready before any service reads settings.
+        await SimplePrefs.instance.init();
+        logStartup('SimplePrefs.init');
 
         // Initialize all dependencies
         await initDependencies();
@@ -289,7 +416,11 @@ void main() async {
         if (singleInstanceServer != null) {
           singleInstanceServer.listen((client) {
             utf8.decoder.bind(client).join().then((message) async {
-              if (message.trim() == 'showDashboard') {
+              final cmd = message.trim();
+              if (cmd == 'shutdown') {
+                debugPrint('SingleInstanceServer: Received shutdown command.');
+                await _gracefulShutdown(singleInstanceServer);
+              } else if (cmd == 'showDashboard') {
                 await sl<OverlayWindowService>().showDashboard(forceShow: true);
               }
               client.destroy();

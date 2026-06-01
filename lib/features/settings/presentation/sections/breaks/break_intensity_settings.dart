@@ -104,64 +104,6 @@ class BreakIntensitySettings extends StatelessWidget {
               onSave(settings.copyWith(playMusicDuringBreak: val));
             },
           ),
-          divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Break Template Theme',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppTheme.textPrimary,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      const Text(
-                        'Select the background for your break screen.',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                          letterSpacing: 0,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                AppDropdown<String>(
-                  value: settings.breakTheme,
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      onSave(settings.copyWith(breakTheme: newValue));
-                    }
-                  },
-                  items: const [
-                    AppDropdownItem(value: 'random', label: 'RANDOM THEME'),
-                    AppDropdownItem(value: 'image', label: 'NATURE IMAGES'),
-                    AppDropdownItem(value: 'ocean', label: 'OCEAN WAVES'),
-                    AppDropdownItem(value: 'forest', label: 'FOREST CANOPY'),
-                    AppDropdownItem(value: 'minimal', label: 'MINIMAL GLOW'),
-                    AppDropdownItem(value: 'sunset', label: 'SUNSET (NEW)'),
-                    AppDropdownItem(value: 'nebula', label: 'NEBULA (NEW)'),
-                    AppDropdownItem(value: 'midnight', label: 'MIDNIGHT (NEW)'),
-                    AppDropdownItem(
-                      value: 'cyberpunk',
-                      label: 'CYBERPUNK (NEW)',
-                    ),
-                    AppDropdownItem(value: 'zen', label: 'ZEN GARDEN (NEW)'),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ]),
         const SizedBox(height: 16),
         sectionHeader('Manual Controls'),
