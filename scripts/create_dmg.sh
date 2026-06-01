@@ -45,7 +45,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 APP_NAME="BreakMate"
-APP_BUILD_DIR="$PROJECT_ROOT/build/macos/Build/Products/Release/${APP_NAME}.app"
+APP_BUILD_DIR="$PROJECT_ROOT/build/macos/Build/Products/Release-prod/${APP_NAME}.app"
 DMG_OUTPUT_DIR="$PROJECT_ROOT/release_dmg"
 DMG_NAME="${APP_NAME}-Installer.dmg"
 DMG_PATH="$DMG_OUTPUT_DIR/$DMG_NAME"
@@ -131,9 +131,9 @@ fi
 
 # ── Print plan ─────────────────────────────────────────────────────────────────
 echo ""
-echo -e "${GREEN}${BOLD}╔═══════════════════════════════════════════════╗${RESET}"
-echo -e "${GREEN}${BOLD}║   BreakMate Release Pipeline v${VERSION}${RESET}"
-echo -e "${GREEN}${BOLD}╚═══════════════════════════════════════════════╝${RESET}"
+echo -e "${GREEN}${BOLD}╔════════════════════════════════════════════════════╗${RESET}"
+echo -e "${GREEN}${BOLD}║   BreakMate Release Pipeline v${VERSION}${RESET}"  ║
+echo -e "${GREEN}${BOLD}╚════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  Version:     ${BOLD}${VERSION}${RESET}  (build ${BUILD_NUMBER})"
 echo -e "  DMG:         ${CYAN}${DMG_PATH}${RESET}"

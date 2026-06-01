@@ -10,7 +10,12 @@
      }
    },
    "contents": [
-     { "x": 213, "y": 288, "type": "file", "path": "/Users/intersamrt/Documents/Flutter-Projects/standup/build/macos/Build/Products/Release/BreakMate.app" },
+    {
+      "x": 213,
+      "y": 288,
+      "type": "file",
+      "path": "/Users/intersamrt/Documents/Flutter-Projects/standup/build/macos/Build/Products/Release-prod/BreakMate.app"
+    },
      { "x": 633, "y": 288, "type": "link", "path": "/Applications" }
    ]
  }
