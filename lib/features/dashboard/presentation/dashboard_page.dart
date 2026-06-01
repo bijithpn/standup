@@ -1,16 +1,19 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:provider/provider.dart';
+
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
-import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/core/constants/app_strings.dart';
-import 'package:breakmate/app/dependency_injection.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -23,6 +26,8 @@ class _DashboardPageState extends State<DashboardPage> {
   List<CalendarEvent>? _calendarEvents;
   bool _calendarLoading = false;
   bool _calendarPermissionGranted = false;
+  bool _calendarPermissionDenied = false;
+  bool _isRequestingPermission = false;
   DateTime? _lastCalendarPermissionCheck;
   Timer? _refreshTimer;
 
@@ -34,11 +39,25 @@ class _DashboardPageState extends State<DashboardPage> {
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
       _loadCalendarEvents();
     });
+
+    // Listen for setting changes to refresh calendar data if enabled
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        sl<SettingsRepository>().addListener(_handleSettingsChange);
+      }
+    });
+  }
+
+  void _handleSettingsChange() {
+    if (mounted) {
+      _loadCalendarEvents();
+    }
   }
 
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    sl<SettingsRepository>().removeListener(_handleSettingsChange);
     super.dispose();
   }
 
@@ -75,6 +94,7 @@ class _DashboardPageState extends State<DashboardPage> {
       }
 
       _calendarPermissionGranted = true;
+      _calendarPermissionDenied = false; // Reset if confirmed
       final events = await calendarService.getUpcomingEvents(
         window: const Duration(hours: 8),
       );
@@ -92,13 +112,41 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _requestCalendarAccess() async {
-    final calendarService = sl<CalendarService>();
-    final granted = await calendarService.requestPermissions();
-    if (granted) {
-      setState(() => _calendarPermissionGranted = true);
-      await _loadCalendarEvents();
-    } else {
-      if (mounted) setState(() => _calendarPermissionGranted = false);
+    if (_isRequestingPermission) return;
+
+    setState(() => _isRequestingPermission = true);
+
+    try {
+      final calendarService = sl<CalendarService>();
+      final granted = await calendarService.requestPermissions();
+
+      if (mounted) {
+        if (granted) {
+          setState(() {
+            _calendarPermissionGranted = true;
+            _calendarPermissionDenied = false;
+          });
+          Toast.showSuccess(context, 'Calendar access granted!');
+          await _loadCalendarEvents();
+        } else {
+          setState(() {
+            _calendarPermissionGranted = false;
+            _calendarPermissionDenied = true;
+          });
+          Toast.showError(
+            context,
+            'Calendar access denied. Please enable it in System Settings.',
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Toast.showError(context, 'An unexpected error occurred.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRequestingPermission = false);
+      }
     }
   }
 
@@ -524,6 +572,18 @@ class _DashboardPageState extends State<DashboardPage> {
       );
     }
 
+    // Group events by date
+    final groupedEvents = <DateTime, List<CalendarEvent>>{};
+    for (var event in events) {
+      final date = DateTime(
+        event.start.year,
+        event.start.month,
+        event.start.day,
+      );
+      groupedEvents.putIfAbsent(date, () => []).add(event);
+    }
+
+    final sortedDates = groupedEvents.keys.toList()..sort();
     final conflict = _nextCalendarConflict();
 
     return Column(
@@ -531,32 +591,89 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         if (conflict != null) ...[
           _CalendarActionCard(event: conflict),
-          const SizedBox(height: 12),
+          const SizedBox(height: 24),
         ],
-        for (int i = 0; i < events.length; i++) ...[
-          if (i > 0) const Divider(height: 1, color: AppTheme.border),
-          _CalendarEventRow(event: events[i]),
+        for (var date in sortedDates) ...[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12, top: 4),
+            child: Text(
+              _formatDate(date),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textSecondary,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          ...groupedEvents[date]!.map((event) {
+            return Column(
+              children: [
+                _CalendarEventRow(event: event),
+                if (event != groupedEvents[date]!.last)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 54),
+                    child: Divider(height: 1, color: AppTheme.border),
+                  ),
+              ],
+            );
+          }),
+          if (date != sortedDates.last) const SizedBox(height: 16),
         ],
       ],
     );
   }
 
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+
+    if (date == today) return 'TODAY';
+    if (date == tomorrow) return 'TOMORROW';
+
+    final months = [
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
   Widget _buildCalendarPermissionPrompt() {
+    final subtitle = _calendarPermissionDenied
+        ? 'Please enable calendar access in System Settings to see your events.'
+        : 'Calendar access required to show upcoming events and avoid interrupting your meetings.';
+    final icon = _calendarPermissionDenied
+        ? Icons.error_outline_rounded
+        : Icons.lock_outline_rounded;
+    final iconColor = _calendarPermissionDenied
+        ? AppTheme.error
+        : AppTheme.warning;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(
-              Icons.lock_outline_rounded,
+            Icon(icon,
               size: 16,
-              color: AppTheme.warning,
+              color: iconColor,
             ),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Calendar access required to show upcoming events and avoid interrupting your meetings.',
-                style: TextStyle(
+                subtitle,
+                style: const TextStyle(
                   fontSize: 13,
                   color: AppTheme.textSecondary,
                   height: 1.4,
@@ -566,38 +683,71 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
         const SizedBox(height: 16),
-        InkWell(
-          onTap: _requestCalendarAccess,
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+        Row(
+          children: [
+            InkWell(
+              onTap: _isRequestingPermission ? null : _requestCalendarAccess,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-              ),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.calendar_month_rounded,
-                  size: 16,
-                  color: Color(0xFF6366F1),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
                 ),
-                SizedBox(width: 8),
-                Text(
-                  'Grant Calendar Access',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6366F1),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: const Color(0xFF6366F1).withValues(alpha: 0.3),
                   ),
                 ),
-              ],
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (_isRequestingPermission)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFF6366F1),
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.calendar_month_rounded,
+                        size: 16,
+                        color: Color(0xFF6366F1),
+                      ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _isRequestingPermission
+                          ? 'Requesting...'
+                          : (_calendarPermissionDenied
+                                ? 'Try Again'
+                                : 'Grant Calendar Access'),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF6366F1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
+            if (_calendarPermissionDenied && !_isRequestingPermission) ...[
+              const SizedBox(width: 12),
+              TextButton.icon(
+                onPressed: () => sl<CalendarService>().openSettings(),
+                icon: const Icon(Icons.settings_outlined, size: 16),
+                label: const Text('Open Settings'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondary,
+                  textStyle: const TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     );

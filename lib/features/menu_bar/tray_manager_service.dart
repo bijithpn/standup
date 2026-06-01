@@ -56,12 +56,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     // Show initial icon and menu as fast as possible
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
-        'assets/icons/tray_icon.png',
+        'assets/icons/app_icon.jpeg',
         defaultFile,
       );
     } catch (_) {
       // Fallback to asset if extraction fails
-      _defaultIconPath = 'assets/icons/tray_icon.png';
+      _defaultIconPath = 'assets/icons/app_icon.jpeg';
     }
     
     _defaultIconPath ??= defaultFile;
@@ -125,11 +125,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
-        'assets/icons/tray_icon.png',
+        'assets/icons/app_icon.jpeg',
         defaultFile,
       );
     } catch (_) {
-      _defaultIconPath = 'assets/icons/tray_icon.png';
+      _defaultIconPath = 'assets/icons/app_icon.jpeg';
     }
 
     if (_defaultIconPath == null || _defaultIconPath!.isEmpty) {

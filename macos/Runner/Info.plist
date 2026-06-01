@@ -38,6 +38,12 @@
 	<true/>
 	<key>SUAllowsAutomaticUpdates</key>
 	<true/>
+	<key>NSCalendarsUsageDescription</key>
+	<string>BreakMate needs calendar access to automatically pause breaks during your meetings.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>BreakMate needs calendar access to automatically pause breaks during your meetings.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>BreakMate needs calendar access to automatically pause breaks during your meetings.</string>
     <key>SUEnableInstallerLauncherService</key>
     <true/>
     <key>NSAppSleepDisabled</key>

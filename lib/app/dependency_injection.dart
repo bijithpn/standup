@@ -39,7 +39,6 @@ import 'package:breakmate/features/companion/services/companion_state_manager.da
 import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 
 final sl = GetIt.instance;
 
@@ -49,17 +48,27 @@ Future<void> initDependencies() async {
 
   // Core Services
   final storage = StorageService();
+  await storage.init();
+
+  if (!storage.isReady) {
+    throw Exception('Storage initialization failed');
+  }
+
+  sl.registerSingleton<StorageService>(storage);
+
+  final settingsRepo = SettingsRepository(storage: storage);
+  await settingsRepo.load();
+  sl.registerSingleton<SettingsRepository>(settingsRepo);
+
   final notifications = NotificationService();
   final displayManager = DisplayManager();
 
   // Parallelize independent initializations
   await Future.wait([
-    storage.init(),
     notifications.init(),
     displayManager.initialize(),
   ]);
 
-  sl.registerSingleton<StorageService>(storage);
   sl.registerSingleton<NotificationService>(notifications);
 
   final activityMonitor = ActivityMonitor();
@@ -93,23 +102,6 @@ Future<void> initDependencies() async {
     wellnessEngine: wellnessEngine,
   );
   sl.registerSingleton<AdaptiveBreakService>(adaptiveBreakService);
-
-  // Feature Services
-  // Initialize Hive BEFORE settings repo — Hive is the definitive persistence
-  // layer for critical flags (hasCompletedOnboarding, breakTemplate, etc.).
-  await Hive.initFlutter();
-  Box criticalPrefsBox;
-  try {
-    criticalPrefsBox = await Hive.openBox('breakmate_critical_prefs');
-    debugPrint('[DI] Hive box opened. Keys: ${criticalPrefsBox.keys.toList()}');
-  } catch (e) {
-    debugPrint('[DI] Hive init failed: $e. Critical prefs will not persist via Hive.');
-    criticalPrefsBox = await Hive.openBox('breakmate_critical_prefs');
-  }
-
-  final settingsRepo = SettingsRepository(storage: sl(), hiveBox: criticalPrefsBox);
-  settingsRepo.load();
-  sl.registerSingleton<SettingsRepository>(settingsRepo);
 
   notifications.setNotificationsEnabled(
     settingsRepo.currentSettings.notificationsEnabled,

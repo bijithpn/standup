@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:8601537166470336041",
-      "lastPropertyId": "7:1967460204486061299",
+      "lastPropertyId": "8:3603219530667623359",
       "name": "CompanionPreferences",
       "properties": [
         {
@@ -43,6 +43,11 @@
           "id": "7:1967460204486061299",
           "name": "companionFollowMouse",
           "type": 1
+        },
+        {
+          "id": "8:3603219530667623359",
+          "name": "unlockedPetsJson",
+          "type": 9
         }
       ],
       "relations": []
@@ -155,7 +160,7 @@
     },
     {
       "id": "5:6076095419739285712",
-      "lastPropertyId": "54:8146101068931357580",
+      "lastPropertyId": "58:5487283696595267110",
       "name": "SettingsSnapshot",
       "properties": [
         {
@@ -428,6 +433,26 @@
           "id": "54:8146101068931357580",
           "name": "intensityLevel",
           "type": 9
+        },
+        {
+          "id": "55:7350395918854661356",
+          "name": "dailyBreakGoalCount",
+          "type": 6
+        },
+        {
+          "id": "56:913960127255691831",
+          "name": "maxContinuousSittingMinutes",
+          "type": 6
+        },
+        {
+          "id": "57:692769245490754384",
+          "name": "weeklyConsistencyTargetDays",
+          "type": 6
+        },
+        {
+          "id": "58:5487283696595267110",
+          "name": "calendarEnabled",
+          "type": 1
         }
       ],
       "relations": []
