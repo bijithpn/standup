@@ -342,8 +342,8 @@ void main() async {
             if (!bound) {
               debugPrint('Startup: Graceful shutdown failed. Force terminating stale process on port $port...');
               try {
-                // Find and kill the process holding port 10425 on macOS
-                final result = await Process.run('sh', ['-c', 'kill -9 \$(lsof -t -i :$port)']);
+                // Find and kill only the process listening on port 10425 on macOS
+                final result = await Process.run('sh', ['-c', 'PID=\$(lsof -t -s TCP:LISTEN -i :$port); [ -n "\$PID" ] && kill -9 \$PID']);
                 debugPrint('Startup: Force terminate result: exitCode=${result.exitCode}');
                 
                 await Future.delayed(const Duration(milliseconds: 500));

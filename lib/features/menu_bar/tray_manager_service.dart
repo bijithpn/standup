@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -56,12 +57,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     // Show initial icon and menu as fast as possible
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
-        'assets/icons/app_icon.jpeg',
+        AppConstants.trayIconPath,
         defaultFile,
       );
     } catch (_) {
       // Fallback to asset if extraction fails
-      _defaultIconPath = 'assets/icons/app_icon.jpeg';
+      _defaultIconPath = AppConstants.trayIconPath;
     }
     
     _defaultIconPath ??= defaultFile;
@@ -125,11 +126,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
-        'assets/icons/app_icon.jpeg',
+        AppConstants.trayIconPath,
         defaultFile,
       );
     } catch (_) {
-      _defaultIconPath = 'assets/icons/app_icon.jpeg';
+      _defaultIconPath = AppConstants.trayIconPath;
     }
 
     if (_defaultIconPath == null || _defaultIconPath!.isEmpty) {

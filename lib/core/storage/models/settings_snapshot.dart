@@ -87,6 +87,9 @@ class SettingsSnapshot {
   int weeklyConsistencyTargetDays;
   bool calendarEnabled;
 
+  // Session Management
+  bool enableSessionResume;
+
   SettingsSnapshot({
     this.id = 0,
     required this.autoStart,
@@ -146,6 +149,7 @@ class SettingsSnapshot {
     this.maxContinuousSittingMinutes = 60,
     this.weeklyConsistencyTargetDays = 5,
     this.calendarEnabled = false,
+    this.enableSessionResume = true,
   });
 
   Map<String, dynamic> toMap() {
@@ -207,6 +211,7 @@ class SettingsSnapshot {
       'maxContinuousSittingMinutes': maxContinuousSittingMinutes,
       'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
       'calendarEnabled': calendarEnabled,
+      'enableSessionResume': enableSessionResume,
     };
   }
 }

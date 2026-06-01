@@ -87,6 +87,15 @@ class TimerEngine extends ChangeNotifier {
   TimerStateData get stateData => _stateData;
   TimerContextManager get contextManager => _contextManager;
 
+  void syncNotifiersFromState() {
+    if (state == TimerState.running || state == TimerState.idle) {
+      _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
+    }
+    countdownNotifier.value = _stateData.countdownSeconds;
+    workElapsedNotifier.value = _stateData.workElapsed;
+    totalWorkTodayNotifier.value = _stateData.totalWorkToday;
+  }
+
   int get shortBreakIntervalMinutes => _shortBreakIntervalMinutes;
   set shortBreakIntervalMinutes(int val) {
     _shortBreakIntervalMinutes = val;

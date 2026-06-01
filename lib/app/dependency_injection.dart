@@ -9,6 +9,7 @@ import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
@@ -55,6 +56,10 @@ Future<void> initDependencies() async {
   }
 
   sl.registerSingleton<StorageService>(storage);
+
+  final sessionStateRepository = SessionStateRepository(storage);
+  sessionStateRepository.initialize();
+  sl.registerSingleton<SessionStateRepository>(sessionStateRepository);
 
   final settingsRepo = SettingsRepository(storage: storage);
   await settingsRepo.load();
@@ -147,6 +152,7 @@ Future<void> initDependencies() async {
   final timerOrchestrator = TimerOrchestrator(
     timerEngine: sl(),
     timerRepository: TimerRepository(sl()),
+    sessionStateRepository: sl(),
     activityMonitor: sl(),
     notificationService: sl(),
     statsService: sl(),

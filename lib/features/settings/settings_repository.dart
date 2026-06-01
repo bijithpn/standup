@@ -214,6 +214,7 @@ class SettingsRepository extends ChangeNotifier {
       maxContinuousSittingMinutes: s.maxContinuousSittingMinutes,
       weeklyConsistencyTargetDays: s.weeklyConsistencyTargetDays,
       calendarEnabled: s.calendarEnabled,
+      enableSessionResume: s.enableSessionResume,
       companionEnabled: cp?.companionEnabled ?? false,
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
@@ -389,6 +390,10 @@ class SettingsRepository extends ChangeNotifier {
         'calendar_enabled',
         defaultValue: false,
       ),
+      enableSessionResume: _storage.getBool(
+        'enable_session_resume',
+        defaultValue: true,
+      ),
     );
   }
 
@@ -507,6 +512,7 @@ class SettingsRepository extends ChangeNotifier {
       maxContinuousSittingMinutes: settings.maxContinuousSittingMinutes,
       weeklyConsistencyTargetDays: settings.weeklyConsistencyTargetDays,
       calendarEnabled: settings.calendarEnabled,
+      enableSessionResume: settings.enableSessionResume,
     );
 
     // Mirror ALL critical settings to the KV store for reliability.
@@ -570,6 +576,7 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('detect_meetings', settings.detectMeetings);
     await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
     await _storage.setBool('calendar_enabled', settings.calendarEnabled);
+    await _storage.setBool('enable_session_resume', settings.enableSessionResume);
 
     // Companion
     await _storage.setString(
