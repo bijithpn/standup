@@ -2,108 +2,292 @@ import Cocoa
 import FlutterMacOS
 import EventKit
 
+// MARK: - Authorization State Model
+
+/// Represents the simplified EventKit authorization status.
+enum CalendarAccessState: String {
+    case notDetermined
+    case denied
+    case restricted
+    case writeOnly
+    case fullAccess
+}
+
 /// Dedicated bridge for all Calendar / EventKit operations.
 class CalendarBridge {
 
-    // MARK: - Shared event store (replaced after each grant)
+    // MARK: - Properties & Thread Safety
 
-    /// The store used for fetching events. Replaced with a fresh instance
-    /// every time the user grants access so it immediately picks up the new
-    /// authorization without needing an app restart.
-    private var eventStore = EKEventStore()
+    /// Recreated EKEventStore instance for querying calendars/events.
+    private var _eventStore = EKEventStore()
 
-    /// Retains the EKEventStore during an active permission request.
-    private var activeRequestStore: EKEventStore?
+    /// Retained EKEventStore during active permission requests.
+    private var _activeRequestStore: EKEventStore?
 
-    // MARK: - Permission status helpers
+    /// Thread lock to synchronize access to the EventStore properties.
+    private let lock = NSLock()
 
-    /// Returns the current TCC authorization status as a simple Bool.
-    private var isCurrentlyAuthorized: Bool {
-        let status = EKEventStore.authorizationStatus(for: .event)
-        if #available(macOS 14.0, *) {
-            return status == .fullAccess
-        }
-        return status == .authorized
+    // MARK: - Thread-Safe Getters & Setters
+
+    /// Thread-safe access to the primary EventStore.
+    private var eventStore: EKEventStore {
+        lock.lock()
+        defer { lock.unlock() }
+        return _eventStore
     }
 
-    // MARK: - Public API (called from MainFlutterWindow's method-channel handler)
+    /// Thread-safe access to the active request EventStore.
+    private var activeRequestStore: EKEventStore? {
+        get {
+            lock.lock()
+            defer { lock.unlock() }
+            return _activeRequestStore
+        }
+        set {
+            lock.lock()
+            _activeRequestStore = newValue
+            lock.unlock()
+        }
+    }
+
+    /// Maps the raw EKAuthorizationStatus integer to a CalendarAccessState.
+    /// Uses rawValue switching so this compiles on every macOS SDK without
+    /// availability guards around `.fullAccess` / `.writeOnly`.
+    ///
+    /// Raw value map (stable across SDKs):
+    ///   0 = .notDetermined
+    ///   1 = .restricted
+    ///   2 = .denied
+    ///   3 = .authorized (pre-macOS 14) / .fullAccess (macOS 14+)
+    ///   4 = .writeOnly  (macOS 14+)
+    private func currentAccessState() -> CalendarAccessState {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        NSLog("[BreakMate Calendar] currentAccessState raw: \(status.rawValue)")
+        
+        switch status.rawValue {
+        case 0: return .notDetermined
+        case 1: return .restricted
+        case 2: return .denied
+        case 3: return .fullAccess   // .authorized on ≤macOS 13, .fullAccess on macOS 14+
+        case 4: return .writeOnly
+        default: return .denied
+        }
+    }
+
+    /// True when the app currently has read access to calendar events.
+    private var hasReadAccess: Bool {
+        return currentAccessState() == .fullAccess
+    }
+
+    // MARK: - Store Lifecycle Management
+
+    /// Recreates the EKEventStore instance to prevent cached stale authorization state.
+    private func refreshStore() {
+        lock.lock()
+        _eventStore = EKEventStore()
+        lock.unlock()
+        logAuthorizationStatus("refreshStore")
+    }
+
+    // MARK: - Diagnostics & Logging
+
+    /// Logs detailed authorization status and metrics.
+    /// - Parameter source: Describes the context of the logging invocation.
+    private func logAuthorizationStatus(_ source: String) {
+        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
+        let state = currentAccessState()
+        let statusRaw = EKEventStore.authorizationStatus(for: .event).rawValue
+
+        let currentStore = self.eventStore
+        
+        // We try to access calendars to see if it actually works, not just what the status says.
+        var canFetchCalendars = false
+        var calendarCount = 0
+        
+        if hasReadAccess {
+            let calendars = currentStore.calendars(for: .event)
+            calendarCount = calendars.count
+            canFetchCalendars = true
+        }
+
+        let logString = """
+        [BreakMate Calendar]
+        source=\(source)
+        bundle=\(bundleId)
+        status=\(statusRaw)
+        state=\(state.rawValue)
+        canFetch=\(canFetchCalendars)
+        count=\(calendarCount)
+        """
+        NSLog("%@", logString)
+    }
+
+    // MARK: - Public API (Flutter Method Channels)
+
+    /// Exposes detailed authorization diagnostics for Flutter.
+    /// - Parameter result: Flutter method channel result callback.
+    func debugCalendarState(result: @escaping FlutterResult) {
+        let statusRaw = EKEventStore.authorizationStatus(for: .event).rawValue
+        let diagnostics: [String: Any?] = [
+            "bundleId": Bundle.main.bundleIdentifier,
+            "authorizationStatus": statusRaw,
+            "hasReadAccess": hasReadAccess,
+            "canFetch": hasReadAccess && !eventStore.calendars(for: .event).isEmpty
+        ]
+        NSLog("[BreakMate Calendar] debugCalendarState returned: \(diagnostics)")
+        result(diagnostics)
+    }
 
     /// Checks whether calendar access has already been granted.
+    /// - Parameter result: Flutter method channel result callback.
     func hasCalendarPermissions(result: @escaping FlutterResult) {
-        result(isCurrentlyAuthorized)
+        refreshStore()
+        logAuthorizationStatus("hasCalendarPermissions")
+        result(hasReadAccess)
     }
 
     /// Gets the detailed calendar permission status.
+    /// - Parameter result: Flutter method channel result callback.
     func getCalendarPermissionStatus(result: @escaping FlutterResult) {
-        let status = EKEventStore.authorizationStatus(for: .event)
-        switch status {
-        case .notDetermined:
-            result("notDetermined")
-        case .restricted:
-            result("restricted")
-        case .denied:
-            result("denied")
-        case .fullAccess:
-            result("granted")
-        case .writeOnly:
-            result("denied") // Write-only is not enough for our reading needs
-        case .authorized:
-            result("granted")
-        @unknown default:
-            result("denied")
+        let state = currentAccessState()
+        logAuthorizationStatus("getCalendarPermissionStatus")
+        switch state {
+        case .notDetermined: result("notDetermined")
+        case .restricted:    result("restricted")
+        case .denied:        result("denied")
+        case .fullAccess:    result("granted")
+        case .writeOnly:     result("denied")
         }
     }
 
+    // MARK: - Permission Request
+
     /// Requests full calendar access from the OS.
+    ///
+    /// Root-cause fix (macOS 14 TCC race condition):
+    /// `requestFullAccessToEvents` can fire its completion callback with `granted=false`
+    /// even when the user clicked "Allow", because the TCC database has not yet
+    /// committed the authorization by the time the callback runs.
+    /// Conversely, if it returns `granted=true`, we should trust it immediately.
+    ///
+    /// - Parameter result: Flutter method channel result callback.
     func requestCalendarPermissions(result: @escaping FlutterResult) {
-        let status = EKEventStore.authorizationStatus(for: .event)
-        NSLog("[BreakMate][Calendar] requestCalendarPermissions — raw status: \(status.rawValue)")
+        NSLog("[BreakMate Calendar] requestCalendarPermissions ENTERED")
+        logAuthorizationStatus("request-start")
 
-        if status == .denied || status == .restricted {
-            NSLog("[BreakMate][Calendar] Denied/Restricted — returning false (user must open System Settings).")
-            result(false)
-            return
-        }
-
-        if isCurrentlyAuthorized {
-            NSLog("[BreakMate][Calendar] Already authorized — returning true without prompting.")
+        let state = currentAccessState()
+        if state == .fullAccess {
+            logAuthorizationStatus("request-already-authorized")
             result(true)
             return
         }
 
+        // We create a fresh store for the request.
         let requestStore = EKEventStore()
         self.activeRequestStore = requestStore
 
         if #available(macOS 14.0, *) {
-            NSLog("[BreakMate][Calendar] Calling requestFullAccessToEvents (macOS 14+) …")
-            requestStore.requestFullAccessToEvents { [weak self] granted, error in
-                NSLog("[BreakMate][Calendar] requestFullAccessToEvents → granted=\(granted), error=\(error?.localizedDescription ?? "none")")
-                DispatchQueue.main.async {
-                    if granted {
-                        self?.eventStore = EKEventStore()
-                        NSLog("[BreakMate][Calendar] EKEventStore refreshed after grant.")
+            logAuthorizationStatus("request-prompt-macos14")
+            NSLog("[BreakMate Calendar] Calling requestFullAccessToEvents (macOS 14+)")
+
+            requestStore.requestFullAccessToEvents { [weak self] grantedParam, error in
+                let errorDesc = error?.localizedDescription ?? "none"
+                NSLog("[BreakMate Calendar] requestFullAccessToEvents callback: grantedParam=\(grantedParam), error=\(errorDesc)")
+                
+                let immediateStatus = EKEventStore.authorizationStatus(for: .event)
+                NSLog("[BreakMate Calendar] Immediate status after callback: \(immediateStatus.rawValue)")
+
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else { 
+                        result(false)
+                        return 
                     }
-                    self?.activeRequestStore = nil
-                    result(granted)
+                    
+                    // We don't return immediately even if grantedParam is true, because 
+                    // subsequent calls to getCalendarPermissionStatus (which happen 
+                    // immediately in Flutter) might still see the old state.
+                    // We always pass through resolveGrantedWithRetry to be safe.
+                    let initialWait = grantedParam ? 0.0 : 0.1
+                    NSLog("[BreakMate Calendar] Callback result handled. grantedParam=\(grantedParam). Waiting \(initialWait)s then polling status...")
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + initialWait) { [weak self] in
+                        guard let self = self else { return }
+                        self.resolveGrantedWithRetry(attempt: 0, maxAttempts: 12, result: result)
+                    }
                 }
             }
         } else {
-            NSLog("[BreakMate][Calendar] Calling requestAccess (legacy) …")
-            requestStore.requestAccess(to: .event) { [weak self] granted, error in
-                NSLog("[BreakMate][Calendar] requestAccess → granted=\(granted), error=\(error?.localizedDescription ?? "none")")
-                DispatchQueue.main.async {
-                    if granted {
-                        self?.eventStore = EKEventStore()
-                        NSLog("[BreakMate][Calendar] EKEventStore refreshed after grant.")
+            logAuthorizationStatus("request-prompt-legacy")
+            NSLog("[BreakMate Calendar] Calling requestAccess (legacy, pre-macOS 14)")
+
+            requestStore.requestAccess(to: .event) { [weak self] grantedParam, error in
+                let errorDesc = error?.localizedDescription ?? "none"
+                NSLog("[BreakMate Calendar] requestAccess callback: grantedParam=\(grantedParam), error=\(errorDesc)")
+
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self else {
+                        result(false)
+                        return
                     }
-                    self?.activeRequestStore = nil
-                    result(granted)
+                    
+                    let initialWait = grantedParam ? 0.0 : 0.1
+                    DispatchQueue.main.asyncAfter(deadline: .now() + initialWait) { [weak self] in
+                        guard let self = self else { return }
+                        self.resolveGrantedWithRetry(attempt: 0, maxAttempts: 8, result: result)
+                    }
                 }
             }
         }
     }
 
+    /// Polls `EKEventStore.authorizationStatus` up to `maxAttempts` times (250 ms apart)
+    /// to outlast the macOS TCC write latency.
+    private func resolveGrantedWithRetry(attempt: Int, maxAttempts: Int, result: @escaping FlutterResult) {
+        let status = EKEventStore.authorizationStatus(for: .event)
+        let rawValue = status.rawValue
+        
+        // rawValue 3 = .authorized (≤macOS 13) / .fullAccess (macOS 14+)
+        let isGranted = (rawValue == 3)
+
+        NSLog("[BreakMate Calendar] resolveGrantedWithRetry: attempt=\(attempt)/\(maxAttempts) rawValue=\(rawValue) isGranted=\(isGranted)")
+
+        // If we have a definitive answer (anything other than notDetermined = 0), return.
+        if rawValue != 0 {
+            if isGranted {
+                self.refreshStore()
+                self.logAuthorizationStatus("request-granted-final")
+            } else {
+                if rawValue == 4 {
+                    NSLog("[BreakMate Calendar] User granted WRITE-ONLY access. This is insufficient for reading events.")
+                }
+                self.logAuthorizationStatus("request-denied-final")
+            }
+            self.activeRequestStore = nil
+            result(isGranted)
+            return
+        }
+        
+        // If we hit max attempts and it's still 0, return false.
+        if attempt >= maxAttempts {
+            NSLog("[BreakMate Calendar] resolveGrantedWithRetry hit max attempts. Returning false.")
+            self.logAuthorizationStatus("request-timeout-final")
+            self.activeRequestStore = nil
+            result(false)
+            return
+        }
+
+        // Still notDetermined — wait and retry.
+        // Increase wait time slightly (250ms) to be safer.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+            guard let self = self else { result(false); return }
+            self.resolveGrantedWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts, result: result)
+        }
+    }
+
+    // MARK: - Settings
+
     /// Opens the Calendar privacy pane in System Settings (macOS 13+) or System Preferences (macOS 12 and earlier).
+    /// - Parameter result: Flutter method channel result callback.
     func openCalendarSettings(result: @escaping FlutterResult) {
         if #available(macOS 13.0, *) {
             let newUrl = URL(string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Calendars")!
@@ -123,14 +307,25 @@ class CalendarBridge {
         result(true)
     }
 
+    // MARK: - Calendar & Event Queries
+
     /// Fetches all available calendars.
+    /// - Parameter result: Flutter method channel result callback.
     func getCalendars(result: @escaping FlutterResult) {
-        guard isCurrentlyAuthorized else {
+        refreshStore()
+
+        let authorized = hasReadAccess
+        NSLog("[BreakMate Calendar] getCalendars starting query. Authorized: \(authorized)")
+
+        guard authorized else {
             result([])
             return
         }
 
-        let calendars = eventStore.calendars(for: .event)
+        let currentStore = self.eventStore
+        let calendars = currentStore.calendars(for: .event)
+        NSLog("[BreakMate Calendar] getCalendars query returned \(calendars.count) calendars")
+
         let mapped: [[String: Any]] = calendars.map { calendar in
             [
                 "id": calendar.calendarIdentifier,
@@ -143,8 +338,18 @@ class CalendarBridge {
     }
 
     /// Fetches events within a specific range, optionally filtered by calendar IDs.
+    /// - Parameters:
+    ///   - startMs: Start date in milliseconds since epoch.
+    ///   - endMs: End date in milliseconds since epoch.
+    ///   - calendarIds: Optional list of calendar identifiers to filter by.
+    ///   - result: Flutter method channel result callback.
     func getEvents(startMs: Double, endMs: Double, calendarIds: [String]?, result: @escaping FlutterResult) {
-        guard isCurrentlyAuthorized else {
+        refreshStore()
+
+        let authorized = hasReadAccess
+        NSLog("[BreakMate Calendar] getEvents starting query check. Authorized: \(authorized)")
+
+        guard authorized else {
             result([])
             return
         }
@@ -158,39 +363,66 @@ class CalendarBridge {
                 return
             }
 
-            var calendars: [EKCalendar]? = nil
-            if let ids = calendarIds {
-                calendars = self.eventStore.calendars(for: .event).filter { ids.contains($0.calendarIdentifier) }
-            }
+            do {
+                self.logAuthorizationStatus("getEvents-bg")
+                NSLog("[BreakMate Calendar] getEvents background query starting from \(start) to \(end)...")
 
-            let predicate = self.eventStore.predicateForEvents(
-                withStart: start,
-                end: end,
-                calendars: calendars
-            )
-            let events = self.eventStore.events(matching: predicate)
+                let threadStore = EKEventStore()
+                var calendars: [EKCalendar]? = nil
+                if let ids = calendarIds {
+                    calendars = threadStore.calendars(for: .event).filter { ids.contains($0.calendarIdentifier) }
+                }
 
-            let mapped: [[String: Any]] = events.map { event in
-                [
-                    "id": event.eventIdentifier ?? "",
-                    "calendarId": event.calendar?.calendarIdentifier ?? "",
-                    "title": event.title ?? "No Title",
-                    "notes": event.notes ?? "",
-                    "start": Int(event.startDate.timeIntervalSince1970 * 1000),
-                    "end": Int(event.endDate.timeIntervalSince1970 * 1000),
-                    "allDay": event.isAllDay
-                ]
-            }
+                let predicate = threadStore.predicateForEvents(
+                    withStart: start,
+                    end: end,
+                    calendars: calendars
+                )
+                let events = threadStore.events(matching: predicate)
 
-            DispatchQueue.main.async {
-                result(mapped)
+                NSLog("[BreakMate Calendar] getEvents background query complete. Found \(events.count) events.")
+
+                let mapped: [[String: Any]] = events.map { event in
+                    [
+                        "id": event.eventIdentifier ?? "",
+                        "calendarId": event.calendar?.calendarIdentifier ?? "",
+                        "title": event.title ?? "No Title",
+                        "notes": event.notes ?? "",
+                        "location": event.location ?? "",
+                        "url": event.url?.absoluteString ?? "",
+                        "start": Int(event.startDate.timeIntervalSince1970 * 1000),
+                        "end": Int(event.endDate.timeIntervalSince1970 * 1000),
+                        "allDay": event.isAllDay
+                    ]
+                }
+
+                if false {
+                    throw NSError(domain: "CalendarBridgeError", code: -1, userInfo: nil)
+                }
+
+                DispatchQueue.main.async {
+                    result(mapped)
+                }
+            } catch {
+                NSLog("[BreakMate Calendar] getEvents exception: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    result([])
+                }
             }
         }
     }
 
     /// Fetches upcoming calendar events within the next `windowMinutes` minutes.
+    /// - Parameters:
+    ///   - windowMinutes: The number of minutes from now to query.
+    ///   - result: Flutter method channel result callback.
     func getUpcomingCalendarEvents(windowMinutes: Int, result: @escaping FlutterResult) {
-        guard isCurrentlyAuthorized else {
+        refreshStore()
+
+        let authorized = hasReadAccess
+        NSLog("[BreakMate Calendar] getUpcomingCalendarEvents starting query check. Authorized: \(authorized)")
+
+        guard authorized else {
             result([])
             return
         }
@@ -204,27 +436,46 @@ class CalendarBridge {
                 return
             }
 
-            let predicate = self.eventStore.predicateForEvents(
-                withStart: start,
-                end: end,
-                calendars: nil
-            )
-            let events = self.eventStore.events(matching: predicate)
+            do {
+                self.logAuthorizationStatus("getUpcomingCalendarEvents-bg")
+                NSLog("[BreakMate Calendar] getUpcomingCalendarEvents background query starting for window \(windowMinutes) minutes...")
 
-            let mapped: [[String: Any]] = events.map { event in
-                [
-                    "id": event.eventIdentifier ?? "",
-                    "calendarId": event.calendar?.calendarIdentifier ?? "",
-                    "title": event.title ?? "No Title",
-                    "notes": event.notes ?? "",
-                    "start": Int(event.startDate.timeIntervalSince1970 * 1000),
-                    "end": Int(event.endDate.timeIntervalSince1970 * 1000),
-                    "allDay": event.isAllDay
-                ]
-            }
+                let threadStore = EKEventStore()
+                let predicate = threadStore.predicateForEvents(
+                    withStart: start,
+                    end: end,
+                    calendars: nil
+                )
+                let events = threadStore.events(matching: predicate)
 
-            DispatchQueue.main.async {
-                result(mapped)
+                NSLog("[BreakMate Calendar] getUpcomingCalendarEvents background query complete. Found \(events.count) events.")
+
+                let mapped: [[String: Any]] = events.map { event in
+                    [
+                        "id": event.eventIdentifier ?? "",
+                        "calendarId": event.calendar?.calendarIdentifier ?? "",
+                        "title": event.title ?? "No Title",
+                        "notes": event.notes ?? "",
+                        "location": event.location ?? "",
+                        "url": event.url?.absoluteString ?? "",
+                        "start": Int(event.startDate.timeIntervalSince1970 * 1000),
+                        "end": Int(event.endDate.timeIntervalSince1970 * 1000),
+                        "allDay": event.isAllDay
+                    ]
+                }
+
+                if false {
+                    throw NSError(domain: "CalendarBridgeError", code: -1, userInfo: nil)
+                }
+
+                DispatchQueue.main.async {
+                    result(mapped)
+                }
+            } catch {
+                NSLog("[BreakMate Calendar] getUpcomingCalendarEvents exception: \(error.localizedDescription)")
+                DispatchQueue.main.async {
+                    result([])
+                }
             }
         }
     }

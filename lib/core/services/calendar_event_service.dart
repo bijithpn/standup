@@ -14,6 +14,14 @@ class CalendarEventService {
     return await _repository.getEvents(now, end);
   }
 
+  Future<List<CalendarEventModel>> getEvents(
+    DateTime start,
+    DateTime end, {
+    List<String>? calendarIds,
+  }) async {
+    return await _repository.getEvents(start, end, calendarIds: calendarIds);
+  }
+
   Future<bool> isMeetingActive() async {
     final now = DateTime.now();
     final events = await _repository.getEvents(

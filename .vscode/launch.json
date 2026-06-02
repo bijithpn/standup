@@ -2,44 +2,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "BreakMate Dev (macOS)",
+      "name": "Dev",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_dev.dart",
-      "args": [
-        "--flavor",
-        "dev"
-      ]
+      "args": ["--flavor", "dev"]
     },
     {
-      "name": "BreakMate Prod (macOS)",
+      "name": "Prod",
       "request": "launch",
       "type": "dart",
       "program": "lib/main_prod.dart",
-      "args": [
-        "--flavor",
-        "prod"
-      ]
-    },
-    {
-      "name": "BreakMate Dev (Windows)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main_dev.dart",
-      "args": [
-        "--flavor",
-        "dev"
-      ]
-    },
-    {
-      "name": "BreakMate Prod (Windows)",
-      "request": "launch",
-      "type": "dart",
-      "program": "lib/main_prod.dart",
-      "args": [
-        "--flavor",
-        "prod"
-      ]
+      "args": ["--flavor", "prod"]
     }
   ]
 }

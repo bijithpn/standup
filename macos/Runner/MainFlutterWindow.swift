@@ -428,6 +428,9 @@ class MainFlutterWindow: NSWindow {
       case "checkIsMainEngine":
         result(true)
 
+      case "debugCalendarState":
+        self.calendarBridge.debugCalendarState(result: result)
+
       case "requestCalendarPermissions":
         self.calendarBridge.requestCalendarPermissions(result: result)
 
