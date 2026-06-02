@@ -214,6 +214,29 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  String? _windowsIcoPath;
+
+  Future<void> _resolveWindowsIcoPath() async {
+    if (_windowsIcoPath != null) return;
+    // The .ico is copied next to the executable during build
+    final exeDir = p.dirname(Platform.resolvedExecutable);
+    final icoPath = p.join(exeDir, 'app_icon.ico');
+    if (File(icoPath).existsSync()) {
+      _windowsIcoPath = icoPath;
+    }
+  }
+
+  Future<void> _applyWindowsIcon() async {
+    try {
+      await _resolveWindowsIcoPath();
+      if (_windowsIcoPath != null) {
+        await trayManager.setIcon(_windowsIcoPath!);
+      }
+    } catch (e) {
+      _logger.error('Failed to set Windows tray icon: $e');
+    }
+  }
+
   PetAnimationState _determineActiveState() {
     if (_isBreakActive) {
       return PetAnimationState.notification;
@@ -227,6 +250,11 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _applyIcon() async {
+    // Windows tray requires .ico files — LoadImage cannot load .png
+    if (Platform.isWindows) {
+      await _applyWindowsIcon();
+      return;
+    }
     try {
       String? path;
       switch (_iconMode) {
@@ -278,7 +306,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         // On macOS, setting the icon sometimes clears the title depending on implementation.
         // Re-apply current title if it exists.
         if (_currentTitle.isNotEmpty) {
-          await trayManager.setTitle(_currentTitle);
+          if (Platform.isMacOS) {
+            await trayManager.setTitle(_currentTitle);
+          }
         }
       } else if (!isPathValid && _defaultIconPath != null) {
         // Fallback to default if primary failed
@@ -331,6 +361,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   void _updateTimerSpeed() {
     _animTimer?.cancel();
     if (_iconMode != TrayIconMode.companion) return;
+    if (Platform.isWindows) return; // Windows uses static .ico, no animation
 
     final settingsRepo = sl<SettingsRepository>();
     final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
@@ -553,13 +584,30 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   Future<void> setTrayTitle(String title) async {
     _currentTitle = title;
     try {
-      await trayManager.setTitle(title);
+      if (Platform.isMacOS) {
+        await trayManager.setTitle(title);
+      } else if (Platform.isWindows && title.isNotEmpty) {
+        // Windows doesn't support tray title — show countdown in tooltip instead
+        final tooltip = title.isNotEmpty && _currentTooltip.isNotEmpty
+            ? '$title — $_currentTooltip'
+            : title.isNotEmpty
+                ? title
+                : _currentTooltip;
+        await trayManager.setToolTip(tooltip);
+      }
     } catch (_) {}
   }
 
+  String _currentTooltip = '';
+
   Future<void> setTooltip(String tooltip) async {
+    _currentTooltip = tooltip;
     try {
-      await trayManager.setToolTip(tooltip);
+      if (Platform.isWindows && _currentTitle.isNotEmpty) {
+        await trayManager.setToolTip('$_currentTitle — $tooltip');
+      } else {
+        await trayManager.setToolTip(tooltip);
+      }
     } catch (_) {}
   }
 

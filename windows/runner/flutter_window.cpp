@@ -8,8 +8,11 @@
 #include <flutter/event_stream_handler.h>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "calendar_bridge.h"
 #include "bridge_utils.h"
+#include "overlay_window_manager.h"
 #include "companion_window_manager.h"
+#include "ipc_bridge_manager.h"
 #include "overlay_window_plugin.h"
 #include "display_bridge.h"
 
@@ -133,6 +136,9 @@ bool FlutterWindow::OnCreate() {
   
   // Register the custom overlay window plugin (needed by both main and companion)
   RegisterOverlayWindowPlugin(flutter_controller_->engine());
+
+  // Register this engine with the IPC bridge so com.breakmate/ipc works
+  IpcBridgeManager::GetInstance()->RegisterEngine(flutter_controller_->engine());
 
   if (is_companion_) {
     // Companion window: only set up channels the companion widget needs.
@@ -340,11 +346,44 @@ void FlutterWindow::SetupBridge() {
           result->Success();
         }
         else if (method_name == "showOverlay") {
-           ConfigureAsOverlay();
+           const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+           std::map<std::string, flutter::EncodableValue> params;
+           bool strict = false;
+           if (args) {
+             for (const auto& kv : *args) {
+                 if (std::holds_alternative<std::string>(kv.first)) {
+                     params[std::get<std::string>(kv.first)] = kv.second;
+                 }
+             }
+             auto it = params.find("strictMode");
+             if (it != params.end() && std::holds_alternative<bool>(it->second)) {
+                 strict = std::get<bool>(it->second);
+             }
+           }
+           OverlayWindowManager::GetInstance()->ShowOverlay(strict, params);
+           if (args) {
+               // Schedule a delayed update to ensure Dart is ready
+               auto map = *args;
+               HWND hwnd = GetHandle();
+               std::thread([hwnd, map]() {
+                   Sleep(1000);
+                   auto* task = new std::function<void()>([map]() {
+                       OverlayWindowManager::GetInstance()->UpdateOverlayData(map);
+                   });
+                   PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+               }).detach();
+           }
+           result->Success();
+        }
+        else if (method_name == "updateOverlayData") {
+           const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+           if (args) {
+               OverlayWindowManager::GetInstance()->UpdateOverlayData(*args);
+           }
            result->Success();
         }
         else if (method_name == "hideOverlay") {
-           ResetToNormal();
+           OverlayWindowManager::GetInstance()->HideOverlay();
            result->Success();
         }
         else if (method_name == "setIgnoreMouseEvents") {
@@ -417,13 +456,40 @@ void FlutterWindow::SetupBridge() {
            result->Success();
         }
         else if (method_name == "requestCalendarPermissions") {
-          result->Success(flutter::EncodableValue(calendar_bridge_->RequestCalendarPermissions()));
+          auto result_ptr = std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>>(std::move(result));
+          HWND hwnd = GetHandle();
+          std::thread([this, hwnd, result_ptr]() {
+            winrt::init_apartment();
+            auto perm = calendar_bridge_->RequestCalendarPermissions();
+            auto* task = new std::function<void()>([perm, result_ptr]() {
+              result_ptr->Success(flutter::EncodableValue(perm));
+            });
+            PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+          }).detach();
         }
         else if (method_name == "hasCalendarPermissions") {
-          result->Success(flutter::EncodableValue(calendar_bridge_->GetCalendarPermissionStatus() == "granted"));
+          auto result_ptr = std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>>(std::move(result));
+          HWND hwnd = GetHandle();
+          std::thread([this, hwnd, result_ptr]() {
+            winrt::init_apartment();
+            auto status = calendar_bridge_->GetCalendarPermissionStatus();
+            auto* task = new std::function<void()>([status, result_ptr]() {
+              result_ptr->Success(flutter::EncodableValue(status == "granted"));
+            });
+            PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+          }).detach();
         }
         else if (method_name == "getCalendarPermissionStatus") {
-          result->Success(flutter::EncodableValue(calendar_bridge_->GetCalendarPermissionStatus()));
+          auto result_ptr = std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>>(std::move(result));
+          HWND hwnd = GetHandle();
+          std::thread([this, hwnd, result_ptr]() {
+            winrt::init_apartment();
+            auto status = calendar_bridge_->GetCalendarPermissionStatus();
+            auto* task = new std::function<void()>([status, result_ptr]() {
+              result_ptr->Success(flutter::EncodableValue(status));
+            });
+            PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+          }).detach();
         }
         else if (method_name == "openCalendarSettings") {
           calendar_bridge_->OpenCalendarSettings();
@@ -444,10 +510,28 @@ void FlutterWindow::SetupBridge() {
               }
             }
           }
-          result->Success(flutter::EncodableValue(calendar_bridge_->GetUpcomingCalendarEvents(minutes)));
+          auto result_ptr = std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>>(std::move(result));
+          HWND hwnd = GetHandle();
+          std::thread([this, hwnd, minutes, result_ptr]() {
+            winrt::init_apartment();
+            auto events = calendar_bridge_->GetUpcomingCalendarEvents(minutes);
+            auto* task = new std::function<void()>([events, result_ptr]() {
+              result_ptr->Success(flutter::EncodableValue(events));
+            });
+            PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+          }).detach();
         }
         else if (method_name == "getCalendars") {
-          result->Success(flutter::EncodableValue(calendar_bridge_->GetCalendars()));
+          auto result_ptr = std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>>(std::move(result));
+          HWND hwnd = GetHandle();
+          std::thread([this, hwnd, result_ptr]() {
+            winrt::init_apartment();
+            auto calendars = calendar_bridge_->GetCalendars();
+            auto* task = new std::function<void()>([calendars, result_ptr]() {
+              result_ptr->Success(flutter::EncodableValue(calendars));
+            });
+            PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+          }).detach();
         }
         else if (method_name == "getEvents") {
           int64_t start_ms = 0;
@@ -485,7 +569,16 @@ void FlutterWindow::SetupBridge() {
               }
             }
           }
-          result->Success(flutter::EncodableValue(calendar_bridge_->GetEvents(start_ms, end_ms, calendar_ids)));
+          auto result_ptr = std::shared_ptr<flutter::MethodResult<flutter::EncodableValue>>(std::move(result));
+          HWND hwnd = GetHandle();
+          std::thread([this, hwnd, start_ms, end_ms, calendar_ids, result_ptr]() {
+            winrt::init_apartment();
+            auto events = calendar_bridge_->GetEvents(start_ms, end_ms, calendar_ids);
+            auto* task = new std::function<void()>([events, result_ptr]() {
+              result_ptr->Success(flutter::EncodableValue(events));
+            });
+            PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
+          }).detach();
         }
 
         else {
@@ -501,6 +594,7 @@ void FlutterWindow::OnDestroy() {
     keyboard_hook_ = nullptr;
   }
   if (flutter_controller_) {
+    IpcBridgeManager::GetInstance()->UnregisterEngine(flutter_controller_->engine());
     flutter_controller_ = nullptr;
   }
 
@@ -613,20 +707,16 @@ void FlutterWindow::SetupOverlayBridge() {
   overlay_channel_->SetMethodCallHandler(
       [this](const auto& call, auto result) {
         const std::string& method_name = call.method_name();
-        const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
 
         if (method_name == "setStrictMode") {
-          if (args) {
-            auto enabled_it = args->find(flutter::EncodableValue("enabled"));
-            if (enabled_it != args->end()) {
-              // On Windows, strict mode means always on top + focus
-              bool enabled = std::get<bool>(enabled_it->second);
-              if (enabled) {
-                SetWindowPos(GetHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-                SetForegroundWindow(GetHandle());
-              } else {
-                SetWindowPos(GetHandle(), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-              }
+          const auto* enabled = std::get_if<bool>(call.arguments());
+          if (enabled) {
+            // On Windows, strict mode means always on top + focus
+            if (*enabled) {
+              SetWindowPos(GetHandle(), HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
+              SetForegroundWindow(GetHandle());
+            } else {
+              SetWindowPos(GetHandle(), HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
             }
           }
           result->Success();
@@ -652,6 +742,14 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case WM_USER + 10: {
+      auto* task = reinterpret_cast<std::function<void()>*>(wparam);
+      if (task) {
+        (*task)();
+        delete task;
+      }
+      return 0;
+    }
     case WM_DISPLAYCHANGE:
     case WM_DPICHANGED:
       if (g_display_stream_handler) {

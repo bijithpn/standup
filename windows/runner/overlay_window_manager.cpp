@@ -1,0 +1,82 @@
+#include "overlay_window_manager.h"
+#include <windows.h>
+#include "ipc_bridge_manager.h"
+
+OverlayWindowManager* OverlayWindowManager::instance_ = nullptr;
+
+OverlayWindowManager* OverlayWindowManager::GetInstance() {
+  if (!instance_) {
+    instance_ = new OverlayWindowManager();
+  }
+  return instance_;
+}
+
+OverlayWindowManager::OverlayWindowManager() {}
+
+OverlayWindowManager::~OverlayWindowManager() {
+  HideOverlay();
+}
+
+void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
+  if (!overlay_windows_.empty()) {
+    return; // Already showing
+  }
+
+  auto monitor_enum_proc = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
+    auto windows = reinterpret_cast<std::vector<std::unique_ptr<FlutterWindow>>*>(dwData);
+
+    flutter::DartProject project(L"data");
+    project.set_dart_entrypoint("overlayMain");
+
+    auto window = std::make_unique<FlutterWindow>(project);
+    window->SetIsOverlay(true);
+
+    Win32Window::Point origin(lprcMonitor->left, lprcMonitor->top);
+    Win32Window::Size size(lprcMonitor->right - lprcMonitor->left, lprcMonitor->bottom - lprcMonitor->top);
+
+    if (window->Create(L"StandupOverlay", origin, size)) {
+      window->SetQuitOnClose(false);
+      window->ConfigureAsOverlay(); // Note: we need to update ConfigureAsOverlay to position properly
+      
+      // Override position to this monitor
+      SetWindowPos(window->GetHandle(), HWND_TOPMOST,
+                   lprcMonitor->left, lprcMonitor->top,
+                   lprcMonitor->right - lprcMonitor->left,
+                   lprcMonitor->bottom - lprcMonitor->top,
+                   SWP_NOACTIVATE);
+
+      window->Show();
+      IpcBridgeManager::GetInstance()->RegisterEngine(window->GetEngine());
+      windows->push_back(std::move(window));
+    }
+    return TRUE;
+  };
+
+  EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, reinterpret_cast<LPARAM>(&overlay_windows_));
+  
+  // Optionally, we could send initial `args` via IPC if needed.
+}
+
+void OverlayWindowManager::HideOverlay() {
+  for (auto& window : overlay_windows_) {
+    if (window && window->GetEngine()) {
+      IpcBridgeManager::GetInstance()->UnregisterEngine(window->GetEngine());
+    }
+    if (window) {
+      window->Destroy();
+    }
+  }
+  overlay_windows_.clear();
+}
+
+void OverlayWindowManager::UpdateOverlayData(const flutter::EncodableMap& data) {
+  for (auto& window : overlay_windows_) {
+    if (window && window->GetEngine()) {
+      auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
+          &flutter::StandardMethodCodec::GetInstance());
+      
+      channel->InvokeMethod("updateOverlayData", std::make_unique<flutter::EncodableValue>(data));
+    }
+  }
+}

@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include <winrt/Windows.Foundation.h>
+
 class CalendarBridge {
  public:
   CalendarBridge();
