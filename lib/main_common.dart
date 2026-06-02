@@ -252,6 +252,16 @@ void mainCommon(FlavorConfig config) async {
 
         WidgetsFlutterBinding.ensureInitialized();
         logStartup('WidgetsFlutterBinding.ensureInitialized');
+
+        if (Platform.isMacOS) {
+          try {
+            final Map<dynamic, dynamic>? debugResult = await const MethodChannel('com.breakmate.desktop/bridge')
+                .invokeMethod<Map<dynamic, dynamic>>('debugCalendarState');
+            debugPrint('🔥 Startup debugCalendarState result: $debugResult');
+          } catch (e) {
+            debugPrint('🔥 Startup debugCalendarState failed: $e');
+          }
+        }
         
         bool isActualMain = true;
         if (Platform.isMacOS) {

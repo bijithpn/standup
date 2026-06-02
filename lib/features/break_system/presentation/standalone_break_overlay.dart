@@ -1,5 +1,6 @@
 import 'dart:async' show Timer;
 
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -197,6 +198,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 orElse: () => _currentTheme,
               );
             }
+            // Use the coordinator-chosen image so all displays show the same one
+            if (args['classicImage'] != null) {
+              _currentTemplate = args['classicImage'] as String;
+            }
             if (args['breakTemplate'] != null) {
               _breakTemplate = args['breakTemplate'];
             } else if (args['template'] != null) {
@@ -220,12 +225,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               _reminderType = args['reminderType'];
             }
 
-            // Auto-dismiss quick reminders after 2 seconds
+            // Auto-dismiss quick reminders after 5 seconds (breakStart gets more time)
             if (_overlayType == 'quickReminder') {
-              _fadeController.duration = const Duration(milliseconds: 250);
-              Future.delayed(const Duration(seconds: 2), () {
-                if (mounted) _skipBreak();
+              _fadeController.duration = const Duration(milliseconds: 400);
+              final dismissDelay = _reminderType == 'breakStart'
+                  ? Duration(seconds: _remainingSeconds.clamp(5, 30))
+                  : const Duration(seconds: 5);
+              Future.delayed(dismissDelay, () {
+                if (mounted && _overlayType == 'quickReminder') _skipBreak();
               });
+            } else {
+              // Reset to default duration for normal break screens
+              _fadeController.duration = const Duration(milliseconds: 600);
             }
           });
         }
@@ -254,7 +265,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _skipBreak() {
     // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
-      NativeBridge.skipBreak();
+      if (_isInternalPreview) {
+        // If it's a preview, just hide the overlay without notifying
+        // the main engine or recording a skipped break in the DB.
+        _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
+      } else {
+        NativeBridge.skipBreak();
+      }
     });
   }
 
@@ -437,6 +454,53 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             ),
           ),
         ),
+        if (_isInternalPreview)
+          Positioned(
+            top: 32,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentColor.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.eye_fill,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'PREVIEW MODE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (!_strictMode)
           Positioned(
             top: 28,
@@ -486,6 +550,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   Widget _buildQuickReminder() {
     final isPosture = _reminderType == 'posture';
     final isBreakStart = _reminderType == 'breakStart';
+
+    if (isBreakStart) {
+      return _buildBreakStartWarning();
+    }
+
     return Center(
       child: ScaleTransition(
         scale: Tween<double>(begin: 0.9, end: 1.0).animate(
@@ -524,9 +593,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
-                  isBreakStart
-                      ? CupertinoIcons.timer
-                      : isPosture
+                  isPosture
                       ? CupertinoIcons.person_crop_circle_badge_checkmark
                       : CupertinoIcons.eye,
                   color: Colors.white,
@@ -535,11 +602,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
               const SizedBox(height: 24),
               Text(
-                isBreakStart
-                    ? 'Break Starts Soon'
-                    : isPosture
-                    ? 'Check Your Posture'
-                    : 'Rest Your Eyes',
+                isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -550,9 +613,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
               const SizedBox(height: 12),
               Text(
-                isBreakStart
-                    ? 'You have ${_remainingSeconds.clamp(0, 999)} seconds to save your work and pause cleanly.'
-                    : isPosture
+                isPosture
                     ? 'Sit up straight, relax your neck, and drop your shoulders.'
                     : 'Blink a few times and focus on something far away.',
                 textAlign: TextAlign.center,
@@ -567,6 +628,198 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBreakStartWarning() {
+    const amber = Color(0xFFF59E0B);
+    const amberDark = Color(0xFFD97706);
+    final secs = _remainingSeconds.clamp(0, 999);
+
+    return Center(
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.88, end: 1.0).animate(
+          CurvedAnimation(
+            parent: _fadeController,
+            curve: Curves.easeOutBack,
+            reverseCurve: Curves.easeIn,
+          ),
+        ),
+        child: Container(
+          width: 420,
+          padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1A1500).withValues(alpha: 0.97),
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: amber.withValues(alpha: 0.45), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: amber.withValues(alpha: 0.18),
+                blurRadius: 48,
+                spreadRadius: 8,
+                offset: const Offset(0, 8),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.55),
+                blurRadius: 24,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Top label pill
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: amber.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(color: amber.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: amber,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'POSTURE BREAK',
+                      style: TextStyle(
+                        color: amber,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.4,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Icon
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  gradient: RadialGradient(
+                    colors: [
+                      amber.withValues(alpha: 0.25),
+                      amberDark.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: amber.withValues(alpha: 0.3), width: 1.5),
+                ),
+                child: const Icon(
+                  CupertinoIcons.person_fill,
+                  color: amber,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              const Text(
+                'Break Starts Soon',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  fontFamily: 'Inter',
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Subtitle
+              Text(
+                'Wrap up what you\'re doing. A posture break\nis coming in just a moment.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.55),
+                  fontSize: 14,
+                  fontFamily: 'Inter',
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              // Countdown
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  color: amber.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: amber.withValues(alpha: 0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '$secs',
+                      style: const TextStyle(
+                        color: amber,
+                        fontSize: 52,
+                        fontWeight: FontWeight.w200,
+                        fontFamily: 'Inter',
+                        letterSpacing: -2,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'seconds remaining',
+                      style: TextStyle(
+                        color: amber.withValues(alpha: 0.7),
+                        fontSize: 12,
+                        fontFamily: 'Inter',
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Tips row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildWarningTip(CupertinoIcons.arrow_up_to_line, 'Sit up straight'),
+                  const SizedBox(width: 16),
+                  _buildWarningTip(CupertinoIcons.hand_raised, 'Save your work'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWarningTip(IconData icon, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: Colors.white.withValues(alpha: 0.4)),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.45),
+            fontSize: 12,
+            fontFamily: 'Inter',
+          ),
+        ),
+      ],
     );
   }
 

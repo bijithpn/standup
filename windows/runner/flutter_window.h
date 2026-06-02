@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "win32_window.h"
+#include "calendar_bridge.h"
 
 // A window that does nothing but host a Flutter view.
 class FlutterWindow : public Win32Window {
@@ -89,6 +90,8 @@ class FlutterWindow : public Win32Window {
   LONG original_style_ = 0;
   LONG original_ex_style_ = 0;
   bool is_overlay_mode_ = false;
+
+  std::unique_ptr<CalendarBridge> calendar_bridge_;
 
   static HHOOK keyboard_hook_;
   static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);

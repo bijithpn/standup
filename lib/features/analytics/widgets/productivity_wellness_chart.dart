@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 class ProductivityWellnessChart extends StatelessWidget {
@@ -8,16 +9,46 @@ class ProductivityWellnessChart extends StatelessWidget {
 
   const ProductivityWellnessChart({super.key, required this.stats});
 
+  /// Build a Sun–Sat grid for the current week, mapped by date.
+  List<_WeekSlot> _buildWeekSlots() {
+    final now = DateTime.now();
+    final daysFromSunday = now.weekday % 7;
+    final sunday = DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: daysFromSunday));
+
+    final Map<String, DailyStats> byDate = {
+      for (final d in stats.weeklyData) d.date: d,
+    };
+
+    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    return List.generate(7, (i) {
+      final day = sunday.add(Duration(days: i));
+      final dateStr =
+          '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+      final s = byDate[dateStr];
+      final isToday = day.year == now.year &&
+          day.month == now.month &&
+          day.day == now.day;
+      return _WeekSlot(
+        label: labels[i],
+        breaksCompleted: s?.breaksCompleted ?? 0,
+        wellnessActions: s?.wellnessActions ?? 0,
+        isToday: isToday,
+        isFuture: day.isAfter(now),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Determine max value for scaling
-    double maxValue = 10;
-    for (final day in stats.weeklyData) {
-      final productivity = day.breaksCompleted.toDouble();
-      final wellness = day.wellnessActions.toDouble();
-      if (productivity > maxValue) maxValue = productivity;
-      if (wellness > maxValue) maxValue = wellness;
+    final slots = _buildWeekSlots();
+
+    double maxValue = 5;
+    for (final s in slots) {
+      if (s.breaksCompleted > maxValue) maxValue = s.breaksCompleted.toDouble();
+      if (s.wellnessActions > maxValue) maxValue = s.wellnessActions.toDouble();
     }
+    maxValue += 2;
 
     return Container(
       height: 300,
@@ -41,20 +72,20 @@ class ProductivityWellnessChart extends StatelessWidget {
               _buildLegendRow(),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
           Expanded(
             child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
-                maxY: maxValue + 2,
+                maxY: maxValue,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (group) =>
-                        Colors.black.withValues(alpha: 0.8),
+                    getTooltipColor: (_) =>
+                        Colors.black.withValues(alpha: 0.85),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final day = stats.weeklyData[groupIndex];
+                      final slot = slots[groupIndex];
                       return BarTooltipItem(
-                        '${day.dayName}\n',
+                        '${slot.label}\n',
                         const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -62,7 +93,7 @@ class ProductivityWellnessChart extends StatelessWidget {
                         ),
                         children: [
                           TextSpan(
-                            text: 'Productivity: ${day.breaksCompleted}\n',
+                            text: 'Breaks: ${slot.breaksCompleted}\n',
                             style: TextStyle(
                               color: AppTheme.accentColor,
                               fontWeight: FontWeight.w600,
@@ -70,9 +101,9 @@ class ProductivityWellnessChart extends StatelessWidget {
                             ),
                           ),
                           TextSpan(
-                            text: 'Wellness: ${day.wellnessActions}',
+                            text: 'Wellness: ${slot.wellnessActions}',
                             style: const TextStyle(
-                              color: Color(0xFF10B981), // Success green
+                              color: Color(0xFF10B981),
                               fontWeight: FontWeight.w600,
                               fontSize: 11,
                             ),
@@ -87,23 +118,29 @@ class ProductivityWellnessChart extends StatelessWidget {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
+                      reservedSize: 28,
                       getTitlesWidget: (value, meta) {
-                        if (value.toInt() >= 0 &&
-                            value.toInt() < stats.weeklyData.length) {
-                          return SideTitleWidget(
-                            meta: meta,
-                            space: 10,
-                            child: Text(
-                              stats.weeklyData[value.toInt()].dayName,
-                              style: const TextStyle(
-                                color: AppTheme.textMuted,
-                                fontSize: 10,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          );
+                        final i = value.round();
+                        if (i < 0 || i >= slots.length) {
+                          return const SizedBox.shrink();
                         }
-                        return const SizedBox.shrink();
+                        final slot = slots[i];
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 6,
+                          child: Text(
+                            slot.label,
+                            style: TextStyle(
+                              color: slot.isToday
+                                  ? AppTheme.accentColor
+                                  : AppTheme.textMuted,
+                              fontSize: 10,
+                              fontWeight: slot.isToday
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
+                          ),
+                        );
                       },
                     ),
                   ),
@@ -117,26 +154,34 @@ class ProductivityWellnessChart extends StatelessWidget {
                     sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
-                gridData: const FlGridData(show: false),
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: maxValue > 10 ? 5 : 2,
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: AppTheme.textMuted.withValues(alpha: 0.08),
+                    strokeWidth: 1,
+                  ),
+                ),
                 borderData: FlBorderData(show: false),
-                barGroups: stats.weeklyData.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final day = entry.value;
+                barGroups: slots.asMap().entries.map((e) {
+                  final i = e.key;
+                  final slot = e.value;
+                  final opacity = slot.isFuture ? 0.25 : 1.0;
                   return BarChartGroupData(
-                    x: index,
+                    x: i,
+                    groupVertically: false,
                     barRods: [
-                      // Productivity Rod (Breaks Completed)
                       BarChartRodData(
-                        toY: day.breaksCompleted.toDouble(),
-                        color: AppTheme.accentColor,
-                        width: 8,
+                        toY: slot.breaksCompleted.toDouble(),
+                        color: AppTheme.accentColor.withValues(alpha: opacity),
+                        width: 9,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      // Wellness Rod (Wellness Actions)
                       BarChartRodData(
-                        toY: day.wellnessActions.toDouble(),
-                        color: const Color(0xFF10B981), // Success green
-                        width: 8,
+                        toY: slot.wellnessActions.toDouble(),
+                        color: const Color(0xFF10B981).withValues(alpha: opacity),
+                        width: 9,
                         borderRadius: BorderRadius.circular(4),
                       ),
                     ],
@@ -154,7 +199,7 @@ class ProductivityWellnessChart extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _legendItem('Productivity', AppTheme.accentColor),
+        _legendItem('Breaks', AppTheme.accentColor),
         const SizedBox(width: 12),
         _legendItem('Wellness', const Color(0xFF10B981)),
       ],
@@ -182,4 +227,20 @@ class ProductivityWellnessChart extends StatelessWidget {
       ],
     );
   }
+}
+
+class _WeekSlot {
+  final String label;
+  final int breaksCompleted;
+  final int wellnessActions;
+  final bool isToday;
+  final bool isFuture;
+
+  const _WeekSlot({
+    required this.label,
+    required this.breaksCompleted,
+    required this.wellnessActions,
+    required this.isToday,
+    required this.isFuture,
+  });
 }

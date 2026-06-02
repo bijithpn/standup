@@ -31,8 +31,11 @@ abstract class NativeBridgePlatform {
   // Calendar Support
   Future<bool> requestCalendarPermissions();
   Future<bool> hasCalendarPermissions();
+  Future<String> getCalendarPermissionStatus();
   Future<void> openCalendarSettings();
   Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(int windowMinutes);
+  Future<List<Map<String, dynamic>>> getCalendars();
+  Future<List<Map<String, dynamic>>> getEvents(int startMs, int endMs, List<String>? calendarIds);
 }
 
 /// A fallback/no-op implementation for unsupported platforms
@@ -109,11 +112,25 @@ class FallbackBridge implements NativeBridgePlatform {
   Future<bool> hasCalendarPermissions() async => false;
 
   @override
+  Future<String> getCalendarPermissionStatus() async => 'denied';
+
+  @override
   Future<void> openCalendarSettings() async {}
 
   @override
   Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(
     int windowMinutes,
+  ) async =>
+      [];
+
+  @override
+  Future<List<Map<String, dynamic>>> getCalendars() async => [];
+
+  @override
+  Future<List<Map<String, dynamic>>> getEvents(
+    int startMs,
+    int endMs,
+    List<String>? calendarIds,
   ) async =>
       [];
 }
@@ -176,10 +193,20 @@ class NativeBridge {
       _platform.requestCalendarPermissions();
   static Future<bool> hasCalendarPermissions() =>
       _platform.hasCalendarPermissions();
+  static Future<String> getCalendarPermissionStatus() =>
+      _platform.getCalendarPermissionStatus();
   static Future<void> openCalendarSettings() =>
       _platform.openCalendarSettings();
   static Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(
     int windowMinutes,
   ) =>
       _platform.getUpcomingCalendarEvents(windowMinutes);
+  static Future<List<Map<String, dynamic>>> getCalendars() =>
+      _platform.getCalendars();
+  static Future<List<Map<String, dynamic>>> getEvents(
+    int startMs,
+    int endMs,
+    List<String>? calendarIds,
+  ) =>
+      _platform.getEvents(startMs, endMs, calendarIds);
 }

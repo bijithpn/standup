@@ -555,20 +555,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
 
   void _showBreakTemplatePreview() {
     try {
-      // Show a demo break overlay with current template style
       final controller = sl<BreakController>();
-
-      // Trigger a short preview break
-      controller.timerEngine.triggerBreakNow(isLong: false);
-
-      // Auto-hide after 10 seconds
-      Future.delayed(const Duration(seconds: 10), () {
-        if (controller.timerEngine.activeBreak != null &&
-            controller.timerEngine.countdownSeconds <= 10) {
-          // Complete the break early if it's still the preview
-          controller.skipCurrentBreak();
-        }
-      });
+      controller.previewBreak();
 
       if (mounted) {
         Toast.showSuccess(

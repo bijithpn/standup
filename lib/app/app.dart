@@ -6,8 +6,6 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/features/break_system/presentation/break_overlay.dart';
-import 'package:breakmate/features/break_system/presentation/pre_break_warning_overlay.dart';
 
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -114,8 +112,8 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                                 offstage: isOverlayVisible || isBreakActive,
                                 child: const MainLayout(),
                               ),
-                              const BreakOverlay(),
-                              const PreBreakWarningOverlay(),
+                              // ⚠️ REDUNDANT: All overlays are now managed exclusively 
+                              // by the native OverlayWindowManager.
                             ],
                           ),
                         );

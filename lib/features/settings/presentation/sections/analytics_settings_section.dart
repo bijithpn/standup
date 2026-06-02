@@ -18,25 +18,28 @@ class AnalyticsSettingsSection extends StatefulWidget {
 }
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
-  int _selectedFilter = 0; // 0: Today, 1: Week
+  int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
 
   StatsModel get _stats => widget.stats;
 
   @override
   Widget build(BuildContext context) {
+    // Recalculate view-specific metrics based on filter
+    final viewMetrics = _calculateViewMetrics();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
         const SizedBox(height: 24),
         WellnessScoreCard(
-          productivityScore: _stats.productivityScore,
-          wellnessScore: _stats.wellnessScore,
+          productivityScore: viewMetrics.productivityScore,
+          wellnessScore: viewMetrics.wellnessScore,
         ),
         const SizedBox(height: 24),
         _buildTrendSection(),
         const SizedBox(height: 24),
-        _buildDetailGrid(),
+        _buildDetailGrid(viewMetrics),
         const SizedBox(height: 48),
       ],
     );
@@ -49,9 +52,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 AppStrings.analytics,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -59,9 +62,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
+              const Text(
                 AppStrings.analyticsSubtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   color: AppTheme.textSecondary,
                 ),
@@ -70,7 +73,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           ),
         ),
         segmentedControl(
-          ['Today', 'This Week'],
+          ['Today', 'This Week', 'Month'],
           _selectedFilter,
           (i) => setState(() => _selectedFilter = i),
         ),
@@ -79,9 +82,31 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   }
 
   Widget _buildTrendSection() {
+    final isMonth = _selectedFilter == 2;
+    final periodLabel = isMonth
+        ? 'This Month'
+        : _selectedFilter == 1
+        ? 'This Week'
+        : 'Today';
+    final chartPeriod = isMonth
+        ? ChartPeriod.month
+        : _selectedFilter == 1
+            ? ChartPeriod.week
+            : ChartPeriod.today;
+    final chartTitle = _selectedFilter == 0
+        ? "Today's Breakdown"
+        : _selectedFilter == 1
+            ? 'Weekly Completion'
+            : 'Monthly Overview';
+    final chartSubtitle = _selectedFilter == 0
+        ? 'Completed vs skipped breaks today.'
+        : _selectedFilter == 1
+            ? 'Break completions for each day this week.'
+            : 'Total breaks completed per week this month.';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,9 +117,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    AppStrings.completionTrend,
-                    style: TextStyle(
+                  Text(
+                    chartTitle,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimary,
@@ -102,7 +127,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    AppStrings.completionTrendSubtitle,
+                    chartSubtitle,
                     style: const TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
@@ -120,7 +145,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
-                  'Last 7 Days',
+                  periodLabel,
                   style: TextStyle(
                     color: AppTheme.accentColor,
                     fontSize: 10,
@@ -134,17 +159,21 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           const SizedBox(height: 24),
           SizedBox(
             height: 180,
-            child: ProductivityTrendChart(weeklyData: _stats.weeklyData),
+            child: ProductivityTrendChart(
+              weeklyData: _stats.weeklyData,
+              period: chartPeriod,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDetailGrid() {
-    // Determine which stats to show based on filter
+  _ViewMetrics _calculateViewMetrics() {
     int breaksCompleted;
+    int breaksSkipped;
     int usageMinutes;
+    int wellnessActions;
     int streak;
     int successRate;
 
@@ -157,27 +186,79 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           breaksCompleted: 0,
           breaksSkipped: 0,
           usageMinutes: 0,
+          wellnessActions: 0,
         ),
       );
       breaksCompleted = today.breaksCompleted;
+      breaksSkipped = today.breaksSkipped;
       usageMinutes = today.usageMinutes;
+      wellnessActions = today.wellnessActions;
       streak = _stats.currentStreak;
       final total = today.breaksCompleted + today.breaksSkipped;
       successRate = total > 0 ? (today.breaksCompleted * 100 ~/ total) : 0;
     } else {
-      // THIS WEEK
-      breaksCompleted = _stats.weeklyData.fold(
-        0,
-        (sum, d) => sum + d.breaksCompleted,
-      );
-      usageMinutes = _stats.weeklyData.fold(
-        0,
-        (sum, d) => sum + d.usageMinutes,
-      );
+      // THIS WEEK or MONTH — aggregate available data
+      final List<DailyStats> rangeData;
+      if (_selectedFilter == 2) {
+        // Month: current calendar month
+        final now = DateTime.now();
+        rangeData = _stats.weeklyData.where((d) {
+          final parts = d.date.split('-');
+          if (parts.length < 2) return false;
+          return int.tryParse(parts[0]) == now.year &&
+              int.tryParse(parts[1]) == now.month;
+        }).toList();
+      } else {
+        // Week: last 7 days
+        rangeData = _stats.weeklyData.length > 7
+            ? _stats.weeklyData.sublist(_stats.weeklyData.length - 7)
+            : _stats.weeklyData;
+      }
+
+      breaksCompleted = rangeData.fold(0, (sum, d) => sum + d.breaksCompleted);
+      breaksSkipped = rangeData.fold(0, (sum, d) => sum + d.breaksSkipped);
+      usageMinutes = rangeData.fold(0, (sum, d) => sum + d.usageMinutes);
+      wellnessActions = rangeData.fold(0, (sum, d) => sum + d.wellnessActions);
       streak = _stats.longestStreak;
-      successRate = (_stats.completionRate * 100).toInt();
+
+      final total = breaksCompleted + breaksSkipped;
+      successRate = total > 0 ? (breaksCompleted * 100 ~/ total) : 0;
     }
 
+    // Dynamic score calculation for the view
+    final completionRate = successRate / 100.0;
+
+    // Productivity Score calculation
+    int productivityScore = (completionRate * 60).round();
+    if (_selectedFilter == 0) {
+      // Scale daily productivity by target (e.g. 6 breaks)
+      const dailyTarget = 6;
+      final targetCompletion = (breaksCompleted / dailyTarget).clamp(0.0, 1.0);
+      productivityScore += (targetCompletion * 40).round();
+    } else {
+      // Scale weekly productivity by consistency and streak
+      productivityScore += (streak.clamp(0, 7) / 7 * 40).round();
+    }
+    productivityScore = productivityScore.clamp(5, 100);
+
+    // Wellness Score calculation
+    int wellnessScore = (completionRate * 40).round();
+    final targetActions = _selectedFilter == 0 ? 5 : 30;
+    final actionCompletion = (wellnessActions / targetActions).clamp(0.0, 1.0);
+    wellnessScore += (actionCompletion * 60).round();
+    wellnessScore = wellnessScore.clamp(5, 100);
+
+    return _ViewMetrics(
+      breaksCompleted: breaksCompleted,
+      usageMinutes: usageMinutes,
+      streak: streak,
+      successRate: successRate,
+      productivityScore: productivityScore,
+      wellnessScore: wellnessScore,
+    );
+  }
+
+  Widget _buildDetailGrid(_ViewMetrics metrics) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
@@ -191,28 +272,28 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           children: [
             _buildStatCard(
               AppStrings.completed,
-              '$breaksCompleted',
+              '${metrics.breaksCompleted}',
               AppStrings.statsSessions,
               CupertinoIcons.checkmark_seal,
               AppTheme.success,
             ),
             _buildStatCard(
               'Active Time',
-              '$usageMinutes',
+              '${metrics.usageMinutes}',
               'MIN',
               CupertinoIcons.stopwatch,
               AppTheme.accent,
             ),
             _buildStatCard(
               _selectedFilter == 0 ? 'Current Streak' : 'Longest Streak',
-              '$streak',
+              '${metrics.streak}',
               'DAYS',
               CupertinoIcons.flame,
               AppTheme.warning,
             ),
             _buildStatCard(
               'Success Rate',
-              '$successRate%',
+              '${metrics.successRate}',
               '%',
               CupertinoIcons.graph_circle,
               AppTheme.info,
@@ -287,5 +368,22 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       ),
     );
   }
+}
 
+class _ViewMetrics {
+  final int breaksCompleted;
+  final int usageMinutes;
+  final int streak;
+  final int successRate;
+  final int productivityScore;
+  final int wellnessScore;
+
+  _ViewMetrics({
+    required this.breaksCompleted,
+    required this.usageMinutes,
+    required this.streak,
+    required this.successRate,
+    required this.productivityScore,
+    required this.wellnessScore,
+  });
 }

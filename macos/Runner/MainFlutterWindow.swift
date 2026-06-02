@@ -1,6 +1,5 @@
 import Cocoa
 import FlutterMacOS
-import EventKit
 
 class OverlayPanel: NSPanel {
     var isReminder: Bool = false
@@ -25,14 +24,15 @@ class OverlayWindowManager: NSObject {
         
         let type = args?["type"] as? String ?? "breakScreen"
         let isReminder = type == "quickReminder"
+        let isPreview = args?["isPreview"] as? Bool ?? false
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,
               let mainWindow = appDelegate.mainFlutterWindow else {
             return
         }
         
-        // Only hide main window for full break screens, not for reminders
-        if !isReminder {
+        // Only hide main window for real full break screens, not for reminders or previews
+        if !isReminder && !isPreview {
             mainWindow.orderOut(nil)
         }
         
@@ -150,7 +150,8 @@ class OverlayWindowManager: NSObject {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
         
-        // Spawn a fresh engine for each monitor
+        // Spawn a fresh engine for each monitor. 
+        // Note: FlutterEngineGroup is not supported in the current macOS SDK version.
         let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
         engine.run(withEntrypoint: "overlayMain")
         RegisterSecondaryPlugins(registry: engine)
@@ -178,10 +179,11 @@ class OverlayWindowManager: NSObject {
         initialArgs["boundsWidth"] = screen.frame.width
         initialArgs["boundsHeight"] = screen.frame.height
         
-        DispatchQueue.main.async {
-            channel.invokeMethod("updateOverlayData", arguments: initialArgs)
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+        // Initial broadcast
+        channel.invokeMethod("updateOverlayData", arguments: initialArgs)
+        
+        // Redundant broadcast with delay to catch the engine as it warms up
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             channel.invokeMethod("updateOverlayData", arguments: initialArgs)
         }
         
@@ -217,10 +219,10 @@ class OverlayWindowManager: NSObject {
 
 class MainFlutterWindow: NSWindow {
   fileprivate var bridgeChannel: FlutterMethodChannel?
-  // The store is `var` so it can be refreshed after permission is granted.
-  // On macOS 14+, a stale EKEventStore instance cannot see events that were
-  // authorised after it was created — replacing it is required.
-  private var eventStore = EKEventStore()
+
+  // Dedicated bridge for all EventKit / calendar operations.
+  // Declared as a lazy var so it is created after the window is fully set up.
+  private lazy var calendarBridge = CalendarBridge()
 
   override func awakeFromNib() {
     let flutterViewController = FlutterViewController()
@@ -429,18 +431,34 @@ class MainFlutterWindow: NSWindow {
       case "checkIsMainEngine":
         result(true)
 
+      case "debugCalendarState":
+        self.calendarBridge.debugCalendarState(result: result)
+
       case "requestCalendarPermissions":
-        self.requestCalendarPermissions(result: result)
+        self.calendarBridge.requestCalendarPermissions(result: result)
 
       case "hasCalendarPermissions":
-        self.hasCalendarPermissions(result: result)
+        self.calendarBridge.hasCalendarPermissions(result: result)
+
+      case "getCalendarPermissionStatus":
+        self.calendarBridge.getCalendarPermissionStatus(result: result)
 
       case "openCalendarSettings":
-        self.openCalendarSettings(result: result)
+        self.calendarBridge.openCalendarSettings(result: result)
 
       case "getUpcomingCalendarEvents":
         let minutes = (call.arguments as? [String: Any])?["windowMinutes"] as? Int ?? 240
-        self.getUpcomingCalendarEvents(windowMinutes: minutes, result: result)
+        self.calendarBridge.getUpcomingCalendarEvents(windowMinutes: minutes, result: result)
+
+      case "getCalendars":
+        self.calendarBridge.getCalendars(result: result)
+
+      case "getEvents":
+        let args = call.arguments as? [String: Any]
+        let startMs = args?["startMs"] as? Double ?? 0.0
+        let endMs = args?["endMs"] as? Double ?? 0.0
+        let calendarIds = args?["calendarIds"] as? [String]
+        self.calendarBridge.getEvents(startMs: startMs, endMs: endMs, calendarIds: calendarIds, result: result)
 
       default:
         result(FlutterMethodNotImplemented)
@@ -448,123 +466,6 @@ class MainFlutterWindow: NSWindow {
     }
   }
 
-  private func requestCalendarPermissions(result: @escaping FlutterResult) {
-    let status = EKEventStore.authorizationStatus(for: .event)
-    NSLog("[BreakMate][Calendar] requestCalendarPermissions — current status: \(status.rawValue)")
-
-    if status == .denied || status == .restricted {
-        NSLog("[BreakMate][Calendar] Already denied/restricted — returning false without prompt.")
-        result(false)
-        return
-    }
-
-    // Already fully authorised — no need to prompt again.
-    if #available(macOS 14.0, *) {
-        if status == .fullAccess {
-            NSLog("[BreakMate][Calendar] Already has fullAccess — returning true.")
-            result(true)
-            return
-        }
-    } else {
-        if status == .authorized {
-            NSLog("[BreakMate][Calendar] Already authorized — returning true.")
-            result(true)
-            return
-        }
-    }
-
-    if #available(macOS 14.0, *) {
-        eventStore.requestFullAccessToEvents { granted, error in
-            NSLog("[BreakMate][Calendar] macOS 14+ requestFullAccess result: \(granted), error: \(error?.localizedDescription ?? "none")")
-            DispatchQueue.main.async {
-                if granted {
-                    // Replace the store so it can immediately see newly-authorised events.
-                    self.eventStore = EKEventStore()
-                    NSLog("[BreakMate][Calendar] EKEventStore refreshed after grant.")
-                }
-                result(granted)
-            }
-        }
-    } else {
-        eventStore.requestAccess(to: .event) { granted, error in
-            NSLog("[BreakMate][Calendar] Legacy requestAccess result: \(granted), error: \(error?.localizedDescription ?? "none")")
-            DispatchQueue.main.async {
-                if granted {
-                    self.eventStore = EKEventStore()
-                    NSLog("[BreakMate][Calendar] EKEventStore refreshed after grant.")
-                }
-                result(granted)
-            }
-        }
-    }
-  }
-
-  private func openCalendarSettings(result: @escaping FlutterResult) {
-    let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Calendars")!
-    NSWorkspace.shared.open(url)
-    result(true)
-  }
-
-  private func hasCalendarPermissions(result: @escaping FlutterResult) {
-    let status = EKEventStore.authorizationStatus(for: .event)
-    NSLog("[BreakMate][Calendar] hasCalendarPermissions — status: \(status.rawValue)")
-    if #available(macOS 14.0, *) {
-        // .fullAccess  = full read/write (macOS 14+)
-        // .writeOnly   = write-only (macOS 14+) — BreakMate only reads, but
-        //                the system may still grant this tier; treat as authorized
-        //                so we can at least attempt to read (EK will just return []).
-        // .authorized  = legacy equivalent of fullAccess on macOS < 14
-        let authorized = (status == .fullAccess || status == .writeOnly || status == .authorized)
-        NSLog("[BreakMate][Calendar] macOS 14+ authorized: \(authorized)")
-        result(authorized)
-    } else {
-        let authorized = (status == .authorized)
-        NSLog("[BreakMate][Calendar] Legacy authorized: \(authorized)")
-        result(authorized)
-    }
-  }
-
-  private func getUpcomingCalendarEvents(windowMinutes: Int, result: @escaping FlutterResult) {
-    let status = EKEventStore.authorizationStatus(for: .event)
-    let isAuthorized: Bool
-    if #available(macOS 14.0, *) {
-        // Accept fullAccess, writeOnly, or legacy authorized
-        isAuthorized = (status == .fullAccess || status == .writeOnly || status == .authorized)
-    } else {
-        isAuthorized = (status == .authorized)
-    }
-
-    NSLog("[BreakMate][Calendar] getUpcomingCalendarEvents — status: \(status.rawValue), isAuthorized: \(isAuthorized), window: \(windowMinutes)m")
-
-    guard isAuthorized else {
-        NSLog("[BreakMate][Calendar] Not authorized — returning empty list.")
-        result([])
-        return
-    }
-
-    let start = Date()
-    let end = start.addingTimeInterval(TimeInterval(windowMinutes * 60))
-
-    // Wrap in a background queue so EventKit I/O doesn't block the main thread.
-    DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-        guard let self = self else { return }
-        let predicate = self.eventStore.predicateForEvents(withStart: start, end: end, calendars: nil)
-        let events = self.eventStore.events(matching: predicate)
-        NSLog("[BreakMate][Calendar] Fetched \(events.count) events.")
-
-        let mappedEvents = events.map { event -> [String: Any] in
-            [
-                "title": event.title ?? "No Title",
-                "start": Int(event.startDate.timeIntervalSince1970 * 1000),
-                "end": Int(event.endDate.timeIntervalSince1970 * 1000),
-                "isAllDay": event.isAllDay
-            ]
-        }
-        DispatchQueue.main.async {
-            result(mappedEvents)
-        }
-    }
-  }
 
   private func setNativeWindowLevel(_ level: String) {
     switch level {

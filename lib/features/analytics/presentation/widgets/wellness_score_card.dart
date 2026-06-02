@@ -88,41 +88,39 @@ class WellnessScoreCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Stack(
-            children: [
-              Container(
-                height: 4,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 800),
-                height: 4,
-                width:
-                    (score / 100) *
-                    100, // This is just a placeholder, in real app need a way to measure width
-                // But since it's inside Expanded -> Row, we can use FractionallySizedBox
-                child: FractionallySizedBox(
-                  widthFactor: (score / 100).clamp(0.05, 1.0),
-                  alignment: Alignment.centerLeft,
-                  child: Container(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final fillWidth =
+                  (constraints.maxWidth * (score / 100).clamp(0.03, 1.0));
+              return Stack(
+                children: [
+                  Container(
+                    height: 4,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeOutCubic,
+                    height: 4,
+                    width: fillWidth,
                     decoration: BoxDecoration(
                       color: color,
                       borderRadius: BorderRadius.circular(2),
                       boxShadow: [
                         BoxShadow(
-                          color: color.withValues(alpha: 0.3),
+                          color: color.withValues(alpha: 0.35),
                           blurRadius: 4,
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 12),
           Text(

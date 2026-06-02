@@ -33,6 +33,7 @@
 		33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */; };
 		33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */; };
 		33CCB00C2044BFA00003C045 /* AppTrackingBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */; };
+		33CCB00E2044BFA00003C045 /* CalendarBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00D2044BFA00003C045 /* CalendarBridge.swift */; };
 		4FD228EB5507191C2365CC9C /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A69135DD4AF97FEDD36BE63A /* Pods_RunnerTests.framework */; };
 		6B276CDF8F02F3FEA8C1E1AC /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C3722FF03BB13E607FBCA37A /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -90,6 +91,7 @@
 		33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWindowManager.swift; sourceTree = "<group>"; };
 		33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IpcBridgeManager.swift; sourceTree = "<group>"; };
 		33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTrackingBridge.swift; sourceTree = "<group>"; };
+		33CCB00D2044BFA00003C045 /* CalendarBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarBridge.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
 		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
 		33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Flutter-Generated.xcconfig"; path = "ephemeral/Flutter-Generated.xcconfig"; sourceTree = "<group>"; };
@@ -219,6 +221,7 @@
 				33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */,
 				33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */,
 				33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */,
+				33CCB00D2044BFA00003C045 /* CalendarBridge.swift */,
 			);
 			path = Bridges;
 			sourceTree = "<group>";
@@ -497,6 +500,7 @@
 				33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */,
 				33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */,
 				33CCB00C2044BFA00003C045 /* AppTrackingBridge.swift in Sources */,
+				33CCB00E2044BFA00003C045 /* CalendarBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
