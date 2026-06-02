@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:breakmate/core/constants/app_constants.dart';
 
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -34,6 +35,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   double _currentVolume = 0.0;
 
   String _currentTemplate = '';
+  String _classicImage = '';
 
   TimerState? _lastOverlayState;
 
@@ -116,6 +118,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         _pickRandomExercise();
       }
 
+      // Pick a single random image so all displays show the same one
+      _classicImage = AppConstants.wellnessSlideshow[
+          Random().nextInt(AppConstants.wellnessSlideshow.length)];
+
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
         builder: (_) =>
@@ -126,6 +132,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'isLong': isLong,
           'template': _currentTemplate,
           'breakTemplate': _currentTemplate,
+          'classicImage': _classicImage,
           'companionPetTheme': settings.companionPetTheme,
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
@@ -309,6 +316,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     _logger.info('Starting break preview');
 
+    _classicImage = AppConstants.wellnessSlideshow[
+        Random().nextInt(AppConstants.wellnessSlideshow.length)];
+
     overlayService.showOverlay(
       type: OverlayType.breakScreen,
       builder: (_) => const SizedBox.shrink(),
@@ -317,6 +327,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'isLong': false,
         'template': settings.breakTemplate,
         'breakTemplate': settings.breakTemplate,
+        'classicImage': _classicImage,
         'companionPetTheme': settings.companionPetTheme,
         'enableAnimations': settings.enableAnimations,
         'intensityLevel': settings.intensityLevel,

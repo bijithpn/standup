@@ -198,6 +198,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
                 orElse: () => _currentTheme,
               );
             }
+            // Use the coordinator-chosen image so all displays show the same one
+            if (args['classicImage'] != null) {
+              _currentTemplate = args['classicImage'] as String;
+            }
             if (args['breakTemplate'] != null) {
               _breakTemplate = args['breakTemplate'];
             } else if (args['template'] != null) {
