@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
@@ -141,8 +142,10 @@ class MacOSBridge implements NativeBridgePlatform {
 
   @override
   Future<bool> requestCalendarPermissions() async {
-    final bool? granted = await _invokeSafely<bool>('requestCalendarPermissions');
-    return granted ?? false;
+    debugPrint('🔥 Requesting calendar permission');
+    final bool? result = await _invokeSafely<bool>('requestCalendarPermissions');
+    debugPrint('🔥 Permission result: $result');
+    return result ?? false;
   }
 
   @override

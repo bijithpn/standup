@@ -1,5 +1,34 @@
 {
+  "$schema": "https://opencode.ai/config.json",
   "plugin": [
     ".opencode/plugins/graphify.js"
+  ],
+  "lsp": {},
+  "permission": {
+    "edit": "allow",
+    "bash": "allow",
+    "web": "allow",
+    "lsp": "allow"
+  },
+  "instructions": [
+    "Execute directly when confidence is high.",
+    "Do not over-explain changes.",
+    "Prefer implementation over planning.",
+    "Avoid repeating analysis.",
+    "Modify files directly instead of describing edits.",
+    "Batch related fixes together.",
+    "Use minimal diffs.",
+    "Do not refactor unrelated code.",
+    "Preserve existing architecture.",
+    "Fix compile errors completely.",
+    "Use modern Flutter and Dart APIs.",
+    "Avoid deprecated Flutter APIs.",
+    "Keep widgets modular and maintainable.",
+    "Avoid unnecessary confirmation requests.",
+    "Do not generate long plans unless explicitly asked.",
+    "Prioritize execution speed and correctness.",
+    "When debugging, identify root cause first then patch immediately.",
+    "Avoid speculative explanations.",
+    "Keep coding responses concise."
   ]
 }

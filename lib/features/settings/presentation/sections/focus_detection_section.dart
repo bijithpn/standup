@@ -70,6 +70,9 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
           _permState = status;
           _isLoading = false;
         });
+        if (status == CalendarPermissionStatus.granted && !_settings.calendarEnabled) {
+          _save(_settings.copyWith(calendarEnabled: true, detectMeetings: true));
+        }
       }
     } catch (_) {
       if (mounted) {
@@ -233,7 +236,7 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
           color: AppTheme.warning,
           icon: Icons.lock_outline_rounded,
           title: 'Calendar access denied',
-          subtitle: 'Please grant calendar access in System Settings to see meetings.',
+          subtitle: 'Please grant calendar access in System Settings. If already enabled, toggle it OFF and ON again to refresh the system cache.',
           actions: [
             _BannerButton(
               label: 'Open Settings',
