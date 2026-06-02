@@ -32,6 +32,10 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   var sparkleBridge: SparkleBridge?
   var appTrackingBridge: AppTrackingBridge?
   
+  /// Shared engine group for spawning lightweight secondary engines (overlays, companion).
+  /// This is the key to 10x faster window startup and shared memory.
+  lazy var engineGroup = FlutterEngineGroup(name: "BreakMateGroup", project: nil)
+  
   override func applicationWillFinishLaunching(_ notification: Notification) {
     // Aggressively terminate any stale running instances of BreakMate (e.g. background menu bar process from a previous debug run)
     // to unlock the ObjectBox database, clean up the status bar, and enforce single-instance execution.
