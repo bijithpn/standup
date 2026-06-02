@@ -21,41 +21,46 @@ class StatsCalculator {
       } catch (_) {}
     }
 
-    // 1. Average breaks per day
+    // Use a sliding window of the last 7 days for 'Weekly' insights and averages
+    final recentData = weeklyData.length > 7
+        ? weeklyData.sublist(weeklyData.length - 7)
+        : weeklyData;
+
+    // 1. Average breaks per day (based on recent data)
     double averageBreaksPerDay = 0.0;
-    if (weeklyData.isNotEmpty) {
-      final total = weeklyData.fold<int>(
+    if (recentData.isNotEmpty) {
+      final total = recentData.fold<int>(
         0,
         (sum, day) => sum + day.breaksCompleted,
       );
-      averageBreaksPerDay = total / weeklyData.length;
+      averageBreaksPerDay = total / recentData.length;
     }
 
-    final totalBreaks = weeklyData.fold<int>(
+    final totalBreaks = recentData.fold<int>(
       0,
       (sum, day) => sum + day.breaksCompleted,
     );
-    final totalUsage = weeklyData.fold<int>(
+    final totalUsage = recentData.fold<int>(
       0,
       (sum, day) => sum + day.usageMinutes,
     );
-    final totalSkipped = weeklyData.fold<int>(
+    final totalSkipped = recentData.fold<int>(
       0,
       (sum, day) => sum + day.breaksSkipped,
     );
 
-    final avgBreaksPerDay = weeklyData.isNotEmpty
-        ? totalBreaks / weeklyData.length
+    final avgBreaksPerDay = recentData.isNotEmpty
+        ? totalBreaks / recentData.length
         : 0.0;
-    final avgUsagePerDay = weeklyData.isNotEmpty
-        ? totalUsage / weeklyData.length
+    final avgUsagePerDay = recentData.isNotEmpty
+        ? totalUsage / recentData.length
         : 0.0;
 
     final completionRate = totalBreaks + totalSkipped > 0
         ? totalBreaks / (totalBreaks + totalSkipped)
         : 0.0;
 
-    // 2. Productivity score
+    // 2. Productivity score (based on recent data)
     int productivityScore = 0;
     productivityScore += (completionRate * 50).round();
 
@@ -74,15 +79,15 @@ class StatsCalculator {
     }
     productivityScore = productivityScore.clamp(0, 100);
 
-    // 3. Wellness actions & score
-    final totalWellnessActions = weeklyData.fold<int>(
+    // 3. Wellness actions & score (based on recent data)
+    final totalWellnessActions = recentData.fold<int>(
       0,
       (sum, day) => sum + day.wellnessActions,
     );
 
     int wellnessScore = 0;
-    if (weeklyData.isNotEmpty) {
-      final avgActions = totalWellnessActions / weeklyData.length;
+    if (recentData.isNotEmpty) {
+      final avgActions = totalWellnessActions / recentData.length;
       wellnessScore += ((avgActions / 10).clamp(0.0, 1.0) * 70).round();
       wellnessScore += (completionRate * 30).round();
     }
@@ -222,34 +227,39 @@ class StatsCalculator {
       }
     }
 
+    // Use a sliding window of the last 7 days for 'Weekly' insights and averages
+    final recentData = weeklyData.length > 7
+        ? weeklyData.sublist(weeklyData.length - 7)
+        : weeklyData;
+
     // Calculations
     double averageBreaksPerDay = 0.0;
-    if (weeklyData.isNotEmpty) {
-      final total = weeklyData.fold<int>(
+    if (recentData.isNotEmpty) {
+      final total = recentData.fold<int>(
         0,
         (sum, day) => sum + day.breaksCompleted,
       );
-      averageBreaksPerDay = total / weeklyData.length;
+      averageBreaksPerDay = total / recentData.length;
     }
 
-    final totalBreaks = weeklyData.fold<int>(
+    final totalBreaks = recentData.fold<int>(
       0,
       (sum, day) => sum + day.breaksCompleted,
     );
-    final totalUsage = weeklyData.fold<int>(
+    final totalUsage = recentData.fold<int>(
       0,
       (sum, day) => sum + day.usageMinutes,
     );
-    final totalSkipped = weeklyData.fold<int>(
+    final totalSkipped = recentData.fold<int>(
       0,
       (sum, day) => sum + day.breaksSkipped,
     );
 
-    final avgBreaksPerDay = weeklyData.isNotEmpty
-        ? totalBreaks / weeklyData.length
+    final avgBreaksPerDay = recentData.isNotEmpty
+        ? totalBreaks / recentData.length
         : 0.0;
-    final avgUsagePerDay = weeklyData.isNotEmpty
-        ? totalUsage / weeklyData.length
+    final avgUsagePerDay = recentData.isNotEmpty
+        ? totalUsage / recentData.length
         : 0.0;
 
     final completionRate = totalBreaks + totalSkipped > 0
@@ -274,14 +284,14 @@ class StatsCalculator {
     }
     productivityScore = productivityScore.clamp(0, 100);
 
-    final totalWellnessActions = weeklyData.fold<int>(
+    final totalWellnessActions = recentData.fold<int>(
       0,
       (sum, day) => sum + day.wellnessActions,
     );
 
     int wellnessScore = 0;
-    if (weeklyData.isNotEmpty) {
-      final avgActions = totalWellnessActions / weeklyData.length;
+    if (recentData.isNotEmpty) {
+      final avgActions = totalWellnessActions / recentData.length;
       wellnessScore += ((avgActions / 10).clamp(0.0, 1.0) * 70).round();
       wellnessScore += (completionRate * 30).round();
     }

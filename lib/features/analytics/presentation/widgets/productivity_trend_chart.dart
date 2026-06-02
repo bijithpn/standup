@@ -10,7 +10,12 @@ class ProductivityTrendChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (weeklyData.isEmpty) {
+    // Limit chart to last 14 days for readability
+    final displayData = weeklyData.length > 14
+        ? weeklyData.sublist(weeklyData.length - 14)
+        : weeklyData;
+
+    if (displayData.isEmpty) {
       return const Center(
         child: Text(
           'No data available yet',
@@ -19,7 +24,7 @@ class ProductivityTrendChart extends StatelessWidget {
       );
     }
 
-    final spots = weeklyData.asMap().entries.map((e) {
+    final spots = displayData.asMap().entries.map((e) {
       return FlSpot(e.key.toDouble(), e.value.breaksCompleted.toDouble());
     }).toList();
 
@@ -41,22 +46,29 @@ class ProductivityTrendChart extends StatelessWidget {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-
+              interval: 1, // Fix: Ensure ticks are only at integer positions
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
 
-                if (index < 0 || index >= weeklyData.length) {
+                // Double check that we are at an exact integer to prevent fractional label duplication
+                if (value % 1 != 0 || index < 0 || index >= displayData.length) {
+                  return const SizedBox();
+                }
+
+                // If we have many days, skip some labels for clarity
+                if (displayData.length > 8 && index % 2 != 0) {
                   return const SizedBox();
                 }
 
                 return SideTitleWidget(
                   meta: meta,
-                  space: 8,
+                  space: 12, // Increased space
                   child: Text(
-                    weeklyData[index].dayName,
+                    displayData[index].dayName,
                     style: AppTheme.sectionTitle.copyWith(
-                      fontSize: 9,
-                      color: AppTheme.textMuted,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textMuted.withValues(alpha: 0.8),
                     ),
                   ),
                 );
@@ -121,7 +133,7 @@ class ProductivityTrendChart extends StatelessWidget {
 
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final day = weeklyData[spot.x.toInt()];
+                final day = displayData[spot.x.toInt()];
 
                 return LineTooltipItem(
                   '${day.dayName}: ${spot.y.toInt()} breaks',

@@ -1,5 +1,7 @@
 import 'dart:math';
 
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -68,6 +70,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _applySettings();
     _timerEngine.startTimers();
     _statsService.load();
+
+    // Pre-initialize audio player to eliminate startup lag
+    _audioPlayer = AudioPlayer();
+    _audioPlayer!.setReleaseMode(ReleaseMode.loop);
+    _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
 
     // Listen for timer events to trigger global overlays
     _timerEngine.addListener(_handleGlobalOverlays);
@@ -294,6 +301,42 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Shows the break overlay for 10 seconds as a preview, without starting 
+  /// a real session or affecting any statistics/database.
+  void previewBreak() {
+    final overlayService = sl<OverlayWindowService>();
+    final settings = _settingsRepo.currentSettings;
+
+    _logger.info('Starting break preview');
+
+    overlayService.showOverlay(
+      type: OverlayType.breakScreen,
+      builder: (_) => const SizedBox.shrink(),
+      isPreview: true,
+      overlayData: {
+        'isLong': false,
+        'template': settings.breakTemplate,
+        'breakTemplate': settings.breakTemplate,
+        'companionPetTheme': settings.companionPetTheme,
+        'enableAnimations': settings.enableAnimations,
+        'intensityLevel': settings.intensityLevel,
+        'exerciseTitle': 'Preview Mode',
+        'exerciseInstructions':
+            'This is a preview of your selected break template. It will not be recorded in your history.',
+        'durationSeconds': 300,
+        'remainingSeconds': 300,
+      },
+    );
+
+    // Auto-close preview after 10 seconds
+    Timer(const Duration(seconds: 10), () {
+      if (overlayService.isOverlayVisible &&
+          overlayService.currentOverlayType == OverlayType.breakScreen) {
+        overlayService.hideOverlay();
+      }
+    });
+  }
+
   Future<void> completeCurrentBreak() async {
     await _timerEngine.finishBreak(skipped: false);
     notifyListeners();
@@ -305,7 +348,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void skipNextBreak() {
-    _timerEngine.skipNextBreak();
+    _timerEngine.stateData.workElapsed = Duration.zero;
+    _emit(BreakEndedEvent(skipped: true));
     notifyListeners();
   }
 
@@ -383,9 +427,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       if (_audioPlayer == null) {
         _audioPlayer = AudioPlayer();
         await _audioPlayer!.setReleaseMode(ReleaseMode.loop);
+        await _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
       }
 
-      await _audioPlayer!.play(AssetSource('music/lofi_1.mp3'));
+      await _audioPlayer!.resume();
       _audioPlayer!.setVolume(0);
       _fadeVolume(1.0);
     } catch (e) {
@@ -400,7 +445,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _fadeVolume(
       0.0,
       onComplete: () {
-        _audioPlayer?.stop();
+        _audioPlayer?.pause();
       },
     );
   }
@@ -420,6 +465,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       }
       _audioPlayer?.setVolume(_currentVolume);
     });
+  }
+
+  void _emit(AppEvent event) {
+    sl<EventBus>().emit(event);
   }
 
   @override

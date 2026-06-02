@@ -23,16 +23,18 @@ class OverlayWindowService extends ChangeNotifier {
     bool strictMode = false,
     bool floatingMode = false,
     bool showOnAllDisplays = true,
+    bool isPreview = false,
     String breakTheme = 'random',
     String? reminderType,
     Map<String, dynamic>? overlayData,
   }) async {
-    if (_isOverlayVisible && _currentOverlayType == type) {
+    if (_isOverlayVisible && _currentOverlayType == type && !isPreview) {
       if (type != OverlayType.clockPreview) {
         // If the overlay is already showing, we can still update its data in real-time
         final args = <String, dynamic>{
           'type': type.name,
           'showOnAllDisplays': showOnAllDisplays,
+          'isPreview': isPreview,
           'theme': breakTheme,
           'isTransparent': type == OverlayType.quickReminder,
           'ignoreMouseEvents': type == OverlayType.quickReminder,
@@ -52,7 +54,7 @@ class OverlayWindowService extends ChangeNotifier {
     }
 
     try {
-      _logger.info('Showing global overlay: $type');
+      _logger.info('Showing global overlay: $type (Preview: $isPreview)');
 
       await windowManager.setIgnoreMouseEvents(false);
 
@@ -62,6 +64,7 @@ class OverlayWindowService extends ChangeNotifier {
           final args = <String, dynamic>{
             'type': type.name,
             'showOnAllDisplays': showOnAllDisplays,
+            'isPreview': isPreview,
             'theme': breakTheme,
             'isTransparent': type == OverlayType.quickReminder,
             'ignoreMouseEvents': type == OverlayType.quickReminder,
@@ -72,7 +75,7 @@ class OverlayWindowService extends ChangeNotifier {
           await windowManager.setFullScreen(true);
           await windowManager.setAlwaysOnTop(true);
           await windowManager.show();
-          if (strictMode && type == OverlayType.breakScreen) {
+          if (strictMode && type == OverlayType.breakScreen && !isPreview) {
             await windowManager.focus();
           }
         } else if (Platform.isMacOS) {
@@ -80,6 +83,7 @@ class OverlayWindowService extends ChangeNotifier {
           final args = <String, dynamic>{
             'type': type.name,
             'showOnAllDisplays': showOnAllDisplays,
+            'isPreview': isPreview,
             'theme': breakTheme,
             'isTransparent': type == OverlayType.quickReminder,
             'ignoreMouseEvents': type == OverlayType.quickReminder,
@@ -87,7 +91,7 @@ class OverlayWindowService extends ChangeNotifier {
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(args);
-          if (strictMode && type == OverlayType.breakScreen) {
+          if (strictMode && type == OverlayType.breakScreen && !isPreview) {
             await NativeBridge.setPresentationOptions(
               hideDock: true,
               hideMenu: true,
@@ -98,7 +102,9 @@ class OverlayWindowService extends ChangeNotifier {
           // Quick reminders should not interfere with the main window's visibility.
           if (type == OverlayType.breakScreen) {
             Future.delayed(const Duration(milliseconds: 200), () {
-              windowManager.hide();
+              if (!isPreview) {
+                windowManager.hide();
+              }
             });
           }
         }
