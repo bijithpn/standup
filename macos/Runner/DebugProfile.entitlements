@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>com.apple.security.app-sandbox</key>
-	<false/>
+	<true/>
 	<key>com.apple.security.cs.allow-jit</key>
 	<true/>
 	<key>com.apple.security.network.server</key>
@@ -18,6 +18,13 @@
 	<array>
 		<string>com.bijith.breakmate-spks</string>
 		<string>com.bijith.breakmate-spki</string>
+	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>com.bijith.breakmate</string>
+		<string>com.bijith.breakmate.dev</string>
+		<string>breakmate</string>
+		<string>breakmate.dev</string>
 	</array>
 </dict>
 </plist>

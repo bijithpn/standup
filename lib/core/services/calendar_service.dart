@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/utils/logger.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/core/services/calendar_permission_service.dart';
+import 'package:breakmate/core/services/calendar_event_service.dart';
 
 class CalendarEvent {
   final String title;
@@ -17,10 +18,18 @@ class CalendarEvent {
   });
 }
 
-/// Service that routes calendar operations to the appropriate backend:
-/// - macOS / Windows → native MethodChannel bridge (EKEventStore / stub)
+/// Service that routes calendar operations to the appropriate backend.
+/// Preserves the original public API for backward compatibility.
 class CalendarService {
   final AppLogger _logger = AppLogger();
+  final CalendarPermissionService _permissionService;
+  final CalendarEventService _eventService;
+
+  CalendarService({
+    required CalendarPermissionService permissionService,
+    required CalendarEventService eventService,
+  })  : _permissionService = permissionService,
+        _eventService = eventService;
 
   /// True if the current platform has a native bridge with calendar support.
   bool get _useNativeBridge =>
@@ -28,7 +37,7 @@ class CalendarService {
 
   Future<bool> requestPermissions() async {
     if (_useNativeBridge) {
-      return await NativeBridge.requestCalendarPermissions();
+      return await _permissionService.requestPermission();
     }
     _logger.warning(
       'Calendar permissions requested on unsupported platform: '
@@ -39,16 +48,16 @@ class CalendarService {
 
   Future<bool> checkPermissions() async {
     if (_useNativeBridge) {
-      return await NativeBridge.hasCalendarPermissions();
+      final status = await _permissionService.getStatus();
+      return status == CalendarPermissionStatus.granted;
     }
     return false;
   }
 
   Future<void> openSettings() async {
     if (_useNativeBridge) {
-      await NativeBridge.openCalendarSettings();
+      await _permissionService.openSettings();
     }
-    // On unsupported platforms, no-op.
   }
 
   Future<List<CalendarEvent>> getUpcomingEvents({
@@ -56,14 +65,12 @@ class CalendarService {
   }) async {
     if (_useNativeBridge) {
       try {
-        final events = await NativeBridge.getUpcomingCalendarEvents(
-          window.inMinutes,
-        );
+        final events = await _eventService.getUpcomingEvents(window: window);
         return events.map((e) => CalendarEvent(
-          title: e['title'] as String? ?? 'No Title',
-          start: DateTime.fromMillisecondsSinceEpoch(e['start'] as int),
-          end: DateTime.fromMillisecondsSinceEpoch(e['end'] as int),
-          isAllDay: e['isAllDay'] as bool? ?? false,
+          title: e.title.isEmpty ? 'No Title' : e.title,
+          start: e.start,
+          end: e.end,
+          isAllDay: e.allDay,
         )).toList();
       } catch (e) {
         _logger.error('Failed to fetch native calendar events: $e');
@@ -75,10 +82,6 @@ class CalendarService {
 
   Future<bool> isMeetingActive() async {
     if (!_useNativeBridge) return false;
-    final events = await getUpcomingEvents(window: const Duration(minutes: 1));
-    final now = DateTime.now();
-    return events.any(
-      (e) => !e.isAllDay && e.start.isBefore(now) && e.end.isAfter(now),
-    );
+    return await _eventService.isMeetingActive();
   }
 }

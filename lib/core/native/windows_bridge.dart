@@ -127,20 +127,56 @@ class WindowsBridge implements NativeBridgePlatform {
 
   @override
   Future<bool> requestCalendarPermissions() async {
-    // Windows implementation pending
-    return false;
+    final bool? granted = await _invokeSafely<bool>('requestCalendarPermissions');
+    return granted ?? false;
   }
 
   @override
   Future<bool> hasCalendarPermissions() async {
-    // Windows implementation pending
-    return false;
+    final bool? granted = await _invokeSafely<bool>('hasCalendarPermissions');
+    return granted ?? false;
+  }
+
+  @override
+  Future<String> getCalendarPermissionStatus() async {
+    final String? status = await _invokeSafely<String>('getCalendarPermissionStatus');
+    return status ?? 'denied';
   }
 
   @override
   Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(int windowMinutes) async {
-    // Windows implementation pending
-    return [];
+    final List<dynamic>? events = await _invokeSafely<List<dynamic>>(
+      'getUpcomingCalendarEvents',
+      {'windowMinutes': windowMinutes},
+    );
+    if (events == null) return [];
+    return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  @override
+  Future<void> openCalendarSettings() async {
+    await _invokeSafely('openCalendarSettings');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getCalendars() async {
+    final List<dynamic>? calendars = await _invokeSafely<List<dynamic>>('getCalendars');
+    if (calendars == null) return [];
+    return calendars.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getEvents(int startMs, int endMs, List<String>? calendarIds) async {
+    final List<dynamic>? events = await _invokeSafely<List<dynamic>>(
+      'getEvents',
+      {
+        'startMs': startMs,
+        'endMs': endMs,
+        'calendarIds': calendarIds,
+      },
+    );
+    if (events == null) return [];
+    return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
@@ -163,11 +199,5 @@ class WindowsBridge implements NativeBridgePlatform {
       );
       return null;
     }
-  }
-  
-  @override
-  Future<void> openCalendarSettings() async {
-    // Windows implementation pending
-    return;
   }
 }
