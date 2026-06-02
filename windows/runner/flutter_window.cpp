@@ -114,6 +114,7 @@ FlutterWindow::FlutterWindow(const flutter::DartProject& project)
 FlutterWindow::~FlutterWindow() {}
 
 bool FlutterWindow::OnCreate() {
+  calendar_bridge_ = std::make_unique<CalendarBridge>();
   if (!Win32Window::OnCreate()) {
     return false;
   }
@@ -414,6 +415,77 @@ void FlutterWindow::SetupBridge() {
                CompanionWindowManager::GetInstance()->UpdateParams(params);
            }
            result->Success();
+        }
+        else if (method_name == "requestCalendarPermissions") {
+          result->Success(flutter::EncodableValue(calendar_bridge_->RequestCalendarPermissions()));
+        }
+        else if (method_name == "hasCalendarPermissions") {
+          result->Success(flutter::EncodableValue(calendar_bridge_->GetCalendarPermissionStatus() == "granted"));
+        }
+        else if (method_name == "getCalendarPermissionStatus") {
+          result->Success(flutter::EncodableValue(calendar_bridge_->GetCalendarPermissionStatus()));
+        }
+        else if (method_name == "openCalendarSettings") {
+          calendar_bridge_->OpenCalendarSettings();
+          result->Success();
+        }
+        else if (method_name == "getUpcomingCalendarEvents") {
+          int minutes = 240;
+          const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+          if (args) {
+            auto it = args->find(flutter::EncodableValue("windowMinutes"));
+            if (it != args->end()) {
+              if (std::holds_alternative<int>(it->second)) {
+                minutes = std::get<int>(it->second);
+              } else if (std::holds_alternative<int64_t>(it->second)) {
+                minutes = static_cast<int>(std::get<int64_t>(it->second));
+              } else if (std::holds_alternative<double>(it->second)) {
+                minutes = static_cast<int>(std::get<double>(it->second));
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(calendar_bridge_->GetUpcomingCalendarEvents(minutes)));
+        }
+        else if (method_name == "getCalendars") {
+          result->Success(flutter::EncodableValue(calendar_bridge_->GetCalendars()));
+        }
+        else if (method_name == "getEvents") {
+          int64_t start_ms = 0;
+          int64_t end_ms = 0;
+          std::vector<std::string> calendar_ids;
+          const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+          if (args) {
+            auto it = args->find(flutter::EncodableValue("startMs"));
+            if (it != args->end()) {
+              if (std::holds_alternative<int64_t>(it->second)) {
+                start_ms = std::get<int64_t>(it->second);
+              } else if (std::holds_alternative<int>(it->second)) {
+                start_ms = std::get<int>(it->second);
+              } else if (std::holds_alternative<double>(it->second)) {
+                start_ms = static_cast<int64_t>(std::get<double>(it->second));
+              }
+            }
+            it = args->find(flutter::EncodableValue("endMs"));
+            if (it != args->end()) {
+              if (std::holds_alternative<int64_t>(it->second)) {
+                end_ms = std::get<int64_t>(it->second);
+              } else if (std::holds_alternative<int>(it->second)) {
+                end_ms = std::get<int>(it->second);
+              } else if (std::holds_alternative<double>(it->second)) {
+                end_ms = static_cast<int64_t>(std::get<double>(it->second));
+              }
+            }
+            it = args->find(flutter::EncodableValue("calendarIds"));
+            if (it != args->end() && std::holds_alternative<flutter::EncodableList>(it->second)) {
+              const auto& list = std::get<flutter::EncodableList>(it->second);
+              for (const auto& val : list) {
+                if (std::holds_alternative<std::string>(val)) {
+                  calendar_ids.push_back(std::get<std::string>(val));
+                }
+              }
+            }
+          }
+          result->Success(flutter::EncodableValue(calendar_bridge_->GetEvents(start_ms, end_ms, calendar_ids)));
         }
 
         else {

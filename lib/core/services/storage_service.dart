@@ -9,6 +9,7 @@ import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/objectbox.g.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class StorageService {
   static Store? _store;
@@ -104,10 +105,34 @@ class StorageService {
         dir.createSync(recursive: true);
       }
 
+      String? macosAppGroup;
+      if (Platform.isMacOS) {
+        try {
+          final packageInfo = await PackageInfo.fromPlatform();
+          final packageName = packageInfo.packageName;
+          if (packageName.endsWith('.dev')) {
+            macosAppGroup = 'breakmate.dev';
+          } else if (packageName.contains('breakmate')) {
+            macosAppGroup = 'breakmate';
+          } else if (packageName.isNotEmpty) {
+            final shortName = packageName.split('.').last;
+            macosAppGroup = shortName.length <= 19 ? shortName : shortName.substring(0, 19);
+          } else {
+            macosAppGroup = 'breakmate';
+          }
+          debugPrint('[Storage] Detected macOS bundle ID: $packageName -> mapped App Group: $macosAppGroup');
+        } catch (e) {
+          debugPrint('[Storage] Failed to fetch PackageInfo for macOS app group: $e');
+        }
+      }
+
       debugPrint('[Storage] Opening ObjectBox store at $activeStoreDir...');
       final openStopwatch = Stopwatch()..start();
       try {
-        _store = await openStore(directory: activeStoreDir);
+        _store = await openStore(
+          directory: activeStoreDir,
+          macosApplicationGroup: macosAppGroup,
+        );
         openDurationMs = openStopwatch.elapsedMilliseconds;
         debugPrint('[Storage] Store opened successfully in ${openDurationMs}ms.');
       } catch (e, stack) {
@@ -183,7 +208,10 @@ class StorageService {
               }
             }
             openStopwatch.reset();
-            _store = await openStore(directory: activeStoreDir);
+            _store = await openStore(
+              directory: activeStoreDir,
+              macosApplicationGroup: macosAppGroup,
+            );
             openDurationMs = openStopwatch.elapsedMilliseconds;
             debugPrint('[Storage] Store opened after cleanup in ${openDurationMs}ms.');
           } catch (retryError) {
@@ -201,7 +229,10 @@ class StorageService {
               debugPrint('[Storage] Database directory deleted and recreated.');
             }
             openStopwatch.reset();
-            _store = await openStore(directory: activeStoreDir);
+            _store = await openStore(
+              directory: activeStoreDir,
+              macosApplicationGroup: macosAppGroup,
+            );
             openDurationMs = openStopwatch.elapsedMilliseconds;
             debugPrint('[Storage] Store opened successfully after database reset in ${openDurationMs}ms.');
           } catch (resetError) {
@@ -216,7 +247,10 @@ class StorageService {
              try {
                 Directory(legacyStoreDir).createSync(recursive: true);
                 openStopwatch.reset();
-                _store = await openStore(directory: legacyStoreDir);
+                _store = await openStore(
+                  directory: legacyStoreDir,
+                  macosApplicationGroup: macosAppGroup,
+                );
                 openDurationMs = openStopwatch.elapsedMilliseconds;
                 activeDatabasePath = legacyStoreDir;
              } catch (_) {}
@@ -230,7 +264,10 @@ class StorageService {
               debugPrint('WARNING:\nRunning on temporary storage.\nSettings may not persist.');
               Directory(fallbackPath).createSync(recursive: true);
               openStopwatch.reset();
-              _store = await openStore(directory: fallbackPath);
+              _store = await openStore(
+                directory: fallbackPath,
+                macosApplicationGroup: macosAppGroup,
+              );
               openDurationMs = openStopwatch.elapsedMilliseconds;
               activeDatabasePath = fallbackPath;
               debugPrint('[Storage] Fallback store opened successfully.');
