@@ -21,8 +21,8 @@
             <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.3.0/BreakMate-Installer.dmg"
                        sparkle:version="32"
                        sparkle:shortVersionString="1.3.0"
-                       sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
-                       length="0"
+                       sparkle:edSignature="WY51B8xvwyPcJycNsdVwLRkFyxYp1PfPfEoF41Bfs/n4horC3CFnJITJbKFqrH1bf//lFhJTj1gT4d/FUxksDg=="
+                       length="51666157"
                        type="application/octet-stream" />
         </item>
         <item>
