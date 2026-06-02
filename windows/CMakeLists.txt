@@ -4,12 +4,24 @@ project(BreakMate LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
+set(BINARY_NAME "BreakMate")
+
+# Decode FLUTTER_DART_DEFINES (base64-encoded, comma-separated) to extract FLUTTER_FLAVOR
+# when passed via --dart-define=FLUTTER_FLAVOR=dev from 'flutter run' or VS Code launch.
+if(DEFINED FLUTTER_DART_DEFINES AND NOT FLUTTER_DART_DEFINES STREQUAL "")
+  string(REPLACE "," ";" _dart_defines_list "${FLUTTER_DART_DEFINES}")
+  foreach(_define IN LISTS _dart_defines_list)
+    string(BASE64_DECODE _decoded "${_define}")
+    if(_decoded MATCHES "^FLUTTER_FLAVOR=(.+)$")
+      set(FLUTTER_FLAVOR "${CMAKE_MATCH_1}")
+    endif()
+  endforeach()
+endif()
+
 if(FLUTTER_FLAVOR STREQUAL "dev")
-  set(BINARY_NAME "BreakMate-Dev")
   set(FLAVOR_APP_NAME "BreakMate Dev")
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon_dev.ico" "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico" COPYONLY)
 else()
-  set(BINARY_NAME "BreakMate")
   set(FLAVOR_APP_NAME "BreakMate")
   configure_file("${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon_prod.ico" "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico" COPYONLY)
 endif()
@@ -84,6 +96,11 @@ set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
+  COMPONENT Runtime)
+
+# Install the tray icon so the app can reference it at runtime
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/runner/resources/app_icon.ico"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"

@@ -44,6 +44,10 @@ class FlutterWindow : public Win32Window {
     is_companion_ = true;
   }
 
+  void SetIsOverlay(bool is_overlay) {
+    is_overlay_ = is_overlay;
+  }
+
  protected:
   // Win32Window:
   bool OnCreate() override;
@@ -85,6 +89,7 @@ class FlutterWindow : public Win32Window {
 
   // Companion state
   bool is_companion_ = false;
+  bool is_overlay_ = false;
   flutter::EncodableMap initial_settings_;
 
   LONG original_style_ = 0;

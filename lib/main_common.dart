@@ -139,8 +139,19 @@ void _setupGlobalErrors() {
 
 Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
   debugPrint('[Shutdown] Starting graceful shutdown...');
-  
-  // 1. Close overlays
+
+  // 1. Flush settings first so that notifications don't fire to disposed services
+  try {
+    if (sl.isRegistered<SettingsRepository>()) {
+      final settingsRepo = sl<SettingsRepository>();
+      await settingsRepo.save(settingsRepo.currentSettings);
+      debugPrint('[Shutdown] Settings saved & flushed.');
+    }
+  } catch (e) {
+    debugPrint('[Shutdown] Error saving settings: $e');
+  }
+
+  // 2. Close overlays
   try {
     if (sl.isRegistered<OverlayWindowService>()) {
       await sl<OverlayWindowService>().reset();
@@ -150,7 +161,7 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error resetting OverlayWindowService: $e');
   }
 
-  // 2. Close companion windows
+  // 3. Close companion windows
   try {
     await NativeBridge.hideCompanion();
     debugPrint('[Shutdown] Companion hidden.');
@@ -158,7 +169,7 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error hiding companion: $e');
   }
 
-  // 3. Stop timers
+  // 4. Stop timers
   try {
     if (sl.isRegistered<TimerEngine>()) {
       sl<TimerEngine>().dispose();
@@ -177,7 +188,7 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error shutting down TimerOrchestrator: $e');
   }
 
-  // 4. Dispose smart detection
+  // 5. Dispose smart detection
   try {
     if (sl.isRegistered<SmartDetectionService>()) {
       sl<SmartDetectionService>().dispose();
@@ -187,7 +198,7 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error disposing SmartDetectionService: $e');
   }
 
-  // 5. Close sockets
+  // 6. Close sockets
   try {
     if (serverSocket != null) {
       await serverSocket.close();
@@ -195,17 +206,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     }
   } catch (e) {
     debugPrint('[Shutdown] Error closing server socket: $e');
-  }
-
-  // 6. Flush settings
-  try {
-    if (sl.isRegistered<SettingsRepository>()) {
-      final settingsRepo = sl<SettingsRepository>();
-      await settingsRepo.save(settingsRepo.currentSettings);
-      debugPrint('[Shutdown] Settings saved & flushed.');
-    }
-  } catch (e) {
-    debugPrint('[Shutdown] Error saving settings: $e');
   }
 
   // 7. Close ObjectBox store cleanly
@@ -225,7 +225,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
 void mainCommon(FlavorConfig config) async {
   final isolateName = Isolate.current.debugName ?? '';
   // On macOS desktop, secondary engines often have names like "OverlayEngine-..."
-  final isMainIsolate = !isolateName.toLowerCase().contains('overlay') &&
+  final isMainIsolate =
+      !isolateName.toLowerCase().contains('overlay') &&
       !isolateName.toLowerCase().contains('companion');
 
   // If we are in an overlay or companion isolate, jump to the correct entry point.
@@ -255,14 +256,16 @@ void mainCommon(FlavorConfig config) async {
 
         if (Platform.isMacOS) {
           try {
-            final Map<dynamic, dynamic>? debugResult = await const MethodChannel('com.breakmate.desktop/bridge')
-                .invokeMethod<Map<dynamic, dynamic>>('debugCalendarState');
+            final Map<dynamic, dynamic>? debugResult =
+                await const MethodChannel(
+                  'com.breakmate.desktop/bridge',
+                ).invokeMethod<Map<dynamic, dynamic>>('debugCalendarState');
             debugPrint('🔥 Startup debugCalendarState result: $debugResult');
           } catch (e) {
             debugPrint('🔥 Startup debugCalendarState failed: $e');
           }
         }
-        
+
         bool isActualMain = true;
         if (Platform.isMacOS) {
           try {
@@ -278,7 +281,9 @@ void mainCommon(FlavorConfig config) async {
         debugPrint('[Main] Is actual main engine: $isActualMain');
 
         if (!isActualMain) {
-          debugPrint('[Main] Secondary engine detected in main(). Redirecting...');
+          debugPrint(
+            '[Main] Secondary engine detected in main(). Redirecting...',
+          );
           // On macOS, secondary engines should have their own entry points.
           // If we reach here, it means the isolate name didn't match but it's not the main engine.
           // We must NOT call initDependencies() here.
@@ -309,8 +314,10 @@ void mainCommon(FlavorConfig config) async {
             debugPrint('Startup: Port $port bound (Main Instance)');
             bound = true;
           } catch (e) {
-            debugPrint('Startup: Primary port $port in use. Attempting process replacement...');
-            
+            debugPrint(
+              'Startup: Primary port $port in use. Attempting process replacement...',
+            );
+
             // Connect to the existing instance and send 'shutdown\n'
             try {
               final socket = await Socket.connect(
@@ -321,59 +328,80 @@ void mainCommon(FlavorConfig config) async {
               socket.write('shutdown\n');
               await socket.flush();
               await socket.close();
-              debugPrint('Startup: Sent shutdown command to existing instance.');
-              
+              debugPrint(
+                'Startup: Sent shutdown command to existing instance.',
+              );
+
               // Wait briefly (500ms to 3000ms) for shutdown completion.
               // Check every 200ms by trying to bind to port 10425.
               int elapsed = 0;
               const int checkIntervalMs = 200;
               const int maxWaitMs = 3000;
-              
+
               await Future.delayed(const Duration(milliseconds: 500));
               elapsed += 500;
-              
+
               while (elapsed < maxWaitMs) {
                 try {
                   singleInstanceServer = await ServerSocket.bind(
                     InternetAddress.loopbackIPv4,
                     port,
                   );
-                  debugPrint('Startup: Port $port successfully bound after old instance shutdown at ${elapsed}ms.');
+                  debugPrint(
+                    'Startup: Port $port successfully bound after old instance shutdown at ${elapsed}ms.',
+                  );
                   bound = true;
                   break;
                 } catch (_) {
-                  await Future.delayed(const Duration(milliseconds: checkIntervalMs));
+                  await Future.delayed(
+                    const Duration(milliseconds: checkIntervalMs),
+                  );
                   elapsed += checkIntervalMs;
                 }
               }
             } catch (connectErr) {
-              debugPrint('Startup: Failed to connect to existing instance: $connectErr. Process may be dead but port remains locked.');
+              debugPrint(
+                'Startup: Failed to connect to existing instance: $connectErr. Process may be dead but port remains locked.',
+              );
             }
 
             if (!bound) {
-              debugPrint('Startup: Graceful shutdown failed. Force terminating stale process on port $port...');
+              debugPrint(
+                'Startup: Graceful shutdown failed. Force terminating stale process on port $port...',
+              );
               try {
                 // Find and kill only the process listening on port 10425 on macOS
-                final result = await Process.run('sh', ['-c', 'PID=\$(lsof -t -s TCP:LISTEN -i :$port); [ -n "\$PID" ] && kill -9 \$PID']);
-                debugPrint('Startup: Force terminate result: exitCode=${result.exitCode}');
-                
+                final result = await Process.run('sh', [
+                  '-c',
+                  'PID=\$(lsof -t -s TCP:LISTEN -i :$port); [ -n "\$PID" ] && kill -9 \$PID',
+                ]);
+                debugPrint(
+                  'Startup: Force terminate result: exitCode=${result.exitCode}',
+                );
+
                 await Future.delayed(const Duration(milliseconds: 500));
-                
+
                 singleInstanceServer = await ServerSocket.bind(
                   InternetAddress.loopbackIPv4,
                   port,
                 );
-                debugPrint('Startup: Port $port successfully bound after force termination.');
+                debugPrint(
+                  'Startup: Port $port successfully bound after force termination.',
+                );
                 bound = true;
               } catch (killErr) {
-                debugPrint('Startup: Failed to force terminate process: $killErr');
+                debugPrint(
+                  'Startup: Failed to force terminate process: $killErr',
+                );
               }
             }
           }
-          
+
           if (!bound && !kDebugMode) {
-             debugPrint('Startup: Could not bind any single-instance port. Exiting.');
-             exit(1);
+            debugPrint(
+              'Startup: Could not bind any single-instance port. Exiting.',
+            );
+            exit(1);
           }
         }
 
@@ -452,10 +480,15 @@ void mainCommon(FlavorConfig config) async {
           debugPrint('Launch at startup setup failed: $e');
         }
 
-        if (kReleaseMode && config.sentryDsn.isNotEmpty && config.sentryDsn != 'DEV_DSN_HERE') {
-          await SentryFlutter.init((options) {
-            options.dsn = config.sentryDsn;
-          }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
+        if (kReleaseMode &&
+            config.sentryDsn.isNotEmpty &&
+            config.sentryDsn != 'DEV_DSN_HERE') {
+          await SentryFlutter.init(
+            (options) {
+              options.dsn = config.sentryDsn;
+            },
+            appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
+          );
         } else {
           // Log first dashboard frame time in debug mode
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -537,10 +570,18 @@ Future<void> overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
   _setupGlobalErrors();
   _setupMinimalIpc();
+  if (Platform.isMacOS) {
+    await Window.initialize();
+    await Window.setEffect(
+      effect: WindowEffect.transparent,
+      color: Colors.transparent,
+    );
+  }
 
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
+      color: Colors.transparent,
       home: StandaloneBreakOverlay(),
     ),
   );
