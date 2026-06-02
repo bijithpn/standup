@@ -22,18 +22,18 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
   List<CalendarEvent>? _calendarEvents;
   bool _calendarLoading = false;
   bool _calendarPermissionGranted = false;
   bool _calendarPermissionDenied = false;
   bool _isRequestingPermission = false;
-  DateTime? _lastCalendarPermissionCheck;
   Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCalendarEvents();
     // Refresh calendar events every 2 minutes
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
@@ -55,7 +55,15 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadCalendarEvents();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _refreshTimer?.cancel();
     sl<SettingsRepository>().removeListener(_handleSettingsChange);
     super.dispose();
@@ -72,17 +80,12 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     final calendarService = sl<CalendarService>();
-    setState(() => _calendarLoading = true);
+    if (mounted) {
+      setState(() => _calendarLoading = true);
+    }
 
     try {
-      final shouldRefreshPermission =
-          _lastCalendarPermissionCheck == null ||
-          DateTime.now().difference(_lastCalendarPermissionCheck!) >
-              const Duration(minutes: 10);
-      final hasPermission = shouldRefreshPermission
-          ? await calendarService.checkPermissions()
-          : _calendarPermissionGranted;
-      _lastCalendarPermissionCheck = DateTime.now();
+      final hasPermission = await calendarService.checkPermissions();
       if (!hasPermission) {
         if (mounted) {
           setState(() {
@@ -95,9 +98,13 @@ class _DashboardPageState extends State<DashboardPage> {
 
       _calendarPermissionGranted = true;
       _calendarPermissionDenied = false; // Reset if confirmed
-      final events = await calendarService.getUpcomingEvents(
-        window: const Duration(hours: 8),
-      );
+      
+      // Query events for the entire current day (from start of today to end of today)
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
+      
+      final events = await calendarService.getEvents(startOfToday, endOfToday);
       if (mounted) {
         setState(() {
           _calendarEvents = events;
@@ -650,106 +657,129 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildCalendarPermissionPrompt() {
+    final title = _calendarPermissionDenied ? 'Calendar access denied' : 'Calendar access required';
     final subtitle = _calendarPermissionDenied
-        ? 'Please enable calendar access in System Settings to see your events.'
+        ? 'Please enable calendar access in System Settings to see your events. If already enabled, toggle it OFF and ON again to refresh the system cache.'
         : 'Calendar access required to show upcoming events and avoid interrupting your meetings.';
     final icon = _calendarPermissionDenied
         ? Icons.error_outline_rounded
         : Icons.lock_outline_rounded;
-    final iconColor = _calendarPermissionDenied
+    final color = _calendarPermissionDenied
         ? AppTheme.error
         : AppTheme.warning;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon,
-              size: 16,
-              color: iconColor,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                subtitle,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                  height: 1.4,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            InkWell(
-              onTap: _isRequestingPermission ? null : _requestCalendarAccess,
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6366F1).withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFF6366F1).withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 16, color: color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (_isRequestingPermission)
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Color(0xFF6366F1),
-                        ),
-                      )
-                    else
-                      const Icon(
-                        Icons.calendar_month_rounded,
-                        size: 16,
-                        color: Color(0xFF6366F1),
-                      ),
-                    const SizedBox(width: 8),
                     Text(
-                      _isRequestingPermission
-                          ? 'Requesting...'
-                          : (_calendarPermissionDenied
-                                ? 'Try Again'
-                                : 'Grant Calendar Access'),
-                      style: const TextStyle(
+                      title,
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF6366F1),
+                        color: color,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                        height: 1.4,
+                        fontFamily: 'Inter',
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-            if (_calendarPermissionDenied && !_isRequestingPermission) ...[
-              const SizedBox(width: 12),
-              TextButton.icon(
-                onPressed: () => sl<CalendarService>().openSettings(),
-                icon: const Icon(Icons.settings_outlined, size: 16),
-                label: const Text('Open Settings'),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondary,
-                  textStyle: const TextStyle(fontSize: 13),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: _isRequestingPermission ? null : _requestCalendarAccess,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF6366F1).withValues(alpha: _isRequestingPermission ? 0.05 : 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_isRequestingPermission) ...[
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            color: Color(0xFF6366F1),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(
+                        _isRequestingPermission
+                            ? 'Requesting...'
+                            : (_calendarPermissionDenied ? 'Try Again' : 'Grant Access'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF6366F1),
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              if (_calendarPermissionDenied && !_isRequestingPermission) ...[
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => sl<CalendarService>().openSettings(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.25)),
+                    ),
+                    child: const Text(
+                      'Open Settings',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -1057,6 +1087,8 @@ class _CalendarEventRow extends StatelessWidget {
       badgeColor = const Color(0xFF6366F1);
     }
 
+    final meetingPlatform = event.getMeetingPlatform();
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -1100,6 +1132,28 @@ class _CalendarEventRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    if (meetingPlatform != null) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Text(
+                          meetingPlatform,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF6366F1),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                     if (badge != null) ...[
                       const SizedBox(width: 8),
                       Container(

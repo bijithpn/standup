@@ -21,5 +21,12 @@
 		<string>com.bijith.breakmate-spks</string>
 		<string>com.bijith.breakmate-spki</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>com.bijith.breakmate</string>
+		<string>com.bijith.breakmate.dev</string>
+		<string>breakmate</string>
+		<string>breakmate.dev</string>
+	</array>
 </dict>
 </plist>

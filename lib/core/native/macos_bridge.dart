@@ -1,5 +1,6 @@
 import 'dart:developer' as developer;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
@@ -141,14 +142,24 @@ class MacOSBridge implements NativeBridgePlatform {
 
   @override
   Future<bool> requestCalendarPermissions() async {
-    final bool? granted = await _invokeSafely<bool>('requestCalendarPermissions');
-    return granted ?? false;
+    debugPrint('🔥 Requesting calendar permission');
+    final bool? result = await _invokeSafely<bool>('requestCalendarPermissions');
+    debugPrint('🔥 Permission result: $result');
+    return result ?? false;
   }
 
   @override
   Future<bool> hasCalendarPermissions() async {
     final bool? granted = await _invokeSafely<bool>('hasCalendarPermissions');
     return granted ?? false;
+  }
+
+  @override
+  Future<String> getCalendarPermissionStatus() async {
+    final String? status = await _invokeSafely<String>(
+      'getCalendarPermissionStatus',
+    );
+    return status ?? 'denied';
   }
 
   @override
@@ -161,6 +172,29 @@ class MacOSBridge implements NativeBridgePlatform {
     final List<dynamic>? events = await _invokeSafely<List<dynamic>>(
       'getUpcomingCalendarEvents',
       {'windowMinutes': windowMinutes},
+    );
+    if (events == null) return [];
+    return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getCalendars() async {
+    final List<dynamic>? calendars = await _invokeSafely<List<dynamic>>(
+      'getCalendars',
+    );
+    if (calendars == null) return [];
+    return calendars.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getEvents(
+    int startMs,
+    int endMs,
+    List<String>? calendarIds,
+  ) async {
+    final List<dynamic>? events = await _invokeSafely<List<dynamic>>(
+      'getEvents',
+      {'startMs': startMs, 'endMs': endMs, 'calendarIds': calendarIds},
     );
     if (events == null) return [];
     return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();

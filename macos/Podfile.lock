@@ -26,11 +26,11 @@ PODS:
     - FlutterMacOS
   - screen_retriever_macos (0.0.1):
     - FlutterMacOS
-  - Sentry/HybridSDK (8.58.2)
-  - sentry_flutter (9.20.0):
+  - Sentry/HybridSDK (8.58.3)
+  - sentry_flutter (9.21.0):
     - Flutter
     - FlutterMacOS
-    - Sentry/HybridSDK (= 8.58.2)
+    - Sentry/HybridSDK (= 8.58.3)
   - Sparkle (2.9.2)
   - sqflite_darwin (0.0.4):
     - Flutter
@@ -135,8 +135,8 @@ SPEC CHECKSUMS:
   objectbox_flutter_libs: c6ec3df598aa194da1cdf929fc9640bbc8f58be1
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
-  Sentry: de29b881e83bd91cf99a927f82f1fd86bfb39db2
-  sentry_flutter: cbb414ef141b64f901bc1ba32daa871349510ce4
+  Sentry: 108fdbb76299c4189af12246bf0308c09c278922
+  sentry_flutter: 32e67cb4756ce3de42bbd56581fa935922ff328f
   Sparkle: 2d0c930d42d53ee0fdf98bbb342c08eaf18ab5f0
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   tray_manager: a104b5c81b578d83f3c3d0f40a997c8b10810166

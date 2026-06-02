@@ -18,6 +18,9 @@ import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
+import 'package:breakmate/core/services/calendar_repository.dart';
+import 'package:breakmate/core/services/calendar_permission_service.dart';
+import 'package:breakmate/core/services/calendar_event_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
@@ -116,7 +119,19 @@ Future<void> initDependencies() async {
   final smartDetectionService = SmartDetectionService();
   sl.registerSingleton<SmartDetectionService>(smartDetectionService);
 
-  final calendarService = CalendarService();
+  final calendarRepository = CalendarRepository();
+  sl.registerSingleton<CalendarRepository>(calendarRepository);
+
+  final calendarPermissionService = CalendarPermissionService();
+  sl.registerSingleton<CalendarPermissionService>(calendarPermissionService);
+
+  final calendarEventService = CalendarEventService(calendarRepository);
+  sl.registerSingleton<CalendarEventService>(calendarEventService);
+
+  final calendarService = CalendarService(
+    permissionService: calendarPermissionService,
+    eventService: calendarEventService,
+  );
   sl.registerSingleton<CalendarService>(calendarService);
 
   final statsService = StatsService(storage: sl());

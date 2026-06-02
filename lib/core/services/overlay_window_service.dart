@@ -23,16 +23,18 @@ class OverlayWindowService extends ChangeNotifier {
     bool strictMode = false,
     bool floatingMode = false,
     bool showOnAllDisplays = true,
+    bool isPreview = false,
     String breakTheme = 'random',
     String? reminderType,
     Map<String, dynamic>? overlayData,
   }) async {
-    if (_isOverlayVisible && _currentOverlayType == type) {
+    if (_isOverlayVisible && _currentOverlayType == type && !isPreview) {
       if (type != OverlayType.clockPreview) {
         // If the overlay is already showing, we can still update its data in real-time
         final args = <String, dynamic>{
           'type': type.name,
           'showOnAllDisplays': showOnAllDisplays,
+          'isPreview': isPreview,
           'theme': breakTheme,
           'isTransparent': type == OverlayType.quickReminder,
           'ignoreMouseEvents': type == OverlayType.quickReminder,
@@ -52,7 +54,7 @@ class OverlayWindowService extends ChangeNotifier {
     }
 
     try {
-      _logger.info('Showing global overlay: $type');
+      _logger.info('Showing global overlay: $type (Preview: $isPreview)');
 
       await windowManager.setIgnoreMouseEvents(false);
 
@@ -62,6 +64,7 @@ class OverlayWindowService extends ChangeNotifier {
           final args = <String, dynamic>{
             'type': type.name,
             'showOnAllDisplays': showOnAllDisplays,
+            'isPreview': isPreview,
             'theme': breakTheme,
             'isTransparent': type == OverlayType.quickReminder,
             'ignoreMouseEvents': type == OverlayType.quickReminder,
@@ -72,7 +75,7 @@ class OverlayWindowService extends ChangeNotifier {
           await windowManager.setFullScreen(true);
           await windowManager.setAlwaysOnTop(true);
           await windowManager.show();
-          if (strictMode && type == OverlayType.breakScreen) {
+          if (strictMode && type == OverlayType.breakScreen && !isPreview) {
             await windowManager.focus();
           }
         } else if (Platform.isMacOS) {
@@ -80,6 +83,7 @@ class OverlayWindowService extends ChangeNotifier {
           final args = <String, dynamic>{
             'type': type.name,
             'showOnAllDisplays': showOnAllDisplays,
+            'isPreview': isPreview,
             'theme': breakTheme,
             'isTransparent': type == OverlayType.quickReminder,
             'ignoreMouseEvents': type == OverlayType.quickReminder,
@@ -87,7 +91,7 @@ class OverlayWindowService extends ChangeNotifier {
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(args);
-          if (strictMode && type == OverlayType.breakScreen) {
+          if (strictMode && type == OverlayType.breakScreen && !isPreview) {
             await NativeBridge.setPresentationOptions(
               hideDock: true,
               hideMenu: true,
@@ -98,7 +102,9 @@ class OverlayWindowService extends ChangeNotifier {
           // Quick reminders should not interfere with the main window's visibility.
           if (type == OverlayType.breakScreen) {
             Future.delayed(const Duration(milliseconds: 200), () {
-              windowManager.hide();
+              if (!isPreview) {
+                windowManager.hide();
+              }
             });
           }
         }
@@ -189,23 +195,26 @@ class OverlayWindowService extends ChangeNotifier {
     try {
       _logger.info('Hiding overlay and resetting window state');
 
-      // Reset native state
+      // Reset native state — may fail if overlay window already closed itself
       if (Platform.isWindows) {
-        await _windowsChannel.invokeMethod('resetToNormal');
+        try { await _windowsChannel.invokeMethod('resetToNormal'); } catch (_) {}
       } else if (Platform.isMacOS) {
-        await NativeBridge.hideOverlay(
-          restoreMainWindow: _wasMainVisibleBeforeOverlay,
-        );
-        await NativeBridge.setPresentationOptions(
-          hideDock: false,
-          hideMenu: false,
-        );
+        try {
+          await NativeBridge.hideOverlay(
+            restoreMainWindow: _wasMainVisibleBeforeOverlay,
+          );
+        } catch (_) {}
+        try {
+          await NativeBridge.setPresentationOptions(
+            hideDock: false,
+            hideMenu: false,
+          );
+        } catch (_) {}
       }
 
       await windowManager.setAlwaysOnTop(false);
       await windowManager.setFullScreen(false);
       await windowManager.setSkipTaskbar(false);
-      await windowManager.hide();
       await windowManager.setBackgroundColor(
         Platform.isWindows ? AppTheme.sidebarBackground : Colors.transparent,
       );
@@ -214,9 +223,30 @@ class OverlayWindowService extends ChangeNotifier {
       _currentOverlayType = null;
       notifyListeners();
 
+      // Always restore the main window so the app doesn't go blank
+      if (_wasMainVisibleBeforeOverlay) {
+        await windowManager.setIgnoreMouseEvents(false);
+        await windowManager.setSize(const Size(1100, 750));
+        final isMinimized = await windowManager.isMinimized();
+        if (isMinimized) await windowManager.restore();
+        await windowManager.show();
+        await windowManager.focus();
+        if (Platform.isMacOS) {
+          await NativeBridge.focusApp();
+        }
+      }
+
       _logger.info('Overlay hidden successfully');
     } catch (e) {
-      _logger.error('Failed to hide overlay: ');
+      _logger.error('Failed to hide overlay: $e');
+      // Last-resort recovery: force show main window
+      try {
+        _isOverlayVisible = false;
+        _currentOverlayType = null;
+        await windowManager.show();
+        await windowManager.focus();
+      } catch (_) {}
+      notifyListeners();
     }
   }
 

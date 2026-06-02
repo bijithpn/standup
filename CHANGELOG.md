@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 |---|---:|---:|---|---|
+| `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
 | `v1.2.1` | 1.2.1 | 31 | 2026-06-01 | Native macOS Calendar and Permission Recovery |
 | `v1.2.0` | 1.2.0 | 30 | 2026-05-31 | Contextual Intelligence and Personal Wellness |
 | `v1.1.4` | 1.1.4 | 29 | 2026-05-31 | Onboarding persistence and macOS storage stability |
@@ -20,18 +21,27 @@ Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.
 
 ## [Unreleased]
 
-### Changed
+## [1.3.0] - 2026-06-02
 
-- Rebuilt `BREAKMATE_ROADMAP.md` from the current project state.
-- Updated project metrics in the roadmap: 160 Dart files, about 21 MB of assets, no active `test/` files found, and slideshow assets as the largest bundle-size target.
-- Reorganized future work around measurement, release confidence, UX, runtime performance, asset optimization, architecture, accessibility, and feature roadmap priorities.
-- Added a static performance baseline and repeatable asset budget report with category breakdowns.
-- Added manual macOS and Windows smoke-check documentation for cases where tests are intentionally skipped.
+Tags: `v1.3.0`  
+Build: `32`  
+Release title: Enhanced Dashboard and Settings Experience
+
+### Added
+
 - Improved the dashboard with compact status chips, next-break reasoning, pause context, and actionable calendar conflict controls.
 - Improved tray/menu-bar quick actions with pause reason, quiet/companion toggles, feedback, and 5/15 minute snooze actions.
 - Added break overlay context explaining why the break started, expected action, and strict/locked mode restrictions.
 - Added settings search, section reset controls, and inline dependency warnings.
 - Added companion low-distraction mode and visible companion state explanations.
+- Added a static performance baseline and repeatable asset budget report with category breakdowns.
+- Added manual macOS and Windows smoke-check documentation for cases where tests are intentionally skipped.
+
+### Changed
+
+- Rebuilt `BREAKMATE_ROADMAP.md` from the current project state.
+- Updated project metrics in the roadmap: 160 Dart files, about 21 MB of assets, no active `test/` files found, and slideshow assets as the largest bundle-size target.
+- Reorganized future work around measurement, release confidence, UX, runtime performance, asset optimization, architecture, accessibility, and feature roadmap priorities.
 - Updated Graphify graph artifacts after the code changes.
 
 ## [1.2.1] - 2026-06-01
@@ -270,7 +280,8 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
-[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0
 [1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1
 [1.2.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.0
 [1.1.4]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.4

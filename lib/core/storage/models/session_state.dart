@@ -12,6 +12,7 @@ class SessionState {
   int eyeBlinkElapsedSeconds;
   bool isPreBreak; // Was user in pre-break warning?
   String timerState; // Enum name: 'idle', 'running', 'paused', etc.
+  @Property(type: PropertyType.date)
   DateTime? longBreakWindowStartedAt; // Timestamp for long break tracking
 
   SessionState({
