@@ -1,5 +1,6 @@
 import 'dart:async' show Timer;
 
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -254,7 +255,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _skipBreak() {
     // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
-      NativeBridge.skipBreak();
+      if (_isInternalPreview) {
+        // If it's a preview, just hide the overlay without notifying
+        // the main engine or recording a skipped break in the DB.
+        _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
+      } else {
+        NativeBridge.skipBreak();
+      }
     });
   }
 
@@ -437,6 +444,53 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             ),
           ),
         ),
+        if (_isInternalPreview)
+          Positioned(
+            top: 32,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentColor.withValues(alpha: 0.9),
+                    borderRadius: BorderRadius.circular(100),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.eye_fill,
+                        color: Colors.white,
+                        size: 14,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'PREVIEW MODE',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         if (!_strictMode)
           Positioned(
             top: 28,
