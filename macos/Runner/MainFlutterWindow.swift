@@ -150,13 +150,10 @@ class OverlayWindowManager: NSObject {
         window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
         
-        // Use the shared engine group for 10x faster startup and memory efficiency.
-        // This is the mandated architecture to prevent "black screen" delays.
-        guard let appDelegate = NSApp.delegate as? AppDelegate else {
-            fatalError("AppDelegate not found")
-        }
-        
-        let engine = appDelegate.engineGroup.makeEngine(withEntrypoint: "overlayMain", libraryURI: nil)
+        // Spawn a fresh engine for each monitor. 
+        // Note: FlutterEngineGroup is not supported in the current macOS SDK version.
+        let engine = FlutterEngine(name: "OverlayEngine-\(UUID().uuidString)", project: nil, allowHeadlessExecution: true)
+        engine.run(withEntrypoint: "overlayMain")
         RegisterSecondaryPlugins(registry: engine)
         
         IpcBridgeManager.shared.register(engine: engine)
