@@ -11,16 +11,10 @@ import screen_retriever_macos
 import url_launcher_macos
 import window_manager
 
+/// Registers all required Flutter plugins for secondary engines (overlays, companion).
+/// This now uses the standard GeneratedPluginRegistrant for 100% feature parity with the main engine.
 func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
-    AppkitUiElementColorsPlugin.register(with: registry.registrar(forPlugin: "AppkitUiElementColorsPlugin"))
-    AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
-    FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
-    MacOSUiPlugin.register(with: registry.registrar(forPlugin: "MacOSUiPlugin"))
-    MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
-    FPPPackageInfoPlusPlugin.register(with: registry.registrar(forPlugin: "FPPPackageInfoPlusPlugin"))
-    ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
-    UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
-    WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
+    RegisterGeneratedPlugins(registry: registry)
 }
 
 @main

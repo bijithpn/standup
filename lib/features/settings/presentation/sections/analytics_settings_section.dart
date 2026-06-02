@@ -18,7 +18,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 }
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
-  int _selectedFilter = 0; // 0: Today, 1: Week
+  int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
 
   StatsModel get _stats => widget.stats;
 
@@ -73,7 +73,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           ),
         ),
         segmentedControl(
-          ['Today', 'This Week'],
+          ['Today', 'This Week', 'Month'],
           _selectedFilter,
           (i) => setState(() => _selectedFilter = i),
         ),
@@ -82,9 +82,31 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   }
 
   Widget _buildTrendSection() {
+    final isMonth = _selectedFilter == 2;
+    final periodLabel = isMonth
+        ? 'This Month'
+        : _selectedFilter == 1
+        ? 'This Week'
+        : 'Today';
+    final chartPeriod = isMonth
+        ? ChartPeriod.month
+        : _selectedFilter == 1
+            ? ChartPeriod.week
+            : ChartPeriod.today;
+    final chartTitle = _selectedFilter == 0
+        ? "Today's Breakdown"
+        : _selectedFilter == 1
+            ? 'Weekly Completion'
+            : 'Monthly Overview';
+    final chartSubtitle = _selectedFilter == 0
+        ? 'Completed vs skipped breaks today.'
+        : _selectedFilter == 1
+            ? 'Break completions for each day this week.'
+            : 'Total breaks completed per week this month.';
+
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: AppTheme.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -92,21 +114,21 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Column(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    AppStrings.completionTrend,
-                    style: TextStyle(
+                    chartTitle,
+                    style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    AppStrings.completionTrendSubtitle,
-                    style: TextStyle(
+                    chartSubtitle,
+                    style: const TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
                     ),
@@ -123,7 +145,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   borderRadius: BorderRadius.circular(100),
                 ),
                 child: Text(
-                  'Last 7 Days',
+                  periodLabel,
                   style: TextStyle(
                     color: AppTheme.accentColor,
                     fontSize: 10,
@@ -137,7 +159,10 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           const SizedBox(height: 24),
           SizedBox(
             height: 180,
-            child: ProductivityTrendChart(weeklyData: _stats.weeklyData),
+            child: ProductivityTrendChart(
+              weeklyData: _stats.weeklyData,
+              period: chartPeriod,
+            ),
           ),
         ],
       ),
@@ -172,15 +197,28 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       final total = today.breaksCompleted + today.breaksSkipped;
       successRate = total > 0 ? (today.breaksCompleted * 100 ~/ total) : 0;
     } else {
-      // THIS WEEK (Last 7 days)
-      final weekData = _stats.weeklyData.length > 7
-          ? _stats.weeklyData.sublist(_stats.weeklyData.length - 7)
-          : _stats.weeklyData;
+      // THIS WEEK or MONTH — aggregate available data
+      final List<DailyStats> rangeData;
+      if (_selectedFilter == 2) {
+        // Month: current calendar month
+        final now = DateTime.now();
+        rangeData = _stats.weeklyData.where((d) {
+          final parts = d.date.split('-');
+          if (parts.length < 2) return false;
+          return int.tryParse(parts[0]) == now.year &&
+              int.tryParse(parts[1]) == now.month;
+        }).toList();
+      } else {
+        // Week: last 7 days
+        rangeData = _stats.weeklyData.length > 7
+            ? _stats.weeklyData.sublist(_stats.weeklyData.length - 7)
+            : _stats.weeklyData;
+      }
 
-      breaksCompleted = weekData.fold(0, (sum, d) => sum + d.breaksCompleted);
-      breaksSkipped = weekData.fold(0, (sum, d) => sum + d.breaksSkipped);
-      usageMinutes = weekData.fold(0, (sum, d) => sum + d.usageMinutes);
-      wellnessActions = weekData.fold(0, (sum, d) => sum + d.wellnessActions);
+      breaksCompleted = rangeData.fold(0, (sum, d) => sum + d.breaksCompleted);
+      breaksSkipped = rangeData.fold(0, (sum, d) => sum + d.breaksSkipped);
+      usageMinutes = rangeData.fold(0, (sum, d) => sum + d.usageMinutes);
+      wellnessActions = rangeData.fold(0, (sum, d) => sum + d.wellnessActions);
       streak = _stats.longestStreak;
 
       final total = breaksCompleted + breaksSkipped;
@@ -255,7 +293,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
             ),
             _buildStatCard(
               'Success Rate',
-              '${metrics.successRate}%',
+              '${metrics.successRate}',
               '%',
               CupertinoIcons.graph_circle,
               AppTheme.info,
