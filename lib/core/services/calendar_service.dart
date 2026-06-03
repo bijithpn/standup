@@ -44,8 +44,9 @@ class CalendarEvent {
       'teams.microsoft.com',
       'teams.live.com',
       'microsoft teams',
-    ]))
+    ])) {
       return 'Teams';
+    }
     if (containsAny(['webex.com', 'cisco webex'])) return 'Webex';
 
     return null;

@@ -12,6 +12,7 @@ class OverlayWindowManager: NSObject {
     static let shared = OverlayWindowManager()
     
     private var overlayInstances: [NSScreen: OverlayInstance] = [:]
+    var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
     
     struct OverlayInstance {
         let window: OverlayPanel
@@ -20,7 +21,14 @@ class OverlayWindowManager: NSObject {
     }
     
     func showOverlay(args: [String: Any]? = nil) {
-        if !overlayInstances.isEmpty { return }
+        self.lastShowArgs = args
+        
+        if !overlayInstances.isEmpty {
+            if let args = args {
+                updateData(args)
+            }
+            return
+        }
         
         let type = args?["type"] as? String ?? "breakScreen"
         let isReminder = type == "quickReminder"
@@ -127,9 +135,10 @@ class OverlayWindowManager: NSObject {
     }
     
     @objc private func screenParametersChanged() {
+        let savedArgs = self.lastShowArgs
         hideOverlay()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.showOverlay()
+            self.showOverlay(args: savedArgs)
         }
     }
     
@@ -189,6 +198,8 @@ class OverlayWindowManager: NSObject {
         
         channel.setMethodCallHandler { call, result in
             switch call.method {
+            case "getOverlayData":
+                result(OverlayWindowManager.shared.lastShowArgs)
             case "checkIsMainEngine":
                 result(false)
             case "hideOverlay":
