@@ -445,6 +445,8 @@ void mainCommon(FlavorConfig config) async {
             await sl<OverlayWindowService>().showDashboard(forceShow: true);
           } else if (call.method == 'skipBreak') {
             sl<BreakController>().skipCurrentBreak();
+          } else if (call.method == 'hideOverlay') {
+            await sl<OverlayWindowService>().hideOverlay();
           } else if (call.method == 'systemSleep') {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
@@ -486,6 +488,9 @@ void mainCommon(FlavorConfig config) async {
           await SentryFlutter.init(
             (options) {
               options.dsn = config.sentryDsn;
+              // Disable App Hang tracking to prevent native modal/alert blocking windows 
+              // (e.g. Sparkle updater prompts/errors) from triggering watchdog crash reports.
+              options.enableAppHangTracking = false;
             },
             appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
           );
