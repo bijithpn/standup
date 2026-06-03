@@ -198,6 +198,8 @@ BreakMate runs three separate isolates utilizing `FlutterEngineGroup` to isolate
 
 BreakMate includes a fully automated release pipeline for building, packaging, signing, and deploying updates via Sparkle and GitHub Releases. All variables are dynamically configured via environment files.
 
+For a detailed step-by-step walkthrough on generating keys, config setups, and troubleshooting build releases, see the [Release & Sparkle Key Management Guide](docs/release_guide.md).
+
 ### ⚙️ Configuration (`.env`)
 
 The pipeline reads its options from `.env` at the project root. Copy `.env.example` to get started:
