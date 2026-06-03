@@ -79,8 +79,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final compact = screenWidth < 760 || screenHeight < 620;
 
-    // Renders either a dynamic sliding PageView or a static single random image fallback
     Widget buildAssetBackground() {
       if (widget.pageController != null) {
         return PageView.builder(
@@ -129,7 +129,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     Widget backgroundWidget;
     final path = widget.settings.customImagePath;
     final isCustomEnabled = path != null && !path.startsWith("disabled:");
-    final actualPath = path != null && path.startsWith("disabled:") ? path.substring(9) : path;
+    final actualPath = path != null && path.startsWith("disabled:")
+        ? path.substring(9)
+        : path;
 
     if (isCustomEnabled &&
         actualPath != 'default_path' &&
@@ -159,34 +161,32 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Slideshow Background with Ken Burns
           RepaintBoundary(child: backgroundWidget),
 
-          // Calming dimming glassmorphic/gradient overlay
+          // Calming dimming gradient overlay
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withValues(alpha: 0.65),
+                  Colors.black.withValues(alpha: 0.72),
                   Colors.black.withValues(alpha: 0.35),
-                  Colors.black.withValues(alpha: 0.75),
+                  Colors.black.withValues(alpha: 0.8),
                 ],
-                stops: const [0.0, 0.4, 1.0],
+                stops: const [0.0, 0.45, 1.0],
               ),
             ),
           ),
 
-          // Main Interactive Layout
           SafeArea(
             child: Column(
               children: [
                 // Top Header Row
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40.0,
-                    vertical: 20.0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 24 : 40,
+                    vertical: 20,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -194,10 +194,10 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                       Row(
                         children: [
                           Container(
-                            width: 8,
-                            height: 8,
+                            width: 6,
+                            height: 6,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF32D74B),
+                              color: Color(0xFF34D399), // Cozy Green dot
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -206,9 +206,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                             AppConstants.appName.toUpperCase(),
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.6),
-                              fontSize: 11,
+                              fontSize: 10,
                               fontWeight: FontWeight.w800,
-                              letterSpacing: 2,
+                              letterSpacing: 2.0,
                               fontFamily: 'Inter',
                             ),
                           ),
@@ -217,8 +217,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                       Text(
                         DateFormat('HH:mm').format(DateTime.now()),
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Inter',
                         ),
@@ -233,23 +233,25 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                 RepaintBoundary(
                   child: Center(
                     child: Container(
-                      width: 560,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 48,
+                      width: 500,
+                      margin: EdgeInsets.symmetric(
+                        horizontal: compact ? 24 : 0,
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 28 : 40,
+                        vertical: compact ? 32 : 44,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.58),
-                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFF0F1115).withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          width: 1,
+                          color: Colors.white.withValues(alpha: 0.08),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.34),
-                            blurRadius: 30,
-                            offset: const Offset(0, 16),
+                            color: Colors.black.withValues(alpha: 0.24),
+                            blurRadius: 28,
+                            offset: const Offset(0, 12),
                           ),
                         ],
                       ),
@@ -262,32 +264,34 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                 : 'Time to Recharge',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 24,
+                              fontSize: 22,
                               fontWeight: FontWeight.w600,
-                              letterSpacing: -0.3,
+                              letterSpacing: -0.2,
                               fontFamily: 'Inter',
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           Text(
                             _formatDuration(widget.remainingSeconds),
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: Colors.white,
-                              fontSize: 90,
+                              fontSize: compact ? 64 : 80,
                               fontWeight: FontWeight.w200,
-                              letterSpacing: -4.0,
+                              letterSpacing: -3.0,
                               height: 1.0,
                               fontFamily: 'Inter',
-                              fontFeatures: [FontFeature.tabularFigures()],
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
                           Text(
                             widget.breakInfo.tip,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 15,
+                              color: Colors.white.withValues(alpha: 0.65),
+                              fontSize: 14,
                               fontWeight: FontWeight.w400,
                               height: 1.5,
                               fontFamily: 'Inter',
@@ -298,17 +302,14 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                           if (widget.settings.showExercisesInBreak &&
                               widget.exerciseTitle != null &&
                               widget.exerciseInstructions != null) ...[
-                            const SizedBox(height: 32),
+                            const SizedBox(height: 28),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 16,
-                              ),
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
                                 color: Colors.white.withValues(alpha: 0.03),
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.08),
+                                  color: Colors.white.withValues(alpha: 0.06),
                                 ),
                               ),
                               child: Column(
@@ -319,14 +320,14 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                       const Icon(
                                         CupertinoIcons.heart_fill,
                                         size: 13,
-                                        color: Color(0xFFFF453A),
+                                        color: Color(0xFFEF4444),
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
                                         'EXERCISE: ${widget.exerciseTitle!}',
                                         style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 12,
+                                          fontSize: 11,
                                           fontWeight: FontWeight.w700,
                                           letterSpacing: 0.5,
                                           fontFamily: 'Inter',
@@ -340,11 +341,11 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                     textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.white.withValues(
-                                        alpha: 0.6,
+                                        alpha: 0.55,
                                       ),
                                       fontSize: 12,
                                       fontWeight: FontWeight.w400,
-                                      height: 1.4,
+                                      height: 1.45,
                                       fontFamily: 'Inter',
                                     ),
                                   ),
@@ -362,9 +363,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
 
                 // Bottom Panel: Streak Activity Graph & Skip Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 40.0,
-                    vertical: 30.0,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: compact ? 24 : 40,
+                    vertical: compact ? 20 : 30,
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -374,14 +375,16 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                         child: Align(
                           alignment: Alignment.bottomLeft,
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 320),
+                            constraints: const BoxConstraints(maxWidth: 280),
                             child: Container(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.03),
-                                borderRadius: BorderRadius.circular(16),
+                                color: const Color(
+                                  0xFF0F1115,
+                                ).withValues(alpha: 0.6),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.08),
+                                  color: Colors.white.withValues(alpha: 0.06),
                                 ),
                               ),
                               child: Column(
@@ -393,29 +396,29 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                       const Icon(
                                         CupertinoIcons.graph_square_fill,
                                         size: 12,
-                                        color: Color(0xFF32D74B),
+                                        color: Color(0xFF34D399),
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
                                         'WEEKLY REST ACTIVITY',
                                         style: TextStyle(
                                           color: Colors.white.withValues(
-                                            alpha: 0.5,
+                                            alpha: 0.4,
                                           ),
-                                          fontSize: 10,
+                                          fontSize: 9,
                                           fontWeight: FontWeight.w700,
-                                          letterSpacing: 1.0,
+                                          letterSpacing: 0.8,
                                           fontFamily: 'Inter',
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 10),
                                   SizedBox(
-                                    height: 50,
+                                    height: 40,
                                     child: BreakActivityGraph(
                                       dataPoints: _dataPoints,
-                                      color: const Color(0xFF32D74B),
+                                      color: const Color(0xFF34D399),
                                     ),
                                   ),
                                 ],
@@ -426,7 +429,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                       ),
 
                       // Skip Button
-                      if (widget.onSkip != null)
+                      if (widget.onSkip != null && !widget.settings.strictMode)
                         SkipBreakButton(onSkip: widget.onSkip!),
                     ],
                   ),

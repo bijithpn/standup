@@ -34,7 +34,7 @@ class NotificationService {
       );
       const settings = InitializationSettings(macOS: macOS, windows: windows);
       await _plugin.initialize(settings: settings);
-      
+
       // Request permission asynchronously without blocking the app loader
       unawaited(_checkAndRequestPermission());
 
@@ -163,7 +163,8 @@ class NotificationService {
         } else {
           // Retrieve selected companion theme
           final settingsRepo = sl<SettingsRepository>();
-          final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+          final selectedThemeId =
+              settingsRepo.currentSettings.companionPetTheme;
           final theme = PetTheme.getTheme(selectedThemeId);
           final iconPath = await PetAssetLoader.extractPetIconPath(theme);
 

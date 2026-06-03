@@ -31,7 +31,9 @@ class AppTrackingService {
 
   Future<ActiveAppInfo?> getActiveApp() async {
     try {
-      final result = await _channel.invokeMapMethod<String, dynamic>('getActiveApp');
+      final result = await _channel.invokeMapMethod<String, dynamic>(
+        'getActiveApp',
+      );
       if (result != null) {
         return ActiveAppInfo.fromMap(result);
       }

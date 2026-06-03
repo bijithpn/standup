@@ -47,14 +47,14 @@ class _MinimalButtonState extends State<MinimalButton>
     if (!isDisabled) {
       if (_isPressed) {
         activeColor = activeColor.withValues(
-          alpha: widget.isSecondary 
-              ? 0.15 
+          alpha: widget.isSecondary
+              ? 0.15
               : (baseAlpha < 1.0 ? (baseAlpha * 1.5).clamp(0.0, 1.0) : 0.8),
         );
       } else if (_isHovering) {
         activeColor = activeColor.withValues(
-          alpha: widget.isSecondary 
-              ? 0.1 
+          alpha: widget.isSecondary
+              ? 0.1
               : (baseAlpha < 1.0 ? (baseAlpha * 1.8).clamp(0.0, 1.0) : 0.9),
         );
       }

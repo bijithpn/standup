@@ -10,18 +10,18 @@
     "semantic_hash": "97d3a20fd20a063c192e886d1822b4a8"
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Runner/CompanionWindowManager.swift": {
-    "mtime": 1780222435.4351237,
+    "mtime": 1780466695.2336926,
     "ast_hash": "676dd8b7bfb8c91aa55e2f54388276e9",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Runner/MainFlutterWindow.swift": {
-    "mtime": 1780396275.9337666,
-    "ast_hash": "d03c73049d62e64d4655b427b4fccbda",
+    "mtime": 1780466690.131115,
+    "ast_hash": "2f9f5b66dd35fbb3a27b100dcaca8ad8",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Runner/AppDelegate.swift": {
-    "mtime": 1780394033.8516228,
-    "ast_hash": "da723e40d3ba5a76f89d47a46da1e1a3",
+    "mtime": 1780466684.8580856,
+    "ast_hash": "c223023b61b4635ee49dd017cb2f0151",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json": {
@@ -60,8 +60,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Flutter/ephemeral/flutter_export_environment.sh": {
-    "mtime": 1780396958.8615339,
-    "ast_hash": "205cad1ca48b968493d11e634c2c0195",
+    "mtime": 1780467111.2843087,
+    "ast_hash": "d22d03ae70bc7512a5cb3c00e1cf4601",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Pods/Target Support Files/window_manager/window_manager-umbrella.h": {
@@ -404,19 +404,14 @@
     "ast_hash": "9276b535256dc065bd7b8b84e15abd95",
     "semantic_hash": "9276b535256dc065bd7b8b84e15abd95"
   },
-  "/Users/intersamrt/Documents/Flutter-Projects/standup/scripts/generate_appcast.py": {
-    "mtime": 1780047506.862607,
-    "ast_hash": "488951252bf11e9b729ef4c87ac14ca3",
-    "semantic_hash": "488951252bf11e9b729ef4c87ac14ca3"
-  },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/scripts/create_dmg.sh": {
-    "mtime": 1780318367.7976055,
-    "ast_hash": "008785afa8570c057aa4e01984595e89",
+    "mtime": 1780461264.5042892,
+    "ast_hash": "36b152b19604740a7605847ae7f59b38",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/main.dart": {
-    "mtime": 1780396934.554794,
-    "ast_hash": "ea25f7e69366a5ec40001148b59a8b24",
+    "mtime": 1780466516.961416,
+    "ast_hash": "b94cd360d7fdf295f40862221774771c",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/core/native/macos_bridge.dart": {
@@ -530,8 +525,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/core/services/notification_service.dart": {
-    "mtime": 1780307184.591004,
-    "ast_hash": "7e0226d3fbb857a12792a179fc643c5c",
+    "mtime": 1780461137.5468104,
+    "ast_hash": "3e39818fd1ac2df5525528171f1db699",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/core/services/adaptive_break_service.dart": {
@@ -560,8 +555,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/core/services/overlay_window_service.dart": {
-    "mtime": 1780392943.792957,
-    "ast_hash": "89c59f6a305ffd59c4334c9c170975c4",
+    "mtime": 1780402305.7581751,
+    "ast_hash": "39c61526f06362de45f5c02344f805e3",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/core/services/app_navigation_service.dart": {
@@ -590,8 +585,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_overlay/presentation/templates/minimal_focus_template.dart": {
-    "mtime": 1780047504.6993885,
-    "ast_hash": "41a3cbceba2cf6672aa74f0c0d3d56c8",
+    "mtime": 1780467693.9515586,
+    "ast_hash": "341e897ea2d4641e04049c17d6215dff",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_overlay/presentation/templates/zen_mode_template.dart": {
@@ -645,8 +640,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/settings_page.dart": {
-    "mtime": 1780251653.9825451,
-    "ast_hash": "a4e5e7357347a19d26a19727107cde26",
+    "mtime": 1780401784.2460644,
+    "ast_hash": "055434d8c50198c011a721db1ed36da3",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/exercise_model.dart": {
@@ -690,8 +685,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_system/application/break_controller.dart": {
-    "mtime": 1780393225.643726,
-    "ast_hash": "bf5c6d56f98f5b0d31b8cbecc58a02eb",
+    "mtime": 1780467693.9179394,
+    "ast_hash": "134b3a204ad426bf967d4344281da79d",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_system/domain/break_model.dart": {
@@ -700,13 +695,13 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_system/presentation/break_overlay.dart": {
-    "mtime": 1780252620.9144225,
-    "ast_hash": "83beddc235cc9beb743276c0ff56b753",
+    "mtime": 1780467693.9407425,
+    "ast_hash": "6ff036ae4fb01abf40fd9bd1c42a3f67",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_system/presentation/standalone_break_overlay.dart": {
-    "mtime": 1780396154.2219958,
-    "ast_hash": "54d810e77c901770ad8d289cbf5167ba",
+    "mtime": 1780467693.9370055,
+    "ast_hash": "8033d18d83a36a76a0da45c4881e8510",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/break_system/presentation/widgets/break_activity_graph.dart": {
@@ -725,8 +720,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/menu_bar/tray_manager_service.dart": {
-    "mtime": 1780304133.1194136,
-    "ast_hash": "abd7b4120c4418f68ec134e389e795ea",
+    "mtime": 1780461137.5471478,
+    "ast_hash": "2f3dc4e87e7fd3550b328e8fc2405e95",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/menu_bar/controllers/controllers.dart": {
@@ -750,8 +745,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/analytics/presentation/widgets/productivity_trend_chart.dart": {
-    "mtime": 1780393392.4853613,
-    "ast_hash": "51b6a1c6a97aff78d6af272585e5828f",
+    "mtime": 1780401653.7154038,
+    "ast_hash": "2d5b7733a76725e25f2c4f65044f29c5",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/analytics/widgets/stats_chart.dart": {
@@ -910,8 +905,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/flutter_window.cpp": {
-    "mtime": 1780378362.008233,
-    "ast_hash": "960e182214cce77b482c2fe4794fb880",
+    "mtime": 1780461137.5505548,
+    "ast_hash": "8370339bd31538e4eca93873f52e0648",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/utils.h": {
@@ -950,14 +945,14 @@
     "semantic_hash": "46bea763776b0425ecfef24d58e70b46"
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/companion_window_manager.cpp": {
-    "mtime": 1780047506.8837378,
-    "ast_hash": "8e569e370ad73083d39c0adf84e55977",
+    "mtime": 1780461137.5502417,
+    "ast_hash": "2fc9272d12804da308d74a148ff64a70",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/bridge_utils.cpp": {
-    "mtime": 1779788116.8139434,
-    "ast_hash": "2a2057c96fa2e14a5d1aa5bde438bb19",
-    "semantic_hash": "2a2057c96fa2e14a5d1aa5bde438bb19"
+    "mtime": 1780461137.5496352,
+    "ast_hash": "784f151920015b96c1057b72c5a5dfd3",
+    "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/overlay_window_plugin.h": {
     "mtime": 1779788116.814162,
@@ -985,8 +980,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/flutter_window.h": {
-    "mtime": 1780378342.6537569,
-    "ast_hash": "ebada1d973f0dbb10ce69e63f625bd72",
+    "mtime": 1780461137.5508711,
+    "ast_hash": "cd7ec1f4b349b0aa070206fe0fcf3e39",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/flutter/generated_plugin_registrant.cc": {
@@ -1010,13 +1005,13 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/README.md": {
-    "mtime": 1780223208.0870893,
-    "ast_hash": "055d9c10d3279c8c695e7b1cc62a0f70",
+    "mtime": 1780461537.3189874,
+    "ast_hash": "5261b35df1225c7eaba3fddd58a4530b",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/pubspec.yaml": {
-    "mtime": 1780315497.7623608,
-    "ast_hash": "c50dd90248e1feef1d5467aad4e3a429",
+    "mtime": 1780402852.2196991,
+    "ast_hash": "1e13bf66c375940af46d0e587fe03554",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/analysis_options.yaml": {
@@ -1160,13 +1155,13 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/CMakeLists.txt": {
-    "mtime": 1780305714.0893219,
-    "ast_hash": "f625cf51c785f3d119663f9588528042",
+    "mtime": 1780461137.5485392,
+    "ast_hash": "bfae3ed632067f8cc91948550b265b22",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/CMakeLists.txt": {
-    "mtime": 1780378323.5065138,
-    "ast_hash": "47ad9bed3f2c6e79764749932fa0f3ae",
+    "mtime": 1780461137.548822,
+    "ast_hash": "6b0a72746b6a64dcec940c03f1c81e8b",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/flutter/CMakeLists.txt": {
@@ -5670,8 +5665,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/scripts/publish_release.sh": {
-    "mtime": 1780319119.185155,
-    "ast_hash": "ce020d6a289f37f8021130abc7648f43",
+    "mtime": 1780461137.5482235,
+    "ast_hash": "91bfe4de30e581223bfe1e2ad88fefe5",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/scripts/generate_sparkle_keys.sh": {
@@ -5905,8 +5900,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/presentation/sections/analytics_settings_section.dart": {
-    "mtime": 1780393562.8544867,
-    "ast_hash": "df34b70104af34a655303eaa40b4733c",
+    "mtime": 1780401977.47403,
+    "ast_hash": "f3b880834f52b6d810ca055ca0885307",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/presentation/sections/focus_detection_section.dart": {
@@ -5975,13 +5970,13 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/analytics/presentation/widgets/wellness_score_card.dart": {
-    "mtime": 1780047504.6514158,
-    "ast_hash": "cb9cedaf5c73058242ff888f732d11a4",
+    "mtime": 1780400555.2409763,
+    "ast_hash": "a2676eafea0d296ef85faf8dad0f3d38",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/analytics/widgets/productivity_wellness_chart.dart": {
-    "mtime": 1780047504.6641529,
-    "ast_hash": "abe30abe96e08c171dd6622deee11688",
+    "mtime": 1780400544.130914,
+    "ast_hash": "12025287247dd300d685bdef28a2dfff",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/companion/assets/tray_icon_generator.dart": {
@@ -6000,18 +5995,18 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/CHANGELOG.md": {
-    "mtime": 1780316090.742271,
-    "ast_hash": "4bf2ff8462270c661cae1f1c9000e161",
+    "mtime": 1780402895.2754223,
+    "ast_hash": "9135cb1b9e43a5eec24f816f82c11170",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/BREAKMATE_ROADMAP.md": {
-    "mtime": 1780381685.8918571,
+    "mtime": 1780466265.8302107,
     "ast_hash": "26d0ebba5c0dcb340059b18256ca07be",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/release_notes.md": {
-    "mtime": 1780315865.0454054,
-    "ast_hash": "818b2a433e2d8d019b7e4cde97a7b354",
+    "mtime": 1780466265.83233,
+    "ast_hash": "45760b6597cfb736d947ddd6de1945a0",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/macos/Pods/ObjectBox/LICENSE.md": {
@@ -6150,18 +6145,18 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/main_prod.dart": {
-    "mtime": 1780396609.9436135,
-    "ast_hash": "0d23313e5d55b6d72ec59276d0b30d70",
+    "mtime": 1780466524.345043,
+    "ast_hash": "f14d2f255d7fcdf81acfe96a32b9ee55",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/main_dev.dart": {
-    "mtime": 1780396588.843741,
-    "ast_hash": "a51a0d75af585c2181ba9de938c015b6",
+    "mtime": 1780466530.3544164,
+    "ast_hash": "f84735187f5b638ef2e400a086abe3c6",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/main_common.dart": {
-    "mtime": 1780388596.8364785,
-    "ast_hash": "22d7e093b157ff2a0db196ba2e5e6c0d",
+    "mtime": 1780466888.9929218,
+    "ast_hash": "bd3c633ee5101e5deb6a4f78c881b5f5",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/core/config/flavor_config.dart": {
@@ -6190,13 +6185,13 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/presentation/sections/breaks/break_intensity_settings.dart": {
-    "mtime": 1780294801.8922298,
-    "ast_hash": "9f41f28e34e808eb4bb1eec70496db15",
+    "mtime": 1780467655.2160203,
+    "ast_hash": "70a58da46de34c2a15b9c51522387ae1",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/presentation/sections/breaks/break_appearance_settings.dart": {
-    "mtime": 1780392994.3011053,
-    "ast_hash": "4e49c85c53c504fe3497fafc92a02170",
+    "mtime": 1780467693.9709718,
+    "ast_hash": "911ae1281b737f8e9244ce6087562fd6",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/lib/features/settings/presentation/sections/breaks/break_profile_selector.dart": {
@@ -6335,8 +6330,8 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/calendar_bridge.h": {
-    "mtime": 1780378328.5658832,
-    "ast_hash": "207dfdc87a5c694e120de979fd561879",
+    "mtime": 1780461137.549949,
+    "ast_hash": "8a425327bcb6ef47145ccf22a8d4f361",
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/calendar_bridge.cpp": {
@@ -6355,8 +6350,58 @@
     "semantic_hash": ""
   },
   "/Users/intersamrt/Documents/Flutter-Projects/standup/image.png": {
-    "mtime": 1780392704.678841,
+    "mtime": 1780466265.8319528,
     "ast_hash": "4dd8e7feb6fc4d029bb03a81b5f2a3c0",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/app_tracking_bridge.cpp": {
+    "mtime": 1780461137.5490685,
+    "ast_hash": "1e2c371c08918c5be91e6e67b60cfce0",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/ipc_bridge_manager.cpp": {
+    "mtime": 1780461137.5512428,
+    "ast_hash": "60974bac2833553b70978006e95d4fe9",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/ipc_bridge_manager.h": {
+    "mtime": 1780461137.5515077,
+    "ast_hash": "be4858a1a6b891e7cb83367363d34a2f",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/overlay_window_manager.cpp": {
+    "mtime": 1780461137.552011,
+    "ast_hash": "441bd122fdbaac6bf762ade8333a2741",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/overlay_window_manager.h": {
+    "mtime": 1780461137.5523756,
+    "ast_hash": "a6650d72a4d185b44cb6518610f28f34",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/windows/runner/app_tracking_bridge.h": {
+    "mtime": 1780461137.549322,
+    "ast_hash": "df799832ac9cf88f1f7faff178b8b2fb",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/error.md": {
+    "mtime": 1780466610.3943772,
+    "ast_hash": "45c77a78f5c4b8c6df0ffcb3694b4f18",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/docs/release_guide.md": {
+    "mtime": 1780461799.7990978,
+    "ast_hash": "cdf34d38f94a657014ff938a4835cbef",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/app_state.png": {
+    "mtime": 1780466265.8311524,
+    "ast_hash": "3acd794c4ed321a839a681e91ab52a49",
+    "semantic_hash": ""
+  },
+  "/Users/intersamrt/Documents/Flutter-Projects/standup/assets/showcase.png": {
+    "mtime": 1780461137.5464404,
+    "ast_hash": "18d500b5c877a212d6370b14ccfcf99d",
     "semantic_hash": ""
   }
 }

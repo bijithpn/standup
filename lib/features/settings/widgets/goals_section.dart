@@ -20,7 +20,7 @@ class GoalsSection extends StatelessWidget {
               subtitle: 'Set daily and weekly targets for your wellbeing.',
             ),
             const SizedBox(height: 16),
-            
+
             buildCard([
               sliderRow(
                 'Daily Focus Goal (${s.dailyWorkGoalHours}h)',
@@ -46,7 +46,9 @@ class GoalsSection extends StatelessWidget {
                 'Sitting Limit (${s.maxContinuousSittingMinutes}m)',
                 s.maxContinuousSittingMinutes.toDouble(),
                 (val) {
-                  repo.save(s.copyWith(maxContinuousSittingMinutes: val.round()));
+                  repo.save(
+                    s.copyWith(maxContinuousSittingMinutes: val.round()),
+                  );
                 },
                 min: 20,
                 max: 120,
@@ -56,13 +58,15 @@ class GoalsSection extends StatelessWidget {
                 'Weekly Consistency (${s.weeklyConsistencyTargetDays} days)',
                 s.weeklyConsistencyTargetDays.toDouble(),
                 (val) {
-                  repo.save(s.copyWith(weeklyConsistencyTargetDays: val.round()));
+                  repo.save(
+                    s.copyWith(weeklyConsistencyTargetDays: val.round()),
+                  );
                 },
                 min: 1,
                 max: 7,
               ),
             ]),
-            
+
             const SizedBox(height: 24),
             sectionHeader(
               'Calendar Integration',

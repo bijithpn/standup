@@ -64,9 +64,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       // Fallback to asset if extraction fails
       _defaultIconPath = AppConstants.trayIconPath;
     }
-    
+
     _defaultIconPath ??= defaultFile;
-    
+
     await _applyIcon();
     await _buildMenu();
 
@@ -93,7 +93,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           if (file is File) {
             final filename = p.basename(file.path);
             // Only delete icon frame caches, never touch database or metadata
-            if (filename.startsWith('bm_pframe_') || 
+            if (filename.startsWith('bm_pframe_') ||
                 filename.startsWith('bm_ccat_')) {
               file.deleteSync();
             }
@@ -139,7 +139,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     // Use raw absolute paths for tray_manager
     if (_defaultIconPath != null) {
-      debugPrint('[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync() || !_defaultIconPath!.startsWith('/')})');
+      debugPrint(
+        '[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync() || !_defaultIconPath!.startsWith('/')})',
+      );
     }
 
     final settingsRepo = sl<SettingsRepository>();
@@ -195,7 +197,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
               iconName = 'idle';
               break;
           }
-          final fallbackFile = p.join(supportDir.path, 'bm_cat_${state.name}.png');
+          final fallbackFile = p.join(
+            supportDir.path,
+            'bm_cat_${state.name}.png',
+          );
           final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
             'assets/icons/cat/cat_$iconName.png',
             fallbackFile,
@@ -267,13 +272,20 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           } else {
             path = _defaultIconPath;
           }
-          if (path != null && (path.startsWith('assets/') || File(path).existsSync())) {
+          if (path != null &&
+              (path.startsWith('assets/') || File(path).existsSync())) {
             await _setTrayIconSafe(path, isTemplate: true);
-          } else if (_defaultIconPath != null && (_defaultIconPath!.startsWith('assets/') || File(_defaultIconPath!).existsSync())) {
-            _logger.warning('Missing primary tray icon asset: $path. Using fallback.');
+          } else if (_defaultIconPath != null &&
+              (_defaultIconPath!.startsWith('assets/') ||
+                  File(_defaultIconPath!).existsSync())) {
+            _logger.warning(
+              'Missing primary tray icon asset: $path. Using fallback.',
+            );
             await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
           } else {
-            _logger.warning('Missing both primary and fallback tray icon assets: $path, $_defaultIconPath');
+            _logger.warning(
+              'Missing both primary and fallback tray icon assets: $path, $_defaultIconPath',
+            );
           }
           break;
         case TrayIconMode.defaultIcon:
@@ -302,7 +314,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       if (isPathValid && path != _lastAppliedIconPath) {
         _lastAppliedIconPath = path;
         await _setTrayIconSafe(path!, isTemplate: true);
-        
+
         // On macOS, setting the icon sometimes clears the title depending on implementation.
         // Re-apply current title if it exists.
         if (_currentTitle.isNotEmpty) {
@@ -313,8 +325,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       } else if (!isPathValid && _defaultIconPath != null) {
         // Fallback to default if primary failed
         if (_lastAppliedIconPath != _defaultIconPath) {
-           _lastAppliedIconPath = _defaultIconPath;
-           await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
+          _lastAppliedIconPath = _defaultIconPath;
+          await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
         }
       }
     } catch (e) {
@@ -591,8 +603,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         final tooltip = title.isNotEmpty && _currentTooltip.isNotEmpty
             ? '$title — $_currentTooltip'
             : title.isNotEmpty
-                ? title
-                : _currentTooltip;
+            ? title
+            : _currentTooltip;
         await trayManager.setToolTip(tooltip);
       }
     } catch (_) {}

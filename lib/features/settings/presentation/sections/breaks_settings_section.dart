@@ -34,27 +34,40 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
           children: [
             sectionHeader(
               'Break Configuration',
-              subtitle: 'Customize your rhythm, focus intensity, and break aesthetics.',
+              subtitle:
+                  'Customize your rhythm, focus intensity, and break aesthetics.',
             ),
             const SizedBox(height: 12),
-            
+
             segmentedControl(
               ['Profiles', 'Custom', 'Intensity', 'Themes'],
               _breaksSubTab,
               (i) => setState(() => _breaksSubTab = i),
               isSmall: isSmallScreen,
             ),
-            
+
             SizedBox(height: isSmallScreen ? 24 : 32),
-            
-            if (_breaksSubTab == 0) 
-              BreakProfileSelector(settings: widget.settings, onSave: widget.onSave),
-            if (_breaksSubTab == 1) 
-              CustomIntervalsEditor(settings: widget.settings, onSave: widget.onSave),
-            if (_breaksSubTab == 2) 
-              BreakIntensitySettings(settings: widget.settings, onSave: widget.onSave),
-            if (_breaksSubTab == 3) 
-              BreakAppearanceSettings(settings: widget.settings, onSave: widget.onSave),
+
+            if (_breaksSubTab == 0)
+              BreakProfileSelector(
+                settings: widget.settings,
+                onSave: widget.onSave,
+              ),
+            if (_breaksSubTab == 1)
+              CustomIntervalsEditor(
+                settings: widget.settings,
+                onSave: widget.onSave,
+              ),
+            if (_breaksSubTab == 2)
+              BreakIntensitySettings(
+                settings: widget.settings,
+                onSave: widget.onSave,
+              ),
+            if (_breaksSubTab == 3)
+              BreakAppearanceSettings(
+                settings: widget.settings,
+                onSave: widget.onSave,
+              ),
           ],
         );
       },

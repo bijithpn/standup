@@ -109,11 +109,7 @@ class ErrorToastService {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(

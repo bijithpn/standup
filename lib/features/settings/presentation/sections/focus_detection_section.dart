@@ -20,7 +20,8 @@ class FocusDetectionSection extends StatefulWidget {
   State<FocusDetectionSection> createState() => _FocusDetectionSectionState();
 }
 
-class _FocusDetectionSectionState extends State<FocusDetectionSection> with WidgetsBindingObserver {
+class _FocusDetectionSectionState extends State<FocusDetectionSection>
+    with WidgetsBindingObserver {
   CalendarPermissionStatus _permState = CalendarPermissionStatus.notDetermined;
   bool _isLoading = false;
   bool _isRequesting = false;
@@ -54,7 +55,8 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
   void didUpdateWidget(FocusDetectionSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Re-check if calendarEnabled just flipped on (e.g. reset-section)
-    if (!oldWidget.settings.calendarEnabled && widget.settings.calendarEnabled) {
+    if (!oldWidget.settings.calendarEnabled &&
+        widget.settings.calendarEnabled) {
       _checkPermission();
     }
   }
@@ -70,8 +72,11 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
           _permState = status;
           _isLoading = false;
         });
-        if (status == CalendarPermissionStatus.granted && !_settings.calendarEnabled) {
-          _save(_settings.copyWith(calendarEnabled: true, detectMeetings: true));
+        if (status == CalendarPermissionStatus.granted &&
+            !_settings.calendarEnabled) {
+          _save(
+            _settings.copyWith(calendarEnabled: true, detectMeetings: true),
+          );
         }
       }
     } catch (_) {
@@ -133,7 +138,10 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
     } catch (e) {
       if (mounted) {
         setState(() => _permState = CalendarPermissionStatus.denied);
-        Toast.showError(context, 'Unexpected error requesting calendar access.');
+        Toast.showError(
+          context,
+          'Unexpected error requesting calendar access.',
+        );
       }
     } finally {
       if (mounted) {
@@ -236,7 +244,8 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
           color: AppTheme.warning,
           icon: Icons.lock_outline_rounded,
           title: 'Calendar access denied',
-          subtitle: 'Please grant calendar access in System Settings. If already enabled, toggle it OFF and ON again to refresh the system cache.',
+          subtitle:
+              'Please grant calendar access in System Settings. If already enabled, toggle it OFF and ON again to refresh the system cache.',
           actions: [
             _BannerButton(
               label: 'Open Settings',
@@ -257,7 +266,8 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection> with Widg
           color: AppTheme.warning,
           icon: Icons.lock_outline_rounded,
           title: 'Calendar access required',
-          subtitle: 'Grant access so BreakMate can see your meetings and avoid interrupting them.',
+          subtitle:
+              'Grant access so BreakMate can see your meetings and avoid interrupting them.',
           actions: [
             _BannerButton(
               label: _isRequesting ? 'Requesting…' : 'Grant Access',
@@ -384,9 +394,7 @@ class _BannerButton extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: onTap == null
-                    ? color.withValues(alpha: 0.5)
-                    : color,
+                color: onTap == null ? color.withValues(alpha: 0.5) : color,
                 fontFamily: 'Inter',
               ),
             ),

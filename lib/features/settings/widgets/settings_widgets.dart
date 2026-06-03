@@ -650,10 +650,7 @@ Widget colorRow(String label, Color color) {
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.3),
-                blurRadius: 6,
-              ),
+              BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 6),
             ],
           ),
         ),

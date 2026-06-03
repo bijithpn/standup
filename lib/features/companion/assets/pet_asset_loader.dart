@@ -36,7 +36,9 @@ class PetAssetLoader {
       return fi.image;
     } catch (e) {
       _failedAssets.add(path);
-      debugPrint('Warning: Failed to load asset $path. Caching failure. Error: $e');
+      debugPrint(
+        'Warning: Failed to load asset $path. Caching failure. Error: $e',
+      );
       throw Exception('Failed to load pet asset: $path, error: $e');
     }
   }
@@ -67,7 +69,9 @@ class PetAssetLoader {
 
   static Future<String> extractPetIconPath(PetTheme theme) async {
     final supportDir = await getApplicationSupportDirectory();
-    final file = File(p.join(supportDir.path, 'bm_selected_pet_${theme.id}.png'));
+    final file = File(
+      p.join(supportDir.path, 'bm_selected_pet_${theme.id}.png'),
+    );
 
     // If already extracted, return cached path
     if (await file.exists()) {
@@ -332,7 +336,7 @@ class PetAssetLoader {
   }) async {
     try {
       final file = File(outputPath);
-      
+
       if (await file.exists()) {
         return file.path;
       }
@@ -340,12 +344,15 @@ class PetAssetLoader {
       final sourceImage = await loadImage(assetPath);
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
-      
+
       // Template icons MUST be solid black with alpha.
       const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = const ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
+        ..colorFilter = const ui.ColorFilter.mode(
+          tintColor,
+          ui.BlendMode.srcIn,
+        );
 
       final rawBytes = await sourceImage.toByteData(
         format: ui.ImageByteFormat.rawRgba,
@@ -456,7 +463,10 @@ class PetAssetLoader {
   }) async {
     final supportDir = await getApplicationSupportDirectory();
     final file = File(
-      p.join(supportDir.path, 'bm_pframe_${theme.id}_${state.name}_${frameIndex}Template@2x.png'),
+      p.join(
+        supportDir.path,
+        'bm_pframe_${theme.id}_${state.name}_${frameIndex}Template@2x.png',
+      ),
     );
 
     if (await file.exists()) {
@@ -556,11 +566,14 @@ class PetAssetLoader {
       const double targetSize = 44.0;
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
-      
+
       const tintColor = ui.Color(0xFF000000);
       final paint = ui.Paint()
         ..filterQuality = ui.FilterQuality.none
-        ..colorFilter = const ui.ColorFilter.mode(tintColor, ui.BlendMode.srcIn);
+        ..colorFilter = const ui.ColorFilter.mode(
+          tintColor,
+          ui.BlendMode.srcIn,
+        );
 
       double contentWidth = (maxX - minX + 1).toDouble();
       double contentHeight = (maxY - minY + 1).toDouble();
@@ -598,12 +611,7 @@ class PetAssetLoader {
       } else {
         canvas.drawImageRect(
           sourceImage,
-          ui.Rect.fromLTWH(
-            sourceX,
-            sourceY,
-            cropW,
-            cropH,
-          ),
+          ui.Rect.fromLTWH(sourceX, sourceY, cropW, cropH),
           const ui.Rect.fromLTWH(2.0, 2.0, targetSize - 4.0, targetSize - 4.0),
           paint,
         );
@@ -635,4 +643,3 @@ class PetAssetLoader {
     CompanionSpriteWidget.clearCache();
   }
 }
-

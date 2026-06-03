@@ -58,28 +58,35 @@ class StatsService extends ChangeNotifier {
       // ⚠️ IMPORTANT: Check streak BEFORE updating lastActiveDate in storage,
       // otherwise _checkAndUpdateStreak will always see lastActive == today.
       _checkAndUpdateStreak(today);
-      
+
       _storage.setString(AppConstants.keyLastActiveDate, today);
       _storage.setInt(AppConstants.keyDailyUsageMinutes, 0);
       _storage.setInt(AppConstants.keyBreaksCompleted, 0);
       _storage.setInt(AppConstants.keyBreaksSkipped, 0);
-      
+
       // Also ensure weeklyData has today's entry
       final weeklyDataJson = _storage.getString(AppConstants.keyWeeklyStats);
       if (weeklyDataJson.isNotEmpty) {
         try {
           final List<dynamic> jsonData = jsonDecode(weeklyDataJson);
-          final List<DailyStats> weeklyData = jsonData.map((e) => DailyStats.fromJson(e)).toList();
-          
+          final List<DailyStats> weeklyData = jsonData
+              .map((e) => DailyStats.fromJson(e))
+              .toList();
+
           if (!weeklyData.any((d) => d.date == today)) {
-            weeklyData.add(DailyStats(
-              date: today,
-              breaksCompleted: 0,
-              breaksSkipped: 0,
-              usageMinutes: 0,
-            ));
+            weeklyData.add(
+              DailyStats(
+                date: today,
+                breaksCompleted: 0,
+                breaksSkipped: 0,
+                usageMinutes: 0,
+              ),
+            );
             if (weeklyData.length > 365) weeklyData.removeAt(0);
-            _storage.setString(AppConstants.keyWeeklyStats, jsonEncode(weeklyData.map((e) => e.toJson()).toList()));
+            _storage.setString(
+              AppConstants.keyWeeklyStats,
+              jsonEncode(weeklyData.map((e) => e.toJson()).toList()),
+            );
           }
         } catch (e) {
           debugPrint('Error migrating weekly data: $e');

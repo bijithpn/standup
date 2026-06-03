@@ -119,8 +119,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       }
 
       // Pick a single random image so all displays show the same one
-      _classicImage = AppConstants.wellnessSlideshow[
-          Random().nextInt(AppConstants.wellnessSlideshow.length)];
+      _classicImage =
+          AppConstants.wellnessSlideshow[Random().nextInt(
+            AppConstants.wellnessSlideshow.length,
+          )];
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
@@ -136,6 +138,12 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'companionPetTheme': settings.companionPetTheme,
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
+          'showWellnessNotes': settings.showExercisesInBreak,
+          'durationSeconds':
+              _timerEngine.activeBreak?.durationSeconds ??
+              _timerEngine.countdownSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+          'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
         },
@@ -152,7 +160,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       overlayService.showOverlay(
         type: OverlayType.preBreakWarning,
         builder: (_) => const SizedBox.shrink(),
-        overlayData: {'secondsRemaining': _timerEngine.countdownSeconds},
+        reminderType: 'breakStart',
+        overlayData: {
+          'secondsRemaining': _timerEngine.countdownSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+          'durationSeconds': _timerEngine.countdownSeconds,
+          'targetEndTime': DateTime.now()
+              .add(Duration(seconds: _timerEngine.countdownSeconds))
+              .millisecondsSinceEpoch,
+        },
       );
     } else if (!shouldShowBreak &&
         !shouldShowWarning &&
@@ -308,16 +324,19 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// Shows the break overlay for 10 seconds as a preview, without starting 
+  /// Shows the break overlay for 10 seconds as a preview, without starting
   /// a real session or affecting any statistics/database.
-  void previewBreak() {
+  void previewBreak({String? templateId}) {
     final overlayService = sl<OverlayWindowService>();
     final settings = _settingsRepo.currentSettings;
+    final activeTemplate = templateId ?? settings.breakTemplate;
 
-    _logger.info('Starting break preview');
+    _logger.info('Starting break preview for template: $activeTemplate');
 
-    _classicImage = AppConstants.wellnessSlideshow[
-        Random().nextInt(AppConstants.wellnessSlideshow.length)];
+    _classicImage =
+        AppConstants.wellnessSlideshow[Random().nextInt(
+          AppConstants.wellnessSlideshow.length,
+        )];
 
     overlayService.showOverlay(
       type: OverlayType.breakScreen,
@@ -325,17 +344,21 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       isPreview: true,
       overlayData: {
         'isLong': false,
-        'template': settings.breakTemplate,
-        'breakTemplate': settings.breakTemplate,
+        'template': activeTemplate,
+        'breakTemplate': activeTemplate,
         'classicImage': _classicImage,
         'companionPetTheme': settings.companionPetTheme,
         'enableAnimations': settings.enableAnimations,
         'intensityLevel': settings.intensityLevel,
+        'showWellnessNotes': settings.showExercisesInBreak,
         'exerciseTitle': 'Preview Mode',
         'exerciseInstructions':
             'This is a preview of your selected break template. It will not be recorded in your history.',
-        'durationSeconds': 300,
-        'remainingSeconds': 300,
+        'durationSeconds': settings.shortBreakDurationSeconds,
+        'remainingSeconds': settings.shortBreakDurationSeconds,
+        'targetEndTime': DateTime.now()
+            .add(Duration(seconds: settings.shortBreakDurationSeconds))
+            .millisecondsSinceEpoch,
       },
     );
 
@@ -402,6 +425,12 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'companionPetTheme': settings.companionPetTheme,
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
+          'showWellnessNotes': settings.showExercisesInBreak,
+          'durationSeconds':
+              _timerEngine.activeBreak?.durationSeconds ??
+              _timerEngine.countdownSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+          'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
         },

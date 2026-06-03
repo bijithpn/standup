@@ -60,10 +60,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         'settings': _storage.settingsBox?.get(1)?.toMap() ?? {},
         'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},
         'global_stats': _storage.globalStatsBox?.get(1)?.toMap() ?? {},
-        'daily_stats': _storage.dailyStatsBox
-                ?.getAll()
-                .map((e) => e.toMap())
-                .toList() ??
+        'daily_stats':
+            _storage.dailyStatsBox?.getAll().map((e) => e.toMap()).toList() ??
             [],
       };
 
@@ -172,7 +170,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       if (!await file.exists()) {
-        throw Exception("breakmate_backup.json not found in Downloads or Documents");
+        throw Exception(
+          "breakmate_backup.json not found in Downloads or Documents",
+        );
       }
 
       final content = await file.readAsString();
@@ -273,7 +273,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
             CupertinoIcons.arrow_right_arrow_left_circle,
           ),
         ]),
-        
+
         sectionHeader(
           'Backup & Restore',
           subtitle: 'Securely move your data between devices.',
@@ -288,17 +288,26 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                     Expanded(
                       child: MinimalButton(
                         onPressed: _exportBackupJson,
-                        backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                        backgroundColor: AppTheme.accentColor.withValues(
+                          alpha: 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(10),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(CupertinoIcons.cloud_upload, size: 16, color: AppTheme.accentColor),
+                            Icon(
+                              CupertinoIcons.cloud_upload,
+                              size: 16,
+                              color: AppTheme.accentColor,
+                            ),
                             const SizedBox(width: 8),
                             Text(
                               'Export Backup',
-                              style: TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: AppTheme.accentColor,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -314,11 +323,18 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(CupertinoIcons.table, size: 16, color: AppTheme.textPrimary),
+                            Icon(
+                              CupertinoIcons.table,
+                              size: 16,
+                              color: AppTheme.textPrimary,
+                            ),
                             const SizedBox(width: 8),
                             const Text(
                               'Export CSV',
-                              style: TextStyle(color: AppTheme.textPrimary, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -337,11 +353,18 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(CupertinoIcons.folder_badge_plus, size: 16, color: AppTheme.textSecondary),
+                        Icon(
+                          CupertinoIcons.folder_badge_plus,
+                          size: 16,
+                          color: AppTheme.textSecondary,
+                        ),
                         const SizedBox(width: 8),
                         const Text(
                           'Restore JSON Backup from Downloads',
-                          style: TextStyle(color: AppTheme.textSecondary, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
@@ -352,17 +375,14 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           ),
         ]),
 
-        sectionHeader(
-          'Danger Zone',
-          subtitle: 'Irreversible data actions.',
-        ),
+        sectionHeader('Danger Zone', subtitle: 'Irreversible data actions.'),
         buildCard([
           actionRow(
             label: 'Clear All Data',
             subtitle: 'Delete all settings and local analytics history.',
             buttonText: 'Reset',
             onPressed: () {
-               // Show confirmation
+              // Show confirmation
             },
             isDestructive: true,
           ),

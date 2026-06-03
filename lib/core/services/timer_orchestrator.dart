@@ -64,7 +64,7 @@ class TimerOrchestrator {
     // 3. Listen to high-frequency notifiers for tray updates
     timerEngine.countdownNotifier.addListener(_updateTray);
     timerEngine.workElapsedNotifier.addListener(_updateTray);
-    
+
     // Listen for low-frequency changes (state, mode, etc.) for state saving
     timerEngine.addListener(_onTimerEngineChanged);
 
@@ -79,7 +79,8 @@ class TimerOrchestrator {
 
     // 7. Start periodic state auto-saving for crash/restart resilience (every 10 seconds)
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      if (timerEngine.state == TimerState.running || timerEngine.state == TimerState.breakActive) {
+      if (timerEngine.state == TimerState.running ||
+          timerEngine.state == TimerState.breakActive) {
         saveState();
       }
     });
@@ -136,7 +137,7 @@ class TimerOrchestrator {
     } else {
       notificationService.showBreakReminder(isLong: event.isLongBreak);
     }
-    
+
     saveState();
   }
 
@@ -167,8 +168,8 @@ class TimerOrchestrator {
       final activityLevel = sessionMinutes > 45
           ? 'high'
           : sessionMinutes > 20
-              ? 'medium'
-              : 'low';
+          ? 'medium'
+          : 'low';
 
       adaptiveBreakService?.recordWorkSession(
         duration: sessionDuration,
@@ -177,10 +178,13 @@ class TimerOrchestrator {
       );
 
       // Fetch suggested next break interval
-      final suggestedInterval = adaptiveBreakService?.getSuggestedBreakInterval();
+      final suggestedInterval = adaptiveBreakService
+          ?.getSuggestedBreakInterval();
       if (suggestedInterval != null && suggestedInterval > 0) {
         timerEngine.shortBreakIntervalMinutes = suggestedInterval;
-        _logger.info('Adaptive: Next break interval updated to $suggestedInterval min');
+        _logger.info(
+          'Adaptive: Next break interval updated to $suggestedInterval min',
+        );
       }
 
       timerEngine.stateData.lastBreakFinishedAt = now;
@@ -193,8 +197,12 @@ class TimerOrchestrator {
     final settings = settingsRepository.currentSettings;
 
     if (settings.companionEnabled) {
-      final interactionType = event.reminderType == 'posture' ? 'stretch' : 'blink';
-      eventBus.emit(CompanionInteractionEvent(interactionType: interactionType));
+      final interactionType = event.reminderType == 'posture'
+          ? 'stretch'
+          : 'blink';
+      eventBus.emit(
+        CompanionInteractionEvent(interactionType: interactionType),
+      );
 
       statsService.recordWellnessAction();
 
@@ -218,7 +226,8 @@ class TimerOrchestrator {
       );
 
       Future.delayed(const Duration(seconds: 5), () {
-        if (sl<OverlayWindowService>().currentOverlayType == OverlayType.quickReminder) {
+        if (sl<OverlayWindowService>().currentOverlayType ==
+            OverlayType.quickReminder) {
           sl<OverlayWindowService>().hideOverlay();
         }
       });
@@ -240,19 +249,21 @@ class TimerOrchestrator {
 
     final mins = remaining.inMinutes;
     final secs = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-    final title = settings.menuBarStyle == 'countdown' || settings.trayIconStyle == 'countdown'
+    final title =
+        settings.menuBarStyle == 'countdown' ||
+            settings.trayIconStyle == 'countdown'
         ? '$mins:$secs'
         : '';
 
     final status = state == TimerState.breakActive
         ? 'Break active'
         : timerEngine.contextManager.isSmartPauseActive()
-            ? 'Paused for meeting or Focus'
-            : !timerEngine.contextManager.isWithinWorkingHours()
-                ? 'Paused outside working hours'
-                : state == TimerState.paused
-                    ? 'Paused'
-                    : 'Next break';
+        ? 'Paused for meeting or Focus'
+        : !timerEngine.contextManager.isWithinWorkingHours()
+        ? 'Paused outside working hours'
+        : state == TimerState.paused
+        ? 'Paused'
+        : 'Next break';
     final tooltip = '$status in $mins:$secs';
 
     if (title != _lastTrayTitle) {
@@ -269,7 +280,9 @@ class TimerOrchestrator {
     activityMonitor.setIdleThreshold(timerEngine.pauseTimerAfterMinutes);
     activityMonitor.setActivityCallback((isActive) {
       final state = timerEngine.state;
-      if (isActive && state == TimerState.paused && !timerEngine.stateData.isManuallyPaused) {
+      if (isActive &&
+          state == TimerState.paused &&
+          !timerEngine.stateData.isManuallyPaused) {
         timerEngine.resumeTimers();
       } else if (!isActive && state == TimerState.running) {
         timerEngine.pauseTimers();
@@ -279,7 +292,9 @@ class TimerOrchestrator {
           () {
             if (timerEngine.state == TimerState.paused) {
               timerEngine.stateData.workElapsed = Duration.zero;
-              _logger.info('Timer reset after ${timerEngine.resetTimerAfterMinutes} min idle');
+              _logger.info(
+                'Timer reset after ${timerEngine.resetTimerAfterMinutes} min idle',
+              );
             }
           },
         );
@@ -335,23 +350,24 @@ class TimerOrchestrator {
       defaultLongBreakDurationMinutes: timerEngine.longBreakDurationMinutes,
       defaultPauseTimerAfterMinutes: timerEngine.pauseTimerAfterMinutes,
       defaultResetTimerAfterMinutes: timerEngine.resetTimerAfterMinutes,
-      onSettingsRestored: (
-        shortInterval,
-        shortDuration,
-        preWarning,
-        longInterval,
-        longDuration,
-        pauseAfter,
-        resetAfter,
-      ) {
-        timerEngine.shortBreakIntervalMinutes = shortInterval;
-        timerEngine.shortBreakDurationSeconds = shortDuration;
-        timerEngine.preBreakWarningSeconds = preWarning;
-        timerEngine.longBreakIntervalMinutes = longInterval;
-        timerEngine.longBreakDurationMinutes = longDuration;
-        timerEngine.pauseTimerAfterMinutes = pauseAfter;
-        timerEngine.resetTimerAfterMinutes = resetAfter;
-      },
+      onSettingsRestored:
+          (
+            shortInterval,
+            shortDuration,
+            preWarning,
+            longInterval,
+            longDuration,
+            pauseAfter,
+            resetAfter,
+          ) {
+            timerEngine.shortBreakIntervalMinutes = shortInterval;
+            timerEngine.shortBreakDurationSeconds = shortDuration;
+            timerEngine.preBreakWarningSeconds = preWarning;
+            timerEngine.longBreakIntervalMinutes = longInterval;
+            timerEngine.longBreakDurationMinutes = longDuration;
+            timerEngine.pauseTimerAfterMinutes = pauseAfter;
+            timerEngine.resetTimerAfterMinutes = resetAfter;
+          },
     );
 
     // Restore session state if feature is enabled
@@ -382,8 +398,11 @@ class TimerOrchestrator {
         timerEngine.stateData.eyeBlinkElapsedSeconds = 0;
         timerEngine.stateData.isPreBreak = false;
         timerEngine.stateData.longBreakWindowStartedAt = null;
-        timerEngine.stateData.countdownSeconds = timerEngine.timeUntilNextShortBreak.inSeconds;
-        _logger.info('New day or no session found. Daily progress reset to zero.');
+        timerEngine.stateData.countdownSeconds =
+            timerEngine.timeUntilNextShortBreak.inSeconds;
+        _logger.info(
+          'New day or no session found. Daily progress reset to zero.',
+        );
       }
     } else {
       // Feature disabled - clear any saved session and start fresh from zero
@@ -394,7 +413,8 @@ class TimerOrchestrator {
       timerEngine.stateData.eyeBlinkElapsedSeconds = 0;
       timerEngine.stateData.isPreBreak = false;
       timerEngine.stateData.longBreakWindowStartedAt = null;
-      timerEngine.stateData.countdownSeconds = timerEngine.timeUntilNextShortBreak.inSeconds;
+      timerEngine.stateData.countdownSeconds =
+          timerEngine.timeUntilNextShortBreak.inSeconds;
       _logger.info('Session resume disabled. Started fresh from zero.');
     }
 

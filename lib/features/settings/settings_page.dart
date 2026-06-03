@@ -202,8 +202,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-
-
   List<String> get _settingsWarnings {
     final warnings = <String>[];
     if (_settings.longBreakIntervalMinutes <=

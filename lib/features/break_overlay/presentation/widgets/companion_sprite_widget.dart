@@ -92,7 +92,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     final path = _getAssetPath();
     if (path.isEmpty) return;
 
-    if (path == _currentLoadedPath && _loadedImage != null && widget.backgroundImagePath == _currentBackgroundPath) {
+    if (path == _currentLoadedPath &&
+        _loadedImage != null &&
+        widget.backgroundImagePath == _currentBackgroundPath) {
       _setupTicker();
       return;
     }
@@ -105,14 +107,16 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     try {
       await _loadImage(path);
-      if (widget.backgroundImagePath != null && widget.backgroundImagePath != _currentBackgroundPath) {
+      if (widget.backgroundImagePath != null &&
+          widget.backgroundImagePath != _currentBackgroundPath) {
         await _loadBackground(widget.backgroundImagePath!);
-      } else if (widget.backgroundImagePath == null && _backgroundImage != null) {
+      } else if (widget.backgroundImagePath == null &&
+          _backgroundImage != null) {
         _backgroundImage?.dispose();
         _backgroundImage = null;
         _currentBackgroundPath = null;
       }
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -144,7 +148,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       debugPrint('CompanionSpriteWidget: Error loading background $path: $e');
     }
   }
-
 
   String _getAssetPath() {
     final dynamic anim =

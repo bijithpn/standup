@@ -576,7 +576,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('detect_meetings', settings.detectMeetings);
     await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
     await _storage.setBool('calendar_enabled', settings.calendarEnabled);
-    await _storage.setBool('enable_session_resume', settings.enableSessionResume);
+    await _storage.setBool(
+      'enable_session_resume',
+      settings.enableSessionResume,
+    );
 
     // Companion
     await _storage.setString(
