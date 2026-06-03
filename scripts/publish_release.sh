@@ -49,8 +49,28 @@ set -euo pipefail
 # ── Paths ─────────────────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-APPCAST="$PROJECT_ROOT/appcast.xml"
-GITHUB_REPO="bijithintersmart/break-mate-update"
+
+# ── Load release config from .env ─────────────────────────────────────────────
+ENV_FILE="$PROJECT_ROOT/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  # shellcheck source=/dev/null
+  set -o allexport
+  source "$ENV_FILE"
+  set +o allexport
+else
+  echo -e "\033[0;31m[ERROR]\033[0m .env not found at $ENV_FILE"
+  echo "  Copy .env.example to .env and fill in your values."
+  exit 1
+fi
+
+# ── Derived config (built from .env.release values) ───────────────────────────
+APP_NAME="${APP_NAME:-BreakMate}"
+RELEASE_GITHUB_REPO="${RELEASE_GITHUB_REPO:-bijithintersmart/standup}"
+APPCAST_GITHUB_REPO="${APPCAST_GITHUB_REPO:-$RELEASE_GITHUB_REPO}"
+GIT_BRANCH="${GIT_BRANCH:-main}"
+APPCAST_SUBPATH="${APPCAST_SUBPATH:-appcast.xml}"
+
+APPCAST="$PROJECT_ROOT/${APPCAST_SUBPATH}"
 
 # ── Colour helpers ─────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
@@ -232,7 +252,7 @@ fi
 
 # ── Build release metadata ─────────────────────────────────────────────────────
 PUB_DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
-DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/v${VERSION}/BreakMate-Installer.dmg"
+DOWNLOAD_URL="https://github.com/${APPCAST_GITHUB_REPO}/releases/download/v${VERSION}/${APP_NAME}-Installer.dmg"
 
 # HTML-escape the notes for CDATA safety
 NOTES_HTML=$(echo "$RELEASE_NOTES" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
@@ -390,8 +410,8 @@ if [[ "$PUSH" == true && "$DRY_RUN" == false ]]; then
   if ! git diff --quiet "$APPCAST" 2>/dev/null; then
     git add "$APPCAST"
     git commit -m "chore: update appcast.xml for v${VERSION} release"
-    git push origin main
-    success "appcast.xml committed and pushed to origin/main."
+    git push origin "${GIT_BRANCH}"
+    success "appcast.xml committed and pushed to ${GIT_BRANCH}."
   else
     info "appcast.xml has no changes — nothing to commit."
   fi

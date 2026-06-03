@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
@@ -26,7 +27,12 @@ class NotificationService {
         requestBadgePermission: false,
         requestSoundPermission: false,
       );
-      const settings = InitializationSettings(macOS: macOS);
+      const windows = WindowsInitializationSettings(
+        appName: 'BreakMate',
+        appUserModelId: 'com.bijith.breakmate',
+        guid: 'd49b0314-ee68-4b06-9a59-9a4a6f91c2e5',
+      );
+      const settings = InitializationSettings(macOS: macOS, windows: windows);
       await _plugin.initialize(settings: settings);
       
       // Request permission asynchronously without blocking the app loader
@@ -63,6 +69,7 @@ class NotificationService {
   }
 
   Future<bool> requestPermission() async {
+    if (Platform.isWindows) return true;
     try {
       final granted = await _plugin
           .resolvePlatformSpecificImplementation<
@@ -147,26 +154,34 @@ class NotificationService {
 
     await _errorHandler.guard(
       action: () async {
-        // Retrieve selected companion theme
-        final settingsRepo = sl<SettingsRepository>();
-        final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
-        final theme = PetTheme.getTheme(selectedThemeId);
+        NotificationDetails notificationDetails;
 
-        // Extract the icon for the selected companion theme
-        final iconPath = await PetAssetLoader.extractPetIconPath(theme);
+        if (Platform.isWindows) {
+          notificationDetails = const NotificationDetails(
+            windows: WindowsNotificationDetails(),
+          );
+        } else {
+          // Retrieve selected companion theme
+          final settingsRepo = sl<SettingsRepository>();
+          final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+          final theme = PetTheme.getTheme(selectedThemeId);
+          final iconPath = await PetAssetLoader.extractPetIconPath(theme);
 
-        final macOS = DarwinNotificationDetails(
-          presentAlert: true,
-          presentSound: _soundEnabled,
-          attachments: iconPath.isNotEmpty
-              ? [DarwinNotificationAttachment(iconPath)]
-              : null,
-        );
+          final macOS = DarwinNotificationDetails(
+            presentAlert: true,
+            presentSound: _soundEnabled,
+            attachments: iconPath.isNotEmpty
+                ? [DarwinNotificationAttachment(iconPath)]
+                : null,
+          );
+          notificationDetails = NotificationDetails(macOS: macOS);
+        }
+
         await _plugin.show(
           id: id,
           title: title,
           body: body,
-          notificationDetails: NotificationDetails(macOS: macOS),
+          notificationDetails: notificationDetails,
         );
       },
       errorType: ErrorType.notification,

@@ -1,6 +1,7 @@
 #include "companion_window_manager.h"
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
+#include "ipc_bridge_manager.h"
 
 CompanionWindowManager* CompanionWindowManager::instance_ = nullptr;
 
@@ -53,6 +54,8 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id, const st
   companion_window_->SetQuitOnClose(false);
   companion_window_->ConfigureAsOverlay();
   companion_window_->Show();
+  
+  IpcBridgeManager::GetInstance()->RegisterEngine(companion_window_->GetEngine());
 
   // Set a timer to track mouse position for cursor following
   SetTimer(companion_window_->GetHandle(), 2, 16, [](HWND hwnd, UINT msg, UINT_PTR id, DWORD time) {
@@ -110,6 +113,9 @@ void CompanionWindowManager::UpdateMousePosition() {
 void CompanionWindowManager::HideCompanion() {
   if (companion_window_) {
     KillTimer(companion_window_->GetHandle(), 2);
+    if (companion_window_->GetEngine()) {
+      IpcBridgeManager::GetInstance()->UnregisterEngine(companion_window_->GetEngine());
+    }
     companion_window_->Destroy();
     companion_window_ = nullptr;
   }
