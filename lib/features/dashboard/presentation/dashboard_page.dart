@@ -22,7 +22,8 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserver {
+class _DashboardPageState extends State<DashboardPage>
+    with WidgetsBindingObserver {
   List<CalendarEvent>? _calendarEvents;
   bool _calendarLoading = false;
   bool _calendarPermissionGranted = false;
@@ -98,12 +99,12 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
 
       _calendarPermissionGranted = true;
       _calendarPermissionDenied = false; // Reset if confirmed
-      
+
       // Query events for the entire current day (from start of today to end of today)
       final now = DateTime.now();
       final startOfToday = DateTime(now.year, now.month, now.day);
       final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      
+
       final events = await calendarService.getEvents(startOfToday, endOfToday);
       if (mounted) {
         setState(() {
@@ -657,16 +658,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
   }
 
   Widget _buildCalendarPermissionPrompt() {
-    final title = _calendarPermissionDenied ? 'Calendar access denied' : 'Calendar access required';
+    final title = _calendarPermissionDenied
+        ? 'Calendar access denied'
+        : 'Calendar access required';
     final subtitle = _calendarPermissionDenied
         ? 'Please enable calendar access in System Settings to see your events. If already enabled, toggle it OFF and ON again to refresh the system cache.'
         : 'Calendar access required to show upcoming events and avoid interrupting your meetings.';
     final icon = _calendarPermissionDenied
         ? Icons.error_outline_rounded
         : Icons.lock_outline_rounded;
-    final color = _calendarPermissionDenied
-        ? AppTheme.error
-        : AppTheme.warning;
+    final color = _calendarPermissionDenied ? AppTheme.error : AppTheme.warning;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
@@ -718,11 +719,18 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
               GestureDetector(
                 onTap: _isRequestingPermission ? null : _requestCalendarAccess,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6366F1).withValues(alpha: _isRequestingPermission ? 0.05 : 0.12),
+                    color: const Color(
+                      0xFF6366F1,
+                    ).withValues(alpha: _isRequestingPermission ? 0.05 : 0.12),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFF6366F1).withValues(alpha: 0.25)),
+                    border: Border.all(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.25),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -741,7 +749,9 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                       Text(
                         _isRequestingPermission
                             ? 'Requesting...'
-                            : (_calendarPermissionDenied ? 'Try Again' : 'Grant Access'),
+                            : (_calendarPermissionDenied
+                                  ? 'Try Again'
+                                  : 'Grant Access'),
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -758,11 +768,16 @@ class _DashboardPageState extends State<DashboardPage> with WidgetsBindingObserv
                 GestureDetector(
                   onTap: () => sl<CalendarService>().openSettings(),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.textSecondary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.textSecondary.withValues(alpha: 0.25)),
+                      border: Border.all(
+                        color: AppTheme.textSecondary.withValues(alpha: 0.25),
+                      ),
                     ),
                     child: const Text(
                       'Open Settings',
@@ -1140,7 +1155,9 @@ class _CalendarEventRow extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withValues(alpha: 0.12),
+                          color: const Color(
+                            0xFF6366F1,
+                          ).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(100),
                         ),
                         child: Text(

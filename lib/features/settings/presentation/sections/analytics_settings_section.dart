@@ -64,10 +64,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               const SizedBox(height: 4),
               const Text(
                 AppStrings.analyticsSubtitle,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
             ],
           ),
@@ -91,18 +88,18 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     final chartPeriod = isMonth
         ? ChartPeriod.month
         : _selectedFilter == 1
-            ? ChartPeriod.week
-            : ChartPeriod.today;
+        ? ChartPeriod.week
+        : ChartPeriod.today;
     final chartTitle = _selectedFilter == 0
         ? "Today's Breakdown"
         : _selectedFilter == 1
-            ? 'Weekly Completion'
-            : 'Monthly Overview';
+        ? 'Weekly Completion'
+        : 'Monthly Overview';
     final chartSubtitle = _selectedFilter == 0
         ? 'Completed vs skipped breaks today.'
         : _selectedFilter == 1
-            ? 'Break completions for each day this week.'
-            : 'Total breaks completed per week this month.';
+        ? 'Break completions for each day this week.'
+        : 'Total breaks completed per week this month.';
 
     return Container(
       width: double.infinity,
@@ -300,7 +297,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
             ),
           ],
         );
-      }
+      },
     );
   }
 

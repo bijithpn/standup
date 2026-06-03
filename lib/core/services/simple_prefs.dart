@@ -43,7 +43,9 @@ class SimplePrefs {
         final decoded = jsonDecode(raw);
         if (decoded is Map<String, dynamic>) {
           _data = decoded;
-          debugPrint('[SimplePrefs] Loaded ${_data.length} keys: ${_data.keys.toList()}');
+          debugPrint(
+            '[SimplePrefs] Loaded ${_data.length} keys: ${_data.keys.toList()}',
+          );
           return;
         }
       }

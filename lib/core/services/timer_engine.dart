@@ -42,8 +42,9 @@ class TimerEngine extends ChangeNotifier {
   int _resetTimerAfterMinutes = 15;
 
   final ValueNotifier<int> countdownNotifier = ValueNotifier<int>(0);
-  final ValueNotifier<Duration> workElapsedNotifier =
-      ValueNotifier<Duration>(Duration.zero);
+  final ValueNotifier<Duration> workElapsedNotifier = ValueNotifier<Duration>(
+    Duration.zero,
+  );
   final ValueNotifier<Duration> totalWorkTodayNotifier =
       ValueNotifier<Duration>(Duration.zero);
 
@@ -61,7 +62,7 @@ class TimerEngine extends ChangeNotifier {
       calendarService: calendarService,
     );
     _syncSettingsFromRepo();
-    
+
     // Initialize notifiers
     countdownNotifier.value = _stateData.countdownSeconds;
     workElapsedNotifier.value = _stateData.workElapsed;
@@ -148,6 +149,7 @@ class TimerEngine extends ChangeNotifier {
     }
     return _stateData.countdownSeconds;
   }
+
   bool get isCompletionState => _stateData.isCompletionState;
   bool get isPreBreak => _stateData.isPreBreak;
   Duration get totalWorkToday => _stateData.totalWorkToday;
@@ -261,20 +263,20 @@ class TimerEngine extends ChangeNotifier {
         _stateData.totalWorkToday += delta;
         _stateData.postureElapsedSeconds += delta.inSeconds;
         _stateData.eyeBlinkElapsedSeconds += delta.inSeconds;
-        
+
         final wasPreBreak = isPreBreak;
         _checkBreakConditions();
         if (wasPreBreak != isPreBreak) significantChange = true;
-        
+
         _checkHealthReminders();
-        
+
         workElapsedNotifier.value = _stateData.workElapsed;
         totalWorkTodayNotifier.value = _stateData.totalWorkToday;
         countdownNotifier.value = timeUntilNextShortBreak.inSeconds;
       } else if (state == TimerState.breakActive) {
         _stateData.countdownSeconds--;
         countdownNotifier.value = _stateData.countdownSeconds;
-        
+
         if (countdownSeconds <= 0) {
           finishBreak(skipped: false);
           return;
@@ -295,7 +297,7 @@ class TimerEngine extends ChangeNotifier {
         _stateData.breakEndTime = null;
       }
 
-      if (_stateData.workEndTime != prevWorkEndTime || 
+      if (_stateData.workEndTime != prevWorkEndTime ||
           _stateData.breakEndTime != prevBreakEndTime) {
         significantChange = true;
       }
@@ -315,7 +317,6 @@ class TimerEngine extends ChangeNotifier {
       }
     });
   }
-
 
   bool _checkClockOut(DateTime now) {
     if (_contextManager.checkClockOut(now, _stateData.clockOutTriggered)) {
@@ -358,7 +359,7 @@ class TimerEngine extends ChangeNotifier {
 
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
-      
+
       // Calendar awareness
       _contextManager.isMeetingUpcoming().then((isMeeting) {
         if (isMeeting) {
@@ -408,10 +409,7 @@ class TimerEngine extends ChangeNotifier {
   void _triggerHealthReminder(String reminderType, String displayType) {
     _logger.info('Triggering $reminderType reminder ($displayType)');
     _emit(
-      HealthReminderEvent(
-        reminderType: reminderType,
-        displayType: displayType,
-      ),
+      HealthReminderEvent(reminderType: reminderType, displayType: displayType),
     );
   }
 

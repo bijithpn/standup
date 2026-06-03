@@ -57,7 +57,7 @@ class BreakProfileSelector extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: isSelected 
+                              color: isSelected
                                   ? AppTheme.accentColor.withValues(alpha: 0.15)
                                   : Colors.white.withValues(alpha: 0.05),
                               shape: BoxShape.circle,
@@ -91,8 +91,10 @@ class BreakProfileSelector extends StatelessWidget {
                                 Text(
                                   '${p.shortIntervalMinutes}m interval • ${p.shortDurationSeconds}s duration',
                                   style: TextStyle(
-                                    color: isSelected 
-                                        ? AppTheme.textSecondary.withValues(alpha: 0.7) 
+                                    color: isSelected
+                                        ? AppTheme.textSecondary.withValues(
+                                            alpha: 0.7,
+                                          )
                                         : AppTheme.textMuted,
                                     fontSize: 12,
                                   ),
@@ -102,7 +104,10 @@ class BreakProfileSelector extends StatelessWidget {
                           ),
                           if (isSelected)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppTheme.accentColor,
                                 borderRadius: BorderRadius.circular(4),
@@ -133,10 +138,14 @@ class BreakProfileSelector extends StatelessWidget {
 
   IconData _getProfileIcon(String id) {
     switch (id) {
-      case 'balanced': return CupertinoIcons.infinite;
-      case 'deep_work': return CupertinoIcons.flame;
-      case 'pomodoro': return CupertinoIcons.timer;
-      default: return CupertinoIcons.layers;
+      case 'balanced':
+        return CupertinoIcons.infinite;
+      case 'deep_work':
+        return CupertinoIcons.flame;
+      case 'pomodoro':
+        return CupertinoIcons.timer;
+      default:
+        return CupertinoIcons.layers;
     }
   }
 }

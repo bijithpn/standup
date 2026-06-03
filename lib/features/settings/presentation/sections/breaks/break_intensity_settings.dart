@@ -88,8 +88,8 @@ class BreakIntensitySettings extends StatelessWidget {
           ),
           divider(),
           toggleRow(
-            'Show Exercises During Break',
-            'Display a random exercise on the break screen.',
+            'Show Wellness Notes',
+            'Display tips and exercise notes on break templates.',
             settings.showExercisesInBreak,
             (val) {
               onSave(settings.copyWith(showExercisesInBreak: val));

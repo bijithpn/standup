@@ -45,7 +45,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     sl<EventBus>().on<NotificationPermissionDeniedEvent>().listen((event) {
       if (mounted) {
         sl<AppNavigationService>().openSection('Notifications');
-        
+
         ErrorToastService.showInfo(
           'Notifications are disabled. Please enable them in settings to receive reminders.',
         );
@@ -81,9 +81,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         title: 'BreakMate',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.macosTheme,
-        routes: {
-          '/main': (context) => const MainLayout(),
-        },
+        routes: {'/main': (context) => const MainLayout()},
         home: Builder(
           builder: (context) {
             final overlayService = sl<OverlayWindowService>();
@@ -112,7 +110,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
                                 offstage: isOverlayVisible || isBreakActive,
                                 child: const MainLayout(),
                               ),
-                              // ⚠️ REDUNDANT: All overlays are now managed exclusively 
+                              // ⚠️ REDUNDANT: All overlays are now managed exclusively
                               // by the native OverlayWindowManager.
                             ],
                           ),

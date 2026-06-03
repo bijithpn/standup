@@ -1,16 +1,16 @@
-# Graph Report - standup  (2026-06-02)
+# Graph Report - standup  (2026-06-03)
 
 ## Corpus Check
-- 1091 files · ~2,658,638 words
+- 1098 files · ~2,687,341 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 7021 nodes · 8597 edges · 872 communities (775 shown, 97 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 394 edges (avg confidence: 0.8)
+- 7147 nodes · 8746 edges · 871 communities (765 shown, 106 thin omitted)
+- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 396 edges (avg confidence: 0.8)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `db33487a`
+- Built from commit: `06acc4d0`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -219,7 +219,6 @@
 - [[_COMMUNITY_Community 253|Community 253]]
 - [[_COMMUNITY_Community 254|Community 254]]
 - [[_COMMUNITY_Community 255|Community 255]]
-- [[_COMMUNITY_Community 256|Community 256]]
 - [[_COMMUNITY_Community 257|Community 257]]
 - [[_COMMUNITY_Community 258|Community 258]]
 - [[_COMMUNITY_Community 259|Community 259]]
@@ -241,6 +240,7 @@
 - [[_COMMUNITY_Community 275|Community 275]]
 - [[_COMMUNITY_Community 276|Community 276]]
 - [[_COMMUNITY_Community 277|Community 277]]
+- [[_COMMUNITY_Community 278|Community 278]]
 - [[_COMMUNITY_Community 279|Community 279]]
 - [[_COMMUNITY_Community 280|Community 280]]
 - [[_COMMUNITY_Community 281|Community 281]]
@@ -446,7 +446,6 @@
 - [[_COMMUNITY_Community 847|Community 847]]
 - [[_COMMUNITY_Community 848|Community 848]]
 - [[_COMMUNITY_Community 849|Community 849]]
-- [[_COMMUNITY_Community 850|Community 850]]
 - [[_COMMUNITY_Community 851|Community 851]]
 - [[_COMMUNITY_Community 852|Community 852]]
 - [[_COMMUNITY_Community 853|Community 853]]
@@ -461,13 +460,12 @@
 - [[_COMMUNITY_Community 862|Community 862]]
 - [[_COMMUNITY_Community 863|Community 863]]
 - [[_COMMUNITY_Community 864|Community 864]]
-- [[_COMMUNITY_Community 865|Community 865]]
 - [[_COMMUNITY_Community 866|Community 866]]
 - [[_COMMUNITY_Community 867|Community 867]]
 - [[_COMMUNITY_Community 868|Community 868]]
-- [[_COMMUNITY_Community 869|Community 869]]
 - [[_COMMUNITY_Community 870|Community 870]]
 - [[_COMMUNITY_Community 871|Community 871]]
+- [[_COMMUNITY_Community 872|Community 872]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `package:flutter/material.dart` - 73 edges
@@ -488,12 +486,12 @@
   macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashReport.c → macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashCachedData.c
 - `writeThread()` --calls--> `sentrycrashccd_getQueueName()`  [INFERRED]
   macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashReport.c → macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashCachedData.c
+- `sentrycrash_notifyAppCrash()` --calls--> `sentrycrashstate_notifyAppCrash()`  [INFERRED]
+  macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashC.c → macos/Pods/Sentry/Sources/SentryCrash/Recording/Monitors/SentryCrashMonitor_AppState.c
 - `isValidString()` --calls--> `sentrycrashstring_isNullTerminatedUTF8String()`  [INFERRED]
   macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashReport.c → macos/Pods/Sentry/Sources/SentryCrash/Recording/Tools/SentryCrashString.c
-- `writeBacktrace()` --calls--> `sentrycrashfu_lastPathEntry()`  [INFERRED]
-  macos/Pods/Sentry/Sources/SentryCrash/Recording/SentryCrashReport.c → macos/Pods/Sentry/Sources/SentryCrash/Recording/Tools/SentryCrashFileUtils.c
 
-## Communities (872 total, 97 thin omitted)
+## Communities (871 total, 106 thin omitted)
 
 ### Community 0 - "Community 0"
 Cohesion: 0.02
@@ -504,16 +502,16 @@ Cohesion: 0.04
 Nodes (47): authors, Michael Bui, dependencies, FlutterMacOS, description, homepage, license, file (+39 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.05
-Nodes (39): package:breakmate/app/main_layout.dart, package:breakmate/core/services/error_toast_service.dart, package:breakmate/features/analytics/stats_model.dart, package:breakmate/features/analytics/stats_service.dart, package:breakmate/features/break_system/application/break_controller.dart, package:breakmate/features/break_system/presentation/break_overlay.dart, package:breakmate/features/break_system/presentation/pre_break_warning_overlay.dart, package:breakmate/features/onboarding/presentation/onboarding_page.dart (+31 more)
+Cohesion: 0.04
+Nodes (49): package:breakmate/app/main_layout.dart, package:breakmate/core/services/timer_engine.dart, package:breakmate/features/break_system/application/break_controller.dart, package:breakmate/features/break_system/presentation/break_overlay.dart, package:breakmate/features/break_system/presentation/pre_break_warning_overlay.dart, package:breakmate/features/onboarding/presentation/onboarding_page.dart, package:lucide_icons_flutter/lucide_icons.dart, package:provider/provider.dart (+41 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.09
 Nodes (22): _BubbleTailPainter, build, _buildMenuButton, _CompanionBackdrop, _CompanionBackdropPainter, CompanionInteractiveTemplate, _CompanionInteractiveTemplateState, CustomPaint (+14 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.06
-Nodes (33): package:breakmate/features/dashboard/presentation/dashboard_page.dart, package:breakmate/features/wellness/presentation/wellness_library_page.dart, AnimatedSwitcher, _BreakNowIntent, build, _buildBrandHeader, _buildMainContent, _buildNarrowLayout (+25 more)
+Cohesion: 0.05
+Nodes (41): package:breakmate/core/config/flavor_config.dart, package:breakmate/features/dashboard/presentation/dashboard_page.dart, package:breakmate/features/wellness/presentation/wellness_library_page.dart, package:breakmate/main_common.dart, AnimatedSwitcher, _BreakNowIntent, build, _buildBrandHeader (+33 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.04
@@ -525,7 +523,7 @@ Nodes (31): authors, Flutter Team, Flutter, FlutterMacOS, description, homepage,
 
 ### Community 7 - "Community 7"
 Cohesion: 0.05
-Nodes (38): package:breakmate/core/constants/app_constants.dart, StorageMigrationLayer, action, RetryPolicy, build, _buildBackground, _buildBreakContextPill, _buildBreakScreen (+30 more)
+Nodes (37): build, _buildBackground, _buildBreakContextPill, _buildBreakScreen, _buildBreakStartWarning, _buildExerciseCard, _buildFooter, _buildMainContent (+29 more)
 
 ### Community 8 - "Community 8"
 Cohesion: 0.17
@@ -537,27 +535,19 @@ Nodes (28): deleted_files, files, code, document, image, paper, video, graphifyi
 
 ### Community 10 - "Community 10"
 Cohesion: 0.12
-Nodes (18): Create(), Destroy(), EnableFullDpiSupportIfAvailable(), GetThisFromHandle(), GetWindowClass(), MessageHandler(), OnCreate(), OnDestroy() (+10 more)
-
-### Community 11 - "Community 11"
-Cohesion: 0.20
-Nodes (3): RegisterGeneratedPlugins(), NSWindow, MainFlutterWindow
+Nodes (20): Create(), Destroy(), EnableFullDpiSupportIfAvailable(), GetClientArea(), GetThisFromHandle(), GetWindowClass(), MessageHandler(), OnCreate() (+12 more)
 
 ### Community 12 - "Community 12"
 Cohesion: 0.04
-Nodes (56): app_events.dart, dart:async, package:breakmate/core/display/services/overlay_fit_service.dart, package:breakmate/core/ipc/ipc_bridge.dart, package:breakmate/core/native/focus_mode_service.dart, package:breakmate/core/native/meeting_detection_service.dart, package:breakmate/core/services/adaptive_break_service.dart, package:breakmate/core/services/session_state_repository.dart (+48 more)
-
-### Community 13 - "Community 13"
-Cohesion: 0.16
-Nodes (8): CalendarAccessState, denied, fullAccess, notDetermined, restricted, writeOnly, CalendarBridge, NSColor
+Nodes (52): package:breakmate/core/display/services/overlay_fit_service.dart, package:breakmate/core/native/focus_mode_service.dart, package:breakmate/core/native/meeting_detection_service.dart, package:breakmate/core/services/adaptive_break_service.dart, package:breakmate/core/services/app_navigation_service.dart, package:breakmate/core/services/notification_service.dart, package:breakmate/core/services/overlay_window_service.dart, package:breakmate/core/services/session_state_repository.dart (+44 more)
 
 ### Community 14 - "Community 14"
-Cohesion: 0.05
-Nodes (44): package:breakmate/app/app.dart, package:breakmate/app/dependency_injection.dart, package:breakmate/core/errors/error_handler.dart, package:breakmate/core/services/overlay_window_service.dart, package:breakmate/core/services/timer_orchestrator.dart, package:breakmate/core/utils/frame_timing_logger.dart, package:breakmate/core/utils/memory_checkpoints.dart, package:breakmate/features/break_system/presentation/standalone_break_overlay.dart (+36 more)
+Cohesion: 0.06
+Nodes (39): package:breakmate/app/app.dart, package:breakmate/core/ipc/ipc_bridge.dart, package:breakmate/core/services/error_toast_service.dart, package:breakmate/core/utils/frame_timing_logger.dart, package:breakmate/core/utils/memory_checkpoints.dart, package:breakmate/features/break_system/presentation/standalone_break_overlay.dart, package:breakmate/features/companion/overlay/companion_overlay_window.dart, package:breakmate/main_dev.dart (+31 more)
 
 ### Community 15 - "Community 15"
 Cohesion: 0.03
-Nodes (31): PodsDummy_appkit_ui_element_colors, PodsDummy_audio_session, PodsDummy_audioplayers_darwin, OverlayWindowBridge, SentryUserFeedbackWidgetConfiguration, PodsDummy_file_picker, PodsDummy_flutter_local_notifications, SentryNSTimerFactory (+23 more)
+Nodes (33): PodsDummy_appkit_ui_element_colors, PodsDummy_audio_session, PodsDummy_audioplayers_darwin, OverlayWindowBridge, SentryUserFeedbackWidgetConfiguration, PodsDummy_file_picker, PodsDummy_flutter_local_notifications, SentryFramesDelayResult (+25 more)
 
 ### Community 16 - "Community 16"
 Cohesion: 0.11
@@ -573,7 +563,7 @@ Nodes (44): package:audioplayers/audioplayers.dart, package:breakmate/core/nativ
 
 ### Community 19 - "Community 19"
 Cohesion: 0.05
-Nodes (42): package:breakmate/core/errors/app_exception.dart, package:breakmate/core/ipc/ipc_events.dart, package:breakmate/core/services/app_navigation_service.dart, package:breakmate/core/services/background_polling_service.dart, package:breakmate/core/services/notification_service.dart, package:breakmate/core/utils/logger.dart, package:breakmate/core/utils/retry_policy.dart, package:breakmate/core/utils/toast.dart (+34 more)
+Nodes (38): package:breakmate/core/ipc/ipc_events.dart, package:breakmate/core/services/background_polling_service.dart, package:breakmate/core/utils/logger.dart, package:breakmate/core/utils/toast.dart, package:flutter/services.dart, package:screen_retriever/screen_retriever.dart, package:window_manager/window_manager.dart, Function (+30 more)
 
 ### Community 20 - "Community 20"
 Cohesion: 0.08
@@ -588,24 +578,24 @@ Cohesion: 0.08
 Nodes (23): authors, Flutter Team, dependencies, FlutterMacOS, description, homepage, license, file (+15 more)
 
 ### Community 23 - "Community 23"
-Cohesion: 0.15
-Nodes (9): initialReportToCallback(), sentrycrashbic_getDyldNode(), sentrycrashbic_iterateOverImages(), sentrycrashbic_registerAddedCallback(), sentrycrashbic_registerRemovedCallback(), sentrycrashbic_shouldAddDyld(), sentrycrashbic_startCache(), sentrycrashbic_stopCache() (+1 more)
+Cohesion: 0.07
+Nodes (27): package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart, package:breakmate/features/break_overlay/presentation/templates/companion_interactive_template.dart, package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart, package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart, ActivitiesBreakTemplate, _BreakLayoutData, BreakOverlay, _BreakOverlayContent (+19 more)
 
 ### Community 24 - "Community 24"
-Cohesion: 0.08
-Nodes (23): package:breakmate/features/companion/domain/pet_personality.dart, package:breakmate/features/companion/flame/companion_component.dart, _applyCompanionState, _applyPetStateToComponent, _applyScale, backgroundColor, CompanionGame, _effectiveScale (+15 more)
+Cohesion: 0.05
+Nodes (39): package:breakmate/features/companion/ai/pet_behavior_brain.dart, package:breakmate/features/companion/domain/pet_behavior_context.dart, package:breakmate/features/companion/domain/pet_mood.dart, package:breakmate/features/companion/domain/pet_personality.dart, package:breakmate/features/companion/domain/pet_state_machine.dart, package:breakmate/features/companion/flame/companion_component.dart, package:breakmate/features/companion/services/pet_companion_service.dart, package:breakmate/features/companion/services/pet_navigation_service.dart (+31 more)
 
 ### Community 25 - "Community 25"
-Cohesion: 0.08
-Nodes (23): 📈 Analytics & Wellness Insights, BreakMate, 📂 Deep Dive: Project Structure, ✨ Features in Depth, 🕒 Intelligent Break Orchestration, `lib/app/`, `lib/core/`, `lib/features/companion/` (+15 more)
+Cohesion: 0.05
+Nodes (41): 📈 Analytics & Wellness Insights, 🖥️ Application Showcase, BreakMate, 📦 Build & Release (`create_dmg.sh`), code:bash (flutter pub get), code:bash (cp .env.example .env), code:bash (# Run with Dev configuration), code:bash (cp .env.example) (+33 more)
 
 ### Community 26 - "Community 26"
 Cohesion: 0.16
 Nodes (19): AppNavigationService, dispose, openSection, _clampToBounds, generateWanderTarget, initialize, PetNavigationService, setCursorFollowing (+11 more)
 
 ### Community 27 - "Community 27"
-Cohesion: 0.15
-Nodes (12): ../domain/pet_behavior_context.dart, ../domain/pet_mood.dart, ../domain/pet_state_machine.dart, _calculateStateScore, decideNextState, _getContextRelevanceBonus, _getMoodAlignmentScore, _getPersonalityAlignmentScore (+4 more)
+Cohesion: 0.10
+Nodes (19): dart:math, ../domain/pet_behavior_context.dart, ../domain/pet_mood.dart, ../domain/pet_state_machine.dart, BreakActivityGraph, build, Container, _GraphPainter (+11 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.06
@@ -636,12 +626,12 @@ Cohesion: 0.10
 Nodes (20): authors, Your Company, dependencies, FlutterMacOS, description, homepage, license, file (+12 more)
 
 ### Community 35 - "Community 35"
-Cohesion: 0.11
-Nodes (18): _BottomRail, _BreakDial, _BreakDialPainter, build, Color, CustomPaint, _formatTime, Material (+10 more)
+Cohesion: 0.09
+Nodes (22): _BottomRail, _BreakDial, _BreakDialPainter, build, Color, Container, CustomPaint, _formatDurationLabel (+14 more)
 
 ### Community 36 - "Community 36"
-Cohesion: 0.19
-Nodes (17): binaryImageAdded(), firstCmdAfterHeader(), getAllImageInfo(), getCrashInfo(), getSegmentAddress(), getSegmentCommand(), imageIndexContainingAddress(), initializeDyldHeader() (+9 more)
+Cohesion: 0.05
+Nodes (32): SentryBinaryImageCache, SentryBinaryImageInfo, binaryImageAdded(), initialReportToCallback(), sentrycrashbic_getDyldNode(), sentrycrashbic_iterateOverImages(), sentrycrashbic_registerAddedCallback(), sentrycrashbic_registerRemovedCallback() (+24 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.09
@@ -664,28 +654,28 @@ Cohesion: 0.15
 Nodes (15): code:block1 (/graphify                                             # full), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash (python3 -m graphify.watch INPUT_PATH --debounce 3), code:bash (graphify hook install    # install), code:bash (graphify claude install), code:bash (graphify claude uninstall  # remove the section), For git commit hook (+7 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.11
-Nodes (17): package:intl/intl.dart, build, Column, CustomPaint, DecoratedBox, _formatTime, _HudGrid, _HudGridPainter (+9 more)
+Cohesion: 0.06
+Nodes (34): 1. Sparkle Key Generation (One-Time Setup), 2. Environment Configuration (`.env`), 3. Building & Releasing the App, 4. Troubleshooting & Key Rotation, 5. Manual Step-by-Step Operations, Automated Setup (Recommended), Basic Release Command, BreakMate Release & Sparkle Key Management Guide (+26 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.12
 Nodes (15): package:breakmate/features/companion/flame/companion_game.dart, package:flame/game.dart, _applySettings, _applySettingsToGame, build, CompanionOverlayWindow, _CompanionOverlayWindowState, dispose (+7 more)
 
 ### Community 45 - "Community 45"
-Cohesion: 0.07
-Nodes (27): package:breakmate/features/break_system/domain/break_model.dart, TimerStateData, build, Column, CustomPaint, dispose, _formatTime, initState (+19 more)
+Cohesion: 0.11
+Nodes (17): package:breakmate/features/settings/settings_page.dart, build, Column, CustomPaint, dispose, _formatTime, initState, Material (+9 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.17
-Nodes (11): package:fl_chart/fl_chart.dart, build, Center, FlDotCirclePainter, FlSpot, LineChart, LineTooltipItem, ProductivityTrendChart (+3 more)
+Cohesion: 0.10
+Nodes (19): BarChart, BarChartGroupData, _BarSlot, BarTooltipItem, build, _buildTodayChart, _buildWeekMonthChart, Center (+11 more)
 
 ### Community 47 - "Community 47"
 Cohesion: 0.03
 Nodes (61): SentryClient, -addAttachmentProcessor, -applyCultureContextToEvent, -applyCurrentViewNamesToEventContextwithScope, -applyExtraDeviceContextToEvent, -buildErrorEvent, -buildExceptionEvent, -callEventProcessors (+53 more)
 
 ### Community 48 - "Community 48"
-Cohesion: 0.12
-Nodes (16): package:breakmate/features/wellness/domain/wellness_engine.dart, AdaptiveBreakService, _checkNewDay, FocusSession, getPersonalizedBreakMessage, getSuggestedBreakDuration, getSuggestedBreakInterval, getTodayFocusScore (+8 more)
+Cohesion: 0.09
+Nodes (20): package:breakmate/core/constants/app_constants.dart, package:breakmate/features/wellness/domain/wellness_engine.dart, AdaptiveBreakService, _checkNewDay, FocusSession, getPersonalizedBreakMessage, getSuggestedBreakDuration, getSuggestedBreakInterval (+12 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.23
@@ -700,64 +690,64 @@ Cohesion: 0.09
 Nodes (20): dart:ui, DisplayInfo, toString, build, clearCache, CompanionSpriteWidget, _CompanionSpriteWidgetState, didUpdateWidget (+12 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.10
-Nodes (18): package:breakmate/core/display/controllers/display_controller.dart, package:breakmate/shared/widgets/app_dropdown.dart, package:provider/provider.dart, build, Material, MouseRegion, PreBreakWarningOverlay, SizedBox (+10 more)
+Cohesion: 0.06
+Nodes (33): package:breakmate/core/display/controllers/display_controller.dart, package:breakmate/features/settings/settings_model.dart, package:breakmate/features/settings/widgets/settings_widgets.dart, package:breakmate/shared/widgets/app_dropdown.dart, actionRow, BreakIntensitySettings, build, buildCard (+25 more)
 
 ### Community 53 - "Community 53"
 Cohesion: 0.13
 Nodes (14): authors, Flutter Dev Team, homepage, license, type, name, platforms, osx (+6 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.28
-Nodes (14): ConfigureAsOverlay(), OnCreate(), OnDestroy(), ResetToNormal(), SetIgnoreMouseEvents(), SetupBridge(), SetupCompanionBridge(), SetupEventChannels() (+6 more)
+Cohesion: 0.34
+Nodes (12): ConfigureAsOverlay(), OnCreate(), OnDestroy(), ResetToNormal(), SetIgnoreMouseEvents(), SetupBridge(), SetupCompanionBridge(), SetupEventChannels() (+4 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.20
 Nodes (6): FocusModeStreamHandler, event_sink_, MeetingDetectionStreamHandler, event_sink_, MessageHandler(), StreamHandler<flutter::EncodableValue>
 
 ### Community 56 - "Community 56"
-Cohesion: 0.03
-Nodes (63): controllers/menu_bar_controller.dart, dart:convert, dart:io, package:breakmate/core/storage/models/daily_stats.dart, package:path/path.dart, package:path_provider/path_provider.dart, package:tray_manager/tray_manager.dart, getBool (+55 more)
+Cohesion: 0.06
+Nodes (33): dart:io, package:breakmate/core/storage/models/daily_stats.dart, package:path/path.dart, package:path_provider/path_provider.dart, Exception, WindowsOverlayPlugin, getBool, getDouble (+25 more)
 
 ### Community 57 - "Community 57"
 Cohesion: 0.06
-Nodes (30): package:breakmate/core/display/models/display_info.dart, package:breakmate/core/display/models/overlay_display_config.dart, package:breakmate/core/display/services/display_manager.dart, package:breakmate/core/events/app_events.dart, package:breakmate/core/events/event_bus.dart, package:flutter/widgets.dart, DisplayController, _init (+22 more)
+Nodes (35): package:breakmate/app/dependency_injection.dart, package:breakmate/core/display/models/display_info.dart, package:breakmate/core/display/models/overlay_display_config.dart, package:breakmate/core/display/services/display_manager.dart, package:breakmate/core/events/app_events.dart, package:breakmate/core/events/event_bus.dart, package:breakmate/core/services/window_service.dart, package:flutter/widgets.dart (+27 more)
 
 ### Community 58 - "Community 58"
-Cohesion: 0.15
-Nodes (12): DailyStats, BarChartGroupData, BarTooltipItem, build, _buildLegend, Container, DailyStatsChart, Padding (+4 more)
+Cohesion: 0.14
+Nodes (13): package:fl_chart/fl_chart.dart, DailyStats, BarChartGroupData, BarTooltipItem, build, _buildLegend, Container, DailyStatsChart (+5 more)
 
 ### Community 59 - "Community 59"
 Cohesion: 0.28
 Nodes (9): Plugin, FlutterWindow(), HandleMethodCall(), OverlayWindowPlugin, HandleMethodCall, RegisterWithRegistrar, registrar_, RegisterOverlayWindowPlugin() (+1 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.14
-Nodes (11): move, DisplayData, bounds, height, id, isPrimary, pixelRatio, width (+3 more)
+Cohesion: 0.11
+Nodes (15): TouchEventPhase, end, move, start, unknown, DisplayData, bounds, height (+7 more)
 
 ### Community 61 - "Community 61"
 Cohesion: 0.22
 Nodes (11): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -m graphify save-result --question "), code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c ") (+3 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.04
-Nodes (57): package:breakmate/features/settings/break_profile.dart, package:breakmate/features/settings/settings_model.dart, package:breakmate/features/settings/settings_page.dart, package:breakmate/features/settings/widgets/settings_widgets.dart, package:flutter/cupertino.dart, package:package_info_plus/package_info_plus.dart, package:url_launcher/url_launcher.dart, BreakProfileSelector (+49 more)
+Cohesion: 0.18
+Nodes (10): build, _buildFocusModeToggle, buildListRow, _buildLongBreakDuration, _buildLongBreakInterval, _buildShortBreakDuration, _buildShortBreakInterval, Column (+2 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.04
-Nodes (55): package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart, package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart, package:breakmate/features/break_overlay/presentation/templates/companion_interactive_template.dart, package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart, package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart, package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart, package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart, package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart (+47 more)
+Cohesion: 0.07
+Nodes (28): package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart, package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart, package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart, package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart, package:file_picker/file_picker.dart, BreakAppearanceSettings, _BreakAppearanceSettingsState, _breakTemplatePreview (+20 more)
 
 ### Community 64 - "Community 64"
 Cohesion: 0.11
 Nodes (17): AnimatedContainer, _banner, _BannerButton, build, _buildCalendarPermissionBanner, _buildIntelligentDetection, Column, didChangeAppLifecycleState (+9 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.40
-Nodes (4): package:breakmate/core/config/flavor_config.dart, package:breakmate/main_common.dart, main, main
+Cohesion: 0.11
+Nodes (17): package:intl/intl.dart, build, Column, CustomPaint, DecoratedBox, _formatTime, _HudGrid, _HudGridPainter (+9 more)
 
 ### Community 66 - "Community 66"
-Cohesion: 0.06
-Nodes (32): package:breakmate/shared/theme/app_theme.dart, AnimatedBuilder, BreathingAssistant, _BreathingAssistantState, build, Column, dispose, initState (+24 more)
+Cohesion: 0.18
+Nodes (10): build, _buildColorCard, _buildSection, _ColorItem, ColorPaletteShowcase, Column, Container, Scaffold (+2 more)
 
 ### Community 67 - "Community 67"
 Cohesion: 0.20
@@ -772,16 +762,16 @@ Cohesion: 0.03
 Nodes (57): SentryFileManager, -allFilesContentInFolder, -allFilesInFolder, -appHangEventExists, -clearDiskState, -createDirectoryAtPathwithError, -createPathsWithOptions, -deleteAbnormalSession (+49 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.04
-Nodes (43): package:flutter/material.dart, ErrorToastService, Icon, showError, showInfo, SizedBox, hideOverlay, OverlayWindowService (+35 more)
+Cohesion: 0.05
+Nodes (35): package:flutter/material.dart, showError, showSuccess, _showToast, SizedBox, Toast, AppButton, _AppButtonState (+27 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.22
 Nodes (8): host, model, experimental, gemmaModelRouter, classifier, enabled, hooks, BeforeTool
 
 ### Community 72 - "Community 72"
-Cohesion: 0.04
-Nodes (44): dart:developer, ../domain/activity_model.dart, ../domain/template_model.dart, package:breakmate/core/native/native_bridge.dart, package:breakmate/core/services/calendar_event_service.dart, package:breakmate/core/services/calendar_permission_service.dart, package:breakmate/core/services/calendar_repository.dart, package:breakmate/core/storage/models/calendar_event_model.dart (+36 more)
+Cohesion: 0.05
+Nodes (37): dart:developer, ../domain/activity_model.dart, ../domain/template_model.dart, package:breakmate/core/native/native_bridge.dart, package:breakmate/core/services/calendar_event_service.dart, package:breakmate/core/services/calendar_permission_service.dart, package:breakmate/core/services/calendar_repository.dart, package:breakmate/core/storage/models/calendar_event_model.dart (+29 more)
 
 ### Community 73 - "Community 73"
 Cohesion: 0.12
@@ -793,11 +783,11 @@ Nodes (8): Architecture & Performance Standards, Asset Management, Flutter Engin
 
 ### Community 75 - "Community 75"
 Cohesion: 0.12
-Nodes (16): package:breakmate/features/companion/ai/pet_behavior_brain.dart, package:breakmate/features/companion/domain/pet_behavior_context.dart, package:breakmate/features/companion/domain/pet_mood.dart, package:breakmate/features/companion/domain/pet_state_machine.dart, package:breakmate/features/companion/services/pet_companion_service.dart, package:breakmate/features/companion/services/pet_navigation_service.dart, _applyStateBehavior, handleEvent (+8 more)
+Nodes (14): package:breakmate/features/settings/break_profile.dart, package:flutter/cupertino.dart, BreakProfileSelector, build, Column, _getProfileIcon, SizedBox, AppDropdown (+6 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.16
-Nodes (12): decreaseDepth(), increaseDepth(), matchesAPath(), matchesPath(), onBeginArray(), onBeginObject(), onEndContainer(), onEndData() (+4 more)
+Cohesion: 0.06
+Nodes (28): app_events.dart, dart:async, dart:isolate, package:breakmate/core/services/activity_monitor.dart, package:breakmate/core/storage/models/settings_snapshot.dart, package:hive_flutter/hive_flutter.dart, dispose, emit (+20 more)
 
 ### Community 77 - "Community 77"
 Cohesion: 0.13
@@ -807,25 +797,25 @@ Nodes (14): Calendar, Channel inventory, Companion, Event dispatch (Dart side), 
 Cohesion: 0.22
 Nodes (8): build, LayoutBuilder, MinimalButton, _MinimalButtonState, MinimalSlider, _MinimalSliderState, MouseRegion, _updateValue
 
-### Community 79 - "Community 79"
-Cohesion: 0.11
-Nodes (4): DisplayBridgeManager, MeetingDetectionBridge, FlutterStreamHandler, DisplayBridgeManager
-
 ### Community 80 - "Community 80"
 Cohesion: 0.25
 Nodes (7): clear, copyWith, getOrDefault, has, PetAnimationConfig, PetAnimationRegistry, register
 
 ### Community 81 - "Community 81"
-Cohesion: 0.25
-Nodes (7): dart:math, BreakActivityGraph, build, Container, _GraphPainter, paint, shouldRepaint
+Cohesion: 0.16
+Nodes (4): sentrycrashcpu_exceptionRegisterName(), sentrycrashcpu_numExceptionRegisters(), sentrycrashcpu_numRegisters(), sentrycrashcpu_registerName()
 
 ### Community 82 - "Community 82"
-Cohesion: 0.07
-Nodes (49): addDataElement(), addJSONElement(), addJSONElementFromFile(), addTextFileElement(), addUUIDElement(), appendDataElement(), beginDataElement(), endDataElement() (+41 more)
+Cohesion: 0.05
+Nodes (64): addDataElement(), addJSONElement(), addJSONElementFromFile(), addTextFileElement(), addUUIDElement(), appendDataElement(), beginDataElement(), endDataElement() (+56 more)
 
 ### Community 83 - "Community 83"
 Cohesion: 0.06
-Nodes (37): sentrycrashcm_getActiveMonitors(), sentrycrash_addUserReport(), sentrycrash_deleteAllReports(), sentrycrash_deleteReportWithID(), sentrycrash_getReportCount(), sentrycrash_getReportIDs(), sentrycrash_install(), sentrycrash_readReport() (+29 more)
+Nodes (40): onCrash(), sentrycrash_addUserReport(), sentrycrash_deleteAllReports(), sentrycrash_deleteReportWithID(), sentrycrash_getReportCount(), sentrycrash_getReportIDs(), sentrycrash_install(), sentrycrash_notifyAppActive() (+32 more)
+
+### Community 84 - "Community 84"
+Cohesion: 0.14
+Nodes (3): FocusModeBridge, MeetingDetectionBridge, FlutterStreamHandler
 
 ### Community 86 - "Community 86"
 Cohesion: 0.48
@@ -836,20 +826,20 @@ Cohesion: 0.43
 Nodes (4): wWinMain(), CreateAndAttachConsole(), GetCommandLineArguments(), Utf8FromUtf16()
 
 ### Community 88 - "Community 88"
-Cohesion: 0.13
-Nodes (26): Hashable, addIgnoreClass(), addIgnoreClasses(), addRedactClass(), addRedactClasses(), ClassIdentifier, color(), containsIgnoreClass() (+18 more)
+Cohesion: 0.08
+Nodes (35): Equatable, Hashable, SentryRedactRegion, SentryRedactRegionType, clipBegin, clipEnd, clipOut, redact (+27 more)
 
 ### Community 89 - "Community 89"
-Cohesion: 0.13
-Nodes (52): sentrycrashccd_freeze(), sentrycrashccd_unfreeze(), addBooleanElement(), addFloatingPointElement(), addIntegerElement(), addStringElement(), addTextLinesFromFile(), addUIntegerElement() (+44 more)
+Cohesion: 0.14
+Nodes (50): addBooleanElement(), addFloatingPointElement(), addIntegerElement(), addStringElement(), addTextLinesFromFile(), addUIntegerElement(), beginArray(), beginObject() (+42 more)
 
 ### Community 91 - "Community 91"
 Cohesion: 0.04
 Nodes (52): _ActionCard, AnimatedContainer, build, _buildActionGrid, _buildCalendarContent, _buildCalendarPermissionPrompt, _buildCalendarSection, _buildCalendarSkeleton (+44 more)
 
 ### Community 92 - "Community 92"
-Cohesion: 0.12
-Nodes (15): package:lucide_icons_flutter/lucide_icons.dart, build, Column, Padding, PrivacySection, _settingsInfoTile, SizedBox, build (+7 more)
+Cohesion: 0.08
+Nodes (23): package:breakmate/shared/theme/app_theme.dart, AnimatedBuilder, BreathingAssistant, _BreathingAssistantState, build, Column, dispose, initState (+15 more)
 
 ### Community 93 - "Community 93"
 Cohesion: 0.25
@@ -860,7 +850,7 @@ Cohesion: 0.40
 Nodes (4): copyWith, getCurrentIntensity, isActive, PetMoodState
 
 ### Community 95 - "Community 95"
-Cohesion: 0.13
+Cohesion: 0.25
 Nodes (6): SentryDefaultMaskRenderer, SentryMaskRendererContext, UIGraphicsImageRendererContext, SentryGraphicsImageRenderer.Context, SentryMaskRendererV2, init()
 
 ### Community 96 - "Community 96"
@@ -895,6 +885,10 @@ Nodes (3): PetBehaviorProfile, PetSpecies, PetVariant
 Cohesion: 0.06
 Nodes (35): authors, Flutter Dev Team, Flutter, FlutterMacOS, description, documentation_url, homepage, ios (+27 more)
 
+### Community 106 - "Community 106"
+Cohesion: 0.21
+Nodes (14): dateDescription(), numberDescription(), objectDescription(), sentrycrashobjc_copyURLContents(), sentrycrashobjc_dateContents(), sentrycrashobjc_numberAsFloat(), sentrycrashobjc_numberAsInteger(), sentrycrashobjc_numberIsFloat() (+6 more)
+
 ### Community 116 - "Community 116"
 Cohesion: 0.20
 Nodes (9): instructions, lsp, permission, bash, edit, lsp, web, plugin (+1 more)
@@ -913,19 +907,19 @@ Nodes (37): package:breakmate/features/settings/presentation/sections/breaks/bre
 
 ### Community 171 - "Community 171"
 Cohesion: 0.40
-Nodes (4): Changed, Changelog, Tag And Version Index, [Unreleased]
+Nodes (5): [1.3.0] - 2026-06-02, Changed, Changelog, Tag And Version Index, [Unreleased]
 
 ### Community 172 - "Community 172"
-Cohesion: 0.09
-Nodes (22): _ActionButton, _ActionButtonState, build, _buildBottomActions, _buildHeader, _buildPauseReason, _buildQuickActions, _buildStatsPreview (+14 more)
+Cohesion: 0.06
+Nodes (31): package:breakmate/features/analytics/stats_model.dart, package:breakmate/features/analytics/stats_service.dart, calculateStats, StatsCalculationResult, StatsCalculator, StatsUpdateResult, updateStats, copyWith (+23 more)
 
 ### Community 173 - "Community 173"
 Cohesion: 0.06
 Nodes (32): authors, Flutter Dev Team, Flutter, FlutterMacOS, description, documentation_url, homepage, ios (+24 more)
 
 ### Community 174 - "Community 174"
-Cohesion: 0.13
-Nodes (28): addContextualInfoToEvent(), CPPExceptionTerminate(), getAPI(), isMonitorEnabled(), handleExceptions(), sentrycrashcm_isReservedThread(), sentrycrashcm_handleException(), sentrycrashcm_notifyFatalExceptionCaptured() (+20 more)
+Cohesion: 0.11
+Nodes (29): CPPExceptionTerminate(), sentrycrashcm_cppexception_callOriginalTerminationHandler(), addContextualInfoToEvent(), handleExceptions(), installExceptionHandler(), machExceptionForSignal(), restoreExceptionPorts(), sentrycrashcm_isReservedThread() (+21 more)
 
 ### Community 175 - "Community 175"
 Cohesion: 0.06
@@ -965,7 +959,7 @@ Nodes (27): SentryCrashDoctor, -backtraceFromThreadReport, -basicRegistersFromTh
 
 ### Community 184 - "Community 184"
 Cohesion: 0.08
-Nodes (10): sentrycrashcpu_getState(), sentrycrashcpu_exceptionRegisterName(), sentrycrashcpu_getState(), sentrycrashcpu_numExceptionRegisters(), sentrycrashcpu_numRegisters(), sentrycrashcpu_registerName(), sentrycrashcpu_i_fillState(), sentrycrashcpu_getState() (+2 more)
+Nodes (10): sentrycrashcpu_exceptionRegisterName(), sentrycrashcpu_getState(), sentrycrashcpu_numExceptionRegisters(), sentrycrashcpu_numRegisters(), sentrycrashcpu_registerName(), sentrycrashcpu_getState(), sentrycrashcpu_i_fillState(), sentrycrashcpu_getState() (+2 more)
 
 ### Community 185 - "Community 185"
 Cohesion: 0.07
@@ -976,24 +970,24 @@ Cohesion: 0.13
 Nodes (7): ExpressibleByStringInterpolation, attributes, SentryLogMessage, StringInterpolation, StringInterpolationProtocol, Options, SentryLogger
 
 ### Community 187 - "Community 187"
-Cohesion: 0.09
-Nodes (16): SentryInfoPlistKey, designRequiresCompatibility, xcodeVersion, Attribute, CodingKeys, type, value, SentryLog (+8 more)
+Cohesion: 0.05
+Nodes (36): CodingKeys, formatted, message, params, CodingKeys, code, domain, CodingKeys (+28 more)
 
 ### Community 188 - "Community 188"
 Cohesion: 0.07
 Nodes (26): _advanceSession, AnimatedContainer, build, _buildDoneState, Color, Column, Container, dispose (+18 more)
 
 ### Community 189 - "Community 189"
-Cohesion: 0.09
-Nodes (20): getCurentTime(), onFloatingPointElement(), onIntegerElement(), saveState(), sentrycrashstate_initialize(), sentrycrashstate_notifyAppActive(), sentrycrashstate_notifyAppCrash(), sentrycrashstate_notifyAppInForeground() (+12 more)
+Cohesion: 0.12
+Nodes (12): getCurentTime(), onFloatingPointElement(), onIntegerElement(), saveState(), sentrycrashstate_initialize(), sentrycrashstate_notifyAppActive(), sentrycrashstate_notifyAppCrash(), sentrycrashstate_notifyAppInForeground() (+4 more)
 
 ### Community 190 - "Community 190"
 Cohesion: 0.13
 Nodes (26): arrayDescription(), arrayIsValid(), cfarrayContents(), cfarrayCount(), cfarrayData(), getClassData(), getClassDataFromObject(), getClassName() (+18 more)
 
 ### Community 191 - "Community 191"
-Cohesion: 0.25
-Nodes (4): NSNumberDecodableWrapper, Decodable, GraphQLRequest, URLSessionTaskHelper
+Cohesion: 0.18
+Nodes (10): package:package_info_plus/package_info_plus.dart, package:url_launcher/url_launcher.dart, AboutSection, _AboutSectionState, build, Column, initState, launchUrl (+2 more)
 
 ### Community 192 - "Community 192"
 Cohesion: 0.06
@@ -1020,7 +1014,7 @@ Cohesion: 0.09
 Nodes (11): dict, package, SentryMobileProvisionParser, SentrySdkInfo, SentrySDKSettings, internalSerialize(), SentryFeedback, SentryFeedbackSource (+3 more)
 
 ### Community 198 - "Community 198"
-Cohesion: 0.10
+Cohesion: 0.09
 Nodes (30): close(), addJSONData(), loadState(), addJSONData(), sentrySessionReplaySync_readInfo(), sentrySessionReplaySync_writeInfo(), canDeletePath(), deletePathContents() (+22 more)
 
 ### Community 199 - "Community 199"
@@ -1056,20 +1050,16 @@ Cohesion: 0.10
 Nodes (19): CodingKeys, columnNumber, contextLine, fileName, function, imageAddress, inApp, instructionAddress (+11 more)
 
 ### Community 210 - "Community 210"
-Cohesion: 0.06
-Nodes (32): dart:isolate, package:breakmate/core/services/activity_monitor.dart, package:breakmate/core/services/simple_prefs.dart, package:breakmate/core/storage/models/companion_preferences.dart, package:breakmate/core/storage/models/key_value_record.dart, package:breakmate/core/storage/models/settings_snapshot.dart, package:breakmate/objectbox.g.dart, package:hive_flutter/hive_flutter.dart (+24 more)
+Cohesion: 0.07
+Nodes (27): package:breakmate/core/errors/app_exception.dart, package:breakmate/core/errors/error_handler.dart, package:breakmate/core/services/simple_prefs.dart, package:breakmate/core/storage/models/companion_preferences.dart, package:breakmate/core/storage/models/key_value_record.dart, package:breakmate/core/utils/retry_policy.dart, package:breakmate/features/companion/domain/pet_theme.dart, package:breakmate/objectbox.g.dart (+19 more)
 
 ### Community 211 - "Community 211"
-Cohesion: 0.09
-Nodes (6): SentrySerializationSwift, SentrySerializable, SentryAppState, SentryClientReport, SentryDiscardedEvent, UserFeedback
+Cohesion: 0.11
+Nodes (5): SentrySerializable, SentryAppState, SentryClientReport, SentryDiscardedEvent, UserFeedback
 
 ### Community 212 - "Community 212"
 Cohesion: 0.10
 Nodes (20): authors, dependencies, FlutterMacOS, ObjectBox, homepage, license, name, platforms (+12 more)
-
-### Community 213 - "Community 213"
-Cohesion: 0.11
-Nodes (9): SentryCrashReportSink, -filterReportsonCompletion, -handleConvertedEventreportsentReports, -initWithInAppLogiccrashWrapperdispatchQueue, -sendReportsonCompletion, SentryMessage, SentryRequest, SentryStacktrace (+1 more)
 
 ### Community 214 - "Community 214"
 Cohesion: 0.10
@@ -1080,8 +1070,8 @@ Cohesion: 0.10
 Nodes (20): SentryHttpTransport, -addClientReportTo, -connectivityChangedtypeDescription, -dealloc, -deleteEnvelopeAndSendNext, -envelopeItemDeletedwithCategory, -envelopeItemDroppedwithCategory, -finishedSending (+12 more)
 
 ### Community 216 - "Community 216"
-Cohesion: 0.06
-Nodes (34): package:breakmate/shared/widgets/minimal_controls.dart, package:flutter_widget_from_html/flutter_widget_from_html.dart, package:markdown/markdown.dart, build, _buildExercises, Center, Column, CupertinoAlertDialog (+26 more)
+Cohesion: 0.10
+Nodes (19): build, _buildExercises, Center, Column, CupertinoAlertDialog, _deleteExercise, _exerciseIcon, _exerciseSettingsItem (+11 more)
 
 ### Community 217 - "Community 217"
 Cohesion: 0.10
@@ -1100,8 +1090,8 @@ Cohesion: 0.10
 Nodes (20): SentryFileIOTracker, -disable, -enable, -endTrackingFile, -finishTrackingNSDataspan, -ignoreFile, -initWithThreadInspectorprocessInfoWrapper, -mainThreadExtraInfo (+12 more)
 
 ### Community 221 - "Community 221"
-Cohesion: 0.29
-Nodes (6): CodingKeys, formatted, message, params, init(), SentryMessageDecodable
+Cohesion: 0.20
+Nodes (7): sentrycrashcm_setEventCallback(), sentrycrash_uninstall(), sentrycrashccd_close(), sentrycrashccd_freeze(), sentrycrashccd_getQueueName(), sentrycrashccd_getThreadName(), sentrycrashccd_unfreeze()
 
 ### Community 222 - "Community 222"
 Cohesion: 0.16
@@ -1120,8 +1110,8 @@ Cohesion: 0.10
 Nodes (19): package:breakmate/features/companion/controllers/companion_overlay_controller.dart, AnimatedBuilder, build, _buildBackgroundPicker, _buildHeroHeader, _buildInteractionGrid, _buildPetGallery, _buildSyncCard (+11 more)
 
 ### Community 226 - "Community 226"
-Cohesion: 0.21
-Nodes (4): SentryBinaryImageCache, SentryBinaryImageInfo, cache, sentrycrashdl_convertBinaryImageUUID()
+Cohesion: 0.36
+Nodes (4): NSPanel, OverlayInstance, OverlayPanel, OverlayWindowManager
 
 ### Community 227 - "Community 227"
 Cohesion: 0.12
@@ -1148,8 +1138,8 @@ Cohesion: 0.20
 Nodes (13): sentrycrashcm_cppexception_enable_swap_cxa_throw(), addPair(), __cxa_throw_decorator(), findOriginalCxaThrowFunction(), perform_rebinding_with_section(), process_segment(), rebind_symbols_for_image(), rebind_symbols_for_image_wrapper() (+5 more)
 
 ### Community 234 - "Community 234"
-Cohesion: 0.20
-Nodes (7): ExceptionType, fatalFullyBlocking, fatalNonFullyBlocking, fullyBlocking, nonFullyBlocking, unknown, SentryAppHangTypeMapper
+Cohesion: 0.12
+Nodes (13): ExceptionType, fatalFullyBlocking, fatalNonFullyBlocking, fullyBlocking, nonFullyBlocking, unknown, SentryANRType, fatalFullyBlocking (+5 more)
 
 ### Community 235 - "Community 235"
 Cohesion: 0.12
@@ -1172,8 +1162,8 @@ Cohesion: 0.12
 Nodes (15): Backtrace, SamplingProfiler, cache_, callback_, clock_, delaySpec_, isInitialized_, isSampling (+7 more)
 
 ### Community 241 - "Community 241"
-Cohesion: 0.12
-Nodes (15): package:breakmate/features/wellness/data/wellness_library_repository.dart, _ActionButton, build, buildContent, Container, ExerciseCard, _getCategoryBadge, LayoutBuilder (+7 more)
+Cohesion: 0.08
+Nodes (23): package:breakmate/features/wellness/data/wellness_library_repository.dart, package:macos_ui/macos_ui.dart, _ActionButton, build, buildContent, Container, ExerciseCard, _getCategoryBadge (+15 more)
 
 ### Community 242 - "Community 242"
 Cohesion: 0.12
@@ -1188,12 +1178,12 @@ Cohesion: 0.14
 Nodes (7): UIAdaptivePresentationControllerDelegate, UIViewController, UIWindow, RootViewController, SentryUserFeedbackWidget, SentryUserFeedbackWidgetDelegate, Window
 
 ### Community 245 - "Community 245"
-Cohesion: 0.21
-Nodes (6): array, NSApplication, PlaceholderSentryApplication, SentryApplication, UIApplication, SentryApplication
+Cohesion: 0.23
+Nodes (5): NSApplication, PlaceholderSentryApplication, SentryApplication, UIApplication, SentryApplication
 
 ### Community 246 - "Community 246"
-Cohesion: 0.33
-Nodes (3): StackBounds, ThreadMetadataCache, metadataForThread
+Cohesion: 0.06
+Nodes (30): controllers/menu_bar_controller.dart, package:tray_manager/tray_manager.dart, _advanceFrame, _applyIcon, _applyWindowsIcon, _buildMenu, _determineActiveState, didChangeAppLifecycleState (+22 more)
 
 ### Community 247 - "Community 247"
 Cohesion: 0.13
@@ -1204,20 +1194,21 @@ Cohesion: 0.13
 Nodes (14): SentryAppStateManager, -buildCurrentAppState, -dealloc, -didBecomeActive, -initWithOptionscrashWrapperfileManagerdispatchQueueWrappernotificationCenterWrapper, -loadPreviousAppState, -start, -stop (+6 more)
 
 ### Community 249 - "Community 249"
-Cohesion: 0.15
-Nodes (9): enumerateBacktracesForAllThreads(), SamplingProfiler(), samplingThreadMain(), SamplingThreadParams, clock, delaySpec, onThreadStart, port (+1 more)
+Cohesion: 0.20
+Nodes (10): fillThreadState(), enumerateBacktracesForAllThreads(), isValidFrame(), size_t
+    backtrace(), samplingThreadMain(), SamplingThreadParams, clock, delaySpec (+2 more)
 
 ### Community 250 - "Community 250"
 Cohesion: 0.13
 Nodes (14): SentryWatchdogTerminationScopeObserver, -addSerializedBreadcrumb, -clear, -clearBreadcrumbs, -initWithBreadcrumbProcessorattributesProcessor, -setContext, -setDist, -setEnvironment (+6 more)
 
 ### Community 251 - "Community 251"
-Cohesion: 0.16
-Nodes (8): __cxa_throw(), initialize(), __sentry_cxa_throw(), sentrycrashcm_cppexception_callOriginalTerminationHandler(), setEnabled(), sentrycrashct_is_cxa_throw_swapped(), sentrycrashct_unswap_cxa_throw(), sentrycrashsc_initCursor()
+Cohesion: 0.19
+Nodes (7): __cxa_throw(), initialize(), __sentry_cxa_throw(), setEnabled(), sentrycrashct_is_cxa_throw_swapped(), sentrycrashct_unswap_cxa_throw(), sentrycrashsc_initCursor()
 
 ### Community 252 - "Community 252"
-Cohesion: 0.21
-Nodes (5): ExtractedTouchData, SentryTouchTracker, TouchEvent, TouchInfo, UITouch.Phase
+Cohesion: 0.12
+Nodes (6): SentryDispatchQueueWrapper, ExtractedTouchData, SentryTouchTracker, TouchEvent, TouchInfo, UITouch.Phase
 
 ### Community 253 - "Community 253"
 Cohesion: 0.13
@@ -1231,10 +1222,6 @@ Nodes (15): isValidPointer(), extractTaggedNSNumber(), getClassDataFromTaggedPoi
 Cohesion: 0.15
 Nodes (12): CodingKeys, data, email, geo, ipAddress, name, segment, userId (+4 more)
 
-### Community 256 - "Community 256"
-Cohesion: 0.40
-Nodes (4): SentryProfileLifecycle, manual, trace, SentryProfileOptions
-
 ### Community 257 - "Community 257"
 Cohesion: 0.14
 Nodes (13): SentryCrashInstallation, -crashHandlerData, -dealloc, -g_crashHandlerData, -init, -initWithRequiredProperties, -install, -makeKeyPath (+5 more)
@@ -1242,10 +1229,6 @@ Nodes (13): SentryCrashInstallation, -crashHandlerData, -dealloc, -g_crashHandle
 ### Community 258 - "Community 258"
 Cohesion: 0.14
 Nodes (13): SentrySessionInternal, -changed, -endSessionAbnormalWithTimestamp, -endSessionCrashedWithTimestamp, -endSessionExitedWithTimestamp, -endSessionWithTimestamp, -incrementErrors, -initDefault (+5 more)
-
-### Community 259 - "Community 259"
-Cohesion: 0.16
-Nodes (4): sentrycrashcpu_exceptionRegisterName(), sentrycrashcpu_numExceptionRegisters(), sentrycrashcpu_numRegisters(), sentrycrashcpu_registerName()
 
 ### Community 260 - "Community 260"
 Cohesion: 0.16
@@ -1268,8 +1251,8 @@ Cohesion: 0.16
 Nodes (4): SentryUserFeedbackFormViewModelDelegate, UITextFieldDelegate, UITextViewDelegate, SentryUserFeedbackFormController
 
 ### Community 265 - "Community 265"
-Cohesion: 0.21
-Nodes (14): dateDescription(), numberDescription(), objectDescription(), sentrycrashobjc_copyURLContents(), sentrycrashobjc_dateContents(), sentrycrashobjc_numberAsFloat(), sentrycrashobjc_numberAsInteger(), sentrycrashobjc_numberIsFloat() (+6 more)
+Cohesion: 0.12
+Nodes (15): package:breakmate/shared/widgets/minimal_controls.dart, package:flutter_widget_from_html/flutter_widget_from_html.dart, package:markdown/markdown.dart, UpdateSection, build, Column, _formatReleaseNotes, _getStatusColor (+7 more)
 
 ### Community 266 - "Community 266"
 Cohesion: 0.17
@@ -1284,8 +1267,8 @@ Cohesion: 0.17
 Nodes (11): CodingKeys, data, desc, handled, helpLink, meta, synthetic, type (+3 more)
 
 ### Community 269 - "Community 269"
-Cohesion: 0.15
-Nodes (12): BarChartGroupData, BarTooltipItem, build, _buildLegendRow, Container, _legendItem, ProductivityWellnessChart, Row (+4 more)
+Cohesion: 0.14
+Nodes (13): BarChartGroupData, BarTooltipItem, build, _buildLegendRow, Container, _legendItem, ProductivityWellnessChart, Row (+5 more)
 
 ### Community 270 - "Community 270"
 Cohesion: 0.17
@@ -1319,6 +1302,10 @@ Nodes (3): SentryUserFeedbackFormDelegate, SentryUserFeedbackWidgetDelegate, Sen
 Cohesion: 0.18
 Nodes (4): decodeFromJSONData(), encodeToJSONData(), SentryEventDecoder, SentryScopePersistentStore
 
+### Community 278 - "Community 278"
+Cohesion: 0.20
+Nodes (7): Backtrace, absoluteTimestamp, addresses, threadMetadata, StackBounds, ThreadMetadataCache, metadataForThread
+
 ### Community 279 - "Community 279"
 Cohesion: 0.17
 Nodes (11): -addBreadcrumbWithTypewithCategorywithLevelwithDataKeywithDataValueSentryBreadcrumbcrumb, -addEnabledCrumbSentryBreadcrumbcrumb, -avoidSenderforTargetactionsenderniltargetnilYEStextFieldsenderNSStringactionstextFieldactionsForTargetforControlEventactionscontainsObject, -connectivityChangedtypeDescriptionSentryBreadcrumbcrumb, -deallocsharedInstancereachabilityremoveObserver, -initReportAccessibilityIdentifierselfsuperinit_reportAccessibilityIdentifierreport, -startSwizzleselfswizzleSendAction, -startWithDelegate_delegatedelegate (+3 more)
@@ -1335,21 +1322,13 @@ Nodes (6): SentrySessionReplayEnvironmentCheckerProvider, Reliability, reliable,
 Cohesion: 0.20
 Nodes (9): CodingKeys, mechanism, module, stacktrace, threadId, type, value, ExceptionDecodable (+1 more)
 
-### Community 284 - "Community 284"
-Cohesion: 0.20
-Nodes (9): CodingKeys, bodySize, cookies, fragment, headers, queryString, url, init() (+1 more)
-
-### Community 285 - "Community 285"
-Cohesion: 0.20
-Nodes (9): CodingKeys, crashed, current, isMain, name, stacktrace, threadId, init() (+1 more)
-
 ### Community 286 - "Community 286"
 Cohesion: 0.24
 Nodes (9): getSentrySDKPackage(), getSentrySDKPackageName(), global(), SentryPackageManagerOption, carthage, cocoaPods, swiftPackageManager, unknown (+1 more)
 
 ### Community 287 - "Community 287"
-Cohesion: 0.10
-Nodes (13): SentryEnvelopeAttachmentHeader, -initWithTypelength, -initWithTypelengthfilenamecontentTypeattachmentType, -serialize, SentryEnvelopeItemHeader, -initWithTypelength, -initWithTypelengthcontentType, -initWithTypelengthcontentTypeitemCount (+5 more)
+Cohesion: 0.08
+Nodes (14): SentrySerializationSwift, SentryEnvelopeAttachmentHeader, -initWithTypelength, -initWithTypelengthfilenamecontentTypeattachmentType, -serialize, SentryEnvelopeItemHeader, -initWithTypelength, -initWithTypelengthcontentType (+6 more)
 
 ### Community 288 - "Community 288"
 Cohesion: 0.18
@@ -1376,16 +1355,12 @@ Cohesion: 0.18
 Nodes (10): SentrySpanId, -copyWithZone, -description, -empty, -hash, -init, -initWithUUID, -initWithValue (+2 more)
 
 ### Community 294 - "Community 294"
-Cohesion: 0.22
-Nodes (6): addContextualInfoToEvent(), installExceptionHandler(), machExceptionForSignal(), restoreExceptionPorts(), setEnabled(), signalForMachException()
+Cohesion: 0.27
+Nodes (8): addContextualInfoToEvent(), getAPI(), isMonitorEnabled(), sentrycrashcm_getActiveMonitors(), sentrycrashcm_handleException(), sentrycrashcm_setActiveMonitors(), setMonitorEnabled(), sentrycrash_setMonitoring()
 
 ### Community 296 - "Community 296"
-Cohesion: 0.17
-Nodes (10): Int, SentryRRWebCustomEvent, RRWebMoveEvent, RRWebTouchEvent, TouchEventPhase, end, start, unknown (+2 more)
-
-### Community 297 - "Community 297"
-Cohesion: 0.27
-Nodes (5): NSPanel, RegisterSecondaryPlugins(), OverlayInstance, OverlayPanel, OverlayWindowManager
+Cohesion: 0.25
+Nodes (5): SentryRRWebCustomEvent, RRWebMoveEvent, RRWebTouchEvent, TouchPosition, SentryRRWebEvent
 
 ### Community 298 - "Community 298"
 Cohesion: 0.20
@@ -1396,8 +1371,8 @@ Cohesion: 0.20
 Nodes (9): BreakEndedIpcEvent, BreakStartedIpcEvent, CompanionInteractionIpcEvent, FormatException, IpcEvent, IpcEventNames, parse, TimerStateChangedIpcEvent (+1 more)
 
 ### Community 300 - "Community 300"
-Cohesion: 0.25
-Nodes (3): SentryEventDecodable, Event, SentryReplayEvent
+Cohesion: 0.08
+Nodes (14): ArbitraryData, boolean, date, int, null, number, string, NSNumberDecodableWrapper (+6 more)
 
 ### Community 301 - "Community 301"
 Cohesion: 0.20
@@ -1420,16 +1395,16 @@ Cohesion: 0.20
 Nodes (9): SentryBreadcrumb, -description, -hash, -init, -initWithDictionary, -initWithLevelcategory, -isEqual, -isEqualToBreadcrumb (+1 more)
 
 ### Community 306 - "Community 306"
-Cohesion: 0.33
-Nodes (6): SentryWatchdogTerminationTracker, -addBreadcrumbsToEvent, -addContextToEvent, -initWithOptionswatchdogTerminationLogicappStateManagerdispatchQueueWrapperfileManagerscopePersistentStore, -start, -stop
+Cohesion: 0.15
+Nodes (9): init(), SentryMessageDecodable, SentryWatchdogTerminationTracker, -addBreadcrumbsToEvent, -addContextToEvent, -initWithOptionswatchdogTerminationLogicappStateManagerdispatchQueueWrapperfileManagerscopePersistentStore, -start, -stop (+1 more)
 
 ### Community 307 - "Community 307"
 Cohesion: 0.22
 Nodes (7): SentryRRWebEvent, SentryRRWebEventProtocol, SentryRRWebEventType, custom, meta, none, touch
 
 ### Community 308 - "Community 308"
-Cohesion: 0.20
-Nodes (9): package:breakmate/core/constants/app_strings.dart, build, Color, Container, _getScoreInsight, Row, _scoreItem, SizedBox (+1 more)
+Cohesion: 0.18
+Nodes (10): package:breakmate/core/constants/app_strings.dart, build, Color, Container, _getScoreInsight, Row, _scoreItem, SizedBox (+2 more)
 
 ### Community 309 - "Community 309"
 Cohesion: 0.20
@@ -1440,8 +1415,8 @@ Cohesion: 0.22
 Nodes (8): BreakMate Improvement Roadmap, 🔵 Completed, 🟢 Doing Right Now, 🔍 Key Optimization Opportunities, 🟡 Pending (To Do), Phase 4: Future Ecosystem Features, 📊 Project Analysis & Strategic Direction, 📋 Task Board
 
 ### Community 311 - "Community 311"
-Cohesion: 0.28
-Nodes (4): Codable, SentryMXCallStack, SentryMXCallStackTree, SentryMXFrame
+Cohesion: 0.18
+Nodes (5): Codable, SentryMXCallStack, SentryMXCallStackTree, SentryMXFrame, SentryLog
 
 ### Community 312 - "Community 312"
 Cohesion: 0.25
@@ -1455,9 +1430,13 @@ Nodes (11): decodeArbitraryData(), unwrapArbitraryArray(), unwrapArbitraryDict()
 Cohesion: 0.22
 Nodes (8): 1. Main Dashboard (UI Isolate), 2. Break Overlay, 3. Companion Engine (Flame), 4. Background Polling (Isolate), 5. Native Bridges, Architecture & Responsibilities, Overview, Ownership Boundaries
 
+### Community 315 - "Community 315"
+Cohesion: 0.29
+Nodes (7): CodingKeys, bodySize, cookies, fragment, headers, queryString, url
+
 ### Community 316 - "Community 316"
-Cohesion: 0.22
-Nodes (8): ../domain/pet_profile.dart, ../domain/pet_type.dart, PetProfile, PetRegistryService, _registerDefaultPresets, registerProfile, setActivePet, unregisterProfile
+Cohesion: 0.14
+Nodes (12): dart:convert, ../domain/pet_profile.dart, ../domain/pet_type.dart, PetProfile, PetRegistryService, _registerDefaultPresets, registerProfile, setActivePet (+4 more)
 
 ### Community 317 - "Community 317"
 Cohesion: 0.22
@@ -1471,6 +1450,10 @@ Nodes (8): SentryTimeToDisplayTracker, -addTimeToDisplayMeasurementname, -finish
 Cohesion: 0.22
 Nodes (8): SentryUIEventTracker, -getOperation, -getTransactionNametarget, -initWithModereportAccessibilityIdentifier, -isUIEventOperation, -sendActionCallbacktargetsenderevent, -start, -stop
 
+### Community 320 - "Community 320"
+Cohesion: 0.21
+Nodes (7): IpcBridgeManager(), RegisterEngine(), SendEvent(), GetInstance(), HideOverlay(), OverlayWindowManager(), ShowOverlay()
+
 ### Community 321 - "Community 321"
 Cohesion: 0.25
 Nodes (7): BreakMate v1.2.0 — Contextual Intelligence & Personal Wellness, Contextual Intelligence, Installation Note (macOS), Personalization & Goals, Privacy & Transparency, Technical Improvements, Version Information
@@ -1480,9 +1463,8 @@ Cohesion: 0.25
 Nodes (3): init(), SentryNSErrorDecodable, SentryNSError
 
 ### Community 324 - "Community 324"
-Cohesion: 0.29
-Nodes (3): fillThreadState(), isValidFrame(), size_t
-    backtrace()
+Cohesion: 0.33
+Nodes (3): init(), SentryRequestDecodable, SentryRequest
 
 ### Community 325 - "Community 325"
 Cohesion: 0.25
@@ -1521,20 +1503,20 @@ Cohesion: 0.25
 Nodes (7): SentryOnDemandReplayError, cantCreatePixelBuffer, cantReadImage, cantReadVideoSize, cantReadVideoStartTime, errorRenderingVideo, indexOutOfBounds
 
 ### Community 334 - "Community 334"
-Cohesion: 0.17
-Nodes (8): Equatable, SentryRedactRegion, SentryRedactRegionType, clipBegin, clipEnd, clipOut, redact, redactSwiftUI
+Cohesion: 0.33
+Nodes (3): uuid, SentryId, Sendable
 
 ### Community 335 - "Community 335"
-Cohesion: 0.25
-Nodes (7): SentryTransactionNameSource, component, custom, route, sourceTask, url, view
+Cohesion: 0.11
+Nodes (15): SentryXcodeVersion, xcode16_4, xcode26, Int, SentryProfileLifecycle, manual, trace, SentryProfileOptions (+7 more)
 
 ### Community 336 - "Community 336"
 Cohesion: 0.25
 Nodes (3): SentryMXManager, SentryMXManagerDelegate, MXMetricManagerSubscriber
 
 ### Community 337 - "Community 337"
-Cohesion: 0.25
-Nodes (7): build, dispose, FadeTransition, initState, StaggeredFadeIn, _StaggeredFadeInState, _startAnimation
+Cohesion: 0.33
+Nodes (6): ThreadCPUInfo, idle, runState, systemTimeMicros, usagePercent, userTimeMicros
 
 ### Community 340 - "Community 340"
 Cohesion: 0.32
@@ -1545,11 +1527,11 @@ Cohesion: 0.25
 Nodes (7): Already built — skip flutter build:, Just sign + update appcast, skip GitHub release:, Step 1 — Generate key pair (saves to macOS Keychain), Step 2 — Export private key to a file, Step 3 — Print the public key (for Info.plist), Step 4 — Sign a DMG using the key file, Test without touching anything:
 
 ### Community 342 - "Community 342"
-Cohesion: 0.13
-Nodes (15): [1.2.1] - 2026-06-01, 🛡️ Advanced Permission Handling, BreakMate v1.2.0 — Contextual Intelligence & Personal Wellness, Contextual Intelligence, 📊 Enhanced Dashboard Visualization, Installation Note (macOS), Key Changes, 🚀 macOS Sonoma Compatibility (+7 more)
+Cohesion: 0.11
+Nodes (21): [1.2.1] - 2026-06-01, [1.3.0] - 2026-06-02, 🛡️ Advanced Permission Handling, 🛑 Break Overlay Clarity, BreakMate v1.2.0 — Contextual Intelligence & Personal Wellness, 🐱 Companion Low-Distraction Mode, Contextual Intelligence, 📊 Enhanced Dashboard & Context (+13 more)
 
 ### Community 343 - "Community 343"
-Cohesion: 0.39
+Cohesion: 0.43
 Nodes (6): CompanionWindowManager(), GetInstance(), HideCompanion(), ShowCompanion(), UpdateMousePosition(), UpdateParams()
 
 ### Community 345 - "Community 345"
@@ -1561,8 +1543,8 @@ Cohesion: 0.29
 Nodes (6): SentryDisplayLinkWrapper, -invalidate, -isRunning, -linkWithTargetselector, -targetTimestamp, -timestamp
 
 ### Community 350 - "Community 350"
-Cohesion: 0.25
-Nodes (5): sentrycrashcm_setEventCallback(), sentrycrash_uninstall(), sentrycrashccd_close(), sentrycrashccd_getQueueName(), sentrycrashccd_getThreadName()
+Cohesion: 0.13
+Nodes (13): package:breakmate/features/break_system/domain/break_model.dart, TimerStateData, BreakContextPill, build, Center, Column, Container, MouseRegion (+5 more)
 
 ### Community 351 - "Community 351"
 Cohesion: 0.29
@@ -1581,8 +1563,8 @@ Cohesion: 0.20
 Nodes (9): Box inventory, Known gaps, KV mirror contract, Migrations, ObjectBox store, Persistence Boundary, Repository usage, Storage stack (+1 more)
 
 ### Community 355 - "Community 355"
-Cohesion: 0.20
-Nodes (10): [1.0.0] - 2026-05-26, Added, Added, Added, Changed, Changed, Changed, Fixed (+2 more)
+Cohesion: 0.15
+Nodes (13): [1.0.0] - 2026-05-26, Added, Added, Added, Added, Changed, Changed, Changed (+5 more)
 
 ### Community 356 - "Community 356"
 Cohesion: 0.29
@@ -1609,20 +1591,20 @@ Cohesion: 0.29
 Nodes (6): SentryCrashJSONCodec, -codecWithEncodeOptionsdecodeOptions, -dealloc, -decodeoptionserror, -encodeoptionserror, -initWithEncodeOptionsdecodeOptions
 
 ### Community 362 - "Community 362"
-Cohesion: 0.20
-Nodes (7): CodingKeys, body, level, severityNumber, timestamp, traceId, SentryLog
+Cohesion: 0.33
+Nodes (5): SentryCrashReportSink, -filterReportsonCompletion, -handleConvertedEventreportsentReports, -initWithInAppLogiccrashWrapperdispatchQueue, -sendReportsonCompletion
 
 ### Community 363 - "Community 363"
 Cohesion: 0.48
 Nodes (5): archs_for_slice(), copy_dir(), install_xcframework(), select_slice(), variant_for_slice()
 
 ### Community 364 - "Community 364"
-Cohesion: 0.33
-Nodes (6): SentryANRType, fatalFullyBlocking, fatalNonFullyBlocking, fullyBlocking, nonFullyBlocking, unknown
+Cohesion: 0.40
+Nodes (6): extractTaggedNSDate(), extractTaggedNSString(), getTaggedNSStringLength(), getTaggedPayload(), sentrycrashobjc_taggedPointerPayload(), taggedStringDescription()
 
 ### Community 365 - "Community 365"
-Cohesion: 0.22
-Nodes (8): package:macos_ui/macos_ui.dart, AppTheme, BoxDecoration, cardDecoration, Container, glassContainer, glassDecoration, ThemeData
+Cohesion: 0.40
+Nodes (3): StackBounds, end, start
 
 ### Community 367 - "Community 367"
 Cohesion: 0.33
@@ -1631,10 +1613,6 @@ Nodes (4): CustomStringConvertible, SentryReplayType, buffer, session
 ### Community 368 - "Community 368"
 Cohesion: 0.33
 Nodes (5): `com.breakmate.desktop/bridge`, `com.breakmate.desktop/companion_data`, `com.breakmate/events`, Core Channels, Native Channels
-
-### Community 373 - "Community 373"
-Cohesion: 0.33
-Nodes (6): ThreadCPUInfo, idle, runState, systemTimeMicros, usagePercent, userTimeMicros
 
 ### Community 375 - "Community 375"
 Cohesion: 0.25
@@ -1649,8 +1627,8 @@ Cohesion: 0.33
 Nodes (5): SentryCoreDataSwizzling, -sharedInstance, -startWithTracker, -stop, -swizzleCoreData
 
 ### Community 378 - "Community 378"
-Cohesion: 0.20
-Nodes (10): [1.0.1] - 2026-05-26, Added, Added, Added, Changed, Changed, Changed, Fixed (+2 more)
+Cohesion: 0.15
+Nodes (13): [1.0.1] - 2026-05-26, Added, Added, Added, Added, Changed, Changed, Changed (+5 more)
 
 ### Community 379 - "Community 379"
 Cohesion: 0.33
@@ -1696,17 +1674,9 @@ Nodes (5): SentryViewHierarchyProviderHelper, -appViewHierarchyFromreportAccessi
 Cohesion: 0.33
 Nodes (3): UIViewControllerRepresentable, SentryUserFeedbackFormDelegate, ViewControllerWrapper
 
-### Community 393 - "Community 393"
-Cohesion: 0.40
-Nodes (6): extractTaggedNSDate(), extractTaggedNSString(), getTaggedNSStringLength(), getTaggedPayload(), sentrycrashobjc_taggedPointerPayload(), taggedStringDescription()
-
-### Community 397 - "Community 397"
-Cohesion: 0.40
-Nodes (3): StackBounds, end, start
-
 ### Community 398 - "Community 398"
-Cohesion: 0.22
-Nodes (9): [1.1.0] - 2026-05-27, Added, Added, Added, Changed, Changed, Fixed, Fixed (+1 more)
+Cohesion: 0.17
+Nodes (12): [1.1.0] - 2026-05-27, Added, Added, Added, Added, Changed, Changed, Changed (+4 more)
 
 ### Community 401 - "Community 401"
 Cohesion: 0.40
@@ -1756,17 +1726,13 @@ Nodes (4): SentryTransportFactory, -createDispatchQueueWrapper, -getUrlSession, 
 Cohesion: 0.40
 Nodes (4): SentryUIEventTrackingIntegration, -installWithOptions, -integrationOptions, -uninstall
 
-### Community 414 - "Community 414"
-Cohesion: 0.20
-Nodes (4): SentryViewRenderer, Context, SentryGraphicsImageRenderer, SentryViewRendererV2
-
 ### Community 419 - "Community 419"
-Cohesion: 0.14
-Nodes (11): CodingKeys, code, domain, CodingKeys, frames, registers, snapshot, init() (+3 more)
+Cohesion: 0.40
+Nodes (3): array, frames, SentryFrameRemover
 
 ### Community 424 - "Community 424"
-Cohesion: 0.67
-Nodes (3): PlaceholderProcessInfoClass, ProcessInfo, SentryProcessInfoSource
+Cohesion: 0.50
+Nodes (3): StackFrame, next, returnAddress
 
 ### Community 425 - "Community 425"
 Cohesion: 0.28
@@ -1837,16 +1803,16 @@ Cohesion: 0.67
 Nodes (3): code:bash ($(cat .graphify_python) -c "), code:bash ($(cat .graphify_python) -c "), Step 7 - Neo4j export (only if --neo4j or --neo4j-push flag)
 
 ### Community 466 - "Community 466"
-Cohesion: 0.22
-Nodes (9): [1.1.4] - 2026-05-31, Added, Added, Added, Changed, Changed, Fixed, Fixed (+1 more)
+Cohesion: 0.18
+Nodes (11): [1.1.4] - 2026-05-31, Added, Added, Added, Added, Changed, Changed, Changed (+3 more)
 
 ### Community 837 - "Community 837"
-Cohesion: 0.25
-Nodes (7): ArbitraryData, boolean, date, int, null, number, string
+Cohesion: 0.50
+Nodes (4): ThreadMetadata, name, priority, threadID
 
 ### Community 838 - "Community 838"
-Cohesion: 0.21
-Nodes (6): CGMutablePath, CGPoint, SentryIconography, SentryMaskRenderer, SentryDefaultMaskRenderer, concatenateTranform()
+Cohesion: 0.40
+Nodes (3): CGMutablePath, CGPoint, SentryIconography
 
 ### Community 839 - "Community 839"
 Cohesion: 0.25
@@ -1861,20 +1827,20 @@ Cohesion: 0.40
 Nodes (4): images, info, author, version
 
 ### Community 842 - "Community 842"
-Cohesion: 0.29
-Nodes (7): [1.1.1] - 2026-05-27, Changed, Changed, Changed, Fixed, Fixed, Fixed
+Cohesion: 0.13
+Nodes (16): [1.1.1] - 2026-05-27, [1.1.3] - 2026-05-27, Changed, Changed, Changed, Changed, Changed, Changed (+8 more)
 
 ### Community 843 - "Community 843"
-Cohesion: 0.29
-Nodes (7): [1.1.2] - 2026-05-27, Added, Added, Added, Changed, Changed, Changed
+Cohesion: 0.22
+Nodes (9): [1.1.2] - 2026-05-27, Added, Added, Added, Added, Changed, Changed, Changed (+1 more)
 
 ### Community 844 - "Community 844"
-Cohesion: 0.29
-Nodes (7): [1.1.3] - 2026-05-27, Changed, Changed, Changed, Fixed, Fixed, Fixed
+Cohesion: 0.22
+Nodes (8): build, dispose, GestureDetector, _handleTapDown, _handleTapUp, initState, PressableButton, _PressableButtonState
 
 ### Community 845 - "Community 845"
-Cohesion: 0.25
-Nodes (9): [1.2.0] - 2026-05-31, [1.2.1] - 2026-06-01, Added, Added, Changed, Changed, Changed, Fixed (+1 more)
+Cohesion: 0.17
+Nodes (13): [1.2.0] - 2026-05-31, [1.2.1] - 2026-06-01, Added, Added, Added, Added, Changed, Changed (+5 more)
 
 ### Community 846 - "Community 846"
 Cohesion: 0.40
@@ -1892,10 +1858,6 @@ Nodes (4): SentryInfoPlistError, keyNotFound, mainInfoPlistNotFound, unableToCas
 Cohesion: 0.29
 Nodes (7): NSCopying, SentryWeakBox, -copyWithZone, -hash, -initWithKey, -isEqual, -key
 
-### Community 853 - "Community 853"
-Cohesion: 0.33
-Nodes (3): uuid, SentryId, Sendable
-
 ### Community 854 - "Community 854"
 Cohesion: 0.40
 Nodes (4): SentryUseNSExceptionCallstackWrapper, -buildCrashStackToEntryMapper, -buildThreads, -initWithNamereasonuserInfocallStackReturnAddresses
@@ -1904,41 +1866,33 @@ Nodes (4): SentryUseNSExceptionCallstackWrapper, -buildCrashStackToEntryMapper, 
 Cohesion: 0.67
 Nodes (3): code:bash (python3 -m graphify.serve graphify-out/graph.json), code:json ({), Step 7d - MCP server (only if --mcp flag)
 
-### Community 861 - "Community 861"
-Cohesion: 0.50
-Nodes (4): Backtrace, absoluteTimestamp, addresses, threadMetadata
+### Community 859 - "Community 859"
+Cohesion: 0.33
+Nodes (6): CalendarAccessState, denied, fullAccess, notDetermined, restricted, writeOnly
 
-### Community 864 - "Community 864"
-Cohesion: 0.50
-Nodes (3): StackFrame, next, returnAddress
-
-### Community 865 - "Community 865"
-Cohesion: 0.50
-Nodes (4): ThreadMetadata, name, priority, threadID
-
-### Community 866 - "Community 866"
-Cohesion: 0.50
-Nodes (3): SentryXcodeVersion, xcode16_4, xcode26
+### Community 868 - "Community 868"
+Cohesion: 0.22
+Nodes (6): RegisterAppTrackingBridge(), Utf16ToUtf8(), SentrySubClassFinder, -actOnSubclassesOfViewControllerInImageblock, -initWithDispatchQueueobjcRuntimeWrapperswizzleClassNameExcludes, -isClasssubClassOf
 
 ## Knowledge Gaps
-- **3568 isolated node(s):** `enabled`, `host`, `model`, `BeforeTool`, `version` (+3563 more)
+- **3642 isolated node(s):** `enabled`, `host`, `model`, `BeforeTool`, `version` (+3637 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **97 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **106 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `package:flutter/material.dart` connect `Community 70` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 7`, `Community 12`, `Community 269`, `Community 14`, `Community 18`, `Community 19`, `Community 24`, `Community 26`, `Community 29`, `Community 31`, `Community 35`, `Community 42`, `Community 170`, `Community 172`, `Community 45`, `Community 46`, `Community 43`, `Community 178`, `Community 50`, `Community 51`, `Community 52`, `Community 57`, `Community 58`, `Community 188`, `Community 62`, `Community 63`, `Community 64`, `Community 66`, `Community 199`, `Community 200`, `Community 73`, `Community 75`, `Community 78`, `Community 81`, `Community 337`, `Community 216`, `Community 91`, `Community 92`, `Community 225`, `Community 236`, `Community 365`, `Community 241`?**
-  _High betweenness centrality (0.117) - this node is a cross-community bridge._
+- **Why does `package:flutter/material.dart` connect `Community 70` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 7`, `Community 265`, `Community 12`, `Community 269`, `Community 14`, `Community 18`, `Community 19`, `Community 23`, `Community 24`, `Community 26`, `Community 27`, `Community 29`, `Community 31`, `Community 35`, `Community 170`, `Community 43`, `Community 172`, `Community 45`, `Community 46`, `Community 178`, `Community 50`, `Community 51`, `Community 52`, `Community 57`, `Community 58`, `Community 188`, `Community 63`, `Community 64`, `Community 65`, `Community 191`, `Community 66`, `Community 199`, `Community 200`, `Community 73`, `Community 75`, `Community 76`, `Community 844`, `Community 78`, `Community 216`, `Community 91`, `Community 92`, `Community 350`, `Community 225`, `Community 236`, `Community 241`?**
+  _High betweenness centrality (0.112) - this node is a cross-community bridge._
 - **Why does `CompanionWindowManager` connect `Community 8` to `Community 15`?**
-  _High betweenness centrality (0.052) - this node is a cross-community bridge._
+  _High betweenness centrality (0.050) - this node is a cross-community bridge._
 - **Why does `remove` connect `Community 198` to `Community 56`, `Community 89`?**
   _High betweenness centrality (0.036) - this node is a cross-community bridge._
 - **What connects `enabled`, `host`, `model` to the rest of the system?**
-  _3568 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _3642 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.019417475728155338 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
   _Cohesion score 0.04081632653061224 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.04983388704318937 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.04053109713487072 - nodes in this community are weakly interconnected._

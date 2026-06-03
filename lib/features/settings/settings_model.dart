@@ -158,7 +158,7 @@ class SettingsModel {
     this.quietModePreset = 'none',
     this.lastSnoozeDurationMinutes = 5,
     this.intensityLevel = 'standard',
-    
+
     this.dailyBreakGoalCount = 10,
     this.maxContinuousSittingMinutes = 60,
     this.weeklyConsistencyTargetDays = 5,
@@ -282,7 +282,9 @@ class SettingsModel {
       clockFaceTextColorHex:
           clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
-      customImagePath: customImagePath != null ? (customImagePath == "" ? null : customImagePath) : this.customImagePath,
+      customImagePath: customImagePath != null
+          ? (customImagePath == "" ? null : customImagePath)
+          : this.customImagePath,
       resetTimerAfterMinutes:
           resetTimerAfterMinutes ?? this.resetTimerAfterMinutes,
       workingHoursEnabled: workingHoursEnabled ?? this.workingHoursEnabled,
@@ -476,7 +478,8 @@ class SettingsModel {
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
-      companionPreviewBackground: map['companionPreviewBackground'] as String? ??
+      companionPreviewBackground:
+          map['companionPreviewBackground'] as String? ??
           'assets/background/forest/background.png',
       unlockedPets:
           (map['unlockedPets'] as List<dynamic>?)

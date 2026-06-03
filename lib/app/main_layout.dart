@@ -178,10 +178,10 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         },
         child: Focus(
-          autofocus: true,
+          autofocus: false,
           canRequestFocus: false,
           descendantsAreFocusable: false,
-          onKeyEvent: (_, _) => KeyEventResult.ignored,
+          onKeyEvent: null,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 750;
@@ -254,7 +254,10 @@ class _MainLayoutState extends State<MainLayout> {
               decoration: BoxDecoration(
                 color: AppTheme.sidebarBackground.withValues(alpha: 0.95),
                 border: Border(
-                  bottom: BorderSide(color: AppTheme.separatorColor, width: 0.5),
+                  bottom: BorderSide(
+                    color: AppTheme.separatorColor,
+                    width: 0.5,
+                  ),
                 ),
               ),
               child: SafeArea(

@@ -105,7 +105,9 @@ class StatsCalculator {
       insight = 'Consider adjusting break intervals to reduce skipping.';
     }
 
-    final consistencyDays = weeklyData.where((day) => day.breaksCompleted > 0).length;
+    final consistencyDays = weeklyData
+        .where((day) => day.breaksCompleted > 0)
+        .length;
 
     final stats = StatsModel(
       breaksCompleted: breaksCompleted,
@@ -308,7 +310,9 @@ class StatsCalculator {
       insight = 'Consider adjusting break intervals to reduce skipping.';
     }
 
-    final consistencyDays = weeklyData.where((day) => day.breaksCompleted > 0).length;
+    final consistencyDays = weeklyData
+        .where((day) => day.breaksCompleted > 0)
+        .length;
 
     final stats = StatsModel(
       breaksCompleted: breaksCompleted,

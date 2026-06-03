@@ -197,7 +197,9 @@ class OverlayWindowService extends ChangeNotifier {
 
       // Reset native state — may fail if overlay window already closed itself
       if (Platform.isWindows) {
-        try { await _windowsChannel.invokeMethod('resetToNormal'); } catch (_) {}
+        try {
+          await _windowsChannel.invokeMethod('resetToNormal');
+        } catch (_) {}
       } else if (Platform.isMacOS) {
         try {
           await NativeBridge.hideOverlay(

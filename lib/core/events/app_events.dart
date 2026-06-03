@@ -150,7 +150,7 @@ class OverlayLayoutChangedEvent extends AppEvent {
 
 class HealthReminderEvent extends AppEvent {
   final String reminderType; // 'posture' or 'eyeblink'
-  final String displayType;  // 'native' or 'overlay'
+  final String displayType; // 'native' or 'overlay'
   HealthReminderEvent({
     required this.reminderType,
     required this.displayType,
@@ -161,4 +161,3 @@ class HealthReminderEvent extends AppEvent {
 class NotificationPermissionDeniedEvent extends AppEvent {
   NotificationPermissionDeniedEvent({super.timestamp});
 }
-

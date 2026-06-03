@@ -29,9 +29,8 @@ class SoftFloatingWidgetTemplate extends StatefulWidget {
       _SoftFloatingWidgetTemplateState();
 }
 
-class _SoftFloatingWidgetTemplateState
-    extends State<SoftFloatingWidgetTemplate> {
-  // Placement coordinates
+class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
+    with SingleTickerProviderStateMixin {
   double? _x;
   double? _y;
   bool _isDragging = false;
@@ -39,16 +38,22 @@ class _SoftFloatingWidgetTemplateState
 
   PetAnimationState _animationState = PetAnimationState.breakMode;
   Timer? _behaviorTimer;
+  late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
     _startBehaviorCycle();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _behaviorTimer?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -78,16 +83,12 @@ class _SoftFloatingWidgetTemplateState
   ) {
     if (_x == null || _y == null) return;
 
-    // Corner options: Top-Left, Top-Right, Bottom-Left, Bottom-Right
     final offset = 30.0;
     final corners = [
-      Offset(offset, offset), // TL
-      Offset(screenWidth - width - offset, offset), // TR
-      Offset(offset, screenHeight - height - offset - 50), // BL
-      Offset(
-        screenWidth - width - offset,
-        screenHeight - height - offset - 50,
-      ), // BR
+      Offset(offset, offset),
+      Offset(screenWidth - width - offset, offset),
+      Offset(offset, screenHeight - height - offset - 50),
+      Offset(screenWidth - width - offset, screenHeight - height - offset - 50),
     ];
 
     Offset nearest = corners.first;
@@ -116,18 +117,20 @@ class _SoftFloatingWidgetTemplateState
   @override
   Widget build(BuildContext context) {
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
-    final double closedWidth = 180.0;
-    final double openWidth = 320.0;
-    final double height = 80.0;
+    final double closedWidth = 190.0;
+    final double openWidth = 340.0;
+    final double height = 76.0;
     final bool enableAnimations =
         widget.settings.enableAnimations &&
         !MediaQuery.of(context).disableAnimations;
+
+    final isShort = widget.breakInfo.type == BreakType.short;
+    final accent = isShort ? const Color(0xFF38BDF8) : const Color(0xFF34D399);
 
     return Material(
       color: Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Default start location: bottom right
           if (_x == null || _y == null) {
             _x = constraints.maxWidth - closedWidth - 30;
             _y = constraints.maxHeight - height - 100;
@@ -149,22 +152,10 @@ class _SoftFloatingWidgetTemplateState
                 left: _x,
                 top: _y,
                 child: MouseRegion(
-                  onEnter: (_) {
-                    setState(() {
-                      _isHovered = true;
-                    });
-                  },
-                  onExit: (_) {
-                    setState(() {
-                      _isHovered = false;
-                    });
-                  },
+                  onEnter: (_) => setState(() => _isHovered = true),
+                  onExit: (_) => setState(() => _isHovered = false),
                   child: GestureDetector(
-                    onPanStart: (_) {
-                      setState(() {
-                        _isDragging = true;
-                      });
-                    },
+                    onPanStart: (_) => setState(() => _isDragging = true),
                     onPanUpdate: (details) {
                       setState(() {
                         _x = (_x! + details.delta.dx).clamp(
@@ -178,9 +169,7 @@ class _SoftFloatingWidgetTemplateState
                       });
                     },
                     onPanEnd: (_) {
-                      setState(() {
-                        _isDragging = false;
-                      });
+                      setState(() => _isDragging = false);
                       _snapToBoundaries(
                         constraints.maxWidth,
                         constraints.maxHeight,
@@ -195,19 +184,18 @@ class _SoftFloatingWidgetTemplateState
                       curve: Curves.easeOutBack,
                       width: currentWidth,
                       height: height,
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF101216).withValues(alpha: 0.92),
-                        borderRadius: BorderRadius.circular(18),
+                        color: const Color(0xFF0F1115).withValues(alpha: 0.85),
+                        borderRadius: BorderRadius.circular(100),
                         border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          width: 1,
+                          color: Colors.white.withValues(alpha: 0.08),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.42),
-                            blurRadius: 28,
-                            offset: const Offset(0, 18),
+                            color: Colors.black.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
@@ -218,60 +206,100 @@ class _SoftFloatingWidgetTemplateState
                           width: openWidth,
                           child: Row(
                             children: [
-                              // Compact Pet Avatar (Visible in both)
+                              // Compact Pet Avatar
                               Container(
-                                width: 52,
-                                height: 52,
+                                width: 50,
+                                height: 50,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white.withValues(alpha: 0.04),
+                                  color: Colors.white.withValues(alpha: 0.03),
                                 ),
                                 child: Center(
                                   child: CompanionSpriteWidget(
                                     petTheme: petTheme,
                                     animationState: _animationState,
-                                    scale: 2.2,
+                                    scale: 2.0,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 10),
 
-                              // Time remaining pill
+                              // Time remaining capsule
                               RepaintBoundary(
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      _formatDuration(widget.remainingSeconds),
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: -0.5,
-                                        fontFamily: 'Inter',
-                                      ),
+                                    Row(
+                                      children: [
+                                        // Pulse Neon Dot indicator
+                                        AnimatedBuilder(
+                                          animation: _pulseController,
+                                          builder: (context, child) {
+                                            return Container(
+                                              width: 6,
+                                              height: 6,
+                                              decoration: BoxDecoration(
+                                                color: accent.withValues(
+                                                  alpha:
+                                                      0.4 +
+                                                      (0.6 *
+                                                          _pulseController
+                                                              .value),
+                                                ),
+                                                shape: BoxShape.circle,
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: accent.withValues(
+                                                      alpha: 0.5,
+                                                    ),
+                                                    blurRadius:
+                                                        4 *
+                                                        _pulseController.value,
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          _formatDuration(
+                                            widget.remainingSeconds,
+                                          ),
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'Inter',
+                                            fontFeatures: [
+                                              FontFeature.tabularFigures(),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       widget.breakInfo.type == BreakType.short
                                           ? 'Eye Rest'
-                                          : 'Mindful Rest',
+                                          : 'Pause Rest',
                                       style: TextStyle(
                                         color: Colors.white.withValues(
-                                          alpha: 0.4,
+                                          alpha: 0.35,
                                         ),
-                                        fontSize: 10,
+                                        fontSize: 9,
                                         fontWeight: FontWeight.w600,
                                         fontFamily: 'Inter',
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              const SizedBox(width: 14),
 
-                              // Hover state actions section (Faded in/out)
+                              // Faded interactions drawer
                               Expanded(
                                 child: AnimatedOpacity(
                                   opacity: _isHovered ? 1.0 : 0.0,
@@ -282,12 +310,12 @@ class _SoftFloatingWidgetTemplateState
                                     children: [
                                       Container(
                                         width: 1,
-                                        height: 32,
+                                        height: 28,
                                         color: Colors.white.withValues(
-                                          alpha: 0.15,
+                                          alpha: 0.1,
                                         ),
                                       ),
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: 14),
                                       Expanded(
                                         child: Text(
                                           widget.breakInfo.tip,
@@ -295,31 +323,36 @@ class _SoftFloatingWidgetTemplateState
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
                                             color: Colors.white.withValues(
-                                              alpha: 0.6,
+                                              alpha: 0.55,
                                             ),
                                             fontSize: 10,
-                                            height: 1.3,
+                                            height: 1.35,
                                             fontFamily: 'Inter',
                                           ),
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
-                                      if (widget.onSkip != null)
+                                      const SizedBox(width: 10),
+                                      if (widget.onSkip != null &&
+                                          !widget.settings.strictMode)
                                         GestureDetector(
                                           onTap: widget.onSkip,
                                           child: MouseRegion(
                                             cursor: SystemMouseCursors.click,
                                             child: Container(
-                                              padding: const EdgeInsets.all(8),
+                                              padding: const EdgeInsets.all(6),
                                               decoration: BoxDecoration(
                                                 color: Colors.white.withValues(
-                                                  alpha: 0.1,
+                                                  alpha: 0.08,
                                                 ),
                                                 shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: Colors.white
+                                                      .withValues(alpha: 0.08),
+                                                ),
                                               ),
                                               child: const Icon(
                                                 CupertinoIcons.chevron_right,
-                                                size: 12,
+                                                size: 10,
                                                 color: Colors.white,
                                               ),
                                             ),
@@ -360,13 +393,13 @@ class _FloatingBackdrop extends StatelessWidget {
 class _FloatingBackdropPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black.withValues(alpha: 0.54);
+    final paint = Paint()..color = Colors.black.withValues(alpha: 0.48);
     canvas.drawRect(Offset.zero & size, paint);
 
     final railPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.035)
+      ..color = Colors.white.withValues(alpha: 0.015)
       ..strokeWidth = 1;
-    for (double y = 72; y < size.height; y += 96) {
+    for (double y = 80; y < size.height; y += 96) {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), railPaint);
     }
   }

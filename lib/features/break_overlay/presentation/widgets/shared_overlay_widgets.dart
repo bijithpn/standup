@@ -19,7 +19,7 @@ class BreakContextPill extends StatelessWidget {
         : breakInfo.title.toUpperCase().contains('LONG')
         ? 'Why now: long focus block completed'
         : 'Why now: scheduled recovery break';
-        
+
     final action = exerciseTitle != null
         ? 'Do: $exerciseTitle'
         : breakInfo.durationSeconds <= 30
@@ -55,10 +55,7 @@ class BreakContextPill extends StatelessWidget {
 class StrictModeNote extends StatelessWidget {
   final String intensityLevel;
 
-  const StrictModeNote({
-    super.key,
-    required this.intensityLevel,
-  });
+  const StrictModeNote({super.key, required this.intensityLevel});
 
   @override
   Widget build(BuildContext context) {

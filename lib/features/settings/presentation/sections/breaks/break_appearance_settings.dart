@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -31,11 +32,27 @@ class BreakAppearanceSettings extends StatefulWidget {
   });
 
   @override
-  State<BreakAppearanceSettings> createState() => _BreakAppearanceSettingsState();
+  State<BreakAppearanceSettings> createState() =>
+      _BreakAppearanceSettingsState();
 }
 
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   String? _hoveredId;
+  String? _selectedTemplateId;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedTemplateId = widget.settings.breakTemplate;
+  }
+
+  @override
+  void didUpdateWidget(covariant BreakAppearanceSettings oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings.breakTemplate != widget.settings.breakTemplate) {
+      _selectedTemplateId = widget.settings.breakTemplate;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,39 +78,101 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         const SizedBox(height: 16),
         _buildBreakTemplateGrid(),
         const SizedBox(height: 24),
-        // Preview Button
+        // Buttons Row
         Center(
-          child: MinimalButton(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            onPressed: () => _showBreakTemplatePreview(),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  CupertinoIcons.play_circle_fill,
-                  size: 18,
-                  color: AppTheme.accentColor,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              MinimalButton(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  'Preview Current Template',
-                  style: TextStyle(
-                    color: AppTheme.accentColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: -0.2,
-                  ),
+                backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.play_circle_fill,
+                      size: 18,
+                      color: AppTheme.accentColor,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Preview Selected',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 16),
+              Builder(
+                builder: (context) {
+                  final bool hasChanges =
+                      _selectedTemplateId != widget.settings.breakTemplate;
+                  return MinimalButton(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    backgroundColor: AppTheme.accentColor,
+                    disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    onPressed: hasChanges
+                        ? () {
+                            widget.onSave(
+                              widget.settings.copyWith(
+                                breakTemplate: _selectedTemplateId,
+                              ),
+                            );
+                            Toast.showSuccess(
+                              context,
+                              'Template updated successfully!',
+                            );
+                          }
+                        : null,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.checkmark_circle_fill,
+                          size: 18,
+                          color: hasChanges
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.5),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Update Template',
+                          style: TextStyle(
+                            color: hasChanges
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.5),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 32),
         sectionHeader(
           'Colors & Customization',
-          subtitle: 'Fine-tune clock accent colors, text opacity, and blur intensity.',
+          subtitle:
+              'Fine-tune clock accent colors, text opacity, and blur intensity.',
         ),
         const SizedBox(height: 16),
         buildCard([
@@ -105,7 +184,11 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
               children: [
                 const Row(
                   children: [
-                    Icon(CupertinoIcons.color_filter, size: 16, color: AppTheme.textMuted),
+                    Icon(
+                      CupertinoIcons.color_filter,
+                      size: 16,
+                      color: AppTheme.textMuted,
+                    ),
                     SizedBox(width: 8),
                     Text(
                       'Clock Face Theme Color',
@@ -122,11 +205,18 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   spacing: 12,
                   runSpacing: 12,
                   children: colorPresets.map((preset) {
-                    final isSelected = baseColor.toARGB32() == preset.color.toARGB32();
+                    final isSelected =
+                        baseColor.toARGB32() == preset.color.toARGB32();
                     return GestureDetector(
                       onTap: () {
-                        final newColorHex = preset.color.withValues(alpha: currentOpacity).toARGB32();
-                        widget.onSave(widget.settings.copyWith(clockFaceTextColorHex: newColorHex));
+                        final newColorHex = preset.color
+                            .withValues(alpha: currentOpacity)
+                            .toARGB32();
+                        widget.onSave(
+                          widget.settings.copyWith(
+                            clockFaceTextColorHex: newColorHex,
+                          ),
+                        );
                       },
                       child: Tooltip(
                         message: preset.name,
@@ -146,10 +236,12 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: preset.color.withValues(alpha: 0.4),
+                                      color: preset.color.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       blurRadius: 8,
                                       spreadRadius: 1,
-                                    )
+                                    ),
                                   ]
                                 : [],
                           ),
@@ -177,7 +269,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             currentOpacity,
             (v) {
               final newColorHex = baseColor.withValues(alpha: v).toARGB32();
-              widget.onSave(widget.settings.copyWith(clockFaceTextColorHex: newColorHex));
+              widget.onSave(
+                widget.settings.copyWith(clockFaceTextColorHex: newColorHex),
+              );
             },
             min: 0.2,
             max: 1.0,
@@ -187,7 +281,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
           sliderRow(
             'Background Blur Intensity',
             widget.settings.clockFaceBlurEnabled ? 1.0 : 0.0,
-            (v) => widget.onSave(widget.settings.copyWith(clockFaceBlurEnabled: v > 0.5)),
+            (v) => widget.onSave(
+              widget.settings.copyWith(clockFaceBlurEnabled: v > 0.5),
+            ),
             min: 0.0,
             max: 1.0,
           ),
@@ -195,15 +291,24 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
           toggleRow(
             'Custom Wallpaper Background',
             'Use high-fidelity static image backdrop during breaks',
-            widget.settings.customImagePath != null && !widget.settings.customImagePath!.startsWith("disabled:"),
+            widget.settings.customImagePath != null &&
+                !widget.settings.customImagePath!.startsWith("disabled:"),
             (v) async {
               if (v) {
-                if (widget.settings.customImagePath != null && widget.settings.customImagePath!.startsWith("disabled:")) {
+                if (widget.settings.customImagePath != null &&
+                    widget.settings.customImagePath!.startsWith("disabled:")) {
                   // Re-enable existing path by removing the prefix
-                  final actualPath = widget.settings.customImagePath!.substring(9);
-                  widget.onSave(widget.settings.copyWith(customImagePath: actualPath));
+                  final actualPath = widget.settings.customImagePath!.substring(
+                    9,
+                  );
+                  widget.onSave(
+                    widget.settings.copyWith(customImagePath: actualPath),
+                  );
                   if (!context.mounted) return;
-                    Toast.showSuccess(context, 'Custom wallpaper background enabled!');
+                  Toast.showSuccess(
+                    context,
+                    'Custom wallpaper background enabled!',
+                  );
                 } else {
                   // No path exists, pick a new file
                   try {
@@ -212,21 +317,40 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
                     );
                     if (result != null && result.files.single.path != null) {
-                      widget.onSave(widget.settings.copyWith(customImagePath: result.files.single.path));
+                      widget.onSave(
+                        widget.settings.copyWith(
+                          customImagePath: result.files.single.path,
+                        ),
+                      );
                       if (!context.mounted) return;
-                        Toast.showSuccess(context, 'Custom wallpaper background enabled!');
+                      Toast.showSuccess(
+                        context,
+                        'Custom wallpaper background enabled!',
+                      );
                     }
                   } catch (e) {
                     if (!context.mounted) return;
-                      Toast.showError(context, 'Failed to select image: ${e.toString()}');
+                    Toast.showError(
+                      context,
+                      'Failed to select image: ${e.toString()}',
+                    );
                   }
                 }
               } else {
                 // Disable by adding "disabled:" prefix (only if a path exists)
-                if (widget.settings.customImagePath != null && !widget.settings.customImagePath!.startsWith("disabled:")) {
-                  widget.onSave(widget.settings.copyWith(customImagePath: 'disabled:${widget.settings.customImagePath}'));
+                if (widget.settings.customImagePath != null &&
+                    !widget.settings.customImagePath!.startsWith("disabled:")) {
+                  widget.onSave(
+                    widget.settings.copyWith(
+                      customImagePath:
+                          'disabled:${widget.settings.customImagePath}',
+                    ),
+                  );
                   if (!context.mounted) return;
-                    Toast.showSuccess(context, 'Custom wallpaper background disabled.');
+                  Toast.showSuccess(
+                    context,
+                    'Custom wallpaper background disabled.',
+                  );
                 }
               }
             },
@@ -253,7 +377,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                         Builder(
                           builder: (context) {
                             final path = widget.settings.customImagePath;
-                            final actualPath = path != null && path.startsWith("disabled:") ? path.substring(9) : path;
+                            final actualPath =
+                                path != null && path.startsWith("disabled:")
+                                ? path.substring(9)
+                                : path;
                             return Text(
                               actualPath ?? '',
                               style: const TextStyle(
@@ -264,7 +391,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             );
-                          }
+                          },
                         ),
                       ],
                     ),
@@ -273,7 +400,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   Builder(
                     builder: (context) {
                       final path = widget.settings.customImagePath;
-                      final actualPath = path != null && path.startsWith("disabled:") ? path.substring(9) : path;
+                      final actualPath =
+                          path != null && path.startsWith("disabled:")
+                          ? path.substring(9)
+                          : path;
                       if (actualPath != null && File(actualPath).existsSync()) {
                         return Container(
                           width: 50,
@@ -281,7 +411,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                           margin: const EdgeInsets.only(right: 12),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.15),
+                            ),
                             image: DecorationImage(
                               image: FileImage(File(actualPath)),
                               fit: BoxFit.cover,
@@ -290,15 +422,25 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                         );
                       }
                       return const SizedBox.shrink();
-                    }
+                    },
                   ),
                   MinimalButton(
-                    backgroundColor: AppTheme.longBreakColor.withValues(alpha: 0.1),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: AppTheme.longBreakColor.withValues(
+                      alpha: 0.1,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                     onPressed: () {
-                      widget.onSave(widget.settings.copyWith(customImagePath: ""));
-                      Toast.showSuccess(context, 'Custom wallpaper removed completely.');
+                      widget.onSave(
+                        widget.settings.copyWith(customImagePath: ""),
+                      );
+                      Toast.showSuccess(
+                        context,
+                        'Custom wallpaper removed completely.',
+                      );
                     },
                     child: Text(
                       'Remove',
@@ -311,8 +453,13 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   ),
                   const SizedBox(width: 8),
                   MinimalButton(
-                    backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    backgroundColor: AppTheme.accentColor.withValues(
+                      alpha: 0.1,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     borderRadius: BorderRadius.circular(8),
                     onPressed: () async {
                       try {
@@ -320,14 +467,22 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                           type: FileType.custom,
                           allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
                         );
-                        if (result != null && result.files.single.path != null) {
-                          widget.onSave(widget.settings.copyWith(customImagePath: result.files.single.path));
+                        if (result != null &&
+                            result.files.single.path != null) {
+                          widget.onSave(
+                            widget.settings.copyWith(
+                              customImagePath: result.files.single.path,
+                            ),
+                          );
                           if (!context.mounted) return;
-                            Toast.showSuccess(context, 'Wallpaper updated!');
+                          Toast.showSuccess(context, 'Wallpaper updated!');
                         }
                       } catch (e) {
                         if (!context.mounted) return;
-                          Toast.showError(context, 'Failed to select image: ${e.toString()}');
+                        Toast.showError(
+                          context,
+                          'Failed to select image: ${e.toString()}',
+                        );
                       }
                     },
                     child: Text(
@@ -400,8 +555,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                 t.name,
                 t.id,
                 t.desc,
-                widget.settings.breakTemplate == t.id,
-                () => widget.onSave(widget.settings.copyWith(breakTemplate: t.id)),
+                _selectedTemplateId == t.id,
+                () => setState(() => _selectedTemplateId = t.id),
               );
             }).toList(),
           );
@@ -420,8 +575,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     t.name,
                     t.id,
                     t.desc,
-                    widget.settings.breakTemplate == t.id,
-                    () => widget.onSave(widget.settings.copyWith(breakTemplate: t.id)),
+                    _selectedTemplateId == t.id,
+                    () => setState(() => _selectedTemplateId = t.id),
                   ),
                 );
               }).toList(),
@@ -467,33 +622,40 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                       color: isSelected
                           ? AppTheme.accentColor
                           : isHovered
-                              ? AppTheme.accentColor.withValues(alpha: 0.5)
-                              : AppTheme.borderColor.withValues(alpha: 0.8),
+                          ? AppTheme.accentColor.withValues(alpha: 0.5)
+                          : AppTheme.borderColor.withValues(alpha: 0.8),
                       width: isSelected ? 2.5 : 1.5,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppTheme.accentColor.withValues(alpha: 0.35),
+                              color: AppTheme.accentColor.withValues(
+                                alpha: 0.35,
+                              ),
                               blurRadius: 16,
                               offset: const Offset(0, 6),
                             ),
                           ]
                         : isHovered
-                            ? [
-                                BoxShadow(
-                                  color: AppTheme.accentColor.withValues(alpha: 0.15),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                            : [],
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.accentColor.withValues(
+                                alpha: 0.15,
+                              ),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : [],
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(14),
                     child: Stack(
                       children: [
-                        _BreakTemplateRealPreview(id: id, settings: widget.settings),
+                        _BreakTemplateRealPreview(
+                          id: id,
+                          settings: widget.settings,
+                        ),
                         if (isSelected)
                           Positioned(
                             top: 8,
@@ -524,8 +686,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   color: isSelected
                       ? AppTheme.accentColor
                       : isHovered
-                          ? Colors.white
-                          : AppTheme.textPrimary.withValues(alpha: 0.9),
+                      ? Colors.white
+                      : AppTheme.textPrimary.withValues(alpha: 0.9),
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   fontSize: 14,
                   fontFamily: 'Inter',
@@ -553,10 +715,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     );
   }
 
-  void _showBreakTemplatePreview() {
+  void _showBreakTemplatePreview(String? templateId) {
     try {
       final controller = sl<BreakController>();
-      controller.previewBreak();
+      controller.previewBreak(templateId: templateId);
 
       if (mounted) {
         Toast.showSuccess(
@@ -579,26 +741,68 @@ class _BreakTemplateRealPreview extends StatefulWidget {
   const _BreakTemplateRealPreview({required this.id, required this.settings});
 
   @override
-  State<_BreakTemplateRealPreview> createState() => _BreakTemplateRealPreviewState();
+  State<_BreakTemplateRealPreview> createState() =>
+      _BreakTemplateRealPreviewState();
 }
 
 class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
     with TickerProviderStateMixin {
   late AnimationController _kenBurnsController;
   late PageController _pageController;
+  Timer? _countdownTimer;
+  late int _remainingSeconds;
 
   @override
   void initState() {
     super.initState();
+    _remainingSeconds = widget.settings.shortBreakDurationSeconds > 0
+        ? widget.settings.shortBreakDurationSeconds
+        : 20;
     _kenBurnsController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 15),
     );
     _pageController = PageController();
+    _startCountdown();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final total = widget.settings.shortBreakDurationSeconds > 0
+          ? widget.settings.shortBreakDurationSeconds
+          : 20;
+      setState(() {
+        if (_remainingSeconds > 0) {
+          _remainingSeconds--;
+        } else {
+          _remainingSeconds = total;
+        }
+      });
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _BreakTemplateRealPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings.shortBreakDurationSeconds !=
+        widget.settings.shortBreakDurationSeconds) {
+      setState(() {
+        _remainingSeconds = widget.settings.shortBreakDurationSeconds > 0
+            ? widget.settings.shortBreakDurationSeconds
+            : 20;
+      });
+      _startCountdown();
+    }
   }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _kenBurnsController.dispose();
     _pageController.dispose();
     super.dispose();
@@ -606,9 +810,13 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
 
   @override
   Widget build(BuildContext context) {
+    final total = widget.settings.shortBreakDurationSeconds > 0
+        ? widget.settings.shortBreakDurationSeconds
+        : 20;
+
     final breakInfo = BreakModel(
       type: BreakType.short,
-      durationSeconds: 300,
+      durationSeconds: total,
       title: widget.id == 'activities' ? 'Activity Room' : 'Eye Rest',
       tip: widget.id == 'zen'
           ? 'Slowly breathe in as the visual cue expands...'
@@ -623,9 +831,9 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
         templateWidget = ClassicSlideshowTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 200,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
           pageController: _pageController,
           kenBurnsController: _kenBurnsController,
           singleImage: AppConstants.wellnessSlideshow.first,
@@ -635,45 +843,45 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
         templateWidget = CompanionInteractiveTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 150,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
         );
         break;
       case 'zen':
         templateWidget = ZenModeTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 180,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
         );
         break;
       case 'hud':
         templateWidget = ProductivityHudTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 120,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
         );
         break;
       case 'floating':
         templateWidget = SoftFloatingWidgetTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 100,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
         );
         break;
       case 'activities':
         templateWidget = ActivitiesBreakTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 240,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
         );
         break;
       case 'minimal':
@@ -681,9 +889,9 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
         templateWidget = MinimalFocusTemplate(
           breakInfo: breakInfo,
           settings: widget.settings,
-          remainingSeconds: 200,
-          totalSeconds: 300,
-          onSkip: () {},
+          remainingSeconds: _remainingSeconds,
+          totalSeconds: total,
+          onSkip: null,
         );
         break;
     }
@@ -700,10 +908,7 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
                 size: Size(1000, 650),
                 padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               ),
-              child: Theme(
-                data: ThemeData.dark(),
-                child: templateWidget,
-              ),
+              child: Theme(data: ThemeData.dark(), child: templateWidget),
             ),
           ),
         );
@@ -715,8 +920,8 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
 class DesktopDragScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+  };
 }

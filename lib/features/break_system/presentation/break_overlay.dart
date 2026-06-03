@@ -180,6 +180,17 @@ class _BreakOverlayContent extends StatelessWidget {
     final total = breakInfo.type == BreakType.short
         ? settings.shortBreakDurationSeconds
         : settings.longBreakDurationMinutes * 60;
+    // Every named template manages its own top rail, skip UI, and action area.
+    // Setting this to true for all of them prevents the global pill, close
+    // button, and swipe-hint from being stacked on top of template chrome.
+    final templateOwnsChrome =
+        settings.breakTemplate == 'minimal' ||
+        settings.breakTemplate == 'activities' ||
+        settings.breakTemplate == 'companion' ||
+        settings.breakTemplate == 'zen' ||
+        settings.breakTemplate == 'hud' ||
+        settings.breakTemplate == 'floating' ||
+        settings.breakTemplate == 'classic';
     void onSkip() => controller.skipCurrentBreak();
 
     return Stack(
@@ -199,17 +210,20 @@ class _BreakOverlayContent extends StatelessWidget {
             ),
           ),
         ),
-        Positioned(
-          top: 28,
-          left: 28,
-          child: SafeArea(
-            child: BreakContextPill(
-              breakInfo: breakInfo,
-              exerciseTitle: controller.currentExerciseTitle,
+        if (!templateOwnsChrome)
+          Positioned(
+            top: 28,
+            left: 28,
+            child: SafeArea(
+              child: BreakContextPill(
+                breakInfo: breakInfo,
+                exerciseTitle: settings.showExercisesInBreak
+                    ? controller.currentExerciseTitle
+                    : null,
+              ),
             ),
           ),
-        ),
-        if (!settings.strictMode)
+        if (!settings.strictMode && !templateOwnsChrome)
           Positioned(
             top: 28,
             right: 28,
@@ -232,16 +246,14 @@ class _BreakOverlayContent extends StatelessWidget {
               ),
             ),
           ),
-        if (!settings.strictMode)
+        if (!settings.strictMode && !templateOwnsChrome)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
-            child: const IgnorePointer(
-              child: SwipeToDismissHint(),
-            ),
+            child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (settings.strictMode)
+        if (settings.strictMode && !templateOwnsChrome)
           Positioned(
             bottom: 24,
             left: 24,

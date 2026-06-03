@@ -143,7 +143,9 @@ class MacOSBridge implements NativeBridgePlatform {
   @override
   Future<bool> requestCalendarPermissions() async {
     debugPrint('🔥 Requesting calendar permission');
-    final bool? result = await _invokeSafely<bool>('requestCalendarPermissions');
+    final bool? result = await _invokeSafely<bool>(
+      'requestCalendarPermissions',
+    );
     debugPrint('🔥 Permission result: $result');
     return result ?? false;
   }
@@ -168,7 +170,9 @@ class MacOSBridge implements NativeBridgePlatform {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(int windowMinutes) async {
+  Future<List<Map<String, dynamic>>> getUpcomingCalendarEvents(
+    int windowMinutes,
+  ) async {
     final List<dynamic>? events = await _invokeSafely<List<dynamic>>(
       'getUpcomingCalendarEvents',
       {'windowMinutes': windowMinutes},

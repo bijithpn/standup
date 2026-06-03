@@ -485,15 +485,12 @@ void mainCommon(FlavorConfig config) async {
         if (kReleaseMode &&
             config.sentryDsn.isNotEmpty &&
             config.sentryDsn != 'DEV_DSN_HERE') {
-          await SentryFlutter.init(
-            (options) {
-              options.dsn = config.sentryDsn;
-              // Disable App Hang tracking to prevent native modal/alert blocking windows 
-              // (e.g. Sparkle updater prompts/errors) from triggering watchdog crash reports.
-              options.enableAppHangTracking = false;
-            },
-            appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
-          );
+          await SentryFlutter.init((options) {
+            options.dsn = config.sentryDsn;
+            // Disable App Hang tracking to prevent native modal/alert blocking windows
+            // (e.g. Sparkle updater prompts/errors) from triggering watchdog crash reports.
+            options.enableAppHangTracking = false;
+          }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
         } else {
           // Log first dashboard frame time in debug mode
           WidgetsBinding.instance.addPostFrameCallback((_) {

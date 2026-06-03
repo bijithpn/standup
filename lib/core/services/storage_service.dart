@@ -25,14 +25,19 @@ class StorageService {
 
   Store get store {
     final isolateName = Isolate.current.debugName ?? '';
-    final isSecondaryIsolate = isolateName.toLowerCase().contains('overlay') ||
+    final isSecondaryIsolate =
+        isolateName.toLowerCase().contains('overlay') ||
         isolateName.toLowerCase().contains('companion');
     if (isSecondaryIsolate) {
-      debugPrint('[Storage] 🚨 REJECTED: Secondary isolate "$isolateName" attempted to access ObjectBox store! Rejecting access to prevent corruption.');
+      debugPrint(
+        '[Storage] 🚨 REJECTED: Secondary isolate "$isolateName" attempted to access ObjectBox store! Rejecting access to prevent corruption.',
+      );
       throw StateError('Storage access rejected in secondary isolates.');
     }
     if (_store == null) {
-      throw StateError('StorageService not initialized. Call init() first and wait for completion.');
+      throw StateError(
+        'StorageService not initialized. Call init() first and wait for completion.',
+      );
     }
     return _store!;
   }
@@ -55,14 +60,19 @@ class StorageService {
     }
 
     final isolateName = Isolate.current.debugName ?? '';
-    final isSecondaryIsolate = isolateName.toLowerCase().contains('overlay') ||
+    final isSecondaryIsolate =
+        isolateName.toLowerCase().contains('overlay') ||
         isolateName.toLowerCase().contains('companion');
-    
-    debugPrint('[Storage] Initializing in isolate: "$isolateName" (isSecondaryIsolate: $isSecondaryIsolate)');
-    
+
+    debugPrint(
+      '[Storage] Initializing in isolate: "$isolateName" (isSecondaryIsolate: $isSecondaryIsolate)',
+    );
+
     if (isSecondaryIsolate) {
-       debugPrint('[Storage] Bypassing initialization in secondary isolate: $isolateName');
-       return;
+      debugPrint(
+        '[Storage] Bypassing initialization in secondary isolate: $isolateName',
+      );
+      return;
     }
 
     _initializing = true;
@@ -71,29 +81,37 @@ class StorageService {
     try {
       final supportDir = await getApplicationSupportDirectory();
       final docsDir = await getApplicationDocumentsDirectory();
-      
+
       debugPrint('[Storage] Support Dir: ${supportDir.path}');
       debugPrint('[Storage] Docs Dir: ${docsDir.path}');
-      
+
       // New primary location
       final storeDir = p.join(supportDir.path, 'breakmate_db');
       // Old location (legacy)
       final legacyStoreDir = p.join(docsDir.path, 'breakmate_db');
 
       // Simple migration: if legacy exists and new doesn't, move it.
-      if (Directory(legacyStoreDir).existsSync() && !Directory(storeDir).existsSync()) {
-        debugPrint('[Storage] Migrating database from legacy location: $legacyStoreDir to $storeDir');
+      if (Directory(legacyStoreDir).existsSync() &&
+          !Directory(storeDir).existsSync()) {
+        debugPrint(
+          '[Storage] Migrating database from legacy location: $legacyStoreDir to $storeDir',
+        );
         try {
           Directory(storeDir).parent.createSync(recursive: true);
           Directory(legacyStoreDir).renameSync(storeDir);
           debugPrint('[Storage] Migration successful.');
         } catch (e) {
-          debugPrint('[Storage] Migration failed: $e. Staying with existing paths.');
+          debugPrint(
+            '[Storage] Migration failed: $e. Staying with existing paths.',
+          );
         }
       }
 
-      final activeStoreDir = Directory(storeDir).existsSync() ? storeDir : 
-                             (Directory(legacyStoreDir).existsSync() ? legacyStoreDir : storeDir);
+      final activeStoreDir = Directory(storeDir).existsSync()
+          ? storeDir
+          : (Directory(legacyStoreDir).existsSync()
+                ? legacyStoreDir
+                : storeDir);
 
       activeDatabasePath = activeStoreDir;
       await diagnoseStorage(activeStoreDir);
@@ -116,13 +134,19 @@ class StorageService {
             macosAppGroup = 'breakmate';
           } else if (packageName.isNotEmpty) {
             final shortName = packageName.split('.').last;
-            macosAppGroup = shortName.length <= 19 ? shortName : shortName.substring(0, 19);
+            macosAppGroup = shortName.length <= 19
+                ? shortName
+                : shortName.substring(0, 19);
           } else {
             macosAppGroup = 'breakmate';
           }
-          debugPrint('[Storage] Detected macOS bundle ID: $packageName -> mapped App Group: $macosAppGroup');
+          debugPrint(
+            '[Storage] Detected macOS bundle ID: $packageName -> mapped App Group: $macosAppGroup',
+          );
         } catch (e) {
-          debugPrint('[Storage] Failed to fetch PackageInfo for macOS app group: $e');
+          debugPrint(
+            '[Storage] Failed to fetch PackageInfo for macOS app group: $e',
+          );
         }
       }
 
@@ -134,22 +158,26 @@ class StorageService {
           macosApplicationGroup: macosAppGroup,
         );
         openDurationMs = openStopwatch.elapsedMilliseconds;
-        debugPrint('[Storage] Store opened successfully in ${openDurationMs}ms.');
+        debugPrint(
+          '[Storage] Store opened successfully in ${openDurationMs}ms.',
+        );
       } catch (e, stack) {
         debugPrint('[Storage] Failed to open store: $e');
         debugPrint('[Storage] StackTrace: $stack');
-        
+
         final errStr = e.toString().toLowerCase();
-        final isLockError = errStr.contains('operation not permitted') || 
-                            errStr.contains('lock') || 
-                            errStr.contains('10199') || 
-                            errStr.contains('10101');
-        final isSchemaError = errStr.contains('migration') || 
-                             errStr.contains('schema') || 
-                             errStr.contains('incompatible') || 
-                             errStr.contains('corrupt') ||
-                             errStr.contains('model');
-        
+        final isLockError =
+            errStr.contains('operation not permitted') ||
+            errStr.contains('lock') ||
+            errStr.contains('10199') ||
+            errStr.contains('10101');
+        final isSchemaError =
+            errStr.contains('migration') ||
+            errStr.contains('schema') ||
+            errStr.contains('incompatible') ||
+            errStr.contains('corrupt') ||
+            errStr.contains('model');
+
         if (isLockError) {
           debugPrint(
             '[Storage] Attempting to clean up stale processes holding the database files...',
@@ -213,14 +241,18 @@ class StorageService {
               macosApplicationGroup: macosAppGroup,
             );
             openDurationMs = openStopwatch.elapsedMilliseconds;
-            debugPrint('[Storage] Store opened after cleanup in ${openDurationMs}ms.');
+            debugPrint(
+              '[Storage] Store opened after cleanup in ${openDurationMs}ms.',
+            );
           } catch (retryError) {
             debugPrint('[Storage] Cleanup retry failed: $retryError');
           }
         }
-        
+
         if (_store == null && isSchemaError) {
-          debugPrint('[Storage] Incompatible or corrupted database detected. Attempting database reset...');
+          debugPrint(
+            '[Storage] Incompatible or corrupted database detected. Attempting database reset...',
+          );
           try {
             final dir = Directory(activeStoreDir);
             if (dir.existsSync()) {
@@ -234,7 +266,9 @@ class StorageService {
               macosApplicationGroup: macosAppGroup,
             );
             openDurationMs = openStopwatch.elapsedMilliseconds;
-            debugPrint('[Storage] Store opened successfully after database reset in ${openDurationMs}ms.');
+            debugPrint(
+              '[Storage] Store opened successfully after database reset in ${openDurationMs}ms.',
+            );
           } catch (resetError) {
             debugPrint('[Storage] Database reset failed: $resetError');
           }
@@ -243,25 +277,29 @@ class StorageService {
         if (_store == null) {
           // Fallback: try Documents directory if Support failed (for some reason)
           if (activeStoreDir != legacyStoreDir) {
-             debugPrint('[Storage] Attempting fallback to legacy location $legacyStoreDir...');
-             try {
-                Directory(legacyStoreDir).createSync(recursive: true);
-                openStopwatch.reset();
-                _store = await openStore(
-                  directory: legacyStoreDir,
-                  macosApplicationGroup: macosAppGroup,
-                );
-                openDurationMs = openStopwatch.elapsedMilliseconds;
-                activeDatabasePath = legacyStoreDir;
-             } catch (_) {}
+            debugPrint(
+              '[Storage] Attempting fallback to legacy location $legacyStoreDir...',
+            );
+            try {
+              Directory(legacyStoreDir).createSync(recursive: true);
+              openStopwatch.reset();
+              _store = await openStore(
+                directory: legacyStoreDir,
+                macosApplicationGroup: macosAppGroup,
+              );
+              openDurationMs = openStopwatch.elapsedMilliseconds;
+              activeDatabasePath = legacyStoreDir;
+            } catch (_) {}
           }
-          
+
           if (_store == null) {
             // Last resort: temporary directory (will lose data on OS cleanup)
             try {
               final tempDir = await getTemporaryDirectory();
               final fallbackPath = p.join(tempDir.path, 'breakmate_fallback');
-              debugPrint('WARNING:\nRunning on temporary storage.\nSettings may not persist.');
+              debugPrint(
+                'WARNING:\nRunning on temporary storage.\nSettings may not persist.',
+              );
               Directory(fallbackPath).createSync(recursive: true);
               openStopwatch.reset();
               _store = await openStore(
@@ -272,7 +310,9 @@ class StorageService {
               activeDatabasePath = fallbackPath;
               debugPrint('[Storage] Fallback store opened successfully.');
             } catch (fallbackError) {
-              debugPrint('[Storage] FATAL: All storage options failed: $fallbackError');
+              debugPrint(
+                '[Storage] FATAL: All storage options failed: $fallbackError',
+              );
               _failed = true;
               diagnoseAndLogFailure(activeStoreDir);
               return;
@@ -317,37 +357,40 @@ class StorageService {
 
   void diagnoseAndLogFailure(String storeDir) {
     debugPrint('=== 🚨 STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
-    
+
     // 1. Initialization order issue
     debugPrint('[Diagnostics] 1. Initialization Order Check:');
     debugPrint('   - StorageService._initializing: $_initializing');
     debugPrint('   - StorageService._store != null: ${_store != null}');
-    
+
     // 2. Existing process ownership
     debugPrint('[Diagnostics] 2. Existing Process Ownership Check:');
     debugPrint('   - Current Process ID: $pid');
-    
+
     // 3. Secondary isolate access
     final isolateName = Isolate.current.debugName ?? '';
-    final isSecondaryIsolate = isolateName.toLowerCase().contains('overlay') ||
+    final isSecondaryIsolate =
+        isolateName.toLowerCase().contains('overlay') ||
         isolateName.toLowerCase().contains('companion');
     debugPrint('[Diagnostics] 3. Secondary Isolate Check:');
     debugPrint('   - Isolate Name: "$isolateName"');
     debugPrint('   - Is Secondary Isolate: $isSecondaryIsolate');
-    
+
     // 4. Temporary storage fallback
     debugPrint('[Diagnostics] 4. Temporary Storage Fallback Check:');
     debugPrint('   - Active database path: $activeDatabasePath');
     final isTemp = activeDatabasePath?.contains('temporary') ?? false;
     debugPrint('   - Is Running on Temporary Storage: $isTemp');
     if (isTemp) {
-      debugPrint('WARNING:\nRunning on temporary storage.\nSettings may not persist.');
+      debugPrint(
+        'WARNING:\nRunning on temporary storage.\nSettings may not persist.',
+      );
     }
 
     // 5. ObjectBox open failure
     debugPrint('[Diagnostics] 5. ObjectBox Open Failure Check:');
     debugPrint('   - StorageService._failed: $_failed');
-    
+
     // 6. Database corruption
     debugPrint('[Diagnostics] 6. Database Corruption Check:');
     if (storeDir.isNotEmpty) {
@@ -361,39 +404,41 @@ class StorageService {
         }
       }
     }
-    
+
     // 7. Lock-file conflict
     debugPrint('[Diagnostics] 7. Lock-file Conflict Check:');
     if (storeDir.isNotEmpty) {
       final lockFile = File(p.join(storeDir, 'lock.mdb'));
       debugPrint('   - Lock file exists: ${lockFile.existsSync()}');
       if (lockFile.existsSync()) {
-        debugPrint('   - Lock file is present, potential locking conflict with another running instance.');
+        debugPrint(
+          '   - Lock file is present, potential locking conflict with another running instance.',
+        );
       }
     }
-    
+
     debugPrint('=====================================================');
   }
 
   Future<void> diagnoseStorage(String storeDir) async {
     try {
       final docsDir = await getApplicationDocumentsDirectory();
-      
+
       debugPrint('--- STORAGE DIAGNOSTICS ---');
       debugPrint('App Docs Dir: ${docsDir.path}');
       debugPrint('Store Dir: $storeDir');
       debugPrint('Home: ${Platform.environment['HOME']}');
-      
+
       final dir = Directory(storeDir);
       debugPrint('Dir exists: ${dir.existsSync()}');
-      
+
       // Test write permission
       final testFile = File(p.join(docsDir.path, '.write_test'));
       testFile.writeAsStringSync('test');
       debugPrint('Write test: SUCCESS');
       testFile.deleteSync();
       debugPrint('Delete test: SUCCESS');
-      
+
       debugPrint('---------------------------');
     } catch (e) {
       debugPrint('--- STORAGE DIAGNOSTICS FAILURE ---');
@@ -434,7 +479,9 @@ class StorageService {
       existing.value = value.toString();
       kvBox!.put(existing);
     } else {
-      kvBox!.put(KeyValueRecord(key: key, value: value.toString(), type: 'int'));
+      kvBox!.put(
+        KeyValueRecord(key: key, value: value.toString(), type: 'int'),
+      );
     }
     return true;
   }

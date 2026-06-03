@@ -32,7 +32,9 @@ class FlavorConfig {
 
   static FlavorConfig get instance {
     if (_instance == null) {
-      throw StateError("FlavorConfig is not initialized. Call FlavorConfig(...) first.");
+      throw StateError(
+        "FlavorConfig is not initialized. Call FlavorConfig(...) first.",
+      );
     }
     return _instance!;
   }

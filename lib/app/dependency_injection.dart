@@ -72,10 +72,7 @@ Future<void> initDependencies() async {
   final displayManager = DisplayManager();
 
   // Parallelize independent initializations
-  await Future.wait([
-    notifications.init(),
-    displayManager.initialize(),
-  ]);
+  await Future.wait([notifications.init(), displayManager.initialize()]);
 
   sl.registerSingleton<NotificationService>(notifications);
 
@@ -184,7 +181,9 @@ Future<void> initDependencies() async {
   sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
 
   sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
-  sl.registerLazySingleton<WellnessLibraryRepository>(() => WellnessLibraryRepository(settingsRepo: sl()));
+  sl.registerLazySingleton<WellnessLibraryRepository>(
+    () => WellnessLibraryRepository(settingsRepo: sl()),
+  );
 
   final focusModeService = FocusModeService();
   sl.registerSingleton<FocusModeService>(focusModeService);
