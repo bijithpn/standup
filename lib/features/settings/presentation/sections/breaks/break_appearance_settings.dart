@@ -11,15 +11,6 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
-import 'package:breakmate/features/break_system/domain/break_model.dart';
-import 'package:breakmate/core/constants/app_constants.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/companion_interactive_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
 
 class BreakAppearanceSettings extends StatefulWidget {
   final SettingsModel settings;
@@ -740,10 +731,7 @@ class _BreakTemplateRealPreview extends StatefulWidget {
       _BreakTemplateRealPreviewState();
 }
 
-class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
-    with TickerProviderStateMixin {
-  late AnimationController _kenBurnsController;
-  late PageController _pageController;
+class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview> {
   Timer? _countdownTimer;
   late int _remainingSeconds;
 
@@ -753,11 +741,6 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
     _remainingSeconds = widget.settings.shortBreakDurationSeconds > 0
         ? widget.settings.shortBreakDurationSeconds
         : 20;
-    _kenBurnsController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 15),
-    );
-    _pageController = PageController();
     _startCountdown();
   }
 
@@ -798,8 +781,6 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
   @override
   void dispose() {
     _countdownTimer?.cancel();
-    _kenBurnsController.dispose();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -809,84 +790,340 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
         ? widget.settings.shortBreakDurationSeconds
         : 20;
 
-    final breakInfo = BreakModel(
-      type: BreakType.short,
-      durationSeconds: total,
-      title: widget.id == 'activities' ? 'Activity Room' : 'Eye Rest',
-      tip: widget.id == 'zen'
-          ? 'Slowly breathe in as the visual cue expands...'
-          : 'Look away at something 20 feet away.',
-      triggerReason: '20-minute focus threshold',
-    );
+    final progress = (total - _remainingSeconds) / total;
+    final timeStr = '00:${_remainingSeconds.toString().padLeft(2, '0')}';
 
-    Widget templateWidget;
+    Widget mockWidget;
 
     switch (widget.id) {
       case 'classic':
-        templateWidget = ClassicSlideshowTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
-          pageController: _pageController,
-          kenBurnsController: _kenBurnsController,
-          singleImage: AppConstants.wellnessSlideshow.first,
+        mockWidget = Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.black87, Colors.blueGrey.shade900, Colors.black],
+            ),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Positioned(
+                top: 15,
+                child: Icon(
+                  CupertinoIcons.photo,
+                  size: 24,
+                  color: Colors.white.withValues(alpha: 0.15),
+                ),
+              ),
+              Container(
+                width: 140,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.black45,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.08),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Rest Your Eyes',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      timeStr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w300,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(100),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 2,
+                        backgroundColor: Colors.white10,
+                        valueColor: const AlwaysStoppedAnimation(
+                          AppTheme.success,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
         break;
+
       case 'companion':
-        templateWidget = CompanionInteractiveTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
+        mockWidget = Container(
+          color: const Color(0xFF0F1115),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.05),
+                  borderRadius: BorderRadius.circular(100),
+                ),
+                child: Text(
+                  'COMPANION · $timeStr',
+                  style: TextStyle(
+                    color: AppTheme.longBreakColor.withValues(alpha: 0.8),
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Icon(
+                CupertinoIcons.heart_fill,
+                size: 28,
+                color: AppTheme.longBreakColor,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.black38,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'Take a deep breath!',
+                  style: TextStyle(color: Colors.white70, fontSize: 8),
+                ),
+              ),
+            ],
+          ),
         );
         break;
+
       case 'zen':
-        templateWidget = ZenModeTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
+        mockWidget = Container(
+          decoration: const BoxDecoration(
+            gradient: RadialGradient(
+              colors: [Color(0xFF0D2A20), Color(0xFF07080B)],
+            ),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text(
+                'Breathe In',
+                style: TextStyle(
+                  color: Color(0xFFA7F3D0),
+                  fontSize: 10,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: const Color(0xFFA7F3D0).withValues(alpha: 0.2),
+                    width: 2,
+                  ),
+                ),
+                child: Center(
+                  child: Text(
+                    timeStr,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
         break;
+
       case 'hud':
-        templateWidget = ProductivityHudTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
+        mockWidget = Container(
+          color: const Color(0xFF0A0F0D),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '[ $timeStr ]',
+                style: const TextStyle(
+                  color: Colors.greenAccent,
+                  fontSize: 16,
+                  fontFamily: 'Courier',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  final filled = progress >= (index + 1) / 5;
+                  return Container(
+                    width: 12,
+                    height: 6,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    color: filled
+                        ? Colors.greenAccent
+                        : Colors.greenAccent.withValues(alpha: 0.15),
+                  );
+                }),
+              ),
+            ],
+          ),
         );
         break;
+
       case 'floating':
-        templateWidget = SoftFloatingWidgetTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
+        mockWidget = Container(
+          color: const Color(0xFF08090C),
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(100),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: AppTheme.shortBreakColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    timeStr,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
         break;
+
       case 'activities':
-        templateWidget = ActivitiesBreakTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
+        mockWidget = Container(
+          color: const Color(0xFF0D0B0F),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'ACTIVITY STUDIO · $timeStr',
+                style: const TextStyle(
+                  color: Colors.purpleAccent,
+                  fontSize: 8,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: Colors.purpleAccent.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.eye,
+                      size: 14,
+                      color: Colors.purpleAccent,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 60,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: const Icon(
+                      CupertinoIcons.wind,
+                      size: 14,
+                      color: Colors.white30,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
         break;
+
       case 'minimal':
       default:
-        templateWidget = MinimalFocusTemplate(
-          breakInfo: breakInfo,
-          settings: widget.settings,
-          remainingSeconds: _remainingSeconds,
-          totalSeconds: total,
-          onSkip: null,
+        mockWidget = Container(
+          color: const Color(0xFF08090C),
+          child: Center(
+            child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppTheme.shortBreakColor.withValues(alpha: 0.1),
+                  width: 2.5,
+                ),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      timeStr,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${total}s',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.4),
+                        fontSize: 7,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
         break;
     }
@@ -896,15 +1133,9 @@ class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview>
         return FittedBox(
           fit: BoxFit.cover,
           child: SizedBox(
-            width: 1000,
-            height: 650,
-            child: MediaQuery(
-              data: const MediaQueryData(
-                size: Size(1000, 650),
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              ),
-              child: Theme(data: ThemeData.dark(), child: templateWidget),
-            ),
+            width: 190,
+            height: 120,
+            child: Theme(data: ThemeData.dark(), child: mockWidget),
           ),
         );
       },

@@ -83,6 +83,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   String _companionPetTheme = 'grey_cat';
   int _maxWarningSeconds = 10;
 
+  bool _initialized = false;
+
   @override
   void initState() {
     super.initState();
@@ -121,9 +123,117 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
 
     _setupBridge();
+    _loadInitialData();
 
     // Smoothly fade in
     _fadeController.forward();
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final Map? data = await _bridge.invokeMethod<Map>('getOverlayData');
+      if (data != null && mounted) {
+        _applyOverlayData(data);
+      }
+    } catch (e) {
+      debugPrint('Error getting initial overlay data: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    }
+  }
+
+  void _applyOverlayData(Map args) {
+    if (!mounted) return;
+
+    // If targetEndTime is passed, use it to count down locally!
+    final targetEndMs = args['targetEndTime'] as int?;
+    if (targetEndMs != null) {
+      _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
+      _startLocalTimer();
+    } else {
+      _targetEndTime = null;
+      _localTimer?.cancel();
+      _localTimer = null;
+    }
+
+    // If we are transitioning to zero remaining seconds (auto-close),
+    // or explicitly told to close, trigger fade out.
+    final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
+    if (newRemaining == 0 && _remainingSeconds > 0) {
+      _fadeController.reverse();
+    }
+
+    setState(() {
+      _title = args['title'] ?? _title;
+      _tip = args['tip'] ?? _tip;
+      _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
+      if (targetEndMs == null) {
+        _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
+      }
+      _overlayType = args['type'] ?? _overlayType;
+      _strictMode = args['strictMode'] ?? _strictMode;
+      _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
+      _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
+      _showWellnessNotes = args['showWellnessNotes'] ?? _showWellnessNotes;
+      _isInternalPreview = args['isPreview'] ?? false;
+
+      if (args['theme'] != null) {
+        final String themeStr = args['theme'];
+        _currentTheme = BreakTheme.values.firstWhere(
+          (e) => e.name == themeStr,
+          orElse: () => _currentTheme,
+        );
+      }
+      // Use the coordinator-chosen image so all displays show the same one
+      if (args['classicImage'] != null) {
+        _currentTemplate = args['classicImage'] as String;
+      }
+      if (args['breakTemplate'] != null) {
+        _breakTemplate = args['breakTemplate'];
+      } else if (args['template'] != null) {
+        _breakTemplate = args['template'];
+      }
+      _syncClassicEffects(_breakTemplate == 'classic' && _enableAnimations);
+      if (args['companionPetTheme'] != null) {
+        _companionPetTheme = args['companionPetTheme'];
+      } else if (args['companionCatTheme'] != null) {
+        _companionPetTheme = args['companionCatTheme'];
+      }
+      if (args.containsKey('exerciseTitle')) {
+        _exerciseTitle = args['exerciseTitle'];
+      }
+      if (args.containsKey('exerciseInstructions')) {
+        _exerciseInstructions = args['exerciseInstructions'];
+      }
+      if (args['reminderType'] != null) {
+        final newReminderType = args['reminderType'];
+        if (newReminderType != _reminderType) {
+          _maxWarningSeconds = newRemaining;
+        }
+        _reminderType = newReminderType;
+      }
+      if (newRemaining > _maxWarningSeconds) {
+        _maxWarningSeconds = newRemaining;
+      }
+
+      // Auto-dismiss quick reminders after 5 seconds (breakStart gets more time)
+      if (_overlayType == 'quickReminder') {
+        _fadeController.duration = const Duration(milliseconds: 400);
+        final dismissDelay = _reminderType == 'breakStart'
+            ? Duration(seconds: _remainingSeconds.clamp(5, 30))
+            : const Duration(seconds: 5);
+        Future.delayed(dismissDelay, () {
+          if (mounted && _overlayType == 'quickReminder') _skipBreak();
+        });
+      } else {
+        // Reset to default duration for normal break screens
+        _fadeController.duration = const Duration(milliseconds: 600);
+      }
+    });
   }
 
   void _startLocalTimer() {
@@ -163,96 +273,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _bridge.setMethodCallHandler((call) async {
       if (call.method == 'updateOverlayData') {
         final args = call.arguments as Map;
-        if (mounted) {
-          // If targetEndTime is passed, use it to count down locally!
-          final targetEndMs = args['targetEndTime'] as int?;
-          if (targetEndMs != null) {
-            _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
-            _startLocalTimer();
-          } else {
-            _targetEndTime = null;
-            _localTimer?.cancel();
-            _localTimer = null;
-          }
-
-          // If we are transitioning to zero remaining seconds (auto-close),
-          // or explicitly told to close, trigger fade out.
-          final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
-          if (newRemaining == 0 && _remainingSeconds > 0) {
-            _fadeController.reverse();
-          }
-
-          setState(() {
-            _title = args['title'] ?? _title;
-            _tip = args['tip'] ?? _tip;
-            _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
-            if (targetEndMs == null) {
-              _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
-            }
-            _overlayType = args['type'] ?? _overlayType;
-            _strictMode = args['strictMode'] ?? _strictMode;
-            _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
-            _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
-            _showWellnessNotes =
-                args['showWellnessNotes'] ?? _showWellnessNotes;
-            _isInternalPreview = args['isPreview'] ?? false;
-
-            if (args['theme'] != null) {
-              final String themeStr = args['theme'];
-              _currentTheme = BreakTheme.values.firstWhere(
-                (e) => e.name == themeStr,
-                orElse: () => _currentTheme,
-              );
-            }
-            // Use the coordinator-chosen image so all displays show the same one
-            if (args['classicImage'] != null) {
-              _currentTemplate = args['classicImage'] as String;
-            }
-            if (args['breakTemplate'] != null) {
-              _breakTemplate = args['breakTemplate'];
-            } else if (args['template'] != null) {
-              _breakTemplate = args['template'];
-            }
-            _syncClassicEffects(
-              _breakTemplate == 'classic' && _enableAnimations,
-            );
-            if (args['companionPetTheme'] != null) {
-              _companionPetTheme = args['companionPetTheme'];
-            } else if (args['companionCatTheme'] != null) {
-              _companionPetTheme = args['companionCatTheme'];
-            }
-            if (args.containsKey('exerciseTitle')) {
-              _exerciseTitle = args['exerciseTitle'];
-            }
-            if (args.containsKey('exerciseInstructions')) {
-              _exerciseInstructions = args['exerciseInstructions'];
-            }
-            if (args['reminderType'] != null) {
-              final newReminderType = args['reminderType'];
-              if (newReminderType != _reminderType) {
-                _maxWarningSeconds = newRemaining;
-              }
-              _reminderType = newReminderType;
-            }
-            if (newRemaining > _maxWarningSeconds) {
-              _maxWarningSeconds = newRemaining;
-            }
-
-            // Auto-dismiss quick reminders after 5 seconds (breakStart gets more time)
-            if (_overlayType == 'quickReminder') {
-              _fadeController.duration = const Duration(milliseconds: 400);
-              final dismissDelay = _reminderType == 'breakStart'
-                  ? Duration(seconds: _remainingSeconds.clamp(5, 30))
-                  : const Duration(seconds: 5);
-              Future.delayed(dismissDelay, () {
-                if (mounted && _overlayType == 'quickReminder') _skipBreak();
-              });
-            } else {
-              // Reset to default duration for normal break screens
-              _fadeController.duration = const Duration(milliseconds: 600);
-            }
-          });
-        }
+        _applyOverlayData(args);
       } else if (call.method == 'setScreenInfo') {
         final args = call.arguments as Map;
         if (mounted) {
@@ -298,6 +319,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   @override
   Widget build(BuildContext context) {
+    if (!_initialized) {
+      return const Material(
+        color: Colors.transparent,
+        child: SizedBox.shrink(),
+      );
+    }
+
     return FadeTransition(
       opacity: _fadeController,
       child: Material(
