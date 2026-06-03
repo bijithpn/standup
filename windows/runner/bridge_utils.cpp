@@ -26,18 +26,19 @@ bool IsMeetingActive(std::string& out_bundle_id) {
     DWORD process_id;
     GetWindowThreadProcessId(foreground, &process_id);
 
-    HANDLE process = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, process_id);
+    HANDLE process = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, process_id);
     if (!process) return false;
 
-    TCHAR process_name[MAX_PATH];
-    if (GetModuleFileNameEx(process, NULL, process_name, MAX_PATH)) {
-        std::wstring ws(process_name);
+    std::wstring exe_path_w;
+    DWORD size = MAX_PATH;
+    wchar_t buffer[MAX_PATH];
+    if (QueryFullProcessImageNameW(process, 0, buffer, &size)) {
+        exe_path_w = buffer;
         std::string name;
-        name.reserve(ws.length());
-        for (wchar_t wc : ws) {
-            name += static_cast<char>(wc);
-        }
-        
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, &exe_path_w[0], (int)exe_path_w.size(), NULL, 0, NULL, NULL);
+        name.assign(size_needed, 0);
+        WideCharToMultiByte(CP_UTF8, 0, &exe_path_w[0], (int)exe_path_w.size(), &name[0], size_needed, NULL, NULL);
+
         // Convert to lowercase for comparison
         std::string lower_name = name;
         std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(),
@@ -54,7 +55,9 @@ bool IsMeetingActive(std::string& out_bundle_id) {
 
         for (const auto& app : known_meeting_apps) {
             if (lower_name.find(app) != std::string::npos) {
-                out_bundle_id = app;
+                // Remove .exe extension for bundleId to match macOS behavior closer
+                std::string app_no_ext = app.substr(0, app.find(".exe"));
+                out_bundle_id = "com." + app_no_ext + ".app"; 
                 CloseHandle(process);
                 return true;
             }
