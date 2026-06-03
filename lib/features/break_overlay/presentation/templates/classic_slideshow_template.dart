@@ -4,9 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_activity_graph.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'dart:io';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
@@ -42,7 +42,8 @@ class ClassicSlideshowTemplate extends StatefulWidget {
 }
 
 class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
-  List<int> _dataPoints = [2, 4, 3, 5, 2, 6, 4];
+  int _completedToday = 0;
+  int _skippedToday = 0;
 
   @override
   void initState() {
@@ -54,18 +55,12 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
     try {
       final statsService = sl<StatsService>();
       final stats = statsService.load();
-      if (stats.weeklyData.isNotEmpty) {
-        final data = stats.weeklyData.map((d) => d.breaksCompleted).toList();
-        if (data.isNotEmpty) {
-          setState(() {
-            _dataPoints = data.length > 7
-                ? data.sublist(data.length - 7)
-                : data;
-          });
-        }
-      }
+      setState(() {
+        _completedToday = stats.breaksCompleted;
+        _skippedToday = stats.breaksSkipped;
+      });
     } catch (e) {
-      // Fallback silently to mock data
+      // Fallback silently
     }
   }
 
@@ -196,8 +191,8 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                           Container(
                             width: 6,
                             height: 6,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF34D399), // Cozy Green dot
+                            decoration: BoxDecoration(
+                              color: AppTheme.success, // Cozy Green dot
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -242,7 +237,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                         vertical: compact ? 32 : 44,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F1115).withValues(alpha: 0.65),
+                        color: AppTheme.surfaceCard.withValues(alpha: 0.65),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: Colors.white.withValues(alpha: 0.08),
@@ -317,10 +312,10 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         CupertinoIcons.heart_fill,
                                         size: 13,
-                                        color: Color(0xFFEF4444),
+                                        color: AppTheme.destructiveColor,
                                       ),
                                       const SizedBox(width: 8),
                                       Text(
@@ -370,18 +365,21 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // Weekly activity chart
+                      // Today's activity stats
                       Expanded(
                         child: Align(
                           alignment: Alignment.bottomLeft,
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 280),
                             child: Container(
-                              padding: const EdgeInsets.all(12),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF0F1115,
-                                ).withValues(alpha: 0.6),
+                                color: AppTheme.surfaceCard.withValues(
+                                  alpha: 0.6,
+                                ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: Colors.white.withValues(alpha: 0.06),
@@ -394,32 +392,127 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                                   Row(
                                     children: [
                                       const Icon(
-                                        CupertinoIcons.graph_square_fill,
+                                        CupertinoIcons.clock_solid,
                                         size: 12,
-                                        color: Color(0xFF34D399),
+                                        color: AppTheme.success,
                                       ),
                                       const SizedBox(width: 6),
                                       Text(
-                                        'WEEKLY REST ACTIVITY',
+                                        'TODAY\'S ACTIVITY',
                                         style: TextStyle(
                                           color: Colors.white.withValues(
                                             alpha: 0.4,
                                           ),
                                           fontSize: 9,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.8,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1.0,
                                           fontFamily: 'Inter',
                                         ),
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 10),
-                                  SizedBox(
-                                    height: 40,
-                                    child: BreakActivityGraph(
-                                      dataPoints: _dataPoints,
-                                      color: const Color(0xFF34D399),
-                                    ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.success,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Completed',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.7,
+                                              ),
+                                              fontSize: 12,
+                                              fontFamily: 'Inter',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '$_completedToday',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.destructiveColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Skipped',
+                                            style: TextStyle(
+                                              color: Colors.white.withValues(
+                                                alpha: 0.7,
+                                              ),
+                                              fontSize: 12,
+                                              fontFamily: 'Inter',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Text(
+                                        '$_skippedToday',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          fontFamily: 'Inter',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Builder(
+                                    builder: (context) {
+                                      final total =
+                                          _completedToday + _skippedToday;
+                                      final rate = total > 0
+                                          ? _completedToday / total
+                                          : 0.0;
+                                      return ClipRRect(
+                                        borderRadius: BorderRadius.circular(
+                                          100,
+                                        ),
+                                        child: LinearProgressIndicator(
+                                          value: rate,
+                                          backgroundColor: Colors.white
+                                              .withValues(alpha: 0.08),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                AppTheme.success,
+                                              ),
+                                          minHeight: 4,
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ],
                               ),
