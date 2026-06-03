@@ -72,11 +72,13 @@ class OverlayWindowService extends ChangeNotifier {
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(args);
-          await windowManager.setFullScreen(true);
-          await windowManager.setAlwaysOnTop(true);
-          await windowManager.show();
-          if (strictMode && type == OverlayType.breakScreen && !isPreview) {
-            await windowManager.focus();
+          
+          if (type == OverlayType.breakScreen) {
+            Future.delayed(const Duration(milliseconds: 200), () {
+              if (!isPreview) {
+                windowManager.hide();
+              }
+            });
           }
         } else if (Platform.isMacOS) {
           // Use native multi-monitor overlay for all real overlays

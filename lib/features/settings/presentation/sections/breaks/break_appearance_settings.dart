@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -7,6 +6,7 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -634,33 +634,28 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                           ]
                         : [],
                   ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Stack(
-                      children: [
-                        _BreakTemplateRealPreview(
-                          id: id,
-                          settings: widget.settings,
-                        ),
-                        if (isSelected)
-                          Positioned(
-                            top: 8,
-                            right: 8,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.black45,
-                              ),
-                              padding: const EdgeInsets.all(2),
-                              child: Icon(
-                                CupertinoIcons.checkmark_circle_fill,
-                                color: AppTheme.accentColor,
-                                size: 22,
-                              ),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      _BreakTemplateIconPreview(id: id),
+                      if (isSelected)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black45,
+                            ),
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              CupertinoIcons.checkmark_circle_fill,
+                              color: AppTheme.accentColor,
+                              size: 22,
                             ),
                           ),
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -720,427 +715,214 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   }
 }
 
-class _BreakTemplateRealPreview extends StatefulWidget {
+/// Static icon-based card for each break template.
+/// Replaces the live timer preview — no timers, no rebuilds, just clean themed visuals.
+class _BreakTemplateIconPreview extends StatelessWidget {
   final String id;
-  final SettingsModel settings;
 
-  const _BreakTemplateRealPreview({required this.id, required this.settings});
-
-  @override
-  State<_BreakTemplateRealPreview> createState() =>
-      _BreakTemplateRealPreviewState();
-}
-
-class _BreakTemplateRealPreviewState extends State<_BreakTemplateRealPreview> {
-  Timer? _countdownTimer;
-  late int _remainingSeconds;
-
-  @override
-  void initState() {
-    super.initState();
-    _remainingSeconds = widget.settings.shortBreakDurationSeconds > 0
-        ? widget.settings.shortBreakDurationSeconds
-        : 20;
-    _startCountdown();
-  }
-
-  void _startCountdown() {
-    _countdownTimer?.cancel();
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      final total = widget.settings.shortBreakDurationSeconds > 0
-          ? widget.settings.shortBreakDurationSeconds
-          : 20;
-      setState(() {
-        if (_remainingSeconds > 0) {
-          _remainingSeconds--;
-        } else {
-          _remainingSeconds = total;
-        }
-      });
-    });
-  }
-
-  @override
-  void didUpdateWidget(covariant _BreakTemplateRealPreview oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.settings.shortBreakDurationSeconds !=
-        widget.settings.shortBreakDurationSeconds) {
-      setState(() {
-        _remainingSeconds = widget.settings.shortBreakDurationSeconds > 0
-            ? widget.settings.shortBreakDurationSeconds
-            : 20;
-      });
-      _startCountdown();
-    }
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    super.dispose();
-  }
+  const _BreakTemplateIconPreview({required this.id});
 
   @override
   Widget build(BuildContext context) {
-    final total = widget.settings.shortBreakDurationSeconds > 0
-        ? widget.settings.shortBreakDurationSeconds
-        : 20;
+    final config = _templateConfig(id);
 
-    final progress = (total - _remainingSeconds) / total;
-    final timeStr = '00:${_remainingSeconds.toString().padLeft(2, '0')}';
-
-    Widget mockWidget;
-
-    switch (widget.id) {
-      case 'classic':
-        mockWidget = Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.black87, Colors.blueGrey.shade900, Colors.black],
+    return Container(
+      width: 190,
+      height: 120,
+      decoration: BoxDecoration(
+        gradient: config.gradient,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Subtle dot-grid pattern overlay
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: CustomPaint(painter: _DotGridPainter(config.accentColor)),
             ),
           ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Positioned(
-                top: 15,
-                child: Icon(
-                  CupertinoIcons.photo,
-                  size: 24,
-                  color: Colors.white.withValues(alpha: 0.15),
-                ),
-              ),
-              Container(
-                width: 140,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: Colors.black45,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.08),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Rest Your Eyes',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      timeStr,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w300,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(100),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 2,
-                        backgroundColor: Colors.white10,
-                        valueColor: const AlwaysStoppedAnimation(
-                          AppTheme.success,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case 'companion':
-        mockWidget = Container(
-          color: const Color(0xFF0F1115),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  'COMPANION · $timeStr',
-                  style: TextStyle(
-                    color: AppTheme.longBreakColor.withValues(alpha: 0.8),
-                    fontSize: 8,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Icon(
-                CupertinoIcons.heart_fill,
-                size: 28,
-                color: AppTheme.longBreakColor,
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: Colors.black38,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  'Take a deep breath!',
-                  style: TextStyle(color: Colors.white70, fontSize: 8),
-                ),
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case 'zen':
-        mockWidget = Container(
-          decoration: const BoxDecoration(
-            gradient: RadialGradient(
-              colors: [Color(0xFF0D2A20), Color(0xFF07080B)],
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Text(
-                'Breathe In',
-                style: TextStyle(
-                  color: Color(0xFFA7F3D0),
-                  fontSize: 10,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: const Color(0xFFA7F3D0).withValues(alpha: 0.2),
-                    width: 2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    timeStr,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 8,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case 'hud':
-        mockWidget = Container(
-          color: const Color(0xFF0A0F0D),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '[ $timeStr ]',
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontSize: 16,
-                  fontFamily: 'Courier',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  final filled = progress >= (index + 1) / 5;
-                  return Container(
-                    width: 12,
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    color: filled
-                        ? Colors.greenAccent
-                        : Colors.greenAccent.withValues(alpha: 0.15),
-                  );
-                }),
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case 'floating':
-        mockWidget = Container(
-          color: const Color(0xFF08090C),
-          child: Center(
+          // Glowing halo behind icon
+          Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: AppTheme.shortBreakColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    timeStr,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-        break;
-
-      case 'activities':
-        mockWidget = Container(
-          color: const Color(0xFF0D0B0F),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'ACTIVITY STUDIO · $timeStr',
-                style: const TextStyle(
-                  color: Colors.purpleAccent,
-                  fontSize: 8,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(
-                        color: Colors.purpleAccent.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.eye,
-                      size: 14,
-                      color: Colors.purpleAccent,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 60,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: Colors.white10),
-                    ),
-                    child: const Icon(
-                      CupertinoIcons.wind,
-                      size: 14,
-                      color: Colors.white30,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-        break;
-
-      case 'minimal':
-      default:
-        mockWidget = Container(
-          color: const Color(0xFF08090C),
-          child: Center(
-            child: Container(
-              width: 70,
-              height: 70,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                color: config.accentColor.withValues(alpha: 0.14),
                 border: Border.all(
-                  color: AppTheme.shortBreakColor.withValues(alpha: 0.1),
-                  width: 2.5,
+                  color: config.accentColor.withValues(alpha: 0.3),
+                  width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: config.accentColor.withValues(alpha: 0.25),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                  ),
+                ],
               ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      timeStr,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${total}s',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.4),
-                        fontSize: 7,
-                      ),
-                    ),
-                  ],
+              child: Icon(
+                config.icon,
+                size: 28,
+                color: config.accentColor,
+              ),
+            ),
+          ),
+          // Label badge at the bottom
+          Positioned(
+            bottom: 12,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(100),
+                  border: Border.all(
+                    color: config.accentColor.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  config.label,
+                  style: TextStyle(
+                    color: config.accentColor,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ),
             ),
           ),
-        );
-        break;
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: 190,
-            height: 120,
-            child: Theme(data: ThemeData.dark(), child: mockWidget),
-          ),
-        );
-      },
+        ],
+      ),
     );
   }
+
+  static _TemplateConfig _templateConfig(String id) {
+    switch (id) {
+      case 'classic':
+        return _TemplateConfig(
+          icon: LucideIcons.image,
+          accentColor: const Color(0xFF60A5FA),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0D1B2E), Color(0xFF0A0D14)],
+          ),
+          label: 'GALLERY FOCUS',
+        );
+      case 'companion':
+        return _TemplateConfig(
+          icon: LucideIcons.cat,
+          accentColor: const Color(0xFFF472B6),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A0D17), Color(0xFF0F0C14)],
+          ),
+          label: 'COMPANION DOCK',
+        );
+      case 'zen':
+        return _TemplateConfig(
+          icon: LucideIcons.wind,
+          accentColor: const Color(0xFF6EE7B7),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF071A12), Color(0xFF070B0A)],
+          ),
+          label: 'BREATH LINES',
+        );
+      case 'hud':
+        return _TemplateConfig(
+          icon: LucideIcons.layoutGrid,
+          accentColor: const Color(0xFF4ADE80),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF060F08), Color(0xFF060907)],
+          ),
+          label: 'SIGNAL HUD',
+        );
+      case 'floating':
+        return _TemplateConfig(
+          icon: LucideIcons.layers,
+          accentColor: const Color(0xFF8B5CF6),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF100E1A), Color(0xFF0B0910)],
+          ),
+          label: 'FLOATING DOCK',
+        );
+      case 'activities':
+        return _TemplateConfig(
+          icon: LucideIcons.activity,
+          accentColor: const Color(0xFFC084FC),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF130D1C), Color(0xFF0D0910)],
+          ),
+          label: 'ACTIVITY STUDIO',
+        );
+      case 'minimal':
+      default:
+        return _TemplateConfig(
+          icon: LucideIcons.circle,
+          accentColor: const Color(0xFF38BDF8),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080B12), Color(0xFF06080C)],
+          ),
+          label: 'QUIET GRID',
+        );
+    }
+  }
+}
+
+class _TemplateConfig {
+  final IconData icon;
+  final Color accentColor;
+  final LinearGradient gradient;
+  final String label;
+
+  const _TemplateConfig({
+    required this.icon,
+    required this.accentColor,
+    required this.gradient,
+    required this.label,
+  });
+}
+
+/// Subtle dot-grid background painter for template cards.
+class _DotGridPainter extends CustomPainter {
+  final Color color;
+  _DotGridPainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.06)
+      ..strokeCap = StrokeCap.round;
+    const spacing = 14.0;
+    for (double x = spacing; x < size.width; x += spacing) {
+      for (double y = spacing; y < size.height; y += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.0, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DotGridPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class DesktopDragScrollBehavior extends MaterialScrollBehavior {
