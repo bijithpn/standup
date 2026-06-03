@@ -10,6 +10,10 @@ BreakMate is a sophisticated wellness platform that integrates deeply with your 
 ![Platform](https://img.shields.io/badge/platform-macos%20|%20windows-lightgrey)
 ![Flutter](https://img.shields.io/badge/Flutter-3.10.4-blue)
 
+## 🖥️ Application Showcase
+
+![BreakMate Application Showcase](assets/showcase.png)
+
 ---
 
 ## 🎯 Scope & Purpose
@@ -133,6 +137,115 @@ To ensure maximum reliability, BreakMate employs a multi-layered storage strateg
 ### Windows (C++)
 - **`display_bridge.cpp`**: Low-level Win32 calls to manage multi-monitor overlay placement.
 - **`companion_window_manager.cpp`**: Implements layered windows for pet animations.
+
+---
+
+---
+
+## 🛠️ Local Development Setup
+
+To run BreakMate locally for development, follow these steps:
+
+### 📋 Prerequisites
+- **Flutter SDK**: Ensure you have Flutter installed (version `3.10.4` or later).
+- **CocoaPods** (macOS only): Run `pod install` in the `macos/` directory to fetch native dependencies.
+- **Node.js**: Required if you plan to build DMGs locally (`npm install -g appdmg`).
+
+### ⚙️ Quick Start
+
+1. **Clone and Install Dependencies**:
+   ```bash
+   flutter pub get
+   cd macos && pod install && cd ..
+   ```
+
+2. **Configure Environment Variables**:
+   Copy `.env.example` to create your active `.env` configuration:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. **Run the Application**:
+   BreakMate supports build flavors (`prod` and `dev`). Run with your target flavor:
+   ```bash
+   # Run with Dev configuration
+   flutter run -t lib/main_dev.dart --flavor dev
+
+   # Run with Production configuration
+   flutter run -t lib/main_prod.dart --flavor prod
+   ```
+
+---
+
+## 🔬 Core System Internals & Lifecycles
+
+### 🔒 Single-Instance Lock
+To prevent database locking issues and process conflicts, BreakMate restricts execution to a single main process:
+- On startup, the main app binds a TCP listener to localhost port `10425`.
+- If the port is already in use, the new instance contacts the running process to trigger a graceful shutdown.
+- If the running process is stale or locked, the app automatically executes a native force-termination command (`lsof`/`kill -9`) to clean up the port and boot cleanly.
+
+### 🔌 Multi-Engine Isolate Structure
+BreakMate runs three separate isolates utilizing `FlutterEngineGroup` to isolate memory and run secondary screens at 60fps:
+- **`mainIsolate`**: Runs the dashboard UI, handles preferences, settings, and native background hooks.
+- **`overlayMain`** (`@pragma('vm:entry-point')`): Runs the fullscreen break overlays.
+- **`companionMain`** (`@pragma('vm:entry-point')`): Runs the low-overhead Flame engine animating your pet companion.
+- **IPC Synchronisation**: A specialized MethodChannel layer translates events (like meeting activity, timers, sleep state, and mouse interactions) across the isolates in real-time.
+
+---
+
+## 🚀 Release & Deployment Pipeline
+
+BreakMate includes a fully automated release pipeline for building, packaging, signing, and deploying updates via Sparkle and GitHub Releases. All variables are dynamically configured via environment files.
+
+### ⚙️ Configuration (`.env`)
+
+The pipeline reads its options from `.env` at the project root. Copy `.env.example` to get started:
+
+```bash
+cp .env.example
+```
+
+Adjust the variables inside:
+- **`APP_NAME`**: Set your application name (e.g. `BreakMate`).
+- **`RELEASE_GITHUB_REPO`**: GitHub repository where DMG releases are created and hosted.
+- **`APPCAST_GITHUB_REPO`**: GitHub repository hosting the Sparkle update XML (`appcast.xml`).
+- **`GIT_BRANCH`**: Branch to commit and push changes of `appcast.xml` to (default: `main`).
+
+---
+
+### 🔑 Sparkle Key Management (`generate_sparkle_keys.sh`)
+
+For secure automatic updates, Sparkle requires Ed25519 signatures. Run this script once to initialize your keys:
+
+```bash
+./scripts/generate_sparkle_keys.sh
+```
+
+- **What it does**: 
+  1. Generates an Ed25519 keypair.
+  2. Exports the private key securely to `~/secrets/breakmate_sparkle_private.pem` (never commit this!).
+  3. Auto-patches `macos/Runner/Info.plist` with the public key (`SUPublicEDKey`).
+
+---
+
+### 📦 Build & Release (`create_dmg.sh`)
+
+The main entry point for creating a new release. One command runs the entire pipeline:
+
+```bash
+./scripts/create_dmg.sh --version 1.2.0 --build 26 --notes "Optimized companion animations and updated window layout."
+```
+
+#### Pipeline Steps:
+1. **Flutter Build**: Builds the macOS target in release mode using your configured flavor.
+2. **DMG Packaging**: Uses `appdmg` to package the app into a premium Installer DMG (configured via `scripts/appdmg.json`).
+3. **Sign update**: Extracts the file size and signs the DMG with your Ed25519 key.
+4. **GitHub Release**: Deletes any pre-existing release/tag of the same version, creates a new GitHub release, uploads the DMG, and attaches your release notes.
+5. **Appcast Updates**: Surgically inserts or updates the version item inside `appcast.xml` using an inline Python processor.
+6. **Git Commit & Push**: Commits `appcast.xml` changes and pushes to your configured `GIT_BRANCH`.
+
+*Add `--dry-run` to preview the entire pipeline process without modifying any local or remote assets.*
 
 ---
 
