@@ -79,94 +79,89 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         _buildBreakTemplateGrid(),
         const SizedBox(height: 24),
         // Buttons Row
-        Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              MinimalButton(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-                onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      CupertinoIcons.play_circle_fill,
-                      size: 18,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            MinimalButton(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    CupertinoIcons.play_circle_fill,
+                    size: 14,
+                    color: AppTheme.accentColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Preview Selected',
+                    style: TextStyle(
                       color: AppTheme.accentColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.1,
                     ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'Preview Selected',
-                      style: TextStyle(
-                        color: AppTheme.accentColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              Builder(
-                builder: (context) {
-                  final bool hasChanges =
-                      _selectedTemplateId != widget.settings.breakTemplate;
-                  return MinimalButton(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    backgroundColor: AppTheme.accentColor,
-                    disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    onPressed: hasChanges
-                        ? () {
-                            widget.onSave(
-                              widget.settings.copyWith(
-                                breakTemplate: _selectedTemplateId,
-                              ),
-                            );
-                            Toast.showSuccess(
-                              context,
-                              'Template updated successfully!',
-                            );
-                          }
-                        : null,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          CupertinoIcons.checkmark_circle_fill,
-                          size: 18,
+            ),
+            const SizedBox(width: 12),
+            Builder(
+              builder: (context) {
+                final bool hasChanges =
+                    _selectedTemplateId != widget.settings.breakTemplate;
+                return MinimalButton(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  backgroundColor: AppTheme.accentColor,
+                  disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(10),
+                  onPressed: hasChanges
+                      ? () {
+                          widget.onSave(
+                            widget.settings.copyWith(
+                              breakTemplate: _selectedTemplateId,
+                            ),
+                          );
+                          Toast.showSuccess(
+                            context,
+                            'Template updated successfully!',
+                          );
+                        }
+                      : null,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        CupertinoIcons.checkmark_circle_fill,
+                        size: 14,
+                        color: hasChanges
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.5),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Update Template',
+                        style: TextStyle(
                           color: hasChanges
                               ? Colors.white
                               : Colors.white.withValues(alpha: 0.5),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: -0.1,
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          'Update Template',
-                          style: TextStyle(
-                            color: hasChanges
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.5),
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 32),
         sectionHeader(
