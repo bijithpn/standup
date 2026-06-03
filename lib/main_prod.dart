@@ -1,7 +1,15 @@
 import 'package:breakmate/core/config/flavor_config.dart';
-import 'package:breakmate/main_common.dart';
+import 'package:breakmate/main_common.dart' as common;
 
-export 'package:breakmate/main_common.dart' show overlayMain, companionMain;
+@pragma('vm:entry-point')
+void overlayMain() {
+  common.overlayMain();
+}
+
+@pragma('vm:entry-point')
+void companionMain() {
+  common.companionMain();
+}
 
 void main() {
   FlavorConfig(
@@ -10,5 +18,5 @@ void main() {
     flavorType: FlavorType.prod,
     sentryDsn: 'https://3287665b86c8b294c6dbb5fead66c05b@o4511460809637888.ingest.de.sentry.io/4511460813963344',
   );
-  mainCommon(FlavorConfig.instance);
+  common.mainCommon(FlavorConfig.instance);
 }

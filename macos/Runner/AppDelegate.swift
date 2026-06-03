@@ -93,7 +93,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   }
 
   override func applicationDidFinishLaunching(_ notification: Notification) {
-  if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
+    if let controller = mainFlutterWindow?.contentViewController as? FlutterViewController {
     let registrar = controller.registrar(forPlugin: "AppBridges")
 
     let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown"

@@ -192,6 +192,10 @@ class OverlayWindowManager: NSObject {
             case "checkIsMainEngine":
                 result(false)
             case "hideOverlay":
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+                    mainWindow.bridgeChannel?.invokeMethod("hideOverlay", arguments: nil)
+                }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)
             case "skipBreak":
