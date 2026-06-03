@@ -194,6 +194,7 @@ class _BreakOverlayContent extends StatelessWidget {
     void onSkip() => controller.skipCurrentBreak();
 
     return Stack(
+      clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
         // RepaintBoundary isolates the high-frequency countdown region from

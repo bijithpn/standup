@@ -17,13 +17,28 @@ OverlayWindowManager::~OverlayWindowManager() {
   HideOverlay();
 }
 
+struct OverlayEnumData {
+  std::vector<std::unique_ptr<FlutterWindow>>* windows;
+  bool ignore_mouse;
+  bool is_strict_mode;
+};
+
 void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
   if (!overlay_windows_.empty()) {
     return; // Already showing
   }
 
+  bool ignore_mouse = false;
+  auto it = args.find("ignoreMouseEvents");
+  if (it != args.end() && std::holds_alternative<bool>(it->second)) {
+    ignore_mouse = std::get<bool>(it->second);
+  }
+
+  OverlayEnumData enum_data = {&overlay_windows_, ignore_mouse, is_strict_mode};
+
   auto monitor_enum_proc = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
-    auto windows = reinterpret_cast<std::vector<std::unique_ptr<FlutterWindow>>*>(dwData);
+    auto data = reinterpret_cast<OverlayEnumData*>(dwData);
+    auto windows = data->windows;
 
     flutter::DartProject project(L"data");
     project.set_dart_entrypoint("overlayMain");
@@ -38,6 +53,10 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
       window->SetQuitOnClose(false);
       window->ConfigureAsOverlay(); // Note: we need to update ConfigureAsOverlay to position properly
       
+      if (data->ignore_mouse) {
+        window->SetIgnoreMouseEvents(true);
+      }
+      
       // Override position to this monitor
       SetWindowPos(window->GetHandle(), HWND_TOPMOST,
                    lprcMonitor->left, lprcMonitor->top,
@@ -46,13 +65,18 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
                    SWP_NOACTIVATE);
 
       window->Show();
+      
+      if (data->is_strict_mode) {
+        SetForegroundWindow(window->GetHandle());
+      }
+      
       IpcBridgeManager::GetInstance()->RegisterEngine(window->GetEngine());
       windows->push_back(std::move(window));
     }
     return TRUE;
   };
 
-  EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, reinterpret_cast<LPARAM>(&overlay_windows_));
+  EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, reinterpret_cast<LPARAM>(&enum_data));
   
   // Optionally, we could send initial `args` via IPC if needed.
 }

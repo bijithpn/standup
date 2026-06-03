@@ -51,6 +51,7 @@ class _BreathingAssistantState extends State<BreathingAssistant>
         return Column(
           children: [
             Stack(
+              clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
                 // Outer glow

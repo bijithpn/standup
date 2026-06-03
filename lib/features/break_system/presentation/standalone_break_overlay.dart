@@ -456,6 +456,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     }
 
     return Stack(
+      clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
         templateWidget,

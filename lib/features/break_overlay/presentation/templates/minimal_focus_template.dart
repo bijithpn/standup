@@ -53,6 +53,7 @@ class MinimalFocusTemplate extends StatelessWidget {
     return Material(
       color: const Color(0xFF090A0F),
       child: Stack(
+        clipBehavior: Clip.none,
         fit: StackFit.expand,
         children: [
           RepaintBoundary(child: _MinimalField(accent: accent)),
