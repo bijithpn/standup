@@ -15,10 +15,16 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/companion_
 
 class PetAssetLoader {
   static final Map<String, ByteData> _byteCache = {};
+  /// Decoded image cache — avoids re-decoding PNG bytes on every call.
+  static final Map<String, ui.Image> _imageCache = {};
   static final Set<String> _failedAssets = {};
   static final Map<String, ui.Rect> _boundingBoxCache = {};
 
   static Future<ui.Image> loadImage(String path) async {
+    // Return cached decoded image — avoids codec instantiation overhead every tick.
+    final cached = _imageCache[path];
+    if (cached != null) return cached;
+
     if (_failedAssets.contains(path)) {
       throw Exception('Asset previously failed to load: $path');
     }
@@ -33,6 +39,7 @@ class PetAssetLoader {
         data.buffer.asUint8List(),
       );
       final ui.FrameInfo fi = await codec.getNextFrame();
+      _imageCache[path] = fi.image;
       return fi.image;
     } catch (e) {
       _failedAssets.add(path);
@@ -638,6 +645,7 @@ class PetAssetLoader {
 
   static void clearCache() {
     _byteCache.clear();
+    _imageCache.clear();
     _failedAssets.clear();
     _boundingBoxCache.clear();
     CompanionSpriteWidget.clearCache();

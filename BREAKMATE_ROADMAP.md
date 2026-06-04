@@ -1,356 +1,210 @@
 # BreakMate Roadmap
 
-Last reviewed: 2026-05-31
+Last reviewed: 2026-06-02
 
 ## Project Snapshot
 
-BreakMate is a Flutter desktop wellness app focused on healthier work rhythm, break enforcement, local analytics, smart pause detection, and a Flame-powered desktop companion. The product is already feature-rich; the next roadmap should make the app feel faster, calmer, easier to configure, and safer to evolve.
+BreakMate is now a fairly broad Flutter desktop wellness product with timer orchestration, break overlays, tray/menu-bar controls, analytics, calendar-aware logic, contextual wellness guidance, and a Flame-powered companion.
 
 Current evidence from this review:
 
-- 160 Dart files under `lib/`.
-- No active files under `test/` were found during this review.
-- About 21 MB under `assets/`.
-- Largest asset groups: `assets/slideshow/` at about 13 MB, `assets/music/lofi_1.mp3` at about 4 MB, and Inter fonts at about 1.6 MB.
-- Largest non-generated Dart files: `breaks_settings_section.dart`, `dashboard_page.dart`, `standalone_break_overlay.dart`, `companion_interactive_template.dart`, `settings_repository.dart`, `pet_state_machine.dart`, `pet_asset_loader.dart`, `timer_engine.dart`, `settings_model.dart`, and `classic_slideshow_template.dart`.
-- Main runtime hubs: `TimerEngine`, `TimerOrchestrator`, `BreakController`, `TrayManagerService`, `CompanionOverlayController`, `PetAssetLoader`, `SettingsRepository`, `StatsService`, native bridge services, and overlay templates.
-- Main UX hubs: dashboard, tray/menu-bar popover, break settings, companion settings, break overlays, onboarding, analytics, and data management.
+- App version in `pubspec.yaml`: `1.2.1+31`
+- Current `main` HEAD: post-`v1.2.1` packaging/update follow-up work (`feat:new dmg updated`)
+- Dart files under `lib/`: 172
+- Active test files under `test/`: 0
+- Asset tree size: about 21 MB
+- Largest asset groups: `assets/slideshow/` about 13 MB, `assets/music/` about 4.0 MB, `assets/fonts/` about 1.6 MB
+- Largest non-generated Dart files include `dashboard_page.dart`, `standalone_break_overlay.dart`, `pet_state_machine.dart`, `break_appearance_settings.dart`, `timer_engine.dart`, `companion_interactive_template.dart`, `pet_asset_loader.dart`, `settings_repository.dart`, `main_layout.dart`, and `tray_manager_service.dart`
+- Major feature areas present in the repo: dashboard, menu-bar/tray, break overlay, break system, companion, analytics, onboarding, settings, wellness, notifications, themes, tracking, and blog/wellness content surfaces
+
+## What Landed Recently
+
+### Already shipped
+
+- `v1.1.0` through `v1.1.4` delivered timer/runtime refactoring, companion behavior updates, onboarding persistence fixes, storage hardening, and macOS data migration.
+- `v1.2.0` added contextual wellness guidance, calendar-aware break planning, personal goals, wind-down support, wellness library surfaces, companion consistency progression, and a local privacy report.
+- `v1.2.1` replaced the macOS calendar plugin path with a native EventKit bridge, improved permission recovery, grouped dashboard calendar views, and fixed calendar initialization/meeting-detection failures.
+
+### Present on `main` after `v1.2.1`
+
+- DMG packaging and release-path follow-up commits are present after the `v1.2.1` tag.
+- Appcast/release automation is still active and worth treating as an ongoing release-safety surface.
 
 ## Product Direction
 
-BreakMate should feel like a quiet desktop health utility, not a heavy dashboard. The user should understand three things immediately:
+BreakMate should feel like a quiet desktop utility with strong defaults, clear reasoning, and low-friction control. The app already has enough surface area. The next phase should reduce ambiguity, improve release confidence, and make existing features easier to trust.
 
-- What state am I in right now?
-- Why is the app asking me to take a break?
-- What is the least disruptive action I can take?
+The user should be able to answer these quickly:
 
-The best next improvements are not more decorative UI or more settings. The priority is fewer confusing decisions, faster feedback, better defaults, reliable detection, and clear user control.
-
-## North-Star UX Principles
-
-- Make the timer and next break reason visible anywhere the user can act.
-- Prefer one recommended action over many equal-looking buttons.
-- Keep strict and locked modes explicit, predictable, and reversible only where the selected intensity allows it.
-- Keep companion behavior ambient and explainable; it should support the timer instead of competing with it.
-- Keep every smart feature local-first and privacy-readable.
-- Respect meetings, presentations, low battery, reduced motion, high contrast, and keyboard navigation.
+- What state is the timer in right now?
+- Why did BreakMate pause, delay, or trigger a break?
+- Which actions are available, and which are intentionally blocked?
+- Which smart features are active, and what local data do they rely on?
 
 ## Current Risks
 
-1. **Test coverage is too thin.** The roadmap previously referenced placeholder tests, but the current checkout has no active test files. Timer transitions, strict mode, settings persistence, storage migration, IPC parsing, and analytics scoring need regression coverage before larger refactors.
-2. **Startup still does too much.** Dependency injection initializes storage, notifications, display services, smart detection, stats, tray, companion controller, pet discovery, and tray icon pre-cache near startup. Optional services should be lazy or setting-gated.
-3. **High-frequency state can still rebuild too much UI.** `TimerEngine` remains a `ChangeNotifier` with a one-second tick and many `notifyListeners()` calls. Timer text and progress should update without rebuilding broad dashboard or overlay trees.
-4. **Settings complexity is concentrated.** `breaks_settings_section.dart` is the largest hand-written feature file and mixes profiles, intervals, intensity, display behavior, preview UI, file picking, and template controls.
-5. **Break templates contain behavior and presentation together.** Several templates still own timers, local state, animations, and large build methods.
-6. **Asset budget has regressed past the stated target.** `docs/dev-checks.md` targets assets under 20 MB, but the current tree is about 21 MB, mostly from slideshow images.
-7. **Performance baseline still needs real numbers.** `docs/performance-baseline.md` contains measurement instructions but no filled measurements.
-8. **Feature count may exceed first-run comprehension.** Calendar awareness, wellness content, companion controls, strictness, templates, music, analytics, and smart detection need progressive disclosure.
+1. **There is still no meaningful automated test suite.** `test/` is empty, while timer transitions, strict-mode behavior, settings persistence, stats scoring, IPC payloads, and calendar/permission paths all carry regression risk.
+2. **Bundle size is still over the stated budget.** Assets remain about 21 MB, with slideshow images as the main target.
+3. **Performance documentation is only partly real.** `docs/performance-baseline.md` now exists, but most runtime metrics are still placeholders pending profile or release measurements.
+4. **Core UI files are still large.** `dashboard_page.dart`, `standalone_break_overlay.dart`, `companion_interactive_template.dart`, and some settings sections remain substantial maintenance hotspots.
+5. **Release automation still has manual edges.** Appcast, release notes, DMG packaging, and version alignment are active workflows and deserve explicit verification on every release.
+6. **Startup and background behavior are still complex.** The app coordinates storage, native bridges, tray state, smart detection, companion state, analytics, and overlays; disabled features should not impose the same runtime cost as enabled ones.
 
-## Priority 0: Measurement And Release Confidence
+## North-Star Priorities
 
-These items should happen before large UX or architecture changes.
+1. Restore release confidence with tests, measurements, and explicit smoke checks.
+2. Make existing smart features more explainable before adding new intelligence.
+3. Shrink maintenance hotspots by continuing UI/controller splits where files are still oversized.
+4. Reduce installer/runtime cost by cutting slideshow asset size and avoiding eager optional initialization.
+5. Keep privacy and local-first behavior readable anywhere permissions or detection are involved.
 
-- [x] Fill `docs/performance-baseline.md` with the current static baseline and profile-run placeholders.
-  - Cold start to first dashboard frame.
-  - Dependency initialization duration.
-  - Break overlay open latency.
-  - Companion first visible frame.
-  - Idle CPU and memory with dashboard hidden.
-  - Settings scroll frame time.
-  - Companion active and throttled CPU.
-- [x] Add a repeatable local command for asset budget reporting.
-  - Current measured total: about 20.5 MB.
-  - Target before release: under 20 MB unless a release note justifies the increase.
-  - `dart run tool/asset_budget.dart --warn-only` now reports top categories and top 20 assets.
-- [ ] Restore a useful `test/` suite. Skipped in this pass by explicit request.
-  - Timer start, pause, resume, reset.
-  - Pre-break warning transition.
-  - Long break scheduling.
-  - Strict and locked skip/postpone rules.
-  - Settings defaults and persistence.
-  - Stats scoring and one-streak-per-day behavior.
-  - IPC event parsing and invalid payload handling.
-- [x] Add smoke tests or scripted manual checks for macOS and Windows.
-  - Tray icon appears.
-  - Dashboard opens.
-  - Start/pause/reset works.
-  - Break now opens overlay.
-  - Strict overlay blocks only as configured.
-  - Companion can show, hide, click-through, and change theme.
-- [x] Keep analyzer and formatter checks documented and timed.
-  - `flutter analyze`.
-  - `dart format --set-exit-if-changed .`
-  - `flutter test` remains documented but was not run for this task.
+## Priority 0: Release Confidence
 
-## Priority 1: Core UX Improvements
+- [ ] Rebuild a useful `test/` suite.
+  - Timer start, pause, resume, reset, and end-time transitions
+  - Pre-break warning and break handoff behavior
+  - Strict and locked action availability
+  - Settings defaults, persistence, and migration fallback
+  - Stats scoring and one-consistency-day-per-day behavior
+  - Calendar/permission state mapping
+  - IPC payload validation and failure handling
+- [/] Keep manual smoke checks current for macOS and Windows.
+  - `docs/dev-checks.md` is present and useful
+  - It still needs to remain aligned with the newest calendar, packaging, and companion flows
+- [/] Fill `docs/performance-baseline.md` with real runtime captures.
+  - Static baseline exists
+  - Profile or release measurements are still pending
+- [ ] Add a short release checklist that explicitly verifies:
+  - `pubspec.yaml` version/build
+  - appcast metadata
+  - release notes
+  - DMG/output paths
+  - installer or archive naming
+
+## Priority 1: Core UX Tightening
 
 ### Dashboard
 
-- [x] Make the dashboard a compact "Today" command center.
-  - Current timer state.
-  - Time until next break.
-  - Reason for the next break.
-  - Smart pause reason, if paused by meeting, idle, focus mode, or calendar.
-  - Today's completed, skipped, postponed, and snoozed breaks.
-  - One recommended adjustment based on recent behavior.
-- [x] Reduce visual weight in timer cards.
-  - Keep timer text stable so layout does not shift.
-  - Use smaller status chips for strict, quiet, meeting-aware, and companion states.
-  - Avoid nested card sections where a simple row or band is enough.
-- [x] Make calendar awareness more actionable.
-  - Show the next meeting conflict only when it affects breaks.
-  - Offer "snooze until meeting ends" or "take break before meeting" when relevant.
-  - Cache permission status so the dashboard does not repeatedly trigger permission checks.
+- [/] Keep the dashboard as a compact command center.
+  - Current timer and next-break context exist
+  - Calendar grouping and permission recovery now exist
+  - Continue reducing density and large-file complexity in `dashboard_page.dart`
+- [x] Surface smart pause and meeting context clearly.
+- [x] Show actionable calendar conflict handling rather than passive status only.
+- [ ] Add one clear recommended action when recent behavior shows repeated skips or postpones.
 
-### Tray / Menu-Bar Popover
+### Tray / Menu-Bar
 
-- [x] Make tray actions feel instant.
-  - Use cached timer state for initial render.
-  - Show immediate feedback after pause, resume, reset, break now, snooze, quiet mode, and companion toggle.
-  - Avoid synchronous service lookups in frequently rebuilt popover widgets.
-- [x] Add a clear pause reason line.
-  - Manual pause.
-  - Meeting detected.
-  - Idle detected.
-  - Calendar conflict.
-  - Focus mode.
-  - Low battery quiet mode.
-- [x] Add quick snooze options.
-  - 5 minutes.
-  - 15 minutes.
-  - Until current meeting ends.
-  - Until active full-screen app exits, if supported safely.
+- [x] Quick timer actions and pause reasons are already present.
+- [ ] Validate that every fast action has immediate visual feedback on both macOS and Windows.
+- [ ] Keep the tray popover resilient under DPI scaling and long localized labels.
 
 ### Break Overlay
 
-- [x] Every overlay template should answer four questions.
-  - Why now?
-  - How long remains?
-  - What should I do?
-  - Which actions are blocked by strict or locked mode?
-- [x] Normalize skip and postpone behavior.
-  - Disabled controls should explain the current intensity rule.
-  - Repeated skips should suggest changing the break profile instead of shaming the user.
-- [x] Add reduced-motion and high-contrast variants for every template.
-  - Disable Ken Burns.
-  - Disable floating particles and companion bubble motion.
-  - Preserve countdown readability.
-- [/] Split large templates into controllers plus pure widgets. (Partially complete: common widgets extracted, major templates modularized).
-  - [x] `standalone_break_overlay.dart`.
-  - [ ] `companion_interactive_template.dart`.
-  - [x] `classic_slideshow_template.dart`.
-  - [ ] `soft_floating_widget_template.dart`.
-  - [ ] `guided_breathing_widget.dart`.
-  - [ ] `eye_sync_game_widget.dart`.
-  - [x] `activities_break_template.dart`.
+- [/] Continue separating presentation from behavior.
+  - Large templates still exist under `lib/features/break_overlay/presentation/templates/`
+  - `standalone_break_overlay.dart` remains a large hotspot
+- [x] Contextual break reasoning is now part of the product direction and recent features.
+- [ ] Verify every template communicates:
+  - why the break started
+  - how long remains
+  - what the user should do
+  - which controls are disabled by intensity rules
 
 ### Settings
 
-- [x] Make settings searchable and task-oriented.
-  - Search by setting label, synonym, and feature area.
-  - Add "reset section" and "restore recommended defaults."
-  - Group advanced/debug options away from everyday settings.
-- [x] Split `breaks_settings_section.dart` further.
-  - [x] Profile selector.
-  - [x] Custom interval editor.
-  - [x] Intensity and enforcement.
-  - [x] Display behavior.
-  - [x] Template picker and preview.
-  - [x] Music and asset selection.
-- [x] Add inline validation and dependency warnings.
-  - Long break interval must be greater than short break interval.
-  - Locked mode requires accessibility/full-screen permissions where applicable.
-  - Calendar features require calendar permission.
-  - Music controls should be hidden or disabled when audio is off.
-- [x] Add settings change feedback that is useful, not noisy.
-  - Immediate visual state update.
-  - Debounced persistence for sliders and cosmetic changes.
-  - Explicit success or failure only for permission, import/export, and update operations.
+- [/] Settings were already split substantially, but complexity remains high.
+  - `lib/features/settings/presentation/sections/` now holds smaller slices
+  - `break_appearance_settings.dart` is still large enough to merit more decomposition
+- [x] Calendar and permission-aware settings now exist.
+- [ ] Add clearer separation between daily-use settings and advanced/debug/release-facing options.
 
-### Companion
+## Priority 2: Runtime And Performance
 
-- [x] Make companion state explainable.
-  - Sleeping because meeting mode is active.
-  - Quiet because focus mode is active.
-  - Alert because a break is approaching.
-  - Playful because the user interacted.
-- [x] Add a low-distraction mode.
-  - Lower FPS.
-  - Fewer behavior changes.
-  - No speech bubbles.
-  - Click-through enabled by default during focus.
-- [x] Improve pet picker performance.
-  - Load only selected pet at startup.
-  - Load previews when picker opens.
-  - Cache generated icons with versioned invalidation.
-  - Show a lightweight placeholder while decoding assets.
+- [/] Keep optional services gated by settings and visibility.
+  - This has improved across recent releases
+  - It still needs verification with actual startup and idle measurements
+- [/] Continue isolating high-frequency timer updates from broad UI rebuilds.
+  - Previous refactors landed
+  - Remaining proof should come from profile traces, not assumption
+- [ ] Audit overlay and companion timers for hidden-window throttling and background cost.
+- [ ] Confirm calendar, smart detection, and companion initialization are lazy where possible.
+- [ ] Add measured before/after notes for any future runtime work instead of qualitative claims only.
 
-## Priority 2: Runtime Performance
+## Priority 3: Asset And Packaging
 
-- [x] Split high-frequency countdown updates from low-frequency timer state.
-  - [x] Use `ValueNotifier` for countdown, work elapsed, and daily totals.
-  - [x] Use `ValueListenableBuilder` in dashboard and overlays to isolate text updates.
-  - [x] Limit `notifyListeners()` to significant state transitions.
-- [x] Finish moving side effects out of `TimerEngine`.
-  - [x] IPC dispatch (throttled/gated).
-  - [x] Tray updates (now listening to specific notifiers).
-  - [ ] Notifications (orchestrator level).
-  - [ ] Stats writes.
-- [x] Gate optional services at startup.
-  - [x] Start smart detection only when enabled.
-  - [x] Start meeting stream only when meeting-aware mode is enabled.
-  - [ ] Defer calendar permission checks until dashboard or settings need calendar data.
-  - [ ] Defer pet discovery and non-selected pet loading until companion settings open.
-- [x] Audit all periodic timers.
-  - [x] `TimerEngine` one-second tick (optimized).
-  - [x] `BackgroundPollingService` idle and smart polling (setting-gated).
-  - [x] `CompanionBehaviorEngine` behavior loop.
-  - [x] `TrayManagerService` tray animation timer.
-  - [x] Break overlay local timers.
-- [x] Add lifecycle and visibility guards.
-  - [ ] Stop or throttle template timers when overlay is hidden.
-  - [x] Use `targetEndTime` for local countdowns in secondary windows to reduce IPC spam.
-  - [ ] Stop dashboard refresh timers when dashboard is not visible.
-- [x] Keep expensive image work off hot paths.
-  - [x] Use `cacheWidth` and `cacheHeight` for slideshow and background images.
-  - [x] Disable expensive scale/Ken-Burns transforms during internal previews.
+- [ ] Reduce slideshow bundle size below the current level.
+  - Keep runtime-ready images in the app bundle
+  - Move original or oversized source art outside Flutter asset declarations
+- [ ] Keep audio optional at runtime.
+  - Do not initialize audio until needed
+  - Avoid adding more bundled tracks before pack management exists
+- [ ] Consider font subsetting if release artifacts continue to grow.
+- [ ] Treat DMG and appcast generation as first-class release surfaces, not script afterthoughts.
 
-## Priority 3: Asset And Bundle Optimization
+## Priority 4: Architecture And Data Boundaries
 
-- [ ] Reduce slideshow asset size first.
-  - Current slideshow directory is about 13 MB.
-  - Generate desktop-sized WebP or compressed JPEG variants.
-  - Keep original source-quality images outside the Flutter asset bundle.
-- [ ] Keep audio optional.
-  - One bundled default track is acceptable at about 4 MB.
-  - Add optional downloadable audio packs only after local pack management exists.
-  - Do not initialize audio resources until music is enabled or a break starts.
-- [ ] Subset fonts before release if installer size matters.
-  - Current Inter fonts are about 1.6 MB.
-  - Keep only used weights and glyph ranges.
-- [ ] Keep generated DMG and source art out of runtime assets unless used in app UI.
-- [ ] Add a clear asset budget table to release notes.
-
-## Priority 4: Architecture And Data
-
-- [ ] Decide the long-term persistence boundary.
-  - The codebase currently includes Hive, ObjectBox, and key/value style storage paths.
-  - Document which data lives in which store.
-  - Avoid new feature code reading raw keys directly from widgets.
-- [ ] Create typed repositories for growing feature domains.
-  - Settings.
-  - Break sessions.
-  - Daily stats and aggregates.
-  - Companion preferences.
-  - Wellness library and completed actions.
-  - Cache metadata.
-- [ ] Add migration and repair UX.
-  - Show local-only migration status.
-  - Let users export before repair.
-  - Keep last-known-good settings and stats backup.
-- [ ] Keep IPC event names and payloads centralized.
-  - One event name source.
-  - Payload versioning.
-  - Validation on receive.
-  - Debug logs behind a verbose flag.
-- [ ] Document native capability status.
-  - Notifications.
-  - Calendar.
-  - Meeting detection.
-  - Focus mode.
-  - Launch at startup.
-  - Accessibility/full-screen enforcement.
+- [x] Document the real persistence boundary clearly.
+  - The repo contains ObjectBox models plus simpler settings/key-value paths
+  - Future feature work should not make widgets responsible for raw storage rules
+- [x] Keep native bridge contracts centralized and versioned.
+  - Calendar
+  - focus mode
+  - meeting detection
+  - overlay control
+  - app tracking
+  - display management
+- [ ] Continue shrinking ownership hotspots in:
+  - dashboard
+  - break overlay templates
+  - timer engine
+  - companion asset loading
+  - settings appearance/editor sections
 
 ## Priority 5: Accessibility And Quality Gates
 
-- [ ] Add keyboard coverage for all primary flows.
-  - Dashboard timer actions.
-  - Tray popover actions.
-  - Settings navigation and search.
-  - Break overlay skip/postpone where allowed.
-  - Dialog cancel/confirm.
-- [ ] Verify screen-reader labels.
-  - Timer state.
-  - Progress ring values.
-  - Chart summaries.
-  - Companion state and toggles.
-  - Strict mode controls.
-- [ ] Verify responsive and large-text behavior.
-  - No overflow at large text scale.
-  - Buttons do not clip labels.
-  - Settings rows wrap cleanly.
-  - Overlay countdown remains readable.
-- [ ] Add screenshot or golden coverage after component cleanup.
-  - Dashboard light/dark.
-  - Settings search and break profile editor.
-  - Tray popover running, paused, and smart-paused.
-  - Strict break overlay.
-  - Companion picker.
-  - Analytics summary.
+- [ ] Add keyboard coverage for dashboard, tray, settings, dialogs, and allowed break actions.
+- [ ] Verify large-text and reduced-motion behavior across dashboard, overlay, and settings surfaces.
+- [ ] Add stronger semantics for timer state, progress indicators, charts, companion controls, and strict-mode messaging.
+- [ ] Add screenshot or golden coverage once the main UI hotspots stabilize.
 
-## Priority 6: Feature Roadmap
+## Feature Roadmap Status
 
-### Next Features
+### Now shipping
 
-- [ ] Adaptive break planner.
-  - Adjust recommendations based on skips, postpones, meeting density, time of day, and session length.
-  - Recommend settings changes without changing them automatically.
-- [ ] Calendar-aware break windows.
-  - Suggest breaks between meetings.
-  - Avoid triggering strict breaks during accepted meetings.
-  - Show a clear reason when a break is moved.
-- [ ] Local privacy report.
-  - What is detected.
-  - What is stored.
-  - What leaves the machine.
-  - How to disable each data source.
-- [ ] Guided recovery after system sleep or long idle.
-  - Count away time as break.
-  - Resume focus.
-  - Reset session.
-  - Start a gentle break.
-- [ ] Wellness action library.
-  - Eye rest.
-  - Wrist mobility.
-  - Neck and posture.
-  - Breathing.
-  - Hydration.
-  - Short walk.
+- [x] Calendar-aware break planning
+- [x] Local privacy report
+- [x] Wellness activity library
+- [x] Companion progression based on consistency rather than punitive streak pressure
+- [x] Wind-down and end-of-day wellness support
 
-### Later Features
+### Next feature candidates
 
-- [ ] Optional template and audio packs.
-  - Keep core installer small.
-  - Let users install visual or audio packs locally.
-- [ ] Companion progression without pressure.
-  - Unlock animations or accessories through healthy consistency.
-  - Avoid punitive streak mechanics.
-- [ ] Team mode research only.
-  - Shared break rooms.
-  - Anonymous aggregate wellness trends.
-  - No individual surveillance metrics.
-- [ ] Mobile companion research only.
-  - Remote break reminder.
-  - Optional sync.
-  - Local-first privacy model.
+- [ ] Adaptive break planner that recommends changes without silently mutating user settings
+- [ ] Guided recovery after system sleep or long idle
+- [ ] Optional local template/audio packs to keep the core installer small
+- [ ] Smarter “take a break before meeting” suggestions based on meeting density and active session length
+
+### Research only
+
+- [ ] Team mode with aggregate-only wellness data
+- [ ] Mobile companion or cross-device sync
+- [ ] More advanced companion adaptation that remains local-first and explainable
 
 ## Suggested Execution Order
 
-1. Fill performance baseline and restore the test suite.
-2. Split high-frequency timer listenables and add timer transition tests.
-3. Refactor break settings into smaller sections and add settings search/reset UX.
-4. Gate optional startup services and lazy-load companion/slideshow assets.
-5. Reduce slideshow assets below the 20 MB budget target.
-6. Normalize dashboard, tray popover, and break overlay status language.
-7. Add accessibility checks and screenshot coverage for the stabilized UI.
-8. Build adaptive break planning and calendar-aware break windows.
+1. Restore automated tests for timer, settings, stats, and calendar permission flows.
+2. Capture real performance numbers in `docs/performance-baseline.md`.
+3. Reduce slideshow asset size and verify release artifact paths end to end.
+4. Continue breaking up `dashboard_page.dart`, overlay templates, and large settings sections.
+5. Tighten tray/dashboard explanations for smart pauses, meeting conflicts, and disabled actions.
+6. Add accessibility and screenshot coverage once UI structure is a bit more stable.
 
 ## Definition Of Done For The Next Release
 
-- `flutter analyze` completes without errors.
-- `flutter test` runs meaningful tests for timer, settings, stats, strict mode, and IPC.
-- `docs/performance-baseline.md` has real before/after measurements.
-- Asset tree is under the agreed budget or release notes explain why not.
-- Dashboard, tray popover, settings, and break overlay pass large-text and keyboard checks.
-- Startup does not eagerly load disabled optional features.
-- The user can understand why a break started and what actions are available in under five seconds.
+- `flutter analyze` completes cleanly.
+- `flutter test` covers timer, settings, stats, strict-mode rules, and calendar/permission flows.
+- `docs/performance-baseline.md` includes real measured startup, frame, memory, and idle-cost data.
+- Asset size is reduced or the release notes explicitly justify the budget overrun.
+- Release metadata, appcast, notes, and packaging outputs all align to one version/build.
+- Dashboard, tray, settings, and overlay flows explain state and blocked actions clearly in normal and reduced-motion use.
