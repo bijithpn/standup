@@ -16,7 +16,7 @@ class AppConstants {
   // Short break defaults
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
-  static const int defaultPreBreakWarningSeconds = 20;
+  static const int defaultPreBreakWarningSeconds = 60;
 
   // Long break defaults
   static const int defaultLongBreakIntervalMinutes = 60;

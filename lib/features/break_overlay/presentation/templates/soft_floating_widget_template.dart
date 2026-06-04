@@ -1,12 +1,7 @@
-import 'dart:async';
 import 'dart:math';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
-import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
-import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class SoftFloatingWidgetTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -29,21 +24,24 @@ class SoftFloatingWidgetTemplate extends StatefulWidget {
       _SoftFloatingWidgetTemplateState();
 }
 
-class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
+class _SoftFloatingWidgetTemplateState
+    extends State<SoftFloatingWidgetTemplate>
     with SingleTickerProviderStateMixin {
   double? _x;
   double? _y;
   bool _isDragging = false;
   bool _isHovered = false;
 
-  PetAnimationState _animationState = PetAnimationState.breakMode;
-  Timer? _behaviorTimer;
   late AnimationController _pulseController;
+
+  static const double _closedWidth = 176.0;
+  static const double _openWidth = 310.0;
+  static const double _height = 56.0;
+  static const _accent = Color(0xFF7EC8E3);
 
   @override
   void initState() {
     super.initState();
-    _startBehaviorCycle();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -52,100 +50,103 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
 
   @override
   void dispose() {
-    _behaviorTimer?.cancel();
     _pulseController.dispose();
     super.dispose();
   }
 
-  void _startBehaviorCycle() {
-    _behaviorTimer = Timer.periodic(const Duration(seconds: 8), (timer) {
-      if (!mounted) return;
-      final random = Random().nextDouble();
-      setState(() {
-        if (random < 0.25) {
-          _animationState = PetAnimationState.stretch;
-        } else if (random < 0.5) {
-          _animationState = PetAnimationState.sleep;
-        } else if (random < 0.75) {
-          _animationState = PetAnimationState.lick1;
-        } else {
-          _animationState = PetAnimationState.idle;
-        }
-      });
-    });
-  }
-
-  void _snapToBoundaries(
-    double screenWidth,
-    double screenHeight,
-    double width,
-    double height,
-  ) {
+  void _snapCorner(double sw, double sh) {
     if (_x == null || _y == null) return;
-
-    final offset = 30.0;
+    const offset = 16.0;
     final corners = [
       Offset(offset, offset),
-      Offset(screenWidth - width - offset, offset),
-      Offset(offset, screenHeight - height - offset - 50),
-      Offset(screenWidth - width - offset, screenHeight - height - offset - 50),
+      Offset(sw - _openWidth - offset, offset),
+      Offset(offset, sh - _height - offset),
+      Offset(sw - _openWidth - offset, sh - _height - offset),
     ];
-
     Offset nearest = corners.first;
     double minDist = double.infinity;
-
     for (final c in corners) {
-      final dist = sqrt(pow(_x! - c.dx, 2) + pow(_y! - c.dy, 2));
-      if (dist < minDist) {
-        minDist = dist;
+      final d = sqrt(pow(_x! - c.dx, 2) + pow(_y! - c.dy, 2));
+      if (d < minDist) {
+        minDist = d;
         nearest = c;
       }
     }
-
     setState(() {
       _x = nearest.dx;
       _y = nearest.dy;
     });
   }
 
-  String _formatDuration(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  String _formatTime(int s) {
+    final m = s ~/ 60;
+    final sec = s % 60;
+    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildHoverContent() {
+    return Row(
+      children: [
+        Container(
+          width: 0.5,
+          height: 24,
+          color: Colors.white.withValues(alpha: 0.15),
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+        ),
+        Expanded(
+          child: Text(
+            widget.breakInfo.tip,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 10,
+              fontFamily: 'Inter',
+              height: 1.35,
+            ),
+          ),
+        ),
+        if (!widget.settings.strictMode && widget.onSkip != null) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: widget.onSkip,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Text(
+                'Skip',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  fontSize: 11,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
-    final double closedWidth = 190.0;
-    final double openWidth = 340.0;
-    final double height = 76.0;
-    final bool enableAnimations =
-        widget.settings.enableAnimations &&
-        !MediaQuery.of(context).disableAnimations;
-
     final isShort = widget.breakInfo.type == BreakType.short;
-    final accent = isShort ? const Color(0xFF38BDF8) : const Color(0xFF34D399);
+    final label = isShort ? 'Eye rest' : 'Pause rest';
 
     return Material(
       color: Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          if (_x == null || _y == null) {
-            _x = constraints.maxWidth - closedWidth - 30;
-            _y = constraints.maxHeight - height - 100;
-          }
+          _x ??= constraints.maxWidth - _openWidth - 16;
+          _y ??= constraints.maxHeight - _height - 80;
 
-          final currentWidth = _isHovered ? openWidth : closedWidth;
+          final targetWidth = _isHovered ? _openWidth : _closedWidth;
 
           return Stack(
             fit: StackFit.expand,
             children: [
-              const _FloatingBackdrop(),
-
-              // Corner Snappable Floating Pill
+              ColoredBox(color: Colors.black.withValues(alpha: 0.4)),
               AnimatedPositioned(
-                duration: _isDragging || !enableAnimations
+                duration: _isDragging
                     ? Duration.zero
                     : const Duration(milliseconds: 300),
                 curve: Curves.easeOutBack,
@@ -156,214 +157,93 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                   onExit: (_) => setState(() => _isHovered = false),
                   child: GestureDetector(
                     onPanStart: (_) => setState(() => _isDragging = true),
-                    onPanUpdate: (details) {
+                    onPanUpdate: (d) {
                       setState(() {
-                        _x = (_x! + details.delta.dx).clamp(
-                          0.0,
-                          constraints.maxWidth - currentWidth,
-                        );
-                        _y = (_y! + details.delta.dy).clamp(
-                          0.0,
-                          constraints.maxHeight - height - 50,
-                        );
+                        _x = (_x! + d.delta.dx)
+                            .clamp(0.0, constraints.maxWidth - targetWidth);
+                        _y = (_y! + d.delta.dy)
+                            .clamp(0.0, constraints.maxHeight - _height - 40);
                       });
                     },
                     onPanEnd: (_) {
                       setState(() => _isDragging = false);
-                      _snapToBoundaries(
-                        constraints.maxWidth,
-                        constraints.maxHeight,
-                        currentWidth,
-                        height,
-                      );
+                      _snapCorner(
+                          constraints.maxWidth, constraints.maxHeight);
                     },
                     child: AnimatedContainer(
-                      duration: enableAnimations
-                          ? const Duration(milliseconds: 250)
-                          : Duration.zero,
+                      duration: const Duration(milliseconds: 220),
                       curve: Curves.easeOutBack,
-                      width: currentWidth,
-                      height: height,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      width: targetWidth,
+                      height: _height,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF0F1115).withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(100),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08),
-                        ),
+                        color: const Color(0xE60F1015),
+                        borderRadius: BorderRadius.circular(30),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
+                            color: Colors.black.withValues(alpha: 0.15),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        physics: const NeverScrollableScrollPhysics(),
-                        child: SizedBox(
-                          width: openWidth,
-                          child: Row(
-                            children: [
-                              // Compact Pet Avatar
-                              Container(
-                                width: 50,
-                                height: 50,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Row(
+                          children: [
+                            // Pulsing dot
+                            AnimatedBuilder(
+                              animation: _pulseController,
+                              builder: (_, _) => Container(
+                                width: 6,
+                                height: 6,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white.withValues(alpha: 0.03),
-                                ),
-                                child: Center(
-                                  child: CompanionSpriteWidget(
-                                    petTheme: petTheme,
-                                    animationState: _animationState,
-                                    scale: 2.0,
+                                  color: _accent.withValues(
+                                    alpha: 0.3 +
+                                        0.55 * _pulseController.value,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 10),
-
-                              // Time remaining capsule
-                              RepaintBoundary(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        // Pulse Neon Dot indicator
-                                        AnimatedBuilder(
-                                          animation: _pulseController,
-                                          builder: (context, child) {
-                                            return Container(
-                                              width: 6,
-                                              height: 6,
-                                              decoration: BoxDecoration(
-                                                color: accent.withValues(
-                                                  alpha:
-                                                      0.4 +
-                                                      (0.6 *
-                                                          _pulseController
-                                                              .value),
-                                                ),
-                                                shape: BoxShape.circle,
-                                                boxShadow: [
-                                                  BoxShadow(
-                                                    color: accent.withValues(
-                                                      alpha: 0.5,
-                                                    ),
-                                                    blurRadius:
-                                                        4 *
-                                                        _pulseController.value,
-                                                  ),
-                                                ],
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          _formatDuration(
-                                            widget.remainingSeconds,
-                                          ),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w700,
-                                            fontFamily: 'Inter',
-                                            fontFeatures: [
-                                              FontFeature.tabularFigures(),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      widget.breakInfo.type == BreakType.short
-                                          ? 'Eye Rest'
-                                          : 'Pause Rest',
-                                      style: TextStyle(
-                                        color: Colors.white.withValues(
-                                          alpha: 0.35,
-                                        ),
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: 'Inter',
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _formatTime(widget.remainingSeconds),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
+                                fontFeatures: [FontFeature.tabularFigures()],
                               ),
-                              const SizedBox(width: 14),
-
-                              // Faded interactions drawer
-                              Expanded(
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              label,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.38),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                            // Expanded tip on hover
+                            Expanded(
+                              child: ClipRect(
                                 child: AnimatedOpacity(
                                   opacity: _isHovered ? 1.0 : 0.0,
-                                  duration: enableAnimations
-                                      ? const Duration(milliseconds: 150)
-                                      : Duration.zero,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        width: 1,
-                                        height: 28,
-                                        color: Colors.white.withValues(
-                                          alpha: 0.1,
+                                  duration: const Duration(milliseconds: 150),
+                                  child: _isHovered
+                                      ? _buildHoverContent()
+                                      : OverflowBox(
+                                          alignment: Alignment.centerLeft,
+                                          minWidth: 0,
+                                          maxWidth: _openWidth,
+                                          child: _buildHoverContent(),
                                         ),
-                                      ),
-                                      const SizedBox(width: 14),
-                                      Expanded(
-                                        child: Text(
-                                          widget.breakInfo.tip,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: TextStyle(
-                                            color: Colors.white.withValues(
-                                              alpha: 0.55,
-                                            ),
-                                            fontSize: 10,
-                                            height: 1.35,
-                                            fontFamily: 'Inter',
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      if (widget.onSkip != null &&
-                                          !widget.settings.strictMode)
-                                        GestureDetector(
-                                          onTap: widget.onSkip,
-                                          child: MouseRegion(
-                                            cursor: SystemMouseCursors.click,
-                                            child: Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.white.withValues(
-                                                  alpha: 0.08,
-                                                ),
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.08),
-                                                ),
-                                              ),
-                                              child: const Icon(
-                                                CupertinoIcons.chevron_right,
-                                                size: 10,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -376,34 +256,4 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
       ),
     );
   }
-}
-
-class _FloatingBackdrop extends StatelessWidget {
-  const _FloatingBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _FloatingBackdropPainter(),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _FloatingBackdropPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black.withValues(alpha: 0.48);
-    canvas.drawRect(Offset.zero & size, paint);
-
-    final railPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.015)
-      ..strokeWidth = 1;
-    for (double y = 80; y < size.height; y += 96) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), railPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

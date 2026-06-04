@@ -12,6 +12,7 @@ import 'package:breakmate/features/wellness/presentation/wellness_library_page.d
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
+import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 
 // --- Nav item model ---
 
@@ -37,6 +38,10 @@ class _TogglePauseIntent extends Intent {
 
 class _BreakNowIntent extends Intent {
   const _BreakNowIntent();
+}
+
+class _QuitIntent extends Intent {
+  const _QuitIntent();
 }
 
 // --- Main Layout ---
@@ -167,6 +172,26 @@ class _MainLayoutState extends State<MainLayout> {
             const _BreakNowIntent(),
         LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyB):
             const _BreakNowIntent(),
+        LogicalKeySet(
+          LogicalKeyboardKey.meta,
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.keyB,
+        ): const _QuitIntent(),
+        LogicalKeySet(
+          LogicalKeyboardKey.meta,
+          LogicalKeyboardKey.shiftRight,
+          LogicalKeyboardKey.keyB,
+        ): const _QuitIntent(),
+        LogicalKeySet(
+          LogicalKeyboardKey.control,
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.keyB,
+        ): const _QuitIntent(),
+        LogicalKeySet(
+          LogicalKeyboardKey.control,
+          LogicalKeyboardKey.shiftRight,
+          LogicalKeyboardKey.keyB,
+        ): const _QuitIntent(),
       },
       child: Actions(
         actions: <Type, Action<Intent>>{
@@ -176,11 +201,14 @@ class _MainLayoutState extends State<MainLayout> {
           _BreakNowIntent: CallbackAction<_BreakNowIntent>(
             onInvoke: (_) => sl<BreakController>().takeBreakNow(),
           ),
+          _QuitIntent: CallbackAction<_QuitIntent>(
+            onInvoke: (_) => sl<MenuBarController>().handleAction('quit'),
+          ),
         },
         child: Focus(
           autofocus: false,
           canRequestFocus: false,
-          descendantsAreFocusable: false,
+          descendantsAreFocusable: true,
           onKeyEvent: null,
           child: LayoutBuilder(
             builder: (context, constraints) {
