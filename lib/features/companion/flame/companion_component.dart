@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,23 @@ class _FireParticle {
   }) : age = 0.0;
 }
 
+/// Tracks an in-progress cross-fade between two animation states.
+///
+/// During a cross-fade the component renders [from] at opacity `(1 - t)` and
+/// [to] at opacity `t`, where `t = elapsed / duration` clamped to `[0, 1]`.
+/// After [duration] seconds the fade is cleared and only [to] plays.
+///
+/// Requirement 10.2
+class _CrossFadeState {
+  _CrossFadeState({required this.from, required this.to}) : elapsed = 0.0;
+
+  static const double duration = 0.1; // 100 ms
+
+  final PetAnimationState from;
+  final PetAnimationState to;
+  double elapsed;
+}
+
 class CompanionComponent
     extends SpriteAnimationGroupComponent<PetAnimationState>
     with HasGameReference<CompanionGame>, TapCallbacks, HoverCallbacks {
@@ -30,6 +48,21 @@ class CompanionComponent
   double _stateElapsed = 0.0;
   PetAnimationState? _previousState;
   final Random _rng = Random();
+
+  // Cross-fade state (null when no fade is active). Requirement 10.2
+  _CrossFadeState? _crossFadeState;
+
+  // Transition pairs that should cross-fade instead of cutting immediately.
+  // Key: (fromState, toState), Value: true.
+  static const Set<(PetAnimationState, PetAnimationState)>
+      _crossFadeTransitions = {
+    (PetAnimationState.idle, PetAnimationState.walkSide),
+    (PetAnimationState.walkSide, PetAnimationState.idle),
+    (PetAnimationState.walkSide, PetAnimationState.run),
+    (PetAnimationState.run, PetAnimationState.walkSide),
+    (PetAnimationState.run, PetAnimationState.idle),
+    (PetAnimationState.idle, PetAnimationState.run),
+  };
 
   // Snout offset for Dragon fire breathing particle origin
   Offset get _snoutOffset =>
@@ -70,6 +103,25 @@ class CompanionComponent
       }
     }
 
+    // Behavior-engine state fallbacks (req 10.2 / task 14.2):
+    // If a dedicated sprite row doesn't exist, fall back gracefully.
+    if (target == PetAnimationState.chasing &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.run;
+    }
+    if (target == PetAnimationState.fetching &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.walkSide;
+    }
+    if (target == PetAnimationState.falling &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.run;
+    }
+    if (target == PetAnimationState.reacting &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.notification;
+    }
+
     // Safety fallback: if the requested state has no animation, use idle
     if (animations?.containsKey(target) != true) {
       target = PetAnimationState.idle;
@@ -100,6 +152,15 @@ class CompanionComponent
     // Reset ticker only when actually changing state
     if (current != target) {
       animationTickers?[target]?.reset();
+    }
+
+    // Trigger cross-fade if a transition definition exists (req 10.2).
+    final PetAnimationState? fromState = current;
+    if (fromState != null &&
+        _crossFadeTransitions.contains((fromState, target))) {
+      _crossFadeState = _CrossFadeState(from: fromState, to: target);
+    } else {
+      _crossFadeState = null;
     }
 
     current = target;
@@ -162,6 +223,14 @@ class CompanionComponent
     super.update(scaledDt);
     _stateElapsed += dt;
 
+    // Advance cross-fade timer (req 10.2).
+    if (_crossFadeState != null) {
+      _crossFadeState!.elapsed += dt;
+      if (_crossFadeState!.elapsed >= _CrossFadeState.duration) {
+        _crossFadeState = null; // fade complete
+      }
+    }
+
     // Auto-revert non-looping animations back to previous (or idle)
     final currentAnim = animations?[current];
     if (currentAnim != null && !currentAnim.loop) {
@@ -176,6 +245,19 @@ class CompanionComponent
           return; // FSM chained to another non-looping anim — let it play
         }
         changeState(_previousState ?? PetAnimationState.idle);
+        return;
+      }
+    }
+
+    // Loop-blocked detection (req 10.5, 10.7):
+    // When a looping animation ticker returns done() == true (blocked),
+    // emit PetEvent.loopBlocked each tick and hold the final frame.
+    if (currentAnim != null && currentAnim.loop) {
+      final ticker = animationTickers?[current];
+      if (ticker != null && ticker.done()) {
+        // Hold on the final frame — do not reset or advance.
+        game.petService.handleEvent(PetEvent.loopBlocked);
+        // Skip super.update to keep the ticker frozen.
         return;
       }
     }
@@ -305,7 +387,70 @@ class CompanionComponent
 
   @override
   void render(Canvas canvas) {
+    // Cross-fade rendering (req 10.2).
+    final cf = _crossFadeState;
+    if (cf != null) {
+      final double t =
+          (cf.elapsed / _CrossFadeState.duration).clamp(0.0, 1.0);
+
+      // Render "from" animation at opacity (1 - t).
+      final fromAnim = animations?[cf.from];
+      if (fromAnim != null) {
+        final fromTicker = animationTickers?[cf.from];
+        if (fromTicker != null) {
+          final ui.Image? fromFrame =
+              fromTicker.currentIndex < fromAnim.frames.length
+                  ? fromAnim.frames[fromTicker.currentIndex].sprite.image
+                  : null;
+          if (fromFrame != null) {
+            final alphaPaint = Paint()
+              ..color = Color.fromRGBO(255, 255, 255, 1.0 - t)
+              ..filterQuality = FilterQuality.none;
+            final src = fromAnim.frames[fromTicker.currentIndex].sprite.src;
+            canvas.drawImageRect(
+              fromFrame,
+              src,
+              Rect.fromLTWH(
+                  -size.x / 2, -size.y / 2, size.x, size.y),
+              alphaPaint,
+            );
+          }
+        }
+      }
+
+      // Render "to" animation at opacity t — the normal super.render() handles
+      // the current animation but at full opacity, so we replicate it here.
+      final toAnim = animations?[cf.to];
+      if (toAnim != null) {
+        final toTicker = animationTickers?[cf.to];
+        if (toTicker != null && toTicker.currentIndex < toAnim.frames.length) {
+          final ui.Image toFrame =
+              toAnim.frames[toTicker.currentIndex].sprite.image;
+          final alphaPaint = Paint()
+            ..color = Color.fromRGBO(255, 255, 255, t)
+            ..filterQuality = FilterQuality.none;
+          final src = toAnim.frames[toTicker.currentIndex].sprite.src;
+          canvas.drawImageRect(
+            toFrame,
+            src,
+            Rect.fromLTWH(-size.x / 2, -size.y / 2, size.x, size.y),
+            alphaPaint,
+          );
+        }
+      }
+
+      // Still render overlays (meeting badge, fire particles) via the rest of
+      // this method without calling super.render() again.
+      _renderOverlays(canvas);
+      return;
+    }
+
     super.render(canvas);
+    _renderOverlays(canvas);
+  }
+
+  /// Renders the meeting indicator badge and fire particles.
+  void _renderOverlays(Canvas canvas) {
 
     // Render "ON AIR" / Meeting Indicator
     if (game.petService.context.isMeetingDetected) {

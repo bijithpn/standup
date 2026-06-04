@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flame/game.dart';
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_personality.dart';
@@ -13,8 +15,15 @@ import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/flame/companion_component.dart';
 import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
+import 'package:breakmate/features/companion/services/constraint_window_controller.dart';
+import 'package:breakmate/features/companion/services/cursor_tracker.dart';
+import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/features/companion/services/pet_companion_service.dart';
 import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
+import 'package:breakmate/features/companion/services/physics_simulator.dart';
+import 'package:breakmate/features/companion/services/settings_persistence.dart';
+import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
+import 'package:breakmate/features/companion/services/window_monitor.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({required PetTheme initialTheme, this.scaleOverride = 0.0})
@@ -48,9 +57,23 @@ class CompanionGame extends FlameGame {
   late StreamSubscription<AppEvent> _eventSubscription;
   late StreamSubscription<PetState> _petStateSubscription;
 
+  // --- Behavior-engine subsystems (task 17.1) ---
+  late final SettingsPersistence _settingsPersistence;
+  late final NativeDisplayManager _displayManager;
+  late final CursorTracker _cursorTracker;
+  late final NativeWindowMonitor _windowMonitor;
+  late final PhysicsSimulator _physicsSimulator;
+  late final ThrowableObjectManager _throwableManager;
+  NativeConstraintWindowController? _constraintWindowController;
+  PetConfigV2 _petConfig = PetConfigV2.defaults();
+
   PetTheme _theme;
   double scaleOverride; // 0.0 = auto-scale
   bool _lastGroomWasLick1 = false; // alternates lick1 → lick2 → lick1 …
+
+  // --- Drag-gesture tracking (task 17.4, req 7.1) ---
+  Offset? _dragStartPosition;
+  bool _isDragging = false;
 
   CompanionComponent? petComponent;
 
@@ -63,6 +86,66 @@ class CompanionGame extends FlameGame {
 
   @override
   Future<void> onLoad() async {
+    // 1. Guard: only macOS and Windows are supported (req 1.8).
+    if (!Platform.isMacOS && !Platform.isWindows) {
+      _eventBus.emit(PlatformErrorEvent(
+          message: 'Unsupported platform. Only macOS and Windows are supported.'));
+      return;
+    }
+
+    // 2. Load settings before the first tick (req 11.1).
+    _settingsPersistence = SettingsPersistence();
+    _petConfig = _settingsPersistence.loadSync();
+
+    // 3. Initialise subsystems.
+    _physicsSimulator = PhysicsSimulator();
+    _displayManager = NativeDisplayManager();
+    _cursorTracker = CursorTracker();
+    _windowMonitor = NativeWindowMonitor();
+    _throwableManager = ThrowableObjectManager(physicsSimulator: _physicsSimulator);
+
+    // 4. Enumerate displays with 500ms timeout (req 1.5, 1.6, 1.7).
+    List<DisplayBounds> displays;
+    try {
+      displays = await _displayManager
+          .enumerateDisplays()
+          .timeout(const Duration(milliseconds: 500));
+    } catch (_) {
+      _eventBus.emit(PlatformErrorEvent(
+          message: 'Display enumeration timed out or failed. Terminating.'));
+      exit(1);
+    }
+
+    if (displays.isEmpty) {
+      _eventBus.emit(PlatformErrorEvent(
+          message: 'No displays found after enumeration. Terminating.'));
+      exit(1);
+    }
+
+    // 5. Apply loaded config to physics boundary.
+    _physicsSimulator.setBoundary(_displayManager.unionBounds);
+    if (_petConfig.mode == PetMode.singleDisplay &&
+        _petConfig.pinnedDisplayId != null) {
+      final pinned = displays.cast<DisplayBounds?>().firstWhere(
+            (d) => d?.id == _petConfig.pinnedDisplayId,
+            orElse: () => null,
+          );
+      if (pinned != null) _physicsSimulator.setBoundary(pinned.rect);
+    }
+
+    // 6. Set up constraint window controller if in constrained mode.
+    if (_petConfig.mode == PetMode.constrained) {
+      _constraintWindowController = NativeConstraintWindowController(
+        physicsSimulator: _physicsSimulator,
+        displays: displays,
+      );
+      await _constraintWindowController!
+          .show(initialSize: _petConfig.constraintWindowBounds.size);
+      _physicsSimulator
+          .setConstraintBoundary(_constraintWindowController!.bounds);
+    }
+
+    // 7. Existing initialization.
     await super.onLoad();
     _eventSubscription = _eventBus.stream.listen(_handleAppEvent);
     _petStateSubscription = _petService.stateMachine.stateStream.listen((
@@ -70,7 +153,12 @@ class CompanionGame extends FlameGame {
     ) {
       _applyPetStateToComponent(state);
     });
-    _petService.initialize(screenSize: Size(size.x, size.y));
+    _petService.initialize(
+      screenSize: Size(size.x, size.y),
+      startPosition: _petConfig.lastAnchorPoint != Offset.zero
+          ? _petConfig.lastAnchorPoint
+          : null,
+    );
     await _loadAndAttachPet();
   }
 
@@ -158,6 +246,51 @@ class CompanionGame extends FlameGame {
     }
     if (petEvent != null) {
       _petService.handleEvent(petEvent);
+    }
+
+    // --- Behavior-engine event → FSM mappings (task 17.3) ---
+    if (event is CursorEnteredZoneEvent) {
+      _petService.handleEvent(PetEvent.cursorEnteredZone);
+    } else if (event is CursorExitedZoneEvent) {
+      _petService.handleEvent(PetEvent.cursorExitedZone);
+    } else if (event is CursorDwellEvent) {
+      _petService.handleEvent(PetEvent.cursorDwell);
+    } else if (event is CursorFastMoveEvent) {
+      _petService.handleEvent(PetEvent.cursorFastMove);
+    } else if (event is ThrowableSpawnedEvent) {
+      _petService.handleEvent(PetEvent.throwableSpawned);
+    } else if (event is ThrowableStationaryEvent) {
+      _petService.handleEvent(PetEvent.throwableStationary);
+    } else if (event is ThrowableDisposedEvent) {
+      // throwable returned/disposed → return pet to idle
+      _petService.handleEvent(PetEvent.throwableFetched);
+    } else if (event is PetWindowOverlapEvent) {
+      if (event.started) {
+        _petService.handleEvent(PetEvent.windowOverlap);
+      } else {
+        _petService.handleEvent(PetEvent.windowOverlapEnded);
+      }
+    } else if (event is PetStandingSurfaceLostEvent) {
+      _petService.handleEvent(PetEvent.surfaceLost);
+    } else if (event is PetLandedEvent) {
+      _petService.handleEvent(PetEvent.landedOnSurface);
+    } else if (event is PlatformErrorEvent) {
+      // Surface platform errors in the UI and terminate.
+      debugPrint('[PlatformError] ${event.message}');
+      exit(1);
+    } else if (event is ConstraintWindowBoundsChangedEvent) {
+      _constraintWindowController?.onBoundsChanged(event.bounds);
+    } else if (event is DisplayDisconnectedEvent) {
+      // If the pinned display was disconnected, revert to free-roam.
+      if (_petConfig.mode == PetMode.singleDisplay &&
+          _petConfig.pinnedDisplayId == event.displayId) {
+        _petConfig = _petConfig.copyWith(
+          mode: PetMode.freeRoam,
+          pinnedDisplayId: null,
+        );
+        _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        _settingsPersistence.scheduleWrite(_petConfig);
+      }
     }
   }
 
@@ -259,6 +392,15 @@ class CompanionGame extends FlameGame {
         return PetAnimationState.breatheFire;
       case PetState.fly:
         return PetAnimationState.fly;
+      // Behavior-engine states — mappings completed in task 15.1
+      case PetState.chasing:
+        return PetAnimationState.chasing;
+      case PetState.fetching:
+        return PetAnimationState.fetching;
+      case PetState.falling:
+        return PetAnimationState.falling;
+      case PetState.reacting:
+        return PetAnimationState.reacting;
     }
   }
 
@@ -337,7 +479,7 @@ class CompanionGame extends FlameGame {
     petComponent?.updateMouseFollow(data);
   }
 
-  void onUserInteraction(String type) {
+  void onUserInteraction(String type, {Offset? position}) {
     switch (type) {
       case 'tap':
         _petService.handleEvent(PetEvent.userClick);
@@ -350,11 +492,95 @@ class CompanionGame extends FlameGame {
         break;
       case 'dragStart':
         _petService.handleEvent(PetEvent.userDragStart);
+        if (position != null) onDragStart(position);
         break;
       case 'dragEnd':
         _petService.handleEvent(PetEvent.userDragEnd);
+        if (position != null) onDragEnd(position);
         break;
     }
+  }
+
+  /// Called when a drag gesture begins (req 7.1).
+  void onDragStart(Offset startPosition) {
+    _dragStartPosition = startPosition;
+    _isDragging = true;
+  }
+
+  /// Called when a drag gesture ends (req 7.1).
+  ///
+  /// If the drag vector is ≥ 20 logical pixels, spawns a throwable object at
+  /// [releasePosition] with a velocity derived from the drag direction.
+  void onDragEnd(Offset releasePosition) {
+    if (_isDragging && _dragStartPosition != null) {
+      final Offset dragVector = releasePosition - _dragStartPosition!;
+      _throwableManager.spawnThrowable(releasePosition, dragVector);
+    }
+    _dragStartPosition = null;
+    _isDragging = false;
+  }
+
+  // --- Mode switching (task 17.5) ---
+
+  /// Switches the pet's movement mode and reconfigures subsystems accordingly.
+  ///
+  /// * [PetMode.constrained]: creates and shows the [_constraintWindowController]
+  ///   if not already present, then notifies physics.
+  /// * [PetMode.singleDisplay]: restricts physics boundary to a single display
+  ///   — use [setPinnedDisplay] after this call to specify which display.
+  /// * [PetMode.freeRoam]: hides the constraint window (if visible), clears
+  ///   constraint boundary, and restores the full union boundary.
+  ///
+  /// Persists the updated config via [_settingsPersistence].
+  Future<void> setMode(PetMode mode) async {
+    if (_petConfig.mode == mode) return;
+    _petConfig = _petConfig.copyWith(mode: mode);
+
+    switch (mode) {
+      case PetMode.constrained:
+        if (_constraintWindowController == null) {
+          final displays = await _displayManager.enumerateDisplays();
+          _constraintWindowController = NativeConstraintWindowController(
+            physicsSimulator: _physicsSimulator,
+            displays: displays,
+          );
+        }
+        await _constraintWindowController!
+            .show(initialSize: _petConfig.constraintWindowBounds.size);
+        _physicsSimulator
+            .setConstraintBoundary(_constraintWindowController!.bounds);
+
+      case PetMode.singleDisplay:
+        await _constraintWindowController?.hide();
+        _physicsSimulator.setConstraintBoundary(null);
+        _physicsSimulator.setBoundary(_displayManager.unionBounds);
+
+      case PetMode.freeRoam:
+        await _constraintWindowController?.hide();
+        _physicsSimulator.setConstraintBoundary(null);
+        _physicsSimulator.setBoundary(_displayManager.unionBounds);
+    }
+
+    _settingsPersistence.scheduleWrite(_petConfig);
+  }
+
+  /// Pins the pet to a specific display when in [PetMode.singleDisplay] mode.
+  ///
+  /// Looks up [displayId] in the current display list and restricts the
+  /// physics boundary to that display's rect. If the display is not found, the
+  /// boundary falls back to the union of all displays.
+  Future<void> setPinnedDisplay(String displayId) async {
+    final displays = await _displayManager.enumerateDisplays();
+    final DisplayBounds? target = displays.cast<DisplayBounds?>().firstWhere(
+          (d) => d?.id == displayId,
+          orElse: () => null,
+        );
+    _petConfig = _petConfig.copyWith(
+      mode: PetMode.singleDisplay,
+      pinnedDisplayId: displayId,
+    );
+    _physicsSimulator.setBoundary(target?.rect ?? _displayManager.unionBounds);
+    _settingsPersistence.scheduleWrite(_petConfig);
   }
 
   bool _isOnBattery = false;
@@ -385,6 +611,7 @@ class CompanionGame extends FlameGame {
         return;
       }
 
+      _runSubsystemTick(_timeSinceLastFrame);
       super.update(_timeSinceLastFrame);
 
       // FSM tick at 1 Hz — behavior decisions don't need frame-rate precision
@@ -399,6 +626,7 @@ class CompanionGame extends FlameGame {
 
       _timeSinceLastFrame = 0.0;
     } else {
+      _runSubsystemTick(dt);
       super.update(dt);
 
       // FSM tick at 1 Hz — behavior decisions don't need frame-rate precision
@@ -411,6 +639,51 @@ class CompanionGame extends FlameGame {
       // Service update: navigation + AI decisions (no notifyListeners inside)
       _petService.update(dt);
     }
+  }
+
+  /// Execute the 6-step behavior-engine tick in strict order (req 9.1, 5.1, 6.1, 8.4).
+  void _runSubsystemTick(double dt) {
+    // 1. Flush pending settings write.
+    _settingsPersistence.flushPendingWrite();
+
+    // 2. Poll display changes.
+    _displayManager.poll();
+
+    // 3. Sample cursor position and emit zone events.
+    final petCenter = _petCenter;
+    _cursorTracker.sample(dt, petCenter);
+
+    // 4. Query visible windows and diff for surface/overlap events.
+    _windowMonitor.update(_petBounds);
+
+    // 5. Step physics.
+    _physicsSimulator.step(dt);
+
+    // 6. Tick throwable objects.
+    _throwableManager.tick(dt,
+        petBounds: _petBounds, petAnchor: petCenter);
+
+    // 7. Persist position change (req 11.4) — update lastAnchorPoint each tick.
+    final Offset currentPos = petCenter;
+    if (currentPos != _petConfig.lastAnchorPoint) {
+      _petConfig = _petConfig.copyWith(lastAnchorPoint: currentPos);
+      _settingsPersistence.scheduleWrite(_petConfig);
+    }
+  }
+
+  /// Pet anchor point in global screen coordinates.
+  Offset get _petCenter {
+    if (petComponent == null) return Offset.zero;
+    return Offset(petComponent!.position.x, petComponent!.position.y);
+  }
+
+  /// Pet bounding rect in global screen coordinates.
+  Rect get _petBounds {
+    if (petComponent == null) return Rect.zero;
+    final double hw = petComponent!.size.x / 2;
+    final double hh = petComponent!.size.y / 2;
+    final Offset center = _petCenter;
+    return Rect.fromLTWH(center.dx - hw, center.dy - hh, hw * 2, hh * 2);
   }
 
   Size? _lastInitializedSize;

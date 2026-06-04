@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
-import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
@@ -212,10 +211,6 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionFollowMouse = settings.companionFollowMouse;
     _enableAnimations = settings.enableAnimations;
     _companionPreviewBackground = settings.companionPreviewBackground;
-
-    try {
-      sl<CompanionBehaviorEngine>().setEnabled(_companionEnabled);
-    } catch (_) {}
 
     final shouldShow =
         _companionEnabled &&

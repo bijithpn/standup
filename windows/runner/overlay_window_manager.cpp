@@ -28,6 +28,12 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     return; // Already showing
   }
 
+  // Store args for getOverlayData calls from overlay isolates
+  last_show_args_.clear();
+  for (const auto& [key, value] : args) {
+    last_show_args_[flutter::EncodableValue(key)] = value;
+  }
+
   bool ignore_mouse = false;
   auto it = args.find("ignoreMouseEvents");
   if (it != args.end() && std::holds_alternative<bool>(it->second)) {
@@ -51,7 +57,7 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
 
     if (window->Create(L"StandupOverlay", origin, size)) {
       window->SetQuitOnClose(false);
-      window->ConfigureAsOverlay(); // Note: we need to update ConfigureAsOverlay to position properly
+      window->ConfigureAsOverlay();
       
       if (data->ignore_mouse) {
         window->SetIgnoreMouseEvents(true);
@@ -77,8 +83,6 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
   };
 
   EnumDisplayMonitors(NULL, NULL, monitor_enum_proc, reinterpret_cast<LPARAM>(&enum_data));
-  
-  // Optionally, we could send initial `args` via IPC if needed.
 }
 
 void OverlayWindowManager::HideOverlay() {

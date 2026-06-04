@@ -41,7 +41,6 @@ import 'package:breakmate/core/native/focus_mode_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
 import 'package:breakmate/features/companion/services/companion_state_manager.dart';
 import 'package:breakmate/features/companion/services/companion_window_controller.dart';
-import 'package:breakmate/features/companion/services/companion_behavior_engine.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 
 final sl = GetIt.instance;
@@ -220,13 +219,6 @@ Future<void> initDependencies() async {
   // Companion Window Controller
   final companionWindowController = CompanionWindowController();
   sl.registerSingleton<CompanionWindowController>(companionWindowController);
-
-  // Companion Behavior Engine
-  final companionBehaviorEngine = CompanionBehaviorEngine(eventBus: sl());
-  companionBehaviorEngine.setEnabled(
-    settingsRepo.currentSettings.companionEnabled,
-  );
-  sl.registerSingleton<CompanionBehaviorEngine>(companionBehaviorEngine);
 
   // Companion Overlay Controller (for settings UI)
   sl.registerSingleton<CompanionOverlayController>(companionOverlayController);

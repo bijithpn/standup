@@ -1,3 +1,5 @@
+import 'dart:ui' show Rect;
+
 sealed class AppEvent {
   final DateTime timestamp;
   AppEvent({DateTime? timestamp}) : timestamp = timestamp ?? DateTime.now();
@@ -160,4 +162,77 @@ class HealthReminderEvent extends AppEvent {
 
 class NotificationPermissionDeniedEvent extends AppEvent {
   NotificationPermissionDeniedEvent({super.timestamp});
+}
+
+// ─── Behavior Engine Events ────────────────────────────────────────────────
+
+// Cursor Events
+class CursorEnteredZoneEvent extends AppEvent {
+  final double velocity;
+  CursorEnteredZoneEvent({required this.velocity, super.timestamp});
+}
+
+class CursorExitedZoneEvent extends AppEvent {
+  CursorExitedZoneEvent({super.timestamp});
+}
+
+class CursorDwellEvent extends AppEvent {
+  final double durationSeconds;
+  CursorDwellEvent({required this.durationSeconds, super.timestamp});
+}
+
+class CursorFastMoveEvent extends AppEvent {
+  final double velocity;
+  CursorFastMoveEvent({required this.velocity, super.timestamp});
+}
+
+// Throwable Events
+class ThrowableSpawnedEvent extends AppEvent {
+  final int objectId;
+  ThrowableSpawnedEvent({required this.objectId, super.timestamp});
+}
+
+class ThrowableStationaryEvent extends AppEvent {
+  final int objectId;
+  ThrowableStationaryEvent({required this.objectId, super.timestamp});
+}
+
+class ThrowableDisposedEvent extends AppEvent {
+  final int objectId;
+  ThrowableDisposedEvent({required this.objectId, super.timestamp});
+}
+
+class ThrowRejectedEvent extends AppEvent {
+  ThrowRejectedEvent({super.timestamp});
+}
+
+// Window Events
+class PetWindowOverlapEvent extends AppEvent {
+  final bool started;
+  PetWindowOverlapEvent({required this.started, super.timestamp});
+}
+
+class PetStandingSurfaceLostEvent extends AppEvent {
+  PetStandingSurfaceLostEvent({super.timestamp});
+}
+
+class PetStandingWindowMovedEvent extends AppEvent {
+  final Rect newBounds;
+  PetStandingWindowMovedEvent({required this.newBounds, super.timestamp});
+}
+
+// Physics Events
+class PetLandedEvent extends AppEvent {
+  PetLandedEvent({super.timestamp});
+}
+
+// Platform Events
+class PlatformErrorEvent extends AppEvent {
+  final String message;
+  PlatformErrorEvent({required this.message, super.timestamp});
+}
+
+class ConstraintWindowBoundsChangedEvent extends AppEvent {
+  final Rect bounds;
+  ConstraintWindowBoundsChangedEvent({required this.bounds, super.timestamp});
 }

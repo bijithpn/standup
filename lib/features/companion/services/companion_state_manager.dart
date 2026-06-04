@@ -3,8 +3,6 @@ import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-import 'package:breakmate/core/native/native_bridge.dart';
-
 class CompanionStateManager {
   CompanionStateManager({EventBus? eventBus})
     : _eventBus = eventBus ?? EventBus.instance,
@@ -188,11 +186,11 @@ class CompanionStateManager {
   void _setState(CompanionState newState) {
     if (_state == newState) return;
     _state = newState;
+    // Emit the typed AppEvent so the companion isolate's Flame FSM handles it
+    // via _mapAppEventToPetEvent — do NOT call NativeBridge.triggerCompanionState
+    // which bypasses the FSM and sets a raw animation state.
     _eventBus.emit(CompanionStateChangedEvent(state: newState));
     _logger.info('Companion state changed to: ${newState.name}');
-
-    // Sync to companion isolate via native bridge
-    NativeBridge.triggerCompanionState(newState.name);
   }
 
   void setVisibility(bool visible) {
