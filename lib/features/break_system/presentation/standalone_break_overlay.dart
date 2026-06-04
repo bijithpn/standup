@@ -2,6 +2,8 @@ import 'dart:async' show Timer;
 
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +39,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/iris_res
 import 'package:breakmate/features/break_overlay/presentation/templates/quiet_pill_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/paper_light_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glow_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 
 enum BreakTheme {
@@ -64,6 +67,8 @@ class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
   final int durationSeconds;
+
+  static final List<void Function(FlutterErrorDetails)> onErrorCallbacks = [];
 
   const StandaloneBreakOverlay({
     super.key,
@@ -111,6 +116,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   String _companionPetTheme = 'grey_cat';
   int _maxWarningSeconds = 10;
 
+  bool _templateFailed = false;
+  String? _breakTypeStr;
+
+  int _clockFaceTextColorHex = 0xFFFFFFFF;
+  bool _clockFaceBlurEnabled = true;
+  String? _customImagePath;
+
   bool _initialized = false;
   bool _isDismissing = false;
 
@@ -129,6 +141,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         final strict = SimplePrefs.instance.getBool('strict_mode', defaultValue: false);
         final anim = SimplePrefs.instance.getBool('enable_animations', defaultValue: true);
         final intensity = SimplePrefs.instance.getString('intensity_level', defaultValue: 'standard');
+        final textColor = SimplePrefs.instance.getInt('clock_face_text_color_hex', defaultValue: 0xFFFFFFFF);
+        final blurEnabled = SimplePrefs.instance.getBool('clock_face_blur_enabled', defaultValue: true);
+        final customImg = SimplePrefs.instance.getString('custom_image_path', defaultValue: '');
         
         setState(() {
           _breakTemplate = template;
@@ -137,6 +152,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           _strictMode = strict;
           _enableAnimations = anim;
           _intensityLevel = intensity;
+          _clockFaceTextColorHex = textColor;
+          _clockFaceBlurEnabled = blurEnabled;
+          _customImagePath = customImg == "" ? null : customImg;
         });
       }
     } catch (_) {
@@ -179,6 +197,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // Smoothly fade in
     _fadeController.forward();
 
+    StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
   }
 
@@ -201,6 +220,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   void _applyOverlayData(Map args) {
     if (!mounted) return;
+
+    if (args.containsKey('breaksCompleted')) {
+      final count = args['breaksCompleted'] as int;
+      try {
+        if (sl.isRegistered<StatsService>()) {
+          final service = sl<StatsService>();
+          if (service.runtimeType.toString() == 'FakeStatsService') {
+            (service as dynamic).updateBreaksCompleted(count);
+          }
+        }
+      } catch (_) {}
+    }
 
     // If targetEndTime is passed, use it to count down locally!
     final targetEndMs = args['targetEndTime'] as int?;
@@ -233,6 +264,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
       _showWellnessNotes = args['showWellnessNotes'] ?? _showWellnessNotes;
       _isInternalPreview = args['isPreview'] ?? false;
+      if (args.containsKey('breakType')) {
+        _breakTypeStr = args['breakType'];
+      }
 
       if (args['theme'] != null) {
         final String themeStr = args['theme'];
@@ -255,6 +289,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         _companionPetTheme = args['companionPetTheme'];
       } else if (args['companionCatTheme'] != null) {
         _companionPetTheme = args['companionCatTheme'];
+      }
+      if (args.containsKey('clockFaceTextColorHex')) {
+        _clockFaceTextColorHex = args['clockFaceTextColorHex'] as int;
+      }
+      if (args.containsKey('clockFaceBlurEnabled')) {
+        _clockFaceBlurEnabled = args['clockFaceBlurEnabled'] as bool;
+      }
+      if (args.containsKey('customImagePath')) {
+        _customImagePath = args['customImagePath'] as String?;
+        if (_customImagePath == "") _customImagePath = null;
       }
       if (args.containsKey('exerciseTitle')) {
         _exerciseTitle = args['exerciseTitle'];
@@ -306,7 +350,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
         if (newRemaining != _remainingSeconds) {
           if (newRemaining == 0 && _remainingSeconds > 0) {
-            _fadeController.reverse();
+            _completeBreak();
           }
           _remainingSeconds = newRemaining;
           // Update the notifier directly — only rebuilds ValueListenableBuilder subtree,
@@ -350,6 +394,31 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     } else {
       _kenBurnsController.stop();
     }
+  }
+
+  void _completeBreak() {
+    if (_isDismissing) return;
+    _isDismissing = true;
+
+    bool callbackTriggered = false;
+    void triggerDismiss() {
+      if (callbackTriggered) return;
+      callbackTriggered = true;
+      if (_isInternalPreview || _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder') {
+        // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
+        _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
+      } else {
+        _bridge.invokeMethod('completeBreak');
+      }
+    }
+
+    // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
+    Timer(const Duration(milliseconds: 800), triggerDismiss);
+
+    // Reverse fade for a smooth exit, then call the native bridge
+    _fadeController.reverse().then((_) {
+      triggerDismiss();
+    });
   }
 
   void _skipBreak() {
@@ -401,13 +470,27 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   bool get _canDismiss =>
-      !_strictMode ||
-      _isInternalPreview ||
+      (!_strictMode && !_isInternalPreview) ||
       _overlayType == 'quickReminder' ||
       _overlayType == 'preBreakWarning';
 
+  void _handleTemplateError(FlutterErrorDetails details) {
+    if (!_templateFailed) {
+      debugPrint('Template $_breakTemplate failed: ${details.exception}');
+      _templateFailed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _breakTemplate = 'minimal';
+          });
+        }
+      });
+    }
+  }
+
   @override
   void dispose() {
+    StandaloneBreakOverlay.onErrorCallbacks.remove(_handleTemplateError);
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _localTimer?.cancel();
     _remainingSecondsNotifier.dispose();
@@ -451,12 +534,21 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       return _buildQuickReminder();
     }
 
-    final breakInfo = BreakModel(
-      type:
-          _title.toUpperCase().contains('SHORT') ||
+    BreakType type;
+    if (_breakTypeStr != null) {
+      type = BreakType.values.firstWhere(
+        (e) => e.name == _breakTypeStr,
+        orElse: () => BreakType.long,
+      );
+    } else {
+      type = _title.toUpperCase().contains('SHORT') ||
               _title.toUpperCase().contains('EYE')
           ? BreakType.short
-          : BreakType.long,
+          : BreakType.long;
+    }
+
+    final breakInfo = BreakModel(
+      type: type,
       durationSeconds: _durationSeconds,
       title: _title,
       tip: _tip,
@@ -468,6 +560,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       companionPetTheme: _companionPetTheme,
       breakTemplate: _breakTemplate,
       showExercisesInBreak: _showWellnessNotes,
+      clockFaceTextColorHex: _clockFaceTextColorHex,
+      clockFaceBlurEnabled: _clockFaceBlurEnabled,
+      customImagePath: _customImagePath,
     );
 
     final total = _durationSeconds;
@@ -604,6 +699,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     required int total,
     required VoidCallback? onSkip,
   }) {
+    if (breakInfo.type == BreakType.windDown) {
+      return const WindDownTemplate();
+    }
+
     switch (_breakTemplate) {
       case 'classic':
         return ClassicSlideshowTemplate(
@@ -705,6 +804,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         return PaperLightTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
       case 'dusk_glow':
         return DuskGlowTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+      case 'wind_down':
+        return const WindDownTemplate();
       default:
         return MinimalFocusTemplate(
           breakInfo: breakInfo,
@@ -720,7 +821,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // All named templates self-manage their chrome (top rail, skip, hints).
     // This prevents the global pill / close / swipe-hint from being stacked
     // on top of template-owned header and footer areas.
-    return _kTemplatesWithChrome.contains(_breakTemplate);
+    final isWindDown = _title.toUpperCase().contains('WIND DOWN') || (_breakTypeStr == 'windDown');
+    if (isWindDown) return true;
+    return _kTemplatesWithChrome.contains(_breakTemplate) || _breakTemplate == 'wind_down';
   }
 
   Widget _buildQuickReminder() {

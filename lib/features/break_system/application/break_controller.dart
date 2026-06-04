@@ -137,6 +137,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         breakTheme: settings.breakTheme,
         overlayData: {
           'isLong': isLong,
+          'breakType': _timerEngine.activeBreak?.type.name,
           'template': _currentTemplate,
           'breakTemplate': _currentTemplate,
           'classicImage': _classicImage,
@@ -151,6 +152,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
+          'breaksCompleted': _statsService.stats.breaksCompleted,
+          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'customImagePath': settings.customImagePath ?? '',
         },
       );
 
@@ -350,6 +355,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       isPreview: true,
       overlayData: {
         'isLong': false,
+        'breakType': activeTemplate == 'wind_down' ? 'windDown' : 'short',
         'template': activeTemplate,
         'breakTemplate': activeTemplate,
         'classicImage': _classicImage,
@@ -365,6 +371,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'targetEndTime': DateTime.now()
             .add(Duration(seconds: settings.shortBreakDurationSeconds))
             .millisecondsSinceEpoch,
+        'breaksCompleted': _statsService.stats.breaksCompleted,
+        'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+        'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+        'customImagePath': settings.customImagePath ?? '',
       },
     );
 
@@ -426,6 +436,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         breakTheme: settings.breakTheme,
         overlayData: {
           'isLong': isLong,
+          'breakType': _timerEngine.activeBreak?.type.name,
           'template': settings.breakTemplate,
           'breakTemplate': settings.breakTemplate,
           'companionPetTheme': settings.companionPetTheme,
@@ -439,6 +450,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
+          'breaksCompleted': _statsService.stats.breaksCompleted,
+          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'customImagePath': settings.customImagePath ?? '',
         },
       );
     }

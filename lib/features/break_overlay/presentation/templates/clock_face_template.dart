@@ -63,7 +63,7 @@ class ClockFaceTemplate extends StatelessWidget {
                     height: 220,
                     child: CustomPaint(
                       painter: _ClockPainter(
-                        accent: const Color(0xFFF9A875),
+                        accent: Color(settings.clockFaceTextColorHex),
                         progress: progress,
                         time: _formatTime(remainingSeconds),
                       ),
@@ -171,12 +171,12 @@ class _ClockPainter extends CustomPainter {
     final tp = TextPainter(
       text: TextSpan(
         text: time,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: accent,
           fontSize: 40,
           fontWeight: FontWeight.w200,
           fontFamily: 'Inter',
-          fontFeatures: [FontFeature.tabularFigures()],
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
       textDirection: ui.TextDirection.ltr,

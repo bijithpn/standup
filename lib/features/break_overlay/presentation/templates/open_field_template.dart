@@ -32,6 +32,14 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
     _loadImage();
   }
 
+  @override
+  void didUpdateWidget(covariant OpenFieldTemplate oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.settings.customImagePath != widget.settings.customImagePath) {
+      _loadImage();
+    }
+  }
+
   Future<void> _loadImage() async {
     // Attempt to load via settings custom image path or fallback
     final path = widget.settings.customImagePath;
@@ -48,7 +56,9 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
         _imagePath = actualPath;
       });
     } else {
-      setState(() {});
+      setState(() {
+        _imagePath = null;
+      });
     }
   }
 

@@ -84,6 +84,49 @@ class _SoftFloatingWidgetTemplateState
     return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
+  Widget _buildHoverContent() {
+    return Row(
+      children: [
+        Container(
+          width: 0.5,
+          height: 24,
+          color: Colors.white.withValues(alpha: 0.15),
+          margin: const EdgeInsets.symmetric(horizontal: 10),
+        ),
+        Expanded(
+          child: Text(
+            widget.breakInfo.tip,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.5),
+              fontSize: 10,
+              fontFamily: 'Inter',
+              height: 1.35,
+            ),
+          ),
+        ),
+        if (!widget.settings.strictMode && widget.onSkip != null) ...[
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: widget.onSkip,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Text(
+                'Skip',
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.35),
+                  fontSize: 11,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isShort = widget.breakInfo.type == BreakType.short;
@@ -185,53 +228,18 @@ class _SoftFloatingWidgetTemplateState
                             ),
                             // Expanded tip on hover
                             Expanded(
-                              child: AnimatedOpacity(
-                                opacity: _isHovered ? 1.0 : 0.0,
-                                duration: const Duration(milliseconds: 150),
-                                child: Row(
-                                  children: [
-                                    Container(
-                                      width: 0.5,
-                                      height: 24,
-                                      color: Colors.white
-                                          .withValues(alpha: 0.15),
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 10),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        widget.breakInfo.tip,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: Colors.white
-                                              .withValues(alpha: 0.5),
-                                          fontSize: 10,
-                                          fontFamily: 'Inter',
-                                          height: 1.35,
+                              child: ClipRect(
+                                child: AnimatedOpacity(
+                                  opacity: _isHovered ? 1.0 : 0.0,
+                                  duration: const Duration(milliseconds: 150),
+                                  child: _isHovered
+                                      ? _buildHoverContent()
+                                      : OverflowBox(
+                                          alignment: Alignment.centerLeft,
+                                          minWidth: 0,
+                                          maxWidth: _openWidth,
+                                          child: _buildHoverContent(),
                                         ),
-                                      ),
-                                    ),
-                                    if (!widget.settings.strictMode &&
-                                        widget.onSkip != null) ...[
-                                      const SizedBox(width: 8),
-                                      GestureDetector(
-                                        onTap: widget.onSkip,
-                                        child: MouseRegion(
-                                          cursor: SystemMouseCursors.click,
-                                          child: Text(
-                                            'Skip',
-                                            style: TextStyle(
-                                              color: Colors.white
-                                                  .withValues(alpha: 0.35),
-                                              fontSize: 11,
-                                              fontFamily: 'Inter',
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
                                 ),
                               ),
                             ),

@@ -29,7 +29,9 @@ class MonoTimeTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
     final breakName = isShort ? 'Eye rest' : 'Long break';
-    const accent = Color(0xFFB5CC7A);
+    final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
+        ? Color(settings.clockFaceTextColorHex)
+        : const Color(0xFFB5CC7A);
 
     return ColoredBox(
       color: const Color(0xFF0A0A0F),
@@ -63,14 +65,14 @@ class MonoTimeTemplate extends StatelessWidget {
                     const SizedBox(width: 10),
                     Text(
                       _formatTime(remainingSeconds),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Color(settings.clockFaceTextColorHex),
                         fontSize: 80,
                         fontFamily: 'Courier',
                         fontWeight: FontWeight.w400,
                         letterSpacing: -1,
                         height: 1.0,
-                        fontFeatures: [FontFeature.tabularFigures()],
+                        fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
                   ],

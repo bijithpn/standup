@@ -33,7 +33,9 @@ class RingOnlyTemplate extends StatelessWidget {
     final progress = totalSeconds > 0
         ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;
-    const accent = Color(0xFF818CF8);
+    final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
+        ? Color(settings.clockFaceTextColorHex)
+        : const Color(0xFF818CF8);
 
     return ColoredBox(
       color: const Color(0xFF0A0A0F),
@@ -58,12 +60,12 @@ class RingOnlyTemplate extends StatelessWidget {
                       const SizedBox(height: 12),
                       Text(
                         _formatTime(remainingSeconds),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: Color(settings.clockFaceTextColorHex),
                           fontSize: 56,
                           fontWeight: FontWeight.w200,
                           fontFamily: 'Inter',
-                          fontFeatures: [FontFeature.tabularFigures()],
+                          fontFeatures: const [FontFeature.tabularFigures()],
                           letterSpacing: -2,
                         ),
                       ),

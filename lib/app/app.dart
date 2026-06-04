@@ -84,40 +84,17 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         routes: {'/main': (context) => const MainLayout()},
         home: Builder(
           builder: (context) {
-            final overlayService = sl<OverlayWindowService>();
+            return Consumer<SettingsRepository>(
+              builder: (context, settingsRepo, _) {
+                final settings = settingsRepo.currentSettings;
 
-            return Selector<BreakController, bool>(
-              selector: (context, controller) => controller.isBreakActive,
-              builder: (context, isBreakActive, _) {
-                return ListenableBuilder(
-                  listenable: overlayService,
-                  builder: (context, _) {
-                    return Consumer<SettingsRepository>(
-                      builder: (context, settingsRepo, _) {
-                        final isOverlayVisible =
-                            overlayService.isOverlayVisible;
-                        final settings = settingsRepo.currentSettings;
+                if (!settings.hasCompletedOnboarding) {
+                  return const OnboardingPage();
+                }
 
-                        if (!settings.hasCompletedOnboarding) {
-                          return const OnboardingPage();
-                        }
-
-                        return Material(
-                          type: MaterialType.transparency,
-                          child: Stack(
-                            children: [
-                              Offstage(
-                                offstage: isOverlayVisible || isBreakActive,
-                                child: const MainLayout(),
-                              ),
-                              // ⚠️ REDUNDANT: All overlays are now managed exclusively
-                              // by the native OverlayWindowManager.
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
+                return const Material(
+                  type: MaterialType.transparency,
+                  child: MainLayout(),
                 );
               },
             );
