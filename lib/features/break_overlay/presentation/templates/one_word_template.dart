@@ -43,8 +43,8 @@ class OneWordTemplate extends StatelessWidget {
                   children: [
                     Text(
                       isLong ? 'Pause' : 'Rest',
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: Color(settings.clockFaceTextColorHex),
                         fontSize: 88,
                         fontWeight: FontWeight.w200,
                         fontFamily: 'Inter',

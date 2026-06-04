@@ -208,7 +208,7 @@ class _MainLayoutState extends State<MainLayout> {
         child: Focus(
           autofocus: false,
           canRequestFocus: false,
-          descendantsAreFocusable: false,
+          descendantsAreFocusable: true,
           onKeyEvent: null,
           child: LayoutBuilder(
             builder: (context, constraints) {

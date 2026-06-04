@@ -39,9 +39,12 @@ class MinimalFocusTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
-    final accent = isShort
+    final defaultAccent = isShort
         ? const Color(0xFF7EC8E3)
         : const Color(0xFF86EFAC);
+    final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
+        ? Color(settings.clockFaceTextColorHex)
+        : defaultAccent;
     final progress = totalSeconds > 0
         ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;
@@ -70,12 +73,12 @@ class MinimalFocusTemplate extends StatelessWidget {
                       child: Center(
                         child: Text(
                           _formatTime(remainingSeconds),
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: Color(settings.clockFaceTextColorHex),
                             fontSize: 54,
                             fontWeight: FontWeight.w200,
                             fontFamily: 'Inter',
-                            fontFeatures: [FontFeature.tabularFigures()],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                             letterSpacing: -1.5,
                           ),
                         ),

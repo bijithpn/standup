@@ -29,8 +29,6 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
   late Animation<double> _scale;
   late Animation<double> _opacity;
 
-  static const _accent = Color(0xFF6EE7B7);
-
   @override
   void initState() {
     super.initState();
@@ -62,6 +60,9 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
   Widget build(BuildContext context) {
     final isShort = widget.breakInfo.type == BreakType.short;
     final breakName = isShort ? 'Eye rest' : 'Long break';
+    final accent = widget.settings.clockFaceTextColorHex != 0xFFFFFFFF
+        ? Color(widget.settings.clockFaceTextColorHex)
+        : const Color(0xFF6EE7B7);
 
     return ColoredBox(
       color: const Color(0xFF0A0A0F),
@@ -83,12 +84,12 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
           ),
           Center(
             child: RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (_, _) => Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Transform.scale(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  AnimatedBuilder(
+                    animation: _controller,
+                    builder: (_, _) => Transform.scale(
                       scale: _scale.value,
                       child: Container(
                         width: 160,
@@ -96,40 +97,40 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: _accent.withValues(alpha: _opacity.value),
+                            color: accent.withValues(alpha: _opacity.value),
                             width: 1.5,
                           ),
                         ),
                       ),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _formatTime(widget.remainingSeconds),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 52,
-                            fontWeight: FontWeight.w200,
-                            fontFamily: 'Inter',
-                            fontFeatures: [FontFeature.tabularFigures()],
-                            letterSpacing: -2,
-                          ),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatTime(widget.remainingSeconds),
+                        style: TextStyle(
+                          color: Color(widget.settings.clockFaceTextColorHex),
+                          fontSize: 52,
+                          fontWeight: FontWeight.w200,
+                          fontFamily: 'Inter',
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          letterSpacing: -2,
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          breakName,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.33),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Inter',
-                          ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        breakName,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.33),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Inter',
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),

@@ -87,7 +87,7 @@ class HaikuCardTemplate extends StatelessWidget {
                   Text(
                     _formatTime(remainingSeconds),
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.65),
+                      color: Color(settings.clockFaceTextColorHex),
                       fontSize: 42,
                       fontWeight: FontWeight.w200,
                       fontFamily: 'Inter',

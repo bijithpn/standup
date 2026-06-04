@@ -28,8 +28,6 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   late Animation<double> _lineAnim;
   String _phaseText = 'Breathe in';
 
-  static const _accent = Color(0xFF7EC8E3);
-
   @override
   void initState() {
     super.initState();
@@ -67,6 +65,9 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   Widget build(BuildContext context) {
     final isShort = widget.breakInfo.type == BreakType.short;
     final breakName = isShort ? 'Eye rest' : 'Long break';
+    final accent = widget.settings.clockFaceTextColorHex != 0xFFFFFFFF
+        ? Color(widget.settings.clockFaceTextColorHex)
+        : const Color(0xFF7EC8E3);
 
     return ColoredBox(
       color: const Color(0xFF0A0A0F),
@@ -91,21 +92,21 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                   child: AnimatedBuilder(
                     animation: _lineAnim,
                     builder: (_, _) => Container(
-                      width: _lineAnim.value,
-                      height: 1,
-                      color: _accent,
+                       width: _lineAnim.value,
+                       height: 1,
+                       color: accent,
                     ),
                   ),
                 ),
                 const SizedBox(height: 32),
                 Text(
                   _formatTime(widget.remainingSeconds),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: Color(widget.settings.clockFaceTextColorHex),
                     fontSize: 48,
                     fontWeight: FontWeight.w200,
                     fontFamily: 'Inter',
-                    fontFeatures: [FontFeature.tabularFigures()],
+                    fontFeatures: const [FontFeature.tabularFigures()],
                     letterSpacing: -1.5,
                   ),
                 ),

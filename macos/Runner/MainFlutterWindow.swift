@@ -13,6 +13,7 @@ class OverlayWindowManager: NSObject {
     
     private var overlayInstances: [NSScreen: OverlayInstance] = [:]
     var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
+    private var wasMainWindowVisible: Bool = false
     
     struct OverlayInstance {
         let window: OverlayPanel
@@ -41,6 +42,7 @@ class OverlayWindowManager: NSObject {
         
         // Only hide main window for real full break screens, not for reminders or previews
         if !isReminder && !isPreview {
+            wasMainWindowVisible = mainWindow.isVisible
             mainWindow.orderOut(nil)
         }
         
@@ -77,14 +79,16 @@ class OverlayWindowManager: NSObject {
         let instances = Array(overlayInstances.values)
         overlayInstances.removeAll()
         
+        let shouldRestore = restoreMainWindow && wasMainWindowVisible
+        
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
             for instance in instances {
                 instance.window.animator().alphaValue = 0.0
             }
         }, completionHandler: {
-            // Restore main window visibility only if requested
-            if restoreMainWindow,
+            // Restore main window visibility only if requested and was visible before
+            if shouldRestore,
                let appDelegate = NSApp.delegate as? AppDelegate,
                let mainWindow = appDelegate.mainFlutterWindow {
                 mainWindow.makeKeyAndOrderFront(nil)
@@ -203,16 +207,24 @@ class OverlayWindowManager: NSObject {
             case "checkIsMainEngine":
                 result(false)
             case "hideOverlay":
+                let restore = (call.arguments as? [String: Any])?["restoreMainWindow"] as? Bool ?? true
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
-                    mainWindow.bridgeChannel?.invokeMethod("hideOverlay", arguments: nil)
+                    mainWindow.bridgeChannel?.invokeMethod("hideOverlay", arguments: ["restoreMainWindow": restore])
                 }
-                OverlayWindowManager.shared.hideOverlay()
+                OverlayWindowManager.shared.hideOverlay(restoreMainWindow: restore)
                 result(nil)
             case "skipBreak":
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
                     mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: nil)
+                }
+                OverlayWindowManager.shared.hideOverlay()
+                result(nil)
+            case "completeBreak":
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+                    mainWindow.bridgeChannel?.invokeMethod("completeBreak", arguments: nil)
                 }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)

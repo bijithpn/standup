@@ -196,28 +196,27 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           child: SizedBox(
             width: ringRadius * 2,
             height: ringRadius * 2,
-            child: AnimatedBuilder(
-              animation: _ringController,
-              builder: (ctx, child) {
-                final scale = _ringScale.value;
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    ValueListenableBuilder<int>(
-                      valueListenable: _phaseElapsed,
-                      builder: (context, elapsed, child) {
-                        final progress = (elapsed / phase.durationSeconds).clamp(0.0, 1.0);
-                        return CustomPaint(
-                          size: const Size.square(ringRadius * 2),
-                          painter: _PhaseArcPainter(
-                            color: phase.color,
-                            progress: progress,
-                          ),
-                        );
-                      },
-                    ),
-                    Transform.scale(
-                      scale: scale,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                ValueListenableBuilder<int>(
+                  valueListenable: _phaseElapsed,
+                  builder: (context, elapsed, child) {
+                    final progress = (elapsed / phase.durationSeconds).clamp(0.0, 1.0);
+                    return CustomPaint(
+                      size: const Size.square(ringRadius * 2),
+                      painter: _PhaseArcPainter(
+                        color: phase.color,
+                        progress: progress,
+                      ),
+                    );
+                  },
+                ),
+                AnimatedBuilder(
+                  animation: _ringController,
+                  builder: (ctx, child) {
+                    return Transform.scale(
+                      scale: _ringScale.value,
                       child: Container(
                         width: ringRadius * 2 - 16,
                         height: ringRadius * 2 - 16,
@@ -229,42 +228,42 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                           ),
                         ),
                       ),
+                    );
+                  },
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      phase.label,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Inter',
+                      ),
                     ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          phase.label,
+                    const SizedBox(height: 6),
+                    ValueListenableBuilder<int>(
+                      valueListenable: _phaseElapsed,
+                      builder: (context, elapsed, child) {
+                        return Text(
+                          '${phase.durationSeconds - elapsed}s',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 18,
-                            fontWeight: FontWeight.w400,
+                            color: Colors.white.withValues(alpha: 0.4),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                             fontFamily: 'Inter',
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
                           ),
-                        ),
-                        const SizedBox(height: 6),
-                        ValueListenableBuilder<int>(
-                          valueListenable: _phaseElapsed,
-                          builder: (context, elapsed, child) {
-                            return Text(
-                              '${phase.durationSeconds - elapsed}s',
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.4),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                fontFamily: 'Inter',
-                                fontFeatures: const [
-                                  FontFeature.tabularFigures(),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
+                        );
+                      },
                     ),
                   ],
-                );
-              },
+                ),
+              ],
             ),
           ),
         ),

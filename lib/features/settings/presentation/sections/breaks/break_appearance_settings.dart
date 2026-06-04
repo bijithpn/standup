@@ -30,11 +30,58 @@ class BreakAppearanceSettings extends StatefulWidget {
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   String? _hoveredId;
   String? _selectedTemplateId;
+  final ScrollController _gridScrollController = ScrollController();
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+
+  static const _templates = [
+    (id: 'classic', name: 'Gallery Focus', desc: 'Image-backed rest view with a compact progress panel.'),
+    (id: 'minimal', name: 'Quiet Grid', desc: 'Fast-loading custom dial with low-stimulus geometry.'),
+    (id: 'companion', name: 'Companion Dock', desc: 'Draggable companion layer with a clean command rail.'),
+    (id: 'zen', name: 'Breath Lines', desc: 'Minimal breathing guide on a quiet lined surface.'),
+    (id: 'hud', name: 'Focus Card', desc: 'Spacious timer with a single progress bar.'),
+    (id: 'floating', name: 'Floating Dock', desc: 'Snappable compact overlay, desktop stays visible.'),
+    (id: 'activities', name: 'Activity Studio', desc: 'Guided breathing & eye sync exercises.'),
+    (id: 'soft_arc', name: 'Soft Arc', desc: 'Icon, large countdown, and a 1.5px arc. Nothing else.'),
+    (id: 'breathe_line', name: 'Breathe Line', desc: 'Animated line expands and contracts with your breath.'),
+    (id: 'clock_face', name: 'Clock Face', desc: 'Analog-style clock ring with a progress arc.'),
+    (id: 'one_word', name: 'One Word', desc: '"Rest" or "Pause" — giant, quiet, minimal.'),
+    (id: 'open_field', name: 'Open Field', desc: 'Full photo backdrop with bottom text overlay.'),
+    (id: 'haiku_card', name: 'Haiku', desc: 'A rotating haiku poem with your countdown below.'),
+    (id: 'ring_only', name: 'Ring Only', desc: 'Single arc ring, icon, and time. Nothing outside.'),
+    (id: 'step_guide', name: 'Step Guide', desc: 'Numbered steps from your break tip.'),
+    (id: 'time_slice', name: 'Time Slice', desc: 'Full-width progress bar, big word, optional tip.'),
+    (id: 'day_stack', name: 'Day Stack', desc: 'Today\'s break count + countdown stacked cleanly.'),
+    (id: 'pulse_dot', name: 'Pulse Dot', desc: 'Pulsing circle border with countdown center.'),
+    (id: 'mono_time', name: 'Mono Time', desc: 'Monospace terminal-style countdown with accent bar.'),
+    (id: 'split_view', name: 'Split View', desc: 'Tip text left, arc + timer right.'),
+    (id: 'warm_amber', name: 'Warm Amber', desc: 'Sunset-toned wind-down with daily break count.'),
+    (id: 'focus_orb', name: 'Focus Orb', desc: 'Static radial glow behind a clean countdown.'),
+    (id: 'wave_calm', name: 'Wave Calm', desc: 'Animated sine waves behind a centered timer.'),
+    (id: 'iris_rest', name: 'Iris Rest', desc: 'Giant eye icon, a rule, countdown, one-line instruction.'),
+    (id: 'quiet_pill', name: 'Quiet Pill', desc: 'Draggable floating pill — desktop stays fully visible.'),
+    (id: 'paper_light', name: 'Paper Light', desc: 'Light mode template on warm paper background.'),
+    (id: 'dusk_glow', name: 'Dusk Glow', desc: 'Deep purple gradient with moon icon and progress bar.'),
+  ];
 
   @override
   void initState() {
     super.initState();
     _selectedTemplateId = widget.settings.breakTemplate;
+    _searchFocusNode.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _gridScrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
   }
 
   @override
@@ -67,93 +114,151 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       children: [
         sectionHeader('Break Templates'),
         const SizedBox(height: 16),
-        _buildBreakTemplateGrid(),
-        const SizedBox(height: 24),
-        // Buttons Row
         Row(
           mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            MinimalButton(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-              onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    CupertinoIcons.play_circle_fill,
-                    size: 14,
-                    color: AppTheme.accentColor,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Preview Selected',
-                    style: TextStyle(
-                      color: AppTheme.accentColor,
+            if (_selectedTemplateId != null) ...[
+              Text(
+                'Selected: ',
+                style: TextStyle(
+                  color: AppTheme.textSecondary.withValues(alpha: 0.6),
+                  fontSize: 12,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              Builder(
+                builder: (context) {
+                  final selectedTemplate = _templates.firstWhere(
+                    (t) => t.id == _selectedTemplateId,
+                    orElse: () => _templates.first,
+                  );
+                  return Text(
+                    selectedTemplate.name,
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -0.1,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
                     ),
-                  ),
-                ],
+                  );
+                },
+              ),
+            ],
+            const Spacer(),
+            Tooltip(
+              message: 'Preview Selected',
+              child: MinimalButton(
+                padding: const EdgeInsets.all(8),
+                backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                onPressed: () => _showBreakTemplatePreview(_selectedTemplateId),
+                child: Icon(
+                  CupertinoIcons.eye,
+                  size: 16,
+                  color: AppTheme.accentColor,
+                ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             Builder(
               builder: (context) {
                 final bool hasChanges =
                     _selectedTemplateId != widget.settings.breakTemplate;
-                return MinimalButton(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  backgroundColor: AppTheme.accentColor,
-                  disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(10),
-                  onPressed: hasChanges
-                      ? () {
-                          widget.onSave(
-                            widget.settings.copyWith(
-                              breakTemplate: _selectedTemplateId,
-                            ),
-                          );
-                          Toast.showSuccess(
-                            context,
-                            'Template updated successfully!',
-                          );
-                        }
-                      : null,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.checkmark_circle_fill,
-                        size: 14,
-                        color: hasChanges
-                            ? Colors.white
-                            : Colors.white.withValues(alpha: 0.5),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Update Template',
-                        style: TextStyle(
-                          color: hasChanges
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.5),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: -0.1,
-                        ),
-                      ),
-                    ],
+                return Tooltip(
+                  message: 'Update Template',
+                  child: MinimalButton(
+                    padding: const EdgeInsets.all(8),
+                    backgroundColor: AppTheme.accentColor,
+                    disabledColor: AppTheme.accentColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    onPressed: hasChanges
+                        ? () {
+                            widget.onSave(
+                              widget.settings.copyWith(
+                                breakTemplate: _selectedTemplateId,
+                              ),
+                            );
+                            Toast.showSuccess(
+                              context,
+                              'Template updated successfully!',
+                            );
+                          }
+                        : null,
+                    child: Icon(
+                      CupertinoIcons.checkmark,
+                      size: 16,
+                      color: hasChanges
+                          ? Colors.white
+                          : Colors.white.withValues(alpha: 0.5),
+                    ),
                   ),
                 );
               },
             ),
           ],
         ),
+        const SizedBox(height: 18),
+        CupertinoTextField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          style: const TextStyle(
+            color: AppTheme.textPrimary,
+            fontSize: 13,
+            fontFamily: 'Inter',
+          ),
+          placeholder: 'Search templates...',
+          placeholderStyle: TextStyle(
+            color: AppTheme.textSecondary.withValues(alpha: 0.5),
+            fontSize: 13,
+            fontFamily: 'Inter',
+          ),
+          prefix: Padding(
+            padding: const EdgeInsets.only(left: 12),
+            child: Icon(
+              CupertinoIcons.search,
+              size: 16,
+              color: AppTheme.textSecondary.withValues(alpha: 0.5),
+            ),
+          ),
+          suffix: _searchQuery.isNotEmpty
+              ? GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: Icon(
+                      CupertinoIcons.clear_circled_solid,
+                      size: 16,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                    ),
+                  ),
+                )
+              : null,
+          decoration: BoxDecoration(
+            color: AppTheme.contentBackground.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: _searchFocusNode.hasFocus
+                  ? AppTheme.accentColor
+                  : AppTheme.borderColor.withValues(alpha: 0.6),
+              width: 1.0,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          onChanged: (val) {
+            setState(() {
+              _searchQuery = val.trim();
+            });
+          },
+        ),
+        const SizedBox(height: 16),
+        _buildBreakTemplateGrid(),
         const SizedBox(height: 32),
         sectionHeader(
           'Colors & Customization',
@@ -206,40 +311,47 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                       },
                       child: Tooltip(
                         message: preset.name,
-                        child: AnimatedContainer(
+                        child: AnimatedScale(
+                          scale: isSelected ? 1.12 : 1.0,
                           duration: const Duration(milliseconds: 200),
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: preset.color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppTheme.accentColor
-                                  : Colors.white.withValues(alpha: 0.15),
-                              width: isSelected ? 3.5 : 1.5,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                      color: preset.color.withValues(
-                                        alpha: 0.4,
+                          curve: Curves.easeOutBack,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: preset.color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.15),
+                                width: isSelected ? 2.2 : 1.5,
+                              ),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: preset.color.withValues(
+                                          alpha: 0.5,
+                                        ),
+                                        blurRadius: 10,
+                                        spreadRadius: 2,
                                       ),
-                                      blurRadius: 8,
-                                      spreadRadius: 1,
+                                    ]
+                                  : [],
+                            ),
+                            child: isSelected
+                                ? Center(
+                                    child: Icon(
+                                      CupertinoIcons.checkmark,
+                                      size: 14,
+                                      color: preset.color.computeLuminance() > 0.5
+                                          ? Colors.black87
+                                          : Colors.white,
                                     ),
-                                  ]
-                                : [],
+                                  )
+                                : null,
                           ),
-                          child: isSelected
-                              ? const Center(
-                                  child: Icon(
-                                    CupertinoIcons.checkmark,
-                                    size: 14,
-                                    color: Colors.black87,
-                                  ),
-                                )
-                              : null,
                         ),
                       ),
                     );
@@ -490,61 +602,73 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   }
 
   Widget _buildBreakTemplateGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final templates = [
-          (id: 'classic', name: 'Gallery Focus', desc: 'Image-backed rest view with a compact progress panel.'),
-          (id: 'minimal', name: 'Quiet Grid', desc: 'Fast-loading custom dial with low-stimulus geometry.'),
-          (id: 'companion', name: 'Companion Dock', desc: 'Draggable companion layer with a clean command rail.'),
-          (id: 'zen', name: 'Breath Lines', desc: 'Minimal breathing guide on a quiet lined surface.'),
-          (id: 'hud', name: 'Focus Card', desc: 'Spacious timer with a single progress bar.'),
-          (id: 'floating', name: 'Floating Dock', desc: 'Snappable compact overlay, desktop stays visible.'),
-          (id: 'activities', name: 'Activity Studio', desc: 'Guided breathing & eye sync exercises.'),
-          (id: 'soft_arc', name: 'Soft Arc', desc: 'Icon, large countdown, and a 1.5px arc. Nothing else.'),
-          (id: 'breathe_line', name: 'Breathe Line', desc: 'Animated line expands and contracts with your breath.'),
-          (id: 'clock_face', name: 'Clock Face', desc: 'Analog-style clock ring with a progress arc.'),
-          (id: 'one_word', name: 'One Word', desc: '"Rest" or "Pause" — giant, quiet, minimal.'),
-          (id: 'open_field', name: 'Open Field', desc: 'Full photo backdrop with bottom text overlay.'),
-          (id: 'haiku_card', name: 'Haiku', desc: 'A rotating haiku poem with your countdown below.'),
-          (id: 'ring_only', name: 'Ring Only', desc: 'Single arc ring, icon, and time. Nothing outside.'),
-          (id: 'step_guide', name: 'Step Guide', desc: 'Numbered steps from your break tip.'),
-          (id: 'time_slice', name: 'Time Slice', desc: 'Full-width progress bar, big word, optional tip.'),
-          (id: 'day_stack', name: 'Day Stack', desc: 'Today\'s break count + countdown stacked cleanly.'),
-          (id: 'pulse_dot', name: 'Pulse Dot', desc: 'Pulsing circle border with countdown center.'),
-          (id: 'mono_time', name: 'Mono Time', desc: 'Monospace terminal-style countdown with accent bar.'),
-          (id: 'split_view', name: 'Split View', desc: 'Tip text left, arc + timer right.'),
-          (id: 'warm_amber', name: 'Warm Amber', desc: 'Sunset-toned wind-down with daily break count.'),
-          (id: 'focus_orb', name: 'Focus Orb', desc: 'Static radial glow behind a clean countdown.'),
-          (id: 'wave_calm', name: 'Wave Calm', desc: 'Animated sine waves behind a centered timer.'),
-          (id: 'iris_rest', name: 'Iris Rest', desc: 'Giant eye icon, a rule, countdown, one-line instruction.'),
-          (id: 'quiet_pill', name: 'Quiet Pill', desc: 'Draggable floating pill — desktop stays fully visible.'),
-          (id: 'paper_light', name: 'Paper Light', desc: 'Light mode template on warm paper background.'),
-          (id: 'dusk_glow', name: 'Dusk Glow', desc: 'Deep purple gradient with moon icon and progress bar.'),
-        ];
+    final filteredTemplates = _templates.where((t) {
+      if (_searchQuery.isEmpty) return true;
+      final q = _searchQuery.toLowerCase();
+      return t.name.toLowerCase().contains(q) ||
+          t.desc.toLowerCase().contains(q);
+    }).toList();
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          clipBehavior: Clip.none,
-          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-            maxCrossAxisExtent: 220,
-            mainAxisSpacing: 20,
-            crossAxisSpacing: 16,
-            mainAxisExtent: 195,
-          ),
-          itemCount: templates.length,
-          itemBuilder: (context, index) {
-            final t = templates[index];
-            return _breakTemplatePreview(
-              t.name,
-              t.id,
-              t.desc,
-              _selectedTemplateId == t.id,
-              () => setState(() => _selectedTemplateId = t.id),
-            );
-          },
-        );
-      },
+    return Container(
+      height: 420,
+      decoration: BoxDecoration(
+        color: AppTheme.contentBackground.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppTheme.borderColor.withValues(alpha: 0.5),
+          width: 1.0,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: filteredTemplates.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      CupertinoIcons.search,
+                      size: 32,
+                      color: AppTheme.textSecondary.withValues(alpha: 0.3),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No templates found matching "$_searchQuery"',
+                      style: TextStyle(
+                        color: AppTheme.textSecondary.withValues(alpha: 0.5),
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Scrollbar(
+                controller: _gridScrollController,
+                thumbVisibility: true,
+                child: GridView.builder(
+                  controller: _gridScrollController,
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 220,
+                    mainAxisSpacing: 20,
+                    crossAxisSpacing: 16,
+                    mainAxisExtent: 195,
+                  ),
+                  itemCount: filteredTemplates.length,
+                  itemBuilder: (context, index) {
+                    final t = filteredTemplates[index];
+                    return _breakTemplatePreview(
+                      t.name,
+                      t.id,
+                      t.desc,
+                      _selectedTemplateId == t.id,
+                      () => setState(() => _selectedTemplateId = t.id),
+                    );
+                  },
+                ),
+              ),
+      ),
     );
   }
 
