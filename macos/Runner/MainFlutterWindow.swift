@@ -263,6 +263,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
+    BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger)
     
     IpcBridgeManager.shared.register(engine: flutterViewController.engine)
     
@@ -398,6 +399,34 @@ class MainFlutterWindow: NSWindow {
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
         }
+
+      case "showPipWindow":
+        PiPWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
+        result(nil)
+
+      case "hidePipWindow":
+        PiPWindowManager.shared.hidePipWindow()
+        result(nil)
+
+      // ── Behavior Engine PAL methods ───────────────────────────────────────
+
+      case "enumerateDisplays":
+        BehaviorEngineBridge.shared.handleEnumerateDisplays(result: result)
+
+      case "getCursorPosition":
+        BehaviorEngineBridge.shared.handleGetCursorPosition(result: result)
+
+      case "getVisibleWindows":
+        BehaviorEngineBridge.shared.handleGetVisibleWindows(result: result)
+
+      case "showConstraintWindow":
+        BehaviorEngineBridge.shared.handleShowConstraintWindow(
+          args: call.arguments as? [String: Any],
+          result: result
+        )
+
+      case "hideConstraintWindow":
+        BehaviorEngineBridge.shared.handleHideConstraintWindow(result: result)
 
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],

@@ -34,6 +34,11 @@ enum PetAnimationState {
   fly,
   hop,
   glide,
+  // Behavior-engine states (pet-behavior-engine spec, task 14.2)
+  chasing,   // maps to run sprite row (or dedicated if available)
+  fetching,  // maps to walkSide with item
+  falling,   // maps to run or a new falling sprite
+  reacting,  // maps to notification or a new reacting sprite
 }
 
 /// Configuration for a specific animation state's visual representation.

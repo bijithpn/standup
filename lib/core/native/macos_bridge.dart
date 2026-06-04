@@ -204,6 +204,121 @@ class MacOSBridge implements NativeBridgePlatform {
     return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
+  // --- New PAL methods: Display / Cursor / Window / Constraint ---
+
+  /// Enumerates connected displays.
+  /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.
+  @override
+  Future<List<Map<String, dynamic>>> enumerateDisplays() async {
+    final List<dynamic>? displays = await _invokeSafely<List<dynamic>>(
+      'enumerateDisplays',
+    );
+    if (displays == null) return [];
+    return displays.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  /// Registers a native callback for display change notifications.
+  /// Uses EventChannel 'com.breakmate.desktop/displayChange'.
+  @override
+  void registerDisplayChangeCallback(
+    void Function(List<Map<String, dynamic>>) cb,
+  ) {
+    const EventChannel eventChannel = EventChannel(
+      'com.breakmate.desktop/displayChange',
+    );
+    eventChannel.receiveBroadcastStream().listen(
+      (dynamic event) {
+        if (event is List) {
+          final displays = event
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          cb(displays);
+        }
+      },
+      onError: (Object error) {
+        developer.log(
+          'macOS displayChange event error: $error',
+          name: 'BreakMate',
+        );
+      },
+    );
+  }
+
+  /// Returns the current global cursor position in screen coordinates.
+  /// macOS uses screen-bottom origin; the caller is responsible for
+  /// converting to Flame screen-top origin when needed.
+  @override
+  Future<Offset> getCursorPosition() async {
+    final Map<dynamic, dynamic>? result =
+        await _invokeSafely<Map<dynamic, dynamic>>('getCursorPosition');
+    if (result == null) return Offset.zero;
+    final double x = (result['x'] as num?)?.toDouble() ?? 0.0;
+    final double y = (result['y'] as num?)?.toDouble() ?? 0.0;
+    return Offset(x, y);
+  }
+
+  /// Returns the list of currently visible, non-minimized application windows.
+  /// Maps contain keys: {windowId, appBundleId, windowTitle, x, y, width,
+  /// height, isMinimized, isVisible}.
+  @override
+  Future<List<Map<String, dynamic>>> getVisibleWindows() async {
+    final List<dynamic>? windows = await _invokeSafely<List<dynamic>>(
+      'getVisibleWindows',
+    );
+    if (windows == null) return [];
+    return windows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  }
+
+  /// Shows the constraint window with the given position and size.
+  /// [args] must contain keys: x, y, width, height.
+  @override
+  Future<void> showConstraintWindow(Map<String, dynamic> args) async {
+    await _invokeSafely('showConstraintWindow', args);
+  }
+
+  /// Hides the constraint window.
+  @override
+  Future<void> hideConstraintWindow() async {
+    await _invokeSafely('hideConstraintWindow');
+  }
+
+  /// Registers a native callback for constraint window bounds changes
+  /// (user resize / move). Uses EventChannel
+  /// 'com.breakmate.desktop/constraintWindowBounds'.
+  @override
+  void registerConstraintWindowBoundsCallback(
+    void Function(Map<String, dynamic>) cb,
+  ) {
+    const EventChannel eventChannel = EventChannel(
+      'com.breakmate.desktop/constraintWindowBounds',
+    );
+    eventChannel.receiveBroadcastStream().listen(
+      (dynamic event) {
+        if (event is Map) {
+          cb(Map<String, dynamic>.from(event));
+        }
+      },
+      onError: (Object error) {
+        developer.log(
+          'macOS constraintWindowBounds event error: $error',
+          name: 'BreakMate',
+        );
+      },
+    );
+  }
+
+  /// Shows the PiP companion window.
+  @override
+  Future<void> showPipWindow(Map<String, dynamic> args) async {
+    await _invokeSafely('showPipWindow', args);
+  }
+
+  /// Hides the PiP companion window.
+  @override
+  Future<void> hidePipWindow() async {
+    await _invokeSafely('hidePipWindow');
+  }
+
   Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

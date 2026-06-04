@@ -700,6 +700,42 @@ void FlutterWindow::SetIgnoreMouseEvents(bool ignore) {
 }
 
 void FlutterWindow::SetupOverlayBridge() {
+  // Setup com.breakmate.desktop/bridge for overlay isolate (needs getOverlayData)
+  if (is_overlay_) {
+    auto overlay_data_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+        flutter_controller_->engine()->messenger(), "com.breakmate.desktop/bridge",
+        &flutter::StandardMethodCodec::GetInstance());
+
+    overlay_data_channel->SetMethodCallHandler(
+        [this](const auto& call, auto result) {
+          const std::string& method_name = call.method_name();
+
+          if (method_name == "getOverlayData") {
+            auto data = OverlayWindowManager::GetInstance()->GetLastShowArgs();
+            result->Success(flutter::EncodableValue(data));
+          }
+          else if (method_name == "checkIsMainEngine") {
+            result->Success(flutter::EncodableValue(false));
+          }
+          else if (method_name == "hideOverlay") {
+            OverlayWindowManager::GetInstance()->HideOverlay();
+            result->Success();
+          }
+          else if (method_name == "skipBreak" || method_name == "completeBreak") {
+            // Forward to main app via IPC
+            IpcBridgeManager::GetInstance()->SendEvent(
+                method_name, 
+                flutter::EncodableValue(flutter::EncodableMap()), 
+                flutter_controller_->engine());
+            OverlayWindowManager::GetInstance()->HideOverlay();
+            result->Success();
+          }
+          else {
+            result->NotImplemented();
+          }
+        });
+  }
+
   overlay_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       flutter_controller_->engine()->messenger(), "com.breakmate/overlay",
       &flutter::StandardMethodCodec::GetInstance());

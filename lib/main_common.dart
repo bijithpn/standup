@@ -19,6 +19,7 @@ import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/overlay/companion_overlay_window.dart';
+import 'package:breakmate/features/companion/overlay/pip_overlay_window.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 
@@ -647,6 +648,36 @@ Future<void> companionMain() async {
   );
 }
 
+/// PiP (Picture-in-Picture) mode entry point.
+///
+/// Runs a compact companion window with interaction buttons.
+/// Spawned by [PiPWindowManager.swift] via a dedicated Flutter engine.
+@pragma('vm:entry-point')
+Future<void> pipMain() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SimplePrefs.instance.init();
+  _setupGlobalErrors();
+  _setupMinimalIpc();
+
+  if (Platform.isMacOS) {
+    await Window.initialize();
+  }
+
+  // Warm up default theme assets.
+  try {
+    final defaultTheme = PetTheme.getTheme('grey_cat');
+    await PetAssetLoader.loadAnimations(
+      CompanionGame.getProfileFromTheme(defaultTheme),
+    );
+  } catch (_) {}
+
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: PiPOverlayWindow(),
+    ),
+  );
+}
 class FakeStatsService extends ChangeNotifier implements StatsService {
   StatsModel _stats = const StatsModel();
 

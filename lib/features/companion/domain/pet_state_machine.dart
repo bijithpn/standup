@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'pet_mood.dart';
 import 'pet_personality.dart';
+import 'behavior_engine_models.dart';
+import '../../../core/utils/logger.dart';
 
 /// Generic pet state for the FSM.
 enum PetState {
@@ -40,6 +43,11 @@ enum PetState {
   scared,
   breatheFire,
   fly,
+  // Behavior-engine states (pet-behavior-engine spec)
+  chasing,    // pursuing a throwable object
+  fetching,   // carrying throwable back to origin
+  falling,    // airborne, gravity applied by PhysicsSimulator
+  reacting,   // cursor/window interaction response
 }
 
 /// Generic pet events that trigger state transitions.
@@ -66,6 +74,20 @@ enum PetEvent {
   petFed,
   petPlayed,
   animationComplete, // fired by CompanionComponent when a non-looping anim finishes
+  // Behavior-engine events (pet-behavior-engine spec)
+  cursorEnteredZone,   // cursor inside 80px radius, velocity ≤800
+  cursorExitedZone,    // cursor left 80px radius
+  cursorDwell,         // stationary in zone ≥3s
+  cursorFastMove,      // velocity >800 px/s
+  throwableSpawned,    // new ThrowableObject created
+  throwableStationary, // ThrowableObject became stationary
+  throwableFetched,    // pet reached throwable
+  throwableReturned,   // pet returned to throw origin
+  landedOnSurface,     // Falling → landed
+  windowOverlap,       // pet bounds overlap app window
+  windowOverlapEnded,  // overlap cleared
+  surfaceLost,         // standing window closed/minimized
+  loopBlocked,         // looping animation is blocked on final frame
 }
 
 /// Weighted transition with conditions.
@@ -89,6 +111,21 @@ class PetTransition {
   });
 }
 
+/// Priority values for behavior-engine states.
+///
+/// Higher number wins when multiple transition targets are active simultaneously.
+/// States not listed here have an implicit priority of 0.
+const Map<PetState, int> _statePriority = {
+  PetState.falling:  5,
+  PetState.chasing:  4,
+  PetState.fetching: 4,
+  PetState.run:      3,
+  PetState.reacting: 3,
+  PetState.walk:     2,
+  PetState.resting:  2,
+  PetState.idle:     1,
+};
+
 /// Abstracted state machine with weighted transitions and mood awareness.
 class PetStateMachine extends ChangeNotifier {
   PetStateMachine({
@@ -107,6 +144,17 @@ class PetStateMachine extends ChangeNotifier {
 
   // Single Random instance — avoids per-call allocation
   static final _rng = Random();
+
+  // Prior-state stack: stores the state active before the most recent
+  // transition into [PetState.reacting], so cursorExitedZone /
+  // windowOverlapEnded can restore it (requirements 5.4, 6.6).
+  PetState? _priorState;
+
+  // Transition log: every _transitionTo() call appends an entry (req 8.9).
+  final List<StateTransitionLog> transitionLog = [];
+
+  // Shared AppLogger instance for structured JSON logging.
+  static final _logger = AppLogger();
 
   PetState get currentState => _currentState;
   Duration get timeInState => _stateEnteredAt != null
@@ -133,7 +181,6 @@ class PetStateMachine extends ChangeNotifier {
 
     // Filter matching transitions inline to avoid list allocation when possible
     PetTransition? selected;
-    double totalWeight = 0;
     final List<PetTransition> matched = [];
 
     for (final t in transitions) {
@@ -147,7 +194,6 @@ class PetStateMachine extends ChangeNotifier {
         continue;
       }
       matched.add(t);
-      totalWeight += t.weight;
     }
 
     if (matched.isEmpty) return;
@@ -155,18 +201,41 @@ class PetStateMachine extends ChangeNotifier {
     if (matched.length == 1) {
       selected = matched.first;
     } else {
-      double threshold = _rng.nextDouble() * totalWeight;
-      for (final t in matched) {
-        threshold -= t.weight;
-        if (threshold <= 0) {
-          selected = t;
-          break;
+      // Priority resolution: among matched transitions, pick the one whose
+      // target state has the highest priority.  Only fall back to weighted
+      // random when all targets share the same priority.
+      final int maxPriority = matched
+          .map((t) => _statePriority[t.targetState] ?? 0)
+          .reduce((a, b) => a > b ? a : b);
+      final highPriority =
+          matched.where((t) => (_statePriority[t.targetState] ?? 0) == maxPriority).toList();
+
+      if (highPriority.length == 1) {
+        selected = highPriority.first;
+      } else {
+        // Multiple transitions at the same priority — use weighted random.
+        double threshold = _rng.nextDouble() *
+            highPriority.fold<double>(0, (s, t) => s + t.weight);
+        for (final t in highPriority) {
+          threshold -= t.weight;
+          if (threshold <= 0) {
+            selected = t;
+            break;
+          }
         }
+        selected ??= highPriority.last;
       }
-      selected ??= matched.last;
     }
 
-    _transitionTo(selected.targetState, selected);
+    // Resolve the sentinel "restore prior" target to the actual prior state.
+    var targetState = selected.targetState;
+    if (targetState == PetState.idle &&
+        (event == PetEvent.cursorExitedZone ||
+            event == PetEvent.windowOverlapEnded)) {
+      targetState = _priorState ?? PetState.idle;
+    }
+
+    _transitionTo(targetState, selected);
   }
 
   void transitionTo(PetState newState) {
@@ -175,9 +244,26 @@ class PetStateMachine extends ChangeNotifier {
 
   void _transitionTo(PetState newState, [PetTransition? transition]) {
     if (_currentState == newState) return;
+    final previousState = _currentState;
+
+    // Before entering reacting, record the prior state so we can restore it.
+    if (newState == PetState.reacting) {
+      _priorState = previousState;
+    }
+
     _currentState = newState;
     _stateEnteredAt = DateTime.now();
     if (transition != null) _lastTriggered[transition] = DateTime.now();
+
+    // Append to transition log and emit structured log line (req 8.9).
+    final entry = StateTransitionLog(
+      previousState: previousState,
+      newState: newState,
+      utcTimestamp: DateTime.now().toUtc(),
+    );
+    transitionLog.add(entry);
+    _logger.info(jsonEncode(entry.toJson()));
+
     _onStateChanged?.call(newState);
     _stateController.add(newState);
     notifyListeners();
@@ -247,6 +333,32 @@ class PetStateMachine extends ChangeNotifier {
         event: PetEvent.cursorNearby,
         targetState: PetState.curious,
         weight: 1.5,
+      ),
+      // Behavior-engine interrupts
+      PetTransition(
+        event: PetEvent.cursorEnteredZone,
+        targetState: PetState.reacting,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.windowOverlap,
+        targetState: PetState.reacting,
+        weight: 1.0,
       ),
       // Ambient AI-driven behaviors — only fire from idle
       PetTransition(
@@ -361,6 +473,32 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      // Behavior-engine interrupts
+      PetTransition(
+        event: PetEvent.cursorEnteredZone,
+        targetState: PetState.reacting,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.windowOverlap,
+        targetState: PetState.reacting,
+        weight: 1.0,
+      ),
     ],
     PetState.run: [
       PetTransition(
@@ -377,6 +515,17 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      // Behavior-engine interrupts
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
         weight: 1.0,
       ),
     ],
@@ -769,6 +918,27 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.idle,
         weight: 1.0,
       ),
+      // Behavior-engine interrupts
+      PetTransition(
+        event: PetEvent.cursorExitedZone,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
     ],
     PetState.angry: [
       PetTransition(
@@ -820,6 +990,107 @@ class PetStateMachine extends ChangeNotifier {
         event: PetEvent.cursorNearby,
         targetState: PetState.following,
         weight: 1.5,
+      ),
+    ],
+    // -------------------------------------------------------------------------
+    // Behavior-engine states (pet-behavior-engine spec)
+    // -------------------------------------------------------------------------
+
+    /// Cursor / window interaction response state.
+    ///
+    /// Transitions:
+    ///   cursorExitedZone    → restore prior state (idle sentinel resolved in handleEvent)
+    ///   windowOverlapEnded  → restore prior state (idle sentinel resolved in handleEvent)
+    ///   cursorDwell         → resting (cursor held still ≥3 s inside zone)
+    ///   cursorFastMove      → run    (priority 3, overrides reacting at equal priority)
+    ///   throwableSpawned    → chasing (priority 4, supersedes reacting priority 3)
+    ///   surfaceLost         → falling (priority 5, supersedes all)
+    PetState.reacting: [
+      PetTransition(
+        event: PetEvent.cursorExitedZone,
+        targetState: PetState.idle, // sentinel — handleEvent resolves to _priorState
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.windowOverlapEnded,
+        targetState: PetState.idle, // sentinel — handleEvent resolves to _priorState
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorDwell,
+        targetState: PetState.resting,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+    ],
+
+    /// Pet is pursuing a throwable object.
+    ///
+    /// Transitions:
+    ///   throwableStationary → fetching (when pet bounds overlap stationary throwable;
+    ///                          the overlap condition is checked by the caller before
+    ///                          firing throwableStationary — see ThrowableObjectManager)
+    ///   throwableFetched    → idle    (throwable disposed / timed out / unreachable)
+    ///   surfaceLost         → falling (priority 5)
+    PetState.chasing: [
+      PetTransition(
+        event: PetEvent.throwableStationary,
+        targetState: PetState.fetching,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableFetched,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+    ],
+
+    /// Pet is carrying a throwable back to the throw origin.
+    ///
+    /// Transitions:
+    ///   throwableReturned → idle    (pet anchor within 10 px of spawnOrigin)
+    ///   surfaceLost       → falling (priority 5)
+    PetState.fetching: [
+      PetTransition(
+        event: PetEvent.throwableReturned,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+    ],
+
+    /// Pet is airborne; gravity is applied by PhysicsSimulator.
+    ///
+    /// Transitions:
+    ///   landedOnSurface → idle
+    PetState.falling: [
+      PetTransition(
+        event: PetEvent.landedOnSurface,
+        targetState: PetState.idle,
+        weight: 1.0,
       ),
     ],
   };
