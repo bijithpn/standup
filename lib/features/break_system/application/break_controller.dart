@@ -38,6 +38,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   String _classicImage = '';
 
   TimerState? _lastOverlayState;
+  bool _hasShownPreBreakWarning = false;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -108,6 +109,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
     bool shouldShowWarning = _timerEngine.isPreBreak;
 
+    if (!shouldShowWarning) {
+      _hasShownPreBreakWarning = false;
+    }
+
     if (shouldShowBreak && _lastOverlayState != TimerState.breakActive) {
       _lastOverlayState = TimerState.breakActive;
 
@@ -132,6 +137,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         breakTheme: settings.breakTheme,
         overlayData: {
           'isLong': isLong,
+          'breakType': _timerEngine.activeBreak?.type.name,
           'template': _currentTemplate,
           'breakTemplate': _currentTemplate,
           'classicImage': _classicImage,
@@ -146,6 +152,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
+          'breaksCompleted': _statsService.stats.breaksCompleted,
+          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'customImagePath': settings.customImagePath ?? '',
         },
       );
 
@@ -156,7 +166,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       if (settings.playMusicDuringBreak) {
         _startMusic();
       }
-    } else if (shouldShowWarning && !overlayService.isOverlayVisible) {
+    } else if (shouldShowWarning && !_hasShownPreBreakWarning && !overlayService.isOverlayVisible) {
+      _hasShownPreBreakWarning = true;
       overlayService.showOverlay(
         type: OverlayType.preBreakWarning,
         builder: (_) => const SizedBox.shrink(),
@@ -344,6 +355,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       isPreview: true,
       overlayData: {
         'isLong': false,
+        'breakType': activeTemplate == 'wind_down' ? 'windDown' : 'short',
         'template': activeTemplate,
         'breakTemplate': activeTemplate,
         'classicImage': _classicImage,
@@ -359,6 +371,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'targetEndTime': DateTime.now()
             .add(Duration(seconds: settings.shortBreakDurationSeconds))
             .millisecondsSinceEpoch,
+        'breaksCompleted': _statsService.stats.breaksCompleted,
+        'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+        'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+        'customImagePath': settings.customImagePath ?? '',
       },
     );
 
@@ -420,6 +436,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         breakTheme: settings.breakTheme,
         overlayData: {
           'isLong': isLong,
+          'breakType': _timerEngine.activeBreak?.type.name,
           'template': settings.breakTemplate,
           'breakTemplate': settings.breakTemplate,
           'companionPetTheme': settings.companionPetTheme,
@@ -433,6 +450,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
+          'breaksCompleted': _statsService.stats.breaksCompleted,
+          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'customImagePath': settings.customImagePath ?? '',
         },
       );
     }

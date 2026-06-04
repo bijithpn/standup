@@ -13,11 +13,14 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_break_overlay.dart';
+import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/overlay/companion_overlay_window.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/analytics/stats_model.dart';
 
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
@@ -69,6 +72,19 @@ void _setupGlobalErrors() {
 
   // 3. User friendly UI for render errors
   ErrorWidget.builder = (FlutterErrorDetails details) {
+    // Notify active standalone break overlays to fall back to minimal
+    if (StandaloneBreakOverlay.onErrorCallbacks.isNotEmpty) {
+      for (final callback in List.from(StandaloneBreakOverlay.onErrorCallbacks)) {
+        try {
+          callback(details);
+        } catch (_) {}
+      }
+      return const Material(
+        color: Color(0xFF0A0A0F),
+        child: SizedBox.shrink(),
+      );
+    }
+
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
@@ -445,8 +461,12 @@ void mainCommon(FlavorConfig config) async {
             await sl<OverlayWindowService>().showDashboard(forceShow: true);
           } else if (call.method == 'skipBreak') {
             sl<BreakController>().skipCurrentBreak();
+          } else if (call.method == 'completeBreak') {
+            sl<BreakController>().completeCurrentBreak();
           } else if (call.method == 'hideOverlay') {
             await sl<OverlayWindowService>().hideOverlay();
+          } else if (call.method == 'quitApp') {
+            sl<MenuBarController>().handleAction('quit');
           } else if (call.method == 'systemSleep') {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
@@ -570,6 +590,7 @@ void _setupMinimalIpc() {
 @pragma('vm:entry-point')
 Future<void> overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SimplePrefs.instance.init();
   _setupGlobalErrors();
   _setupMinimalIpc();
   if (Platform.isMacOS) {
@@ -578,6 +599,14 @@ Future<void> overlayMain() async {
       effect: WindowEffect.transparent,
       color: Colors.transparent,
     );
+  }
+
+  // Register fake services in GetIt (sl) for templates
+  if (!sl.isRegistered<StatsService>()) {
+    sl.registerSingleton<StatsService>(FakeStatsService());
+  }
+  if (!sl.isRegistered<BreakController>()) {
+    sl.registerSingleton<BreakController>(FakeBreakController());
   }
 
   runApp(
@@ -592,6 +621,7 @@ Future<void> overlayMain() async {
 @pragma('vm:entry-point')
 Future<void> companionMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SimplePrefs.instance.init();
   _setupGlobalErrors();
   _setupMinimalIpc();
 
@@ -615,4 +645,34 @@ Future<void> companionMain() async {
       home: CompanionOverlayWindow(),
     ),
   );
+}
+
+class FakeStatsService extends ChangeNotifier implements StatsService {
+  StatsModel _stats = const StatsModel();
+
+  @override
+  StatsModel get stats => _stats;
+
+  void updateBreaksCompleted(int count) {
+    _stats = _stats.copyWith(breaksCompleted: count);
+    notifyListeners();
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class FakeBreakController extends ChangeNotifier implements BreakController {
+  @override
+  Future<void> completeCurrentBreak() async {
+    const MethodChannel('com.breakmate.desktop/bridge').invokeMethod('completeBreak');
+  }
+
+  @override
+  Future<void> skipCurrentBreak() async {
+    const MethodChannel('com.breakmate.desktop/bridge').invokeMethod('skipBreak');
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

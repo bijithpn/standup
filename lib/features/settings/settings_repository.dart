@@ -541,6 +541,9 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('menu_bar_style', settings.menuBarStyle);
     await _storage.setString('selected_profile_id', settings.selectedProfileId);
     await _storage.setString('tray_icon_style', settings.trayIconStyle);
+    await _storage.setInt('clock_face_text_color_hex', settings.clockFaceTextColorHex);
+    await _storage.setBool('clock_face_blur_enabled', settings.clockFaceBlurEnabled);
+    await _storage.setString('custom_image_path', settings.customImagePath ?? '');
 
     // Timer intervals
     await _storage.setInt(
@@ -579,6 +582,19 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool(
       'enable_session_resume',
       settings.enableSessionResume,
+    );
+
+    await _storage.setBool(
+      'show_exercises_in_break',
+      settings.showExercisesInBreak,
+    );
+    await _storage.setBool(
+      'enable_animations',
+      settings.enableAnimations,
+    );
+    await _storage.setString(
+      'intensity_level',
+      settings.intensityLevel,
     );
 
     // Companion
