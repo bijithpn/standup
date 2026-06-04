@@ -13,6 +13,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_break_overlay.dart';
+import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -447,6 +448,8 @@ void mainCommon(FlavorConfig config) async {
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'hideOverlay') {
             await sl<OverlayWindowService>().hideOverlay();
+          } else if (call.method == 'quitApp') {
+            sl<MenuBarController>().handleAction('quit');
           } else if (call.method == 'systemSleep') {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
@@ -570,6 +573,7 @@ void _setupMinimalIpc() {
 @pragma('vm:entry-point')
 Future<void> overlayMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SimplePrefs.instance.init();
   _setupGlobalErrors();
   _setupMinimalIpc();
   if (Platform.isMacOS) {
@@ -592,6 +596,7 @@ Future<void> overlayMain() async {
 @pragma('vm:entry-point')
 Future<void> companionMain() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SimplePrefs.instance.init();
   _setupGlobalErrors();
   _setupMinimalIpc();
 

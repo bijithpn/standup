@@ -36,8 +36,8 @@ class OverlayWindowService extends ChangeNotifier {
           'showOnAllDisplays': showOnAllDisplays,
           'isPreview': isPreview,
           'theme': breakTheme,
-          'isTransparent': type == OverlayType.quickReminder,
-          'ignoreMouseEvents': type == OverlayType.quickReminder,
+          'isTransparent': type == OverlayType.quickReminder || type == OverlayType.preBreakWarning,
+          'ignoreMouseEvents': type == OverlayType.quickReminder || type == OverlayType.preBreakWarning,
           ...?overlayData,
         };
         if (reminderType != null) args['reminderType'] = reminderType;
@@ -66,13 +66,13 @@ class OverlayWindowService extends ChangeNotifier {
             'showOnAllDisplays': showOnAllDisplays,
             'isPreview': isPreview,
             'theme': breakTheme,
-            'isTransparent': type == OverlayType.quickReminder,
-            'ignoreMouseEvents': type == OverlayType.quickReminder,
+            'isTransparent': type == OverlayType.quickReminder || type == OverlayType.preBreakWarning,
+            'ignoreMouseEvents': type == OverlayType.quickReminder || type == OverlayType.preBreakWarning,
             ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(args);
-          
+
           if (type == OverlayType.breakScreen) {
             Future.delayed(const Duration(milliseconds: 200), () {
               if (!isPreview) {
@@ -87,8 +87,8 @@ class OverlayWindowService extends ChangeNotifier {
             'showOnAllDisplays': showOnAllDisplays,
             'isPreview': isPreview,
             'theme': breakTheme,
-            'isTransparent': type == OverlayType.quickReminder,
-            'ignoreMouseEvents': type == OverlayType.quickReminder,
+            'isTransparent': type == OverlayType.quickReminder || type == OverlayType.preBreakWarning,
+            'ignoreMouseEvents': type == OverlayType.quickReminder || type == OverlayType.preBreakWarning,
             ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;

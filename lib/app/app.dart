@@ -129,6 +129,13 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
 
   @override
   void onWindowClose() async {
+    // `preventClose` is true by default (menu-bar app – closing hides it).
+    // When the user explicitly chooses Quit from the menu bar, MenuBarController
+    // sets preventClose = false before calling destroy(), so we do nothing here.
+    final prevent = await windowManager.isPreventClose();
+    if (!prevent) return; // Quit flow already handled
+
+    // Default behavior: hide the window (menu-bar app style)
     await sl<OverlayWindowService>().reset();
     await windowManager.hide();
   }

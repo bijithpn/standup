@@ -30,15 +30,15 @@ class BreakContextPill extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.32),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+        color: const Color(0xFF0F1115).withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
       child: DefaultTextStyle(
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.78),
+          color: Colors.white.withValues(alpha: 0.6),
           fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
           fontFamily: 'Inter',
           height: 1.35,
         ),
@@ -65,9 +65,9 @@ class StrictModeNote extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 560),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.34),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+          color: const Color(0xFF0F1115).withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
         ),
         child: Text(
           isLocked
@@ -75,9 +75,9 @@ class StrictModeNote extends StatelessWidget {
               : 'Strict mode is active. Skip is hidden for this break intensity.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.64),
+            color: Colors.white.withValues(alpha: 0.5),
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w500,
             fontFamily: 'Inter',
             height: 1.35,
           ),
@@ -98,12 +98,12 @@ class SwipeToDismissHint extends StatelessWidget {
         Icon(
           CupertinoIcons.chevron_up,
           size: 20,
-          color: Colors.white.withValues(alpha: 0.5),
+          color: Colors.white.withValues(alpha: 0.4),
         ),
         Text(
           'Swipe up to dismiss',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: Colors.white.withValues(alpha: 0.4),
             fontSize: 12,
             fontWeight: FontWeight.w500,
             letterSpacing: 1.0,
@@ -126,32 +126,20 @@ class SkipBreakButton extends StatelessWidget {
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onSkip,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Skip Break',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Inter',
-                ),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Opacity(
+            opacity: 0.4,
+            child: const Text(
+              'Skip',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                fontFamily: 'Inter',
               ),
-              const SizedBox(width: 8),
-              Icon(
-                CupertinoIcons.arrow_right,
-                size: 14,
-                color: Colors.white.withValues(alpha: 0.9),
-              ),
-            ],
+            ),
           ),
         ),
       ),

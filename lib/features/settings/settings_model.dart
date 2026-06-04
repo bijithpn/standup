@@ -107,7 +107,7 @@ class SettingsModel {
     this.focusModeEnabled = false,
     this.shortBreakIntervalMinutes = 20,
     this.shortBreakDurationSeconds = 20,
-    this.preBreakWarningSeconds = 20,
+    this.preBreakWarningSeconds = 60,
     this.longBreakIntervalMinutes = 60,
     this.longBreakDurationMinutes = 5,
 
@@ -420,7 +420,7 @@ class SettingsModel {
       focusModeEnabled: map['focusModeEnabled'] as bool? ?? false,
       shortBreakIntervalMinutes: map['shortBreakIntervalMinutes'] as int? ?? 20,
       shortBreakDurationSeconds: map['shortBreakDurationSeconds'] as int? ?? 20,
-      preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 20,
+      preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 60,
       longBreakIntervalMinutes: map['longBreakIntervalMinutes'] as int? ?? 60,
       longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 5,
 

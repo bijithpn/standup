@@ -31,7 +31,7 @@ class OverlayWindowManager: NSObject {
         }
         
         let type = args?["type"] as? String ?? "breakScreen"
-        let isReminder = type == "quickReminder"
+        let isReminder = type == "quickReminder" || type == "preBreakWarning"
         let isPreview = args?["isPreview"] as? Bool ?? false
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,

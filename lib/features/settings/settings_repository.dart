@@ -581,6 +581,19 @@ class SettingsRepository extends ChangeNotifier {
       settings.enableSessionResume,
     );
 
+    await _storage.setBool(
+      'show_exercises_in_break',
+      settings.showExercisesInBreak,
+    );
+    await _storage.setBool(
+      'enable_animations',
+      settings.enableAnimations,
+    );
+    await _storage.setString(
+      'intensity_level',
+      settings.intensityLevel,
+    );
+
     // Companion
     await _storage.setString(
       AppConstants.keyCompanionPetTheme,
