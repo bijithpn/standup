@@ -17,11 +17,11 @@ void main() {
   group('Property 6: Prior-state restoration on zone exit', () {
     // States that can be the "prior" state before entering reacting.
     // We exclude reacting itself (same-state is a no-op in _transitionTo).
-    final testableStates =
-        PetState.values.where((s) => s != PetState.reacting).toList();
+    final testableStates = PetState.values
+        .where((s) => s != PetState.reacting)
+        .toList();
 
-    test(
-        'cursorExitedZone restores the prior state for every non-reacting '
+    test('cursorExitedZone restores the prior state for every non-reacting '
         'starting state (exhaustive)', () {
       for (final startState in testableStates) {
         final fsm = PetStateMachine();
@@ -44,14 +44,12 @@ void main() {
         expect(
           fsm.currentState,
           equals(startState),
-          reason:
-              'After cursorExitedZone the FSM should restore "$startState"',
+          reason: 'After cursorExitedZone the FSM should restore "$startState"',
         );
       }
     });
 
-    test(
-        'windowOverlapEnded also restores the prior state for every '
+    test('windowOverlapEnded also restores the prior state for every '
         'non-reacting starting state (exhaustive)', () {
       for (final startState in testableStates) {
         final fsm = PetStateMachine();
@@ -68,8 +66,7 @@ void main() {
       }
     });
 
-    test(
-        'restoration falls back to idle when the FSM starts at idle before '
+    test('restoration falls back to idle when the FSM starts at idle before '
         'entering reacting (fresh FSM default)', () {
       // A fresh FSM starts at idle; transitionTo(reacting) sets _priorState=idle.
       final fsm = PetStateMachine();
@@ -97,8 +94,7 @@ void main() {
         expect(
           fsm.currentState,
           equals(startState),
-          reason:
-              'Expected restoration to $startState after cursorExitedZone',
+          reason: 'Expected restoration to $startState after cursorExitedZone',
         );
       },
     );

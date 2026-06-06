@@ -48,6 +48,10 @@ class FlutterWindow : public Win32Window {
     is_overlay_ = is_overlay;
   }
 
+  void SetIsPiP(bool is_pip) {
+    is_pip_ = is_pip;
+  }
+
  protected:
   // Win32Window:
   bool OnCreate() override;
@@ -67,6 +71,9 @@ class FlutterWindow : public Win32Window {
 
   // Sets up the companion data bridge (if is_companion_)
   void SetupCompanionBridge();
+
+  // Sets up the PiP data bridge (if is_pip_)
+  void SetupPiPBridge();
 
   // Sets up the overlay bridge (com.breakmate/overlay)
   void SetupOverlayBridge();
@@ -90,6 +97,7 @@ class FlutterWindow : public Win32Window {
   // Companion state
   bool is_companion_ = false;
   bool is_overlay_ = false;
+  bool is_pip_ = false;
   flutter::EncodableMap initial_settings_;
 
   LONG original_style_ = 0;

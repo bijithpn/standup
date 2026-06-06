@@ -25,6 +25,12 @@ class CompanionWindowManager {
   void HideCompanion();
   void UpdateParams(const std::map<std::string, flutter::EncodableValue>& params);
 
+  // PiP (Picture-in-Picture) window — small, draggable, always-on-top.
+  // args: x, y, width, height, themeId, petName, scale, clickThrough
+  void ShowPiP(const std::map<std::string, flutter::EncodableValue>& args);
+  void HidePiP();
+  void UpdatePiPParams(const std::map<std::string, flutter::EncodableValue>& params);
+
   // Called by the mouse-poll timer (public so the static lambda can reach it)
   void UpdateMousePosition();
   // Called by the monitor-change timer
@@ -39,8 +45,13 @@ class CompanionWindowManager {
   bool click_through_ = true;
   bool follow_mouse_ = false;
 
+  // PiP window
+  std::unique_ptr<FlutterWindow> pip_window_;
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> pip_channel_;
+
   static constexpr UINT_PTR kMouseTimerId   = 2;
   static constexpr UINT_PTR kMonitorTimerId = 3;
+  static constexpr UINT_PTR kPipMouseTimerId = 4;
 };
 
 #endif  // RUNNER_COMPANION_WINDOW_MANAGER_H_

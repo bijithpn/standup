@@ -1,34 +1,15 @@
 // Tasks 7.2 and 7.3 — DisplayManager tests
 // Requirements 2.1, 2.6
 
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' hide test, group, expect;
-import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
-import 'package:breakmate/features/companion/services/display_manager.dart';
 
-// ─── Minimal concrete DisplayManager for unit testing ───────────────────────
-
-class _TestDisplayManager extends NativeDisplayManager {
-  _TestDisplayManager() : super(bridge: _NoOpBridge(), eventBus: null);
-}
-
-// We can't easily extend NativeDisplayManager with a mock bridge in a unit test
-// context because the bridge is injected but EventBus.instance is a singleton.
-// Instead test the pure geometry helpers through a direct subclass.
-class _GeoDisplayManager extends DisplayManager {
-  _GeoDisplayManager(List<DisplayBounds> displays) {
-    // Seed the internal list by calling onDisplayChanged
-    onDisplayChanged(displays);
-  }
-
-  @override
-  Future<List<DisplayBounds>> enumerateDisplays() async => [];
-
-  @override
-  void poll() {}
-}
+// The tests in this file exercise standalone geometry helpers copied from
+// the production NativeDisplayManager.  No live NativeBridgePlatform or
+// DisplayManager subclass is needed.
 
 // We re-implement the geometry methods directly here to unit-test them
 // without needing a live NativeBridge.  The production NativeDisplayManager
@@ -36,9 +17,9 @@ class _GeoDisplayManager extends DisplayManager {
 
 /// Nearest boundary point on [rect] to [point] (clamped).
 Offset _clamp(Offset point, Rect rect) => Offset(
-      point.dx.clamp(rect.left, rect.right),
-      point.dy.clamp(rect.top, rect.bottom),
-    );
+  point.dx.clamp(rect.left, rect.right),
+  point.dy.clamp(rect.top, rect.bottom),
+);
 
 double _dist(Offset a, Offset b) {
   final dx = a.dx - b.dx;
@@ -65,11 +46,40 @@ Offset _nearestDisplayPoint(Offset outside, List<Rect> rects) {
 }
 
 bool _areAdjacent(Rect a, Rect b) {
+  // Two displays are adjacent when they share at least 1 px of a horizontal
+  // or vertical edge (not just a single corner point).
+  //
+  // Approach: inflate each by 1 px, check overlap, then require that the
+  // intersection has strictly more than 1 px in BOTH dimensions.  A pure
+  // corner-touch produces an intersection of exactly 1×1 after inflation
+  // (the two 1-px inflated corners meet), which we exclude.
   final ia = a.inflate(1);
   final ib = b.inflate(1);
   if (!ia.overlaps(ib)) return false;
-  final inter = ia.intersect(ib);
-  return inter.width > 0 && inter.height > 0;
+  ia.intersect(ib);
+  // A true shared edge gives width > 1 OR height > 1 (one axis has the
+  // inflation overlap of 2px, the other has real edge length > 0 after
+  // subtracting inflation).  A corner-only touch gives width == 2, height == 2
+  // because both inflated edges overlap by exactly 2 px at the corner — so we
+  // need to be more precise.
+  //
+  // Simplest correct check: the original (uninflated) rects must share a
+  // non-zero-length edge on at least one axis.
+  final sharedHorizLeft = math.max(a.left, b.left);
+  final sharedHorizRight = math.min(a.right, b.right);
+  final sharedVertTop = math.max(a.top, b.top);
+  final sharedVertBottom = math.min(a.bottom, b.bottom);
+  // Horizontal shared edge: rects line up horizontally and touch vertically
+  final shareHEdge =
+      sharedHorizRight > sharedHorizLeft &&
+      (a.top == b.bottom || a.bottom == b.top);
+  // Vertical shared edge: rects line up vertically and touch horizontally
+  final shareVEdge =
+      sharedVertBottom > sharedVertTop &&
+      (a.left == b.right || a.right == b.left);
+  // Overlapping rects are also adjacent
+  final overlap = a.overlaps(b);
+  return shareHEdge || shareVEdge || overlap;
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -163,22 +173,14 @@ void main() {
       expect(result.dy, lessThanOrEqualTo(1080));
     });
 
-    Glados2(
-      any.doubleInRange(1921, 9000),
-      any.doubleInRange(1081, 9000),
-    ).test('point right/below single display clamps to boundary', (
-      double x,
-      double y,
-    ) {
-      final rects = [Rect.fromLTWH(0, 0, 1920, 1080)];
-      final result = _nearestDisplayPoint(Offset(x, y), rects);
-      expect(result.dx, lessThanOrEqualTo(1920));
-      expect(result.dy, lessThanOrEqualTo(1080));
-    });
+    Glados2(any.doubleInRange(1921, 9000), any.doubleInRange(1081, 9000)).test(
+      'point right/below single display clamps to boundary',
+      (double x, double y) {
+        final rects = [Rect.fromLTWH(0, 0, 1920, 1080)];
+        final result = _nearestDisplayPoint(Offset(x, y), rects);
+        expect(result.dx, lessThanOrEqualTo(1920));
+        expect(result.dy, lessThanOrEqualTo(1080));
+      },
+    );
   });
-}
-
-// Dummy bridge used in test constructor
-class _NoOpBridge implements dynamic {
-  dynamic noSuchMethod(Invocation i) => null;
 }

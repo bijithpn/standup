@@ -206,12 +206,17 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       );
       if (result != null) {
         _applySettings(Map<String, dynamic>.from(result));
+        // Initialize the window manager so size, position, and
+        // non-activating style (WS_EX_NOACTIVATE on Windows) are applied
+        // before the window becomes interactive.
+        await _windowManager.initialize();
         return;
       }
     } catch (_) {
       // Channel unavailable — fall through to defaults.
     }
     _initGameWithDefaults();
+    await _windowManager.initialize();
   }
 
   void _initGameWithDefaults() {
@@ -220,6 +225,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       _game = CompanionGame(
         initialTheme: PetTheme.getTheme(_themeId),
         scaleOverride: _scale,
+        isPiP: true,
       );
       _gameInitialized = true;
     });
@@ -241,6 +247,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         _game = CompanionGame(
           initialTheme: PetTheme.getTheme(_themeId),
           scaleOverride: _scale,
+          isPiP: true,
         );
         _gameInitialized = true;
       });

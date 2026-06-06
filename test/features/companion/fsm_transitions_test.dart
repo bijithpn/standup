@@ -28,8 +28,7 @@ void main() {
     // -------------------------------------------------------------------------
     // chasing → throwableStationary → fetching
     // -------------------------------------------------------------------------
-    test(
-        'From chasing: throwableStationary fires → state becomes fetching '
+    test('From chasing: throwableStationary fires → state becomes fetching '
         '(Req 8.2)', () {
       final fsm = makeFsm(PetState.chasing);
       fsm.handleEvent(PetEvent.throwableStationary);
@@ -45,23 +44,23 @@ void main() {
     // falling → landedOnSurface → idle
     // -------------------------------------------------------------------------
     test(
-        'From falling: landedOnSurface fires → state becomes idle (Req 8.2)',
-        () {
-      final fsm = makeFsm(PetState.falling);
-      fsm.handleEvent(PetEvent.landedOnSurface);
-      expect(
-        fsm.currentState,
-        equals(PetState.idle),
-        reason: 'landedOnSurface from falling should transition to idle',
-      );
-    });
+      'From falling: landedOnSurface fires → state becomes idle (Req 8.2)',
+      () {
+        final fsm = makeFsm(PetState.falling);
+        fsm.handleEvent(PetEvent.landedOnSurface);
+        expect(
+          fsm.currentState,
+          equals(PetState.idle),
+          reason: 'landedOnSurface from falling should transition to idle',
+        );
+      },
+    );
 
     // -------------------------------------------------------------------------
     // reacting → cursorFastMove → run  (running supersedes reacting, both pri 3
     // but run is the explicit target)
     // -------------------------------------------------------------------------
-    test(
-        'From reacting: cursorFastMove fires → state becomes run, '
+    test('From reacting: cursorFastMove fires → state becomes run, '
         'run supersedes reacting (Req 5.5, 8.7)', () {
       final fsm = PetStateMachine();
       // Place FSM in reacting by entering from idle via cursorEnteredZone
@@ -85,8 +84,7 @@ void main() {
     // -------------------------------------------------------------------------
     // idle → surfaceLost → falling  (priority 5 wins over all)
     // -------------------------------------------------------------------------
-    test(
-        'From idle: surfaceLost fires → state becomes falling '
+    test('From idle: surfaceLost fires → state becomes falling '
         '(priority 5 wins, Req 8.8)', () {
       final fsm = makeFsm(PetState.idle);
       fsm.handleEvent(PetEvent.surfaceLost);
@@ -101,8 +99,7 @@ void main() {
     // -------------------------------------------------------------------------
     // chasing → surfaceLost → falling  (priority 5 beats chasing priority 4)
     // -------------------------------------------------------------------------
-    test(
-        'From chasing: surfaceLost fires → state becomes falling '
+    test('From chasing: surfaceLost fires → state becomes falling '
         '(priority 5 supersedes chasing priority 4, Req 8.8)', () {
       final fsm = makeFsm(PetState.chasing);
       fsm.handleEvent(PetEvent.surfaceLost);
@@ -119,49 +116,52 @@ void main() {
     // Additional coverage: fetching → surfaceLost → falling
     // -------------------------------------------------------------------------
     test(
-        'From fetching: surfaceLost fires → state becomes falling (Req 8.8)',
-        () {
-      final fsm = makeFsm(PetState.fetching);
-      fsm.handleEvent(PetEvent.surfaceLost);
-      expect(
-        fsm.currentState,
-        equals(PetState.falling),
-        reason: 'surfaceLost from fetching should transition to falling',
-      );
-    });
+      'From fetching: surfaceLost fires → state becomes falling (Req 8.8)',
+      () {
+        final fsm = makeFsm(PetState.fetching);
+        fsm.handleEvent(PetEvent.surfaceLost);
+        expect(
+          fsm.currentState,
+          equals(PetState.falling),
+          reason: 'surfaceLost from fetching should transition to falling',
+        );
+      },
+    );
 
     // -------------------------------------------------------------------------
     // Verify throwableFetched (disposal/timeout) from chasing → idle
     // -------------------------------------------------------------------------
     test(
-        'From chasing: throwableFetched fires → state becomes idle (Req 8.2)',
-        () {
-      final fsm = makeFsm(PetState.chasing);
-      fsm.handleEvent(PetEvent.throwableFetched);
-      expect(
-        fsm.currentState,
-        equals(PetState.idle),
-        reason:
-            'throwableFetched (throwable disposed/unreachable) from chasing '
-            'should return to idle',
-      );
-    });
+      'From chasing: throwableFetched fires → state becomes idle (Req 8.2)',
+      () {
+        final fsm = makeFsm(PetState.chasing);
+        fsm.handleEvent(PetEvent.throwableFetched);
+        expect(
+          fsm.currentState,
+          equals(PetState.idle),
+          reason:
+              'throwableFetched (throwable disposed/unreachable) from chasing '
+              'should return to idle',
+        );
+      },
+    );
 
     // -------------------------------------------------------------------------
     // Verify throwableReturned from fetching → idle
     // -------------------------------------------------------------------------
     test(
-        'From fetching: throwableReturned fires → state becomes idle (Req 8.2)',
-        () {
-      final fsm = makeFsm(PetState.fetching);
-      fsm.handleEvent(PetEvent.throwableReturned);
-      expect(
-        fsm.currentState,
-        equals(PetState.idle),
-        reason:
-            'throwableReturned from fetching should return to idle after '
-            'pet delivers throwable to spawn origin',
-      );
-    });
+      'From fetching: throwableReturned fires → state becomes idle (Req 8.2)',
+      () {
+        final fsm = makeFsm(PetState.fetching);
+        fsm.handleEvent(PetEvent.throwableReturned);
+        expect(
+          fsm.currentState,
+          equals(PetState.idle),
+          reason:
+              'throwableReturned from fetching should return to idle after '
+              'pet delivers throwable to spawn origin',
+        );
+      },
+    );
   });
 }

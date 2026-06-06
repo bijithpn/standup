@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -257,7 +256,7 @@ class CompanionOverlayController extends ChangeNotifier {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
         if (animationsChanged) {
-          if (Platform.isMacOS && _pipModeEnabled) {
+          if (_pipModeEnabled) {
             NativeBridge.showPipWindow(_companionPayload());
           } else {
             NativeBridge.showCompanion(_companionPayload());
@@ -280,7 +279,7 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_isPreviewMode) return;
 
     _isCompanionShown = true;
-    if (Platform.isMacOS && _pipModeEnabled) {
+    if (_pipModeEnabled) {
       await NativeBridge.showPipWindow(_companionPayload());
     } else {
       await NativeBridge.showCompanion(_companionPayload());

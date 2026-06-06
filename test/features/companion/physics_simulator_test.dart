@@ -21,20 +21,22 @@ PhysicsEntityId _addEntity(
   bool isAirborne = true,
   bool applyGravity = true,
 }) {
-  return sim.addEntity(PhysicsEntity(
-    initialState: PhysicsEntityState(
-      x: x,
-      y: y,
-      vx: vx,
-      vy: vy,
-      width: w,
-      height: h,
-      isAirborne: isAirborne,
-      isStationary: false,
-      stationaryTicks: 0,
+  return sim.addEntity(
+    PhysicsEntity(
+      initialState: PhysicsEntityState(
+        x: x,
+        y: y,
+        vx: vx,
+        vy: vy,
+        width: w,
+        height: h,
+        isAirborne: isAirborne,
+        isStationary: false,
+        stationaryTicks: 0,
+      ),
+      applyGravity: applyGravity,
     ),
-    applyGravity: applyGravity,
-  ));
+  );
 }
 
 void main() {
@@ -42,39 +44,45 @@ void main() {
 
   // ── Property 1: Pet confinement ──────────────────────────────────────────
   group('Property 1: Pet confinement to movement boundary (Task 10.2)', () {
-    Glados(any.list(any.doubleInRange(-5000, 5000), minLength: 1, maxLength: 20)).test(
-      'entity stays within boundary after arbitrary velocity impulses',
-      (List<double> impulses) {
+    Glados(
+      any.listWithLengthInRange(1, 20, any.doubleInRange(-5000, 5000)),
+    ).test('entity stays within boundary after arbitrary velocity impulses', (
+      List<double> impulses,
+    ) {
+      final sim = PhysicsSimulator()..setBoundary(boundary);
+      final id = _addEntity(sim, x: 960, y: 100);
+      const dt = 1.0 / 60.0;
+      for (final _ in impulses) {
+        // Apply impulse directly by re-adding the entity with modified state
+        // We can't inject velocity directly without removing/re-adding;
+        // instead just step many times.
+        sim.step(dt);
+        final st = sim.getState(id);
+        final halfW = st.width / 2;
+        final halfH = st.height / 2;
+        expect(st.x - halfW, greaterThanOrEqualTo(boundary.left - 0.001));
+        expect(st.x + halfW, lessThanOrEqualTo(boundary.right + 0.001));
+        expect(st.y - halfH, greaterThanOrEqualTo(boundary.top - 0.001));
+        expect(st.y + halfH, lessThanOrEqualTo(boundary.bottom + 0.001));
+      }
+    });
+
+    test(
+      'entity released from midair lands within boundary (floor at y=1080)',
+      () {
         final sim = PhysicsSimulator()..setBoundary(boundary);
-        final id = _addEntity(sim, x: 960, y: 100);
+        final id = _addEntity(sim, x: 960, y: 500, vy: 0, isAirborne: true);
         const dt = 1.0 / 60.0;
-        for (final imp in impulses) {
-          // Apply impulse directly by re-adding the entity with modified state
-          final s = sim.getState(id);
-          // We can't inject velocity directly without removing/re-adding;
-          // instead just step many times.
+        for (var i = 0; i < 300; i++) {
           sim.step(dt);
-          final st = sim.getState(id);
-          final halfW = st.width / 2;
-          final halfH = st.height / 2;
-          expect(st.x - halfW, greaterThanOrEqualTo(boundary.left - 0.001));
-          expect(st.x + halfW, lessThanOrEqualTo(boundary.right + 0.001));
-          expect(st.y - halfH, greaterThanOrEqualTo(boundary.top - 0.001));
-          expect(st.y + halfH, lessThanOrEqualTo(boundary.bottom + 0.001));
+          final s = sim.getState(id);
+          expect(
+            s.y + s.height / 2,
+            lessThanOrEqualTo(boundary.bottom + 0.001),
+          );
         }
       },
     );
-
-    test('entity released from midair lands within boundary (floor at y=1080)', () {
-      final sim = PhysicsSimulator()..setBoundary(boundary);
-      final id = _addEntity(sim, x: 960, y: 500, vy: 0, isAirborne: true);
-      const dt = 1.0 / 60.0;
-      for (var i = 0; i < 300; i++) {
-        sim.step(dt);
-        final s = sim.getState(id);
-        expect(s.y + s.height / 2, lessThanOrEqualTo(boundary.bottom + 0.001));
-      }
-    });
   });
 
   // ── Property 2: Velocity reflection ─────────────────────────────────────
@@ -83,7 +91,15 @@ void main() {
       final narrow = Rect.fromLTWH(0, 0, 100, 1080);
       final sim = PhysicsSimulator()..setBoundary(narrow);
       // Place entity just before the right edge, moving right
-      final id = _addEntity(sim, x: 95, y: 500, vx: 200, vy: 0, isAirborne: true, applyGravity: false);
+      final id = _addEntity(
+        sim,
+        x: 95,
+        y: 500,
+        vx: 200,
+        vy: 0,
+        isAirborne: true,
+        applyGravity: false,
+      );
       sim.step(1.0 / 60.0);
       final s = sim.getState(id);
       expect(s.vx, lessThan(0)); // reflected
@@ -92,7 +108,15 @@ void main() {
     test('entity moving down hits floor — vy negated × 0.6', () {
       final shallow = Rect.fromLTWH(0, 0, 1920, 50);
       final sim = PhysicsSimulator()..setBoundary(shallow);
-      final id = _addEntity(sim, x: 960, y: 45, vx: 0, vy: 300, isAirborne: true, applyGravity: false);
+      final id = _addEntity(
+        sim,
+        x: 960,
+        y: 45,
+        vx: 0,
+        vy: 300,
+        isAirborne: true,
+        applyGravity: false,
+      );
       sim.step(1.0 / 60.0);
       final s = sim.getState(id);
       expect(s.vy, lessThan(0)); // reflected upward
@@ -105,9 +129,15 @@ void main() {
       'two runs from identical state produce bit-identical output',
       (double dt) {
         final state = PhysicsEntityState(
-          x: 500, y: 200, vx: 50, vy: -30,
-          width: 20, height: 20,
-          isAirborne: true, isStationary: false, stationaryTicks: 0,
+          x: 500,
+          y: 200,
+          vx: 50,
+          vy: -30,
+          width: 20,
+          height: 20,
+          isAirborne: true,
+          isStationary: false,
+          stationaryTicks: 0,
         );
 
         PhysicsEntityId run1Id, run2Id;
@@ -183,51 +213,69 @@ void main() {
       expect(s.isStationary, isTrue);
     });
 
-    test('entity with zero velocity NOT marked stationary after only 2 ticks', () {
-      final sim = PhysicsSimulator()..setBoundary(boundary);
-      final id = _addEntity(
-        sim,
-        x: 960,
-        y: boundary.bottom - 10,
-        vx: 0.001,
-        vy: 0.001,
-        isAirborne: false,
-        applyGravity: false,
-      );
-      for (var i = 0; i < 2; i++) {
-        sim.step(1.0 / 60.0);
-      }
-      final s = sim.getState(id);
-      expect(s.isStationary, isFalse);
-    });
+    test(
+      'entity with zero velocity NOT marked stationary after only 2 ticks',
+      () {
+        final sim = PhysicsSimulator()..setBoundary(boundary);
+        final id = _addEntity(
+          sim,
+          x: 960,
+          y: boundary.bottom - 10,
+          vx: 0.001,
+          vy: 0.001,
+          isAirborne: false,
+          applyGravity: false,
+        );
+        for (var i = 0; i < 2; i++) {
+          sim.step(1.0 / 60.0);
+        }
+        final s = sim.getState(id);
+        expect(s.isStationary, isFalse);
+      },
+    );
   });
 
   // ── Unit tests (Task 10.7) ───────────────────────────────────────────────
   group('PhysicsSimulator unit tests (Task 10.7)', () {
-    test('entity placed 5px inside wall resolves to boundary edge after 1 step', () {
-      final narrow = Rect.fromLTWH(0, 0, 100, 1000);
-      final sim = PhysicsSimulator()..setBoundary(narrow);
-      // Entity center at x=105 (5px past right wall at 100), no velocity
-      final id = _addEntity(sim, x: 105, y: 500, vx: 0, vy: 0, w: 20, isAirborne: false, applyGravity: false);
-      sim.step(1.0 / 60.0);
-      final s = sim.getState(id);
-      expect(s.x + s.width / 2, lessThanOrEqualTo(narrow.right + 0.001));
-    });
+    test(
+      'entity placed 5px inside wall resolves to boundary edge after 1 step',
+      () {
+        final narrow = Rect.fromLTWH(0, 0, 100, 1000);
+        final sim = PhysicsSimulator()..setBoundary(narrow);
+        // Entity center at x=105 (5px past right wall at 100), no velocity
+        final id = _addEntity(
+          sim,
+          x: 105,
+          y: 500,
+          vx: 0,
+          vy: 0,
+          w: 20,
+          isAirborne: false,
+          applyGravity: false,
+        );
+        sim.step(1.0 / 60.0);
+        final s = sim.getState(id);
+        expect(s.x + s.width / 2, lessThanOrEqualTo(narrow.right + 0.001));
+      },
+    );
 
-    test('setConstraintBoundary repositions out-of-bounds entity to interior', () {
-      final sim = PhysicsSimulator()..setBoundary(boundary);
-      final id = _addEntity(sim, x: 960, y: 540);
-      // Set a small constraint boundary that excludes the current position
-      final small = Rect.fromLTWH(0, 0, 200, 200);
-      sim.setConstraintBoundary(small);
-      final s = sim.getState(id);
-      final halfW = s.width / 2;
-      final halfH = s.height / 2;
-      expect(s.x, greaterThanOrEqualTo(small.left + halfW - 0.001));
-      expect(s.x, lessThanOrEqualTo(small.right - halfW + 0.001));
-      expect(s.y, greaterThanOrEqualTo(small.top + halfH - 0.001));
-      expect(s.y, lessThanOrEqualTo(small.bottom - halfH + 0.001));
-    });
+    test(
+      'setConstraintBoundary repositions out-of-bounds entity to interior',
+      () {
+        final sim = PhysicsSimulator()..setBoundary(boundary);
+        final id = _addEntity(sim, x: 960, y: 540);
+        // Set a small constraint boundary that excludes the current position
+        final small = Rect.fromLTWH(0, 0, 200, 200);
+        sim.setConstraintBoundary(small);
+        final s = sim.getState(id);
+        final halfW = s.width / 2;
+        final halfH = s.height / 2;
+        expect(s.x, greaterThanOrEqualTo(small.left + halfW - 0.001));
+        expect(s.x, lessThanOrEqualTo(small.right - halfW + 0.001));
+        expect(s.y, greaterThanOrEqualTo(small.top + halfH - 0.001));
+        expect(s.y, lessThanOrEqualTo(small.bottom - halfH + 0.001));
+      },
+    );
 
     test('removing an entity then getting its state throws ArgumentError', () {
       final sim = PhysicsSimulator()..setBoundary(boundary);
