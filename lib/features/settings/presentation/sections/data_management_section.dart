@@ -13,6 +13,10 @@ import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/core/storage/models/daily_stats.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/core/storage/models/key_value_record.dart';
+import 'package:breakmate/features/analytics/stats_service.dart' show StatsService;
+import 'package:breakmate/core/constants/app_constants.dart';
 
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
@@ -62,6 +66,15 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         'global_stats': _storage.globalStatsBox?.get(1)?.toMap() ?? {},
         'daily_stats':
             _storage.dailyStatsBox?.getAll().map((e) => e.toMap()).toList() ??
+            [],
+        'kv_records': _storage.kvBox
+                ?.getAll()
+                .map((e) => {
+                      'key': e.key,
+                      'value': e.value,
+                      'type': e.type,
+                    })
+                .toList() ??
             [],
       };
 
@@ -227,13 +240,231 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
+      // Restore key-value records (stats, streaks, etc.)
+      if (data.containsKey('kv_records') && data['kv_records'] is List) {
+        final kvList = data['kv_records'] as List;
+        _storage.kvBox?.removeAll();
+        for (final item in kvList) {
+          if (item is Map) {
+            final key = item['key'] as String?;
+            final value = item['value'] as String?;
+            final type = item['type'] as String?;
+            if (key != null && value != null && type != null) {
+              final record = KeyValueRecord(key: key, value: value, type: type);
+              _storage.kvBox?.put(record);
+
+              // Mirror to SimplePrefs
+              if (type == 'int') {
+                final intVal = int.tryParse(value);
+                if (intVal != null) SimplePrefs.instance.setInt(key, intVal);
+              } else if (type == 'bool') {
+                SimplePrefs.instance.setBool(key, value == 'true');
+              } else if (type == 'string') {
+                SimplePrefs.instance.setString(key, value);
+              } else if (type == 'double') {
+                final doubleVal = double.tryParse(value);
+                if (doubleVal != null) SimplePrefs.instance.setDouble(key, doubleVal);
+              }
+            }
+          }
+        }
+      }
+
       // Reload settings repository to apply to UI immediately
       await sl<SettingsRepository>().load();
+      if (sl.isRegistered<StatsService>()) {
+        await sl<StatsService>().initialize();
+      }
       await _loadStats();
 
       if (mounted) Toast.showSuccess(context, 'Backup restored successfully!');
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import backup: $e');
+    }
+  }
+
+  Future<void> _importStatsCsv() async {
+    try {
+      Directory? dir;
+      try {
+        dir = await getDownloadsDirectory();
+      } catch (_) {}
+
+      dir ??= await getApplicationDocumentsDirectory();
+
+      File file = File(p.join(dir.path, 'breakmate_stats.csv'));
+      if (!await file.exists()) {
+        final altDir = dir.path.contains('Downloads')
+            ? await getApplicationDocumentsDirectory()
+            : await getDownloadsDirectory();
+        if (altDir != null) {
+          final altFile = File(p.join(altDir.path, 'breakmate_stats.csv'));
+          if (await altFile.exists()) {
+            file = altFile;
+            dir = altDir;
+          }
+        }
+      }
+
+      if (!await file.exists()) {
+        throw Exception(
+          "breakmate_stats.csv not found in Downloads or Documents",
+        );
+      }
+
+      final content = await file.readAsString();
+      final lines = content.split(RegExp(r'\r?\n'));
+      if (lines.length <= 1) {
+        throw Exception("CSV file is empty");
+      }
+
+      final List<DailyStats> statsList = [];
+      // Skip header
+      for (int i = 1; i < lines.length; i++) {
+        final line = lines[i].trim();
+        if (line.isEmpty) continue;
+        final parts = line.split(',');
+        if (parts.length >= 4) {
+          final date = parts[0].trim();
+          final breaksCompleted = int.tryParse(parts[1].trim()) ?? 0;
+          final breaksSkipped = int.tryParse(parts[2].trim()) ?? 0;
+          final usageMinutes = int.tryParse(parts[3].trim()) ?? 0;
+          final wellnessActions = parts.length > 4 ? (int.tryParse(parts[4].trim()) ?? 0) : 0;
+
+          statsList.add(DailyStats(
+            id: 0,
+            date: date,
+            breaksCompleted: breaksCompleted,
+            breaksSkipped: breaksSkipped,
+            usageMinutes: usageMinutes,
+            wellnessActions: wellnessActions,
+          ));
+        }
+      }
+
+      if (statsList.isEmpty) {
+        throw Exception("No valid stats found in CSV");
+      }
+
+      // Write to DailyStatsBox
+      _storage.dailyStatsBox?.removeAll();
+      for (final s in statsList) {
+        _storage.dailyStatsBox?.put(s);
+      }
+
+      // Sort chronologically for weekly_stats JSON
+      statsList.sort((a, b) => a.date.compareTo(b.date));
+
+      // Build weekly_stats JSON
+      final jsonList = statsList.map((e) => {
+        'date': e.date,
+        'breaksCompleted': e.breaksCompleted,
+        'breaksSkipped': e.breaksSkipped,
+        'usageMinutes': e.usageMinutes,
+        'wellnessActions': e.wellnessActions,
+      }).toList();
+      final String weeklyDataJson = jsonEncode(jsonList);
+
+      await _storage.setString(AppConstants.keyWeeklyStats, weeklyDataJson);
+      SimplePrefs.instance.setString(AppConstants.keyWeeklyStats, weeklyDataJson);
+
+      // Sum totals
+      int totalCompleted = 0;
+      int totalSkipped = 0;
+      for (final s in statsList) {
+        totalCompleted += s.breaksCompleted;
+        totalSkipped += s.breaksSkipped;
+      }
+
+      await _storage.setInt(AppConstants.keyBreaksCompleted, totalCompleted);
+      SimplePrefs.instance.setInt(AppConstants.keyBreaksCompleted, totalCompleted);
+
+      await _storage.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
+      SimplePrefs.instance.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
+
+      // Check if we have today's row to restore daily counts
+      final now = DateTime.now();
+      final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      DailyStats? todayRow;
+      for (final s in statsList) {
+        if (s.date == todayStr) {
+          todayRow = s;
+          break;
+        }
+      }
+
+      if (todayRow != null) {
+        await _storage.setInt(AppConstants.keyDailyUsageMinutes, todayRow.usageMinutes);
+        SimplePrefs.instance.setInt(AppConstants.keyDailyUsageMinutes, todayRow.usageMinutes);
+      } else {
+        await _storage.setInt(AppConstants.keyDailyUsageMinutes, 0);
+        SimplePrefs.instance.setInt(AppConstants.keyDailyUsageMinutes, 0);
+      }
+
+      // Re-initialize stats service
+      if (sl.isRegistered<StatsService>()) {
+        await sl<StatsService>().initialize();
+      }
+      await _loadStats();
+
+      if (mounted) Toast.showSuccess(context, 'Stats imported from CSV successfully!');
+    } catch (e) {
+      if (mounted) Toast.showError(context, 'Failed to import CSV: $e');
+    }
+  }
+
+  void _showResetConfirmation() {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: const Text('Reset All Data'),
+        content: const Text(
+          'Are you sure you want to delete all settings, companion preferences, and statistics? This action is permanent and cannot be undone.',
+        ),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _clearAllData();
+            },
+            isDestructiveAction: true,
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _clearAllData() async {
+    try {
+      // Clear database boxes
+      _storage.settingsBox?.removeAll();
+      _storage.companionPreferencesBox?.removeAll();
+      _storage.globalStatsBox?.removeAll();
+      _storage.dailyStatsBox?.removeAll();
+      _storage.kvBox?.removeAll();
+
+      // Clear SimplePrefs
+      SimplePrefs.instance.clear();
+
+      // Reload settings repository & stats service
+      await sl<SettingsRepository>().load();
+      if (sl.isRegistered<StatsService>()) {
+        await sl<StatsService>().initialize();
+      }
+      await _loadStats();
+
+      if (mounted) {
+        Toast.showSuccess(context, 'All application data has been reset.');
+      }
+    } catch (e) {
+      if (mounted) {
+        Toast.showError(context, 'Failed to clear data: $e');
+      }
     }
   }
 
@@ -269,7 +500,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           divider(),
           _infoRow(
             'Last Migration',
-            '${migrationTime}ms',
+            migrationTime == 0 ? 'N/A' : '${migrationTime}ms',
             CupertinoIcons.arrow_right_arrow_left_circle,
           ),
         ]),
@@ -288,9 +519,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                     Expanded(
                       child: MinimalButton(
                         onPressed: _exportBackupJson,
-                        backgroundColor: AppTheme.accentColor.withValues(
-                          alpha: 0.1,
-                        ),
+                        isSecondary: true,
                         borderRadius: BorderRadius.circular(10),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
@@ -299,13 +528,13 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                             Icon(
                               CupertinoIcons.cloud_upload,
                               size: 16,
-                              color: AppTheme.accentColor,
+                              color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
-                            Text(
+                            const Text(
                               'Export Backup',
                               style: TextStyle(
-                                color: AppTheme.accentColor,
+                                color: AppTheme.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -317,7 +546,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                     Expanded(
                       child: MinimalButton(
                         onPressed: _exportStatsCsv,
-                        backgroundColor: AppTheme.surfaceElevated,
+                        isSecondary: true,
                         borderRadius: BorderRadius.circular(10),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
@@ -326,13 +555,13 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                             Icon(
                               CupertinoIcons.table,
                               size: 16,
-                              color: AppTheme.textPrimary,
+                              color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
                             const Text(
                               'Export CSV',
                               style: TextStyle(
-                                color: AppTheme.textPrimary,
+                                color: AppTheme.textSecondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -343,32 +572,62 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: MinimalButton(
-                    onPressed: _importBackupJson,
-                    isSecondary: true,
-                    borderRadius: BorderRadius.circular(10),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          CupertinoIcons.folder_badge_plus,
-                          size: 16,
-                          color: AppTheme.textSecondary,
+                Row(
+                  children: [
+                    Expanded(
+                      child: MinimalButton(
+                        onPressed: _importBackupJson,
+                        isSecondary: true,
+                        borderRadius: BorderRadius.circular(10),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              CupertinoIcons.folder_badge_plus,
+                              size: 16,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Restore JSON',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Restore JSON Backup from Downloads',
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: MinimalButton(
+                        onPressed: _importStatsCsv,
+                        isSecondary: true,
+                        borderRadius: BorderRadius.circular(10),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              CupertinoIcons.table_badge_more,
+                              size: 16,
+                              color: AppTheme.textSecondary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Import CSV',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -381,9 +640,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
             label: 'Clear All Data',
             subtitle: 'Delete all settings and local analytics history.',
             buttonText: 'Reset',
-            onPressed: () {
-              // Show confirmation
-            },
+            onPressed: _showResetConfirmation,
             isDestructive: true,
           ),
         ]),
