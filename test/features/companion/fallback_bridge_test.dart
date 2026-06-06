@@ -34,7 +34,12 @@ void main() {
 
     test('showConstraintWindow does not throw', () async {
       expect(
-        () async => bridge.showConstraintWindow({'x': 0, 'y': 0, 'width': 300, 'height': 300}),
+        () async => bridge.showConstraintWindow({
+          'x': 0,
+          'y': 0,
+          'width': 300,
+          'height': 300,
+        }),
         returnsNormally,
       );
     });

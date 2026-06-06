@@ -82,7 +82,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 widget.controller.companionEnabled,
                 (v) => widget.controller.toggleCompanion(v),
               ),
-              if (Platform.isMacOS) ...[
+              if (Platform.isMacOS || Platform.isWindows) ...[
                 divider(),
                 toggleRow(
                   'Draggable PiP Panel',

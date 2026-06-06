@@ -19,23 +19,24 @@ void main() {
     final allEvents = PetEvent.values;
 
     test(
-        'currentState is always a valid PetState after applying any single event '
-        'to a fresh FSM (all events)', () {
-      for (final event in allEvents) {
-        final fsm = PetStateMachine();
-        fsm.handleEvent(event);
-        expect(
-          allStates.contains(fsm.currentState),
-          isTrue,
-          reason:
-              'After firing $event on a fresh FSM the state '
-              '"${fsm.currentState}" must be a valid PetState',
-        );
-      }
-    });
+      'currentState is always a valid PetState after applying any single event '
+      'to a fresh FSM (all events)',
+      () {
+        for (final event in allEvents) {
+          final fsm = PetStateMachine();
+          fsm.handleEvent(event);
+          expect(
+            allStates.contains(fsm.currentState),
+            isTrue,
+            reason:
+                'After firing $event on a fresh FSM the state '
+                '"${fsm.currentState}" must be a valid PetState',
+          );
+        }
+      },
+    );
 
-    test(
-        'currentState is always a valid PetState for every starting-state × '
+    test('currentState is always a valid PetState for every starting-state × '
         'event combination', () {
       for (final startState in PetState.values) {
         for (final event in allEvents) {

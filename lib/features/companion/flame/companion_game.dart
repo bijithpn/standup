@@ -30,15 +30,20 @@ import 'package:breakmate/features/companion/services/throwable_object_manager.d
 import 'package:breakmate/features/companion/services/window_monitor.dart';
 
 class CompanionGame extends FlameGame {
-  CompanionGame({required PetTheme initialTheme, this.scaleOverride = 0.0})
-    : _eventBus = EventBus.instance,
-      _petService = PetCompanionService(
-        stateMachine: PetStateMachine(personality: PetPersonality()),
-        brain: PetBehaviorBrain(),
-        navigation: PetNavigationService(),
-        profile: getProfileFromTheme(initialTheme),
-      ),
-      _theme = initialTheme;
+  CompanionGame({
+    required PetTheme initialTheme,
+    this.scaleOverride = 0.0,
+    this.isPiP = false,
+  }) : _eventBus = EventBus.instance,
+       _petService = PetCompanionService(
+         stateMachine: PetStateMachine(personality: PetPersonality()),
+         brain: PetBehaviorBrain(),
+         navigation: PetNavigationService(),
+         profile: getProfileFromTheme(initialTheme),
+       ),
+       _theme = initialTheme;
+
+  final bool isPiP;
 
   static PetProfile getProfileFromTheme(PetTheme theme) {
     final species = theme.species;
@@ -585,6 +590,40 @@ class CompanionGame extends FlameGame {
     return (target / spriteSize).clamp(3.0, 10.0);
   }
 
+  void _updateNavigationPaddings() {
+    if (petComponent == null) return;
+    final double spriteSize = _theme.spriteSize.toDouble();
+    final double scale = _effectiveScale(spriteSize);
+    final double scaledHalfW = (spriteSize * scale) / 2;
+    final double scaledHalfH = (spriteSize * scale) / 2;
+
+    double minX = scaledHalfW + 4.0;
+    double maxX = size.x - scaledHalfW - 4.0;
+    if (minX > maxX) {
+      minX = size.x / 2;
+      maxX = size.x / 2;
+    }
+
+    double minY = isPiP ? (24.0 + scaledHalfH + 4.0) : (scaledHalfH + 4.0);
+    double maxY = isPiP
+        ? (size.y - 44.0 - scaledHalfH - 4.0)
+        : (size.y - scaledHalfH - 4.0);
+    if (minY > maxY) {
+      final double safeCenterY = isPiP
+          ? 24.0 + (size.y - 24.0 - 44.0) / 2
+          : size.y / 2;
+      minY = safeCenterY;
+      maxY = safeCenterY;
+    }
+
+    _petService.navigation.updatePaddings(
+      left: minX,
+      right: size.x - maxX,
+      top: minY,
+      bottom: size.y - maxY,
+    );
+  }
+
   Future<void> _loadAndAttachPet() async {
     final animations = await PetAssetLoader.loadAnimations(_petService.profile);
     if (animations.isEmpty) return;
@@ -604,10 +643,29 @@ class CompanionGame extends FlameGame {
     petComponent!.size = Vector2(spriteSize, spriteSize);
     petComponent!.scale = Vector2.all(scale);
 
+    final double scaledHalfW = (spriteSize * scale) / 2;
     final double scaledHalfH = (spriteSize * scale) / 2;
-    petComponent!.position = Vector2(size.x / 2, size.y - scaledHalfH - 4.0);
+    final double initialY = isPiP
+        ? size.y - 44.0 - scaledHalfH - 4.0
+        : size.y - scaledHalfH - 4.0;
+
+    petComponent!.position = Vector2(size.x / 2, initialY);
 
     add(petComponent!);
+
+    _updateNavigationPaddings();
+
+    final currentPos = _petService.navigation.currentPosition;
+    final minY = isPiP ? (24.0 + scaledHalfH + 4.0) : (scaledHalfH + 4.0);
+    final maxY = isPiP
+        ? (size.y - 44.0 - scaledHalfH - 4.0)
+        : (size.y - scaledHalfH - 4.0);
+    if (currentPos.dy < minY ||
+        currentPos.dy > maxY ||
+        currentPos.dx < scaledHalfW + 4.0 ||
+        currentPos.dx > size.x - scaledHalfW - 4.0) {
+      _petService.navigation.teleport(Offset(size.x / 2, initialY));
+    }
   }
 
   Future<void> updateTheme(PetTheme newTheme) async {
@@ -635,10 +693,13 @@ class CompanionGame extends FlameGame {
     petComponent!.scale = Vector2.all(scale);
 
     final double scaledHalfH = (spriteSize * scale) / 2;
-    petComponent!.position = Vector2(
-      petComponent!.position.x,
-      size.y - scaledHalfH - 4.0,
-    );
+    final double initialY = isPiP
+        ? size.y - 44.0 - scaledHalfH - 4.0
+        : size.y - scaledHalfH - 4.0;
+
+    petComponent!.position = Vector2(petComponent!.position.x, initialY);
+    _updateNavigationPaddings();
+    _petService.navigation.teleport(Offset(petComponent!.position.x, initialY));
   }
 
   void triggerState(PetAnimationState state) {
@@ -959,9 +1020,13 @@ class CompanionGame extends FlameGame {
         final double scale = _effectiveScale(spriteSize);
         final double scaledHalfH = (spriteSize * scale) / 2;
 
+        final double initialY = isPiP
+            ? size.y - 44.0 - scaledHalfH - 4.0
+            : size.y - scaledHalfH - 4.0;
+
         _petService.initialize(
           screenSize: newSize,
-          startPosition: Offset(size.x / 2, size.y - scaledHalfH - 4.0),
+          startPosition: Offset(size.x / 2, initialY),
         );
       }
     }
@@ -983,7 +1048,13 @@ class CompanionGame extends FlameGame {
       }
 
       final double scaledHalfH = (spriteSize * scale) / 2;
-      petComponent!.position = Vector2(newX, size.y - scaledHalfH - 4.0);
+      final double initialY = isPiP
+          ? size.y - 44.0 - scaledHalfH - 4.0
+          : size.y - scaledHalfH - 4.0;
+
+      petComponent!.position = Vector2(newX, initialY);
+      _updateNavigationPaddings();
+      _petService.navigation.teleport(Offset(newX, initialY));
     }
   }
 }

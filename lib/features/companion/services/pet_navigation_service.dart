@@ -9,7 +9,10 @@ class PetNavigationService {
 
   // Config
   double _wanderSpeed = 0.0;
-  final double _edgeMargin = 50.0;
+  double _paddingLeft = 50.0;
+  double _paddingRight = 50.0;
+  double _paddingTop = 50.0;
+  double _paddingBottom = 50.0;
   bool _isWanderingEnabled = true;
   PetSpecies _species = PetSpecies.cat;
 
@@ -86,6 +89,18 @@ class PetNavigationService {
     _species = species;
   }
 
+  void updatePaddings({
+    required double left,
+    required double right,
+    required double top,
+    required double bottom,
+  }) {
+    _paddingLeft = left;
+    _paddingRight = right;
+    _paddingTop = top;
+    _paddingBottom = bottom;
+  }
+
   void updateConfig({double? wanderSpeed}) {
     _wanderSpeed = wanderSpeed ?? _wanderSpeed;
   }
@@ -130,26 +145,27 @@ class PetNavigationService {
         now.difference(_lastWanderTime!) < _currentWanderCooldown) {
       return;
     }
-    final m = _edgeMargin;
 
     // Unpredictable movement: 75% chance of short local wanders, 25% chance of long-distance prowls
     final bool isProwl = _rng.nextDouble() < 0.25;
     if (isProwl) {
+      final double widthRange = _screen.width - _paddingLeft - _paddingRight;
+      final double heightRange = _screen.height - _paddingTop - _paddingBottom;
       _wanderTarget = Offset(
-        m + _rng.nextDouble() * (_screen.width - m * 2),
-        m + _rng.nextDouble() * (_screen.height - m * 2),
+        _paddingLeft + (widthRange > 0 ? _rng.nextDouble() * widthRange : 0),
+        _paddingTop + (heightRange > 0 ? _rng.nextDouble() * heightRange : 0),
       );
     } else {
       // Local wander within 100 to 250 pixels of current position
       final double distance = 100.0 + _rng.nextDouble() * 150.0;
       final double angle = _rng.nextDouble() * 2 * pi;
       final double targetX = (_pos.dx + cos(angle) * distance).clamp(
-        m,
-        _screen.width - m,
+        _paddingLeft,
+        max(_paddingLeft, _screen.width - _paddingRight),
       );
       final double targetY = (_pos.dy + sin(angle) * distance).clamp(
-        m,
-        _screen.height - m,
+        _paddingTop,
+        max(_paddingTop, _screen.height - _paddingBottom),
       );
       _wanderTarget = Offset(targetX, targetY);
     }
@@ -256,12 +272,13 @@ class PetNavigationService {
   }
 
   void _clampToBounds() {
-    final m = _edgeMargin;
-    final maxX = _screen.width - m;
-    final maxY = _screen.height - m;
+    final minX = _paddingLeft;
+    final maxX = _screen.width - _paddingRight;
+    final minY = _paddingTop;
+    final maxY = _screen.height - _paddingBottom;
 
-    if (_pos.dx < m) {
-      _pos = Offset(m, _pos.dy);
+    if (_pos.dx < minX) {
+      _pos = Offset(minX, _pos.dy);
       _vel = Offset(_vel.dx.abs() * 0.5, _vel.dy); // Soft bounce
       _hasWanderTarget = false;
     } else if (_pos.dx > maxX) {
@@ -270,8 +287,8 @@ class PetNavigationService {
       _hasWanderTarget = false;
     }
 
-    if (_pos.dy < m) {
-      _pos = Offset(_pos.dx, m);
+    if (_pos.dy < minY) {
+      _pos = Offset(_pos.dx, minY);
       _vel = Offset(_vel.dx, _vel.dy.abs() * 0.5);
       _hasWanderTarget = false;
     } else if (_pos.dy > maxY) {

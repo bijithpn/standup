@@ -187,7 +187,12 @@ bool FlutterWindow::OnCreate() {
   if (is_companion_) {
     // Companion window: only set up channels the companion widget needs.
     SetupBridge();
-    SetupCompanionBridge();
+    if (is_pip_) {
+      SetupPiPBridge();
+      SetupWindowBridge();  // PiP needs startDrag / setNonActivating
+    } else {
+      SetupCompanionBridge();
+    }
     SetupOverlayBridge();
     DisplayStreamHandler* dummy_handler = nullptr;
     RegisterDisplayBridge(flutter_controller_->engine(), &dummy_handler);
@@ -308,10 +313,58 @@ void FlutterWindow::SetupWindowBridge() {
           // Could implement borderless/titled style changes here
           result->Success();
         }
+        else if (method_name == "startDrag") {
+          // Release mouse capture and let the OS handle window dragging via
+          // the caption hit-test — the standard mechanism for borderless windows.
+          HWND hwnd = GetHandle();
+          ReleaseCapture();
+          PostMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+          result->Success();
+        }
+        else if (method_name == "setNonActivating") {
+          // Toggle WS_EX_NOACTIVATE so the PiP window doesn't steal focus
+          // when the drag handle is clicked.
+          bool non_activating = true;
+          if (args) {
+            auto it = args->find(flutter::EncodableValue("nonActivating"));
+            if (it != args->end() && std::holds_alternative<bool>(it->second)) {
+              non_activating = std::get<bool>(it->second);
+            }
+          }
+          HWND hwnd = GetHandle();
+          LONG ex_style = GetWindowLong(hwnd, GWL_EXSTYLE);
+          if (non_activating) {
+            ex_style |= WS_EX_NOACTIVATE;
+          } else {
+            ex_style &= ~WS_EX_NOACTIVATE;
+          }
+          SetWindowLong(hwnd, GWL_EXSTYLE, ex_style);
+          result->Success();
+        }
         else {
           result->NotImplemented();
         }
       });
+}
+
+void FlutterWindow::SetupPiPBridge() {
+  auto pip_data_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "com.breakmate.desktop/pip_data",
+      &flutter::StandardMethodCodec::GetInstance());
+
+  flutter::EncodableMap settings = initial_settings_;
+  pip_data_channel->SetMethodCallHandler(
+      [settings](const auto& call, auto result) {
+        if (call.method_name() == "getInitialSettings") {
+          result->Success(flutter::EncodableValue(settings));
+        } else {
+          result->NotImplemented();
+        }
+      });
+
+  // Keep the channel alive by transferring ownership to the instance var.
+  // We reuse companion_channel_ slot to avoid adding new fields to the header.
+  companion_channel_ = std::move(pip_data_channel);
 }
 
 void FlutterWindow::SetupCompanionBridge() {
@@ -689,6 +742,23 @@ void FlutterWindow::SetupBridge() {
             });
             PostMessage(hwnd, WM_USER + 10, reinterpret_cast<WPARAM>(task), 0);
           }).detach();
+        }
+        else if (method_name == "showPipWindow") {
+          const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+          std::map<std::string, flutter::EncodableValue> params;
+          if (args) {
+            for (const auto& [key, value] : *args) {
+              if (std::holds_alternative<std::string>(key)) {
+                params[std::get<std::string>(key)] = value;
+              }
+            }
+          }
+          CompanionWindowManager::GetInstance()->ShowPiP(params);
+          result->Success();
+        }
+        else if (method_name == "hidePipWindow") {
+          CompanionWindowManager::GetInstance()->HidePiP();
+          result->Success();
         }
 
         else {

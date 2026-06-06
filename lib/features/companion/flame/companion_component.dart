@@ -328,8 +328,8 @@ class CompanionComponent
       angle = _direction * tiltFactor * maxTilt;
 
       // Squash and stretch vertical scaling based on vertical speed
-      final double stretch = (vel.dy / 220.0).clamp(-0.12, 0.12);
-      scale.y = scale.x.abs() * (1.0 - stretch);
+      final double stretch = (vel.dy.abs() / 220.0).clamp(0.0, 0.12);
+      scale.y = scale.x.abs() * (1.0 + stretch);
     } else {
       angle = 0.0;
       // Idle breathing / celebration micro-bob

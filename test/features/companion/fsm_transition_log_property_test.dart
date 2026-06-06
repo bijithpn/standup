@@ -28,8 +28,7 @@ void main() {
       PetState.falling,
     ];
 
-    test(
-        'transitionLog length equals number of actual state changes for a '
+    test('transitionLog length equals number of actual state changes for a '
         'sequence of 10+ distinct states', () {
       final fsm = PetStateMachine();
       var expectedLogCount = 0;
@@ -52,47 +51,52 @@ void main() {
       );
     });
 
-    test('same → same transitionTo is a no-op and does not append a log entry',
-        () {
-      final fsm = PetStateMachine();
-      fsm.transitionTo(PetState.walk);
-      final logLengthBefore = fsm.transitionLog.length;
+    test(
+      'same → same transitionTo is a no-op and does not append a log entry',
+      () {
+        final fsm = PetStateMachine();
+        fsm.transitionTo(PetState.walk);
+        final logLengthBefore = fsm.transitionLog.length;
 
-      // Repeated call with the same state should be ignored.
-      fsm.transitionTo(PetState.walk);
+        // Repeated call with the same state should be ignored.
+        fsm.transitionTo(PetState.walk);
 
-      expect(
-        fsm.transitionLog.length,
-        equals(logLengthBefore),
-        reason: 'Transitioning to the current state must not append a log entry',
-      );
-    });
-
-    test('every log entry has valid previousState, newState, and UTC utcTimestamp',
-        () {
-      final fsm = PetStateMachine();
-      for (final state in elevenDistinctStates) {
-        fsm.transitionTo(state);
-      }
-
-      for (final entry in fsm.transitionLog) {
         expect(
-          PetState.values.contains(entry.previousState),
-          isTrue,
-          reason: 'previousState must be a valid PetState',
+          fsm.transitionLog.length,
+          equals(logLengthBefore),
+          reason:
+              'Transitioning to the current state must not append a log entry',
         );
-        expect(
-          PetState.values.contains(entry.newState),
-          isTrue,
-          reason: 'newState must be a valid PetState',
-        );
-        expect(
-          entry.utcTimestamp.isUtc,
-          isTrue,
-          reason: 'utcTimestamp must be in UTC',
-        );
-      }
-    });
+      },
+    );
+
+    test(
+      'every log entry has valid previousState, newState, and UTC utcTimestamp',
+      () {
+        final fsm = PetStateMachine();
+        for (final state in elevenDistinctStates) {
+          fsm.transitionTo(state);
+        }
+
+        for (final entry in fsm.transitionLog) {
+          expect(
+            PetState.values.contains(entry.previousState),
+            isTrue,
+            reason: 'previousState must be a valid PetState',
+          );
+          expect(
+            PetState.values.contains(entry.newState),
+            isTrue,
+            reason: 'newState must be a valid PetState',
+          );
+          expect(
+            entry.utcTimestamp.isUtc,
+            isTrue,
+            reason: 'utcTimestamp must be in UTC',
+          );
+        }
+      },
+    );
 
     test('timestamps in transitionLog are monotonically non-decreasing', () {
       final fsm = PetStateMachine();
@@ -124,32 +128,31 @@ void main() {
         30,
         any.intInRange(0, PetState.values.length - 1),
       ),
-    ).test(
-      'log length always matches the number of real state changes in an '
-      'arbitrary sequence of transitionTo() calls (≥10 calls)',
-      (List<int> stateIndices) {
-        final fsm = PetStateMachine();
-        var expectedCount = 0;
-        var current = fsm.currentState;
+    ).test('log length always matches the number of real state changes in an '
+        'arbitrary sequence of transitionTo() calls (≥10 calls)', (
+      List<int> stateIndices,
+    ) {
+      final fsm = PetStateMachine();
+      var expectedCount = 0;
+      var current = fsm.currentState;
 
-        for (final idx in stateIndices) {
-          final next = PetState.values[idx];
-          fsm.transitionTo(next);
-          if (next != current) {
-            expectedCount++;
-            current = next;
-          }
+      for (final idx in stateIndices) {
+        final next = PetState.values[idx];
+        fsm.transitionTo(next);
+        if (next != current) {
+          expectedCount++;
+          current = next;
         }
+      }
 
-        expect(
-          fsm.transitionLog.length,
-          equals(expectedCount),
-          reason:
-              'Log length ${fsm.transitionLog.length} != '
-              'expected $expectedCount',
-        );
-      },
-    );
+      expect(
+        fsm.transitionLog.length,
+        equals(expectedCount),
+        reason:
+            'Log length ${fsm.transitionLog.length} != '
+            'expected $expectedCount',
+      );
+    });
 
     /// Validates: Requirements 8.9
     Glados(
@@ -158,28 +161,25 @@ void main() {
         30,
         any.intInRange(0, PetState.values.length - 1),
       ),
-    ).test(
-      'log timestamps are monotonically non-decreasing for any arbitrary '
-      'sequence of transitionTo() calls',
-      (List<int> stateIndices) {
-        final fsm = PetStateMachine();
-        for (final idx in stateIndices) {
-          fsm.transitionTo(PetState.values[idx]);
-        }
+    ).test('log timestamps are monotonically non-decreasing for any arbitrary '
+        'sequence of transitionTo() calls', (List<int> stateIndices) {
+      final fsm = PetStateMachine();
+      for (final idx in stateIndices) {
+        fsm.transitionTo(PetState.values[idx]);
+      }
 
-        for (var i = 1; i < fsm.transitionLog.length; i++) {
-          final prev = fsm.transitionLog[i - 1].utcTimestamp;
-          final curr = fsm.transitionLog[i].utcTimestamp;
-          expect(
-            curr.isAfter(prev) || curr.isAtSameMomentAs(prev),
-            isTrue,
-            reason:
-                'Timestamp at index $i ($curr) is before timestamp at '
-                'index ${i - 1} ($prev)',
-          );
-        }
-      },
-    );
+      for (var i = 1; i < fsm.transitionLog.length; i++) {
+        final prev = fsm.transitionLog[i - 1].utcTimestamp;
+        final curr = fsm.transitionLog[i].utcTimestamp;
+        expect(
+          curr.isAfter(prev) || curr.isAtSameMomentAs(prev),
+          isTrue,
+          reason:
+              'Timestamp at index $i ($curr) is before timestamp at '
+              'index ${i - 1} ($prev)',
+        );
+      }
+    });
 
     /// Validates: Requirements 8.9
     Glados(

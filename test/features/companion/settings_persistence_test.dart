@@ -9,16 +9,14 @@ import 'package:breakmate/features/companion/domain/behavior_engine_models.dart'
 import 'package:breakmate/features/companion/services/settings_persistence.dart';
 
 SettingsPersistence _make(Directory dir) => SettingsPersistence(
-      configPathOverride:
-          '${dir.path}${Platform.pathSeparator}pet_config_v2.json',
-    );
+  configPathOverride: '${dir.path}${Platform.pathSeparator}pet_config_v2.json',
+);
 
 void main() {
   late Directory tempDir;
 
   setUp(() {
-    tempDir =
-        Directory.systemTemp.createTempSync('settings_persistence_test_');
+    tempDir = Directory.systemTemp.createTempSync('settings_persistence_test_');
   });
 
   tearDown(() {
@@ -34,7 +32,8 @@ void main() {
 
     test('returns defaults and schedules write on corrupt JSON', () {
       final configFile = File(
-          '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json');
+        '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
+      );
       configFile.writeAsStringSync('not valid json }{{{');
 
       final sp = _make(tempDir);
@@ -92,19 +91,24 @@ void main() {
       ),
     ];
 
-    test('scheduleWrite → flushPendingWrite → loadSync roundtrip for all configs',
-        () {
-      for (final config in testConfigs) {
-        final sp = _make(tempDir);
-        sp.scheduleWrite(config);
-        sp.flushPendingWrite();
+    test(
+      'scheduleWrite → flushPendingWrite → loadSync roundtrip for all configs',
+      () {
+        for (final config in testConfigs) {
+          final sp = _make(tempDir);
+          sp.scheduleWrite(config);
+          sp.flushPendingWrite();
 
-        final sp2 = _make(tempDir);
-        final loaded = sp2.loadSync();
-        expect(loaded, equals(config),
-            reason: 'Round-trip I/O failed for config: $config');
-      }
-    });
+          final sp2 = _make(tempDir);
+          final loaded = sp2.loadSync();
+          expect(
+            loaded,
+            equals(config),
+            reason: 'Round-trip I/O failed for config: $config',
+          );
+        }
+      },
+    );
 
     test('.tmp file is cleaned up after atomic write (renamed to target)', () {
       const config = PetConfigV2(
@@ -122,21 +126,30 @@ void main() {
       sp.flushPendingWrite();
 
       final configFile = File(
-          '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json');
+        '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
+      );
       final tmpFile = File(
-          '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json.tmp');
+        '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json.tmp',
+      );
 
-      expect(configFile.existsSync(), isTrue,
-          reason: 'Config file should exist after flush');
-      expect(tmpFile.existsSync(), isFalse,
-          reason: '.tmp file should be cleaned up (renamed) after flush');
+      expect(
+        configFile.existsSync(),
+        isTrue,
+        reason: 'Config file should exist after flush',
+      );
+      expect(
+        tmpFile.existsSync(),
+        isFalse,
+        reason: '.tmp file should be cleaned up (renamed) after flush',
+      );
     });
 
     test('flushPendingWrite is a no-op when nothing is dirty', () {
       final sp = _make(tempDir);
       sp.flushPendingWrite(); // no-op
       final configFile = File(
-          '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json');
+        '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
+      );
       expect(configFile.existsSync(), isFalse);
     });
   });

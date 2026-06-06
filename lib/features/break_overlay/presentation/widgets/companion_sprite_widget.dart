@@ -247,6 +247,20 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     _lastFrameCount = frameCount;
 
+    // ── Aspect-ratio-correct frame dimensions ────────────────────────────────
+    // For separate-image pets (one PNG per animation) the image is a horizontal
+    // strip: width = frameCount * frameWidth, height = frameHeight.  Use the
+    // actual pixel dimensions rather than the square spriteSize so tall or wide
+    // animations (e.g. jumps) are never squished.
+    double frameWidth = widget.petTheme.spriteSize.toDouble();
+    double frameHeight = widget.petTheme.spriteSize.toDouble();
+    if (widget.petTheme.type != PetType.composite && _loadedImage != null) {
+      if (frameCount > 0) {
+        frameWidth = _loadedImage!.width / frameCount;
+      }
+      frameHeight = _loadedImage!.height.toDouble();
+    }
+
     return RepaintBoundary(
       child: ValueListenableBuilder<int>(
         valueListenable: _frameIndexNotifier,
@@ -260,12 +274,14 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
             ),
             child: CustomPaint(
               size: Size(
-                widget.petTheme.spriteSize * widget.scale,
-                widget.petTheme.spriteSize * widget.scale,
+                frameWidth * widget.scale,
+                frameHeight * widget.scale,
               ),
               painter: _SpritePainter(
                 image: _loadedImage!,
                 spriteSize: widget.petTheme.spriteSize,
+                frameWidth: frameWidth,
+                frameHeight: frameHeight,
                 row: row,
                 frameIndex: frameIndex,
                 backgroundImage: _backgroundImage,
@@ -282,6 +298,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 class _SpritePainter extends CustomPainter {
   final ui.Image image;
   final int spriteSize;
+  final double frameWidth;
+  final double frameHeight;
   final int row;
   final int frameIndex;
   final ui.Image? backgroundImage;
@@ -290,6 +308,8 @@ class _SpritePainter extends CustomPainter {
   _SpritePainter({
     required this.image,
     required this.spriteSize,
+    required this.frameWidth,
+    required this.frameHeight,
     required this.row,
     required this.frameIndex,
     this.backgroundImage,
@@ -309,19 +329,19 @@ class _SpritePainter extends CustomPainter {
       );
     }
 
-    final double srcX = (frameIndex * spriteSize).toDouble();
-    final double srcY = (row * spriteSize).toDouble();
+    final double srcX = frameIndex * frameWidth;
+    final double srcY = row * frameHeight;
 
     final src = Rect.fromLTWH(
       srcX,
       srcY,
-      spriteSize.toDouble(),
-      spriteSize.toDouble(),
+      frameWidth,
+      frameHeight,
     );
 
     // Calculate actual pixel size based on scale
-    final double drawWidth = spriteSize * scale;
-    final double drawHeight = spriteSize * scale;
+    final double drawWidth = frameWidth * scale;
+    final double drawHeight = frameHeight * scale;
 
     // Position the pet at the bottom of the available space, centered horizontally
     final dst = Rect.fromLTWH(
@@ -341,6 +361,8 @@ class _SpritePainter extends CustomPainter {
   bool shouldRepaint(covariant _SpritePainter oldDelegate) {
     return oldDelegate.image != image ||
         oldDelegate.spriteSize != spriteSize ||
+        oldDelegate.frameWidth != frameWidth ||
+        oldDelegate.frameHeight != frameHeight ||
         oldDelegate.row != row ||
         oldDelegate.frameIndex != frameIndex;
   }
