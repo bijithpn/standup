@@ -193,30 +193,48 @@ class WindowsBridge implements NativeBridgePlatform {
   /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.
   @override
   Future<List<Map<String, dynamic>>> enumerateDisplays() async {
-    final List<dynamic>? displays = await _invokeSafely<List<dynamic>>(
-      'enumerateDisplays',
-    );
-    if (displays == null) return [];
-    return displays.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    const channel = MethodChannel('com.breakmate/display_bridge');
+    try {
+      final List<dynamic>? displays = await channel.invokeMethod<List<dynamic>>(
+        'getDisplays',
+      );
+      if (displays == null) return [];
+      return displays.map((e) {
+        final map = Map<String, dynamic>.from(e as Map);
+        return {
+          'id': map['id'] ?? '',
+          'x': map['boundsX'] ?? 0.0,
+          'y': map['boundsY'] ?? 0.0,
+          'width': map['width'] ?? 0.0,
+          'height': map['height'] ?? 0.0,
+          'dpiScale': map['pixelRatio'] ?? 1.0,
+          'isPrimary': map['isPrimary'] ?? false,
+        };
+      }).toList();
+    } catch (e, stackTrace) {
+      developer.log(
+        'Windows display bridge enumerateDisplays failed',
+        name: 'BreakMate',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      return [];
+    }
   }
 
   /// Registers a native callback for display change notifications (WM_DISPLAYCHANGE).
-  /// Uses EventChannel 'com.breakmate.desktop/displayChange'.
+  /// Uses EventChannel 'com.breakmate/display_events'.
   @override
   void registerDisplayChangeCallback(
     void Function(List<Map<String, dynamic>>) cb,
   ) {
     const EventChannel eventChannel = EventChannel(
-      'com.breakmate.desktop/displayChange',
+      'com.breakmate/display_events',
     );
     eventChannel.receiveBroadcastStream().listen(
-      (dynamic event) {
-        if (event is List) {
-          final displays = event
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList();
-          cb(displays);
-        }
+      (dynamic event) async {
+        final displays = await enumerateDisplays();
+        cb(displays);
       },
       onError: (Object error) {
         developer.log(
@@ -270,22 +288,7 @@ class WindowsBridge implements NativeBridgePlatform {
   void registerConstraintWindowBoundsCallback(
     void Function(Map<String, dynamic>) cb,
   ) {
-    const EventChannel eventChannel = EventChannel(
-      'com.breakmate.desktop/constraintWindowBounds',
-    );
-    eventChannel.receiveBroadcastStream().listen(
-      (dynamic event) {
-        if (event is Map) {
-          cb(Map<String, dynamic>.from(event));
-        }
-      },
-      onError: (Object error) {
-        developer.log(
-          'Windows constraintWindowBounds event error: $error',
-          name: 'BreakMate',
-        );
-      },
-    );
+    // No-op on Windows. Constraint window is not supported/implemented on Windows.
   }
 
   /// Shows the PiP companion window.

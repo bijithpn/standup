@@ -206,6 +206,12 @@ class ThrowRejectedEvent extends AppEvent {
   ThrowRejectedEvent({super.timestamp});
 }
 
+/// Emitted by [InteractionController] when both attempts to spawn a treat
+/// throwable return `null` (Req 8.4).
+class TreatSpawnFailedEvent extends AppEvent {
+  TreatSpawnFailedEvent({super.timestamp});
+}
+
 // Window Events
 class PetWindowOverlapEvent extends AppEvent {
   final bool started;
@@ -235,4 +241,11 @@ class PlatformErrorEvent extends AppEvent {
 class ConstraintWindowBoundsChangedEvent extends AppEvent {
   final Rect bounds;
   ConstraintWindowBoundsChangedEvent({required this.bounds, super.timestamp});
+}
+
+/// Emitted by [InteractionController] when the low-power flag changes so that
+/// [CompanionGame] can throttle the Flame loop to 15 FPS (Req 18.5–18.7).
+class LowPowerModeChangedEvent extends AppEvent {
+  final bool isLowPower;
+  LowPowerModeChangedEvent({required this.isLowPower, super.timestamp});
 }

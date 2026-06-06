@@ -60,6 +60,11 @@ class CompanionWindowController {
     _eventBus.emit(CompanionPositionChangedEvent(x: x, y: y));
   }
 
+  Future<void> setSize(double width, double height) async {
+    await _windowService.setWindowSize(width: width, height: height);
+    _logger.info('Companion window resized to ${width}x$height');
+  }
+
   Future<void> setOpacity(double opacity) async {
     _opacity = opacity.clamp(0.1, 1.0);
     await _windowService.setWindowOpacity(_opacity);
@@ -79,5 +84,17 @@ class CompanionWindowController {
 
   Future<void> bringToFront() async {
     await _windowService.orderFrontRegardless();
+  }
+
+  /// Initiates a native window-drag so the OS handles repositioning.
+  ///
+  /// Call this from the drag-handle gesture handler (Req 1.5).
+  Future<void> startDrag() async {
+    await _windowService.startDrag();
+  }
+
+  /// Applies / removes the non-activating window style (Req 18.2).
+  Future<void> setNonActivating(bool nonActivating) async {
+    await _windowService.setNonActivating(nonActivating);
   }
 }

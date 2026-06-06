@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
@@ -81,6 +82,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 widget.controller.companionEnabled,
                 (v) => widget.controller.toggleCompanion(v),
               ),
+              if (Platform.isMacOS) ...[
+                divider(),
+                toggleRow(
+                  'Draggable PiP Panel',
+                  'Run the companion in a compact, floating always-on-top window rather than a full-screen transparent overlay.',
+                  widget.controller.pipModeEnabled,
+                  (v) => widget.controller.changePipModeEnabled(v),
+                ),
+              ],
             ]),
 
             if (widget.controller.companionEnabled) ...[
@@ -128,6 +138,46 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   'The pet will dynamically move toward and follow your cursor.',
                   widget.controller.companionFollowMouse,
                   (v) => widget.controller.changeFollowMouse(v),
+                ),
+              ]),
+
+              const SizedBox(height: 32),
+
+              sectionHeader('Interaction Features'),
+              buildCard([
+                toggleRow(
+                  'Petting & Affection',
+                  'Interact with your pet by hovering or moving your cursor over it.',
+                  widget.controller.pettingEnabled,
+                  (v) => widget.controller.changePettingEnabled(v),
+                ),
+                divider(),
+                toggleRow(
+                  'Play Fetch',
+                  'Allow throwing balls from the action bar for the pet to chase.',
+                  widget.controller.ballThrowEnabled,
+                  (v) => widget.controller.changeBallThrowEnabled(v),
+                ),
+                divider(),
+                toggleRow(
+                  'Feed Treats',
+                  'Allow feeding treats to your pet from the action bar.',
+                  widget.controller.treatEnabled,
+                  (v) => widget.controller.changeTreatEnabled(v),
+                ),
+                divider(),
+                toggleRow(
+                  'Developer Milestones',
+                  'Enable pet reactions triggered by coding accomplishments.',
+                  widget.controller.developerReactions,
+                  (v) => widget.controller.changeDeveloperReactions(v),
+                ),
+                divider(),
+                toggleRow(
+                  'Quiet Mode Auto-Activation',
+                  'Automatically calm the pet during meetings, focus blocks, or battery-saver mode.',
+                  widget.controller.quietModeAutoActivate,
+                  (v) => widget.controller.changeQuietModeAutoActivate(v),
                 ),
               ]),
 

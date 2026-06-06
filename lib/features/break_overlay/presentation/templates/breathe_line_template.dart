@@ -35,9 +35,10 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
       vsync: this,
       duration: const Duration(seconds: 4),
     );
-    _lineAnim = Tween<double>(begin: 60, end: 240).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _lineAnim = Tween<double>(
+      begin: 60,
+      end: 240,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.addStatusListener((status) {
       if (!mounted) return;
       if (status == AnimationStatus.forward) {
@@ -92,9 +93,9 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                   child: AnimatedBuilder(
                     animation: _lineAnim,
                     builder: (_, _) => Container(
-                       width: _lineAnim.value,
-                       height: 1,
-                       color: accent,
+                      width: _lineAnim.value,
+                      height: 1,
+                      color: accent,
                     ),
                   ),
                 ),

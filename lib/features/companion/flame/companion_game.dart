@@ -1,19 +1,23 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/features/companion/domain/pet_needs.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_personality.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/flame/companion_component.dart';
+import 'package:breakmate/features/companion/flame/micro_particle_factory.dart';
 import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
 import 'package:breakmate/features/companion/services/constraint_window_controller.dart';
 import 'package:breakmate/features/companion/services/cursor_tracker.dart';
@@ -75,6 +79,33 @@ class CompanionGame extends FlameGame {
   Offset? _dragStartPosition;
   bool _isDragging = false;
 
+  // ── Task 8.1 – QuietMode bitmask (Req 15.1–15.7) ──────────────────────────
+  // Bit 0x01 = focus mode, 0x02 = meeting, 0x04 = low power
+  int _quietModeTriggers = 0;
+
+  /// `true` when any QuietMode trigger is active.
+  bool get isQuietMode => _quietModeTriggers != 0;
+
+  // ── Task 8.2 – NeedsEngine (Req 10.2–10.9) ────────────────────────────────
+  late final NeedsEngine _needsEngine;
+  bool _isPettingActive = false;
+  Duration _workSessionElapsed = Duration.zero;
+
+  // ── Task 8.3 – Particle-trigger tracking (Req 13.1–13.7) ─────────────────
+  // Tracks how long the pet has been in PetState.sleep continuously.
+  double _sleepParticleElapsed = 0.0;
+  // True while a sleep-bubble particle is currently alive.
+  bool _sleepBubbleActive = false;
+  // Counts down the current bubble lifespan so we know when to reset.
+  double _sleepBubbleCooldown = 0.0;
+  // Duration of a single sleepBubble particle (must match MicroParticleFactory).
+  static const double _sleepBubbleDuration = 2.0;
+  // Previous state — used to detect eating→happy and idle celebrating transitions.
+  PetState _previousState = PetState.idle;
+
+  // ── Task 8.5 – DeveloperReactionController ────────────────────────────────
+  late final _DeveloperReactionController _devReaction;
+
   CompanionComponent? petComponent;
 
   PetTheme get currentTheme => _theme;
@@ -88,8 +119,12 @@ class CompanionGame extends FlameGame {
   Future<void> onLoad() async {
     // 1. Guard: only macOS and Windows are supported (req 1.8).
     if (!Platform.isMacOS && !Platform.isWindows) {
-      _eventBus.emit(PlatformErrorEvent(
-          message: 'Unsupported platform. Only macOS and Windows are supported.'));
+      _eventBus.emit(
+        PlatformErrorEvent(
+          message:
+              'Unsupported platform. Only macOS and Windows are supported.',
+        ),
+      );
       return;
     }
 
@@ -102,23 +137,38 @@ class CompanionGame extends FlameGame {
     _displayManager = NativeDisplayManager();
     _cursorTracker = CursorTracker();
     _windowMonitor = NativeWindowMonitor();
-    _throwableManager = ThrowableObjectManager(physicsSimulator: _physicsSimulator);
+    _throwableManager = ThrowableObjectManager(
+      physicsSimulator: _physicsSimulator,
+    );
+
+    // Task 8.2: Initialise NeedsEngine and restore persisted state (Req 10.9).
+    _needsEngine = NeedsEngine(logger: AppLogger());
+    _needsEngine.restore();
+
+    // Task 8.5: Initialise developer-reaction controller.
+    _devReaction = _DeveloperReactionController(game: this);
 
     // 4. Enumerate displays with 500ms timeout (req 1.5, 1.6, 1.7).
     List<DisplayBounds> displays;
     try {
-      displays = await _displayManager
-          .enumerateDisplays()
-          .timeout(const Duration(milliseconds: 500));
+      displays = await _displayManager.enumerateDisplays().timeout(
+        const Duration(milliseconds: 500),
+      );
     } catch (_) {
-      _eventBus.emit(PlatformErrorEvent(
-          message: 'Display enumeration timed out or failed. Terminating.'));
+      _eventBus.emit(
+        PlatformErrorEvent(
+          message: 'Display enumeration timed out or failed. Terminating.',
+        ),
+      );
       exit(1);
     }
 
     if (displays.isEmpty) {
-      _eventBus.emit(PlatformErrorEvent(
-          message: 'No displays found after enumeration. Terminating.'));
+      _eventBus.emit(
+        PlatformErrorEvent(
+          message: 'No displays found after enumeration. Terminating.',
+        ),
+      );
       exit(1);
     }
 
@@ -127,9 +177,9 @@ class CompanionGame extends FlameGame {
     if (_petConfig.mode == PetMode.singleDisplay &&
         _petConfig.pinnedDisplayId != null) {
       final pinned = displays.cast<DisplayBounds?>().firstWhere(
-            (d) => d?.id == _petConfig.pinnedDisplayId,
-            orElse: () => null,
-          );
+        (d) => d?.id == _petConfig.pinnedDisplayId,
+        orElse: () => null,
+      );
       if (pinned != null) _physicsSimulator.setBoundary(pinned.rect);
     }
 
@@ -139,10 +189,12 @@ class CompanionGame extends FlameGame {
         physicsSimulator: _physicsSimulator,
         displays: displays,
       );
-      await _constraintWindowController!
-          .show(initialSize: _petConfig.constraintWindowBounds.size);
-      _physicsSimulator
-          .setConstraintBoundary(_constraintWindowController!.bounds);
+      await _constraintWindowController!.show(
+        initialSize: _petConfig.constraintWindowBounds.size,
+      );
+      _physicsSimulator.setConstraintBoundary(
+        _constraintWindowController!.bounds,
+      );
     }
 
     // 7. Existing initialization.
@@ -168,6 +220,8 @@ class CompanionGame extends FlameGame {
     _petStateSubscription.cancel();
     _petService.stateMachine.dispose();
     _petService.dispose();
+    // Task 8.2: Persist NeedsEngine state on removal (Req 10.9).
+    _needsEngine.persist();
     super.onRemove();
   }
 
@@ -193,21 +247,39 @@ class CompanionGame extends FlameGame {
         isIdle: event.state == TimerStateEvent.idle,
         totalWorkTodaySeconds: event.totalWorkTodaySeconds,
       );
+      _workSessionElapsed = Duration(seconds: event.workElapsedSeconds);
+      // Task 8.5: forward to developer-reaction controller (Req 11.6).
+      _devReaction.onTimerStateChanged(event);
       return;
     } else if (event is BreakStartedEvent) {
       _petService.syncContextFlags(isBreakActive: true);
       petEvent = PetEvent.breakStarted;
+      // Task 8.5: forward to developer-reaction controller (Req 11.2).
+      _devReaction.onBreakStarted(event);
     } else if (event is BreakEndedEvent) {
       _petService.syncContextFlags(isBreakActive: false);
       petEvent = PetEvent.breakEnded;
+      // Task 8.5: forward to developer-reaction controller (Req 12.2, 12.3).
+      _devReaction.onBreakEnded(event);
     } else if (event is MeetingDetectedEvent) {
       _petService.syncContextFlags(isMeetingDetected: event.isActive);
       petEvent = event.isActive
           ? PetEvent.meetingDetected
           : PetEvent.meetingEnded;
+      // Task 8.1: set/clear QuietMode bit 0x02 (Req 15.2).
+      _updateQuietModeBit(0x02, event.isActive);
+      // Task 8.5: forward to developer-reaction controller (Req 11.4, 11.5).
+      _devReaction.onMeetingDetected(event);
     } else if (event is FocusModeEvent) {
       _petService.syncContextFlags(isFocusMode: event.isActive);
       petEvent = event.isActive ? PetEvent.focusModeOn : PetEvent.focusModeOff;
+      // Task 8.1: set/clear QuietMode bit 0x01 (Req 15.1).
+      _updateQuietModeBit(0x01, event.isActive);
+    } else if (event is LowPowerModeChangedEvent) {
+      // Task 8.1: set/clear QuietMode bit 0x04 (Req 15.3).
+      _updateQuietModeBit(0x04, event.isLowPower);
+      updateEnergyStatus(isLowPowerMode: event.isLowPower);
+      return;
     } else if (event is IdleDetectedEvent) {
       _petService.syncContextFlags(isIdle: event.isIdle);
       petEvent = event.isIdle
@@ -242,6 +314,13 @@ class CompanionGame extends FlameGame {
         case 'blink':
           _applyPetStateToComponent(PetState.blink);
           return;
+        // Task 8.3: petting interaction sets active flag (Req 13.1).
+        case 'petting':
+          _isPettingActive = true;
+          return;
+        case 'pettingEnd':
+          _isPettingActive = false;
+          return;
       }
     }
     if (petEvent != null) {
@@ -261,6 +340,8 @@ class CompanionGame extends FlameGame {
       _petService.handleEvent(PetEvent.throwableSpawned);
     } else if (event is ThrowableStationaryEvent) {
       _petService.handleEvent(PetEvent.throwableStationary);
+      // Task 8.3: spawn bounce particle at throwable position (Req 13.5).
+      _spawnBounceParticle();
     } else if (event is ThrowableDisposedEvent) {
       // throwable returned/disposed → return pet to idle
       _petService.handleEvent(PetEvent.throwableFetched);
@@ -290,6 +371,99 @@ class CompanionGame extends FlameGame {
         );
         _physicsSimulator.setBoundary(_displayManager.unionBounds);
         _settingsPersistence.scheduleWrite(_petConfig);
+      }
+    }
+  }
+
+  // ── Task 8.1 – QuietMode helpers (Req 15.1–15.7) ─────────────────────────
+
+  void _updateQuietModeBit(int bit, bool active) {
+    final bool wasQuiet = isQuietMode;
+    if (active) {
+      _quietModeTriggers |= bit;
+    } else {
+      _quietModeTriggers &= ~bit;
+    }
+    final bool nowQuiet = isQuietMode;
+    if (!wasQuiet && nowQuiet) {
+      _onQuietModeActivated();
+    } else if (wasQuiet && !nowQuiet) {
+      _onQuietModeDeactivated();
+    }
+  }
+
+  void _onQuietModeActivated() {
+    // QuietMode speed multiplier (0.6) is applied dynamically inside CompanionComponent.update()
+    // Remove all in-flight ParticleSystemComponent children.
+    for (final particle
+        in children.whereType<ParticleSystemComponent>().toList()) {
+      particle.removeFromParent();
+    }
+    _sleepBubbleActive = false;
+  }
+
+  void _onQuietModeDeactivated() {
+    // QuietMode speed multiplier (0.6) is reverted to 1.0 dynamically inside CompanionComponent.update()
+  }
+
+  // ── Task 8.3 – Particle helpers ───────────────────────────────────────────
+
+  void _spawnParticle(ParticleSystemComponent? component) {
+    if (component != null) {
+      add(component);
+    }
+  }
+
+  void _spawnBounceParticle() {
+    final pos = _petCenter;
+    _spawnParticle(MicroParticleFactory.bounce(pos, quietMode: isQuietMode));
+  }
+
+  void _onPettingTick() {
+    final pos = _petCenter;
+    _spawnParticle(MicroParticleFactory.heart(pos, quietMode: isQuietMode));
+  }
+
+  void _onEatingToHappy() {
+    final pos = _petCenter;
+    _spawnParticle(MicroParticleFactory.crumbs(pos, quietMode: isQuietMode));
+  }
+
+  void _onCelebratingEntered() {
+    final pos = _petCenter;
+    _spawnParticle(MicroParticleFactory.sparkle(pos, quietMode: isQuietMode));
+  }
+
+  void _tickSleepBubble(double dt) {
+    if (_petService.currentState != PetState.sleep) {
+      _sleepParticleElapsed = 0.0;
+      _sleepBubbleActive = false;
+      _sleepBubbleCooldown = 0.0;
+      return;
+    }
+
+    _sleepParticleElapsed += dt;
+
+    if (_sleepBubbleActive) {
+      // Count down while the bubble is alive; once its lifespan ends, reset.
+      _sleepBubbleCooldown -= dt;
+      if (_sleepBubbleCooldown <= 0.0) {
+        _sleepBubbleActive = false;
+      }
+      return;
+    }
+
+    // Only spawn after 3 s of continuous sleep.
+    if (_sleepParticleElapsed >= 3.0) {
+      final pos = _petCenter;
+      final component = MicroParticleFactory.sleepBubble(
+        pos,
+        quietMode: isQuietMode,
+      );
+      if (component != null) {
+        _sleepBubbleActive = true;
+        _sleepBubbleCooldown = _sleepBubbleDuration;
+        add(component);
       }
     }
   }
@@ -545,10 +719,12 @@ class CompanionGame extends FlameGame {
             displays: displays,
           );
         }
-        await _constraintWindowController!
-            .show(initialSize: _petConfig.constraintWindowBounds.size);
-        _physicsSimulator
-            .setConstraintBoundary(_constraintWindowController!.bounds);
+        await _constraintWindowController!.show(
+          initialSize: _petConfig.constraintWindowBounds.size,
+        );
+        _physicsSimulator.setConstraintBoundary(
+          _constraintWindowController!.bounds,
+        );
 
       case PetMode.singleDisplay:
         await _constraintWindowController?.hide();
@@ -572,9 +748,9 @@ class CompanionGame extends FlameGame {
   Future<void> setPinnedDisplay(String displayId) async {
     final displays = await _displayManager.enumerateDisplays();
     final DisplayBounds? target = displays.cast<DisplayBounds?>().firstWhere(
-          (d) => d?.id == displayId,
-          orElse: () => null,
-        );
+      (d) => d?.id == displayId,
+      orElse: () => null,
+    );
     _petConfig = _petConfig.copyWith(
       mode: PetMode.singleDisplay,
       pinnedDisplayId: displayId,
@@ -660,8 +836,7 @@ class CompanionGame extends FlameGame {
     _physicsSimulator.step(dt);
 
     // 6. Tick throwable objects.
-    _throwableManager.tick(dt,
-        petBounds: _petBounds, petAnchor: petCenter);
+    _throwableManager.tick(dt, petBounds: _petBounds, petAnchor: petCenter);
 
     // 7. Persist position change (req 11.4) — update lastAnchorPoint each tick.
     final Offset currentPos = petCenter;
@@ -669,6 +844,41 @@ class CompanionGame extends FlameGame {
       _petConfig = _petConfig.copyWith(lastAnchorPoint: currentPos);
       _settingsPersistence.scheduleWrite(_petConfig);
     }
+
+    // ── Task 8.2: Tick NeedsEngine (Req 10.2–10.9) ─────────────────────────
+    _needsEngine.tick(
+      dt,
+      _petService.currentState,
+      _isPettingActive,
+      _workSessionElapsed,
+    );
+
+    // ── Task 8.3: State-change particle triggers ────────────────────────────
+    final currentState = _petService.currentState;
+
+    // Detect celebrating state entry.
+    if (currentState == PetState.celebrating &&
+        _previousState != PetState.celebrating) {
+      _onCelebratingEntered();
+    }
+
+    // Detect eating→happy transition for crumbs.
+    if (currentState == PetState.happy && _previousState == PetState.eating) {
+      _onEatingToHappy();
+    }
+
+    // Petting tick: spawn heart particle while petting is active.
+    if (_isPettingActive) {
+      _onPettingTick();
+    }
+
+    // Sleep bubble repeating cycle.
+    _tickSleepBubble(dt);
+
+    _previousState = currentState;
+
+    // ── Task 8.5: Tick developer-reaction controller ────────────────────────
+    _devReaction.tick(dt);
   }
 
   /// Pet anchor point in global screen coordinates.
@@ -684,6 +894,56 @@ class CompanionGame extends FlameGame {
     final double hh = petComponent!.size.y / 2;
     final Offset center = _petCenter;
     return Rect.fromLTWH(center.dx - hw, center.dy - hh, hw * 2, hh * 2);
+  }
+
+  // ── Task 8.5 – triggerCompanionReaction (Req 9.6) ────────────────────────
+
+  static const Set<PetState> _blockedReactionTargets = {
+    PetState.breakReminder,
+    PetState.meetingPaused,
+    PetState.focusMode,
+  };
+
+  static final AppLogger _logger = AppLogger();
+
+  /// Triggers a companion reaction by mapping [targetState] to the appropriate
+  /// [PetEvent] and forwarding to the FSM via [PetStateMachine.handleEvent].
+  ///
+  /// Protected states ([PetState.breakReminder], [PetState.meetingPaused],
+  /// [PetState.focusMode]) are rejected with a warning log (Req 9.6).
+  void triggerCompanionReaction(PetState targetState) {
+    if (_blockedReactionTargets.contains(targetState)) {
+      _logger.warning(
+        'triggerCompanionReaction: rejected protected state ${targetState.name}',
+      );
+      return;
+    }
+
+    final PetEvent? event = _petEventForState(targetState);
+    if (event != null) {
+      _petService.handleEvent(event);
+    }
+  }
+
+  PetEvent? _petEventForState(PetState state) {
+    switch (state) {
+      case PetState.idle:
+        return PetEvent.tick;
+      case PetState.alert:
+        return PetEvent.userClick;
+      case PetState.happy:
+        return PetEvent.userDoubleClick;
+      case PetState.celebrating:
+        return PetEvent.breakCompleted;
+      case PetState.sleep:
+        return PetEvent.idleTimeout;
+      case PetState.resting:
+        return PetEvent.cursorDwell;
+      case PetState.sad:
+        return PetEvent.breakEnded;
+      default:
+        return PetEvent.userClick;
+    }
   }
 
   Size? _lastInitializedSize;
@@ -724,6 +984,190 @@ class CompanionGame extends FlameGame {
 
       final double scaledHalfH = (spriteSize * scale) / 2;
       petComponent!.position = Vector2(newX, size.y - scaledHalfH - 4.0);
+    }
+  }
+}
+
+// =============================================================================
+// _DeveloperReactionController — Task 8.5 (Req 11.1–12.5)
+// =============================================================================
+
+/// Private helper that lives inside [CompanionGame] and owns all
+/// developer-productivity reaction logic.
+///
+/// All reactions are suppressed when [CompanionGame.isQuietMode] is `true`
+/// (Req 12.5).
+class _DeveloperReactionController {
+  _DeveloperReactionController({required this.game});
+
+  final CompanionGame game;
+
+  static final AppLogger _log = AppLogger();
+
+  // ── State (Req design doc: DeveloperReaction counters) ───────────────────
+
+  /// Number of consecutive work blocks completed without a skipped break.
+  /// Resets to zero when a break is skipped (Req 12.1).
+  int _consecutiveWorkBlocksCompleted = 0;
+
+  /// Prevents the celebration reaction from firing more than once per block
+  /// (Req 11.2).
+  bool _celebrationFiredThisBlock = false;
+
+  /// Prevents the one-hour milestone from firing more than once per session
+  /// (Req 12.4).
+  bool _oneHourMilestoneFired = false;
+
+  /// Prevents the alert reaction from firing more than once per cycle
+  /// (Req 11.6).
+  bool _alertFiredThisCycle = false;
+
+  // ── System-idle tracking (Req 11.1) ──────────────────────────────────────
+
+  /// Continuous seconds the system has been idle.
+  double _systemIdleSeconds = 0.0;
+
+  /// Seconds the pet has been continuously in [PetState.idle].
+  double _idleStateSeconds = 0.0;
+
+  // ── Work-block elapsed tracking ───────────────────────────────────────────
+
+  /// Elapsed seconds in the current work block (since last BreakEndedEvent /
+  /// session start).  Updated by [onTimerStateChanged].
+  int _workBlockElapsedSeconds = 0;
+
+  // ── Countdown tracking (Req 11.6) ────────────────────────────────────────
+
+  int _countdownSeconds = 9999;
+
+  // ── Per-frame tick ────────────────────────────────────────────────────────
+
+  void tick(double dt) {
+    // ── Req 11.1: system idle > 5 min while pet in idle → idleTimeout ──────
+    if (game._petService.currentState == PetState.idle) {
+      _idleStateSeconds += dt;
+      _systemIdleSeconds += dt;
+      if (_systemIdleSeconds > 5 * 60 && !game.isQuietMode) {
+        _log.info('_DeveloperReactionController: system idle timeout (5 min)');
+        _emitIdleTimeout();
+        _systemIdleSeconds = 0.0; // reset so it doesn't re-fire every frame
+      }
+    } else {
+      _idleStateSeconds = 0.0;
+      _systemIdleSeconds = 0.0;
+    }
+
+    // ── Req 11.3: late-night idle ≥ 120 s (22:00–05:00) ──────────────────
+    if (game._petService.currentState == PetState.idle &&
+        _idleStateSeconds >= 120.0 &&
+        !game.isQuietMode) {
+      final hour = DateTime.now().hour;
+      final isLateNight = hour >= 22 || hour < 5;
+      if (isLateNight) {
+        _log.info(
+          '_DeveloperReactionController: late-night idle ≥ 120 s, triggering sleep',
+        );
+        _emitIdleTimeout();
+        _idleStateSeconds = 0.0; // reset so it doesn't re-fire every frame
+      }
+    }
+  }
+
+  void _emitIdleTimeout() {
+    game._petService.handleEvent(PetEvent.idleTimeout);
+  }
+
+  // ── BreakStartedEvent (Req 11.2) ──────────────────────────────────────────
+
+  void onBreakStarted(BreakStartedEvent event) {
+    // Req 11.2: work block ≥ 25 min → celebrate, once per block.
+    if (!_celebrationFiredThisBlock &&
+        _workBlockElapsedSeconds >= 25 * 60 &&
+        !game.isQuietMode) {
+      _log.info(
+        '_DeveloperReactionController: ≥25 min work block, triggering celebrating',
+      );
+      game.triggerCompanionReaction(PetState.celebrating);
+      _celebrationFiredThisBlock = true;
+    }
+
+    // Reset the break-cycle alert flag (Req 11.6).
+    _alertFiredThisCycle = false;
+  }
+
+  // ── BreakEndedEvent (Req 12.2, 12.3) ─────────────────────────────────────
+
+  void onBreakEnded(BreakEndedEvent event) {
+    if (event.skipped) {
+      // Req 12.2: skipped break → sad.
+      if (!game.isQuietMode) {
+        game.triggerCompanionReaction(PetState.sad);
+      }
+      // Req 12.1: reset consecutive-block counter on skip.
+      _consecutiveWorkBlocksCompleted = 0;
+    } else {
+      // Req 12.3: completed break → happy.
+      if (!game.isQuietMode) {
+        game.triggerCompanionReaction(PetState.happy);
+      }
+      // Req 12.1: increment consecutive counter and check milestone.
+      _consecutiveWorkBlocksCompleted++;
+      if (_consecutiveWorkBlocksCompleted % 3 == 0 && !game.isQuietMode) {
+        _log.info(
+          '_DeveloperReactionController: $_consecutiveWorkBlocksCompleted consecutive blocks → sparkle',
+        );
+        game.triggerCompanionReaction(PetState.celebrating);
+        final pos = game._petCenter;
+        game._spawnParticle(
+          MicroParticleFactory.sparkle(pos, quietMode: game.isQuietMode),
+        );
+      }
+    }
+
+    // Reset per-block flags for the next work block.
+    _celebrationFiredThisBlock = false;
+    _workBlockElapsedSeconds = 0;
+
+    // Req 12.4: reset the one-hour milestone on any break end so it can fire
+    // again in the next session.
+    _oneHourMilestoneFired = false;
+  }
+
+  // ── MeetingDetectedEvent (Req 11.4, 11.5) ────────────────────────────────
+
+  void onMeetingDetected(MeetingDetectedEvent event) {
+    // The FSM transition (meetingDetected / meetingEnded) is already handled by
+    // CompanionGame._mapAppEventToPetEvent.  Nothing extra needed here.
+    _log.info(
+      '_DeveloperReactionController: meeting detected isActive=${event.isActive}',
+    );
+  }
+
+  // ── TimerStateChangedEvent (Req 11.6, 12.4) ──────────────────────────────
+
+  void onTimerStateChanged(TimerStateChangedEvent event) {
+    _workBlockElapsedSeconds = event.workElapsedSeconds;
+    _countdownSeconds = event.countdownSeconds;
+
+    // Req 11.6: countdown ≤ 60 s, running, break not yet started → alert once.
+    if (event.state == TimerStateEvent.running &&
+        _countdownSeconds <= 60 &&
+        !_alertFiredThisCycle &&
+        !game.isQuietMode) {
+      _log.info(
+        '_DeveloperReactionController: countdown ≤60 s, triggering alert',
+      );
+      game.triggerCompanionReaction(PetState.alert);
+      _alertFiredThisCycle = true;
+    }
+
+    // Req 12.4: 3600 s elapsed → resting, once per work session.
+    if (event.workElapsedSeconds >= 3600 &&
+        !_oneHourMilestoneFired &&
+        !game.isQuietMode) {
+      _log.info('_DeveloperReactionController: 1-hour milestone → resting');
+      game.triggerCompanionReaction(PetState.resting);
+      _oneHourMilestoneFired = true;
     }
   }
 }

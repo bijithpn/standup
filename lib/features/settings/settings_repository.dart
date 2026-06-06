@@ -216,12 +216,27 @@ class SettingsRepository extends ChangeNotifier {
       calendarEnabled: s.calendarEnabled,
       enableSessionResume: s.enableSessionResume,
       companionEnabled: cp?.companionEnabled ?? false,
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
       companionScale: cp?.companionScale ?? 1.5,
       companionClickThrough: cp?.companionClickThrough ?? false,
       companionFollowMouse: cp?.companionFollowMouse ?? false,
       unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
+      pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      ballThrowEnabled: _storage.getBool(
+        'ball_throw_enabled',
+        defaultValue: true,
+      ),
+      treatEnabled: _storage.getBool('treat_enabled', defaultValue: true),
+      developerReactions: _storage.getBool(
+        'developer_reactions',
+        defaultValue: true,
+      ),
+      quietModeAutoActivate: _storage.getBool(
+        'quiet_mode_auto_activate',
+        defaultValue: true,
+      ),
     );
   }
 
@@ -366,6 +381,7 @@ class SettingsRepository extends ChangeNotifier {
         'companion_enabled',
         defaultValue: true,
       ),
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
       companionPetTheme: _storage.getString(
         AppConstants.keyCompanionPetTheme,
         defaultValue: _storage.getString(
@@ -385,6 +401,20 @@ class SettingsRepository extends ChangeNotifier {
       companionFollowMouse: _storage.getBool(
         'companion_follow_mouse',
         defaultValue: false,
+      ),
+      pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      ballThrowEnabled: _storage.getBool(
+        'ball_throw_enabled',
+        defaultValue: true,
+      ),
+      treatEnabled: _storage.getBool('treat_enabled', defaultValue: true),
+      developerReactions: _storage.getBool(
+        'developer_reactions',
+        defaultValue: true,
+      ),
+      quietModeAutoActivate: _storage.getBool(
+        'quiet_mode_auto_activate',
+        defaultValue: true,
       ),
       calendarEnabled: _storage.getBool(
         'calendar_enabled',
@@ -541,9 +571,18 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('menu_bar_style', settings.menuBarStyle);
     await _storage.setString('selected_profile_id', settings.selectedProfileId);
     await _storage.setString('tray_icon_style', settings.trayIconStyle);
-    await _storage.setInt('clock_face_text_color_hex', settings.clockFaceTextColorHex);
-    await _storage.setBool('clock_face_blur_enabled', settings.clockFaceBlurEnabled);
-    await _storage.setString('custom_image_path', settings.customImagePath ?? '');
+    await _storage.setInt(
+      'clock_face_text_color_hex',
+      settings.clockFaceTextColorHex,
+    );
+    await _storage.setBool(
+      'clock_face_blur_enabled',
+      settings.clockFaceBlurEnabled,
+    );
+    await _storage.setString(
+      'custom_image_path',
+      settings.customImagePath ?? '',
+    );
 
     // Timer intervals
     await _storage.setInt(
@@ -588,14 +627,8 @@ class SettingsRepository extends ChangeNotifier {
       'show_exercises_in_break',
       settings.showExercisesInBreak,
     );
-    await _storage.setBool(
-      'enable_animations',
-      settings.enableAnimations,
-    );
-    await _storage.setString(
-      'intensity_level',
-      settings.intensityLevel,
-    );
+    await _storage.setBool('enable_animations', settings.enableAnimations);
+    await _storage.setString('intensity_level', settings.intensityLevel);
 
     // Companion
     await _storage.setString(
@@ -603,6 +636,15 @@ class SettingsRepository extends ChangeNotifier {
       settings.companionPetTheme,
     );
     await _storage.setDouble('companion_scale', settings.companionScale);
+    await _storage.setBool('petting_enabled', settings.pettingEnabled);
+    await _storage.setBool('ball_throw_enabled', settings.ballThrowEnabled);
+    await _storage.setBool('treat_enabled', settings.treatEnabled);
+    await _storage.setBool('developer_reactions', settings.developerReactions);
+    await _storage.setBool(
+      'quiet_mode_auto_activate',
+      settings.quietModeAutoActivate,
+    );
+    await _storage.setBool('pip_mode_enabled', settings.pipModeEnabled);
 
     // Write the full snapshot to ObjectBox.
     _storage.settingsBox!.put(snapshot);

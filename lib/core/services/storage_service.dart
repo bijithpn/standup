@@ -48,8 +48,10 @@ class StorageService {
   Box<CompanionPreferences>? companionPreferencesBox;
   Box<KeyValueRecord>? kvBox;
 
-  int get migrationDurationMs => SimplePrefs.instance.getInt('database_migration_ms', defaultValue: 0);
-  set migrationDurationMs(int val) => SimplePrefs.instance.setInt('database_migration_ms', val);
+  int get migrationDurationMs =>
+      SimplePrefs.instance.getInt('database_migration_ms', defaultValue: 0);
+  set migrationDurationMs(int val) =>
+      SimplePrefs.instance.setInt('database_migration_ms', val);
 
   Future<void> init() async {
     if (_store != null) return;
@@ -102,7 +104,9 @@ class StorageService {
           Directory(storeDir).parent.createSync(recursive: true);
           Directory(legacyStoreDir).renameSync(storeDir);
           migrationDurationMs = migrationStopwatch.elapsedMilliseconds;
-          debugPrint('[Storage] Migration successful in ${migrationDurationMs}ms.');
+          debugPrint(
+            '[Storage] Migration successful in ${migrationDurationMs}ms.',
+          );
         } catch (e) {
           debugPrint(
             '[Storage] Migration failed: $e. Staying with existing paths.',

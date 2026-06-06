@@ -70,6 +70,7 @@ class SettingsModel {
   final bool enableAnimations;
   final String trayIconStyle; // 'default', 'companion', 'minimal', 'countdown'
   final bool companionEnabled;
+  final bool pipModeEnabled;
   final String companionPetTheme;
   final String companionPetName;
   final double companionScale;
@@ -77,6 +78,19 @@ class SettingsModel {
   final bool companionFollowMouse;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
+
+  // Companion window geometry (persisted across sessions)
+  final double companionWindowWidth;
+  final double companionWindowHeight;
+  final double? companionWindowX; // null = use platform default
+  final double? companionWindowY; // null = use platform default
+
+  // Companion feature toggles (Req 18.8)
+  final bool pettingEnabled;
+  final bool ballThrowEnabled;
+  final bool treatEnabled;
+  final bool developerReactions;
+  final bool quietModeAutoActivate;
 
   // UX & Onboarding
   final bool hasCompletedOnboarding;
@@ -146,6 +160,7 @@ class SettingsModel {
     this.enableAnimations = true,
     this.trayIconStyle = 'companion',
     this.companionEnabled = false,
+    this.pipModeEnabled = false,
     this.companionPetTheme = 'grey_cat',
     this.companionPetName = 'Mochi',
     this.companionScale = 6.0,
@@ -153,6 +168,15 @@ class SettingsModel {
     this.companionFollowMouse = false,
     this.companionPreviewBackground = 'assets/background/forest/background.png',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
+    this.companionWindowWidth = 280.0,
+    this.companionWindowHeight = 320.0,
+    this.companionWindowX,
+    this.companionWindowY,
+    this.pettingEnabled = true,
+    this.ballThrowEnabled = true,
+    this.treatEnabled = true,
+    this.developerReactions = true,
+    this.quietModeAutoActivate = true,
     this.hasCompletedOnboarding = false,
     this.quietModeEnabled = false,
     this.quietModePreset = 'none',
@@ -217,6 +241,7 @@ class SettingsModel {
     bool? enableAnimations,
     String? trayIconStyle,
     bool? companionEnabled,
+    bool? pipModeEnabled,
     String? companionPetTheme,
     String? companionPetName,
     double? companionScale,
@@ -224,6 +249,15 @@ class SettingsModel {
     bool? companionFollowMouse,
     String? companionPreviewBackground,
     List<String>? unlockedPets,
+    double? companionWindowWidth,
+    double? companionWindowHeight,
+    double? companionWindowX,
+    double? companionWindowY,
+    bool? pettingEnabled,
+    bool? ballThrowEnabled,
+    bool? treatEnabled,
+    bool? developerReactions,
+    bool? quietModeAutoActivate,
     bool? hasCompletedOnboarding,
     bool? quietModeEnabled,
     String? quietModePreset,
@@ -302,6 +336,7 @@ class SettingsModel {
       enableAnimations: enableAnimations ?? this.enableAnimations,
       trayIconStyle: trayIconStyle ?? this.trayIconStyle,
       companionEnabled: companionEnabled ?? this.companionEnabled,
+      pipModeEnabled: pipModeEnabled ?? this.pipModeEnabled,
       companionPetTheme: companionPetTheme ?? this.companionPetTheme,
       companionPetName: companionPetName ?? this.companionPetName,
       companionScale: companionScale ?? this.companionScale,
@@ -311,6 +346,17 @@ class SettingsModel {
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
       unlockedPets: unlockedPets ?? this.unlockedPets,
+      companionWindowWidth: companionWindowWidth ?? this.companionWindowWidth,
+      companionWindowHeight:
+          companionWindowHeight ?? this.companionWindowHeight,
+      companionWindowX: companionWindowX ?? this.companionWindowX,
+      companionWindowY: companionWindowY ?? this.companionWindowY,
+      pettingEnabled: pettingEnabled ?? this.pettingEnabled,
+      ballThrowEnabled: ballThrowEnabled ?? this.ballThrowEnabled,
+      treatEnabled: treatEnabled ?? this.treatEnabled,
+      developerReactions: developerReactions ?? this.developerReactions,
+      quietModeAutoActivate:
+          quietModeAutoActivate ?? this.quietModeAutoActivate,
       hasCompletedOnboarding:
           hasCompletedOnboarding ?? this.hasCompletedOnboarding,
       quietModeEnabled: quietModeEnabled ?? this.quietModeEnabled,
@@ -379,6 +425,7 @@ class SettingsModel {
     'enableAnimations': enableAnimations,
     'trayIconStyle': trayIconStyle,
     'companionEnabled': companionEnabled,
+    'pipModeEnabled': pipModeEnabled,
     'companionPetTheme': companionPetTheme,
     'companionPetName': companionPetName,
     'companionScale': companionScale,
@@ -386,6 +433,11 @@ class SettingsModel {
     'companionFollowMouse': companionFollowMouse,
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
+    'pettingEnabled': pettingEnabled,
+    'ballThrowEnabled': ballThrowEnabled,
+    'treatEnabled': treatEnabled,
+    'developerReactions': developerReactions,
+    'quietModeAutoActivate': quietModeAutoActivate,
     'hasCompletedOnboarding': hasCompletedOnboarding,
     'quietModeEnabled': quietModeEnabled,
     'quietModePreset': quietModePreset,
@@ -471,6 +523,7 @@ class SettingsModel {
           ? 'companion'
           : (map['trayIconStyle'] as String? ?? 'companion'),
       companionEnabled: map['companionEnabled'] as bool? ?? false,
+      pipModeEnabled: map['pipModeEnabled'] as bool? ?? false,
       companionPetTheme:
           (map['companionPetTheme'] ?? map['companionCatTheme']) as String? ??
           'grey_cat',
@@ -486,6 +539,11 @@ class SettingsModel {
               ?.map((e) => e.toString())
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
+      pettingEnabled: map['pettingEnabled'] as bool? ?? true,
+      ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
+      treatEnabled: map['treatEnabled'] as bool? ?? true,
+      developerReactions: map['developerReactions'] as bool? ?? true,
+      quietModeAutoActivate: map['quietModeAutoActivate'] as bool? ?? true,
       hasCompletedOnboarding: map['hasCompletedOnboarding'] as bool? ?? false,
       quietModeEnabled: map['quietModeEnabled'] as bool? ?? false,
       quietModePreset: map['quietModePreset'] as String? ?? 'none',

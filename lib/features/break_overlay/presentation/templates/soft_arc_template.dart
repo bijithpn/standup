@@ -39,7 +39,9 @@ class SoftArcTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
-    final defaultAccent = isShort ? const Color(0xFF7EC8E3) : const Color(0xFF86EFAC);
+    final defaultAccent = isShort
+        ? const Color(0xFF7EC8E3)
+        : const Color(0xFF86EFAC);
     final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
         ? Color(settings.clockFaceTextColorHex)
         : defaultAccent;
@@ -68,7 +70,9 @@ class SoftArcTemplate extends StatelessWidget {
                     height: 200,
                     child: CustomPaint(
                       painter: _SoftArcPainter(
-                          accent: accent, progress: progress),
+                        accent: accent,
+                        progress: progress,
+                      ),
                       child: Center(
                         child: Text(
                           _formatTime(remainingSeconds),

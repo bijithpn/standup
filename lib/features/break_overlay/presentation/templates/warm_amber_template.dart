@@ -40,9 +40,7 @@ class WarmAmberTemplate extends StatelessWidget {
         return Stack(
           fit: StackFit.expand,
           children: [
-            RepaintBoundary(
-              child: CustomPaint(painter: _WarmAmberPainter()),
-            ),
+            RepaintBoundary(child: CustomPaint(painter: _WarmAmberPainter())),
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 380),

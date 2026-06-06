@@ -45,9 +45,7 @@ class DuskGlowTemplate extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        RepaintBoundary(
-          child: CustomPaint(painter: _DuskPainter()),
-        ),
+        RepaintBoundary(child: CustomPaint(painter: _DuskPainter())),
         Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,

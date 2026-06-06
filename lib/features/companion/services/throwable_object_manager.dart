@@ -15,9 +15,9 @@ class ThrowableObjectManager {
     required PhysicsSimulator physicsSimulator,
     EventBus? eventBus,
     AppLogger? logger,
-  })  : _physics = physicsSimulator,
-        _eventBus = eventBus ?? EventBus.instance,
-        _logger = logger ?? AppLogger();
+  }) : _physics = physicsSimulator,
+       _eventBus = eventBus ?? EventBus.instance,
+       _logger = logger ?? AppLogger();
 
   static const int maxActiveThrowables = 5;
   static const double minDragMagnitude = 20.0;
@@ -42,24 +42,29 @@ class ThrowableObjectManager {
   /// Spawn a throwable at [releasePoint] with velocity derived from [dragVector].
   ///
   /// Requirements 7.1, 7.9
-  void spawnThrowable(Offset releasePoint, Offset dragVector) {
+  PhysicsEntityId? spawnThrowable(
+    Offset releasePoint,
+    Offset dragVector, {
+    String kind = 'ball',
+  }) {
     final double magnitude = dragVector.distance;
     if (magnitude < minDragMagnitude) {
       _logger.info(
         'ThrowableObjectManager: drag too short (${magnitude.toStringAsFixed(1)} px), ignoring',
       );
-      return;
+      return null;
     }
 
     // Enforce max 5 active throwables (req 7.9).
-    final int activeCount =
-        _throwables.where((r) => r.lifecycle != ThrowableLifecycle.disposed).length;
+    final int activeCount = _throwables
+        .where((r) => r.lifecycle != ThrowableLifecycle.disposed)
+        .length;
     if (activeCount >= maxActiveThrowables) {
       _eventBus.emit(ThrowRejectedEvent());
       _logger.info(
         'ThrowableObjectManager: max throwables reached, throw rejected',
       );
-      return;
+      return null;
     }
 
     // Compute initial velocity: direction × min(magnitude × scale, 2000).
@@ -89,6 +94,7 @@ class ThrowableObjectManager {
       spawnOrigin: releasePoint,
       physicsId: physicsId,
       lifecycle: ThrowableLifecycle.flying,
+      kind: kind,
     );
     _throwables.add(record);
 
@@ -97,6 +103,7 @@ class ThrowableObjectManager {
       'ThrowableObjectManager: spawned throwable id=$physicsId '
       'priority=$priority speed=${speed.toStringAsFixed(1)}',
     );
+    return physicsId;
   }
 
   /// Tick all active throwables and advance lifecycle state.
@@ -135,7 +142,9 @@ class ThrowableObjectManager {
               lifecycle: ThrowableLifecycle.stationary,
               stationaryAt: now,
             );
-            _eventBus.emit(ThrowableStationaryEvent(objectId: record.physicsId));
+            _eventBus.emit(
+              ThrowableStationaryEvent(objectId: record.physicsId),
+            );
             _logger.info(
               'ThrowableObjectManager: throwable ${record.physicsId} became stationary',
             );
@@ -152,7 +161,9 @@ class ThrowableObjectManager {
 
           // Pet overlap → beingFetched (req 7.7).
           if (petBounds.overlaps(throwableBounds)) {
-            _throwables[i] = record.withLifecycle(ThrowableLifecycle.beingFetched);
+            _throwables[i] = record.withLifecycle(
+              ThrowableLifecycle.beingFetched,
+            );
             _logger.info(
               'ThrowableObjectManager: throwable ${record.physicsId} being fetched',
             );
@@ -160,8 +171,7 @@ class ThrowableObjectManager {
 
         case ThrowableLifecycle.beingFetched:
           // Return to origin → disposed (req 7.8).
-          final double distToOrigin =
-              (petAnchor - record.spawnOrigin).distance;
+          final double distToOrigin = (petAnchor - record.spawnOrigin).distance;
           if (distToOrigin <= fetchReturnRadius) {
             _disposeThrowable(i);
           }
@@ -194,6 +204,29 @@ class ThrowableObjectManager {
   /// Equivalent to [chaseTarget].
   PhysicsEntityId? get chaseTargetPhysicsId => chaseTarget;
 
+  List<ThrowableObjectState> snapshots() {
+    final result = <ThrowableObjectState>[];
+    for (final record in _throwables) {
+      if (record.lifecycle == ThrowableLifecycle.disposed) continue;
+      final state = _physics.getState(record.physicsId);
+      result.add(
+        ThrowableObjectState(
+          id: record.physicsId,
+          spawnPriority: record.spawnPriority,
+          spawnOrigin: record.spawnOrigin,
+          physicsId: record.physicsId,
+          lifecycle: record.lifecycle,
+          stationaryTickCount: state.stationaryTicks,
+          stationaryAt: record.stationaryAt,
+          unreachableSince: record.unreachableSince,
+          kind: record.kind,
+          position: Offset(state.x, state.y),
+        ),
+      );
+    }
+    return result;
+  }
+
   /// Mark a throwable as unreachable (called by navigation layer).
   ///
   /// The manager will dispose it after [unreachableDisposalSeconds].
@@ -204,9 +237,7 @@ class ThrowableObjectManager {
           _throwables[i].lifecycle != ThrowableLifecycle.disposed) {
         if (_throwables[i].unreachableSince == null) {
           _throwables[i] = _throwables[i].copyWith(unreachableSince: now);
-        } else if (now
-                .difference(_throwables[i].unreachableSince!)
-                .inSeconds >=
+        } else if (now.difference(_throwables[i].unreachableSince!).inSeconds >=
             unreachableDisposalSeconds) {
           _disposeThrowable(i);
         }
@@ -240,6 +271,7 @@ class _ThrowableRecord {
     required this.lifecycle,
     this.stationaryAt,
     this.unreachableSince,
+    this.kind = 'ball',
   });
 
   final int spawnPriority;
@@ -248,27 +280,29 @@ class _ThrowableRecord {
   final ThrowableLifecycle lifecycle;
   final DateTime? stationaryAt;
   final DateTime? unreachableSince;
+  final String kind;
 
   _ThrowableRecord withLifecycle(ThrowableLifecycle l) => _ThrowableRecord(
-        spawnPriority: spawnPriority,
-        spawnOrigin: spawnOrigin,
-        physicsId: physicsId,
-        lifecycle: l,
-        stationaryAt: stationaryAt,
-        unreachableSince: unreachableSince,
-      );
+    spawnPriority: spawnPriority,
+    spawnOrigin: spawnOrigin,
+    physicsId: physicsId,
+    lifecycle: l,
+    stationaryAt: stationaryAt,
+    unreachableSince: unreachableSince,
+    kind: kind,
+  );
 
   _ThrowableRecord copyWith({
     ThrowableLifecycle? lifecycle,
     DateTime? stationaryAt,
     DateTime? unreachableSince,
-  }) =>
-      _ThrowableRecord(
-        spawnPriority: spawnPriority,
-        spawnOrigin: spawnOrigin,
-        physicsId: physicsId,
-        lifecycle: lifecycle ?? this.lifecycle,
-        stationaryAt: stationaryAt ?? this.stationaryAt,
-        unreachableSince: unreachableSince ?? this.unreachableSince,
-      );
+  }) => _ThrowableRecord(
+    spawnPriority: spawnPriority,
+    spawnOrigin: spawnOrigin,
+    physicsId: physicsId,
+    lifecycle: lifecycle ?? this.lifecycle,
+    stationaryAt: stationaryAt ?? this.stationaryAt,
+    unreachableSince: unreachableSince ?? this.unreachableSince,
+    kind: kind,
+  );
 }

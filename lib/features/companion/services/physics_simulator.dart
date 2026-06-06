@@ -13,10 +13,7 @@ import 'package:breakmate/features/companion/domain/behavior_engine_models.dart'
 /// [applyGravity] should be `false` for the pet entity when it is in any
 /// state other than `falling` (navigation owns the position in those states).
 class PhysicsEntity {
-  const PhysicsEntity({
-    required this.initialState,
-    this.applyGravity = true,
-  });
+  const PhysicsEntity({required this.initialState, this.applyGravity = true});
 
   final PhysicsEntityState initialState;
   final bool applyGravity;
@@ -111,8 +108,12 @@ class PhysicsSimulator {
 
     for (final entry in _entities.entries) {
       _entities[entry.key] = _EntityRecord(
-        state: _stepEntity(entry.value.state, dt, activeBounds,
-            entry.value.applyGravity),
+        state: _stepEntity(
+          entry.value.state,
+          dt,
+          activeBounds,
+          entry.value.applyGravity,
+        ),
         applyGravity: entry.value.applyGravity,
       );
     }
@@ -230,10 +231,14 @@ class PhysicsSimulator {
       final s = entry.value.state;
       final double halfW = s.width / 2.0;
       final double halfH = s.height / 2.0;
-      final double clampedX =
-          s.x.clamp(activeBounds.left + halfW, activeBounds.right - halfW);
-      final double clampedY =
-          s.y.clamp(activeBounds.top + halfH, activeBounds.bottom - halfH);
+      final double clampedX = s.x.clamp(
+        activeBounds.left + halfW,
+        activeBounds.right - halfW,
+      );
+      final double clampedY = s.y.clamp(
+        activeBounds.top + halfH,
+        activeBounds.bottom - halfH,
+      );
       if (clampedX != s.x || clampedY != s.y) {
         _entities[entry.key] = _EntityRecord(
           state: s.copyWith(x: clampedX, y: clampedY),
@@ -251,10 +256,7 @@ class PhysicsSimulator {
 /// Internal mutable record associating a [PhysicsEntityState] with its
 /// gravity flag.  Immutable — replaced on each step.
 class _EntityRecord {
-  const _EntityRecord({
-    required this.state,
-    required this.applyGravity,
-  });
+  const _EntityRecord({required this.state, required this.applyGravity});
 
   final PhysicsEntityState state;
   final bool applyGravity;

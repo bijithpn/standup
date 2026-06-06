@@ -55,7 +55,7 @@ class CompanionComponent
   // Transition pairs that should cross-fade instead of cutting immediately.
   // Key: (fromState, toState), Value: true.
   static const Set<(PetAnimationState, PetAnimationState)>
-      _crossFadeTransitions = {
+  _crossFadeTransitions = {
     (PetAnimationState.idle, PetAnimationState.walkSide),
     (PetAnimationState.walkSide, PetAnimationState.idle),
     (PetAnimationState.walkSide, PetAnimationState.run),
@@ -218,6 +218,10 @@ class CompanionComponent
       scaledDt = dt * speedRatio;
     } else if (current == PetAnimationState.excited) {
       scaledDt = dt * _strideFrequency;
+    }
+
+    if (game.isQuietMode) {
+      scaledDt *= 0.6;
     }
 
     super.update(scaledDt);
@@ -390,8 +394,7 @@ class CompanionComponent
     // Cross-fade rendering (req 10.2).
     final cf = _crossFadeState;
     if (cf != null) {
-      final double t =
-          (cf.elapsed / _CrossFadeState.duration).clamp(0.0, 1.0);
+      final double t = (cf.elapsed / _CrossFadeState.duration).clamp(0.0, 1.0);
 
       // Render "from" animation at opacity (1 - t).
       final fromAnim = animations?[cf.from];
@@ -400,8 +403,8 @@ class CompanionComponent
         if (fromTicker != null) {
           final ui.Image? fromFrame =
               fromTicker.currentIndex < fromAnim.frames.length
-                  ? fromAnim.frames[fromTicker.currentIndex].sprite.image
-                  : null;
+              ? fromAnim.frames[fromTicker.currentIndex].sprite.image
+              : null;
           if (fromFrame != null) {
             final alphaPaint = Paint()
               ..color = Color.fromRGBO(255, 255, 255, 1.0 - t)
@@ -410,8 +413,7 @@ class CompanionComponent
             canvas.drawImageRect(
               fromFrame,
               src,
-              Rect.fromLTWH(
-                  -size.x / 2, -size.y / 2, size.x, size.y),
+              Rect.fromLTWH(-size.x / 2, -size.y / 2, size.x, size.y),
               alphaPaint,
             );
           }
@@ -451,7 +453,6 @@ class CompanionComponent
 
   /// Renders the meeting indicator badge and fire particles.
   void _renderOverlays(Canvas canvas) {
-
     // Render "ON AIR" / Meeting Indicator
     if (game.petService.context.isMeetingDetected) {
       final double spriteSize = game.currentTheme.spriteSize.toDouble();

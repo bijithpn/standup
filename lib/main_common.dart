@@ -75,15 +75,14 @@ void _setupGlobalErrors() {
   ErrorWidget.builder = (FlutterErrorDetails details) {
     // Notify active standalone break overlays to fall back to minimal
     if (StandaloneBreakOverlay.onErrorCallbacks.isNotEmpty) {
-      for (final callback in List.from(StandaloneBreakOverlay.onErrorCallbacks)) {
+      for (final callback in List.from(
+        StandaloneBreakOverlay.onErrorCallbacks,
+      )) {
         try {
           callback(details);
         } catch (_) {}
       }
-      return const Material(
-        color: Color(0xFF0A0A0F),
-        child: SizedBox.shrink(),
-      );
+      return const Material(color: Color(0xFF0A0A0F), child: SizedBox.shrink());
     }
 
     return Directionality(
@@ -679,6 +678,7 @@ Future<void> pipMain() async {
     ),
   );
 }
+
 class FakeStatsService extends ChangeNotifier implements StatsService {
   StatsModel _stats = const StatsModel();
 
@@ -697,12 +697,16 @@ class FakeStatsService extends ChangeNotifier implements StatsService {
 class FakeBreakController extends ChangeNotifier implements BreakController {
   @override
   Future<void> completeCurrentBreak() async {
-    const MethodChannel('com.breakmate.desktop/bridge').invokeMethod('completeBreak');
+    const MethodChannel(
+      'com.breakmate.desktop/bridge',
+    ).invokeMethod('completeBreak');
   }
 
   @override
   Future<void> skipCurrentBreak() async {
-    const MethodChannel('com.breakmate.desktop/bridge').invokeMethod('skipBreak');
+    const MethodChannel(
+      'com.breakmate.desktop/bridge',
+    ).invokeMethod('skipBreak');
   }
 
   @override

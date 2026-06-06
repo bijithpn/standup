@@ -56,11 +56,33 @@ enum BreakTheme {
 
 // Templates that own their own chrome (skip button, top rail, etc.)
 const _kTemplatesWithChrome = {
-  'minimal', 'activities', 'companion', 'zen', 'hud', 'floating', 'classic',
-  'soft_arc', 'breathe_line', 'clock_face', 'one_word', 'open_field',
-  'haiku_card', 'ring_only', 'step_guide', 'time_slice', 'day_stack',
-  'pulse_dot', 'mono_time', 'split_view', 'warm_amber', 'focus_orb',
-  'wave_calm', 'iris_rest', 'quiet_pill', 'paper_light', 'dusk_glow',
+  'minimal',
+  'activities',
+  'companion',
+  'zen',
+  'hud',
+  'floating',
+  'classic',
+  'soft_arc',
+  'breathe_line',
+  'clock_face',
+  'one_word',
+  'open_field',
+  'haiku_card',
+  'ring_only',
+  'step_guide',
+  'time_slice',
+  'day_stack',
+  'pulse_dot',
+  'mono_time',
+  'split_view',
+  'warm_amber',
+  'focus_orb',
+  'wave_calm',
+  'iris_rest',
+  'quiet_pill',
+  'paper_light',
+  'dusk_glow',
 };
 
 class StandaloneBreakOverlay extends StatefulWidget {
@@ -135,16 +157,43 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _loadInitialSettings() {
     try {
       if (SimplePrefs.instance.isReady) {
-        final template = SimplePrefs.instance.getString('break_template', defaultValue: 'minimal');
-        final petTheme = SimplePrefs.instance.getString('companion_pet_theme', defaultValue: 'grey_cat');
-        final showNotes = SimplePrefs.instance.getBool('show_exercises_in_break', defaultValue: true);
-        final strict = SimplePrefs.instance.getBool('strict_mode', defaultValue: false);
-        final anim = SimplePrefs.instance.getBool('enable_animations', defaultValue: true);
-        final intensity = SimplePrefs.instance.getString('intensity_level', defaultValue: 'standard');
-        final textColor = SimplePrefs.instance.getInt('clock_face_text_color_hex', defaultValue: 0xFFFFFFFF);
-        final blurEnabled = SimplePrefs.instance.getBool('clock_face_blur_enabled', defaultValue: true);
-        final customImg = SimplePrefs.instance.getString('custom_image_path', defaultValue: '');
-        
+        final template = SimplePrefs.instance.getString(
+          'break_template',
+          defaultValue: 'minimal',
+        );
+        final petTheme = SimplePrefs.instance.getString(
+          'companion_pet_theme',
+          defaultValue: 'grey_cat',
+        );
+        final showNotes = SimplePrefs.instance.getBool(
+          'show_exercises_in_break',
+          defaultValue: true,
+        );
+        final strict = SimplePrefs.instance.getBool(
+          'strict_mode',
+          defaultValue: false,
+        );
+        final anim = SimplePrefs.instance.getBool(
+          'enable_animations',
+          defaultValue: true,
+        );
+        final intensity = SimplePrefs.instance.getString(
+          'intensity_level',
+          defaultValue: 'standard',
+        );
+        final textColor = SimplePrefs.instance.getInt(
+          'clock_face_text_color_hex',
+          defaultValue: 0xFFFFFFFF,
+        );
+        final blurEnabled = SimplePrefs.instance.getBool(
+          'clock_face_blur_enabled',
+          defaultValue: true,
+        );
+        final customImg = SimplePrefs.instance.getString(
+          'custom_image_path',
+          defaultValue: '',
+        );
+
         setState(() {
           _breakTemplate = template;
           _companionPetTheme = petTheme;
@@ -318,13 +367,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
 
       // Auto-dismiss quick reminders / prebreak warnings after 5/3 seconds
-      if (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning') {
+      if (_overlayType == 'quickReminder' ||
+          _overlayType == 'preBreakWarning') {
         _fadeController.duration = const Duration(milliseconds: 400);
         final dismissDelay = _overlayType == 'preBreakWarning'
             ? const Duration(seconds: 3)
             : const Duration(seconds: 5);
         Future.delayed(dismissDelay, () {
-          if (mounted && (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning')) {
+          if (mounted &&
+              (_overlayType == 'quickReminder' ||
+                  _overlayType == 'preBreakWarning')) {
             _skipBreak();
           }
         });
@@ -404,7 +456,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     void triggerDismiss() {
       if (callbackTriggered) return;
       callbackTriggered = true;
-      if (_isInternalPreview || _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder') {
+      if (_isInternalPreview ||
+          _overlayType == 'preBreakWarning' ||
+          _overlayType == 'quickReminder') {
         // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
@@ -429,7 +483,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     void triggerDismiss() {
       if (callbackTriggered) return;
       callbackTriggered = true;
-      if (_isInternalPreview || _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder') {
+      if (_isInternalPreview ||
+          _overlayType == 'preBreakWarning' ||
+          _overlayType == 'quickReminder') {
         // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
@@ -450,7 +506,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     if (!mounted) return false;
 
     // Check for Command/Control + Shift + B to quit the app
-    final isModifierPressed = HardwareKeyboard.instance.isMetaPressed ||
+    final isModifierPressed =
+        HardwareKeyboard.instance.isMetaPressed ||
         HardwareKeyboard.instance.isControlPressed;
     if (isModifierPressed &&
         HardwareKeyboard.instance.isShiftPressed &&
@@ -460,7 +517,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       return true;
     }
 
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
       if (_canDismiss) {
         _skipBreak();
         return true;
@@ -511,7 +569,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     return FadeTransition(
       opacity: _fadeController,
       child: Material(
-        color: _overlayType == 'quickReminder' || _overlayType == 'preBreakWarning'
+        color:
+            _overlayType == 'quickReminder' || _overlayType == 'preBreakWarning'
             ? Colors.black.withValues(alpha: 0.4)
             : Colors.black,
         child: GestureDetector(
@@ -541,7 +600,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         orElse: () => BreakType.long,
       );
     } else {
-      type = _title.toUpperCase().contains('SHORT') ||
+      type =
+          _title.toUpperCase().contains('SHORT') ||
               _title.toUpperCase().contains('EYE')
           ? BreakType.short
           : BreakType.long;
@@ -765,45 +825,165 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           onSkip: onSkip,
         );
       case 'soft_arc':
-        return SoftArcTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return SoftArcTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'breathe_line':
-        return BreatheLineTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return BreatheLineTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'clock_face':
-        return ClockFaceTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return ClockFaceTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'one_word':
-        return OneWordTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return OneWordTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'open_field':
-        return OpenFieldTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return OpenFieldTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'haiku_card':
-        return HaikuCardTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return HaikuCardTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'ring_only':
-        return RingOnlyTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return RingOnlyTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'step_guide':
-        return StepGuideTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return StepGuideTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'time_slice':
-        return TimeSliceTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return TimeSliceTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'day_stack':
-        return DayStackTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return DayStackTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'pulse_dot':
-        return PulseDotTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return PulseDotTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'mono_time':
-        return MonoTimeTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return MonoTimeTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'split_view':
-        return SplitViewTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return SplitViewTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'warm_amber':
-        return WarmAmberTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return WarmAmberTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'focus_orb':
-        return FocusOrbTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return FocusOrbTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'wave_calm':
-        return WaveCalmTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return WaveCalmTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'iris_rest':
-        return IrisRestTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return IrisRestTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'quiet_pill':
-        return QuietPillTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return QuietPillTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'paper_light':
-        return PaperLightTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return PaperLightTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'dusk_glow':
-        return DuskGlowTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return DuskGlowTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'wind_down':
         return const WindDownTemplate();
       default:
@@ -821,14 +1001,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // All named templates self-manage their chrome (top rail, skip, hints).
     // This prevents the global pill / close / swipe-hint from being stacked
     // on top of template-owned header and footer areas.
-    final isWindDown = _title.toUpperCase().contains('WIND DOWN') || (_breakTypeStr == 'windDown');
+    final isWindDown =
+        _title.toUpperCase().contains('WIND DOWN') ||
+        (_breakTypeStr == 'windDown');
     if (isWindDown) return true;
-    return _kTemplatesWithChrome.contains(_breakTemplate) || _breakTemplate == 'wind_down';
+    return _kTemplatesWithChrome.contains(_breakTemplate) ||
+        _breakTemplate == 'wind_down';
   }
 
   Widget _buildQuickReminder() {
     final isPosture = _reminderType == 'posture';
-    final isBreakStart = _reminderType == 'breakStart' || _overlayType == 'preBreakWarning';
+    final isBreakStart =
+        _reminderType == 'breakStart' || _overlayType == 'preBreakWarning';
 
     if (isBreakStart) {
       return _buildBreakStartWarning();

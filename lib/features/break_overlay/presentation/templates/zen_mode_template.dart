@@ -40,14 +40,18 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
 
     _scaleAnim = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween(begin: 0.7, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(
+          begin: 0.7,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 25,
       ),
       TweenSequenceItem(tween: ConstantTween(1.0), weight: 25),
       TweenSequenceItem(
-        tween: Tween(begin: 1.0, end: 0.7)
-            .chain(CurveTween(curve: Curves.easeInOut)),
+        tween: Tween(
+          begin: 1.0,
+          end: 0.7,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
         weight: 25,
       ),
       TweenSequenceItem(tween: ConstantTween(0.7), weight: 25),

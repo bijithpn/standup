@@ -22,9 +22,7 @@ class WindDownTemplate extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              RepaintBoundary(
-                child: CustomPaint(painter: _WindDownPainter()),
-              ),
+              RepaintBoundary(child: CustomPaint(painter: _WindDownPainter())),
               Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 320),
@@ -64,7 +62,9 @@ class WindDownTemplate extends StatelessWidget {
                         height: 42,
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white.withValues(alpha: 0.5),
+                            foregroundColor: Colors.white.withValues(
+                              alpha: 0.5,
+                            ),
                             side: BorderSide(
                               color: Colors.white.withValues(alpha: 0.2),
                               width: 0.5,
@@ -79,7 +79,8 @@ class WindDownTemplate extends StatelessWidget {
                               fontFamily: 'Inter',
                             ),
                           ),
-                          onPressed: () => breakController.completeCurrentBreak(),
+                          onPressed: () =>
+                              breakController.completeCurrentBreak(),
                           child: const Text('Done for today'),
                         ),
                       ),
@@ -100,14 +101,15 @@ class _WindDownPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width * 0.5, size.height);
     final paint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          const Color(0xFFEA580C).withValues(alpha: 0.07),
-          Colors.transparent,
-        ],
-      ).createShader(
-        Rect.fromCircle(center: center, radius: size.shortestSide * 0.5),
-      );
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFFEA580C).withValues(alpha: 0.07),
+              Colors.transparent,
+            ],
+          ).createShader(
+            Rect.fromCircle(center: center, radius: size.shortestSide * 0.5),
+          );
     canvas.drawCircle(center, size.shortestSide * 0.5, paint);
   }
 

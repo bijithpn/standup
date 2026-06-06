@@ -24,6 +24,20 @@ class WindowService {
     }
   }
 
+  Future<void> setWindowSize({
+    required double width,
+    required double height,
+  }) async {
+    try {
+      await _channel.invokeMethod('setWindowSize', {
+        'width': width,
+        'height': height,
+      });
+    } catch (e) {
+      _logger.error('Failed to set window size: $e');
+    }
+  }
+
   Future<Map<String, dynamic>> getWindowPosition() async {
     try {
       final result = await _channel.invokeMethod('getWindowPosition');
@@ -97,6 +111,36 @@ class WindowService {
       await _channel.invokeMethod('setWindowStyle', {'style': style});
     } catch (e) {
       _logger.error('Failed to set window style: $e');
+    }
+  }
+
+  /// Initiates a native window-drag gesture (macOS `performWindowDragWithEvent` /
+  /// Windows `ReleaseCapture` + `PostMessage WM_NCLBUTTONDOWN`).
+  ///
+  /// This delegates window repositioning entirely to the OS so Flutter never
+  /// needs to track pointer deltas for the drag handle.
+  Future<void> startDrag() async {
+    try {
+      await _channel.invokeMethod('startDrag');
+    } catch (e) {
+      _logger.error('Failed to start window drag: $e');
+    }
+  }
+
+  /// Configures the window as non-activating:
+  /// - macOS: sets `styleMask` to include `NSWindowStyleMaskNonactivatingPanel`
+  ///   or `canBecomeKey = false`.
+  /// - Windows: applies `WS_EX_NOACTIVATE` extended window style.
+  ///
+  /// Call once during [initialize] so click events never steal focus from the
+  /// user's current application (Req 18.2).
+  Future<void> setNonActivating(bool nonActivating) async {
+    try {
+      await _channel.invokeMethod('setNonActivating', {
+        'nonActivating': nonActivating,
+      });
+    } catch (e) {
+      _logger.error('Failed to set non-activating style: $e');
     }
   }
 }

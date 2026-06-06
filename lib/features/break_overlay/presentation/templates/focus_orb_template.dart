@@ -107,10 +107,7 @@ class _OrbPainter extends CustomPainter {
         ..shader = RadialGradient(
           center: Alignment.center,
           radius: 0.35,
-          colors: [
-            accent.withValues(alpha: 0.12),
-            Colors.transparent,
-          ],
+          colors: [accent.withValues(alpha: 0.12), Colors.transparent],
         ).createShader(Offset.zero & size),
     );
   }

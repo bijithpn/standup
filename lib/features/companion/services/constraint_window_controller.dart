@@ -44,12 +44,12 @@ class NativeConstraintWindowController implements ConstraintWindowController {
     EventBus? eventBus,
     AppLogger? logger,
     Size petSize = const Size(64, 64),
-  })  : _physics = physicsSimulator,
-        _displays = displays,
-        _bridge = bridge ?? NativeBridge.instance,
-        _eventBus = eventBus ?? EventBus.instance,
-        _logger = logger ?? AppLogger(),
-        _petSize = petSize {
+  }) : _physics = physicsSimulator,
+       _displays = displays,
+       _bridge = bridge ?? NativeBridge.instance,
+       _eventBus = eventBus ?? EventBus.instance,
+       _logger = logger ?? AppLogger(),
+       _petSize = petSize {
     // Register the native bounds-changed callback on construction.
     _bridge.registerConstraintWindowBoundsCallback(_onNativeBoundsChanged);
   }
@@ -70,12 +70,14 @@ class NativeConstraintWindowController implements ConstraintWindowController {
   // ---- ConstraintWindowController interface --------------------------------
 
   @override
-  Future<void> show({Size initialSize = const Size(_defaultSize, _defaultSize)}) async {
+  Future<void> show({
+    Size initialSize = const Size(_defaultSize, _defaultSize),
+  }) async {
     // Center on the primary display (fall back to first display, then origin).
     final DisplayBounds? primary = _displays.cast<DisplayBounds?>().firstWhere(
-          (d) => d?.isPrimary == true,
-          orElse: () => _displays.isNotEmpty ? _displays.first : null,
-        );
+      (d) => d?.isPrimary == true,
+      orElse: () => _displays.isNotEmpty ? _displays.first : null,
+    );
 
     double centerX = 0.0;
     double centerY = 0.0;

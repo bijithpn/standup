@@ -106,11 +106,17 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
       case _BreathPhase.holdIn:
         _ringScale = TweenSequence<double>([
           TweenSequenceItem(
-            tween: Tween(begin: 1.0, end: 1.04).chain(CurveTween(curve: Curves.easeInOut)),
+            tween: Tween(
+              begin: 1.0,
+              end: 1.04,
+            ).chain(CurveTween(curve: Curves.easeInOut)),
             weight: 1,
           ),
           TweenSequenceItem(
-            tween: Tween(begin: 1.04, end: 1.0).chain(CurveTween(curve: Curves.easeInOut)),
+            tween: Tween(
+              begin: 1.04,
+              end: 1.0,
+            ).chain(CurveTween(curve: Curves.easeInOut)),
             weight: 1,
           ),
         ]).animate(_ringController);
@@ -202,7 +208,10 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                 ValueListenableBuilder<int>(
                   valueListenable: _phaseElapsed,
                   builder: (context, elapsed, child) {
-                    final progress = (elapsed / phase.durationSeconds).clamp(0.0, 1.0);
+                    final progress = (elapsed / phase.durationSeconds).clamp(
+                      0.0,
+                      1.0,
+                    );
                     return CustomPaint(
                       size: const Size.square(ringRadius * 2),
                       painter: _PhaseArcPainter(
@@ -254,9 +263,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Inter',
-                            fontFeatures: const [
-                              FontFeature.tabularFigures(),
-                            ],
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         );
                       },
