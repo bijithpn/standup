@@ -125,4 +125,9 @@ class SimplePrefs {
     _data.remove(key);
     _persist();
   }
+
+  void clear() {
+    _data.clear();
+    _persist();
+  }
 }

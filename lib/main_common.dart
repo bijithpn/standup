@@ -452,7 +452,8 @@ void mainCommon(FlavorConfig config) async {
         await windowManager.waitUntilReadyToShow(windowOptions, () async {
           await windowManager.setPreventClose(true);
           await windowManager.setResizable(false);
-          await windowManager.hide();
+          await windowManager.show();
+          await windowManager.focus();
         });
 
         MethodChannel('com.breakmate.desktop/bridge').setMethodCallHandler((

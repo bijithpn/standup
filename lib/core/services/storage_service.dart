@@ -48,7 +48,8 @@ class StorageService {
   Box<CompanionPreferences>? companionPreferencesBox;
   Box<KeyValueRecord>? kvBox;
 
-  int migrationDurationMs = 0;
+  int get migrationDurationMs => SimplePrefs.instance.getInt('database_migration_ms', defaultValue: 0);
+  set migrationDurationMs(int val) => SimplePrefs.instance.setInt('database_migration_ms', val);
 
   Future<void> init() async {
     if (_store != null) return;
@@ -96,10 +97,12 @@ class StorageService {
         debugPrint(
           '[Storage] Migrating database from legacy location: $legacyStoreDir to $storeDir',
         );
+        final migrationStopwatch = Stopwatch()..start();
         try {
           Directory(storeDir).parent.createSync(recursive: true);
           Directory(legacyStoreDir).renameSync(storeDir);
-          debugPrint('[Storage] Migration successful.');
+          migrationDurationMs = migrationStopwatch.elapsedMilliseconds;
+          debugPrint('[Storage] Migration successful in ${migrationDurationMs}ms.');
         } catch (e) {
           debugPrint(
             '[Storage] Migration failed: $e. Staying with existing paths.',
@@ -449,6 +452,12 @@ class StorageService {
 
   Future<int> getDatabaseSize() async {
     try {
+      if (activeDatabasePath != null) {
+        final file = File(p.join(activeDatabasePath!, 'data.mdb'));
+        if (await file.exists()) {
+          return await file.length();
+        }
+      }
       final docsDir = await getApplicationDocumentsDirectory();
       final storeDir = p.join(docsDir.path, 'breakmate_db');
       final file = File(p.join(storeDir, 'data.mdb'));
