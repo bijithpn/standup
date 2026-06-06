@@ -25,6 +25,10 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
+  /// While [DateTime.now().isBefore(_interactionSuppressUntil)], random
+  /// behavior emission is suppressed (Req 9.4, 9.5).
+  DateTime _interactionSuppressUntil = DateTime.fromMillisecondsSinceEpoch(0);
+
   void start() {
     stop();
     try {
@@ -72,6 +76,10 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
     } catch (_) {
       // Safe fallback
     }
+
+    // Skip random behavior while an active interaction is suppressing it
+    // (Req 9.4, 9.5).
+    if (DateTime.now().isBefore(_interactionSuppressUntil)) return;
 
     _idleCycles++;
 
@@ -146,6 +154,18 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
       ),
     );
     _logger.info('Companion: happy behavior');
+  }
+
+  /// Suppresses random behavior emission until [suppress] duration elapses.
+  ///
+  /// Called by [InteractionController] at the start of any active user
+  /// interaction (Req 9.4, 9.5). An ongoing suppress timestamp is extended
+  /// when called again before expiry.
+  void suppressRandomBehavior(Duration suppress) {
+    _interactionSuppressUntil = DateTime.now().add(suppress);
+    _logger.info(
+      'CompanionBehaviorEngine: random behavior suppressed for ${suppress.inMilliseconds} ms',
+    );
   }
 
   void onUserInteraction() {

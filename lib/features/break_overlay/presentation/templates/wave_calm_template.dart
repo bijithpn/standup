@@ -135,7 +135,8 @@ class _WavePainter extends CustomPainter {
 
       final path = Path()..moveTo(0, cy);
       for (double x = 0; x <= size.width; x += 2) {
-        final y = cy +
+        final y =
+            cy +
             14 *
                 math.sin(
                   (x / size.width) * 4 * math.pi + phase + i * math.pi / 3,

@@ -64,9 +64,9 @@ class NativeDisplayManager implements DisplayManager {
     NativeBridgePlatform? bridge,
     EventBus? eventBus,
     AppLogger? logger,
-  })  : _bridge = bridge ?? NativeBridge.instance,
-        _eventBus = eventBus ?? EventBus.instance,
-        _logger = logger ?? AppLogger() {
+  }) : _bridge = bridge ?? NativeBridge.instance,
+       _eventBus = eventBus ?? EventBus.instance,
+       _logger = logger ?? AppLogger() {
     // Register the native display-change callback on construction so events
     // received before the first enumerateDisplays() call are queued.
     _bridge.registerDisplayChangeCallback(_onNativeDisplayChange);
@@ -137,26 +137,33 @@ class NativeDisplayManager implements DisplayManager {
 
   @override
   bool areAdjacent(DisplayBounds a, DisplayBounds b) {
-    // Inflate each rect by 1 px and check for intersection.
-    // Two rects that merely touch (share an edge) will then overlap ≥ 1 px.
-    final inflatedA = a.rect.inflate(1.0);
-    final inflatedB = b.rect.inflate(1.0);
-
-    if (!inflatedA.overlaps(inflatedB)) return false;
-
-    // Corner-only touch: inflate overlap is 1×1 or less in both axes.
-    // Two displays that share only a single corner point are NOT considered
-    // adjacent (they need a shared *edge*, not just a shared point).
-    final intersection = inflatedA.intersect(inflatedB);
-    // A 1×1 intersection area means they share ≥ 1 px on both axes — that is
-    // a legitimate edge.  We exclude pure-corner contacts by requiring that
-    // at least one dimension of the intersection is > 1 px (i.e., the edge
-    // has real length, not just a meeting point).
+    // Two displays are adjacent when they share at least 1 px of a horizontal
+    // or vertical *edge* (not just a single corner point).
     //
-    // However, the spec says "share or overlap by ≥1px along a horizontal or
-    // vertical edge".  A 1-px shared edge (width=1 or height=1 on the
-    // intersection) still qualifies.  Only a zero-length edge does not.
-    return intersection.width > 0 && intersection.height > 0;
+    // Overlapping displays are also considered adjacent.
+    final ar = a.rect;
+    final br = b.rect;
+
+    // If they already overlap, they are adjacent.
+    if (ar.overlaps(br)) return true;
+
+    // Shared horizontal boundary: rects line up horizontally and their
+    // vertical edges touch (top of one == bottom of the other).
+    final sharedHorizLeft = ar.left > br.left ? ar.left : br.left;
+    final sharedHorizRight = ar.right < br.right ? ar.right : br.right;
+    if (sharedHorizRight > sharedHorizLeft) {
+      if (ar.top == br.bottom || ar.bottom == br.top) return true;
+    }
+
+    // Shared vertical boundary: rects line up vertically and their
+    // horizontal edges touch (left of one == right of the other).
+    final sharedVertTop = ar.top > br.top ? ar.top : br.top;
+    final sharedVertBottom = ar.bottom < br.bottom ? ar.bottom : br.bottom;
+    if (sharedVertBottom > sharedVertTop) {
+      if (ar.left == br.right || ar.right == br.left) return true;
+    }
+
+    return false;
   }
 
   @override
@@ -175,9 +182,7 @@ class NativeDisplayManager implements DisplayManager {
     // Emit disconnection events for displays that have gone away.
     for (final prevId in _previousDisplayIds) {
       if (!newIds.contains(prevId)) {
-        _logger.warning(
-          'DisplayManager: display "$prevId" disconnected.',
-        );
+        _logger.warning('DisplayManager: display "$prevId" disconnected.');
         _eventBus.emit(DisplayDisconnectedEvent(displayId: prevId));
       }
     }

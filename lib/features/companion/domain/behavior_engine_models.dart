@@ -132,8 +132,14 @@ class WindowInfo {
           isVisible == other.isVisible;
 
   @override
-  int get hashCode =>
-      Object.hash(windowId, appBundleId, windowTitle, bounds, isMinimized, isVisible);
+  int get hashCode => Object.hash(
+    windowId,
+    appBundleId,
+    windowTitle,
+    bounds,
+    isMinimized,
+    isVisible,
+  );
 
   @override
   String toString() =>
@@ -234,16 +240,16 @@ class PhysicsEntityState {
 
   @override
   int get hashCode => Object.hash(
-        x,
-        y,
-        vx,
-        vy,
-        width,
-        height,
-        isAirborne,
-        isStationary,
-        stationaryTicks,
-      );
+    x,
+    y,
+    vx,
+    vy,
+    width,
+    height,
+    isAirborne,
+    isStationary,
+    stationaryTicks,
+  );
 
   @override
   String toString() =>
@@ -286,6 +292,12 @@ class ThrowableObjectState {
   /// Reset to `null` when pathfinding succeeds again.
   final DateTime? unreachableSince;
 
+  /// Visual/behavior flavor of the object, e.g. `ball` or `treat`.
+  final String kind;
+
+  /// Current center position in the companion game coordinate space.
+  final Offset position;
+
   const ThrowableObjectState({
     required this.id,
     required this.spawnPriority,
@@ -295,6 +307,8 @@ class ThrowableObjectState {
     required this.stationaryTickCount,
     this.stationaryAt,
     this.unreachableSince,
+    this.kind = 'ball',
+    this.position = Offset.zero,
   });
 
   ThrowableObjectState copyWith({
@@ -306,6 +320,8 @@ class ThrowableObjectState {
     int? stationaryTickCount,
     DateTime? stationaryAt,
     DateTime? unreachableSince,
+    String? kind,
+    Offset? position,
   }) {
     return ThrowableObjectState(
       id: id ?? this.id,
@@ -316,6 +332,8 @@ class ThrowableObjectState {
       stationaryTickCount: stationaryTickCount ?? this.stationaryTickCount,
       stationaryAt: stationaryAt ?? this.stationaryAt,
       unreachableSince: unreachableSince ?? this.unreachableSince,
+      kind: kind ?? this.kind,
+      position: position ?? this.position,
     );
   }
 
@@ -331,24 +349,28 @@ class ThrowableObjectState {
           lifecycle == other.lifecycle &&
           stationaryTickCount == other.stationaryTickCount &&
           stationaryAt == other.stationaryAt &&
-          unreachableSince == other.unreachableSince;
+          unreachableSince == other.unreachableSince &&
+          kind == other.kind &&
+          position == other.position;
 
   @override
   int get hashCode => Object.hash(
-        id,
-        spawnPriority,
-        spawnOrigin,
-        physicsId,
-        lifecycle,
-        stationaryTickCount,
-        stationaryAt,
-        unreachableSince,
-      );
+    id,
+    spawnPriority,
+    spawnOrigin,
+    physicsId,
+    lifecycle,
+    stationaryTickCount,
+    stationaryAt,
+    unreachableSince,
+    kind,
+    position,
+  );
 
   @override
   String toString() =>
       'ThrowableObjectState(id: $id, priority: $spawnPriority, '
-      'lifecycle: $lifecycle, stationaryTickCount: $stationaryTickCount)';
+      'kind: $kind, lifecycle: $lifecycle, stationaryTickCount: $stationaryTickCount)';
 }
 
 // ---------------------------------------------------------------------------
@@ -397,14 +419,14 @@ class PetConfigV2 {
   /// Factory that returns the out-of-the-box configuration used when no
   /// persisted config file exists or when the saved file cannot be parsed.
   factory PetConfigV2.defaults() => const PetConfigV2(
-        mode: PetMode.freeRoam,
-        pinnedDisplayId: null,
-        constraintWindowBounds: Rect.fromLTWH(100, 100, 300, 300),
-        lastAnchorPoint: Offset.zero,
-        themeId: 'grey_cat',
-        petName: 'Mochi',
-        scale: 6.0,
-      );
+    mode: PetMode.freeRoam,
+    pinnedDisplayId: null,
+    constraintWindowBounds: Rect.fromLTWH(100, 100, 300, 300),
+    lastAnchorPoint: Offset.zero,
+    themeId: 'grey_cat',
+    petName: 'Mochi',
+    scale: 6.0,
+  );
 
   // ---- JSON serialization --------------------------------------------------
 
@@ -481,14 +503,14 @@ class PetConfigV2 {
 
   @override
   int get hashCode => Object.hash(
-        mode,
-        pinnedDisplayId,
-        constraintWindowBounds,
-        lastAnchorPoint,
-        themeId,
-        petName,
-        scale,
-      );
+    mode,
+    pinnedDisplayId,
+    constraintWindowBounds,
+    lastAnchorPoint,
+    themeId,
+    petName,
+    scale,
+  );
 
   @override
   String toString() =>
@@ -508,11 +530,11 @@ class PetConfigV2 {
   }
 
   static Map<String, dynamic> _rectToJson(Rect rect) => <String, dynamic>{
-        'left': rect.left,
-        'top': rect.top,
-        'width': rect.width,
-        'height': rect.height,
-      };
+    'left': rect.left,
+    'top': rect.top,
+    'width': rect.width,
+    'height': rect.height,
+  };
 
   static Rect _parseRect(dynamic raw, Rect fallback) {
     if (raw is! Map) return fallback;
@@ -527,8 +549,10 @@ class PetConfigV2 {
     return Rect.fromLTWH(left, top, width, height);
   }
 
-  static Map<String, dynamic> _offsetToJson(Offset offset) =>
-      <String, dynamic>{'dx': offset.dx, 'dy': offset.dy};
+  static Map<String, dynamic> _offsetToJson(Offset offset) => <String, dynamic>{
+    'dx': offset.dx,
+    'dy': offset.dy,
+  };
 
   static Offset _parseOffset(dynamic raw, Offset fallback) {
     if (raw is! Map) return fallback;
@@ -565,10 +589,10 @@ class StateTransitionLog {
   });
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'previousState': previousState.name,
-        'newState': newState.name,
-        'utcTimestamp': utcTimestamp.toIso8601String(),
-      };
+    'previousState': previousState.name,
+    'newState': newState.name,
+    'utcTimestamp': utcTimestamp.toIso8601String(),
+  };
 
   @override
   bool operator ==(Object other) =>

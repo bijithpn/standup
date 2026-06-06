@@ -15,6 +15,7 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/companion_
 
 class PetAssetLoader {
   static final Map<String, ByteData> _byteCache = {};
+
   /// Decoded image cache — avoids re-decoding PNG bytes on every call.
   static final Map<String, ui.Image> _imageCache = {};
   static final Set<String> _failedAssets = {};

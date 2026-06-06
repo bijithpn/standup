@@ -22,7 +22,7 @@ import FlutterMacOS
 
 // MARK: - BehaviorEngineBridge
 
-final class BehaviorEngineBridge: NSObject {
+final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     static let shared = BehaviorEngineBridge()
 
     private var displayChangeSink: FlutterEventSink?
@@ -35,8 +35,30 @@ final class BehaviorEngineBridge: NSObject {
 
     // MARK: - Setup
 
-    /// Call this once from MainFlutterWindow to register event channels and add
-    /// the new method-call cases to the existing bridge channel handler.
+    static func register(with registrar: FlutterPluginRegistrar) {
+        let bridge = BehaviorEngineBridge.shared
+        
+        let methodChannel = FlutterMethodChannel(
+            name: "com.breakmate.desktop/bridge",
+            binaryMessenger: registrar.messenger
+        )
+        registrar.addMethodCallDelegate(bridge, channel: methodChannel)
+        
+        // EventChannel — display changes (NSApplicationDidChangeScreenParametersNotification)
+        let displayEventChannel = FlutterEventChannel(
+            name: "com.breakmate.desktop/displayChange",
+            binaryMessenger: registrar.messenger
+        )
+        displayEventChannel.setStreamHandler(DisplayChangeStreamHandler.shared)
+
+        // EventChannel — constraint window bounds changes
+        let constraintEventChannel = FlutterEventChannel(
+            name: "com.breakmate.desktop/constraintWindowBounds",
+            binaryMessenger: registrar.messenger
+        )
+        constraintEventChannel.setStreamHandler(ConstraintBoundsStreamHandler.shared)
+    }
+
     func setup(binaryMessenger: FlutterBinaryMessenger) {
         // EventChannel — display changes (NSApplicationDidChangeScreenParametersNotification)
         let displayEventChannel = FlutterEventChannel(
@@ -51,6 +73,24 @@ final class BehaviorEngineBridge: NSObject {
             binaryMessenger: binaryMessenger
         )
         constraintEventChannel.setStreamHandler(ConstraintBoundsStreamHandler.shared)
+    }
+
+    func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        let args = call.arguments as? [String: Any]
+        switch call.method {
+        case "enumerateDisplays":
+            handleEnumerateDisplays(result: result)
+        case "getCursorPosition":
+            handleGetCursorPosition(result: result)
+        case "getVisibleWindows":
+            handleGetVisibleWindows(result: result)
+        case "showConstraintWindow":
+            handleShowConstraintWindow(args: args, result: result)
+        case "hideConstraintWindow":
+            handleHideConstraintWindow(result: result)
+        default:
+            result(FlutterMethodNotImplemented)
+        }
     }
 
     // MARK: - Method Handlers

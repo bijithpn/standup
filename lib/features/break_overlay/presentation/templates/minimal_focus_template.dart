@@ -96,7 +96,8 @@ class MinimalFocusTemplate extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
-                if (settings.showExercisesInBreak && breakInfo.tip.isNotEmpty) ...[
+                if (settings.showExercisesInBreak &&
+                    breakInfo.tip.isNotEmpty) ...[
                   const SizedBox(height: 32),
                   SizedBox(
                     width: 320,

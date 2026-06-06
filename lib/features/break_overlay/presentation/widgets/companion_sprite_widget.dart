@@ -83,8 +83,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   void dispose() {
     _animationController.dispose();
     _frameIndexNotifier.dispose();
-    _loadedImage?.dispose();
-    _backgroundImage?.dispose();
     super.dispose();
   }
 
@@ -112,7 +110,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         await _loadBackground(widget.backgroundImagePath!);
       } else if (widget.backgroundImagePath == null &&
           _backgroundImage != null) {
-        _backgroundImage?.dispose();
         _backgroundImage = null;
         _currentBackgroundPath = null;
       }
@@ -136,9 +133,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     try {
       final ui.Image bg = await PetAssetLoader.loadImage(path);
       if (mounted) {
-        if (_backgroundImage != null && _backgroundImage != bg) {
-          _backgroundImage?.dispose();
-        }
         setState(() {
           _backgroundImage = bg;
           _currentBackgroundPath = path;
@@ -213,12 +207,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   Future<void> _loadImage(String path) async {
     final ui.Image img = await PetAssetLoader.loadImage(path);
     if (mounted) {
-      // Dispose old image if it exists and is different
-      if (_loadedImage != null && _loadedImage != img) {
-        // We don't dispose here because PetAssetLoader might return the same image if it was cached locally (but it's not)
-        // Actually, since we now instantiate every time in PetAssetLoader.loadImage, we SHOULD dispose.
-        _loadedImage?.dispose();
-      }
+      // Do not dispose the old image as it is cached in PetAssetLoader._imageCache
       setState(() {
         _loadedImage = img;
         _currentLoadedPath = path;

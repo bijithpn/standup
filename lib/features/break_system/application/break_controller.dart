@@ -166,7 +166,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       if (settings.playMusicDuringBreak) {
         _startMusic();
       }
-    } else if (shouldShowWarning && !_hasShownPreBreakWarning && !overlayService.isOverlayVisible) {
+    } else if (shouldShowWarning &&
+        !_hasShownPreBreakWarning &&
+        !overlayService.isOverlayVisible) {
       _hasShownPreBreakWarning = true;
       overlayService.showOverlay(
         type: OverlayType.preBreakWarning,

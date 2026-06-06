@@ -12,11 +12,9 @@ import 'package:breakmate/core/native/native_bridge.dart';
 ///
 /// Requirements: 5.1, 5.2, 5.3, 5.5, 5.6
 class CursorTracker {
-  CursorTracker({
-    NativeBridgePlatform? bridge,
-    EventBus? eventBus,
-  })  : _bridge = bridge ?? NativeBridge.instance,
-        _eventBus = eventBus ?? EventBus.instance;
+  CursorTracker({NativeBridgePlatform? bridge, EventBus? eventBus})
+    : _bridge = bridge ?? NativeBridge.instance,
+      _eventBus = eventBus ?? EventBus.instance;
 
   static const double interactionZoneRadius = 80.0; // logical px
   static const double fastVelocityThreshold = 800.0; // logical px/s
@@ -104,7 +102,6 @@ class CursorTracker {
       _dwellSeconds = 0;
       _dwellEmitted = false;
     }
-
   }
 
   /// Convert a macOS screen-bottom-left coordinate to Flame screen-top-left.

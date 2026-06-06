@@ -17,8 +17,8 @@ import 'package:breakmate/features/companion/domain/behavior_engine_models.dart'
 /// Requirement references: 11.1, 11.2, 11.3, 11.4, 11.6, 11.7.
 class SettingsPersistence {
   SettingsPersistence({AppLogger? logger, String? configPathOverride})
-      : _logger = logger ?? AppLogger(),
-        _configPathOverride = configPathOverride;
+    : _logger = logger ?? AppLogger(),
+      _configPathOverride = configPathOverride;
 
   final AppLogger _logger;
   final String? _configPathOverride;
@@ -73,9 +73,7 @@ class SettingsPersistence {
       final contents = file.readAsStringSync();
       final decoded = jsonDecode(contents) as Map<String, dynamic>;
       _config = PetConfigV2.fromJson(decoded);
-      _logger.info(
-        'SettingsPersistence: loaded config from $path',
-      );
+      _logger.info('SettingsPersistence: loaded config from $path');
     } on FileSystemException catch (e) {
       _logger.error(
         'SettingsPersistence: could not read config file "$path": '
@@ -148,9 +146,9 @@ class SettingsPersistence {
     final path = _configPath;
     final tmpPath = '$path.tmp';
     try {
-      final jsonString = const JsonEncoder.withIndent('  ').convert(
-        config.toJson(),
-      );
+      final jsonString = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(config.toJson());
 
       // Ensure parent directory exists before writing.
       final dir = File(path).parent;

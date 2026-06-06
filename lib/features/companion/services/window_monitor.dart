@@ -37,9 +37,9 @@ class NativeWindowMonitor implements WindowMonitor {
     NativeBridgePlatform? bridge,
     EventBus? eventBus,
     AppLogger? logger,
-  })  : _bridge = bridge ?? NativeBridge.instance,
-        _eventBus = eventBus ?? EventBus.instance,
-        _logger = logger ?? AppLogger();
+  }) : _bridge = bridge ?? NativeBridge.instance,
+       _eventBus = eventBus ?? EventBus.instance,
+       _logger = logger ?? AppLogger();
 
   final NativeBridgePlatform _bridge;
   final EventBus _eventBus;
@@ -94,8 +94,9 @@ class NativeWindowMonitor implements WindowMonitor {
 
   void _diffAndEmit(Rect petBounds, List<WindowInfo> currentWindows) {
     // --- Overlap detection ---
-    final bool nowOverlapping = currentWindows.any((w) =>
-        petBounds.overlaps(w.bounds));
+    final bool nowOverlapping = currentWindows.any(
+      (w) => petBounds.overlaps(w.bounds),
+    );
 
     if (nowOverlapping && !_wasOverlapping) {
       _eventBus.emit(PetWindowOverlapEvent(started: true));
@@ -107,20 +108,28 @@ class NativeWindowMonitor implements WindowMonitor {
     _wasOverlapping = nowOverlapping;
 
     // --- Standing surface detection ---
-    final WindowInfo? currentStanding =
-        currentPlatform(petBounds, currentWindows);
+    final WindowInfo? currentStanding = currentPlatform(
+      petBounds,
+      currentWindows,
+    );
 
     if (_standingWindowId != null) {
       // Pet was previously standing on a window.
       final WindowInfo? previousStandingWindow = _previousWindows
           .cast<WindowInfo?>()
-          .firstWhere((w) => w?.windowId == _standingWindowId, orElse: () => null);
+          .firstWhere(
+            (w) => w?.windowId == _standingWindowId,
+            orElse: () => null,
+          );
 
       if (previousStandingWindow != null) {
         // Check if it was removed (closed/minimized).
         final WindowInfo? stillPresent = currentWindows
             .cast<WindowInfo?>()
-            .firstWhere((w) => w?.windowId == _standingWindowId, orElse: () => null);
+            .firstWhere(
+              (w) => w?.windowId == _standingWindowId,
+              orElse: () => null,
+            );
 
         if (stillPresent == null) {
           // Window was closed or minimized.

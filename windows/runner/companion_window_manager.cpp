@@ -39,7 +39,7 @@ static void ConfigureAsCompanionWindow(HWND hwnd, bool click_through) {
   // Per-pixel alpha: use LWA_COLORKEY+LWA_ALPHA together so Flutter's
   // transparent pixels pass through. Full opacity (255) lets Flutter
   // manage alpha via its own rendering.
-  SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 255, LWA_ALPHA);
+  SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 255, LWA_COLORKEY | LWA_ALPHA);
 
   // Always on top, no activation
   SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,

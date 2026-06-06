@@ -48,7 +48,9 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
       duration: const Duration(milliseconds: 200),
       value: _selected == _Activity.breathing ? 0.0 : 1.0,
     );
-    _underlineWidth = _underlineController.drive(CurveTween(curve: Curves.easeOut));
+    _underlineWidth = _underlineController.drive(
+      CurveTween(curve: Curves.easeOut),
+    );
   }
 
   @override
@@ -135,10 +137,8 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                           duration: const Duration(milliseconds: 250),
                           switchInCurve: Curves.easeOut,
                           switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, anim) => FadeTransition(
-                            opacity: anim,
-                            child: child,
-                          ),
+                          transitionBuilder: (child, anim) =>
+                              FadeTransition(opacity: anim, child: child),
                           child: _selected == _Activity.breathing
                               ? GuidedBreathingWidget(
                                   key: _activityKey,

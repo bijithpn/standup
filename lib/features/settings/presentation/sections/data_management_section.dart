@@ -15,7 +15,8 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/core/storage/models/daily_stats.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/core/storage/models/key_value_record.dart';
-import 'package:breakmate/features/analytics/stats_service.dart' show StatsService;
+import 'package:breakmate/features/analytics/stats_service.dart'
+    show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
 
 class DataManagementSection extends StatefulWidget {
@@ -67,13 +68,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         'daily_stats':
             _storage.dailyStatsBox?.getAll().map((e) => e.toMap()).toList() ??
             [],
-        'kv_records': _storage.kvBox
+        'kv_records':
+            _storage.kvBox
                 ?.getAll()
-                .map((e) => {
-                      'key': e.key,
-                      'value': e.value,
-                      'type': e.type,
-                    })
+                .map((e) => {'key': e.key, 'value': e.value, 'type': e.type})
                 .toList() ??
             [],
       };
@@ -263,7 +261,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                 SimplePrefs.instance.setString(key, value);
               } else if (type == 'double') {
                 final doubleVal = double.tryParse(value);
-                if (doubleVal != null) SimplePrefs.instance.setDouble(key, doubleVal);
+                if (doubleVal != null) {
+                  SimplePrefs.instance.setDouble(key, doubleVal);
+                }
               }
             }
           }
@@ -329,16 +329,20 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           final breaksCompleted = int.tryParse(parts[1].trim()) ?? 0;
           final breaksSkipped = int.tryParse(parts[2].trim()) ?? 0;
           final usageMinutes = int.tryParse(parts[3].trim()) ?? 0;
-          final wellnessActions = parts.length > 4 ? (int.tryParse(parts[4].trim()) ?? 0) : 0;
+          final wellnessActions = parts.length > 4
+              ? (int.tryParse(parts[4].trim()) ?? 0)
+              : 0;
 
-          statsList.add(DailyStats(
-            id: 0,
-            date: date,
-            breaksCompleted: breaksCompleted,
-            breaksSkipped: breaksSkipped,
-            usageMinutes: usageMinutes,
-            wellnessActions: wellnessActions,
-          ));
+          statsList.add(
+            DailyStats(
+              id: 0,
+              date: date,
+              breaksCompleted: breaksCompleted,
+              breaksSkipped: breaksSkipped,
+              usageMinutes: usageMinutes,
+              wellnessActions: wellnessActions,
+            ),
+          );
         }
       }
 
@@ -356,17 +360,24 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       statsList.sort((a, b) => a.date.compareTo(b.date));
 
       // Build weekly_stats JSON
-      final jsonList = statsList.map((e) => {
-        'date': e.date,
-        'breaksCompleted': e.breaksCompleted,
-        'breaksSkipped': e.breaksSkipped,
-        'usageMinutes': e.usageMinutes,
-        'wellnessActions': e.wellnessActions,
-      }).toList();
+      final jsonList = statsList
+          .map(
+            (e) => {
+              'date': e.date,
+              'breaksCompleted': e.breaksCompleted,
+              'breaksSkipped': e.breaksSkipped,
+              'usageMinutes': e.usageMinutes,
+              'wellnessActions': e.wellnessActions,
+            },
+          )
+          .toList();
       final String weeklyDataJson = jsonEncode(jsonList);
 
       await _storage.setString(AppConstants.keyWeeklyStats, weeklyDataJson);
-      SimplePrefs.instance.setString(AppConstants.keyWeeklyStats, weeklyDataJson);
+      SimplePrefs.instance.setString(
+        AppConstants.keyWeeklyStats,
+        weeklyDataJson,
+      );
 
       // Sum totals
       int totalCompleted = 0;
@@ -377,14 +388,18 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       await _storage.setInt(AppConstants.keyBreaksCompleted, totalCompleted);
-      SimplePrefs.instance.setInt(AppConstants.keyBreaksCompleted, totalCompleted);
+      SimplePrefs.instance.setInt(
+        AppConstants.keyBreaksCompleted,
+        totalCompleted,
+      );
 
       await _storage.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
       SimplePrefs.instance.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
 
       // Check if we have today's row to restore daily counts
       final now = DateTime.now();
-      final todayStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final todayStr =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       DailyStats? todayRow;
       for (final s in statsList) {
         if (s.date == todayStr) {
@@ -394,8 +409,14 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       if (todayRow != null) {
-        await _storage.setInt(AppConstants.keyDailyUsageMinutes, todayRow.usageMinutes);
-        SimplePrefs.instance.setInt(AppConstants.keyDailyUsageMinutes, todayRow.usageMinutes);
+        await _storage.setInt(
+          AppConstants.keyDailyUsageMinutes,
+          todayRow.usageMinutes,
+        );
+        SimplePrefs.instance.setInt(
+          AppConstants.keyDailyUsageMinutes,
+          todayRow.usageMinutes,
+        );
       } else {
         await _storage.setInt(AppConstants.keyDailyUsageMinutes, 0);
         SimplePrefs.instance.setInt(AppConstants.keyDailyUsageMinutes, 0);
@@ -407,7 +428,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
       await _loadStats();
 
-      if (mounted) Toast.showSuccess(context, 'Stats imported from CSV successfully!');
+      if (mounted) {
+        Toast.showSuccess(context, 'Stats imported from CSV successfully!');
+      }
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to import CSV: $e');
     }

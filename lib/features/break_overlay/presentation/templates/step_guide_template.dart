@@ -90,9 +90,7 @@ class StepGuideTemplate extends StatelessWidget {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                step.endsWith('.')
-                                    ? step
-                                    : '$step.',
+                                step.endsWith('.') ? step : '$step.',
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.58),
                                   fontSize: 14,

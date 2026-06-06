@@ -18,6 +18,38 @@
 
 // ... rest of stream handlers ...
 
+struct WindowData {
+  HWND hwnd;
+  std::wstring title;
+  std::wstring class_name;
+  RECT rect;
+  bool is_minimized;
+};
+
+BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
+  std::vector<WindowData>* windows = reinterpret_cast<std::vector<WindowData>*>(lParam);
+  if (!IsWindowVisible(hwnd)) {
+    return TRUE;
+  }
+  int title_length = GetWindowTextLengthW(hwnd);
+  if (title_length == 0) {
+    return TRUE;
+  }
+  LONG ex_style = GetWindowLong(hwnd, GWL_EXSTYLE);
+  if (ex_style & WS_EX_TOOLWINDOW) {
+    return TRUE;
+  }
+  wchar_t title[256];
+  GetWindowTextW(hwnd, title, 256);
+  wchar_t class_name[256];
+  GetClassNameW(hwnd, class_name, 256);
+  RECT rect;
+  GetWindowRect(hwnd, &rect);
+  bool is_minimized = IsIconic(hwnd) != 0;
+  windows->push_back({hwnd, std::wstring(title), std::wstring(class_name), rect, is_minimized});
+  return TRUE;
+}
+
 HHOOK FlutterWindow::keyboard_hook_ = nullptr;
 
 LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
@@ -38,10 +70,20 @@ LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, L
   return CallNextHookEx(keyboard_hook_, nCode, wParam, lParam);
 }
 
+class FocusModeStreamHandler;
+static FocusModeStreamHandler* g_focus_mode_handler = nullptr;
+
+class MeetingDetectionStreamHandler;
+static MeetingDetectionStreamHandler* g_meeting_detection_handler = nullptr;
+
 class FocusModeStreamHandler : public flutter::StreamHandler<flutter::EncodableValue> {
  public:
   FocusModeStreamHandler() {}
-  virtual ~FocusModeStreamHandler() {}
+  virtual ~FocusModeStreamHandler() {
+    if (g_focus_mode_handler == this) {
+      g_focus_mode_handler = nullptr;
+    }
+  }
 
   void SendUpdate(bool is_active) {
     if (event_sink_) {
@@ -72,7 +114,11 @@ class FocusModeStreamHandler : public flutter::StreamHandler<flutter::EncodableV
 class MeetingDetectionStreamHandler : public flutter::StreamHandler<flutter::EncodableValue> {
  public:
   MeetingDetectionStreamHandler() {}
-  virtual ~MeetingDetectionStreamHandler() {}
+  virtual ~MeetingDetectionStreamHandler() {
+    if (g_meeting_detection_handler == this) {
+      g_meeting_detection_handler = nullptr;
+    }
+  }
 
   void SendUpdate(bool is_active, const std::string& bundle_id) {
     if (event_sink_) {
@@ -107,8 +153,6 @@ class MeetingDetectionStreamHandler : public flutter::StreamHandler<flutter::Enc
   std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> event_sink_;
 };
 
-static FocusModeStreamHandler* g_focus_mode_handler = nullptr;
-static MeetingDetectionStreamHandler* g_meeting_detection_handler = nullptr;
 static DisplayStreamHandler* g_display_stream_handler = nullptr;
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -142,9 +186,13 @@ bool FlutterWindow::OnCreate() {
 
   if (is_companion_) {
     // Companion window: only set up channels the companion widget needs.
-    // Skipping SetupBridge / SetupEventChannels / SetupWindowBridge / timer
-    // avoids crashes from APIs that only make sense in the main-app context.
+    SetupBridge();
     SetupCompanionBridge();
+    SetupOverlayBridge();
+    DisplayStreamHandler* dummy_handler = nullptr;
+    RegisterDisplayBridge(flutter_controller_->engine(), &dummy_handler);
+  } else if (is_overlay_) {
+    // Overlay window: only set up overlay-specific channels.
     SetupOverlayBridge();
   } else {
     // Main application window: full channel + event setup
@@ -314,8 +362,70 @@ void FlutterWindow::SetupBridge() {
              std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
         const std::string& method_name = call.method_name();
 
+        if (is_companion_ &&
+            method_name != "getCursorPosition" &&
+            method_name != "getVisibleWindows" &&
+            method_name != "showConstraintWindow" &&
+            method_name != "hideConstraintWindow") {
+          result->NotImplemented();
+          return;
+        }
+
         if (method_name == "getIdleTime") {
           result->Success(flutter::EncodableValue(bridge_utils::GetIdleTime()));
+        }
+        else if (method_name == "getCursorPosition") {
+          POINT pt;
+          if (GetCursorPos(&pt)) {
+            flutter::EncodableMap pos;
+            pos[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(pt.x));
+            pos[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(pt.y));
+            result->Success(flutter::EncodableValue(pos));
+          } else {
+            result->Error("CURSOR_ERROR", "Failed to get cursor position");
+          }
+        }
+        else if (method_name == "getVisibleWindows") {
+          std::vector<WindowData> window_list;
+          EnumWindows(EnumWindowsProc, reinterpret_cast<LPARAM>(&window_list));
+
+          flutter::EncodableList encodable_list;
+          for (const auto& w : window_list) {
+            flutter::EncodableMap map;
+            map[flutter::EncodableValue("windowId")] = flutter::EncodableValue(reinterpret_cast<int64_t>(w.hwnd));
+            
+            // Convert title to UTF-8
+            int size_needed = WideCharToMultiByte(CP_UTF8, 0, w.title.c_str(), -1, NULL, 0, NULL, NULL);
+            std::string title_utf8(size_needed > 0 ? size_needed - 1 : 0, 0);
+            if (size_needed > 0) {
+              WideCharToMultiByte(CP_UTF8, 0, w.title.c_str(), -1, &title_utf8[0], size_needed, NULL, NULL);
+            }
+
+            // Convert class name to UTF-8
+            size_needed = WideCharToMultiByte(CP_UTF8, 0, w.class_name.c_str(), -1, NULL, 0, NULL, NULL);
+            std::string class_utf8(size_needed > 0 ? size_needed - 1 : 0, 0);
+            if (size_needed > 0) {
+              WideCharToMultiByte(CP_UTF8, 0, w.class_name.c_str(), -1, &class_utf8[0], size_needed, NULL, NULL);
+            }
+
+            map[flutter::EncodableValue("appBundleId")] = flutter::EncodableValue(class_utf8);
+            map[flutter::EncodableValue("windowTitle")] = flutter::EncodableValue(title_utf8);
+            map[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(w.rect.left));
+            map[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(w.rect.top));
+            map[flutter::EncodableValue("width")] = flutter::EncodableValue(static_cast<double>(w.rect.right - w.rect.left));
+            map[flutter::EncodableValue("height")] = flutter::EncodableValue(static_cast<double>(w.rect.bottom - w.rect.top));
+            map[flutter::EncodableValue("isMinimized")] = flutter::EncodableValue(w.is_minimized);
+            map[flutter::EncodableValue("isVisible")] = flutter::EncodableValue(true);
+
+            encodable_list.push_back(flutter::EncodableValue(map));
+          }
+          result->Success(flutter::EncodableValue(encodable_list));
+        }
+        else if (method_name == "showConstraintWindow") {
+          result->Success();
+        }
+        else if (method_name == "hideConstraintWindow") {
+          result->Success();
         }
         else if (method_name == "focusApp") {
           HWND hwnd = GetHandle();

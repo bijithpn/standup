@@ -107,7 +107,8 @@ class _BreakOverlayState extends State<BreakOverlay>
     if (!mounted) return false;
 
     // Check for Command/Control + Shift + B to quit the app
-    final isModifierPressed = HardwareKeyboard.instance.isMetaPressed ||
+    final isModifierPressed =
+        HardwareKeyboard.instance.isMetaPressed ||
         HardwareKeyboard.instance.isControlPressed;
     if (isModifierPressed &&
         HardwareKeyboard.instance.isShiftPressed &&
@@ -516,7 +517,8 @@ class _BreakOverlayContent extends StatelessWidget {
         ? settings.shortBreakDurationSeconds
         : settings.longBreakDurationMinutes * 60;
 
-    final templateOwnsChrome = breakInfo.type == BreakType.windDown ||
+    final templateOwnsChrome =
+        breakInfo.type == BreakType.windDown ||
         _kTemplatesWithChrome.contains(settings.breakTemplate);
 
     void onSkip() => controller.skipCurrentBreak();

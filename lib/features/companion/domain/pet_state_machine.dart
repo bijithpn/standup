@@ -44,10 +44,10 @@ enum PetState {
   breatheFire,
   fly,
   // Behavior-engine states (pet-behavior-engine spec)
-  chasing,    // pursuing a throwable object
-  fetching,   // carrying throwable back to origin
-  falling,    // airborne, gravity applied by PhysicsSimulator
-  reacting,   // cursor/window interaction response
+  chasing, // pursuing a throwable object
+  fetching, // carrying throwable back to origin
+  falling, // airborne, gravity applied by PhysicsSimulator
+  reacting, // cursor/window interaction response
 }
 
 /// Generic pet events that trigger state transitions.
@@ -75,19 +75,19 @@ enum PetEvent {
   petPlayed,
   animationComplete, // fired by CompanionComponent when a non-looping anim finishes
   // Behavior-engine events (pet-behavior-engine spec)
-  cursorEnteredZone,   // cursor inside 80px radius, velocity ≤800
-  cursorExitedZone,    // cursor left 80px radius
-  cursorDwell,         // stationary in zone ≥3s
-  cursorFastMove,      // velocity >800 px/s
-  throwableSpawned,    // new ThrowableObject created
+  cursorEnteredZone, // cursor inside 80px radius, velocity ≤800
+  cursorExitedZone, // cursor left 80px radius
+  cursorDwell, // stationary in zone ≥3s
+  cursorFastMove, // velocity >800 px/s
+  throwableSpawned, // new ThrowableObject created
   throwableStationary, // ThrowableObject became stationary
-  throwableFetched,    // pet reached throwable
-  throwableReturned,   // pet returned to throw origin
-  landedOnSurface,     // Falling → landed
-  windowOverlap,       // pet bounds overlap app window
-  windowOverlapEnded,  // overlap cleared
-  surfaceLost,         // standing window closed/minimized
-  loopBlocked,         // looping animation is blocked on final frame
+  throwableFetched, // pet reached throwable
+  throwableReturned, // pet returned to throw origin
+  landedOnSurface, // Falling → landed
+  windowOverlap, // pet bounds overlap app window
+  windowOverlapEnded, // overlap cleared
+  surfaceLost, // standing window closed/minimized
+  loopBlocked, // looping animation is blocked on final frame
 }
 
 /// Weighted transition with conditions.
@@ -116,14 +116,14 @@ class PetTransition {
 /// Higher number wins when multiple transition targets are active simultaneously.
 /// States not listed here have an implicit priority of 0.
 const Map<PetState, int> _statePriority = {
-  PetState.falling:  5,
-  PetState.chasing:  4,
+  PetState.falling: 5,
+  PetState.chasing: 4,
   PetState.fetching: 4,
-  PetState.run:      3,
+  PetState.run: 3,
   PetState.reacting: 3,
-  PetState.walk:     2,
-  PetState.resting:  2,
-  PetState.idle:     1,
+  PetState.walk: 2,
+  PetState.resting: 2,
+  PetState.idle: 1,
 };
 
 /// Abstracted state machine with weighted transitions and mood awareness.
@@ -207,14 +207,16 @@ class PetStateMachine extends ChangeNotifier {
       final int maxPriority = matched
           .map((t) => _statePriority[t.targetState] ?? 0)
           .reduce((a, b) => a > b ? a : b);
-      final highPriority =
-          matched.where((t) => (_statePriority[t.targetState] ?? 0) == maxPriority).toList();
+      final highPriority = matched
+          .where((t) => (_statePriority[t.targetState] ?? 0) == maxPriority)
+          .toList();
 
       if (highPriority.length == 1) {
         selected = highPriority.first;
       } else {
         // Multiple transitions at the same priority — use weighted random.
-        double threshold = _rng.nextDouble() *
+        double threshold =
+            _rng.nextDouble() *
             highPriority.fold<double>(0, (s, t) => s + t.weight);
         for (final t in highPriority) {
           threshold -= t.weight;
@@ -1008,12 +1010,14 @@ class PetStateMachine extends ChangeNotifier {
     PetState.reacting: [
       PetTransition(
         event: PetEvent.cursorExitedZone,
-        targetState: PetState.idle, // sentinel — handleEvent resolves to _priorState
+        targetState:
+            PetState.idle, // sentinel — handleEvent resolves to _priorState
         weight: 1.0,
       ),
       PetTransition(
         event: PetEvent.windowOverlapEnded,
-        targetState: PetState.idle, // sentinel — handleEvent resolves to _priorState
+        targetState:
+            PetState.idle, // sentinel — handleEvent resolves to _priorState
         weight: 1.0,
       ),
       PetTransition(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -25,6 +26,7 @@ class CompanionOverlayController extends ChangeNotifier {
       sl<PetRegistryService>().getEnabledProfiles();
 
   bool _companionEnabled = false;
+  bool _pipModeEnabled = false;
   String _companionPetTheme = 'grey_cat';
   String _companionPetName = 'Mochi';
   double _companionScale = 6.0;
@@ -125,11 +127,19 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   bool get companionEnabled => _companionEnabled;
+  bool get pipModeEnabled => _pipModeEnabled;
   String get companionPetTheme => _companionPetTheme;
   String get companionPetName => _companionPetName;
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
   bool get companionFollowMouse => _companionFollowMouse;
+  bool get pettingEnabled => _settingsRepo.currentSettings.pettingEnabled;
+  bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
+  bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
+  bool get developerReactions =>
+      _settingsRepo.currentSettings.developerReactions;
+  bool get quietModeAutoActivate =>
+      _settingsRepo.currentSettings.quietModeAutoActivate;
   bool get isLowDistractionMode =>
       _companionClickThrough && !_companionFollowMouse && !_enableAnimations;
   String get companionStateExplanation {
@@ -157,6 +167,7 @@ class CompanionOverlayController extends ChangeNotifier {
     final settings = _settingsRepo.currentSettings;
 
     _companionEnabled = settings.companionEnabled;
+    _pipModeEnabled = settings.pipModeEnabled;
     _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
     _companionScale = settings.companionScale;
@@ -181,6 +192,7 @@ class CompanionOverlayController extends ChangeNotifier {
     final settings = _settingsRepo.currentSettings;
 
     final enabledChanged = _companionEnabled != settings.companionEnabled;
+    final pipModeChanged = _pipModeEnabled != settings.pipModeEnabled;
     final themeChanged = _companionPetTheme != settings.companionPetTheme;
     final nameChanged = _companionPetName != settings.companionPetName;
     final scaleChanged = _companionScale != settings.companionScale;
@@ -193,6 +205,7 @@ class CompanionOverlayController extends ChangeNotifier {
         _companionPreviewBackground != settings.companionPreviewBackground;
 
     if (!enabledChanged &&
+        !pipModeChanged &&
         !themeChanged &&
         !nameChanged &&
         !scaleChanged &&
@@ -204,6 +217,7 @@ class CompanionOverlayController extends ChangeNotifier {
     }
 
     _companionEnabled = settings.companionEnabled;
+    _pipModeEnabled = settings.pipModeEnabled;
     _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
     _companionScale = settings.companionScale;
@@ -219,7 +233,12 @@ class CompanionOverlayController extends ChangeNotifier {
         !_isPreviewMode;
 
     if (shouldShow) {
-      if (!_isCompanionShown) {
+      if (!_isCompanionShown || pipModeChanged) {
+        if (_isCompanionShown && pipModeChanged) {
+          _isCompanionShown = false;
+          NativeBridge.hideCompanion();
+          NativeBridge.hidePipWindow();
+        }
         _showNativeCompanion();
       } else {
         if (themeChanged) {
@@ -238,13 +257,18 @@ class CompanionOverlayController extends ChangeNotifier {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
         if (animationsChanged) {
-          NativeBridge.showCompanion(_companionPayload());
+          if (Platform.isMacOS && _pipModeEnabled) {
+            NativeBridge.showPipWindow(_companionPayload());
+          } else {
+            NativeBridge.showCompanion(_companionPayload());
+          }
         }
       }
     } else {
       if (_isCompanionShown) {
         _isCompanionShown = false;
         NativeBridge.hideCompanion();
+        NativeBridge.hidePipWindow();
       }
     }
 
@@ -256,7 +280,11 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_isPreviewMode) return;
 
     _isCompanionShown = true;
-    await NativeBridge.showCompanion(_companionPayload());
+    if (Platform.isMacOS && _pipModeEnabled) {
+      await NativeBridge.showPipWindow(_companionPayload());
+    } else {
+      await NativeBridge.showCompanion(_companionPayload());
+    }
   }
 
   Map<String, dynamic> _companionPayload() {
@@ -393,10 +421,52 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
   }
 
+  Future<void> changePettingEnabled(bool value) async {
+    final updated = _settingsRepo.currentSettings.copyWith(
+      pettingEnabled: value,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeBallThrowEnabled(bool value) async {
+    final updated = _settingsRepo.currentSettings.copyWith(
+      ballThrowEnabled: value,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeTreatEnabled(bool value) async {
+    final updated = _settingsRepo.currentSettings.copyWith(treatEnabled: value);
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeDeveloperReactions(bool value) async {
+    final updated = _settingsRepo.currentSettings.copyWith(
+      developerReactions: value,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeQuietModeAutoActivate(bool value) async {
+    final updated = _settingsRepo.currentSettings.copyWith(
+      quietModeAutoActivate: value,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changePipModeEnabled(bool value) async {
+    if (_pipModeEnabled == value) return;
+    final updated = _settingsRepo.currentSettings.copyWith(
+      pipModeEnabled: value,
+    );
+    await _settingsRepo.save(updated);
+  }
+
   Future<void> refreshCompanion() async {
     if (!_companionEnabled) return;
     _isCompanionShown = false;
     await NativeBridge.hideCompanion();
+    await NativeBridge.hidePipWindow();
     await Future.delayed(const Duration(milliseconds: 300));
     await _showNativeCompanion();
   }
@@ -408,6 +478,7 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_companionEnabled) {
       _isCompanionShown = false;
       NativeBridge.hideCompanion();
+      NativeBridge.hidePipWindow();
     }
     super.dispose();
   }
