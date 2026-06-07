@@ -39,15 +39,6 @@ void main() {
       scale: 3.0,
     ),
     PetConfigV2(
-      mode: PetMode.freeRoam,
-      pinnedDisplayId: null,
-      constraintWindowBounds: Rect.fromLTWH(-50, -20, 250, 180),
-      lastAnchorPoint: Offset(1920, 1080),
-      themeId: 'pixel_cat',
-      petName: 'Pixel',
-      scale: 8.0,
-    ),
-    PetConfigV2(
       mode: PetMode.constrained,
       pinnedDisplayId: null,
       constraintWindowBounds: Rect.fromLTWH(10, 20, 200, 200),
@@ -73,15 +64,6 @@ void main() {
       themeId: 'cat_1',
       petName: 'Tiny',
       scale: 10.0,
-    ),
-    PetConfigV2(
-      mode: PetMode.constrained,
-      pinnedDisplayId: null,
-      constraintWindowBounds: Rect.fromLTWH(0, 0, 800, 800),
-      lastAnchorPoint: Offset(400, 400),
-      themeId: 'cat_50',
-      petName: 'BigCat',
-      scale: 2.0,
     ),
     PetConfigV2(
       mode: PetMode.freeRoam,

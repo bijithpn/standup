@@ -164,7 +164,8 @@ class CompanionComponent
     }
 
     current = target;
-    _stateElapsed = 0.0;
+    // Do NOT reset _stateElapsed — keeping it continuous prevents the idle
+    // bob scale.y from snapping on state transitions (visual discontinuity).
     _updateFlip();
   }
 
@@ -202,6 +203,17 @@ class CompanionComponent
     final speed = nav.speed;
     final vel = nav.velocity;
     final baseSpeed = game.currentTheme.species.defaultProfile.movementSpeed;
+
+    // ALWAYS sync position from navigation service first — before any early
+    // returns — so the component never lags behind the nav service position.
+    final servicePos = nav.currentPosition;
+    position = Vector2(servicePos.dx, servicePos.dy);
+
+    // Sync horizontal flip from velocity direction
+    if (vel.dx.abs() > 0.5) {
+      _direction = vel.dx > 0 ? 1.0 : -1.0;
+      _updateFlip();
+    }
 
     // --- Dynamic Step Time / Prevents Foot-sliding ---
     // Scaled dt based on velocity ratio, ensuring perfect physical pacing
@@ -264,16 +276,6 @@ class CompanionComponent
         // Skip super.update to keep the ticker frozen.
         return;
       }
-    }
-
-    // Sync position from navigation service
-    final servicePos = nav.currentPosition;
-    position = Vector2(servicePos.dx, servicePos.dy);
-
-    // Sync horizontal flip from velocity direction
-    if (vel.dx.abs() > 0.5) {
-      _direction = vel.dx > 0 ? 1.0 : -1.0;
-      _updateFlip();
     }
 
     // --- Directional Walk & Deceleration Transitions ---

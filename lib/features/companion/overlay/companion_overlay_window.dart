@@ -103,6 +103,8 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     // Extract theme + scale before game init so we can start with right values
     final newThemeId = (args['themeId'] as String?) ?? _themeId;
     final newScale = (args['scale'] as num?)?.toDouble() ?? _scale;
+    final newToyType = (args['companionToyType'] as String?) ?? 'tennis_ball';
+    final newTreatType = (args['companionTreatType'] as String?) ?? 'sushi';
 
     if (!_gameInitialized) {
       // First call: initialise the game with the provided settings
@@ -112,6 +114,8 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         _game = CompanionGame(
           initialTheme: PetTheme.getTheme(newThemeId),
           scaleOverride: newScale > 0 ? newScale : 6.0,
+          toyType: newToyType,
+          treatType: newTreatType,
         );
         _gameInitialized = true;
       });
@@ -141,6 +145,16 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
           _scale = newScale;
           _game!.updateScale(newScale);
         }
+      }
+
+      if (args.containsKey('companionToyType')) {
+        final String newToyType = args['companionToyType'] as String;
+        _game!.updateToyType(newToyType);
+      }
+
+      if (args.containsKey('companionTreatType')) {
+        final String newTreatType = args['companionTreatType'] as String;
+        _game!.updateTreatType(newTreatType);
       }
 
       if (args.containsKey('petName')) {

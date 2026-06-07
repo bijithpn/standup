@@ -71,7 +71,6 @@ class PetRegistryService {
       'assets/animations/cats/cat_4/',
       'assets/animations/cats/cat_5/',
       'assets/animations/cats/cat_6/',
-      'assets/animations/cats/cat_50/',
     ];
 
     for (final path in legacyPaths) {

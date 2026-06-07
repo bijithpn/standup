@@ -308,6 +308,8 @@ void _setupIpcBridge() {
         } else if (action == 'reset') {
           timerEngine.resetTimers();
         }
+      case 'companion.close':
+        sl<CompanionOverlayController>().toggleCompanion(false);
       case 'companion.positionChanged':
         eventBus.emit(
           CompanionPositionChangedEvent(

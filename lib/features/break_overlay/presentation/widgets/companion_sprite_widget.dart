@@ -13,6 +13,9 @@ class CompanionSpriteWidget extends StatefulWidget {
   final bool flipX;
   final bool isStatic;
   final String? backgroundImagePath;
+  final Size? size;
+  final double petYOffset;
+  final double petXOffset;
 
   static void clearCache() {
     // PetAssetLoader handles the byte cache now
@@ -34,6 +37,9 @@ class CompanionSpriteWidget extends StatefulWidget {
     this.flipX = false,
     this.isStatic = false,
     this.backgroundImagePath,
+    this.size,
+    this.petYOffset = 0.0,
+    this.petXOffset = 0.0,
   });
 
   @override
@@ -218,10 +224,14 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Normalize all sprite sizes to the 32x32 baseline visual size to ensure consistency with game rendering
+    final double effectiveScale =
+        widget.scale * (32.0 / widget.petTheme.spriteSize);
+
     if (_isLoading || _loadedImage == null) {
       return SizedBox(
-        width: widget.petTheme.spriteSize * widget.scale,
-        height: widget.petTheme.spriteSize * widget.scale,
+        width: (widget.size?.width) ?? (widget.petTheme.spriteSize * effectiveScale),
+        height: (widget.size?.height) ?? (widget.petTheme.spriteSize * effectiveScale),
       );
     }
 
@@ -273,10 +283,11 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
               1.0,
             ),
             child: CustomPaint(
-              size: Size(
-                frameWidth * widget.scale,
-                frameHeight * widget.scale,
-              ),
+              size: widget.size ??
+                  Size(
+                    frameWidth * effectiveScale,
+                    frameHeight * effectiveScale,
+                  ),
               painter: _SpritePainter(
                 image: _loadedImage!,
                 spriteSize: widget.petTheme.spriteSize,
@@ -285,7 +296,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
                 row: row,
                 frameIndex: frameIndex,
                 backgroundImage: _backgroundImage,
-                scale: widget.scale,
+                scale: effectiveScale,
+                petYOffset: widget.petYOffset,
+                petXOffset: widget.petXOffset,
               ),
             ),
           );
@@ -304,6 +317,8 @@ class _SpritePainter extends CustomPainter {
   final int frameIndex;
   final ui.Image? backgroundImage;
   final double scale;
+  final double petYOffset;
+  final double petXOffset;
 
   _SpritePainter({
     required this.image,
@@ -314,6 +329,8 @@ class _SpritePainter extends CustomPainter {
     required this.frameIndex,
     this.backgroundImage,
     required this.scale,
+    this.petYOffset = 0.0,
+    this.petXOffset = 0.0,
   });
 
   @override
@@ -324,7 +341,7 @@ class _SpritePainter extends CustomPainter {
         rect: Rect.fromLTWH(0, 0, size.width, size.height),
         image: backgroundImage!,
         fit: BoxFit.cover,
-        alignment: Alignment.center,
+        alignment: Alignment.bottomCenter, // Keep floor visible
         filterQuality: FilterQuality.none,
       );
     }
@@ -332,21 +349,16 @@ class _SpritePainter extends CustomPainter {
     final double srcX = frameIndex * frameWidth;
     final double srcY = row * frameHeight;
 
-    final src = Rect.fromLTWH(
-      srcX,
-      srcY,
-      frameWidth,
-      frameHeight,
-    );
+    final src = Rect.fromLTWH(srcX, srcY, frameWidth, frameHeight);
 
     // Calculate actual pixel size based on scale
     final double drawWidth = frameWidth * scale;
     final double drawHeight = frameHeight * scale;
 
-    // Position the pet at the bottom of the available space, centered horizontally
+    // Position the pet at the bottom of the available space, centered horizontally, with offsets
     final dst = Rect.fromLTWH(
-      (size.width - drawWidth) / 2,
-      size.height - drawHeight,
+      (size.width - drawWidth) / 2 + petXOffset,
+      size.height - drawHeight + petYOffset,
       drawWidth,
       drawHeight,
     );
@@ -364,6 +376,10 @@ class _SpritePainter extends CustomPainter {
         oldDelegate.frameWidth != frameWidth ||
         oldDelegate.frameHeight != frameHeight ||
         oldDelegate.row != row ||
-        oldDelegate.frameIndex != frameIndex;
+        oldDelegate.frameIndex != frameIndex ||
+        oldDelegate.backgroundImage != backgroundImage ||
+        oldDelegate.scale != scale ||
+        oldDelegate.petYOffset != petYOffset ||
+        oldDelegate.petXOffset != petXOffset;
   }
 }
