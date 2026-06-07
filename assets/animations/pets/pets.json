@@ -12,7 +12,7 @@
         "isSpriteSheet": true,
         "rowCount": 12,
         "frameCount": 8,
-        "spriteSize": 32
+        "spriteSize": 16
       },
       "personality": "balanced",
       "initialMood": "relaxed",
@@ -29,7 +29,7 @@
         "isSpriteSheet": true,
         "rowCount": 12,
         "frameCount": 8,
-        "spriteSize": 32
+        "spriteSize": 16
       },
       "personality": "playful",
       "initialMood": "happy",
@@ -46,40 +46,10 @@
         "isSpriteSheet": true,
         "rowCount": 12,
         "frameCount": 8,
-        "spriteSize": 32
+        "spriteSize": 16
       },
       "personality": "cool",
       "initialMood": "relaxed",
-      "isEnabled": true
-    },
-    {
-      "id": "large_cat",
-      "name": "Fluffy Large Cat",
-      "species": "cat",
-      "variant": {
-        "id": "large_cat",
-        "name": "Fluffy Large Cat",
-        "assetPath": "assets/animations/cats/large_cat/",
-        "isSpriteSheet": false,
-        "spriteSize": 32
-      },
-      "personality": "lazy",
-      "initialMood": "relaxed",
-      "isEnabled": true
-    },
-    {
-      "id": "pixel_cat",
-      "name": "Pixel Explorer Cat",
-      "species": "cat",
-      "variant": {
-        "id": "pixel_cat",
-        "name": "Pixel Explorer Cat",
-        "assetPath": "assets/animations/cats/pixel_cat/",
-        "isSpriteSheet": false,
-        "spriteSize": 64
-      },
-      "personality": "adventurous",
-      "initialMood": "curious",
       "isEnabled": true
     },
     {
@@ -255,6 +225,23 @@
       },
       "personality": "loyal",
       "initialMood": "happy",
+      "isEnabled": true
+    },
+    {
+      "id": "flamingo",
+      "name": "Pinky Flamingo",
+      "species": "flamingo",
+      "variant": {
+        "id": "flamingo",
+        "name": "Pinky Flamingo",
+        "assetPath": "assets/animations/flaming/PixelFlamingoSpriteSheet.png",
+        "isSpriteSheet": true,
+        "rowCount": 4,
+        "frameCount": 5,
+        "spriteSize": 128
+      },
+      "personality": "cool",
+      "initialMood": "relaxed",
       "isEnabled": true
     }
   ]
