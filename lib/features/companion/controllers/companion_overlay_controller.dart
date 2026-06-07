@@ -38,6 +38,12 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _isPreviewMode =
       false; // Hides native companion when viewing settings UI
 
+  String _pipBackgroundStyle = 'dark';
+  double _pipOpacity = 0.9;
+  bool _pipDraggableClickable = true;
+  String _companionToyType = 'tennis_ball';
+  String _companionTreatType = 'sushi';
+
   static const List<String> catNames = [
     'Mochi',
     'Luna',
@@ -94,6 +100,19 @@ class CompanionOverlayController extends ChangeNotifier {
     'Harley',
   ];
 
+  static const List<String> flamingoNames = [
+    'Pinky',
+    'Flo',
+    'Mingo',
+    'Ruby',
+    'Peach',
+    'Mango',
+    'Sherbet',
+    'Flammie',
+    'Coral',
+    'Sunset',
+  ];
+
   CompanionOverlayController({required SettingsRepository settingsRepo})
     : _settingsRepo = settingsRepo {
     _settingsRepo.addListener(_handleSettingsChanged);
@@ -132,6 +151,11 @@ class CompanionOverlayController extends ChangeNotifier {
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
   bool get companionFollowMouse => _companionFollowMouse;
+  String get pipBackgroundStyle => _pipBackgroundStyle;
+  double get pipOpacity => _pipOpacity;
+  bool get pipDraggableClickable => _pipDraggableClickable;
+  String get companionToyType => _companionToyType;
+  String get companionTreatType => _companionTreatType;
   bool get pettingEnabled => _settingsRepo.currentSettings.pettingEnabled;
   bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
   bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
@@ -174,6 +198,11 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionFollowMouse = settings.companionFollowMouse;
     _enableAnimations = settings.enableAnimations;
     _companionPreviewBackground = settings.companionPreviewBackground;
+    _pipBackgroundStyle = settings.pipBackgroundStyle;
+    _pipOpacity = settings.pipOpacity;
+    _pipDraggableClickable = settings.pipDraggableClickable;
+    _companionToyType = settings.companionToyType;
+    _companionTreatType = settings.companionTreatType;
 
     // Check initial break state if possible, though TimerEngine usually starts later
     try {
@@ -202,6 +231,13 @@ class CompanionOverlayController extends ChangeNotifier {
     final animationsChanged = _enableAnimations != settings.enableAnimations;
     final backgroundChanged =
         _companionPreviewBackground != settings.companionPreviewBackground;
+    final pipBackgroundStyleChanged =
+        _pipBackgroundStyle != settings.pipBackgroundStyle;
+    final pipOpacityChanged = _pipOpacity != settings.pipOpacity;
+    final pipDraggableClickableChanged =
+        _pipDraggableClickable != settings.pipDraggableClickable;
+    final toyTypeChanged = _companionToyType != settings.companionToyType;
+    final treatTypeChanged = _companionTreatType != settings.companionTreatType;
 
     if (!enabledChanged &&
         !pipModeChanged &&
@@ -211,7 +247,12 @@ class CompanionOverlayController extends ChangeNotifier {
         !clickChanged &&
         !followChanged &&
         !animationsChanged &&
-        !backgroundChanged) {
+        !backgroundChanged &&
+        !pipBackgroundStyleChanged &&
+        !pipOpacityChanged &&
+        !pipDraggableClickableChanged &&
+        !toyTypeChanged &&
+        !treatTypeChanged) {
       return; // Exit early if no companion settings have changed
     }
 
@@ -224,6 +265,11 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionFollowMouse = settings.companionFollowMouse;
     _enableAnimations = settings.enableAnimations;
     _companionPreviewBackground = settings.companionPreviewBackground;
+    _pipBackgroundStyle = settings.pipBackgroundStyle;
+    _pipOpacity = settings.pipOpacity;
+    _pipDraggableClickable = settings.pipDraggableClickable;
+    _companionToyType = settings.companionToyType;
+    _companionTreatType = settings.companionTreatType;
 
     final shouldShow =
         _companionEnabled &&
@@ -255,7 +301,12 @@ class CompanionOverlayController extends ChangeNotifier {
         if (followChanged) {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
-        if (animationsChanged) {
+        if (animationsChanged ||
+            pipBackgroundStyleChanged ||
+            pipOpacityChanged ||
+            pipDraggableClickableChanged ||
+            toyTypeChanged ||
+            treatTypeChanged) {
           if (_pipModeEnabled) {
             NativeBridge.showPipWindow(_companionPayload());
           } else {
@@ -295,6 +346,11 @@ class CompanionOverlayController extends ChangeNotifier {
       'followMouse': _companionFollowMouse,
       'wanderingEnabled': _enableAnimations,
       'isLowPowerMode': !_enableAnimations,
+      'pipBackgroundStyle': _pipBackgroundStyle,
+      'pipOpacity': _pipOpacity,
+      'pipDraggableClickable': _pipDraggableClickable,
+      'companionToyType': _companionToyType,
+      'companionTreatType': _companionTreatType,
     };
   }
 
@@ -345,6 +401,8 @@ class CompanionOverlayController extends ChangeNotifier {
 
     if (species == PetSpecies.dog) {
       names = dogNames;
+    } else if (species == PetSpecies.flamingo) {
+      names = flamingoNames;
     } else {
       names = catNames;
     }
@@ -457,6 +515,44 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_pipModeEnabled == value) return;
     final updated = _settingsRepo.currentSettings.copyWith(
       pipModeEnabled: value,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changePipBackgroundStyle(String style) async {
+    if (_pipBackgroundStyle == style) return;
+    final updated = _settingsRepo.currentSettings.copyWith(
+      pipBackgroundStyle: style,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changePipOpacity(double opacity) async {
+    if (_pipOpacity == opacity) return;
+    final updated = _settingsRepo.currentSettings.copyWith(pipOpacity: opacity);
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changePipDraggableClickable(bool enabled) async {
+    if (_pipDraggableClickable == enabled) return;
+    final updated = _settingsRepo.currentSettings.copyWith(
+      pipDraggableClickable: enabled,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeToyType(String toyType) async {
+    if (_companionToyType == toyType) return;
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionToyType: toyType,
+    );
+    await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeTreatType(String treatType) async {
+    if (_companionTreatType == treatType) return;
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionTreatType: treatType,
     );
     await _settingsRepo.save(updated);
   }

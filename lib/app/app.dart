@@ -13,6 +13,7 @@ import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:breakmate/app/main_layout.dart';
+import 'package:breakmate/main_common.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
@@ -115,9 +116,13 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
   void onWindowClose() async {
     // `preventClose` is true by default (menu-bar app – closing hides it).
     // When the user explicitly chooses Quit from the menu bar, MenuBarController
-    // sets preventClose = false before calling destroy(), so we do nothing here.
+    // sets preventClose = false before calling destroy().
+    // If preventClose is false, we trigger a clean exit of the entire app.
     final prevent = await windowManager.isPreventClose();
-    if (!prevent) return; // Quit flow already handled
+    if (!prevent) {
+      await gracefulShutdown();
+      return;
+    }
 
     // Default behavior: hide the window (menu-bar app style)
     await sl<OverlayWindowService>().reset();

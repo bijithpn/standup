@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flame/components.dart';
+import 'package:flame/sprite.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
@@ -18,8 +20,13 @@ class PetAssetLoader {
 
   /// Decoded image cache — avoids re-decoding PNG bytes on every call.
   static final Map<String, ui.Image> _imageCache = {};
+  static final Map<int, Uint8List?> _rgbaCache = {};
   static final Set<String> _failedAssets = {};
   static final Map<String, ui.Rect> _boundingBoxCache = {};
+  static final List<String> _lastValidationReport = [];
+
+  static List<String> get lastValidationReport =>
+      List.unmodifiable(_lastValidationReport);
 
   static Future<ui.Image> loadImage(String path) async {
     // Return cached decoded image — avoids codec instantiation overhead every tick.
@@ -67,7 +74,14 @@ class PetAssetLoader {
   }
 
   static String buildAssetPath(PetProfile profile, {String? stateName}) {
-    final speciesPath = profile.species == PetSpecies.dog ? 'dogs' : 'cats';
+    final String speciesPath;
+    if (profile.species == PetSpecies.dog) {
+      speciesPath = 'dogs';
+    } else if (profile.species == PetSpecies.flamingo) {
+      speciesPath = 'flaming';
+    } else {
+      speciesPath = 'cats';
+    }
     final basePath = 'assets/animations/$speciesPath/${profile.variant.id}/';
     if (stateName != null) {
       return '$basePath$stateName.png';
@@ -142,11 +156,214 @@ class PetAssetLoader {
     await extractPetIconPath(theme);
   }
 
+  static Future<List<String>> validateTheme(PetTheme theme) async {
+    final issues = <String>[];
+
+    try {
+      if (theme.type == PetType.composite) {
+        final image = await loadImage(theme.basePath);
+        final size = theme.spriteSize.toDouble();
+        for (final entry in theme.animations.entries) {
+          final config = entry.value;
+          if (config is! AnimationRowConfig) continue;
+          final frames = await _buildSheetAnimationFrames(
+            image: image,
+            state: entry.key,
+            row: config.row,
+            requestedFrameCount: config.frameCount,
+            spriteSize: size,
+            issues: issues,
+            assetPath: theme.basePath,
+          );
+          if (frames.isEmpty) {
+            issues.add(
+              '${theme.id}.${entry.key.name}: no valid frames in ${theme.basePath}',
+            );
+          }
+        }
+      } else {
+        for (final entry in theme.animations.entries) {
+          final config = entry.value;
+          if (config is! SeparateAnimationConfig) continue;
+          final path = '${theme.basePath}${config.fileName}';
+          final image = await loadImage(path);
+          final frames = await _buildStripAnimationFrames(
+            image: image,
+            state: entry.key,
+            requestedFrameCount: config.frameCount,
+            issues: issues,
+            assetPath: path,
+          );
+          if (frames.isEmpty) {
+            issues.add(
+              '${theme.id}.${entry.key.name}: no valid frames in $path',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      issues.add('${theme.id}: validation failed: $e');
+    }
+
+    return issues;
+  }
+
+  static Future<bool> _hasVisiblePixels(ui.Image image, ui.Rect rect) async {
+    final bytes = await _rgbaBytesFor(image);
+    if (bytes == null) return true;
+    final left = rect.left.floor().clamp(0, image.width).toInt();
+    final top = rect.top.floor().clamp(0, image.height).toInt();
+    final right = rect.right.ceil().clamp(0, image.width).toInt();
+    final bottom = rect.bottom.ceil().clamp(0, image.height).toInt();
+
+    for (int y = top; y < bottom; y++) {
+      final rowOffset = y * image.width * 4;
+      for (int x = left; x < right; x++) {
+        final offset = rowOffset + x * 4;
+        if (offset + 3 < bytes.length && bytes[offset + 3] > 15) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static Future<Uint8List?> _rgbaBytesFor(ui.Image image) async {
+    final key = image.hashCode;
+    if (_rgbaCache.containsKey(key)) return _rgbaCache[key];
+
+    final rawBytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final bytes = rawBytes?.buffer.asUint8List();
+    _rgbaCache[key] = bytes;
+    return bytes;
+  }
+
+  static bool _isFrameRectInBounds(ui.Image image, ui.Rect rect) {
+    return rect.left >= 0 &&
+        rect.top >= 0 &&
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.right <= image.width &&
+        rect.bottom <= image.height;
+  }
+
+  static Future<List<Sprite>> _buildSheetAnimationFrames({
+    required ui.Image image,
+    required PetAnimationState state,
+    required int row,
+    required int requestedFrameCount,
+    required double spriteSize,
+    required List<String> issues,
+    required String assetPath,
+  }) async {
+    final frames = <Sprite>[];
+    final columns = image.width ~/ spriteSize;
+    final rows = image.height ~/ spriteSize;
+
+    if (spriteSize <= 0 || columns <= 0 || rows <= 0) {
+      issues.add('$assetPath.${state.name}: invalid sprite size $spriteSize');
+      return frames;
+    }
+
+    if (row < 0 || row >= rows) {
+      issues.add(
+        '$assetPath.${state.name}: row $row is outside 0..${rows - 1}',
+      );
+      return frames;
+    }
+
+    final safeCount = requestedFrameCount.clamp(1, columns).toInt();
+    if (safeCount != requestedFrameCount) {
+      issues.add(
+        '$assetPath.${state.name}: clamped frame count '
+        '$requestedFrameCount to $safeCount for $columns columns',
+      );
+    }
+
+    for (int i = 0; i < safeCount; i++) {
+      final src = ui.Rect.fromLTWH(
+        i * spriteSize,
+        row * spriteSize,
+        spriteSize,
+        spriteSize,
+      );
+      if (!_isFrameRectInBounds(image, src)) {
+        issues.add(
+          '$assetPath.${state.name}: skipped out-of-bounds frame $i '
+          'at ${src.left},${src.top},${src.width},${src.height}',
+        );
+        continue;
+      }
+      if (!await _hasVisiblePixels(image, src)) {
+        issues.add('$assetPath.${state.name}: skipped blank frame $i');
+        continue;
+      }
+      frames.add(
+        Sprite(
+          image,
+          srcPosition: Vector2(src.left, src.top),
+          srcSize: Vector2(src.width, src.height),
+        ),
+      );
+    }
+
+    return frames;
+  }
+
+  static Future<List<Sprite>> _buildStripAnimationFrames({
+    required ui.Image image,
+    required PetAnimationState state,
+    required int requestedFrameCount,
+    required List<String> issues,
+    required String assetPath,
+  }) async {
+    final frames = <Sprite>[];
+    final safeCount = requestedFrameCount < 1 ? 1 : requestedFrameCount;
+    final frameWidth = image.width / safeCount;
+    final frameHeight = image.height.toDouble();
+
+    if (requestedFrameCount < 1) {
+      issues.add('$assetPath.${state.name}: raised frame count to 1');
+    }
+
+    if (image.width % safeCount != 0) {
+      issues.add(
+        '$assetPath.${state.name}: ${image.width}px width is not evenly '
+        'divisible by $safeCount frames',
+      );
+    }
+
+    for (int i = 0; i < safeCount; i++) {
+      final src = ui.Rect.fromLTWH(i * frameWidth, 0, frameWidth, frameHeight);
+      if (!_isFrameRectInBounds(image, src)) {
+        issues.add(
+          '$assetPath.${state.name}: skipped out-of-bounds frame $i '
+          'at ${src.left},${src.top},${src.width},${src.height}',
+        );
+        continue;
+      }
+      if (!await _hasVisiblePixels(image, src)) {
+        issues.add('$assetPath.${state.name}: skipped blank frame $i');
+        continue;
+      }
+      frames.add(
+        Sprite(
+          image,
+          srcPosition: Vector2(src.left, src.top),
+          srcSize: Vector2(src.width, src.height),
+        ),
+      );
+    }
+
+    return frames;
+  }
+
   static Future<Map<PetAnimationState, SpriteAnimation>> loadAnimations(
     PetProfile profile,
   ) async {
     try {
       final Map<PetAnimationState, SpriteAnimation> loaded = {};
+      final validationIssues = <String>[];
       final basePath = buildAssetPath(profile);
       final manifest = await loadPetsManifest();
       final petConfig = manifest?['pets']?.firstWhere(
@@ -179,6 +396,7 @@ class PetAssetLoader {
           int frameCount = 1;
           double stepTime = 0.1;
           bool loop = true;
+          bool hasExplicitConfig = false;
 
           final themeAnim = matchingTheme.animations[state];
           if (themeAnim is AnimationRowConfig) {
@@ -186,6 +404,7 @@ class PetAssetLoader {
             frameCount = themeAnim.frameCount;
             stepTime = themeAnim.stepTime;
             loop = themeAnim.loop;
+            hasExplicitConfig = true;
           } else if (variantConfig?['rows']?[stateName] != null) {
             row = (variantConfig['rows'][stateName] as num).toInt();
             frameCount =
@@ -194,19 +413,30 @@ class PetAssetLoader {
             stepTime =
                 (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ??
                 0.1;
+            hasExplicitConfig = true;
           }
 
-          final maxFrames = sheetImage.width ~/ spriteSize;
-          final amount = frameCount > maxFrames ? maxFrames : frameCount;
+          if (!hasExplicitConfig) {
+            continue;
+          }
 
-          final data = SpriteAnimationData.sequenced(
-            amount: amount,
+          final sprites = await _buildSheetAnimationFrames(
+            image: sheetImage,
+            state: state,
+            row: row,
+            requestedFrameCount: frameCount,
+            spriteSize: spriteSize,
+            issues: validationIssues,
+            assetPath: sheetPath,
+          );
+          if (sprites.isEmpty) {
+            continue;
+          }
+          loaded[state] = SpriteAnimation.spriteList(
+            sprites,
             stepTime: stepTime,
-            textureSize: Vector2(spriteSize, spriteSize),
-            texturePosition: Vector2(0.0, (row * spriteSize).toDouble()),
             loop: loop,
           );
-          loaded[state] = SpriteAnimation.fromFrameData(sheetImage, data);
         }
       } else {
         for (final state in PetAnimationState.values) {
@@ -216,6 +446,7 @@ class PetAssetLoader {
           int frameCount = 1;
           double stepTime = 0.1;
           bool loop = true;
+          bool hasExplicitConfig = false;
 
           final themeAnim = matchingTheme.animations[state];
           if (themeAnim is SeparateAnimationConfig) {
@@ -223,6 +454,7 @@ class PetAssetLoader {
             frameCount = themeAnim.frameCount;
             stepTime = themeAnim.stepTime;
             loop = themeAnim.loop;
+            hasExplicitConfig = true;
           } else if (variantConfig?['fileNames']?[stateName] != null) {
             fileName = variantConfig['fileNames'][stateName] as String;
             frameCount =
@@ -231,23 +463,35 @@ class PetAssetLoader {
             stepTime =
                 (variantConfig['stepTimes']?[stateName] as num?)?.toDouble() ??
                 0.1;
+            hasExplicitConfig = true;
+          }
+
+          if (!hasExplicitConfig) {
+            continue;
           }
 
           final filePath = '$basePath$fileName';
           try {
             final ui.Image stateImage = await loadImage(filePath);
-            final frameWidth = stateImage.width / frameCount;
-            final frameHeight = stateImage.height.toDouble();
-
-            final data = SpriteAnimationData.sequenced(
-              amount: frameCount,
-              stepTime: stepTime,
-              textureSize: Vector2(frameWidth, frameHeight),
-              texturePosition: Vector2.zero(),
-              loop: loop,
+            final sprites = await _buildStripAnimationFrames(
+              image: stateImage,
+              state: state,
+              requestedFrameCount: frameCount,
+              issues: validationIssues,
+              assetPath: filePath,
             );
-            loaded[state] = SpriteAnimation.fromFrameData(stateImage, data);
+            if (sprites.isNotEmpty) {
+              loaded[state] = SpriteAnimation.spriteList(
+                sprites,
+                stepTime: stepTime,
+                loop: loop,
+              );
+            }
           } catch (e) {
+            validationIssues.add(
+              '$filePath.${state.name}: failed to load configured animation; '
+              'using idle fallback',
+            );
             String fallbackFileName = 'idle.png';
             int fallbackFrameCount = 1;
             double fallbackStepTime = 0.1;
@@ -264,23 +508,25 @@ class PetAssetLoader {
             final fallbackPath = '$basePath$fallbackFileName';
             try {
               final ui.Image fallbackImage = await loadImage(fallbackPath);
-              final fallbackFrameWidth =
-                  fallbackImage.width / fallbackFrameCount;
-              final fallbackFrameHeight = fallbackImage.height.toDouble();
-
-              final data = SpriteAnimationData.sequenced(
-                amount: fallbackFrameCount,
-                stepTime: fallbackStepTime,
-                textureSize: Vector2(fallbackFrameWidth, fallbackFrameHeight),
-                texturePosition: Vector2.zero(),
-                loop: fallbackLoop,
+              final fallbackSprites = await _buildStripAnimationFrames(
+                image: fallbackImage,
+                state: state,
+                requestedFrameCount: fallbackFrameCount,
+                issues: validationIssues,
+                assetPath: fallbackPath,
               );
-              loaded[state] = SpriteAnimation.fromFrameData(
-                fallbackImage,
-                data,
-              );
+              if (fallbackSprites.isNotEmpty) {
+                loaded[state] = SpriteAnimation.spriteList(
+                  fallbackSprites,
+                  stepTime: fallbackStepTime,
+                  loop: fallbackLoop,
+                );
+              }
             } catch (fallbackError) {
-              // Silently ignore or fallback to empty
+              validationIssues.add(
+                '$filePath.${state.name}: failed to load fallback '
+                '$fallbackPath: $fallbackError',
+              );
             }
           }
         }
@@ -298,13 +544,29 @@ class PetAssetLoader {
         final idleAnim = loaded[PetAnimationState.idle]!;
         for (final state in PetAnimationState.values) {
           if (!loaded.containsKey(state)) {
+            validationIssues.add(
+              '${profile.id}.${state.name}: using idle fallback animation',
+            );
             loaded[state] = idleAnim;
           }
         }
       }
 
+      _lastValidationReport
+        ..clear()
+        ..addAll(validationIssues);
+      if (validationIssues.isNotEmpty) {
+        debugPrint(
+          '[PetAssetLoader] ${profile.id} animation validation: '
+          '${validationIssues.join(' | ')}',
+        );
+      }
+
       return loaded;
     } catch (e) {
+      _lastValidationReport
+        ..clear()
+        ..add('${profile.id}: failed to load animations: $e');
       return {};
     }
   }
@@ -647,6 +909,7 @@ class PetAssetLoader {
   static void clearCache() {
     _byteCache.clear();
     _imageCache.clear();
+    _rgbaCache.clear();
     _failedAssets.clear();
     _boundingBoxCache.clear();
     CompanionSpriteWidget.clearCache();

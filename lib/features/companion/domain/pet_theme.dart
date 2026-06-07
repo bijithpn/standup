@@ -28,20 +28,18 @@ class PetTheme {
   static const String keyGreyCat = 'grey_cat';
   static const String keyOrangeCat = 'orange_cat';
   static const String keyBlackCat = 'black_cat';
-  static const String keyLargeCat = 'large_cat';
-  static const String keyPixelCat = 'pixel_cat';
   static const String keyCat1 = 'cat_1';
   static const String keyCat2 = 'cat_2';
   static const String keyCat3 = 'cat_3';
   static const String keyCat4 = 'cat_4';
   static const String keyCat5 = 'cat_5';
   static const String keyCat6 = 'cat_6';
-  static const String keyCat50 = 'cat_50';
   static const String keyCollie = 'collie';
   static const String keyCorgi = 'corgi';
   static const String keyDalmatian = 'dalmatian';
   static const String keyHusky = 'husky';
   static const String keyLabrador = 'labrador';
+  static const String keyFlamingo = 'flamingo';
 
   static const Map<PetAnimationState, SeparateAnimationConfig>
   _petPackAnimations = {
@@ -275,21 +273,88 @@ class PetTheme {
         ),
       };
 
+  static const Map<PetAnimationState, AnimationRowConfig>
+  _flamingoSheetAnimations = {
+    PetAnimationState.idle: AnimationRowConfig(
+      row: 1,
+      frameCount: 1,
+      stepTime: 1.0,
+    ),
+    PetAnimationState.walkSide: AnimationRowConfig(
+      row: 1,
+      frameCount: 4,
+      stepTime: 0.15,
+    ),
+    PetAnimationState.run: AnimationRowConfig(
+      row: 1,
+      frameCount: 4,
+      stepTime: 0.1,
+    ),
+    PetAnimationState.excited: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.12,
+    ),
+    PetAnimationState.celebrate: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.1,
+    ),
+    PetAnimationState.notification: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.15,
+      loop: false,
+    ),
+    PetAnimationState.sad: AnimationRowConfig(
+      row: 3,
+      frameCount: 4,
+      stepTime: 0.4,
+    ),
+    PetAnimationState.sleep: AnimationRowConfig(
+      row: 3,
+      frameCount: 4,
+      stepTime: 0.4,
+    ),
+    PetAnimationState.stretch: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.15,
+      loop: false,
+    ),
+    PetAnimationState.breakMode: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.12,
+    ),
+    PetAnimationState.focusMode: AnimationRowConfig(
+      row: 1,
+      frameCount: 1,
+      stepTime: 1.0,
+    ),
+    PetAnimationState.angry: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.12,
+      loop: false,
+    ),
+  };
+
   static const Map<PetAnimationState, AnimationRowConfig> _petSheetAnimations =
       {
         PetAnimationState.sleep: AnimationRowConfig(
           row: 0,
-          frameCount: 4,
+          frameCount: 6,
           stepTime: 0.4,
         ),
         PetAnimationState.idle: AnimationRowConfig(
           row: 1,
-          frameCount: 4,
+          frameCount: 8,
           stepTime: 0.3,
         ),
         PetAnimationState.typing: AnimationRowConfig(
           row: 2,
-          frameCount: 4,
+          frameCount: 6,
           stepTime: 0.25,
         ),
         PetAnimationState.walkSide: AnimationRowConfig(
@@ -297,50 +362,127 @@ class PetTheme {
           frameCount: 8,
           stepTime: 0.15,
         ),
+        PetAnimationState.run: AnimationRowConfig(
+          row: 7,
+          frameCount: 8,
+          stepTime: 0.1,
+        ),
         PetAnimationState.excited: AnimationRowConfig(
           row: 9,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.12,
         ),
         PetAnimationState.sad: AnimationRowConfig(
           row: 0,
-          frameCount: 4,
+          frameCount: 6,
           stepTime: 0.4,
         ),
         PetAnimationState.stretch: AnimationRowConfig(
-          row: 9,
-          frameCount: 8,
+          row: 39,
+          frameCount: 11,
           stepTime: 0.2,
           loop: false,
         ),
         PetAnimationState.breakMode: AnimationRowConfig(
-          row: 9,
-          frameCount: 8,
+          row: 39,
+          frameCount: 11,
           stepTime: 0.12,
         ),
         PetAnimationState.focusMode: AnimationRowConfig(
           row: 1,
-          frameCount: 4,
+          frameCount: 8,
           stepTime: 0.3,
         ),
         PetAnimationState.angry: AnimationRowConfig(
           row: 11,
-          frameCount: 4,
+          frameCount: 6,
           stepTime: 0.2,
           loop: false,
         ),
         PetAnimationState.notification: AnimationRowConfig(
           row: 11,
-          frameCount: 4,
+          frameCount: 6,
           stepTime: 0.2,
           loop: false,
         ),
         PetAnimationState.celebrate: AnimationRowConfig(
-          row: 9,
-          frameCount: 8,
+          row: 39,
+          frameCount: 11,
           stepTime: 0.1,
         ),
       };
+
+  static const Map<PetAnimationState, AnimationRowConfig>
+  _cat50SheetAnimations = {
+    PetAnimationState.sleep: AnimationRowConfig(
+      row: 0,
+      frameCount: 8,
+      stepTime: 0.4,
+    ),
+    PetAnimationState.idle: AnimationRowConfig(
+      row: 1,
+      frameCount: 8,
+      stepTime: 0.3,
+    ),
+    PetAnimationState.typing: AnimationRowConfig(
+      row: 2,
+      frameCount: 8,
+      stepTime: 0.25,
+    ),
+    PetAnimationState.walkSide: AnimationRowConfig(
+      row: 10,
+      frameCount: 8,
+      stepTime: 0.15,
+    ),
+    PetAnimationState.run: AnimationRowConfig(
+      row: 11,
+      frameCount: 8,
+      stepTime: 0.1,
+    ),
+    PetAnimationState.excited: AnimationRowConfig(
+      row: 11,
+      frameCount: 8,
+      stepTime: 0.12,
+    ),
+    PetAnimationState.sad: AnimationRowConfig(
+      row: 0,
+      frameCount: 8,
+      stepTime: 0.4,
+    ),
+    PetAnimationState.stretch: AnimationRowConfig(
+      row: 34,
+      frameCount: 8,
+      stepTime: 0.2,
+      loop: false,
+    ),
+    PetAnimationState.breakMode: AnimationRowConfig(
+      row: 34,
+      frameCount: 8,
+      stepTime: 0.12,
+    ),
+    PetAnimationState.focusMode: AnimationRowConfig(
+      row: 1,
+      frameCount: 8,
+      stepTime: 0.3,
+    ),
+    PetAnimationState.angry: AnimationRowConfig(
+      row: 46,
+      frameCount: 8,
+      stepTime: 0.2,
+      loop: false,
+    ),
+    PetAnimationState.notification: AnimationRowConfig(
+      row: 46,
+      frameCount: 8,
+      stepTime: 0.2,
+      loop: false,
+    ),
+    PetAnimationState.celebrate: AnimationRowConfig(
+      row: 34,
+      frameCount: 8,
+      stepTime: 0.1,
+    ),
+  };
 
   static const List<PetTheme> themes = [
     PetTheme(
@@ -348,7 +490,7 @@ class PetTheme {
       name: 'Classic Grey Cat',
       basePath: 'assets/animations/cats/grey_cat/sprite_sheet.png',
       type: PetType.composite,
-      spriteSize: 32,
+      spriteSize: 16,
       animations: _petSheetAnimations,
       species: PetSpecies.cat,
     ),
@@ -357,7 +499,7 @@ class PetTheme {
       name: 'Playful Orange Cat',
       basePath: 'assets/animations/cats/orange_cat/sprite_sheet.png',
       type: PetType.composite,
-      spriteSize: 32,
+      spriteSize: 16,
       animations: _petSheetAnimations,
       species: PetSpecies.cat,
     ),
@@ -366,147 +508,9 @@ class PetTheme {
       name: 'Sleek Black Cat',
       basePath: 'assets/animations/cats/black_cat/sprite_sheet.png',
       type: PetType.composite,
-      spriteSize: 32,
+      spriteSize: 16,
       animations: _petSheetAnimations,
       species: PetSpecies.cat,
-    ),
-    PetTheme(
-      id: keyLargeCat,
-      name: 'Fluffy Large Cat',
-      basePath: 'assets/animations/cats/large_cat/',
-      type: PetType.separate,
-      spriteSize: 32,
-      animations: {
-        PetAnimationState.sleep: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 8,
-          stepTime: 0.4,
-        ),
-        PetAnimationState.idle: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 8,
-          stepTime: 0.3,
-        ),
-        PetAnimationState.typing: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 8,
-          stepTime: 0.3,
-        ),
-        PetAnimationState.walkSide: SeparateAnimationConfig(
-          fileName: 'run.png',
-          frameCount: 10,
-          stepTime: 0.15,
-        ),
-        PetAnimationState.excited: SeparateAnimationConfig(
-          fileName: 'run.png',
-          frameCount: 10,
-          stepTime: 0.12,
-        ),
-        PetAnimationState.sad: SeparateAnimationConfig(
-          fileName: 'fall.png',
-          frameCount: 4,
-          stepTime: 0.25,
-        ),
-        PetAnimationState.breakMode: SeparateAnimationConfig(
-          fileName: 'run.png',
-          frameCount: 10,
-          stepTime: 0.12,
-        ),
-        PetAnimationState.focusMode: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 8,
-          stepTime: 0.3,
-        ),
-        PetAnimationState.angry: SeparateAnimationConfig(
-          fileName: 'jump.png',
-          frameCount: 4,
-          stepTime: 0.2,
-          loop: false,
-        ),
-        PetAnimationState.notification: SeparateAnimationConfig(
-          fileName: 'jump.png',
-          frameCount: 4,
-          stepTime: 0.2,
-          loop: false,
-        ),
-        PetAnimationState.celebrate: SeparateAnimationConfig(
-          fileName: 'run.png',
-          frameCount: 10,
-          stepTime: 0.1,
-        ),
-      },
-      species: PetSpecies.cat,
-      requiredConsistencyDays: 3,
-    ),
-    PetTheme(
-      id: keyPixelCat,
-      name: 'Pixel Explorer Cat',
-      basePath: 'assets/animations/cats/pixel_cat/',
-      type: PetType.separate,
-      spriteSize: 64,
-      animations: {
-        PetAnimationState.sleep: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 10,
-          stepTime: 0.4,
-        ),
-        PetAnimationState.idle: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 10,
-          stepTime: 0.12,
-        ),
-        PetAnimationState.typing: SeparateAnimationConfig(
-          fileName: 'walk.png',
-          frameCount: 15,
-          stepTime: 0.08,
-        ),
-        PetAnimationState.walkSide: SeparateAnimationConfig(
-          fileName: 'walk.png',
-          frameCount: 15,
-          stepTime: 0.08,
-        ),
-        PetAnimationState.excited: SeparateAnimationConfig(
-          fileName: 'run.png',
-          frameCount: 10,
-          stepTime: 0.08,
-        ),
-        PetAnimationState.sad: SeparateAnimationConfig(
-          fileName: 'hurt.png',
-          frameCount: 5,
-          stepTime: 0.12,
-          loop: false,
-        ),
-        PetAnimationState.breakMode: SeparateAnimationConfig(
-          fileName: 'run.png',
-          frameCount: 10,
-          stepTime: 0.08,
-        ),
-        PetAnimationState.focusMode: SeparateAnimationConfig(
-          fileName: 'idle.png',
-          frameCount: 10,
-          stepTime: 0.16,
-        ),
-        PetAnimationState.angry: SeparateAnimationConfig(
-          fileName: 'attack.png',
-          frameCount: 10,
-          stepTime: 0.08,
-          loop: false,
-        ),
-        PetAnimationState.notification: SeparateAnimationConfig(
-          fileName: 'jump.png',
-          frameCount: 3,
-          stepTime: 0.12,
-          loop: false,
-        ),
-        PetAnimationState.celebrate: SeparateAnimationConfig(
-          fileName: 'running jump.png',
-          frameCount: 3,
-          stepTime: 0.1,
-          loop: false,
-        ),
-      },
-      species: PetSpecies.cat,
-      requiredConsistencyDays: 7,
     ),
     PetTheme(
       id: keyCat1,
@@ -565,15 +569,6 @@ class PetTheme {
       species: PetSpecies.cat,
     ),
     PetTheme(
-      id: keyCat50,
-      name: 'Tiny Sheet Cat',
-      basePath: 'assets/animations/cats/cat_50/cat_sheet.png',
-      type: PetType.composite,
-      spriteSize: 32,
-      animations: _petSheetAnimations,
-      species: PetSpecies.cat,
-    ),
-    PetTheme(
       id: keyCollie,
       name: 'Collie Dog',
       basePath: 'assets/animations/dogs/collie.png',
@@ -619,6 +614,15 @@ class PetTheme {
       spriteSize: 64,
       animations: _dogSheetAnimations,
       species: PetSpecies.dog,
+    ),
+    PetTheme(
+      id: keyFlamingo,
+      name: 'Pinky Flamingo',
+      basePath: 'assets/animations/flaming/PixelFlamingoSpriteSheet.png',
+      type: PetType.composite,
+      spriteSize: 128,
+      animations: _flamingoSheetAnimations,
+      species: PetSpecies.flamingo,
     ),
   ];
 

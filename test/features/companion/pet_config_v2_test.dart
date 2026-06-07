@@ -110,15 +110,6 @@ void main() {
         scale: 3.0,
       ),
       PetConfigV2(
-        mode: PetMode.freeRoam,
-        pinnedDisplayId: null,
-        constraintWindowBounds: Rect.fromLTWH(-50, -20, 250, 180),
-        lastAnchorPoint: Offset(1920, 1080),
-        themeId: 'pixel_cat',
-        petName: 'Pixel',
-        scale: 8.0,
-      ),
-      PetConfigV2(
         mode: PetMode.constrained,
         pinnedDisplayId: null,
         constraintWindowBounds: Rect.fromLTWH(10, 20, 200, 200),

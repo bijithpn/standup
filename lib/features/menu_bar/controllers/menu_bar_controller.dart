@@ -5,8 +5,7 @@ import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:window_manager/window_manager.dart';
-import 'dart:io';
+import 'package:breakmate/main_common.dart';
 
 class MenuBarController {
   MenuBarController({EventBus? eventBus})
@@ -75,9 +74,6 @@ class MenuBarController {
   }
 
   Future<void> _quitApp() async {
-    await sl<OverlayWindowService>().reset();
-    await windowManager.setPreventClose(false);
-    await windowManager.destroy();
-    exit(0);
+    await gracefulShutdown();
   }
 }

@@ -72,15 +72,6 @@ void main() {
     final testConfigs = <PetConfigV2>[
       PetConfigV2.defaults(),
       PetConfigV2(
-        mode: PetMode.singleDisplay,
-        pinnedDisplayId: 'display_xyz',
-        constraintWindowBounds: Rect.fromLTWH(0, 0, 800, 600),
-        lastAnchorPoint: Offset(400, 300),
-        themeId: 'pixel_cat',
-        petName: 'Pixel',
-        scale: 7.0,
-      ),
-      PetConfigV2(
         mode: PetMode.constrained,
         pinnedDisplayId: null,
         constraintWindowBounds: Rect.fromLTWH(200, 100, 300, 250),

@@ -149,15 +149,6 @@ void main() {
           scale: 5.0,
         ),
         PetConfigV2(
-          mode: PetMode.singleDisplay,
-          pinnedDisplayId: 'primary',
-          constraintWindowBounds: Rect.fromLTWH(100, 100, 400, 400),
-          lastAnchorPoint: Offset(200, 200),
-          themeId: 'pixel_cat',
-          petName: 'Dot',
-          scale: 7.0,
-        ),
-        PetConfigV2(
           mode: PetMode.constrained,
           pinnedDisplayId: null,
           constraintWindowBounds: Rect.fromLTWH(50, 50, 250, 250),

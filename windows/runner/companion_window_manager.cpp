@@ -36,10 +36,9 @@ static void ConfigureAsCompanionWindow(HWND hwnd, bool click_through) {
   }
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  // Per-pixel alpha: use LWA_COLORKEY+LWA_ALPHA together so Flutter's
-  // transparent pixels pass through. Full opacity (255) lets Flutter
-  // manage alpha via its own rendering.
-  SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 255, LWA_COLORKEY | LWA_ALPHA);
+  // Per-pixel alpha: use only LWA_ALPHA to enable DWM native per-pixel composition transparency
+  // without color keying, avoiding black fringes or pixelated shadow boundaries.
+  SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
   // Always on top, no activation
   SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
@@ -324,8 +323,9 @@ void CompanionWindowManager::ShowPiP(
   if (click_through) exStyle |= WS_EX_TRANSPARENT;
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  // Per-pixel alpha (black = transparent).
-  SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 255, LWA_COLORKEY | LWA_ALPHA);
+  // Per-pixel alpha: use only LWA_ALPHA to enable DWM native per-pixel composition transparency
+  // without color keying, avoiding black fringes or pixelated shadow boundaries.
+  SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
   SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH,
                SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);

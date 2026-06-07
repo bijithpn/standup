@@ -85,6 +85,15 @@ class SettingsModel {
   final double? companionWindowX; // null = use platform default
   final double? companionWindowY; // null = use platform default
 
+  // PiP settings
+  final String pipBackgroundStyle;
+  final double pipOpacity;
+  final bool pipDraggableClickable;
+
+  // Companion Customizations
+  final String companionToyType;
+  final String companionTreatType;
+
   // Companion feature toggles (Req 18.8)
   final bool pettingEnabled;
   final bool ballThrowEnabled;
@@ -172,6 +181,11 @@ class SettingsModel {
     this.companionWindowHeight = 320.0,
     this.companionWindowX,
     this.companionWindowY,
+    this.pipBackgroundStyle = 'dark',
+    this.pipOpacity = 0.9,
+    this.pipDraggableClickable = true,
+    this.companionToyType = 'tennis_ball',
+    this.companionTreatType = 'sushi',
     this.pettingEnabled = true,
     this.ballThrowEnabled = true,
     this.treatEnabled = true,
@@ -268,6 +282,11 @@ class SettingsModel {
     int? weeklyConsistencyTargetDays,
     bool? calendarEnabled,
     bool? enableSessionResume,
+    String? pipBackgroundStyle,
+    double? pipOpacity,
+    bool? pipDraggableClickable,
+    String? companionToyType,
+    String? companionTreatType,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -371,6 +390,12 @@ class SettingsModel {
           weeklyConsistencyTargetDays ?? this.weeklyConsistencyTargetDays,
       calendarEnabled: calendarEnabled ?? this.calendarEnabled,
       enableSessionResume: enableSessionResume ?? this.enableSessionResume,
+      pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
+      pipOpacity: pipOpacity ?? this.pipOpacity,
+      pipDraggableClickable:
+          pipDraggableClickable ?? this.pipDraggableClickable,
+      companionToyType: companionToyType ?? this.companionToyType,
+      companionTreatType: companionTreatType ?? this.companionTreatType,
     );
   }
 
@@ -448,6 +473,11 @@ class SettingsModel {
     'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
     'calendarEnabled': calendarEnabled,
     'enableSessionResume': enableSessionResume,
+    'pipBackgroundStyle': pipBackgroundStyle,
+    'pipOpacity': pipOpacity,
+    'pipDraggableClickable': pipDraggableClickable,
+    'companionToyType': companionToyType,
+    'companionTreatType': companionTreatType,
   };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -556,6 +586,11 @@ class SettingsModel {
           map['weeklyConsistencyTargetDays'] as int? ?? 5,
       calendarEnabled: map['calendarEnabled'] as bool? ?? false,
       enableSessionResume: map['enableSessionResume'] as bool? ?? true,
+      pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'dark',
+      pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 0.9,
+      pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
+      companionToyType: map['companionToyType'] as String? ?? 'tennis_ball',
+      companionTreatType: map['companionTreatType'] as String? ?? 'sushi',
     );
   }
 }

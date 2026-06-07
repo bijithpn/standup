@@ -291,6 +291,10 @@ class PetCompanionService extends ChangeNotifier {
         // Set wanderSpeed=0 so _updateWander doesn't fight it.
         _navigation.updateConfig(wanderSpeed: 0.0);
         break;
+      case PetState.chasing:
+      case PetState.fetching:
+        // Movement speed and targeting are set externally in CompanionGame
+        break;
       default:
         _navigation.updateConfig(wanderSpeed: 0.0);
         break;

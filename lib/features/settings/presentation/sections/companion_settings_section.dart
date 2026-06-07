@@ -117,6 +117,37 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ),
               ]),
 
+              if (widget.controller.pipModeEnabled) ...[
+                sectionHeader('Draggable PiP Panel Settings'),
+                buildCard([
+                  dropdownRow(
+                    'Background Style',
+                    widget.controller.pipBackgroundStyle,
+                    const ['dark', 'light', 'transparent'],
+                    (v) {
+                      if (v != null) {
+                        widget.controller.changePipBackgroundStyle(v);
+                      }
+                    },
+                  ),
+                  divider(),
+                  sliderRow(
+                    'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
+                    widget.controller.pipOpacity,
+                    (v) => widget.controller.changePipOpacity(v),
+                    min: 0.1,
+                    max: 1.0,
+                  ),
+                  divider(),
+                  toggleRow(
+                    'Draggable Area Clickable',
+                    'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
+                    widget.controller.pipDraggableClickable,
+                    (v) => widget.controller.changePipDraggableClickable(v),
+                  ),
+                ]),
+              ],
+
               sectionHeader('Behavior'),
               buildCard([
                 toggleRow(
@@ -158,6 +189,19 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   widget.controller.ballThrowEnabled,
                   (v) => widget.controller.changeBallThrowEnabled(v),
                 ),
+                if (widget.controller.ballThrowEnabled) ...[
+                  divider(),
+                  dropdownRow(
+                    'Throwable Toy Type',
+                    widget.controller.companionToyType,
+                    const ['tennis_ball', 'toy_mouse', 'pink_yarn', 'orange_yarn'],
+                    (v) {
+                      if (v != null) {
+                        widget.controller.changeToyType(v);
+                      }
+                    },
+                  ),
+                ],
                 divider(),
                 toggleRow(
                   'Feed Treats',
@@ -165,6 +209,19 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   widget.controller.treatEnabled,
                   (v) => widget.controller.changeTreatEnabled(v),
                 ),
+                if (widget.controller.treatEnabled) ...[
+                  divider(),
+                  dropdownRow(
+                    'Feed Treat Type',
+                    widget.controller.companionTreatType,
+                    const ['sushi', 'bone', 'carrot'],
+                    (v) {
+                      if (v != null) {
+                        widget.controller.changeTreatType(v);
+                      }
+                    },
+                  ),
+                ],
                 divider(),
                 toggleRow(
                   'Developer Milestones',
@@ -219,13 +276,21 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               children: [
                 // Full Screen Background & Grounded Pet
                 Positioned.fill(
-                  child: CompanionSpriteWidget(
-                    petTheme: currentTheme,
-                    animationState: PetAnimationState.idle,
-                    scale: 6.0, // Large prominent pet
-                    backgroundImagePath:
-                        widget.controller.companionPreviewBackground,
-                    isStatic: false,
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    scaleEnabled: false,
+                    constrained: false, // Allow child to be wider than container
+                    boundaryMargin: const EdgeInsets.symmetric(horizontal: 1000),
+                    child: CompanionSpriteWidget(
+                      petTheme: currentTheme,
+                      animationState: PetAnimationState.idle,
+                      scale: 6.0, // Large prominent pet
+                      backgroundImagePath:
+                          widget.controller.companionPreviewBackground,
+                      isStatic: false,
+                      size: const Size(2000, 280), // Panoramic width
+                      petYOffset: 0.0, // Grounded by Alignment.bottomCenter
+                    ),
                   ),
                 ),
 
@@ -313,6 +378,12 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {'name': 'Autumn', 'path': 'assets/background/autumn/background.png'},
       {'name': 'Winter', 'path': 'assets/background/winter/background.png'},
       {'name': 'Beach', 'path': 'assets/background/beach/background-light.png'},
+      {'name': 'Cave', 'path': 'assets/background/cave/background.png'},
+      {'name': 'Desert', 'path': 'assets/background/desert/background.png'},
+      {'name': 'Sky', 'path': 'assets/background/sky/background.png'},
+      {'name': 'Night Town', 'path': 'assets/background/night_town/background.png'},
+      {'name': 'Mist Forest', 'path': 'assets/background/mist_forest/background.png'},
+      {'name': 'Urban', 'path': 'assets/background/urban/background.png'},
     ];
 
     return Column(
@@ -482,63 +553,24 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   Widget _buildInteractionGrid() {
-    final themeId = widget.controller.companionPetTheme;
     final List<Map<String, dynamic>> interactions;
 
-    if (themeId == PetTheme.keyPixelCat) {
-      interactions = [
-        {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {'label': 'Run', 'icon': CupertinoIcons.wind, 'state': 'excited'},
-        {
-          'label': 'Attack',
-          'icon': CupertinoIcons.shield_fill,
-          'state': 'angry',
-        },
-        {
-          'label': 'Alert',
-          'icon': CupertinoIcons.bell_fill,
-          'state': 'notification',
-        },
-        {'label': 'Hurt', 'icon': CupertinoIcons.bandage_fill, 'state': 'sad'},
-        {'label': 'Win', 'icon': CupertinoIcons.sparkles, 'state': 'celebrate'},
-      ];
-    } else if (themeId == PetTheme.keyLargeCat) {
-      interactions = [
-        {'label': 'Run', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {
-          'label': 'Fall',
-          'icon': CupertinoIcons.cloud_rain_fill,
-          'state': 'sad',
-        },
-        {
-          'label': 'Jump',
-          'icon': CupertinoIcons.bell_fill,
-          'state': 'notification',
-        },
-        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
-      ];
-    } else {
-      interactions = [
-        {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {
-          'label': 'Nap',
-          'icon': CupertinoIcons.moon_zzz_fill,
-          'state': 'sleep',
-        },
-        {
-          'label': 'Stretch',
-          'icon': CupertinoIcons.sparkles,
-          'state': 'celebrate',
-        },
-        {'label': 'Angry', 'icon': CupertinoIcons.flame_fill, 'state': 'angry'},
-        {
-          'label': 'Alert',
-          'icon': CupertinoIcons.bell_fill,
-          'state': 'notification',
-        },
-        {'label': 'Lick', 'icon': CupertinoIcons.heart_fill, 'state': 'lick1'},
-      ];
-    }
+    interactions = [
+      {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+      {'label': 'Nap', 'icon': CupertinoIcons.moon_zzz_fill, 'state': 'sleep'},
+      {
+        'label': 'Stretch',
+        'icon': CupertinoIcons.sparkles,
+        'state': 'celebrate',
+      },
+      {'label': 'Angry', 'icon': CupertinoIcons.flame_fill, 'state': 'angry'},
+      {
+        'label': 'Alert',
+        'icon': CupertinoIcons.bell_fill,
+        'state': 'notification',
+      },
+      {'label': 'Lick', 'icon': CupertinoIcons.heart_fill, 'state': 'lick1'},
+    ];
 
     return GridView.builder(
       shrinkWrap: true,

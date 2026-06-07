@@ -65,6 +65,7 @@ class _MinimalButtonState extends State<MinimalButton>
       onExit: (_) => setState(() => _isHovering = false),
       cursor: isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
         onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
         onTapCancel: isDisabled
@@ -154,6 +155,7 @@ class _MinimalSliderState extends State<MinimalSlider> {
           onExit: (_) => setState(() => _isHovering = false),
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onPanStart: (details) {
               setState(() => _isDragging = true);
               _updateValue(details.localPosition, width);

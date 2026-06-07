@@ -153,6 +153,10 @@ void _setupGlobalErrors() {
   };
 }
 
+// Top-level reference so signal handlers and the socket listener can
+// both call _gracefulShutdown with the same server socket.
+ServerSocket? _globalSingleInstanceServer;
+
 Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
   debugPrint('[Shutdown] Starting graceful shutdown...');
 
@@ -236,6 +240,10 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
 
   debugPrint('[Shutdown] Graceful shutdown complete. Exiting.');
   exit(0);
+}
+
+Future<void> gracefulShutdown() async {
+  await _gracefulShutdown(_globalSingleInstanceServer);
 }
 
 void mainCommon(FlavorConfig config) async {
@@ -421,6 +429,25 @@ void mainCommon(FlavorConfig config) async {
           }
         }
 
+        // Store globally so signal handlers can reference it.
+        _globalSingleInstanceServer = singleInstanceServer;
+
+        // Register OS-level signal handlers so SIGTERM (system kill) and
+        // SIGINT (Ctrl+C / force-quit from Activity Monitor / Task Manager)
+        // both trigger a graceful shutdown that calls exit(0) — this kills
+        // all Dart background isolates and releases the ObjectBox DB lock.
+        if (!Platform.isWindows) {
+          // POSIX signals — Windows doesn't support SIGTERM/SIGINT via Dart.
+          ProcessSignal.sigterm.watch().listen((_) async {
+            debugPrint('[Signal] SIGTERM received — shutting down.');
+            await _gracefulShutdown(_globalSingleInstanceServer);
+          });
+          ProcessSignal.sigint.watch().listen((_) async {
+            debugPrint('[Signal] SIGINT received — shutting down.');
+            await _gracefulShutdown(_globalSingleInstanceServer);
+          });
+        }
+
         // Initialize SimplePrefs (file-based) FIRST — it is the most reliable
         // persistence layer and must be ready before any service reads settings.
         await SimplePrefs.instance.init();
@@ -528,6 +555,7 @@ void mainCommon(FlavorConfig config) async {
     (error, stack) {
       debugPrint('ZONED ERROR: $error');
       debugPrint(stack.toString());
+      gracefulShutdown();
     },
   );
 }
@@ -594,12 +622,16 @@ Future<void> overlayMain() async {
   await SimplePrefs.instance.init();
   _setupGlobalErrors();
   _setupMinimalIpc();
-  if (Platform.isMacOS) {
+  if (Platform.isMacOS || Platform.isWindows) {
     await Window.initialize();
-    await Window.setEffect(
-      effect: WindowEffect.transparent,
-      color: Colors.transparent,
-    );
+    try {
+      await Window.setEffect(
+        effect: WindowEffect.transparent,
+        color: Colors.transparent,
+      );
+    } catch (e) {
+      debugPrint('Window.setEffect failed: $e');
+    }
   }
 
   // Register fake services in GetIt (sl) for templates
@@ -626,9 +658,17 @@ Future<void> companionMain() async {
   _setupGlobalErrors();
   _setupMinimalIpc();
 
-  // On macOS, initialize flutter_acrylic for the companion panel.
-  if (Platform.isMacOS) {
+  // On macOS and Windows, initialize flutter_acrylic and set transparency.
+  if (Platform.isMacOS || Platform.isWindows) {
     await Window.initialize();
+    try {
+      await Window.setEffect(
+        effect: WindowEffect.transparent,
+        color: Colors.transparent,
+      );
+    } catch (e) {
+      debugPrint('Window.setEffect failed: $e');
+    }
   }
 
   // Pre-load the default cat theme to warm up the Flame engine and image codec
@@ -659,8 +699,16 @@ Future<void> pipMain() async {
   _setupGlobalErrors();
   _setupMinimalIpc();
 
-  if (Platform.isMacOS) {
+  if (Platform.isMacOS || Platform.isWindows) {
     await Window.initialize();
+    try {
+      await Window.setEffect(
+        effect: WindowEffect.transparent,
+        color: Colors.transparent,
+      );
+    } catch (e) {
+      debugPrint('Window.setEffect failed: $e');
+    }
   }
 
   // Warm up default theme assets.

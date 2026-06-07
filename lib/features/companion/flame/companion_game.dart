@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flame/flame.dart';
@@ -34,6 +36,8 @@ class CompanionGame extends FlameGame {
     required PetTheme initialTheme,
     this.scaleOverride = 0.0,
     this.isPiP = false,
+    this.toyType = 'tennis_ball',
+    this.treatType = 'sushi',
   }) : _eventBus = EventBus.instance,
        _petService = PetCompanionService(
          stateMachine: PetStateMachine(personality: PetPersonality()),
@@ -44,6 +48,8 @@ class CompanionGame extends FlameGame {
        _theme = initialTheme;
 
   final bool isPiP;
+  String toyType;
+  String treatType;
 
   static PetProfile getProfileFromTheme(PetTheme theme) {
     final species = theme.species;
@@ -107,9 +113,17 @@ class CompanionGame extends FlameGame {
   static const double _sleepBubbleDuration = 2.0;
   // Previous state — used to detect eating→happy and idle celebrating transitions.
   PetState _previousState = PetState.idle;
+  double _totalTime = 0.0;
 
   // ── Task 8.5 – DeveloperReactionController ────────────────────────────────
   late final _DeveloperReactionController _devReaction;
+
+  ui.Image? mouseImage;
+  ui.Image? pinkBallImage;
+  ui.Image? orangeBallImage;
+  ui.Image? blueBallImage;
+  ui.Image? bunnyFoodsImage;
+  ui.Image? dogItemsImage;
 
   CompanionComponent? petComponent;
 
@@ -178,14 +192,20 @@ class CompanionGame extends FlameGame {
     }
 
     // 5. Apply loaded config to physics boundary.
-    _physicsSimulator.setBoundary(_displayManager.unionBounds);
-    if (_petConfig.mode == PetMode.singleDisplay &&
-        _petConfig.pinnedDisplayId != null) {
-      final pinned = displays.cast<DisplayBounds?>().firstWhere(
-        (d) => d?.id == _petConfig.pinnedDisplayId,
-        orElse: () => null,
+    if (isPiP) {
+      _physicsSimulator.setBoundary(
+        Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
       );
-      if (pinned != null) _physicsSimulator.setBoundary(pinned.rect);
+    } else {
+      _physicsSimulator.setBoundary(_displayManager.unionBounds);
+      if (_petConfig.mode == PetMode.singleDisplay &&
+          _petConfig.pinnedDisplayId != null) {
+        final pinned = displays.cast<DisplayBounds?>().firstWhere(
+          (d) => d?.id == _petConfig.pinnedDisplayId,
+          orElse: () => null,
+        );
+        if (pinned != null) _physicsSimulator.setBoundary(pinned.rect);
+      }
     }
 
     // 6. Set up constraint window controller if in constrained mode.
@@ -200,6 +220,17 @@ class CompanionGame extends FlameGame {
       _physicsSimulator.setConstraintBoundary(
         _constraintWindowController!.bounds,
       );
+    }
+
+    // Load toy/treat sprites
+    try {
+      mouseImage = await PetAssetLoader.loadImage('assets/ui/icons/mouse_sheet.png');
+      pinkBallImage = await PetAssetLoader.loadImage('assets/ui/icons/pinkball_sheet.png');
+      orangeBallImage = await PetAssetLoader.loadImage('assets/ui/icons/orangeball_sheet.png');
+      bunnyFoodsImage = await PetAssetLoader.loadImage('assets/characters/pets/bunnyfoods_2.png');
+      dogItemsImage = await PetAssetLoader.loadImage('assets/characters/pets/dogitems_2.png');
+    } catch (e) {
+      debugPrint('Error loading companion toy/treat assets: $e');
     }
 
     // 7. Existing initialization.
@@ -349,7 +380,11 @@ class CompanionGame extends FlameGame {
       _spawnBounceParticle();
     } else if (event is ThrowableDisposedEvent) {
       // throwable returned/disposed → return pet to idle
-      _petService.handleEvent(PetEvent.throwableFetched);
+      if (_petService.currentState == PetState.fetching) {
+        _petService.handleEvent(PetEvent.throwableReturned);
+      } else {
+        _petService.handleEvent(PetEvent.throwableFetched);
+      }
     } else if (event is PetWindowOverlapEvent) {
       if (event.started) {
         _petService.handleEvent(PetEvent.windowOverlap);
@@ -374,7 +409,13 @@ class CompanionGame extends FlameGame {
           mode: PetMode.freeRoam,
           pinnedDisplayId: null,
         );
-        _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        if (isPiP) {
+          _physicsSimulator.setBoundary(
+            Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+          );
+        } else {
+          _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        }
         _settingsPersistence.scheduleWrite(_petConfig);
       }
     }
@@ -584,10 +625,24 @@ class CompanionGame extends FlameGame {
   }
 
   double _effectiveScale(double spriteSize) {
-    if (scaleOverride > 0.0) return scaleOverride;
-    final double baselineHeight = size.y > 400.0 ? 300.0 : size.y;
-    final double target = baselineHeight * 0.45;
-    return (target / spriteSize).clamp(3.0, 10.0);
+    double scale;
+    if (scaleOverride > 0.0) {
+      scale = scaleOverride;
+    } else {
+      final double baselineHeight = size.y > 400.0 ? 300.0 : size.y;
+      final double target = baselineHeight * 0.45;
+      scale = (target / spriteSize).clamp(3.0, 10.0);
+    }
+
+    // Normalize smaller sprites (like 16x16) to the 32x32 baseline visual size
+    scale = scale * (32.0 / spriteSize);
+
+    // Enlarge the pet in PiP mode for better visibility
+    if (isPiP) {
+      scale *= 1.5;
+    }
+
+    return scale;
   }
 
   void _updateNavigationPaddings() {
@@ -666,6 +721,12 @@ class CompanionGame extends FlameGame {
         currentPos.dx > size.x - scaledHalfW - 4.0) {
       _petService.navigation.teleport(Offset(size.x / 2, initialY));
     }
+
+    // Always sync the component's visual position to the nav position to
+    // prevent a 1-frame jump on first load when the nav position (size.y/2)
+    // differs from the initial component placement (initialY near bottom).
+    final syncedPos = _petService.navigation.currentPosition;
+    petComponent!.position = Vector2(syncedPos.dx, syncedPos.dy);
   }
 
   Future<void> updateTheme(PetTheme newTheme) async {
@@ -684,6 +745,16 @@ class CompanionGame extends FlameGame {
     if (scaleOverride == newScale) return;
     scaleOverride = newScale;
     _applyScale();
+  }
+
+  void updateToyType(String newToyType) {
+    if (toyType == newToyType) return;
+    toyType = newToyType;
+  }
+
+  void updateTreatType(String newTreatType) {
+    if (treatType == newTreatType) return;
+    treatType = newTreatType;
   }
 
   void _applyScale() {
@@ -790,12 +861,24 @@ class CompanionGame extends FlameGame {
       case PetMode.singleDisplay:
         await _constraintWindowController?.hide();
         _physicsSimulator.setConstraintBoundary(null);
-        _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        if (isPiP) {
+          _physicsSimulator.setBoundary(
+            Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+          );
+        } else {
+          _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        }
 
       case PetMode.freeRoam:
         await _constraintWindowController?.hide();
         _physicsSimulator.setConstraintBoundary(null);
-        _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        if (isPiP) {
+          _physicsSimulator.setBoundary(
+            Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+          );
+        } else {
+          _physicsSimulator.setBoundary(_displayManager.unionBounds);
+        }
     }
 
     _settingsPersistence.scheduleWrite(_petConfig);
@@ -816,7 +899,15 @@ class CompanionGame extends FlameGame {
       mode: PetMode.singleDisplay,
       pinnedDisplayId: displayId,
     );
-    _physicsSimulator.setBoundary(target?.rect ?? _displayManager.unionBounds);
+    if (isPiP) {
+      _physicsSimulator.setBoundary(
+        Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+      );
+    } else {
+      _physicsSimulator.setBoundary(
+        target?.rect ?? _displayManager.unionBounds,
+      );
+    }
     _settingsPersistence.scheduleWrite(_petConfig);
   }
 
@@ -841,6 +932,7 @@ class CompanionGame extends FlameGame {
 
   @override
   void update(double dt) {
+    _totalTime += dt;
     if (isThrottled) {
       _timeSinceLastFrame += dt;
       const throttledFrameTime = 1.0 / 15.0; // 15 FPS
@@ -898,6 +990,36 @@ class CompanionGame extends FlameGame {
 
     // 6. Tick throwable objects.
     _throwableManager.tick(dt, petBounds: _petBounds, petAnchor: petCenter);
+
+    // --- Pet Chase & Fetch Targeting ---
+    final curState = _petService.currentState;
+    if (curState == PetState.chasing) {
+      final targetId = _throwableManager.chaseTarget;
+      if (targetId != null) {
+        try {
+          final state = _physicsSimulator.getState(targetId);
+          _petService.navigation.setTarget(Offset(state.x, state.y));
+          _petService.navigation.updateConfig(wanderSpeed: 160.0);
+        } catch (_) {}
+      }
+    } else if (curState == PetState.fetching) {
+      final snapshots = _throwableManager.snapshots();
+      if (snapshots.isNotEmpty) {
+        final activeToy = snapshots.firstWhere(
+          (t) =>
+              t.lifecycle == ThrowableLifecycle.stationary ||
+              t.lifecycle == ThrowableLifecycle.beingFetched,
+          orElse: () => snapshots.first,
+        );
+        if (activeToy.lifecycle == ThrowableLifecycle.stationary) {
+          _petService.navigation.setTarget(activeToy.position);
+          _petService.navigation.updateConfig(wanderSpeed: 100.0);
+        } else if (activeToy.lifecycle == ThrowableLifecycle.beingFetched) {
+          _petService.navigation.setTarget(activeToy.spawnOrigin);
+          _petService.navigation.updateConfig(wanderSpeed: 70.0);
+        }
+      }
+    }
 
     // 7. Persist position change (req 11.4) — update lastAnchorPoint each tick.
     final Offset currentPos = petCenter;
@@ -1056,6 +1178,241 @@ class CompanionGame extends FlameGame {
       _updateNavigationPaddings();
       _petService.navigation.teleport(Offset(newX, initialY));
     }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    // 1. Let the engine render all existing components (pet, particles, etc.)
+    super.render(canvas);
+
+    // 2. Draw active throwables
+    final snapshots = _throwableManager.snapshots();
+    for (final toy in snapshots) {
+      canvas.save();
+
+      Offset position;
+      if (toy.lifecycle == ThrowableLifecycle.beingFetched) {
+        // Attach to pet's snout/face area.
+        if (petComponent != null) {
+          final direction = petComponent!.scale.x.sign;
+          final snoutOffset = Offset(
+            direction *
+                (petComponent!.size.x * petComponent!.scale.x.abs() * 0.3),
+            -petComponent!.size.y * petComponent!.scale.y.abs() * 0.1,
+          );
+          position = petComponent!.position.toOffset() + snoutOffset;
+        } else {
+          position = toy.position;
+        }
+      } else {
+        position = toy.position;
+      }
+
+      PhysicsEntityState? state;
+      try {
+        state = _physicsSimulator.getState(toy.physicsId);
+      } catch (_) {}
+
+      // Draw trails if airborne and moving fast
+      if (state != null && toy.lifecycle == ThrowableLifecycle.flying) {
+        final double vx = state.vx;
+        final double vy = state.vy;
+        final double speed = sqrt(vx * vx + vy * vy);
+        if (speed > 10.0) {
+          final double dx = vx / speed;
+          final double dy = vy / speed;
+          final double baseOffset = (speed * 0.02).clamp(4.0, 15.0);
+          for (int step = 3; step >= 1; step--) {
+            final double offsetDist = baseOffset * step;
+            final double trailX = -dx * offsetDist;
+            final double trailY = -dy * offsetDist;
+            final double opacity = 0.15 * (4 - step);
+
+            canvas.save();
+            canvas.translate(position.dx + trailX, position.dy + trailY);
+            canvas.rotate((_totalTime - step * 0.016) * (speed * 0.01));
+
+            if (toy.kind == 'treat') {
+              _drawSushiVector(canvas, opacity);
+            } else {
+              _drawTennisBallVector(canvas, opacity);
+            }
+            canvas.restore();
+          }
+        }
+      }
+
+      canvas.translate(position.dx, position.dy);
+
+      // Apply spin if airborne
+      if (toy.lifecycle == ThrowableLifecycle.flying && state != null) {
+        final double vx = state.vx;
+        final double vy = state.vy;
+        final double speed = sqrt(vx * vx + vy * vy);
+        final double spinSpeed = speed * 0.01;
+        canvas.rotate(_totalTime * spinSpeed);
+      }
+
+      if (toy.kind == 'treat') {
+        _drawTreat(
+          canvas,
+          toy.lifecycle == ThrowableLifecycle.beingFetched,
+          1.0,
+        );
+      } else {
+        _drawToy(
+          canvas,
+          toy.lifecycle == ThrowableLifecycle.beingFetched,
+          1.0,
+        );
+      }
+
+      canvas.restore();
+    }
+  }
+
+  void _drawToy(Canvas canvas, bool isBeingCarried, [double opacity = 1.0]) {
+    if (!isBeingCarried) {
+      final shadowPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.2 * opacity)
+        ..style = PaintingStyle.fill;
+      canvas.drawOval(
+        Rect.fromCenter(center: const Offset(0, 9), width: 14, height: 4),
+        shadowPaint,
+      );
+    }
+
+    final destRect = Rect.fromCenter(center: Offset.zero, width: 20, height: 20);
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: opacity)
+      ..filterQuality = FilterQuality.medium;
+
+    if (toyType == 'toy_mouse' && mouseImage != null) {
+      canvas.drawImageRect(
+        mouseImage!,
+        const Rect.fromLTWH(0, 0, 32, 32),
+        destRect,
+        paint,
+      );
+    } else if (toyType == 'pink_yarn' && pinkBallImage != null) {
+      canvas.drawImageRect(
+        pinkBallImage!,
+        const Rect.fromLTWH(0, 0, 15, 16),
+        destRect,
+        paint,
+      );
+    } else if (toyType == 'orange_yarn' && orangeBallImage != null) {
+      canvas.drawImageRect(
+        orangeBallImage!,
+        const Rect.fromLTWH(0, 0, 15, 16),
+        destRect,
+        paint,
+      );
+    } else if (toyType == 'tennis_ball' && blueBallImage != null) {
+      canvas.drawImageRect(
+        blueBallImage!,
+        const Rect.fromLTWH(0, 0, 15, 16),
+        destRect,
+        paint,
+      );
+    } else {
+      _drawTennisBallVector(canvas, opacity);
+    }
+  }
+
+  void _drawTennisBallVector(Canvas canvas, double opacity) {
+    final ballPaint = Paint()
+      ..shader = ui.Gradient.radial(
+        const Offset(-3, -3),
+        10.0,
+        [
+          const Color(0xFFE6FF55).withValues(alpha: opacity),
+          const Color(0xFF9EBF00).withValues(alpha: opacity),
+          const Color(0xFF5D7300).withValues(alpha: opacity),
+        ],
+        [0.0, 0.7, 1.0],
+      )
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset.zero, 10.0, ballPaint);
+
+    final seamPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.85 * opacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..isAntiAlias = true;
+
+    final path1 = Path();
+    path1.addArc(
+      Rect.fromCircle(center: const Offset(-10, 0), radius: 10),
+      -pi / 3,
+      2 * pi / 3,
+    );
+    canvas.drawPath(path1, seamPaint);
+
+    final path2 = Path();
+    path2.addArc(
+      Rect.fromCircle(center: const Offset(10, 0), radius: 10),
+      2 * pi / 3,
+      2 * pi / 3,
+    );
+    canvas.drawPath(path2, seamPaint);
+  }
+
+  void _drawTreat(Canvas canvas, bool isBeingCarried, [double opacity = 1.0]) {
+    if (!isBeingCarried) {
+      final shadowPaint = Paint()
+        ..color = Colors.black.withValues(alpha: 0.2 * opacity)
+        ..style = PaintingStyle.fill;
+      canvas.drawOval(
+        Rect.fromCenter(center: const Offset(0, 9), width: 14, height: 4),
+        shadowPaint,
+      );
+    }
+
+    final destRect = Rect.fromCenter(center: Offset.zero, width: 20, height: 20);
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: opacity)
+      ..filterQuality = FilterQuality.medium;
+
+    if (treatType == 'carrot' && bunnyFoodsImage != null) {
+      canvas.drawImageRect(
+        bunnyFoodsImage!,
+        const Rect.fromLTWH(0, 0, 16, 16),
+        destRect,
+        paint,
+      );
+    } else if (treatType == 'bone' && dogItemsImage != null) {
+      canvas.drawImageRect(
+        dogItemsImage!,
+        const Rect.fromLTWH(0, 0, 32, 32),
+        destRect,
+        paint,
+      );
+    } else {
+      _drawSushiVector(canvas, opacity);
+    }
+  }
+
+  void _drawSushiVector(Canvas canvas, double opacity) {
+    final noriPaint = Paint()
+      ..color = const Color(0xFF1B2421).withValues(alpha: opacity)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset.zero, 10.0, noriPaint);
+
+    final ricePaint = Paint()
+      ..color = const Color(0xFFF5F5F0).withValues(alpha: opacity)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(Offset.zero, 7.5, ricePaint);
+
+    final salmonPaint = Paint()
+      ..color = const Color(0xFFFF5C5C).withValues(alpha: opacity)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(-1.5, -0.5), 3.5, salmonPaint);
+
+    final avocadoPaint = Paint()
+      ..color = const Color(0xFF7CB342).withValues(alpha: opacity)
+      ..style = PaintingStyle.fill;
+    canvas.drawCircle(const Offset(2.0, 1.5), 2.0, avocadoPaint);
   }
 }
 
@@ -1241,4 +1598,5 @@ class _DeveloperReactionController {
       _oneHourMilestoneFired = true;
     }
   }
+
 }
