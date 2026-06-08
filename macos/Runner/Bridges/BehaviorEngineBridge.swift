@@ -25,8 +25,7 @@ import FlutterMacOS
 final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     static let shared = BehaviorEngineBridge()
 
-    private var displayChangeSink: FlutterEventSink?
-    private var constraintBoundsSink: FlutterEventSink?
+    private var constraintHandlers: [ConstraintBoundsStreamHandler] = []
 
     private var constraintWindow: ConstraintBorderWindow?
     private var constraintWindowDelegate: ConstraintWindowDelegate?
@@ -65,14 +64,20 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             name: "com.breakmate.desktop/displayChange",
             binaryMessenger: binaryMessenger
         )
-        displayEventChannel.setStreamHandler(DisplayChangeStreamHandler.shared)
+        displayEventChannel.setStreamHandler(DisplayChangeStreamHandler())
 
         // EventChannel — constraint window bounds changes
         let constraintEventChannel = FlutterEventChannel(
             name: "com.breakmate.desktop/constraintWindowBounds",
             binaryMessenger: binaryMessenger
         )
-        constraintEventChannel.setStreamHandler(ConstraintBoundsStreamHandler.shared)
+        let handler = ConstraintBoundsStreamHandler()
+        constraintHandlers.append(handler)
+        constraintEventChannel.setStreamHandler(handler)
+    }
+
+    func removeConstraintHandler(_ handler: ConstraintBoundsStreamHandler) {
+        constraintHandlers.removeAll { $0 === handler }
     }
 
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -94,6 +99,34 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     }
 
     // MARK: - Method Handlers
+
+    func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        switch call.method {
+        case "checkIsMainEngine":
+            // Usually only the MainFlutterWindow returns true for this.
+            // Bridges registered on secondary engines should return false.
+            result(false)
+        case "enumerateDisplays":
+            handleEnumerateDisplays(result: result)
+        case "getCursorPosition":
+            handleGetCursorPosition(result: result)
+        case "getVisibleWindows":
+            handleGetVisibleWindows(result: result)
+        case "showConstraintWindow":
+            handleShowConstraintWindow(
+                args: call.arguments as? [String: Any],
+                result: result
+            )
+        case "hideConstraintWindow":
+            handleHideConstraintWindow(result: result)
+        case "getIdleTime":
+            handleGetIdleTime(result: result)
+        case "focusApp":
+            handleFocusApp(result: result)
+        default:
+            result(FlutterMethodNotImplemented)
+        }
+    }
 
     /// Returns the list of connected displays in the format expected by `NativeDisplayManager`.
     func handleEnumerateDisplays(result: FlutterResult) {
@@ -158,7 +191,7 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     }
 
     /// Shows the constraint border window at the specified position and size.
-    func handleShowConstraintWindow(args: [String: Any]?, result: FlutterResult) {
+    func handleShowConstraintWindow(args: [String: Any]?, result: @escaping FlutterResult) {
         let x = (args?["x"] as? Double) ?? 100
         let y = (args?["y"] as? Double) ?? 100
         let w = (args?["width"] as? Double) ?? 300
@@ -193,7 +226,7 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     }
 
     /// Hides and removes the constraint window.
-    func handleHideConstraintWindow(result: FlutterResult) {
+    func handleHideConstraintWindow(result: @escaping FlutterResult) {
         DispatchQueue.main.async { [weak self] in
             self?.constraintWindow?.orderOut(nil)
             self?.constraintWindow?.delegate = nil
@@ -201,6 +234,17 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             self?.constraintWindowDelegate = nil
             result(nil)
         }
+    }
+
+    func handleGetIdleTime(result: FlutterResult) {
+        let anyEvent = CGEventType(rawValue: ~0)!
+        let idle = CGEventSource.secondsSinceLastEventType(CGEventSourceStateID.combinedSessionState, eventType: anyEvent)
+        result(idle)
+    }
+
+    func handleFocusApp(result: FlutterResult) {
+        NSApp.activate(ignoringOtherApps: true)
+        result(nil)
     }
 
     // MARK: - Private helpers
@@ -237,7 +281,9 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             "width":  bounds.width,
             "height": bounds.height
         ]
-        ConstraintBoundsStreamHandler.shared.send(payload)
+        for handler in constraintHandlers {
+            handler.send(payload)
+        }
     }
 }
 
@@ -246,10 +292,9 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
 /// FlutterStreamHandler that forwards NSApplicationDidChangeScreenParametersNotification
 /// to the `com.breakmate.desktop/displayChange` EventChannel.
 final class DisplayChangeStreamHandler: NSObject, FlutterStreamHandler {
-    static let shared = DisplayChangeStreamHandler()
     private var eventSink: FlutterEventSink?
 
-    private override init() {
+    override init() {
         super.init()
         NotificationCenter.default.addObserver(
             self,
@@ -257,6 +302,10 @@ final class DisplayChangeStreamHandler: NSObject, FlutterStreamHandler {
             name: NSApplication.didChangeScreenParametersNotification,
             object: nil
         )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
@@ -281,7 +330,6 @@ final class DisplayChangeStreamHandler: NSObject, FlutterStreamHandler {
 
 /// FlutterStreamHandler for the `com.breakmate.desktop/constraintWindowBounds` EventChannel.
 final class ConstraintBoundsStreamHandler: NSObject, FlutterStreamHandler {
-    static let shared = ConstraintBoundsStreamHandler()
     private var eventSink: FlutterEventSink?
 
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
@@ -291,6 +339,7 @@ final class ConstraintBoundsStreamHandler: NSObject, FlutterStreamHandler {
 
     func onCancel(withArguments arguments: Any?) -> FlutterError? {
         self.eventSink = nil
+        BehaviorEngineBridge.shared.removeConstraintHandler(self)
         return nil
     }
 

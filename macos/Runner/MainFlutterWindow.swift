@@ -235,6 +235,9 @@ class OverlayWindowManager: NSObject {
                 } else {
                     result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
                 }
+            case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
+                 "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
+                BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -263,7 +266,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
-    BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger)
+    BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger, registerMethodChannel: false)
     
     IpcBridgeManager.shared.register(engine: flutterViewController.engine)
     
@@ -410,23 +413,9 @@ class MainFlutterWindow: NSWindow {
 
       // ── Behavior Engine PAL methods ───────────────────────────────────────
 
-      case "enumerateDisplays":
-        BehaviorEngineBridge.shared.handleEnumerateDisplays(result: result)
-
-      case "getCursorPosition":
-        BehaviorEngineBridge.shared.handleGetCursorPosition(result: result)
-
-      case "getVisibleWindows":
-        BehaviorEngineBridge.shared.handleGetVisibleWindows(result: result)
-
-      case "showConstraintWindow":
-        BehaviorEngineBridge.shared.handleShowConstraintWindow(
-          args: call.arguments as? [String: Any],
-          result: result
-        )
-
-      case "hideConstraintWindow":
-        BehaviorEngineBridge.shared.handleHideConstraintWindow(result: result)
+      case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
+           "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
+        BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
 
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
@@ -436,15 +425,6 @@ class MainFlutterWindow: NSWindow {
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing level", details: nil))
         }
-
-      case "getIdleTime":
-        let anyEvent = CGEventType(rawValue: ~0)!
-        let idle = CGEventSource.secondsSinceLastEventType(CGEventSourceStateID.combinedSessionState, eventType: anyEvent)
-        result(idle)
-
-      case "focusApp":
-        NSApp.activate(ignoringOtherApps: true)
-        result(nil)
 
       case "setPresentationOptions":
         if let args = call.arguments as? [String: Any],

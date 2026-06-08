@@ -97,6 +97,15 @@ final class PiPWindowManager: NSObject {
             }
         }
 
+        // Setup MethodChannel for behavior engine bridge
+        let bridgeChannel = FlutterMethodChannel(
+            name: "com.breakmate.desktop/bridge",
+            binaryMessenger: engine.binaryMessenger
+        )
+        bridgeChannel.setMethodCallHandler { call, result in
+            BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
+        }
+
         isSettingUp = false
 
         window.alphaValue = 0.0
