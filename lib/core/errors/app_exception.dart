@@ -1,8 +1,21 @@
-enum ErrorType { timer, notification, storage, activityMonitor, general }
+enum AppErrorType {
+  timer,
+  notification,
+  storage,
+  activityMonitor,
+  assetLoadFailure,
+  ui,
+  ipc,
+  native,
+  calendar,
+  wellness,
+  backup,
+  general,
+}
 
 class AppException implements Exception {
   final String message;
-  final ErrorType type;
+  final AppErrorType type;
   final dynamic originalError;
   final StackTrace? stackTrace;
 

@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 
 /// Windows-specific overlay window plugin for native window manipulation
 class WindowsOverlayPlugin {
@@ -13,7 +14,10 @@ class WindowsOverlayPlugin {
     try {
       await _channel.invokeMethod('configureAsOverlay');
     } on PlatformException catch (e) {
-      throw Exception('Failed to configure overlay: ${e.message}');
+      throw AppException(
+        type: AppErrorType.native,
+        message: 'Failed to configure overlay: ${e.message}',
+      );
     }
   }
 
@@ -23,7 +27,10 @@ class WindowsOverlayPlugin {
     try {
       await _channel.invokeMethod('resetToNormal');
     } on PlatformException catch (e) {
-      throw Exception('Failed to reset window: ${e.message}');
+      throw AppException(
+        type: AppErrorType.native,
+        message: 'Failed to reset window: ${e.message}',
+      );
     }
   }
 
@@ -33,7 +40,10 @@ class WindowsOverlayPlugin {
     try {
       await _channel.invokeMethod('setTransparency', {'opacity': opacity});
     } on PlatformException catch (e) {
-      throw Exception('Failed to set transparency: ${e.message}');
+      throw AppException(
+        type: AppErrorType.native,
+        message: 'Failed to set transparency: ${e.message}',
+      );
     }
   }
 
@@ -43,7 +53,10 @@ class WindowsOverlayPlugin {
     try {
       await _channel.invokeMethod('setIgnoreMouseEvents', {'ignore': ignore});
     } on PlatformException catch (e) {
-      throw Exception('Failed to set mouse events: ${e.message}');
+      throw AppException(
+        type: AppErrorType.native,
+        message: 'Failed to set mouse events: ${e.message}',
+      );
     }
   }
 }

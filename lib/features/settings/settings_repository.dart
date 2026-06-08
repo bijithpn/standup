@@ -237,8 +237,14 @@ class SettingsRepository extends ChangeNotifier {
         'quiet_mode_auto_activate',
         defaultValue: true,
       ),
-      companionToyType: _storage.getString('companion_toy_type', defaultValue: 'tennis_ball'),
-      companionTreatType: _storage.getString('companion_treat_type', defaultValue: 'sushi'),
+      companionToyType: _storage.getString(
+        'companion_toy_type',
+        defaultValue: 'tennis_ball',
+      ),
+      companionTreatType: _storage.getString(
+        'companion_treat_type',
+        defaultValue: 'sushi',
+      ),
     );
   }
 
@@ -426,8 +432,14 @@ class SettingsRepository extends ChangeNotifier {
         'enable_session_resume',
         defaultValue: true,
       ),
-      companionToyType: _storage.getString('companion_toy_type', defaultValue: 'tennis_ball'),
-      companionTreatType: _storage.getString('companion_treat_type', defaultValue: 'sushi'),
+      companionToyType: _storage.getString(
+        'companion_toy_type',
+        defaultValue: 'tennis_ball',
+      ),
+      companionTreatType: _storage.getString(
+        'companion_treat_type',
+        defaultValue: 'sushi',
+      ),
     );
   }
 
@@ -650,7 +662,10 @@ class SettingsRepository extends ChangeNotifier {
     );
     await _storage.setBool('pip_mode_enabled', settings.pipModeEnabled);
     await _storage.setString('companion_toy_type', settings.companionToyType);
-    await _storage.setString('companion_treat_type', settings.companionTreatType);
+    await _storage.setString(
+      'companion_treat_type',
+      settings.companionTreatType,
+    );
 
     // Write the full snapshot to ObjectBox.
     _storage.settingsBox!.put(snapshot);

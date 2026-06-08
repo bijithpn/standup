@@ -1063,4 +1063,3 @@ class _BarButtonState extends State<_BarButton>
     );
   }
 }
-

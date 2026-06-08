@@ -194,7 +194,12 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   dropdownRow(
                     'Throwable Toy Type',
                     widget.controller.companionToyType,
-                    const ['tennis_ball', 'toy_mouse', 'pink_yarn', 'orange_yarn'],
+                    const [
+                      'tennis_ball',
+                      'toy_mouse',
+                      'pink_yarn',
+                      'orange_yarn',
+                    ],
                     (v) {
                       if (v != null) {
                         widget.controller.changeToyType(v);
@@ -279,8 +284,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   child: InteractiveViewer(
                     panEnabled: true,
                     scaleEnabled: false,
-                    constrained: false, // Allow child to be wider than container
-                    boundaryMargin: const EdgeInsets.symmetric(horizontal: 1000),
+                    constrained:
+                        false, // Allow child to be wider than container
+                    boundaryMargin: const EdgeInsets.symmetric(
+                      horizontal: 1000,
+                    ),
                     child: CompanionSpriteWidget(
                       petTheme: currentTheme,
                       animationState: PetAnimationState.idle,
@@ -381,8 +389,14 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {'name': 'Cave', 'path': 'assets/background/cave/background.png'},
       {'name': 'Desert', 'path': 'assets/background/desert/background.png'},
       {'name': 'Sky', 'path': 'assets/background/sky/background.png'},
-      {'name': 'Night Town', 'path': 'assets/background/night_town/background.png'},
-      {'name': 'Mist Forest', 'path': 'assets/background/mist_forest/background.png'},
+      {
+        'name': 'Night Town',
+        'path': 'assets/background/night_town/background.png',
+      },
+      {
+        'name': 'Mist Forest',
+        'path': 'assets/background/mist_forest/background.png',
+      },
       {'name': 'Urban', 'path': 'assets/background/urban/background.png'},
     ];
 

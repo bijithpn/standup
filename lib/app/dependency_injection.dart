@@ -2,10 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:get_it/get_it.dart';
 import 'package:breakmate/features/companion/services/pet_registry_service.dart';
-import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
-import 'package:breakmate/core/ipc/ipc_bridge.dart';
-import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -42,19 +39,24 @@ import 'package:breakmate/features/break_system/application/strict_mode_controll
 import 'package:breakmate/features/companion/services/companion_state_manager.dart';
 import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
+
+import 'package:breakmate/app/bootstrapper.dart';
 
 final sl = GetIt.instance;
 
 Future<void> initDependencies() async {
-  // Event Bus (singleton for cross-layer communication)
+  // EventBus coordinates cross-layer communication (IPC <-> Core <-> UI) without tight coupling.
   sl.registerSingleton<EventBus>(EventBus.instance);
 
-  // Core Services
   final storage = StorageService();
   await storage.init();
 
   if (!storage.isReady) {
-    throw Exception('Storage initialization failed');
+    throw AppException(
+      type: AppErrorType.storage,
+      message: 'Storage initialization failed',
+    );
   }
 
   sl.registerSingleton<StorageService>(storage);
@@ -70,7 +72,7 @@ Future<void> initDependencies() async {
   final notifications = NotificationService();
   final displayManager = DisplayManager();
 
-  // Parallelize independent initializations
+  // Parallelize initialization of independent I/O services to optimize app startup time.
   await Future.wait([notifications.init(), displayManager.initialize()]);
 
   sl.registerSingleton<NotificationService>(notifications);
@@ -80,16 +82,13 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<AppNavigationService>(AppNavigationService(storage));
 
-  // Window Service for native macOS window operations
   sl.registerSingleton<WindowService>(WindowService.instance);
 
-  // Overlay Window Service for system-wide displays
   final overlayService = OverlayWindowService();
   sl.registerSingleton<OverlayWindowService>(overlayService);
 
   sl.registerSingleton<SystemMediaService>(SystemMediaService());
 
-  // Display Management Services
   sl.registerSingleton<DisplayManager>(displayManager);
 
   sl.registerSingleton<OverlayFitService>(OverlayFitService());
@@ -97,7 +96,6 @@ Future<void> initDependencies() async {
     DisplayController(displayManager, sl()),
   );
 
-  // Adaptive Break Service for smart timing
   final wellnessEngine = WellnessEngine(appTracking: AppTrackingService());
   sl.registerSingleton<WellnessEngine>(wellnessEngine);
 
@@ -134,7 +132,6 @@ Future<void> initDependencies() async {
   await statsService.initialize();
   sl.registerSingleton<StatsService>(statsService);
 
-  // TimerEngine with EventBus integration
   final timerEngine = TimerEngine(
     settingsRepository: sl(),
     smartDetectionService: sl(),
@@ -143,10 +140,9 @@ Future<void> initDependencies() async {
   );
   sl.registerSingleton<TimerEngine>(timerEngine);
 
-  // Tray Manager Service (must be before BreakController)
   final trayManager = TrayManagerService();
 
-  // Run tray manager init and companion controller init in parallel
+  // Parallelize tray initialization and companion rendering engine to minimize desktop spawn delay.
   final petRegistry = PetRegistryService();
   sl.registerSingleton<PetRegistryService>(petRegistry);
   unawaited(petRegistry.discoverFromLegacyAssets());
@@ -159,7 +155,7 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<TrayManagerService>(trayManager);
 
-  // TimerOrchestrator to handle persistence and side effects
+  // TimerOrchestrator acts as the primary state machine, driving persistence and native side effects.
   final timerOrchestrator = TimerOrchestrator(
     timerEngine: sl(),
     timerRepository: TimerRepository(sl()),
@@ -175,7 +171,6 @@ Future<void> initDependencies() async {
   timerOrchestrator.initialize();
   sl.registerSingleton<TimerOrchestrator>(timerOrchestrator);
 
-  // Application Controllers
   final meetingDetectionService = MeetingDetectionService();
   sl.registerSingleton<MeetingDetectionService>(meetingDetectionService);
 
@@ -201,29 +196,23 @@ Future<void> initDependencies() async {
   breakController.initialize();
   sl.registerSingleton<BreakController>(breakController);
 
-  // Menu Bar Controller (centralized action routing)
   sl.registerSingleton<MenuBarController>(MenuBarController());
 
-  // Wire tray menu with dependencies
   trayManager.setDependencies(timerEngine, sl());
   trayManager.setMenuBarController(sl());
 
-  // Wire menu bar controller with break controller
   sl<MenuBarController>().setDependencies(sl());
 
-  // Companion Services
   final companionStateManager = CompanionStateManager(eventBus: sl());
   companionStateManager.startListening();
   sl.registerSingleton<CompanionStateManager>(companionStateManager);
 
-  // Companion Window Controller
   final companionWindowController = CompanionWindowController();
   sl.registerSingleton<CompanionWindowController>(companionWindowController);
 
-  // Companion Overlay Controller (for settings UI)
   sl.registerSingleton<CompanionOverlayController>(companionOverlayController);
 
-  // Eagerly pre-cache tray icons for the current theme to ensure smooth animation
+  // Pre-cache tray animation frames directly into memory on startup to avoid frame drops on macOS Menubar updates.
   try {
     final theme = PetTheme.getTheme(
       settingsRepo.currentSettings.companionPetTheme,
@@ -234,107 +223,5 @@ Future<void> initDependencies() async {
   }
 
   // IPC Bridge: wire native macOS events to EventBus
-  _setupIpcBridge();
-}
-
-void _setupIpcBridge() {
-  final ipc = IpcBridge.instance;
-  final eventBus = sl<EventBus>();
-  final timerEngine = sl<TimerEngine>();
-
-  ipc.setEventHandler((event, data) {
-    switch (event) {
-      case IpcEventNames.timerStateChanged:
-        final state = data['state'] as String?;
-        final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
-        final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
-        final targetEndMs = data['targetEndTime'] as int?;
-        final targetEndTime = targetEndMs != null
-            ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
-            : null;
-        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)
-            ?.toInt();
-        TimerStateEvent? timerState;
-        switch (state) {
-          case 'running':
-            timerState = TimerStateEvent.running;
-          case 'breakActive':
-            timerState = TimerStateEvent.breakActive;
-          case 'paused':
-            timerState = TimerStateEvent.paused;
-          case 'idle':
-            timerState = TimerStateEvent.idle;
-        }
-        if (timerState != null) {
-          eventBus.emit(
-            TimerStateChangedEvent(
-              state: timerState,
-              countdownSeconds: countdown,
-              workElapsedSeconds: elapsed,
-              targetEndTime: targetEndTime,
-              totalWorkTodaySeconds: totalWorkTodaySecs,
-            ),
-          );
-        }
-      case IpcEventNames.breakStarted:
-        eventBus.emit(
-          BreakStartedEvent(
-            isLongBreak: data['isLongBreak'] as bool? ?? false,
-            durationSeconds: (data['durationSeconds'] as num?)?.toInt() ?? 0,
-            title: data['title'] as String? ?? 'Break',
-          ),
-        );
-      case IpcEventNames.breakEnded:
-        eventBus.emit(
-          BreakEndedEvent(skipped: data['skipped'] as bool? ?? false),
-        );
-      case 'detection.meeting':
-        eventBus.emit(
-          MeetingDetectedEvent(
-            isActive: data['isActive'] as bool? ?? false,
-            bundleId: data['bundleId'] as String? ?? '',
-          ),
-        );
-      case 'detection.focusMode':
-        eventBus.emit(
-          FocusModeEvent(isActive: data['isActive'] as bool? ?? false),
-        );
-      case 'tray.action':
-        final action = data['action'] as String?;
-        if (action == 'start') {
-          timerEngine.startTimers();
-        } else if (action == 'pause') {
-          timerEngine.pauseTimers(isManual: true);
-        } else if (action == 'reset') {
-          timerEngine.resetTimers();
-        }
-      case 'companion.close':
-        sl<CompanionOverlayController>().toggleCompanion(false);
-      case 'companion.positionChanged':
-        eventBus.emit(
-          CompanionPositionChangedEvent(
-            x: (data['x'] as num?)?.toDouble() ?? 0,
-            y: (data['y'] as num?)?.toDouble() ?? 0,
-          ),
-        );
-      case 'companion.stateChanged':
-        eventBus.emit(
-          CompanionStateChangedEvent(
-            state: CompanionState.values.firstWhere(
-              (s) => s.name == (data['state'] as String?),
-              orElse: () => CompanionState.idle,
-            ),
-          ),
-        );
-      case IpcEventNames.companionInteraction:
-        eventBus.emit(
-          CompanionInteractionEvent(
-            interactionType: data['interactionType'] as String? ?? 'click',
-            metadata: data['metadata'] != null
-                ? Map<String, dynamic>.from(data['metadata'] as Map)
-                : null,
-          ),
-        );
-    }
-  });
+  AppBootstrapper.initializeIpc();
 }

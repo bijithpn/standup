@@ -230,8 +230,12 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     if (_isLoading || _loadedImage == null) {
       return SizedBox(
-        width: (widget.size?.width) ?? (widget.petTheme.spriteSize * effectiveScale),
-        height: (widget.size?.height) ?? (widget.petTheme.spriteSize * effectiveScale),
+        width:
+            (widget.size?.width) ??
+            (widget.petTheme.spriteSize * effectiveScale),
+        height:
+            (widget.size?.height) ??
+            (widget.petTheme.spriteSize * effectiveScale),
       );
     }
 
@@ -283,7 +287,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
               1.0,
             ),
             child: CustomPaint(
-              size: widget.size ??
+              size:
+                  widget.size ??
                   Size(
                     frameWidth * effectiveScale,
                     frameHeight * effectiveScale,

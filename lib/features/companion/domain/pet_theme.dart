@@ -462,7 +462,6 @@ class PetTheme {
         ),
       };
 
-
   static const List<PetTheme> themes = [
     PetTheme(
       id: keyGreyCat,

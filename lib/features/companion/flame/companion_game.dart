@@ -224,11 +224,21 @@ class CompanionGame extends FlameGame {
 
     // Load toy/treat sprites
     try {
-      mouseImage = await PetAssetLoader.loadImage('assets/ui/icons/mouse_sheet.png');
-      pinkBallImage = await PetAssetLoader.loadImage('assets/ui/icons/pinkball_sheet.png');
-      orangeBallImage = await PetAssetLoader.loadImage('assets/ui/icons/orangeball_sheet.png');
-      bunnyFoodsImage = await PetAssetLoader.loadImage('assets/characters/pets/bunnyfoods_2.png');
-      dogItemsImage = await PetAssetLoader.loadImage('assets/characters/pets/dogitems_2.png');
+      mouseImage = await PetAssetLoader.loadImage(
+        'assets/ui/icons/mouse_sheet.png',
+      );
+      pinkBallImage = await PetAssetLoader.loadImage(
+        'assets/ui/icons/pinkball_sheet.png',
+      );
+      orangeBallImage = await PetAssetLoader.loadImage(
+        'assets/ui/icons/orangeball_sheet.png',
+      );
+      bunnyFoodsImage = await PetAssetLoader.loadImage(
+        'assets/characters/pets/bunnyfoods_2.png',
+      );
+      dogItemsImage = await PetAssetLoader.loadImage(
+        'assets/characters/pets/dogitems_2.png',
+      );
     } catch (e) {
       debugPrint('Error loading companion toy/treat assets: $e');
     }
@@ -669,14 +679,16 @@ class CompanionGame extends FlameGame {
 
     // Top padding needs to account for the drag handle (24.0 or 32.0, assuming 24.0 here)
     // and the visual offset if the sprite is shifted down.
-    double minY = isPiP ? (24.0 + scaledHalfH + 4.0 - groundOffset) : (scaledHalfH + 4.0 - groundOffset);
-    
+    double minY = isPiP
+        ? (24.0 + scaledHalfH + 4.0 - groundOffset)
+        : (scaledHalfH + 4.0 - groundOffset);
+
     // Bottom padding needs to account for the interaction bar (44.0)
     // and the visual offset.
     double maxY = isPiP
         ? (size.y - 44.0 - scaledHalfH - 4.0 + groundOffset)
         : (size.y - scaledHalfH - 4.0 + groundOffset);
-        
+
     if (minY > maxY) {
       final double safeCenterY = isPiP
           ? 24.0 + (size.y - 24.0 - 44.0) / 2
@@ -726,7 +738,9 @@ class CompanionGame extends FlameGame {
     _updateNavigationPaddings();
 
     final currentPos = _petService.navigation.currentPosition;
-    final minY = isPiP ? (24.0 + scaledHalfH + 4.0 - groundOffset) : (scaledHalfH + 4.0 - groundOffset);
+    final minY = isPiP
+        ? (24.0 + scaledHalfH + 4.0 - groundOffset)
+        : (scaledHalfH + 4.0 - groundOffset);
     final maxY = isPiP
         ? (size.y - 44.0 - scaledHalfH - 4.0 + groundOffset)
         : (size.y - scaledHalfH - 4.0 + groundOffset);
@@ -1283,7 +1297,8 @@ class CompanionGame extends FlameGame {
             snoutY = comp.size.y * 0.25;
           }
 
-          renderPos = comp.position.toOffset() +
+          renderPos =
+              comp.position.toOffset() +
               Offset(comp.size.x / 2 + snoutX, snoutY);
         }
       }
@@ -1306,11 +1321,7 @@ class CompanionGame extends FlameGame {
           1.0,
         );
       } else {
-        _drawToy(
-          canvas,
-          toy.lifecycle == ThrowableLifecycle.beingFetched,
-          1.0,
-        );
+        _drawToy(canvas, toy.lifecycle == ThrowableLifecycle.beingFetched, 1.0);
       }
 
       canvas.restore();
@@ -1328,7 +1339,11 @@ class CompanionGame extends FlameGame {
       );
     }
 
-    final destRect = Rect.fromCenter(center: Offset.zero, width: 20, height: 20);
+    final destRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: 20,
+      height: 20,
+    );
     final paint = Paint()
       ..color = Colors.white.withValues(alpha: opacity)
       ..filterQuality = FilterQuality.medium;
@@ -1415,7 +1430,11 @@ class CompanionGame extends FlameGame {
       );
     }
 
-    final destRect = Rect.fromCenter(center: Offset.zero, width: 20, height: 20);
+    final destRect = Rect.fromCenter(
+      center: Offset.zero,
+      width: 20,
+      height: 20,
+    );
     final paint = Paint()
       ..color = Colors.white.withValues(alpha: opacity)
       ..filterQuality = FilterQuality.medium;
@@ -1644,5 +1663,4 @@ class _DeveloperReactionController {
       _oneHourMilestoneFired = true;
     }
   }
-
 }
