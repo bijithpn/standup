@@ -155,6 +155,15 @@ class CompanionWindowManager: NSObject {
             }
         }
         
+        // Setup MethodChannel for behavior engine bridge
+        let bridgeChannel = FlutterMethodChannel(
+            name: "com.breakmate.desktop/bridge",
+            binaryMessenger: engine.binaryMessenger
+        )
+        bridgeChannel.setMethodCallHandler { call, result in
+            BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
+        }
+        
         // Also attempt an immediate push; Flutter may already be ready if it initialized fast
         if let args = args {
             updateCompanionParams(args: args)
