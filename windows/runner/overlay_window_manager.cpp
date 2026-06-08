@@ -25,10 +25,11 @@ struct OverlayEnumData {
 
 void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
   if (!overlay_windows_.empty()) {
-    return; // Already showing
+    return; // A break overlay is already active across the current monitor set.
   }
 
-  // Store args for getOverlayData calls from overlay isolates
+  // Keep the launch payload available for overlay isolates that initialize
+  // their MethodChannel handler after the native window is already visible.
   last_show_args_.clear();
   for (const auto& [key, value] : args) {
     last_show_args_[flutter::EncodableValue(key)] = value;
@@ -63,7 +64,8 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
         window->SetIgnoreMouseEvents(true);
       }
       
-      // Override position to this monitor
+      // EnumDisplayMonitors reports virtual-screen coordinates, including
+      // negative origins for monitors placed left or above the primary display.
       SetWindowPos(window->GetHandle(), HWND_TOPMOST,
                    lprcMonitor->left, lprcMonitor->top,
                    lprcMonitor->right - lprcMonitor->left,
@@ -100,6 +102,8 @@ void OverlayWindowManager::HideOverlay() {
 void OverlayWindowManager::UpdateOverlayData(const flutter::EncodableMap& data) {
   for (auto& window : overlay_windows_) {
     if (window && window->GetEngine()) {
+      // Push live timer/template data into every overlay engine so each
+      // monitor stays visually synchronized.
       auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
           &flutter::StandardMethodCodec::GetInstance());

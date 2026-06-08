@@ -259,9 +259,9 @@ void mainCommon(FlavorConfig config) async {
                 await const MethodChannel(
                   'com.breakmate.desktop/bridge',
                 ).invokeMethod<Map<dynamic, dynamic>>('debugCalendarState');
-            debugPrint('🔥 Startup debugCalendarState result: $debugResult');
+            debugPrint('Startup debugCalendarState result: $debugResult');
           } catch (e) {
-            debugPrint('🔥 Startup debugCalendarState failed: $e');
+            debugPrint('Startup debugCalendarState failed: $e');
           }
         }
 

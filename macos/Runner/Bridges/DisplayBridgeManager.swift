@@ -35,6 +35,8 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
     
     @objc private func screenParametersChanged() {
         if let sink = eventSink {
+            // Dart re-enumerates displays after this signal so native and
+            // Flutter use the same payload shape for initial and changed state.
             sink(["type": "display_changed"])
         }
     }
@@ -48,8 +50,9 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
             let frame = screen.frame
             let visibleFrame = screen.visibleFrame
             
-            // Generate a persistent ID based on display device UUID if possible, but NSScreen doesn't expose it easily.
-            // Using localizedName as ID for simplicity, or simply an index string
+            // TODO(intersamrt): Replace localizedName/index fallback with a
+            // CoreGraphics display UUID so pinned companion displays survive
+            // monitor reorder and duplicate display names.
             var displayId = "Display_\(index)"
             if #available(macOS 10.15, *) {
                 displayId = screen.localizedName

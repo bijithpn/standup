@@ -51,7 +51,7 @@ class SettingsRepository extends ChangeNotifier {
 
     if (!_storage.isReady) {
       debugPrint(
-        '[SettingsRepo] 🚨 ERROR: StorageService remains uninitialized after load() retry fallback! Falling back to default settings.',
+        '[SettingsRepo] StorageService remains uninitialized after load() retry fallback. Falling back to default settings.',
       );
       _current = const SettingsModel();
       return;
@@ -460,12 +460,12 @@ class SettingsRepository extends ChangeNotifier {
         _storage.settingsBox?.get(1)?.hasCompletedOnboarding ?? false;
     if (!kvVerify || !simpleVerify || !snapVerify) {
       debugPrint(
-        '[SettingsRepo] ⚠️ Onboarding flag NOT fully persisted! '
+        '[SettingsRepo] Onboarding flag was not fully persisted. '
         'KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
       );
     } else {
       debugPrint(
-        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify ✓',
+        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
       );
     }
   }
@@ -486,7 +486,7 @@ class SettingsRepository extends ChangeNotifier {
 
     if (!_storage.isReady || _storage.settingsBox == null) {
       debugPrint(
-        '[SettingsRepo] 🚨 FATAL: StorageService remains uninitialized during save()! settingsBox is null. Diagnostic details: '
+        '[SettingsRepo] StorageService is unavailable during save(); settingsBox is null. Diagnostic details: '
         'Storage ready: ${_storage.isReady}, settingsBox: ${_storage.settingsBox}, companionPrefsBox: ${_storage.companionPreferencesBox}, kvBox: ${_storage.kvBox}',
       );
       throw StateError('Storage unavailable');

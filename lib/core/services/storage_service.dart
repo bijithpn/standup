@@ -30,7 +30,7 @@ class StorageService {
         isolateName.toLowerCase().contains('companion');
     if (isSecondaryIsolate) {
       debugPrint(
-        '[Storage] 🚨 REJECTED: Secondary isolate "$isolateName" attempted to access ObjectBox store! Rejecting access to prevent corruption.',
+        '[Storage] Rejected ObjectBox access from secondary isolate "$isolateName" to prevent store corruption.',
       );
       throw StateError('Storage access rejected in secondary isolates.');
     }
@@ -363,18 +363,18 @@ class StorageService {
   }
 
   void diagnoseAndLogFailure(String storeDir) {
-    debugPrint('=== 🚨 STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
+    debugPrint('=== STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
 
-    // 1. Initialization order issue
+    // Check whether initialization was re-entered or skipped.
     debugPrint('[Diagnostics] 1. Initialization Order Check:');
     debugPrint('   - StorageService._initializing: $_initializing');
     debugPrint('   - StorageService._store != null: ${_store != null}');
 
-    // 2. Existing process ownership
+    // Identify the process that owns this storage attempt.
     debugPrint('[Diagnostics] 2. Existing Process Ownership Check:');
     debugPrint('   - Current Process ID: $pid');
 
-    // 3. Secondary isolate access
+    // Secondary Flutter engines must not open ObjectBox directly.
     final isolateName = Isolate.current.debugName ?? '';
     final isSecondaryIsolate =
         isolateName.toLowerCase().contains('overlay') ||
@@ -383,7 +383,7 @@ class StorageService {
     debugPrint('   - Isolate Name: "$isolateName"');
     debugPrint('   - Is Secondary Isolate: $isSecondaryIsolate');
 
-    // 4. Temporary storage fallback
+    // Temporary storage keeps the app usable but cannot be treated as durable.
     debugPrint('[Diagnostics] 4. Temporary Storage Fallback Check:');
     debugPrint('   - Active database path: $activeDatabasePath');
     final isTemp = activeDatabasePath?.contains('temporary') ?? false;
@@ -394,11 +394,11 @@ class StorageService {
       );
     }
 
-    // 5. ObjectBox open failure
+    // Capture the internal failure flag after all retry paths have run.
     debugPrint('[Diagnostics] 5. ObjectBox Open Failure Check:');
     debugPrint('   - StorageService._failed: $_failed');
 
-    // 6. Database corruption
+    // Inspect the main database file without attempting repair here.
     debugPrint('[Diagnostics] 6. Database Corruption Check:');
     if (storeDir.isNotEmpty) {
       final dbFile = File(p.join(storeDir, 'data.mdb'));
@@ -412,7 +412,7 @@ class StorageService {
       }
     }
 
-    // 7. Lock-file conflict
+    // A leftover lock file usually points to another process or a crash.
     debugPrint('[Diagnostics] 7. Lock-file Conflict Check:');
     if (storeDir.isNotEmpty) {
       final lockFile = File(p.join(storeDir, 'lock.mdb'));

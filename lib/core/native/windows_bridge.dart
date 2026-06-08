@@ -187,8 +187,6 @@ class WindowsBridge implements NativeBridgePlatform {
     return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
-  // --- New PAL methods: Display / Cursor / Window / Constraint ---
-
   /// Enumerates connected displays.
   /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.
   @override
@@ -288,7 +286,8 @@ class WindowsBridge implements NativeBridgePlatform {
   void registerConstraintWindowBoundsCallback(
     void Function(Map<String, dynamic>) cb,
   ) {
-    // No-op on Windows. Constraint window is not supported/implemented on Windows.
+    // TODO: Wire Windows constraint-window bounds events when the
+    // native constraint window is promoted beyond the macOS-only path.
   }
 
   /// Shows the PiP companion window.
