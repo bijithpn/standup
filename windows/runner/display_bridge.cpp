@@ -30,7 +30,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   data.bounds = info.rcMonitor;
   data.workArea = info.rcWork;
   
-  // Calculate DPI scale
+  // Use effective DPI because Flutter sizes the desktop UI in logical pixels.
   UINT dpiX = 96, dpiY = 96;
   HMODULE hUser32 = LoadLibrary(L"user32.dll");
   if (hUser32) {
@@ -48,7 +48,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 }
 
 void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler** handler_out) {
-  // Setup Method Channel
+  // This channel is queried by Dart when display geometry is needed.
   auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       engine->messenger(), "com.breakmate/display_bridge",
       &flutter::StandardMethodCodec::GetInstance());
@@ -85,7 +85,8 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
         }
       });
 
-  // Setup Event Channel
+  // The event channel only signals that display state changed; Dart performs a
+  // fresh enumeration so all geometry comes from one code path.
   auto handler = std::make_unique<DisplayStreamHandler>();
   *handler_out = handler.get();
   auto event_channel = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
@@ -93,7 +94,8 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
       &flutter::StandardMethodCodec::GetInstance());
   event_channel->SetStreamHandler(std::move(handler));
 
-  // Must leak channels because they hold raw pointers to lambdas and don't manage lifetime natively well if dropped here in C++ setup func
+  // TODO: Store these channels in a runner-owned registry so their
+  // lifetime is explicit instead of relying on release() from setup code.
   channel.release();
   event_channel.release();
 }

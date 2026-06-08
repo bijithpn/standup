@@ -62,6 +62,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       final Map<String, dynamic> backup = {
+        // TODO: Add a backup schema version before changing any
+        // persisted field names, so older exports can be migrated explicitly.
         'timestamp': DateTime.now().toIso8601String(),
         'settings': _storage.settingsBox?.get(1)?.toMap() ?? {},
         'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},
@@ -182,8 +184,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       if (!await file.exists()) {
-        throw Exception(
-          "breakmate_backup.json not found in Downloads or Documents",
+        throw AppException(
+          type: AppErrorType.backup,
+          message: "breakmate_backup.json not found in Downloads or Documents",
         );
       }
 
@@ -197,7 +200,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         );
       }
 
-      // Restore settings
+      // Restore settings through the repository so it remains the source of truth.
       if (data.containsKey('settings') && data['settings'] is Map) {
         final settingsMap = Map<String, dynamic>.from(data['settings']);
         if (settingsMap.isNotEmpty) {
@@ -207,7 +210,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Restore global stats
+      // Global and daily stats are restored directly because their ObjectBox
+      // boxes are the canonical local store for analytics history.
       if (data.containsKey('global_stats') && data['global_stats'] is Map) {
         final globalStatsMap = Map<String, dynamic>.from(data['global_stats']);
         if (globalStatsMap.isNotEmpty) {
@@ -222,7 +226,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Restore daily stats
+      // Restore daily stats.
       if (data.containsKey('daily_stats') && data['daily_stats'] is List) {
         final dailyList = data['daily_stats'] as List;
         _storage.dailyStatsBox?.removeAll();
@@ -242,7 +246,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Restore key-value records (stats, streaks, etc.)
+      // Restore key-value records and mirror them into SimplePrefs for legacy
+      // readers that have not moved fully behind StorageService yet.
       if (data.containsKey('kv_records') && data['kv_records'] is List) {
         final kvList = data['kv_records'] as List;
         _storage.kvBox?.removeAll();

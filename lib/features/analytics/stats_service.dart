@@ -55,8 +55,8 @@ class StatsService extends ChangeNotifier {
 
     // Reset daily stats if it's a new day
     if (lastDate != today) {
-      // ⚠️ IMPORTANT: Check streak BEFORE updating lastActiveDate in storage,
-      // otherwise _checkAndUpdateStreak will always see lastActive == today.
+      // Check streak before updating lastActiveDate; otherwise the streak
+      // calculation will always see lastActive == today.
       _checkAndUpdateStreak(today);
 
       _storage.setString(AppConstants.keyLastActiveDate, today);

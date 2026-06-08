@@ -142,11 +142,11 @@ class MacOSBridge implements NativeBridgePlatform {
 
   @override
   Future<bool> requestCalendarPermissions() async {
-    debugPrint('🔥 Requesting calendar permission');
+    debugPrint('Requesting calendar permission');
     final bool? result = await _invokeSafely<bool>(
       'requestCalendarPermissions',
     );
-    debugPrint('🔥 Permission result: $result');
+    debugPrint('Calendar permission result: $result');
     return result ?? false;
   }
 
@@ -203,8 +203,6 @@ class MacOSBridge implements NativeBridgePlatform {
     if (events == null) return [];
     return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
-
-  // --- New PAL methods: Display / Cursor / Window / Constraint ---
 
   /// Enumerates connected displays.
   /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.

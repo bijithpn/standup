@@ -25,7 +25,8 @@ class CompanionWindowManager: NSObject {
     private var energyStatusTimer: Timer?
     private var lastEnergyStatus: [String: Any] = [:]
     
-    // Stores the initial spawn args so Flutter can pull them after its method handler registers
+    // Flutter pulls these after its method handler registers, avoiding a lost
+    // first settings update on slower engine startups.
     private var pendingInitialArgs: [String: Any]?
     
     private var catOffsetFromBottom: CGFloat = 40.0
@@ -54,7 +55,8 @@ class CompanionWindowManager: NSObject {
         
         isSettingUp = true
         
-        // Aggressively close any orphaned CompanionPanel windows before creating a new one
+        // Defensive cleanup for panels left behind by a crashed or interrupted
+        // secondary Flutter engine.
         for w in NSApp.windows {
             if let panel = w as? CompanionPanel {
                 panel.orderOut(nil)
@@ -66,7 +68,8 @@ class CompanionWindowManager: NSObject {
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.visibleFrame
         
-        // Fullscreen overlay frame spanning the screen's visible area
+        // The native panel stays fullscreen; Flutter handles the pet's visual
+        // position inside the transparent surface.
         let frame = screenFrame
         
         let window = CompanionPanel(
@@ -87,7 +90,7 @@ class CompanionWindowManager: NSObject {
             .stationary
         ]
         
-        // Unconditional click-through for zero user work disruption
+        // The companion never steals input from the active desktop app.
         window.ignoresMouseEvents = true
         
         // Spawn a fresh, dedicated Flutter engine with its own Dart isolate.
@@ -133,14 +136,15 @@ class CompanionWindowManager: NSObject {
         // method handler registers (avoids race condition where push arrives too early)
         pendingInitialArgs = args
         
-        // Setup MethodChannel for native drag tracking and overlay synchronization
+        // Native-to-companion channel for startup settings and live overlay sync.
         let channel = FlutterMethodChannel(
             name: "com.breakmate.desktop/companion_data",
             binaryMessenger: engine.binaryMessenger
         )
         channel.setMethodCallHandler { [weak self] (call, result) in
             if call.method == "syncCompanionSettings" {
-                // With stationary fullscreen window, we ignore frame adjustments from Flutter
+                // The fullscreen panel is stationary; Flutter moves only the pet
+                // sprite inside it.
                 result(nil)
             } else if call.method == "getInitialSettings" {
                 // Flutter pulls its initial configuration on startup to avoid the push-race
@@ -155,7 +159,8 @@ class CompanionWindowManager: NSObject {
             }
         }
         
-        // Setup MethodChannel for behavior engine bridge
+        // Behavior engine calls stay on the companion engine so animation state
+        // changes do not depend on the main Flutter view.
         let bridgeChannel = FlutterMethodChannel(
             name: "com.breakmate.desktop/bridge",
             binaryMessenger: engine.binaryMessenger
@@ -183,7 +188,8 @@ class CompanionWindowManager: NSObject {
             }
         }
         
-        // Start the energy status tracking timer
+        // Start energy polling after the engine is visible so initial state and
+        // live updates use the same companion channel.
         startEnergyStatusTimer()
     }
     

@@ -18,7 +18,8 @@ IpcBridgeManager::~IpcBridgeManager() {}
 void IpcBridgeManager::RegisterEngine(flutter::FlutterEngine* engine) {
   std::lock_guard<std::mutex> lock(mutex_);
   
-  // Only register if not already registered
+  // Keep one IPC channel per Flutter engine. Secondary overlay engines are
+  // long-lived while their native windows are visible.
   if (std::find(engines_.begin(), engines_.end(), engine) == engines_.end()) {
     engines_.push_back(engine);
 
@@ -42,7 +43,8 @@ void IpcBridgeManager::RegisterEngine(flutter::FlutterEngine* engine) {
                   data = data_it->second;
                 }
                 
-                // Broadcast to other engines
+                // Broadcast to other engines; the sender has already handled
+                // its own state update.
                 SendEvent(event_name, data, engine);
               }
             }
@@ -60,8 +62,8 @@ void IpcBridgeManager::UnregisterEngine(flutter::FlutterEngine* engine) {
   std::lock_guard<std::mutex> lock(mutex_);
   engines_.erase(std::remove(engines_.begin(), engines_.end(), engine), engines_.end());
   
-  // It's acceptable to leak the unique_ptrs in channels_ as the app shuts down 
-  // or we can remove them if we track them by engine, but for simplicity here we just leave them.
+  // TODO: Track channels by engine and erase the matching channel
+  // here once Windows overlay lifecycle tests cover repeated open/close cycles.
 }
 
 void IpcBridgeManager::SendEvent(const std::string& event_name, const flutter::EncodableValue& data, flutter::FlutterEngine* sender_engine) {
@@ -73,6 +75,8 @@ void IpcBridgeManager::SendEvent(const std::string& event_name, const flutter::E
       args[flutter::EncodableValue("event")] = flutter::EncodableValue(event_name);
       args[flutter::EncodableValue("data")] = data;
 
+      // TODO(intersamrt): Align this callback shape with macOS, which invokes
+      // the event name directly. Dart currently has to tolerate both contracts.
       auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           engine->messenger(), "com.breakmate/ipc",
           &flutter::StandardMethodCodec::GetInstance());

@@ -81,7 +81,7 @@ class SimplePrefs {
   void setBool(String key, bool value) {
     _data[key] = value;
     _persist();
-    debugPrint('[SimplePrefs] setBool($key, $value) ✓');
+    debugPrint('[SimplePrefs] setBool($key, $value) persisted.');
   }
 
   String getString(String key, {String defaultValue = ''}) {

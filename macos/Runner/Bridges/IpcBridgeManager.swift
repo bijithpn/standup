@@ -10,7 +10,7 @@ class IpcBridgeManager: NSObject {
         super.init()
     }
     
-    /// Registers a new engine to participate in the IPC network.
+    /// Registers a Flutter engine to participate in cross-engine IPC.
     func register(engine: FlutterEngine) {
         engines.append(engine)
         setupChannel(for: engine)
@@ -45,7 +45,7 @@ class IpcBridgeManager: NSObject {
                     return
                 }
                 
-                // Broadcast to all OTHER engines
+                // Do not echo to the sender; each isolate already applied its local state change.
                 self?.broadcast(event: event, data: data, sourceEngine: engine)
                 result(nil)
             } else {

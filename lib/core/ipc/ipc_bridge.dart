@@ -29,12 +29,19 @@ class IpcBridge {
     });
   }
 
+  /// Preferred entry point for IPC consumers.
+  ///
+  /// This keeps validation in [IpcEvent.parse] and prevents callers from
+  /// spreading native map parsing across UI and service layers.
   void setTypedEventHandler(void Function(IpcEvent event) handler) {
     setEventHandler((event, data) {
       handler(IpcEvent.parse(event, data));
     });
   }
 
+  // TODO: Migrate the convenience notify methods to build typed
+  // IpcEvent instances and call dispatch(), then keep sendEvent() only for
+  // temporary native compatibility.
   Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
     int retries = 3;
     while (retries > 0) {

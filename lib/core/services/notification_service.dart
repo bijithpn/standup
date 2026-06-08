@@ -98,7 +98,7 @@ class NotificationService {
   Future<void> showEyeRestReminder() async {
     await _show(
       id: 10,
-      title: '👁 Eye Rest — 20-20-20',
+      title: 'Eye Rest - 20-20-20',
       body: 'Look 20 feet away for 20 seconds to reduce eye strain.',
     );
   }

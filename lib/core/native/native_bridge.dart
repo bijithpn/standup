@@ -3,7 +3,14 @@ import 'package:flutter/painting.dart';
 import 'package:breakmate/core/native/macos_bridge.dart';
 import 'package:breakmate/core/native/windows_bridge.dart';
 
-/// Common interface for the native native bridge functions across platforms
+/// Platform boundary for desktop features implemented outside Flutter.
+///
+/// The Dart layer still receives several platform payloads as maps because
+/// MethodChannel is the compatibility boundary between the Flutter engines and
+/// native runners.
+// TODO: Replace the remaining raw map payloads with typed bridge
+// models before adding new native channels, so validation stays consistent
+// across macOS, Windows, and tests.
 abstract class NativeBridgePlatform {
   Future<void> showOverlay([Map<String, dynamic>? args]);
   Future<void> hideOverlay({bool restoreMainWindow = true});
@@ -29,7 +36,7 @@ abstract class NativeBridgePlatform {
   Future<void> setCompanionWandering(bool enabled);
   Future<void> setCompanionFollowMouse(bool enabled);
 
-  // Calendar Support
+  // Calendar support.
   Future<bool> requestCalendarPermissions();
   Future<bool> hasCalendarPermissions();
   Future<String> getCalendarPermissionStatus();
@@ -44,7 +51,7 @@ abstract class NativeBridgePlatform {
     List<String>? calendarIds,
   );
 
-  // Display management
+  // Display management.
   /// Returns a list of connected displays as maps with keys:
   /// {id, x, y, width, height, dpiScale, isPrimary}
   Future<List<Map<String, dynamic>>> enumerateDisplays();
@@ -56,17 +63,17 @@ abstract class NativeBridgePlatform {
     void Function(List<Map<String, dynamic>>) cb,
   );
 
-  // Cursor position (global screen coordinates)
+  // Cursor position in global screen coordinates.
   /// Returns the current cursor position in global screen coordinates.
   Future<Offset> getCursorPosition();
 
-  // Window enumeration
+  // Window enumeration.
   /// Returns the list of currently visible, non-minimized application windows
   /// as maps with keys: {windowId, appBundleId, windowTitle, x, y, width,
   /// height, isMinimized, isVisible}
   Future<List<Map<String, dynamic>>> getVisibleWindows();
 
-  // Constraint window
+  // Constraint window.
   /// Shows the constraint window using the provided [args] map.
   /// Expected keys: x, y, width, height.
   Future<void> showConstraintWindow(Map<String, dynamic> args);
@@ -80,7 +87,7 @@ abstract class NativeBridgePlatform {
     void Function(Map<String, dynamic>) cb,
   );
 
-  // PiP (Picture-in-Picture) window
+  // PiP companion window.
   /// Shows the PiP companion window.
   /// Expected keys: x, y, width, height, themeId, petName, scale.
   Future<void> showPipWindow(Map<String, dynamic> args);
@@ -185,8 +192,6 @@ class FallbackBridge implements NativeBridgePlatform {
     int endMs,
     List<String>? calendarIds,
   ) async => [];
-
-  // --- New PAL stubs (Display / Cursor / Window / Constraint) ---
 
   @override
   Future<List<Map<String, dynamic>>> enumerateDisplays() async => [];
