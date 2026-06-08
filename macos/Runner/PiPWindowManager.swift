@@ -86,7 +86,7 @@ final class PiPWindowManager: NSObject {
             name: "com.breakmate.desktop/pip_data",
             binaryMessenger: engine.binaryMessenger
         )
-        dataChannel.setMethodCallHandler { [weak self] (call, result) in
+        dataChannel.setMethodCallHandler { (call, result) in
             switch call.method {
             case "getInitialSettings":
                 result(pendingArgs)
@@ -103,7 +103,7 @@ final class PiPWindowManager: NSObject {
             binaryMessenger: engine.binaryMessenger
         )
         bridgeChannel.setMethodCallHandler { call, result in
-            BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
+            BehaviorEngineBridge.shared.handle(call, result: result)
         }
 
         isSettingUp = false

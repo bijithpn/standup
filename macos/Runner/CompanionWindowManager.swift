@@ -161,7 +161,7 @@ class CompanionWindowManager: NSObject {
             binaryMessenger: engine.binaryMessenger
         )
         bridgeChannel.setMethodCallHandler { call, result in
-            BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
+            BehaviorEngineBridge.shared.handle(call, result: result)
         }
         
         // Also attempt an immediate push; Flutter may already be ready if it initialized fast
