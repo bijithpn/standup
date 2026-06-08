@@ -237,7 +237,7 @@ class OverlayWindowManager: NSObject {
                 }
             case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
                  "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
-                BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
+                BehaviorEngineBridge.shared.handle(call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -266,7 +266,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
-    BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger, registerMethodChannel: false)
+    BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger)
     
     IpcBridgeManager.shared.register(engine: flutterViewController.engine)
     
@@ -415,7 +415,7 @@ class MainFlutterWindow: NSWindow {
 
       case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
            "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
-        BehaviorEngineBridge.shared.handleMethodCall(call, result: result)
+        BehaviorEngineBridge.shared.handle(call, result: result)
 
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],

@@ -164,6 +164,7 @@ class ThrowableObjectManager {
             _throwables[i] = record.withLifecycle(
               ThrowableLifecycle.beingFetched,
             );
+            _eventBus.emit(ThrowableFetchedEvent(objectId: record.physicsId));
             _logger.info(
               'ThrowableObjectManager: throwable ${record.physicsId} being fetched',
             );
@@ -173,6 +174,7 @@ class ThrowableObjectManager {
           // Return to origin → disposed (req 7.8).
           final double distToOrigin = (petAnchor - record.spawnOrigin).distance;
           if (distToOrigin <= fetchReturnRadius) {
+            _eventBus.emit(ThrowableReturnedEvent(objectId: record.physicsId));
             _disposeThrowable(i);
           }
 

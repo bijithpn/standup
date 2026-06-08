@@ -55,7 +55,9 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             name: "com.breakmate.desktop/constraintWindowBounds",
             binaryMessenger: registrar.messenger
         )
-        constraintEventChannel.setStreamHandler(ConstraintBoundsStreamHandler.shared)
+        let handler = ConstraintBoundsStreamHandler.shared
+        bridge.constraintHandlers.append(handler)
+        constraintEventChannel.setStreamHandler(handler)
     }
 
     func setup(binaryMessenger: FlutterBinaryMessenger) {
@@ -83,25 +85,6 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args = call.arguments as? [String: Any]
         switch call.method {
-        case "enumerateDisplays":
-            handleEnumerateDisplays(result: result)
-        case "getCursorPosition":
-            handleGetCursorPosition(result: result)
-        case "getVisibleWindows":
-            handleGetVisibleWindows(result: result)
-        case "showConstraintWindow":
-            handleShowConstraintWindow(args: args, result: result)
-        case "hideConstraintWindow":
-            handleHideConstraintWindow(result: result)
-        default:
-            result(FlutterMethodNotImplemented)
-        }
-    }
-
-    // MARK: - Method Handlers
-
-    func handleMethodCall(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
-        switch call.method {
         case "checkIsMainEngine":
             // Usually only the MainFlutterWindow returns true for this.
             // Bridges registered on secondary engines should return false.
@@ -113,10 +96,7 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
         case "getVisibleWindows":
             handleGetVisibleWindows(result: result)
         case "showConstraintWindow":
-            handleShowConstraintWindow(
-                args: call.arguments as? [String: Any],
-                result: result
-            )
+            handleShowConstraintWindow(args: args, result: result)
         case "hideConstraintWindow":
             handleHideConstraintWindow(result: result)
         case "getIdleTime":
@@ -127,6 +107,9 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             result(FlutterMethodNotImplemented)
         }
     }
+
+    // MARK: - Method Handlers
+
 
     /// Returns the list of connected displays in the format expected by `NativeDisplayManager`.
     func handleEnumerateDisplays(result: FlutterResult) {
@@ -292,6 +275,7 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
 /// FlutterStreamHandler that forwards NSApplicationDidChangeScreenParametersNotification
 /// to the `com.breakmate.desktop/displayChange` EventChannel.
 final class DisplayChangeStreamHandler: NSObject, FlutterStreamHandler {
+    static let shared = DisplayChangeStreamHandler()
     private var eventSink: FlutterEventSink?
 
     override init() {
@@ -330,6 +314,7 @@ final class DisplayChangeStreamHandler: NSObject, FlutterStreamHandler {
 
 /// FlutterStreamHandler for the `com.breakmate.desktop/constraintWindowBounds` EventChannel.
 final class ConstraintBoundsStreamHandler: NSObject, FlutterStreamHandler {
+    static let shared = ConstraintBoundsStreamHandler()
     private var eventSink: FlutterEventSink?
 
     func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {

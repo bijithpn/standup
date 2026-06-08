@@ -49,6 +49,8 @@ class CompanionComponent
   PetAnimationState? _previousState;
   final Random _rng = Random();
 
+  bool get isFlipped => scale.x < 0;
+
   // Cross-fade state (null when no fade is active). Requirement 10.2
   _CrossFadeState? _crossFadeState;
 

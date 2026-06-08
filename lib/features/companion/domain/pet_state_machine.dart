@@ -1045,19 +1045,17 @@ class PetStateMachine extends ChangeNotifier {
     /// Pet is pursuing a throwable object.
     ///
     /// Transitions:
-    ///   throwableStationary → fetching (when pet bounds overlap stationary throwable;
-    ///                          the overlap condition is checked by the caller before
-    ///                          firing throwableStationary — see ThrowableObjectManager)
-    ///   throwableFetched    → idle    (throwable disposed / timed out / unreachable)
+    ///   throwableFetched    → fetching (when pet reaches the item)
+    ///   throwableReturned   → idle     (fallback)
     ///   surfaceLost         → falling (priority 5)
     PetState.chasing: [
       PetTransition(
-        event: PetEvent.throwableStationary,
+        event: PetEvent.throwableFetched,
         targetState: PetState.fetching,
         weight: 1.0,
       ),
       PetTransition(
-        event: PetEvent.throwableFetched,
+        event: PetEvent.throwableReturned,
         targetState: PetState.idle,
         weight: 1.0,
       ),

@@ -378,13 +378,13 @@ class CompanionGame extends FlameGame {
       _petService.handleEvent(PetEvent.throwableStationary);
       // Task 8.3: spawn bounce particle at throwable position (Req 13.5).
       _spawnBounceParticle();
+    } else if (event is ThrowableFetchedEvent) {
+      _petService.handleEvent(PetEvent.throwableFetched);
+    } else if (event is ThrowableReturnedEvent) {
+      _petService.handleEvent(PetEvent.throwableReturned);
     } else if (event is ThrowableDisposedEvent) {
-      // throwable returned/disposed → return pet to idle
-      if (_petService.currentState == PetState.fetching) {
-        _petService.handleEvent(PetEvent.throwableReturned);
-      } else {
-        _petService.handleEvent(PetEvent.throwableFetched);
-      }
+      // throwable disposed (e.g. timeout or unreachable) → return pet to idle
+      _petService.handleEvent(PetEvent.throwableReturned);
     } else if (event is PetWindowOverlapEvent) {
       if (event.started) {
         _petService.handleEvent(PetEvent.windowOverlap);
@@ -645,12 +645,20 @@ class CompanionGame extends FlameGame {
     return scale;
   }
 
+  double _getGroundOffset() {
+    if (_petService.profile.species == PetSpecies.flamingo) {
+      return _effectiveScale(_theme.spriteSize.toDouble()) * 20.0;
+    }
+    return 0.0;
+  }
+
   void _updateNavigationPaddings() {
     if (petComponent == null) return;
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
     final double scaledHalfW = (spriteSize * scale) / 2;
     final double scaledHalfH = (spriteSize * scale) / 2;
+    final double groundOffset = _getGroundOffset();
 
     double minX = scaledHalfW + 4.0;
     double maxX = size.x - scaledHalfW - 4.0;
@@ -659,10 +667,16 @@ class CompanionGame extends FlameGame {
       maxX = size.x / 2;
     }
 
-    double minY = isPiP ? (24.0 + scaledHalfH + 4.0) : (scaledHalfH + 4.0);
+    // Top padding needs to account for the drag handle (24.0 or 32.0, assuming 24.0 here)
+    // and the visual offset if the sprite is shifted down.
+    double minY = isPiP ? (24.0 + scaledHalfH + 4.0 - groundOffset) : (scaledHalfH + 4.0 - groundOffset);
+    
+    // Bottom padding needs to account for the interaction bar (44.0)
+    // and the visual offset.
     double maxY = isPiP
-        ? (size.y - 44.0 - scaledHalfH - 4.0)
-        : (size.y - scaledHalfH - 4.0);
+        ? (size.y - 44.0 - scaledHalfH - 4.0 + groundOffset)
+        : (size.y - scaledHalfH - 4.0 + groundOffset);
+        
     if (minY > maxY) {
       final double safeCenterY = isPiP
           ? 24.0 + (size.y - 24.0 - 44.0) / 2
@@ -700,9 +714,10 @@ class CompanionGame extends FlameGame {
 
     final double scaledHalfW = (spriteSize * scale) / 2;
     final double scaledHalfH = (spriteSize * scale) / 2;
+    final double groundOffset = _getGroundOffset();
     final double initialY = isPiP
-        ? size.y - 44.0 - scaledHalfH - 4.0
-        : size.y - scaledHalfH - 4.0;
+        ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+        : size.y - scaledHalfH - 4.0 + groundOffset;
 
     petComponent!.position = Vector2(size.x / 2, initialY);
 
@@ -711,10 +726,10 @@ class CompanionGame extends FlameGame {
     _updateNavigationPaddings();
 
     final currentPos = _petService.navigation.currentPosition;
-    final minY = isPiP ? (24.0 + scaledHalfH + 4.0) : (scaledHalfH + 4.0);
+    final minY = isPiP ? (24.0 + scaledHalfH + 4.0 - groundOffset) : (scaledHalfH + 4.0 - groundOffset);
     final maxY = isPiP
-        ? (size.y - 44.0 - scaledHalfH - 4.0)
-        : (size.y - scaledHalfH - 4.0);
+        ? (size.y - 44.0 - scaledHalfH - 4.0 + groundOffset)
+        : (size.y - scaledHalfH - 4.0 + groundOffset);
     if (currentPos.dy < minY ||
         currentPos.dy > maxY ||
         currentPos.dx < scaledHalfW + 4.0 ||
@@ -764,9 +779,10 @@ class CompanionGame extends FlameGame {
     petComponent!.scale = Vector2.all(scale);
 
     final double scaledHalfH = (spriteSize * scale) / 2;
+    final double groundOffset = _getGroundOffset();
     final double initialY = isPiP
-        ? size.y - 44.0 - scaledHalfH - 4.0
-        : size.y - scaledHalfH - 4.0;
+        ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+        : size.y - scaledHalfH - 4.0 + groundOffset;
 
     petComponent!.position = Vector2(petComponent!.position.x, initialY);
     _updateNavigationPaddings();
@@ -1141,10 +1157,11 @@ class CompanionGame extends FlameGame {
         final double spriteSize = _theme.spriteSize.toDouble();
         final double scale = _effectiveScale(spriteSize);
         final double scaledHalfH = (spriteSize * scale) / 2;
+        final double groundOffset = _getGroundOffset();
 
         final double initialY = isPiP
-            ? size.y - 44.0 - scaledHalfH - 4.0
-            : size.y - scaledHalfH - 4.0;
+            ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+            : size.y - scaledHalfH - 4.0 + groundOffset;
 
         _petService.initialize(
           screenSize: newSize,
@@ -1170,9 +1187,10 @@ class CompanionGame extends FlameGame {
       }
 
       final double scaledHalfH = (spriteSize * scale) / 2;
+      final double groundOffset = _getGroundOffset();
       final double initialY = isPiP
-          ? size.y - 44.0 - scaledHalfH - 4.0
-          : size.y - scaledHalfH - 4.0;
+          ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+          : size.y - scaledHalfH - 4.0 + groundOffset;
 
       petComponent!.position = Vector2(newX, initialY);
       _updateNavigationPaddings();
@@ -1242,7 +1260,35 @@ class CompanionGame extends FlameGame {
         }
       }
 
-      canvas.translate(position.dx, position.dy);
+      // Handle fetching offset (Req 7.8, 14.2)
+      Offset renderPos = position;
+      if (toy.lifecycle == ThrowableLifecycle.beingFetched) {
+        final comp = petComponent;
+        if (comp != null) {
+          // Default center-snout offset
+          double snoutX = 0;
+          double snoutY = comp.size.y * 0.35;
+
+          // Species-specific snout overrides
+          final species = _petService.profile.species;
+          if (species == PetSpecies.cat) {
+            snoutX = comp.isFlipped ? -comp.size.x * 0.25 : comp.size.x * 0.25;
+            snoutY = comp.size.y * 0.45;
+          } else if (species == PetSpecies.dog) {
+            snoutX = comp.isFlipped ? -comp.size.x * 0.35 : comp.size.x * 0.35;
+            snoutY = comp.size.y * 0.55;
+          } else if (species == PetSpecies.flamingo) {
+            // Flamingo head is higher up and further forward
+            snoutX = comp.isFlipped ? -comp.size.x * 0.15 : comp.size.x * 0.15;
+            snoutY = comp.size.y * 0.25;
+          }
+
+          renderPos = comp.position.toOffset() +
+              Offset(comp.size.x / 2 + snoutX, snoutY);
+        }
+      }
+
+      canvas.translate(renderPos.dx, renderPos.dy);
 
       // Apply spin if airborne
       if (toy.lifecycle == ThrowableLifecycle.flying && state != null) {

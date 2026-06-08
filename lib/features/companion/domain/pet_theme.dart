@@ -124,6 +124,16 @@ class PetTheme {
       stepTime: 0.16,
       loop: false,
     ),
+    PetAnimationState.chasing: SeparateAnimationConfig(
+      fileName: 'run.png',
+      frameCount: 8,
+      stepTime: 0.08,
+    ),
+    PetAnimationState.fetching: SeparateAnimationConfig(
+      fileName: 'walk.png',
+      frameCount: 8,
+      stepTime: 0.12,
+    ),
   };
 
   static const Map<PetAnimationState, SeparateAnimationConfig>
@@ -209,6 +219,16 @@ class PetTheme {
       stepTime: 0.16,
       loop: false,
     ),
+    PetAnimationState.chasing: SeparateAnimationConfig(
+      fileName: 'run.png',
+      frameCount: 8,
+      stepTime: 0.08,
+    ),
+    PetAnimationState.fetching: SeparateAnimationConfig(
+      fileName: 'walk.png',
+      frameCount: 8,
+      stepTime: 0.12,
+    ),
   };
 
   static const Map<PetAnimationState, AnimationRowConfig> _dogSheetAnimations =
@@ -270,6 +290,16 @@ class PetTheme {
           frameCount: 8,
           stepTime: 0.12,
           loop: false,
+        ),
+        PetAnimationState.chasing: AnimationRowConfig(
+          row: 1,
+          frameCount: 8,
+          stepTime: 0.1,
+        ),
+        PetAnimationState.fetching: AnimationRowConfig(
+          row: 0,
+          frameCount: 8,
+          stepTime: 0.15,
         ),
       };
 
@@ -337,6 +367,16 @@ class PetTheme {
       frameCount: 5,
       stepTime: 0.12,
       loop: false,
+    ),
+    PetAnimationState.chasing: AnimationRowConfig(
+      row: 1,
+      frameCount: 4,
+      stepTime: 0.1,
+    ),
+    PetAnimationState.fetching: AnimationRowConfig(
+      row: 1,
+      frameCount: 4,
+      stepTime: 0.15,
     ),
   };
 
@@ -410,79 +450,18 @@ class PetTheme {
           frameCount: 11,
           stepTime: 0.1,
         ),
+        PetAnimationState.chasing: AnimationRowConfig(
+          row: 7,
+          frameCount: 8,
+          stepTime: 0.08,
+        ),
+        PetAnimationState.fetching: AnimationRowConfig(
+          row: 6,
+          frameCount: 8,
+          stepTime: 0.12,
+        ),
       };
 
-  static const Map<PetAnimationState, AnimationRowConfig>
-  _cat50SheetAnimations = {
-    PetAnimationState.sleep: AnimationRowConfig(
-      row: 0,
-      frameCount: 8,
-      stepTime: 0.4,
-    ),
-    PetAnimationState.idle: AnimationRowConfig(
-      row: 1,
-      frameCount: 8,
-      stepTime: 0.3,
-    ),
-    PetAnimationState.typing: AnimationRowConfig(
-      row: 2,
-      frameCount: 8,
-      stepTime: 0.25,
-    ),
-    PetAnimationState.walkSide: AnimationRowConfig(
-      row: 10,
-      frameCount: 8,
-      stepTime: 0.15,
-    ),
-    PetAnimationState.run: AnimationRowConfig(
-      row: 11,
-      frameCount: 8,
-      stepTime: 0.1,
-    ),
-    PetAnimationState.excited: AnimationRowConfig(
-      row: 11,
-      frameCount: 8,
-      stepTime: 0.12,
-    ),
-    PetAnimationState.sad: AnimationRowConfig(
-      row: 0,
-      frameCount: 8,
-      stepTime: 0.4,
-    ),
-    PetAnimationState.stretch: AnimationRowConfig(
-      row: 34,
-      frameCount: 8,
-      stepTime: 0.2,
-      loop: false,
-    ),
-    PetAnimationState.breakMode: AnimationRowConfig(
-      row: 34,
-      frameCount: 8,
-      stepTime: 0.12,
-    ),
-    PetAnimationState.focusMode: AnimationRowConfig(
-      row: 1,
-      frameCount: 8,
-      stepTime: 0.3,
-    ),
-    PetAnimationState.angry: AnimationRowConfig(
-      row: 46,
-      frameCount: 8,
-      stepTime: 0.2,
-      loop: false,
-    ),
-    PetAnimationState.notification: AnimationRowConfig(
-      row: 46,
-      frameCount: 8,
-      stepTime: 0.2,
-      loop: false,
-    ),
-    PetAnimationState.celebrate: AnimationRowConfig(
-      row: 34,
-      frameCount: 8,
-      stepTime: 0.1,
-    ),
-  };
 
   static const List<PetTheme> themes = [
     PetTheme(

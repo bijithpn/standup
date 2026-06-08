@@ -197,6 +197,16 @@ class ThrowableStationaryEvent extends AppEvent {
   ThrowableStationaryEvent({required this.objectId, super.timestamp});
 }
 
+class ThrowableFetchedEvent extends AppEvent {
+  final int objectId;
+  ThrowableFetchedEvent({required this.objectId, super.timestamp});
+}
+
+class ThrowableReturnedEvent extends AppEvent {
+  final int objectId;
+  ThrowableReturnedEvent({required this.objectId, super.timestamp});
+}
+
 class ThrowableDisposedEvent extends AppEvent {
   final int objectId;
   ThrowableDisposedEvent({required this.objectId, super.timestamp});

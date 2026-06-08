@@ -15,12 +15,8 @@ import window_manager
 /// This now uses the standard GeneratedPluginRegistrant for 100% feature parity with the main engine.
 func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
     RegisterGeneratedPlugins(registry: registry)
-    if let windowRegistrar = registry.registrar(forPlugin: "WindowBridge") {
-        WindowBridge.register(with: windowRegistrar)
-    }
-    if let behaviorRegistrar = registry.registrar(forPlugin: "BehaviorEngineBridge") {
-        BehaviorEngineBridge.register(with: behaviorRegistrar)
-    }
+    WindowBridge.register(with: registry.registrar(forPlugin: "WindowBridge"))
+    BehaviorEngineBridge.register(with: registry.registrar(forPlugin: "BehaviorEngineBridge"))
 }
 
 @main

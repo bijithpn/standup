@@ -377,17 +377,17 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   // ── InteractionBar actions ────────────────────────────────────────────────
 
-  String _getToyEmoji() {
+  String _getToyIconPath() {
     switch (_game?.toyType) {
       case 'toy_mouse':
-        return '🐭';
+        return 'assets/ui/icons/mouse_sheet.png';
       case 'pink_yarn':
-        return '🧶';
+        return 'assets/ui/icons/pinkball_sheet.png';
       case 'orange_yarn':
-        return '🧶';
+        return 'assets/ui/icons/orangeball_sheet.png';
       case 'tennis_ball':
       default:
-        return '🎾';
+        return 'assets/animations/throw_particles/tennis-ball.png';
     }
   }
 
@@ -411,7 +411,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   void _throwBall() {
     if (_throwDisabled) return;
     _interactionController.throwToy();
-    _flashFeedback('🎾 Fetch!');
+    _flashFeedback('Fetch!');
   }
 
   /// Called when the 🍣 give treat button is tapped.
@@ -421,7 +421,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   void _giveTreat() {
     if (_treatOnCooldown) return;
     _interactionController.giveTreat();
-    _flashFeedback('🍣 Treat!');
+    _flashFeedback('Treat!');
 
     setState(() => _treatOnCooldown = true);
     _treatCooldownTimer?.cancel();
@@ -517,20 +517,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     if (_pipBackgroundStyle == 'light') {
       return BoxDecoration(
-        color: const Color(
-          0xFFF5F5FA,
-        ).withValues(alpha: 0.75), // Translucent frosted light theme
-        borderRadius: BorderRadius.circular(20),
+        color: const Color(0xFFF5F5FA).withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: const Color(0xFF161622).withValues(alpha: 0.12),
-          width: 1.2,
+          color: const Color(0xFF161622).withValues(alpha: 0.1),
+          width: 1.0,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 10,
-            spreadRadius: 1,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 16,
+            spreadRadius: 2,
+            offset: const Offset(0, 8),
           ),
         ],
       );
@@ -538,20 +536,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     // default: 'dark'
     return BoxDecoration(
-      color: const Color(
-        0xFF161622,
-      ).withValues(alpha: 0.75), // Translucent dark theme
-      borderRadius: BorderRadius.circular(20),
+      color: const Color(0xFF161622).withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(24),
       border: Border.all(
-        color: Colors.white.withValues(alpha: 0.12),
-        width: 1.2,
+        color: Colors.white.withValues(alpha: 0.1),
+        width: 1.0,
       ),
       boxShadow: [
         BoxShadow(
           color: Colors.black.withValues(alpha: 0.35),
-          blurRadius: 10,
-          spreadRadius: 1,
-          offset: const Offset(0, 4),
+          blurRadius: 16,
+          spreadRadius: 2,
+          offset: const Offset(0, 8),
         ),
       ],
     );
@@ -563,7 +559,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Container(
-        margin: const EdgeInsets.all(8.0),
+        margin: const EdgeInsets.all(12.0),
         decoration: _buildContainerDecoration(),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -581,10 +577,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 ),
               ),
 
-            // ── Top 24 px drag handle (Task 9.3) ──────────────────────────────
-            // Positioned above the pet area. Routes pan gestures to native
-            // window-drag. Always interactive — excluded from clickThrough
-            // pass-through (Req 1.4, 1.5, 1.6).
+            // ── Top drag handle ──────────────────────────────
             Positioned(
               top: 0,
               left: 0,
@@ -595,12 +588,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 onPanStart: (_) => _windowManager.startDrag(),
                 child: Center(
                   child: Container(
-                    width: 32,
+                    width: 36,
                     height: 4,
                     decoration: BoxDecoration(
                       color: isLight
-                          ? const Color(0xFF161622).withValues(alpha: 0.25)
-                          : Colors.white.withValues(alpha: 0.25),
+                          ? const Color(0xFF161622).withValues(alpha: 0.15)
+                          : Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -608,9 +601,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               ),
             ),
 
-            // ── Floating pet name badge (below drag handle) ────────────────────
+            // ── Floating pet name badge ────────────────────
             Positioned(
-              top: _dragHandleHeight,
+              top: 14,
               left: 0,
               right: 0,
               child: Center(
@@ -621,9 +614,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               ),
             ),
 
-            // ── Pet-area gesture detector (Task 9.2) ──────────────────────────
-            // Covers the full window except the drag handle at top and the
-            // interaction bar at bottom.  Excluded from clickThrough (Req 1.6).
+            // ── Pet-area gesture detector ──────────────────────────
             Positioned(
               top: _dragHandleHeight,
               left: 0,
@@ -645,7 +636,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
             // ── Floating feedback toast ────────────────────────────────────────
             if (_feedbackText != null)
               Positioned(
-                top: _dragHandleHeight + 8,
+                top: 50,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -659,7 +650,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 ),
               ),
 
-            // ── Interaction bar at bottom (Task 9.1) ──────────────────────────
+            // ── Interaction bar at bottom ──────────────────────────
             Positioned(
               left: 0,
               right: 0,
@@ -669,7 +660,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 isExpanded: _barExpanded,
                 throwDisabled: _throwDisabled,
                 treatOnCooldown: _treatOnCooldown,
-                toyEmoji: _getToyEmoji(),
+                toyIconPath: _getToyIconPath(),
                 treatEmoji: _getTreatEmoji(),
                 onThrowBall: _throwBall,
                 onGiveTreat: _giveTreat,
@@ -680,8 +671,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
             // ── Top-Right Close Button ──────────────────────────────────────
             Positioned(
-              top: 12,
-              right: 12,
+              top: 10,
+              right: 10,
               child: _CloseButton(
                 onTap: _closeWindow,
                 isLightBackground: isLight,
@@ -695,7 +686,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 }
 
 /// Maximum height of the interaction bar region (used for pet-area layout).
-const double _kInteractionBarHeight = 44.0;
+const double _kInteractionBarHeight = 52.0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // _PetNameBadge
@@ -709,27 +700,28 @@ class _PetNameBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
         color: isLightBackground
-            ? const Color(0xFFE6E6F0).withValues(alpha: 0.8)
-            : const Color(0xFF1E1E2E).withValues(alpha: 0.6),
+            ? const Color(0xFFE6E6F0).withValues(alpha: 0.9)
+            : const Color(0xFF2D2D3E).withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isLightBackground
-              ? const Color(0xFF161622).withValues(alpha: 0.12)
-              : Colors.white.withValues(alpha: 0.12),
-          width: 1.0,
-        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         name,
         style: TextStyle(
           color: isLightBackground ? const Color(0xFF161622) : Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
           fontFamily: 'Inter',
-          letterSpacing: 0.5,
+          letterSpacing: 0.2,
         ),
       ),
     );
@@ -747,15 +739,15 @@ class _FeedbackToast extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
+        color: const Color(0xFF161622).withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -763,8 +755,8 @@ class _FeedbackToast extends StatelessWidget {
         text,
         style: const TextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF1A1A2E),
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
           fontFamily: 'Inter',
         ),
       ),
@@ -773,16 +765,7 @@ class _FeedbackToast extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _InteractionBar  (Task 9.1 — upgraded widget, Req 16.1–16.8)
-//
-// Layout:
-//   [🎾 Throw] [🍣 Treat] [👁 Quiet] [‹ Collapse arrow]
-//
-// Height: constrained to ≤ 44 logical pixels.
-// Each tap target: ≥ 36×36 logical pixels.
-//
-// Collapse animation: the three action buttons fade+slide away in 200 ms,
-// leaving only the expand arrow (Req 16.3).
+// _InteractionBar
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _InteractionBar extends StatelessWidget {
@@ -791,7 +774,7 @@ class _InteractionBar extends StatelessWidget {
     required this.isExpanded,
     required this.throwDisabled,
     required this.treatOnCooldown,
-    required this.toyEmoji,
+    required this.toyIconPath,
     required this.treatEmoji,
     required this.onThrowBall,
     required this.onGiveTreat,
@@ -799,15 +782,12 @@ class _InteractionBar extends StatelessWidget {
     required this.isLightBackground,
   });
 
-  /// Animation value in [0, 1] that drives the collapsible section width.
   final Animation<double> expandFraction;
-
   final bool isExpanded;
   final bool throwDisabled;
   final bool treatOnCooldown;
-  final String toyEmoji;
+  final String toyIconPath;
   final String treatEmoji;
-
   final VoidCallback onThrowBall;
   final VoidCallback onGiveTreat;
   final VoidCallback onToggleCollapse;
@@ -816,34 +796,31 @@ class _InteractionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(maxHeight: _kInteractionBarHeight),
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: _kInteractionBarHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: isLightBackground
-            ? const Color(0xFFF5F5FA).withValues(alpha: 0.9)
-            : const Color(
-                0xFF161622,
-              ).withValues(alpha: 0.8), // Sleek translucent bar
+            ? const Color(0xFFF5F5FA).withValues(alpha: 0.5)
+            : const Color(0xFF161622).withValues(alpha: 0.4),
         border: Border(
           top: BorderSide(
             color: isLightBackground
-                ? const Color(0xFF161622).withValues(alpha: 0.1)
-                : Colors.white.withValues(alpha: 0.1),
+                ? const Color(0xFF161622).withValues(alpha: 0.05)
+                : Colors.white.withValues(alpha: 0.05),
             width: 1.0,
           ),
         ),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // ── Collapsible action buttons (animate width → 0 on collapse) ──
           AnimatedBuilder(
             animation: expandFraction,
             builder: (context, child) {
               return ClipRect(
                 child: Align(
                   widthFactor: expandFraction.value,
-                  alignment: Alignment.centerRight,
+                  alignment: Alignment.center,
                   child: child,
                 ),
               );
@@ -851,16 +828,14 @@ class _InteractionBar extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 🎾 Throw ball (Req 16.1, 16.4)
                 _BarButton(
-                  emoji: toyEmoji,
+                  iconPath: toyIconPath,
                   label: 'Throw',
                   disabled: throwDisabled,
                   onTap: onThrowBall,
                   isLightBackground: isLightBackground,
                 ),
-                const SizedBox(width: 6),
-                // 🍣 Give treat (Req 16.1, 16.5)
+                const SizedBox(width: 12),
                 _BarButton(
                   emoji: treatEmoji,
                   label: 'Treat',
@@ -868,19 +843,22 @@ class _InteractionBar extends StatelessWidget {
                   onTap: onGiveTreat,
                   isLightBackground: isLightBackground,
                 ),
-                const SizedBox(width: 6),
               ],
             ),
           ),
-
-          // ── Collapse / expand arrow (always visible, Req 16.7) ──────────
-          // Req 16.8: tap target ≥ 36×36.
+          const SizedBox(width: 8),
           GestureDetector(
             onTap: onToggleCollapse,
             behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              width: 36,
-              height: 36,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: isLightBackground
+                    ? Colors.black.withValues(alpha: 0.05)
+                    : Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(8),
+              ),
               child: Center(
                 child: AnimatedRotation(
                   turns: isExpanded ? 0.0 : 0.5,
@@ -888,9 +866,9 @@ class _InteractionBar extends StatelessWidget {
                   child: Icon(
                     Icons.keyboard_arrow_right_rounded,
                     color: isLightBackground
-                        ? const Color(0xFF161622).withValues(alpha: 0.8)
+                        ? const Color(0xFF161622)
                         : Colors.white70,
-                    size: 22,
+                    size: 20,
                   ),
                 ),
               ),
@@ -903,7 +881,7 @@ class _InteractionBar extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _CloseButton — circular Apple-style hover-animated close button
+// _CloseButton
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _CloseButton extends StatefulWidget {
@@ -926,41 +904,27 @@ class _CloseButtonState extends State<_CloseButton> {
       child: GestureDetector(
         onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: SizedBox(
-          width: 36,
-          height: 36,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: _isHovered
+                ? const Color(0xFFE0443E).withValues(alpha: 0.9)
+                : (widget.isLightBackground
+                      ? Colors.black.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.12)),
+            shape: BoxShape.circle,
+          ),
           child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                color: _isHovered
-                    ? const Color(0xFFFF5F56)
-                    : (widget.isLightBackground
-                          ? const Color(0xFF161622).withValues(alpha: 0.1)
-                          : Colors.white.withValues(alpha: 0.15)),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: _isHovered
-                      ? const Color(0xFFE0443E)
-                      : (widget.isLightBackground
-                            ? const Color(0xFF161622).withValues(alpha: 0.1)
-                            : Colors.white.withValues(alpha: 0.1)),
-                  width: 1.0,
-                ),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.close_rounded,
-                  size: 12,
-                  color: _isHovered
-                      ? Colors.white
-                      : (widget.isLightBackground
-                            ? const Color(0xFF161622).withValues(alpha: 0.8)
-                            : Colors.white70),
-                ),
-              ),
+            child: Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: _isHovered
+                  ? Colors.white
+                  : (widget.isLightBackground
+                        ? const Color(0xFF161622)
+                        : Colors.white70),
             ),
           ),
         ),
@@ -970,22 +934,21 @@ class _CloseButtonState extends State<_CloseButton> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// _BarButton — single icon+label button in the InteractionBar
-//
-// Req 16.2: tap target ≥ 36×36 logical pixels.
-// Disabled state: opacity 0.4, taps suppressed (Req 16.4, 16.5).
+// _BarButton
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _BarButton extends StatefulWidget {
   const _BarButton({
-    required this.emoji,
+    this.emoji,
+    this.iconPath,
     required this.label,
     required this.disabled,
     required this.onTap,
     required this.isLightBackground,
-  });
+  }) : assert(emoji != null || iconPath != null);
 
-  final String emoji;
+  final String? emoji;
+  final String? iconPath;
   final String label;
   final bool disabled;
   final VoidCallback onTap;
@@ -1011,7 +974,7 @@ class _BarButtonState extends State<_BarButton>
     );
     _scale = Tween<double>(
       begin: 1.0,
-      end: 0.85,
+      end: 0.92,
     ).animate(CurvedAnimation(parent: _press, curve: Curves.easeOut));
   }
 
@@ -1022,20 +985,13 @@ class _BarButtonState extends State<_BarButton>
   }
 
   void _handleTap() {
-    if (widget.disabled) return; // Req 16.4, 16.5: suppress taps when disabled
+    if (widget.disabled) return;
     _press.forward().then((_) => _press.reverse());
     widget.onTap();
   }
 
-  Color _getGlowColor() {
-    if (widget.emoji == '🎾') return const Color(0xFFCCFF00);
-    if (widget.emoji == '🍣') return const Color(0xFFFF5E5B);
-    return const Color(0xFF5F68E9);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final glowColor = _getGlowColor();
     final bool isHoverActive = _isHovered && !widget.disabled;
 
     return MouseRegion(
@@ -1045,68 +1001,61 @@ class _BarButtonState extends State<_BarButton>
         onTap: _handleTap,
         behavior: HitTestBehavior.opaque,
         child: Opacity(
-          // Req 16.4 / 16.5: 0.4 opacity when disabled, 1.0 when enabled.
           opacity: widget.disabled ? 0.4 : 1.0,
           child: ScaleTransition(
             scale: _scale,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: 44,
-              height: 36,
-              decoration: BoxDecoration(
-                color: isHoverActive
-                    ? glowColor.withValues(alpha: 0.18)
-                    : (widget.isLightBackground
-                          ? const Color(0xFF161622).withValues(alpha: 0.05)
-                          : Colors.white.withValues(alpha: 0.05)),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isHoverActive
-                      ? glowColor.withValues(alpha: 0.35)
-                      : (widget.isLightBackground
-                            ? const Color(0xFF161622).withValues(alpha: 0.1)
-                            : Colors.white.withValues(alpha: 0.1)),
-                  width: 1.0,
-                ),
-                boxShadow: isHoverActive
-                    ? [
-                        BoxShadow(
-                          color: glowColor.withValues(alpha: 0.25),
-                          blurRadius: 6,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedScale(
-                    scale: isHoverActive ? 1.15 : 1.0,
-                    duration: const Duration(milliseconds: 150),
-                    child: Text(
-                      widget.emoji,
-                      style: const TextStyle(fontSize: 15),
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    widget.label,
-                    style: TextStyle(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: isHoverActive
+                        ? (widget.isLightBackground
+                              ? Colors.black.withValues(alpha: 0.1)
+                              : Colors.white.withValues(alpha: 0.1))
+                        : (widget.isLightBackground
+                              ? Colors.black.withValues(alpha: 0.05)
+                              : Colors.white.withValues(alpha: 0.05)),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
                       color: isHoverActive
                           ? (widget.isLightBackground
-                                ? const Color(0xFF161622)
-                                : Colors.white)
-                          : (widget.isLightBackground
-                                ? const Color(0xFF161622).withValues(alpha: 0.7)
-                                : Colors.white70),
-                      fontSize: 8,
-                      fontFamily: 'Inter',
-                      fontWeight: FontWeight.bold,
+                                ? Colors.black.withValues(alpha: 0.1)
+                                : Colors.white.withValues(alpha: 0.1))
+                          : Colors.transparent,
+                      width: 1.0,
                     ),
                   ),
-                ],
-              ),
+                  child: Center(
+                    child: widget.iconPath != null
+                        ? Image.asset(
+                            widget.iconPath!,
+                            width: 24,
+                            height: 24,
+                            fit: BoxFit.contain,
+                          )
+                        : Text(
+                            widget.emoji!,
+                            style: const TextStyle(fontSize: 20),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  widget.label,
+                  style: TextStyle(
+                    color: widget.isLightBackground
+                        ? const Color(0xFF161622)
+                        : Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1114,3 +1063,4 @@ class _BarButtonState extends State<_BarButton>
     );
   }
 }
+
