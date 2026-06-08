@@ -12,6 +12,7 @@ import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 
 class PetAssetLoader {
   static final Map<String, ByteData> _byteCache = {};
@@ -32,7 +33,10 @@ class PetAssetLoader {
     if (cached != null) return cached;
 
     if (_failedAssets.contains(path)) {
-      throw Exception('Asset previously failed to load: $path');
+      throw AppException(
+        type: AppErrorType.assetLoadFailure,
+        message: 'Asset previously failed to load: $path',
+      );
     }
     try {
       ByteData? data = _byteCache[path];
@@ -52,7 +56,10 @@ class PetAssetLoader {
       debugPrint(
         'Warning: Failed to load asset $path. Caching failure. Error: $e',
       );
-      throw Exception('Failed to load pet asset: $path, error: $e');
+      throw AppException(
+        type: AppErrorType.assetLoadFailure,
+        message: 'Failed to load pet asset: $path, error: $e',
+      );
     }
   }
 

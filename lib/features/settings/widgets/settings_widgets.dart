@@ -251,14 +251,13 @@ Widget dropdownRow(
                       value: option,
                       label: option.contains('_')
                           ? option
-                              .split('_')
-                              .map(
-                                (word) =>
-                                    word.isNotEmpty
-                                        ? '${word[0].toUpperCase()}${word.substring(1)}'
-                                        : '',
-                              )
-                              .join(' ')
+                                .split('_')
+                                .map(
+                                  (word) => word.isNotEmpty
+                                      ? '${word[0].toUpperCase()}${word.substring(1)}'
+                                      : '',
+                                )
+                                .join(' ')
                           : '${option[0].toUpperCase()}${option.substring(1)}',
                     ),
                   )
@@ -404,14 +403,13 @@ Widget inlineDropdown(
             value: option,
             label: option.contains('_')
                 ? option
-                    .split('_')
-                    .map(
-                      (word) =>
-                          word.isNotEmpty
-                              ? '${word[0].toUpperCase()}${word.substring(1)}'
-                              : '',
-                    )
-                    .join(' ')
+                      .split('_')
+                      .map(
+                        (word) => word.isNotEmpty
+                            ? '${word[0].toUpperCase()}${word.substring(1)}'
+                            : '',
+                      )
+                      .join(' ')
                 : '${option[0].toUpperCase()}${option.substring(1)}',
           ),
         )

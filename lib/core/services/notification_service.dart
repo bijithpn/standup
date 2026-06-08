@@ -185,7 +185,7 @@ class NotificationService {
           notificationDetails: notificationDetails,
         );
       },
-      errorType: ErrorType.notification,
+      errorType: AppErrorType.notification,
     );
   }
 }

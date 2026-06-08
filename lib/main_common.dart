@@ -8,40 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:breakmate/app/app.dart';
-import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/core/services/overlay_window_service.dart';
-import 'package:breakmate/core/services/timer_engine.dart';
-import 'package:breakmate/features/break_system/presentation/standalone_break_overlay.dart';
-import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
-import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
-import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/companion/flame/companion_game.dart';
-import 'package:breakmate/features/companion/overlay/companion_overlay_window.dart';
-import 'package:breakmate/features/companion/overlay/pip_overlay_window.dart';
-import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:breakmate/features/analytics/stats_model.dart';
-
+import 'package:sentry_flutter/sentry_flutter.dart'
+    show SentryFlutter, SentryWidget;
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/core/services/error_toast_service.dart';
 
-import 'package:breakmate/core/ipc/ipc_bridge.dart';
-import 'package:breakmate/core/ipc/ipc_events.dart';
-import 'package:breakmate/core/events/event_bus.dart';
-import 'package:breakmate/core/events/app_events.dart';
-import 'package:breakmate/core/utils/frame_timing_logger.dart';
-import 'package:breakmate/core/utils/memory_checkpoints.dart';
-import 'package:breakmate/core/services/simple_prefs.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:breakmate/core/services/storage_service.dart';
-import 'package:breakmate/core/services/smart_detection_service.dart';
-import 'package:breakmate/core/services/timer_orchestrator.dart';
-import 'package:breakmate/features/settings/settings_repository.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
-import 'package:breakmate/core/config/flavor_config.dart';
+import 'app/app.dart';
+import 'core/core.dart';
+import 'features/features.dart';
+import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
   // 1. Log Flutter errors to console

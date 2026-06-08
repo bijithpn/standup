@@ -21,6 +21,18 @@ abstract class IpcEvent {
         return BreakEndedIpcEvent.fromJson(payload);
       case IpcEventNames.companionInteraction:
         return CompanionInteractionIpcEvent.fromJson(payload);
+      case IpcEventNames.detectionMeeting:
+        return MeetingDetectedIpcEvent.fromJson(payload);
+      case IpcEventNames.detectionFocusMode:
+        return FocusModeIpcEvent.fromJson(payload);
+      case IpcEventNames.trayAction:
+        return TrayActionIpcEvent.fromJson(payload);
+      case IpcEventNames.companionClose:
+        return CompanionCloseIpcEvent();
+      case IpcEventNames.companionPositionChanged:
+        return CompanionPositionChangedIpcEvent.fromJson(payload);
+      case IpcEventNames.companionStateChanged:
+        return CompanionStateChangedIpcEvent.fromJson(payload);
       default:
         return UnknownIpcEvent(eventName: eventName, payload: payload);
     }
@@ -34,6 +46,12 @@ class IpcEventNames {
   static const String breakStarted = 'timer.breakStarted';
   static const String breakEnded = 'timer.breakEnded';
   static const String companionInteraction = 'companion.interaction';
+  static const String detectionMeeting = 'detection.meeting';
+  static const String detectionFocusMode = 'detection.focusMode';
+  static const String trayAction = 'tray.action';
+  static const String companionClose = 'companion.close';
+  static const String companionPositionChanged = 'companion.positionChanged';
+  static const String companionStateChanged = 'companion.stateChanged';
 }
 
 T _readRequired<T>(Map<String, dynamic> payload, String key) {
@@ -47,14 +65,14 @@ class TimerStateChangedIpcEvent extends IpcEvent {
   final int countdownSeconds;
   final int workElapsedSeconds;
   final int? targetEndTime;
-  final int totalWorkTodaySeconds;
+  final int? totalWorkTodaySeconds;
 
   TimerStateChangedIpcEvent({
     required this.stateName,
     required this.countdownSeconds,
     required this.workElapsedSeconds,
-    required this.targetEndTime,
-    required this.totalWorkTodaySeconds,
+    this.targetEndTime,
+    this.totalWorkTodaySeconds,
   }) : super(IpcEventNames.timerStateChanged, {
          'state': stateName,
          'countdownSeconds': countdownSeconds,
@@ -66,13 +84,11 @@ class TimerStateChangedIpcEvent extends IpcEvent {
   factory TimerStateChangedIpcEvent.fromJson(Map<String, dynamic> payload) {
     return TimerStateChangedIpcEvent(
       stateName: _readRequired<String>(payload, 'state'),
-      countdownSeconds: _readRequired<int>(payload, 'countdownSeconds'),
-      workElapsedSeconds: _readRequired<int>(payload, 'workElapsedSeconds'),
+      countdownSeconds: (payload['countdownSeconds'] as num?)?.toInt() ?? 0,
+      workElapsedSeconds: (payload['workElapsedSeconds'] as num?)?.toInt() ?? 0,
       targetEndTime: payload['targetEndTime'] as int?,
-      totalWorkTodaySeconds: _readRequired<int>(
-        payload,
-        'totalWorkTodaySeconds',
-      ),
+      totalWorkTodaySeconds: (payload['totalWorkTodaySeconds'] as num?)
+          ?.toInt(),
     );
   }
 }
@@ -94,9 +110,9 @@ class BreakStartedIpcEvent extends IpcEvent {
 
   factory BreakStartedIpcEvent.fromJson(Map<String, dynamic> payload) {
     return BreakStartedIpcEvent(
-      isLongBreak: _readRequired<bool>(payload, 'isLongBreak'),
-      durationSeconds: _readRequired<int>(payload, 'durationSeconds'),
-      title: _readRequired<String>(payload, 'title'),
+      isLongBreak: payload['isLongBreak'] as bool? ?? false,
+      durationSeconds: (payload['durationSeconds'] as num?)?.toInt() ?? 0,
+      title: payload['title'] as String? ?? 'Break',
     );
   }
 }
@@ -108,21 +124,100 @@ class BreakEndedIpcEvent extends IpcEvent {
     : super(IpcEventNames.breakEnded, {'skipped': skipped});
 
   factory BreakEndedIpcEvent.fromJson(Map<String, dynamic> payload) {
-    return BreakEndedIpcEvent(skipped: _readRequired<bool>(payload, 'skipped'));
+    return BreakEndedIpcEvent(skipped: payload['skipped'] as bool? ?? false);
   }
 }
 
 class CompanionInteractionIpcEvent extends IpcEvent {
   final String interactionType;
+  final Map<String, dynamic>? metadata;
 
-  CompanionInteractionIpcEvent({required this.interactionType})
+  CompanionInteractionIpcEvent({required this.interactionType, this.metadata})
     : super(IpcEventNames.companionInteraction, {
         'interactionType': interactionType,
+        'metadata': metadata,
       });
 
   factory CompanionInteractionIpcEvent.fromJson(Map<String, dynamic> payload) {
     return CompanionInteractionIpcEvent(
-      interactionType: _readRequired<String>(payload, 'interactionType'),
+      interactionType: payload['interactionType'] as String? ?? 'click',
+      metadata: payload['metadata'] != null
+          ? Map<String, dynamic>.from(payload['metadata'] as Map)
+          : null,
+    );
+  }
+}
+
+class MeetingDetectedIpcEvent extends IpcEvent {
+  final bool isActive;
+  final String bundleId;
+
+  MeetingDetectedIpcEvent({required this.isActive, required this.bundleId})
+    : super(IpcEventNames.detectionMeeting, {
+        'isActive': isActive,
+        'bundleId': bundleId,
+      });
+
+  factory MeetingDetectedIpcEvent.fromJson(Map<String, dynamic> payload) {
+    return MeetingDetectedIpcEvent(
+      isActive: payload['isActive'] as bool? ?? false,
+      bundleId: payload['bundleId'] as String? ?? '',
+    );
+  }
+}
+
+class FocusModeIpcEvent extends IpcEvent {
+  final bool isActive;
+
+  FocusModeIpcEvent({required this.isActive})
+    : super(IpcEventNames.detectionFocusMode, {'isActive': isActive});
+
+  factory FocusModeIpcEvent.fromJson(Map<String, dynamic> payload) {
+    return FocusModeIpcEvent(isActive: payload['isActive'] as bool? ?? false);
+  }
+}
+
+class TrayActionIpcEvent extends IpcEvent {
+  final String action;
+
+  TrayActionIpcEvent({required this.action})
+    : super(IpcEventNames.trayAction, {'action': action});
+
+  factory TrayActionIpcEvent.fromJson(Map<String, dynamic> payload) {
+    return TrayActionIpcEvent(action: payload['action'] as String? ?? '');
+  }
+}
+
+class CompanionCloseIpcEvent extends IpcEvent {
+  CompanionCloseIpcEvent() : super(IpcEventNames.companionClose, {});
+}
+
+class CompanionPositionChangedIpcEvent extends IpcEvent {
+  final double x;
+  final double y;
+
+  CompanionPositionChangedIpcEvent({required this.x, required this.y})
+    : super(IpcEventNames.companionPositionChanged, {'x': x, 'y': y});
+
+  factory CompanionPositionChangedIpcEvent.fromJson(
+    Map<String, dynamic> payload,
+  ) {
+    return CompanionPositionChangedIpcEvent(
+      x: (payload['x'] as num?)?.toDouble() ?? 0,
+      y: (payload['y'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}
+
+class CompanionStateChangedIpcEvent extends IpcEvent {
+  final String state;
+
+  CompanionStateChangedIpcEvent({required this.state})
+    : super(IpcEventNames.companionStateChanged, {'state': state});
+
+  factory CompanionStateChangedIpcEvent.fromJson(Map<String, dynamic> payload) {
+    return CompanionStateChangedIpcEvent(
+      state: payload['state'] as String? ?? '',
     );
   }
 }

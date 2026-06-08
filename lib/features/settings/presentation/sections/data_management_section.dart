@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:path_provider/path_provider.dart';
@@ -190,7 +191,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       final Map<String, dynamic> data = jsonDecode(content);
 
       if (!data.containsKey('timestamp')) {
-        throw Exception("Invalid backup file format");
+        throw AppException(
+          type: AppErrorType.backup,
+          message: "Invalid backup file format",
+        );
       }
 
       // Restore settings
@@ -307,15 +311,19 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       if (!await file.exists()) {
-        throw Exception(
-          "breakmate_stats.csv not found in Downloads or Documents",
+        throw AppException(
+          type: AppErrorType.backup,
+          message: "breakmate_stats.csv not found in Downloads or Documents",
         );
       }
 
       final content = await file.readAsString();
       final lines = content.split(RegExp(r'\r?\n'));
       if (lines.length <= 1) {
-        throw Exception("CSV file is empty");
+        throw AppException(
+          type: AppErrorType.backup,
+          message: "CSV file is empty",
+        );
       }
 
       final List<DailyStats> statsList = [];
@@ -347,7 +355,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       if (statsList.isEmpty) {
-        throw Exception("No valid stats found in CSV");
+        throw AppException(
+          type: AppErrorType.backup,
+          message: "No valid stats found in CSV",
+        );
       }
 
       // Write to DailyStatsBox
