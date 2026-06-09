@@ -42,9 +42,9 @@ class _SlowDisplayBridge extends FallbackBridge {
   ];
 
   @override
-  Future<List<Map<String, dynamic>>> enumerateDisplays() async {
+  Future<List<NativeDisplayInfo>> enumerateDisplays() async {
     await Future<void>.delayed(_delay);
-    return _fakeDisplays;
+    return _fakeDisplays.map((map) => NativeDisplayInfo.fromMap(map)).toList();
   }
 }
 

@@ -308,9 +308,9 @@ class CompanionOverlayController extends ChangeNotifier {
             toyTypeChanged ||
             treatTypeChanged) {
           if (_pipModeEnabled) {
-            NativeBridge.showPipWindow(_companionPayload());
+            NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
           } else {
-            NativeBridge.showCompanion(_companionPayload());
+            NativeBridge.showCompanion(CompanionArgs(_companionPayload()));
           }
         }
       }
@@ -331,9 +331,9 @@ class CompanionOverlayController extends ChangeNotifier {
 
     _isCompanionShown = true;
     if (_pipModeEnabled) {
-      await NativeBridge.showPipWindow(_companionPayload());
+      await NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
     } else {
-      await NativeBridge.showCompanion(_companionPayload());
+      await NativeBridge.showCompanion(CompanionArgs(_companionPayload()));
     }
   }
 

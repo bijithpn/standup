@@ -500,13 +500,13 @@ class TimerEngine extends ChangeNotifier {
       _stateData.isCompletionState = true;
       notifyListeners();
 
-      NativeBridge.updateOverlayData({
+      NativeBridge.updateOverlayData(OverlayData(<String, dynamic>{
         'title': 'Well Done!',
         'remainingSeconds': 0,
         'durationSeconds':
             activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
         'strictMode': false,
-      });
+      }));
     }
 
     _emit(BreakEndedEvent(skipped: skipped));

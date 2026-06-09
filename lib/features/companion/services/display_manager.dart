@@ -84,7 +84,7 @@ class NativeDisplayManager implements DisplayManager {
 
   /// Pending display list delivered by the native callback but not yet
   /// processed by [poll].
-  List<Map<String, dynamic>>? _pendingNativeChange;
+  List<NativeDisplayInfo>? _pendingNativeChange;
 
   /// IDs of displays that are considered "pinned" (i.e., the set of IDs
   /// present the last time [onDisplayChanged] was called).  Used to detect
@@ -95,7 +95,8 @@ class NativeDisplayManager implements DisplayManager {
 
   @override
   Future<List<DisplayBounds>> enumerateDisplays() async {
-    final rawList = await _bridge.enumerateDisplays();
+    final displayInfoList = await _bridge.enumerateDisplays();
+    final rawList = displayInfoList.map((info) => info.toMap()).toList();
     final bounds = rawList.map(_parseDisplayMap).toList();
     _displays = bounds;
     _unionBounds = _computeUnion(bounds);
@@ -171,7 +172,8 @@ class NativeDisplayManager implements DisplayManager {
     final pending = _pendingNativeChange;
     if (pending == null) return; // fast no-op
     _pendingNativeChange = null;
-    final newBounds = pending.map(_parseDisplayMap).toList();
+    final rawList = pending.map((info) => info.toMap()).toList();
+    final newBounds = rawList.map(_parseDisplayMap).toList();
     onDisplayChanged(newBounds);
   }
 
@@ -203,10 +205,10 @@ class NativeDisplayManager implements DisplayManager {
 
   // ---- Native callback (runs on platform thread / isolate boundary) --------
 
-  void _onNativeDisplayChange(List<Map<String, dynamic>> rawDisplays) {
+  void _onNativeDisplayChange(List<NativeDisplayInfo> displays) {
     // Store for processing on the next poll() call from the game loop so all
     // display-change logic runs safely on the Flutter UI isolate.
-    _pendingNativeChange = rawDisplays;
+    _pendingNativeChange = displays;
   }
 
   // ---- Private helpers -----------------------------------------------------

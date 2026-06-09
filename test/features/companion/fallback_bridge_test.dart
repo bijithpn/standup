@@ -34,12 +34,12 @@ void main() {
 
     test('showConstraintWindow does not throw', () async {
       expect(
-        () async => bridge.showConstraintWindow({
-          'x': 0,
-          'y': 0,
-          'width': 300,
-          'height': 300,
-        }),
+        () async => bridge.showConstraintWindow(ConstraintWindowArgs(
+          x: 0,
+          y: 0,
+          width: 300,
+          height: 300,
+        )),
         returnsNormally,
       );
     });
@@ -57,7 +57,15 @@ void main() {
 
     test('showPipWindow does not throw', () async {
       expect(
-        () async => bridge.showPipWindow({'width': 280, 'height': 320}),
+        () async => bridge.showPipWindow(PipWindowArgs(
+          x: 0,
+          y: 0,
+          width: 280,
+          height: 320,
+          themeId: 'grey_cat',
+          petName: 'Mochi',
+          scale: 6.0,
+        )),
         returnsNormally,
       );
     });

@@ -45,7 +45,7 @@ class OverlayWindowService extends ChangeNotifier {
           ...?overlayData,
         };
         if (reminderType != null) args['reminderType'] = reminderType;
-        await NativeBridge.showOverlay(args);
+        await NativeBridge.showOverlay(OverlayArgs(args: args));
       }
       return;
     }
@@ -79,7 +79,7 @@ class OverlayWindowService extends ChangeNotifier {
             ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
-          await NativeBridge.showOverlay(args);
+          await NativeBridge.showOverlay(OverlayArgs(args: args));
 
           if (type == OverlayType.breakScreen) {
             Future.delayed(const Duration(milliseconds: 200), () {
@@ -104,7 +104,7 @@ class OverlayWindowService extends ChangeNotifier {
             ...?overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
-          await NativeBridge.showOverlay(args);
+          await NativeBridge.showOverlay(OverlayArgs(args: args));
           if (strictMode && type == OverlayType.breakScreen && !isPreview) {
             await NativeBridge.setPresentationOptions(
               hideDock: true,

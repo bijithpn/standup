@@ -33,6 +33,9 @@ class AppConstants {
   static const String notificationChannelId = 'breakloop_breaks';
   static const String notificationChannelName = 'Break Reminders';
 
+  // Backup schema version
+  static const int backupSchemaVersion = 1;
+
   // Storage keys
   static const String keyShortBreakInterval = 'short_break_interval';
   static const String keyShortBreakDuration = 'short_break_duration';
