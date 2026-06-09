@@ -1,6 +1,7 @@
 import 'dart:developer' as developer;
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 /// Windows implementation of the platform native bridge interface.
 class WindowsBridge implements NativeBridgePlatform {
@@ -8,10 +9,11 @@ class WindowsBridge implements NativeBridgePlatform {
     'com.breakmate.desktop/bridge',
   );
   static final Set<String> _loggedMissingMethods = {};
+static final AppLogger _logger = AppLogger();
 
   @override
-  Future<void> showOverlay([Map<String, dynamic>? args]) async {
-    await _invokeSafely('showOverlay', args);
+  Future<void> showOverlay([OverlayArgs? args]) async {
+    await _invokeSafely('showOverlay', args?.toMap());
   }
 
   @override
@@ -25,6 +27,7 @@ class WindowsBridge implements NativeBridgePlatform {
   Future<void> skipBreak() async {
     // Windows fallback: no-op / graceful log
     developer.log('skipBreak not supported on Windows', name: 'BreakMate');
+    return;
   }
 
   @override
@@ -76,13 +79,13 @@ class WindowsBridge implements NativeBridgePlatform {
   }
 
   @override
-  Future<void> updateOverlayData(Map<String, dynamic> data) async {
-    await _invokeSafely('updateOverlayData', data);
+  Future<void> updateOverlayData(OverlayData data) async {
+    await _invokeSafely('updateOverlayData', data.toMap());
   }
 
   @override
-  Future<void> showCompanion(Map<String, dynamic> args) async {
-    await _invokeSafely('showCompanion', args);
+  Future<void> showCompanion(CompanionArgs args) async {
+    await _invokeSafely('showCompanion', args.toMap());
   }
 
   @override
@@ -190,25 +193,16 @@ class WindowsBridge implements NativeBridgePlatform {
   /// Enumerates connected displays.
   /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.
   @override
-  Future<List<Map<String, dynamic>>> enumerateDisplays() async {
+  Future<List<NativeDisplayInfo>> enumerateDisplays() async {
     const channel = MethodChannel('com.breakmate/display_bridge');
     try {
       final List<dynamic>? displays = await channel.invokeMethod<List<dynamic>>(
         'getDisplays',
       );
       if (displays == null) return [];
-      return displays.map((e) {
-        final map = Map<String, dynamic>.from(e as Map);
-        return {
-          'id': map['id'] ?? '',
-          'x': map['boundsX'] ?? 0.0,
-          'y': map['boundsY'] ?? 0.0,
-          'width': map['width'] ?? 0.0,
-          'height': map['height'] ?? 0.0,
-          'dpiScale': map['pixelRatio'] ?? 1.0,
-          'isPrimary': map['isPrimary'] ?? false,
-        };
-      }).toList();
+      return displays
+          .map((e) => NativeDisplayInfo.fromMap(e as Map<String, dynamic>))
+          .toList();
     } catch (e, stackTrace) {
       developer.log(
         'Windows display bridge enumerateDisplays failed',
@@ -224,7 +218,7 @@ class WindowsBridge implements NativeBridgePlatform {
   /// Uses EventChannel 'com.breakmate/display_events'.
   @override
   void registerDisplayChangeCallback(
-    void Function(List<Map<String, dynamic>>) cb,
+    void Function(List<NativeDisplayInfo>) cb,
   ) {
     const EventChannel eventChannel = EventChannel(
       'com.breakmate/display_events',
@@ -258,19 +252,21 @@ class WindowsBridge implements NativeBridgePlatform {
   /// Maps contain keys: {windowId, windowTitle, x, y, width, height,
   /// isMinimized, isVisible}.
   @override
-  Future<List<Map<String, dynamic>>> getVisibleWindows() async {
+  Future<List<WindowInfo>> getVisibleWindows() async {
     final List<dynamic>? windows = await _invokeSafely<List<dynamic>>(
       'getVisibleWindows',
     );
     if (windows == null) return [];
-    return windows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return windows
+        .map((e) => WindowInfo.fromMap(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Shows the constraint window (WS_EX_TOOLWINDOW, always-on-top).
   /// [args] must contain keys: x, y, width, height.
   @override
-  Future<void> showConstraintWindow(Map<String, dynamic> args) async {
-    await _invokeSafely('showConstraintWindow', args);
+  Future<void> showConstraintWindow(ConstraintWindowArgs args) async {
+    await _invokeSafely('showConstraintWindow', args.toMap());
   }
 
   /// Hides the constraint window.
@@ -284,16 +280,30 @@ class WindowsBridge implements NativeBridgePlatform {
   /// 'com.breakmate.desktop/constraintWindowBounds'.
   @override
   void registerConstraintWindowBoundsCallback(
-    void Function(Map<String, dynamic>) cb,
+    void Function(ConstraintWindowArgs) callback,
   ) {
-    // TODO: Wire Windows constraint-window bounds events when the
-    // native constraint window is promoted beyond the macOS-only path.
+    const EventChannel eventChannel = EventChannel(
+      'com.breakmate.desktop/constraintWindowBounds',
+    );
+    eventChannel.receiveBroadcastStream().listen(
+      (dynamic event) {
+        if (event is Map<String, dynamic>) {
+          callback(ConstraintWindowArgs.fromMap(event));
+        }
+      },
+      onError: (Object error) {
+        developer.log(
+          'Windows constraintWindowBounds event error: $error',
+          name: 'BreakMate',
+        );
+      },
+    );
   }
 
   /// Shows the PiP companion window.
   @override
-  Future<void> showPipWindow(Map<String, dynamic> args) async {
-    await _invokeSafely('showPipWindow', args);
+  Future<void> showPipWindow(PipWindowArgs args) async {
+    await _invokeSafely('showPipWindow', args.toMap());
   }
 
   /// Hides the PiP companion window.
@@ -307,19 +317,11 @@ class WindowsBridge implements NativeBridgePlatform {
       return await _channel.invokeMethod<T>(method, arguments);
     } on MissingPluginException {
       if (_loggedMissingMethods.add(method)) {
-        developer.log(
-          'Windows bridge method unavailable: $method',
-          name: 'BreakMate',
-        );
+        _logger.error('Windows bridge method unavailable: $method');
       }
       return null;
     } catch (e, stackTrace) {
-      developer.log(
-        'Windows bridge method failed: $method',
-        name: 'BreakMate',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      _logger.error('Windows bridge method failed: $method', stackTrace: stackTrace);
       return null;
     }
   }

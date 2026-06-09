@@ -62,8 +62,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       final Map<String, dynamic> backup = {
-        // TODO: Add a backup schema version before changing any
-        // persisted field names, so older exports can be migrated explicitly.
+        // Backup schema version - increment this when making changes to the backup format
+        'schemaVersion': AppConstants.backupSchemaVersion,
         'timestamp': DateTime.now().toIso8601String(),
         'settings': _storage.settingsBox?.get(1)?.toMap() ?? {},
         'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},

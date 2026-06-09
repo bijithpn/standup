@@ -1,10 +1,3 @@
-// Integration test for atomic write sequence in SettingsPersistence.
-// Task 20.3 — Validates: Requirements 11.6
-//
-// Requirement 11.6: THE Behavior_Engine SHALL write configuration files using
-// atomic operations: writing to a temporary file first, then replacing the
-// target configuration file, to prevent data corruption.
-
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
@@ -38,10 +31,6 @@ void main() {
   });
 
   group('Atomic write — Requirement 11.6', () {
-    // -------------------------------------------------------------------------
-    // 1. Pre-condition: neither the config file nor the .tmp file should exist
-    //    before any write is triggered.
-    // -------------------------------------------------------------------------
     test('neither config nor .tmp file exists before first write', () {
       expect(
         configFile.existsSync(),
@@ -55,10 +44,6 @@ void main() {
       );
     });
 
-    // -------------------------------------------------------------------------
-    // 2. After scheduleWrite + flushPendingWrite the config file is present
-    //    and the .tmp file has been consumed (renamed away).
-    // -------------------------------------------------------------------------
     test(
       'config file exists and .tmp file is absent after flushPendingWrite',
       () {
@@ -80,10 +65,6 @@ void main() {
       },
     );
 
-    // -------------------------------------------------------------------------
-    // 3. The config file contains valid JSON that round-trips back to the
-    //    original PetConfigV2 value.
-    // -------------------------------------------------------------------------
     test('config file contains correct JSON content after flush', () {
       const config = PetConfigV2(
         mode: PetMode.constrained,
@@ -99,7 +80,7 @@ void main() {
       sp.scheduleWrite(config);
       sp.flushPendingWrite();
 
-      // Raw JSON must be parseable.
+      // Verify the file contains real JSON, not just an object instance dump.
       final raw = configFile.readAsStringSync();
       final decoded = jsonDecode(raw) as Map<String, dynamic>;
       final loaded = PetConfigV2.fromJson(decoded);
@@ -112,10 +93,6 @@ void main() {
       );
     });
 
-    // -------------------------------------------------------------------------
-    // 4. flushPendingWrite is a no-op when nothing is scheduled — neither file
-    //    is created.
-    // -------------------------------------------------------------------------
     test('no files created when flush is called with nothing pending', () {
       final sp = _makePersistence(tempDir);
       sp.flushPendingWrite(); // nothing scheduled
@@ -132,11 +109,6 @@ void main() {
       );
     });
 
-    // -------------------------------------------------------------------------
-    // 5. Successive writes each overwrite the config file and leave no .tmp
-    //    remnant.  This simulates repeated settings changes across multiple
-    //    ticks (e.g. position tracking per Requirement 11.4).
-    // -------------------------------------------------------------------------
     test('successive flushes overwrite config file and leave no .tmp', () {
       const configs = [
         PetConfigV2(
@@ -190,11 +162,6 @@ void main() {
       }
     });
 
-    // -------------------------------------------------------------------------
-    // 6. After a flush, a second SettingsPersistence instance can loadSync()
-    //    and recover the exact config — exercising the full atomic write path
-    //    end-to-end (write → persist → reload).
-    // -------------------------------------------------------------------------
     test('loadSync on a second instance recovers config written atomically', () {
       const original = PetConfigV2(
         mode: PetMode.freeRoam,
@@ -206,7 +173,7 @@ void main() {
         scale: 7.0,
       );
 
-      // Writer instance — simulates a settings change at runtime.
+      // Writer instance simulates a settings change at runtime.
       final writer = _makePersistence(tempDir);
       writer.scheduleWrite(original);
       writer.flushPendingWrite();
@@ -219,7 +186,7 @@ void main() {
         reason: 'No .tmp remnant after atomic write',
       );
 
-      // Reader instance — simulates application restart.
+      // Reader instance simulates application restart.
       final reader = _makePersistence(tempDir);
       final loaded = reader.loadSync();
 
@@ -231,14 +198,10 @@ void main() {
       );
     });
 
-    // -------------------------------------------------------------------------
-    // 7. Defaults config written on corrupt-file recovery also produces no
-    //    .tmp remnant — the atomic write path is used even for recovery writes.
-    // -------------------------------------------------------------------------
     test(
       'corrupt file recovery writes defaults atomically — no .tmp remnant',
       () {
-        // Seed a corrupt config file.
+        // Seed a corrupt config file to exercise the recovery path.
         configFile.writeAsStringSync('}{invalid json{{');
 
         final sp = _makePersistence(tempDir);

@@ -91,12 +91,12 @@ class NativeConstraintWindowController implements ConstraintWindowController {
     final double x = centerX - w / 2;
     final double y = centerY - h / 2;
 
-    await _bridge.showConstraintWindow(<String, dynamic>{
-      'x': x,
-      'y': y,
-      'width': w,
-      'height': h,
-    });
+    await _bridge.showConstraintWindow(ConstraintWindowArgs(
+      x: x,
+      y: y,
+      width: w,
+      height: h,
+    ));
 
     _bounds = Rect.fromLTWH(x, y, w, h);
     _physics.setConstraintBoundary(_bounds);
@@ -141,11 +141,7 @@ class NativeConstraintWindowController implements ConstraintWindowController {
 
   // ---- Private callback from native layer -----------------------------------
 
-  void _onNativeBoundsChanged(Map<String, dynamic> map) {
-    final double x = (map['x'] as num?)?.toDouble() ?? _bounds.left;
-    final double y = (map['y'] as num?)?.toDouble() ?? _bounds.top;
-    final double w = (map['width'] as num?)?.toDouble() ?? _bounds.width;
-    final double h = (map['height'] as num?)?.toDouble() ?? _bounds.height;
-    onBoundsChanged(Rect.fromLTWH(x, y, w, h));
+  void _onNativeBoundsChanged(ConstraintWindowArgs args) {
+    onBoundsChanged(Rect.fromLTWH(args.x, args.y, args.width, args.height));
   }
 }

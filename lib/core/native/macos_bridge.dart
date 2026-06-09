@@ -3,17 +3,19 @@ import 'dart:developer' as developer;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/core/utils/logger.dart';
 
 class MacOSBridge implements NativeBridgePlatform {
   final MethodChannel _channel = const MethodChannel(
     'com.breakmate.desktop/bridge',
   );
   static final Set<String> _loggedMissingMethods = {};
+  static final AppLogger _logger = AppLogger();
 
   /// Show the native multi-monitor overlay
   @override
-  Future<void> showOverlay([Map<String, dynamic>? args]) async {
-    await _invokeSafely('showOverlay', args);
+  Future<void> showOverlay([OverlayArgs? args]) async {
+    await _invokeSafely('showOverlay', args?.toMap());
   }
 
   /// Hide the native multi-monitor overlay
@@ -82,14 +84,14 @@ class MacOSBridge implements NativeBridgePlatform {
 
   /// Update data in all active overlay engines
   @override
-  Future<void> updateOverlayData(Map<String, dynamic> data) async {
-    await _invokeSafely('updateOverlayData', data);
+  Future<void> updateOverlayData(OverlayData data) async {
+    await _invokeSafely('updateOverlayData', data.toMap());
   }
 
   /// Spawns the native floating desktop companion window
   @override
-  Future<void> showCompanion(Map<String, dynamic> args) async {
-    await _invokeSafely('showCompanion', args);
+  Future<void> showCompanion(CompanionArgs args) async {
+    await _invokeSafely('showCompanion', args.toMap());
   }
 
   /// Closes the native floating desktop companion window
@@ -207,19 +209,21 @@ class MacOSBridge implements NativeBridgePlatform {
   /// Enumerates connected displays.
   /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.
   @override
-  Future<List<Map<String, dynamic>>> enumerateDisplays() async {
+  Future<List<NativeDisplayInfo>> enumerateDisplays() async {
     final List<dynamic>? displays = await _invokeSafely<List<dynamic>>(
       'enumerateDisplays',
     );
     if (displays == null) return [];
-    return displays.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return displays
+        .map((e) => NativeDisplayInfo.fromMap(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Registers a native callback for display change notifications.
   /// Uses EventChannel 'com.breakmate.desktop/displayChange'.
   @override
   void registerDisplayChangeCallback(
-    void Function(List<Map<String, dynamic>>) cb,
+    void Function(List<NativeDisplayInfo>) cb,
   ) {
     const EventChannel eventChannel = EventChannel(
       'com.breakmate.desktop/displayChange',
@@ -228,7 +232,7 @@ class MacOSBridge implements NativeBridgePlatform {
       (dynamic event) {
         if (event is List) {
           final displays = event
-              .map((e) => Map<String, dynamic>.from(e as Map))
+              .map((e) => NativeDisplayInfo.fromMap(e as Map<String, dynamic>))
               .toList();
           cb(displays);
         }
@@ -259,19 +263,21 @@ class MacOSBridge implements NativeBridgePlatform {
   /// Maps contain keys: {windowId, appBundleId, windowTitle, x, y, width,
   /// height, isMinimized, isVisible}.
   @override
-  Future<List<Map<String, dynamic>>> getVisibleWindows() async {
+  Future<List<WindowInfo>> getVisibleWindows() async {
     final List<dynamic>? windows = await _invokeSafely<List<dynamic>>(
       'getVisibleWindows',
     );
     if (windows == null) return [];
-    return windows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return windows
+        .map((e) => WindowInfo.fromMap(e as Map<String, dynamic>))
+        .toList();
   }
 
   /// Shows the constraint window with the given position and size.
   /// [args] must contain keys: x, y, width, height.
   @override
-  Future<void> showConstraintWindow(Map<String, dynamic> args) async {
-    await _invokeSafely('showConstraintWindow', args);
+  Future<void> showConstraintWindow(ConstraintWindowArgs args) async {
+    await _invokeSafely('showConstraintWindow', args.toMap());
   }
 
   /// Hides the constraint window.
@@ -285,15 +291,15 @@ class MacOSBridge implements NativeBridgePlatform {
   /// 'com.breakmate.desktop/constraintWindowBounds'.
   @override
   void registerConstraintWindowBoundsCallback(
-    void Function(Map<String, dynamic>) cb,
+    void Function(ConstraintWindowArgs) callback,
   ) {
     const EventChannel eventChannel = EventChannel(
       'com.breakmate.desktop/constraintWindowBounds',
     );
     eventChannel.receiveBroadcastStream().listen(
       (dynamic event) {
-        if (event is Map) {
-          cb(Map<String, dynamic>.from(event));
+        if (event is Map<String, dynamic>) {
+          callback(ConstraintWindowArgs.fromMap(event));
         }
       },
       onError: (Object error) {
@@ -307,8 +313,8 @@ class MacOSBridge implements NativeBridgePlatform {
 
   /// Shows the PiP companion window.
   @override
-  Future<void> showPipWindow(Map<String, dynamic> args) async {
-    await _invokeSafely('showPipWindow', args);
+  Future<void> showPipWindow(PipWindowArgs args) async {
+    await _invokeSafely('showPipWindow', args.toMap());
   }
 
   /// Hides the PiP companion window.
@@ -322,19 +328,11 @@ class MacOSBridge implements NativeBridgePlatform {
       return await _channel.invokeMethod<T>(method, arguments);
     } on MissingPluginException {
       if (_loggedMissingMethods.add(method)) {
-        developer.log(
-          'macOS bridge method unavailable: $method',
-          name: 'BreakMate',
-        );
+        _logger.error('macOS bridge method unavailable: $method');
       }
       return null;
     } catch (e, stackTrace) {
-      developer.log(
-        'macOS bridge method failed: $method',
-        name: 'BreakMate',
-        error: e,
-        stackTrace: stackTrace,
-      );
+      _logger.error('macOS bridge method failed: $method', stackTrace: stackTrace);
       return null;
     }
   }

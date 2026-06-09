@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/core/native/native_bridge.dart' as native;
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 
@@ -34,31 +34,46 @@ abstract class WindowMonitor {
 /// [WindowMonitor] backed by [NativeBridgePlatform.getVisibleWindows].
 class NativeWindowMonitor implements WindowMonitor {
   NativeWindowMonitor({
-    NativeBridgePlatform? bridge,
+    native.NativeBridgePlatform? bridge,
     EventBus? eventBus,
     AppLogger? logger,
-  }) : _bridge = bridge ?? NativeBridge.instance,
+  }) : _bridge = bridge ?? native.NativeBridge.instance,
        _eventBus = eventBus ?? EventBus.instance,
        _logger = logger ?? AppLogger();
 
-  final NativeBridgePlatform _bridge;
+  final native.NativeBridgePlatform _bridge;
   final EventBus _eventBus;
   final AppLogger _logger;
 
   List<WindowInfo> _previousWindows = [];
   bool _wasOverlapping = false;
-  int? _standingWindowId; // windowId of the window pet was last standing on
+  int? _standingWindowId;
 
   // ---- WindowMonitor interface ---------------------------------------------
 
   @override
   Future<List<WindowInfo>> queryVisibleWindows() async {
-    final rawList = await _bridge.getVisibleWindows();
-    final windows = rawList
-        .map(_parseWindowMap)
+    final nativeWindows = await _bridge.getVisibleWindows();
+    return nativeWindows
+        .map(_parseNativeWindowInfo)
         .where((w) => w.isVisible && !w.isMinimized)
         .toList();
-    return windows;
+  }
+
+  static WindowInfo _parseNativeWindowInfo(native.WindowInfo nativeWin) {
+    return WindowInfo(
+      windowId: int.tryParse(nativeWin.windowId) ?? 0,
+      appBundleId: null, // not available from native bridge
+      windowTitle: nativeWin.windowTitle,
+      bounds: Rect.fromLTWH(
+        nativeWin.x,
+        nativeWin.y,
+        nativeWin.width,
+        nativeWin.height,
+      ),
+      isMinimized: nativeWin.isMinimized,
+      isVisible: nativeWin.isVisible,
+    );
   }
 
   @override
@@ -81,7 +96,7 @@ class NativeWindowMonitor implements WindowMonitor {
     return null;
   }
 
-  /// Full tick update: query windows, diff state, emit events.
+  /// Updates window monitoring state each tick.
   ///
   /// Should be called from `CompanionGame.update()` each tick.
   Future<void> update(Rect petBounds) async {
@@ -155,25 +170,4 @@ class NativeWindowMonitor implements WindowMonitor {
     _standingWindowId = currentStanding?.windowId;
   }
 
-  /// Parse a raw window map from [NativeBridgePlatform.getVisibleWindows].
-  static WindowInfo _parseWindowMap(Map<String, dynamic> map) {
-    final windowId = (map['windowId'] as num?)?.toInt() ?? 0;
-    final appBundleId = map['appBundleId'] as String?;
-    final windowTitle = map['windowTitle'] as String?;
-    final x = (map['x'] as num?)?.toDouble() ?? 0.0;
-    final y = (map['y'] as num?)?.toDouble() ?? 0.0;
-    final width = (map['width'] as num?)?.toDouble() ?? 0.0;
-    final height = (map['height'] as num?)?.toDouble() ?? 0.0;
-    final isMinimized = map['isMinimized'] as bool? ?? false;
-    final isVisible = map['isVisible'] as bool? ?? true;
-
-    return WindowInfo(
-      windowId: windowId,
-      appBundleId: appBundleId,
-      windowTitle: windowTitle,
-      bounds: Rect.fromLTWH(x, y, width, height),
-      isMinimized: isMinimized,
-      isVisible: isVisible,
-    );
-  }
 }

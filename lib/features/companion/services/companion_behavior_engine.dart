@@ -20,8 +20,7 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
 
   Timer? _behaviorTimer;
   Timer? _wanderTimer;
-  bool _isEnabled =
-      true; // Default true; disabled only when explicitly set or settings say so
+  bool _isEnabled = true;
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
@@ -37,7 +36,7 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
         return;
       }
     } catch (_) {
-      // If DI fails (e.g. background isolate), do not start
+      // DI failed (e.g. background isolate), do not start
       return;
     }
     if (!_isEnabled) return;
