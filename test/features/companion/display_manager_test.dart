@@ -1,5 +1,3 @@
-// Tasks 7.2 and 7.3 — DisplayManager tests
-// Requirements 2.1, 2.6
 
 import 'dart:math' as math;
 import 'dart:ui';

@@ -6,14 +6,10 @@ import 'package:breakmate/core/native/native_bridge.dart' as native;
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 
-// ---------------------------------------------------------------------------
 // Abstract interface
-// ---------------------------------------------------------------------------
 
 /// Queries the operating system each tick for visible application windows and
 /// emits typed EventBus events when overlap or standing-surface state changes.
-///
-/// Requirements: 6.1–6.6
 abstract class WindowMonitor {
   /// Query the OS and return the filtered list of visible, non-minimized
   /// application windows.  Called once per tick.
@@ -27,9 +23,7 @@ abstract class WindowMonitor {
   WindowInfo? currentPlatform(Rect petBounds, List<WindowInfo> windows);
 }
 
-// ---------------------------------------------------------------------------
 // Concrete implementation
-// ---------------------------------------------------------------------------
 
 /// [WindowMonitor] backed by [NativeBridgePlatform.getVisibleWindows].
 class NativeWindowMonitor implements WindowMonitor {
@@ -49,7 +43,7 @@ class NativeWindowMonitor implements WindowMonitor {
   bool _wasOverlapping = false;
   int? _standingWindowId;
 
-  // ---- WindowMonitor interface ---------------------------------------------
+  // WindowMonitor interface
 
   @override
   Future<List<WindowInfo>> queryVisibleWindows() async {
@@ -97,18 +91,17 @@ class NativeWindowMonitor implements WindowMonitor {
   }
 
   /// Updates window monitoring state each tick.
-  ///
-  /// Should be called from `CompanionGame.update()` each tick.
+  /// Should be called from `CompanionGame.update` each tick.
   Future<void> update(Rect petBounds) async {
     final windows = await queryVisibleWindows();
     _diffAndEmit(petBounds, windows);
     _previousWindows = windows;
   }
 
-  // ---- Private helpers -----------------------------------------------------
+  // Private helpers
 
   void _diffAndEmit(Rect petBounds, List<WindowInfo> currentWindows) {
-    // --- Overlap detection ---
+    // Overlap detection
     final bool nowOverlapping = currentWindows.any(
       (w) => petBounds.overlaps(w.bounds),
     );
@@ -122,7 +115,7 @@ class NativeWindowMonitor implements WindowMonitor {
     }
     _wasOverlapping = nowOverlapping;
 
-    // --- Standing surface detection ---
+    // Standing surface detection
     final WindowInfo? currentStanding = currentPlatform(
       petBounds,
       currentWindows,

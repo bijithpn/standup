@@ -15,7 +15,7 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 
-// --- Nav item model ---
+// Nav item model
 
 class _NavItem {
   final String label;
@@ -31,7 +31,7 @@ class _NavItem {
   });
 }
 
-// --- Intent classes ---
+// Intent classes
 
 class _TogglePauseIntent extends Intent {
   const _TogglePauseIntent();
@@ -45,7 +45,7 @@ class _QuitIntent extends Intent {
   const _QuitIntent();
 }
 
-// --- Main Layout ---
+// Main Layout
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -233,7 +233,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // --- Wide layout ---
+  // Wide layout
 
   Widget _buildWideLayout({Key? key}) {
     return MacosWindow(
@@ -267,7 +267,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // --- Narrow layout ---
+  // Narrow layout
 
   Widget _buildNarrowLayout({Key? key}) {
     return Material(
@@ -364,7 +364,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // --- Content area ---
+  // Content area
 
   Widget _buildMainContent() {
     return AnimatedSwitcher(
@@ -430,7 +430,7 @@ class _MainLayoutState extends State<MainLayout> {
   }
 }
 
-// --- Sidebar Content Widget ---
+// Sidebar Content Widget
 
 class _SidebarContent extends StatelessWidget {
   final ScrollController? scrollController;
@@ -452,11 +452,11 @@ class _SidebarContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- App brand header ---
+        // App brand header
         _buildBrandHeader(),
         const SizedBox(height: 8),
 
-        // --- Primary nav items ---
+        // Primary nav items
         Expanded(
           child: ListView.builder(
             controller: scrollController,
@@ -476,7 +476,7 @@ class _SidebarContent extends StatelessWidget {
           ),
         ),
 
-        // --- Separator ---
+        // Separator
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Divider(
@@ -486,7 +486,7 @@ class _SidebarContent extends StatelessWidget {
           ),
         ),
 
-        // --- Bottom nav items ---
+        // Bottom nav items
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
           child: Column(
@@ -585,7 +585,7 @@ class _SidebarContent extends StatelessWidget {
   }
 }
 
-// --- Sidebar Nav Item Widget ---
+// Sidebar Nav Item Widget
 
 class _SidebarNavItem extends StatefulWidget {
   final _NavItem item;

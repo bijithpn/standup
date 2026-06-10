@@ -146,7 +146,7 @@ class PetBehaviorBrain {
     final contextBonus = _getContextRelevanceBonus(state, context);
     score *= (1.0 + contextBonus);
 
-    // --- Dynamic Needs Influence ---
+    // Dynamic Needs Influence
     // Fatigue Impact
     if (context.fatigue > 0.6) {
       if (state == PetState.sleep) {

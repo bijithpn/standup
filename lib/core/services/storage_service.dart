@@ -472,7 +472,7 @@ class StorageService {
     return 0;
   }
 
-  // --- KeyValue Compatibility Layer ---
+  // KeyValue Compatibility Layer
 
   KeyValueRecord? _getKv(String key) {
     if (kvBox == null) return null;

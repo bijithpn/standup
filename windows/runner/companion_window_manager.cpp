@@ -18,15 +18,11 @@ CompanionWindowManager::~CompanionWindowManager() {
   HideCompanion();
 }
 
-// Configures a FlutterWindow's HWND as a transparent, always-on-top,
-// click-through companion window (NOT a full-screen overlay).
 static void ConfigureAsCompanionWindow(HWND hwnd, bool click_through) {
-  // Remove title bar, borders, resize frame
   LONG style = GetWindowLong(hwnd, GWL_STYLE);
   style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
   SetWindowLong(hwnd, GWL_STYLE, style);
 
-  // Layered (per-pixel alpha), toolwindow (no taskbar), topmost
   LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
   exStyle |= WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
   if (click_through) {
@@ -36,11 +32,8 @@ static void ConfigureAsCompanionWindow(HWND hwnd, bool click_through) {
   }
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  // Per-pixel alpha: use only LWA_ALPHA to enable DWM native per-pixel composition transparency
-  // without color keying, avoiding black fringes or pixelated shadow boundaries.
   SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
-  // Always on top, no activation
   SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }
@@ -50,7 +43,6 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
                                            double scale,
                                            bool click_through) {
   if (companion_window_) {
-    // Already showing — just update params
     UpdateParams({
       {"themeId", flutter::EncodableValue(theme_id)},
       {"petName", flutter::EncodableValue(pet_name)},
@@ -72,11 +64,8 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
   settings[flutter::EncodableValue("clickThrough")] = flutter::EncodableValue(click_through);
   companion_window_->SetInitialSettings(settings);
   click_through_ = click_through;
-  follow_mouse_ = false;  // will be set via UpdateParams if enabled
+  follow_mouse_ = false;
 
-  // Companion lives on the primary monitor — full-screen so the pet can
-  // wander freely. The window itself is transparent + click-through so it
-  // doesn't block anything below it.
   HMONITOR primary = MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY);
   MONITORINFO mi = {sizeof(mi)};
   GetMonitorInfo(primary, &mi);
@@ -96,7 +85,6 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
   HWND hwnd = companion_window_->GetHandle();
   ConfigureAsCompanionWindow(hwnd, click_through);
 
-  // Position: full-monitor so the pet can walk anywhere
   SetWindowPos(hwnd, HWND_TOPMOST,
                mi.rcMonitor.left, mi.rcMonitor.top, w, h,
                SWP_NOACTIVATE | SWP_SHOWWINDOW);
@@ -104,7 +92,6 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
   companion_window_->Show();
   IpcBridgeManager::GetInstance()->RegisterEngine(companion_window_->GetEngine());
 
-  // Reuse a single persistent channel object for mouse-tracking pushes
   if (companion_window_->GetEngine()) {
     mouse_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
         companion_window_->GetEngine()->messenger(),
@@ -112,13 +99,11 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
         &flutter::StandardMethodCodec::GetInstance());
   }
 
-  // Poll mouse position at ~60 Hz to drive cursor-following
   SetTimer(hwnd, kMouseTimerId, 16,
       [](HWND, UINT, UINT_PTR, DWORD) {
         CompanionWindowManager::GetInstance()->UpdateMousePosition();
       });
 
-  // Poll monitor changes at 2 Hz
   SetTimer(hwnd, kMonitorTimerId, 500,
       [](HWND, UINT, UINT_PTR, DWORD) {
         CompanionWindowManager::GetInstance()->UpdateMonitorIfNeeded();
@@ -229,11 +214,6 @@ void CompanionWindowManager::UpdateParams(
       std::make_unique<flutter::EncodableValue>(args));
 }
 
-// ---------------------------------------------------------------------------
-// PiP window implementation
-// ---------------------------------------------------------------------------
-
-// Helper: extract a double from an EncodableValue (handles int/int64/double).
 static double ToDouble(const flutter::EncodableValue& v, double fallback = 0.0) {
   if (std::holds_alternative<double>(v)) return std::get<double>(v);
   if (std::holds_alternative<int>(v))    return static_cast<double>(std::get<int>(v));
@@ -254,7 +234,6 @@ static bool ExtractBool(const flutter::EncodableValue& v, bool fallback = false)
 
 void CompanionWindowManager::ShowPiP(
     const std::map<std::string, flutter::EncodableValue>& args) {
-  // -- Parse args -----------------------------------------------------------
   double x         = 100.0, y         = 100.0;
   double pip_w     = 280.0, pip_h     = 320.0;
   std::string theme_id = "grey_cat";
@@ -277,7 +256,6 @@ void CompanionWindowManager::ShowPiP(
   const int iH = static_cast<int>(pip_h);
 
   if (pip_window_) {
-    // Already visible — update position and settings.
     HWND hwnd = pip_window_->GetHandle();
     if (hwnd) {
       SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH,
@@ -287,20 +265,18 @@ void CompanionWindowManager::ShowPiP(
     return;
   }
 
-  // -- Create a new PiP Flutter window with the pipMain entrypoint ----------
   flutter::DartProject project(L"data");
   project.set_dart_entrypoint("pipMain");
 
   pip_window_ = std::make_unique<FlutterWindow>(project);
 
-  // Store initial settings so the PiPOverlayWindow widget can retrieve them.
   flutter::EncodableMap settings;
   settings[flutter::EncodableValue("themeId")]      = flutter::EncodableValue(theme_id);
   settings[flutter::EncodableValue("petName")]      = flutter::EncodableValue(pet_name);
   settings[flutter::EncodableValue("scale")]        = flutter::EncodableValue(scale);
   settings[flutter::EncodableValue("clickThrough")] = flutter::EncodableValue(click_through);
   pip_window_->SetInitialSettings(settings);
-  pip_window_->SetIsPiP(true);  // Route OnCreate to SetupPiPBridge, not SetupCompanionBridge
+  pip_window_->SetIsPiP(true);
 
   Win32Window::Point origin(iX, iY);
   Win32Window::Size  size(iW, iH);
@@ -313,7 +289,6 @@ void CompanionWindowManager::ShowPiP(
 
   HWND hwnd = pip_window_->GetHandle();
 
-  // Configure as companion-style: layered, toolwindow, topmost, no borders.
   LONG style = GetWindowLong(hwnd, GWL_STYLE);
   style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
   SetWindowLong(hwnd, GWL_STYLE, style);
@@ -323,8 +298,6 @@ void CompanionWindowManager::ShowPiP(
   if (click_through) exStyle |= WS_EX_TRANSPARENT;
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  // Per-pixel alpha: use only LWA_ALPHA to enable DWM native per-pixel composition transparency
-  // without color keying, avoiding black fringes or pixelated shadow boundaries.
   SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
   SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH,
@@ -333,15 +306,11 @@ void CompanionWindowManager::ShowPiP(
   pip_window_->Show();
   IpcBridgeManager::GetInstance()->RegisterEngine(pip_window_->GetEngine());
 
-  // Create a push-only channel for sending syncPiPSettings updates.
-  // The getInitialSettings handler is registered in FlutterWindow::SetupPiPBridge()
-  // which runs during OnCreate() before the Flutter engine renders its first frame.
   if (pip_window_->GetEngine()) {
     pip_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
         pip_window_->GetEngine()->messenger(),
         "com.breakmate.desktop/pip_data",
         &flutter::StandardMethodCodec::GetInstance());
-    // No handler set — this channel is push-only (InvokeMethod from native side).
   }
 }
 

@@ -1,6 +1,5 @@
 // Property 13: Exactly one active state invariant
 //
-// Validates: Requirements 8.1
 //
 // For every PetEvent value applied to a fresh PetStateMachine, assert
 // currentState is a valid PetState enum value after each event.
@@ -59,7 +58,6 @@ void main() {
     // Glados property-based test: random sequences of events on a fresh FSM
     // -------------------------------------------------------------------------
 
-    /// Validates: Requirements 8.1
     Glados(any.list(any.intInRange(0, PetEvent.values.length - 1))).test(
       'currentState remains a valid PetState after every event in an '
       'arbitrary sequence applied to a fresh FSM',
@@ -79,7 +77,6 @@ void main() {
       },
     );
 
-    /// Validates: Requirements 8.1
     Glados2(
       any.intInRange(0, PetState.values.length - 1),
       any.intInRange(0, PetEvent.values.length - 1),

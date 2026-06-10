@@ -173,9 +173,9 @@ class AdaptiveBreakService {
     if (todaySessions.isEmpty) return 50;
 
     // Calculate score based on:
-    // - Session completion rate
-    // - Average session duration
-    // - Consistency
+    // Session completion rate
+    // Average session duration
+    // Consistency
 
     final avgDuration =
         todaySessions.fold<int>(0, (sum, s) => sum + s.durationMinutes) /

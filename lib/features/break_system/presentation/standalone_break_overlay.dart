@@ -244,7 +244,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _setupBridge();
     _loadInitialData();
 
-    // Smoothly fade in
     _fadeController.forward();
 
     StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
@@ -382,7 +381,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           }
         });
       } else {
-        // Reset to default duration for normal break screens
         _fadeController.duration = const Duration(milliseconds: 600);
       }
     });
@@ -497,7 +495,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
     Timer(const Duration(milliseconds: 800), triggerDismiss);
 
-    // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
       triggerDismiss();
     });

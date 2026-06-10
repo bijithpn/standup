@@ -227,7 +227,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
 
   void _onPanStart(DragStartDetails details) {
     // On both platforms, use window_manager to drag the frameless window
-    // (window_manager.startDragging() works on macOS and Windows)
+    // (window_manager.startDragging works on macOS and Windows)
     try {
       // Attempt platform drag; ignore errors (e.g., in unit tests)
       const MethodChannel(

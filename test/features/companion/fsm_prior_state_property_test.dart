@@ -1,6 +1,5 @@
 // Property 6: Prior-state restoration on zone exit
 //
-// Validates: Requirements 5.4, 6.6
 //
 // For each PetState value (excluding `reacting`):
 //   1. Create fresh FSM
@@ -80,7 +79,6 @@ void main() {
     // Glados property-based tests
     // -------------------------------------------------------------------------
 
-    /// Validates: Requirements 5.4, 6.6
     Glados(any.intInRange(0, testableStates.length - 1)).test(
       'cursorExitedZone always restores the prior non-reacting state',
       (int idx) {
@@ -99,7 +97,6 @@ void main() {
       },
     );
 
-    /// Validates: Requirements 5.4, 6.6
     Glados(any.intInRange(0, testableStates.length - 1)).test(
       'windowOverlapEnded always restores the prior non-reacting state',
       (int idx) {

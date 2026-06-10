@@ -240,7 +240,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  // --- Snooze Logic ---
+  // Snooze Logic
 
   void snooze({int? minutes}) {
     final snoozeMins =
@@ -267,7 +267,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     snooze(minutes: minutes);
   }
 
-  // --- Quiet Mode Logic ---
+  // Quiet Mode Logic
 
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
   String get quietModePreset => _settingsRepo.currentSettings.quietModePreset;
@@ -330,7 +330,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  // --- Break Actions ---
+  // Break Actions
 
   void takeBreakNow() {
     _timerEngine.triggerBreakNow(isLong: false);
@@ -480,7 +480,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  // --- Music Logic ---
+  // Music Logic
 
   Future<void> _startMusic() async {
     if (_isPlayingMusic) return;

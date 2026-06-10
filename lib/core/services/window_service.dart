@@ -116,7 +116,6 @@ class WindowService {
 
   /// Initiates a native window-drag gesture (macOS `performWindowDragWithEvent` /
   /// Windows `ReleaseCapture` + `PostMessage WM_NCLBUTTONDOWN`).
-  ///
   /// This delegates window repositioning entirely to the OS so Flutter never
   /// needs to track pointer deltas for the drag handle.
   Future<void> startDrag() async {
@@ -128,12 +127,11 @@ class WindowService {
   }
 
   /// Configures the window as non-activating:
-  /// - macOS: sets `styleMask` to include `NSWindowStyleMaskNonactivatingPanel`
+  /// macOS: sets `styleMask` to include `NSWindowStyleMaskNonactivatingPanel`
   ///   or `canBecomeKey = false`.
-  /// - Windows: applies `WS_EX_NOACTIVATE` extended window style.
-  ///
+  /// Windows: applies `WS_EX_NOACTIVATE` extended window style.
   /// Call once during [initialize] so click events never steal focus from the
-  /// user's current application (Req 18.2).
+  /// user's current application .
   Future<void> setNonActivating(bool nonActivating) async {
     try {
       await _channel.invokeMethod('setNonActivating', {

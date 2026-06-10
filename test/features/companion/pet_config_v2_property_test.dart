@@ -1,5 +1,4 @@
 // Property 18: Settings serialization round-trip
-// Task 1.2 — Validates: Requirements 11.4, 11.5
 
 import 'dart:ui';
 

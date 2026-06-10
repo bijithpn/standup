@@ -8,7 +8,6 @@ import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
 /// Background isolate entry point for idle and smart-detection polling.
-///
 /// MethodChannel calls are proxied through the main isolate because plugin
 /// messengers are not available directly inside this spawned isolate.
 void _backgroundPollingEntry(Map<String, dynamic> initialData) {

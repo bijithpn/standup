@@ -1,63 +1,33 @@
 import 'dart:ui';
 import 'pet_state_machine.dart';
 
-// ---------------------------------------------------------------------------
-// Enums
-// ---------------------------------------------------------------------------
-
-/// Operating mode that governs how much of the screen the pet may traverse.
 enum PetMode {
-  /// Pet may roam freely across all connected displays.
   freeRoam,
 
-  /// Pet is confined to a user-defined [ConstraintWindow].
   constrained,
 
-  /// Pet is restricted to a single pinned display.
   singleDisplay,
 }
 
-/// Lifecycle state of a [ThrowableObjectState].
 enum ThrowableLifecycle {
-  /// Object is in the air, physics active.
   flying,
 
-  /// Object has come to rest on a surface.
   stationary,
 
-  /// Pet has picked it up and is carrying it back to the throw origin.
   beingFetched,
 
-  /// Object has been returned or timed out; pending removal.
   disposed,
 }
 
-// ---------------------------------------------------------------------------
-// Type aliases
-// ---------------------------------------------------------------------------
-
-/// Opaque identifier for a physics-simulated entity.
-///
-/// Using a typedef over `int` keeps the domain model readable and allows the
-/// physics layer to change its internal key type without touching callers.
 typedef PhysicsEntityId = int;
 
-// ---------------------------------------------------------------------------
-// DisplayBounds
-// ---------------------------------------------------------------------------
-
-/// An immutable snapshot of a single connected display.
 class DisplayBounds {
-  /// Platform-specific display identifier (e.g., CGDirectDisplayID on macOS).
   final String id;
 
-  /// Pixel bounds in global screen coordinates (logical pixels).
   final Rect rect;
 
-  /// Logical-to-physical pixel ratio (e.g., 2.0 on a Retina display).
   final double dpiScale;
 
-  /// Whether this is the operating system's primary/main display.
   final bool isPrimary;
 
   const DisplayBounds({
@@ -85,29 +55,17 @@ class DisplayBounds {
       'DisplayBounds(id: $id, rect: $rect, dpiScale: $dpiScale, isPrimary: $isPrimary)';
 }
 
-// ---------------------------------------------------------------------------
-// WindowInfo
-// ---------------------------------------------------------------------------
-
-/// An immutable snapshot of a visible OS application window.
 class WindowInfo {
-  /// OS window identifier (CGWindowID on macOS, HWND integer on Windows).
   final int windowId;
 
-  /// macOS application bundle identifier (e.g., `com.apple.finder`).
-  /// `null` on Windows or when unavailable.
   final String? appBundleId;
 
-  /// Window title string. May be `null` when the OS does not expose it.
   final String? windowTitle;
 
-  /// Window frame in global screen coordinates (logical pixels).
   final Rect bounds;
 
-  /// Whether the window is currently minimised to the Dock / taskbar.
   final bool isMinimized;
 
-  /// Whether the window is visible on screen.
   final bool isVisible;
 
   const WindowInfo({
@@ -147,43 +105,23 @@ class WindowInfo {
       'isMinimized: $isMinimized, isVisible: $isVisible)';
 }
 
-// ---------------------------------------------------------------------------
-// PhysicsEntityState
-// ---------------------------------------------------------------------------
-
-/// Immutable snapshot of a single physics-simulated entity at one instant.
-///
-/// All arithmetic in the physics simulator operates on these fields in a fixed
-/// IEEE 754 double-precision order to guarantee deterministic results
-/// (requirement 9.7).
 class PhysicsEntityState {
-  /// Horizontal anchor position in global screen coordinates (logical px).
   final double x;
 
-  /// Vertical anchor position in global screen coordinates (logical px).
   final double y;
 
-  /// Horizontal velocity component (logical px / s).
   final double vx;
 
-  /// Vertical velocity component (logical px / s).
   final double vy;
 
-  /// Bounding-box width (logical px).
   final double width;
 
-  /// Bounding-box height (logical px).
   final double height;
 
-  /// True when the entity is not in contact with any valid surface.
   final bool isAirborne;
 
-  /// True when the entity's velocity has been zeroed after [stationaryTicks]
-  /// consecutive sub-threshold ticks.
   final bool isStationary;
 
-  /// Number of consecutive ticks during which `|vx| < 5 && |vy| < 5`.
-  /// Resets to 0 whenever either axis exceeds the threshold.
   final int stationaryTicks;
 
   const PhysicsEntityState({
@@ -198,7 +136,6 @@ class PhysicsEntityState {
     required this.stationaryTicks,
   });
 
-  /// Returns a new [PhysicsEntityState] with only the specified fields replaced.
   PhysicsEntityState copyWith({
     double? x,
     double? y,
@@ -258,44 +195,25 @@ class PhysicsEntityState {
       'stationaryTicks: $stationaryTicks)';
 }
 
-// ---------------------------------------------------------------------------
-// ThrowableObjectState
-// ---------------------------------------------------------------------------
-
-/// Immutable runtime snapshot of one throwable object.
 class ThrowableObjectState {
-  /// Unique object identifier within a session (matches [PhysicsEntityId] key).
   final int id;
 
-  /// Monotonically increasing spawn counter.  The highest value among active
-  /// objects is the pet's current chase target (requirement 7.4).
   final int spawnPriority;
 
-  /// Global screen position where the drag gesture was released.
   final Offset spawnOrigin;
 
-  /// Identifier of this object's entry in the [PhysicsSimulator].
   final PhysicsEntityId physicsId;
 
-  /// Current lifecycle phase.
   final ThrowableLifecycle lifecycle;
 
-  /// Consecutive ticks during which the object's speed was below threshold
-  /// (used to advance `flying → stationary` after 3 ticks).
   final int stationaryTickCount;
 
-  /// Wall-clock time at which the object first became stationary.
-  /// `null` while still flying or already disposed.
   final DateTime? stationaryAt;
 
-  /// Wall-clock time at which pathfinding to the object first failed.
-  /// Reset to `null` when pathfinding succeeds again.
   final DateTime? unreachableSince;
 
-  /// Visual/behavior flavor of the object, e.g. `ball` or `treat`.
   final String kind;
 
-  /// Current center position in the companion game coordinate space.
   final Offset position;
 
   const ThrowableObjectState({
@@ -373,37 +291,19 @@ class ThrowableObjectState {
       'kind: $kind, lifecycle: $lifecycle, stationaryTickCount: $stationaryTickCount)';
 }
 
-// ---------------------------------------------------------------------------
-// PetConfigV2
-// ---------------------------------------------------------------------------
-
-/// Persisted settings for the pet companion, format version 2.
-///
-/// All fields are required at the Dart level; missing fields in a JSON payload
-/// fall back to the values returned by [PetConfigV2.defaults()].
 class PetConfigV2 {
-  /// Active movement mode (free roam, constrained, or single-display).
   final PetMode mode;
 
-  /// Display [DisplayBounds.id] to pin the pet to when [PetMode.singleDisplay]
-  /// is active.  `null` in all other modes.
   final String? pinnedDisplayId;
 
-  /// Position and size of the constraint window in global screen coordinates
-  /// (used only when [mode] == [PetMode.constrained]).
   final Rect constraintWindowBounds;
 
-  /// Pet's last known anchor point in global screen coordinates.
-  /// Restored on next launch to avoid the pet "teleporting" to a default spot.
   final Offset lastAnchorPoint;
 
-  /// Identifier of the active visual theme / sprite pack (e.g., `'grey_cat'`).
   final String themeId;
 
-  /// User-visible display name for the pet.
   final String petName;
 
-  /// Uniform scaling factor applied to the pet sprite.
   final double scale;
 
   const PetConfigV2({
@@ -416,8 +316,6 @@ class PetConfigV2 {
     required this.scale,
   });
 
-  /// Factory that returns the out-of-the-box configuration used when no
-  /// persisted config file exists or when the saved file cannot be parsed.
   factory PetConfigV2.defaults() => const PetConfigV2(
     mode: PetMode.freeRoam,
     pinnedDisplayId: null,
@@ -427,8 +325,6 @@ class PetConfigV2 {
     petName: 'Mochi',
     scale: 6.0,
   );
-
-  // ---- JSON serialization --------------------------------------------------
 
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -461,8 +357,6 @@ class PetConfigV2 {
     );
   }
 
-  // ---- copyWith ------------------------------------------------------------
-
   PetConfigV2 copyWith({
     PetMode? mode,
     Object? pinnedDisplayId = _sentinel,
@@ -485,8 +379,6 @@ class PetConfigV2 {
       scale: scale ?? this.scale,
     );
   }
-
-  // ---- equality ------------------------------------------------------------
 
   @override
   bool operator ==(Object other) =>
@@ -516,8 +408,6 @@ class PetConfigV2 {
   String toString() =>
       'PetConfigV2(mode: $mode, themeId: $themeId, petName: $petName, '
       'scale: $scale, lastAnchorPoint: $lastAnchorPoint)';
-
-  // ---- private helpers -----------------------------------------------------
 
   static const Object _sentinel = Object();
 
@@ -564,22 +454,11 @@ class PetConfigV2 {
   }
 }
 
-// ---------------------------------------------------------------------------
-// StateTransitionLog
-// ---------------------------------------------------------------------------
-
-/// A single entry in the pet state-machine transition log.
-///
-/// Written by [PetStateMachine._transitionTo()] on every state change and
-/// forwarded to [AppLogger.info()] as a structured JSON payload (requirement 8.9).
 class StateTransitionLog {
-  /// The state the machine was in immediately before this transition.
   final PetState previousState;
 
-  /// The state the machine has entered.
   final PetState newState;
 
-  /// UTC wall-clock timestamp of the transition.
   final DateTime utcTimestamp;
 
   const StateTransitionLog({

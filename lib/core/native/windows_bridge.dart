@@ -237,7 +237,7 @@ static final AppLogger _logger = AppLogger();
     );
   }
 
-  /// Returns the current global cursor position via GetCursorPos().
+  /// Returns the current global cursor position via GetCursorPos.
   @override
   Future<Offset> getCursorPosition() async {
     final Map<dynamic, dynamic>? result =

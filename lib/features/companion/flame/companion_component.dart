@@ -24,17 +24,10 @@ class _FireParticle {
   }) : age = 0.0;
 }
 
-/// Tracks an in-progress cross-fade between two animation states.
-///
-/// During a cross-fade the component renders [from] at opacity `(1 - t)` and
-/// [to] at opacity `t`, where `t = elapsed / duration` clamped to `[0, 1]`.
-/// After [duration] seconds the fade is cleared and only [to] plays.
-///
-/// Requirement 10.2
 class _CrossFadeState {
   _CrossFadeState({required this.from, required this.to}) : elapsed = 0.0;
 
-  static const double duration = 0.1; // 100 ms
+  static const double duration = 0.1;
 
   final PetAnimationState from;
   final PetAnimationState to;
@@ -51,11 +44,8 @@ class CompanionComponent
 
   bool get isFlipped => scale.x < 0;
 
-  // Cross-fade state (null when no fade is active). Requirement 10.2
   _CrossFadeState? _crossFadeState;
 
-  // Transition pairs that should cross-fade instead of cutting immediately.
-  // Key: (fromState, toState), Value: true.
   static const Set<(PetAnimationState, PetAnimationState)>
   _crossFadeTransitions = {
     (PetAnimationState.idle, PetAnimationState.walkSide),
@@ -66,11 +56,9 @@ class CompanionComponent
     (PetAnimationState.idle, PetAnimationState.run),
   };
 
-  // Snout offset for Dragon fire breathing particle origin
   Offset get _snoutOffset =>
       Offset(_direction * (size.x * 0.35), -size.y * 0.12);
 
-  // Active fire particles
   final List<_FireParticle> _particles = [];
 
   CompanionComponent({
@@ -92,12 +80,9 @@ class CompanionComponent
     _updateFlip();
   }
 
-  /// Changes animation state safely.
-  /// Handles fallback of missing directional animations to side-view walking seamlessly.
   void changeState(PetAnimationState newState, {bool force = false}) {
     var target = newState;
 
-    // Directional walk fallback to side walk
     if (target == PetAnimationState.walkUp ||
         target == PetAnimationState.walkDown) {
       if (animations?.containsKey(target) != true) {
@@ -105,8 +90,6 @@ class CompanionComponent
       }
     }
 
-    // Behavior-engine state fallbacks (req 10.2 / task 14.2):
-    // If a dedicated sprite row doesn't exist, fall back gracefully.
     if (target == PetAnimationState.chasing &&
         animations?.containsKey(target) != true) {
       target = PetAnimationState.run;
@@ -124,19 +107,17 @@ class CompanionComponent
       target = PetAnimationState.notification;
     }
 
-    // Safety fallback: if the requested state has no animation, use idle
     if (animations?.containsKey(target) != true) {
       target = PetAnimationState.idle;
     }
 
     if (current == target && !force) {
-      // For a non-looping animation already playing, let it finish — don't restart
       final anim = animations?[target];
       if (anim != null && !anim.loop) {
         final ticker = animationTickers?[target];
         if (ticker != null && !ticker.done()) return;
       } else {
-        return; // Same looping state — no-op
+        return;
       }
     }
 
@@ -144,19 +125,16 @@ class CompanionComponent
     final newAnim = animations?[target];
     final isNewLooping = newAnim?.loop ?? true;
 
-    // Save previous looping state to revert to after non-looping finishes
     if (currentAnim != null && currentAnim.loop && !isNewLooping) {
       _previousState = current;
     } else if (isNewLooping) {
       _previousState = null;
     }
 
-    // Reset ticker only when actually changing state
     if (current != target) {
       animationTickers?[target]?.reset();
     }
 
-    // Trigger cross-fade if a transition definition exists (req 10.2).
     final PetAnimationState? fromState = current;
     if (fromState != null &&
         _crossFadeTransitions.contains((fromState, target))) {
@@ -166,8 +144,6 @@ class CompanionComponent
     }
 
     current = target;
-    // Do NOT reset _stateElapsed — keeping it continuous prevents the idle
-    // bob scale.y from snapping on state transitions (visual discontinuity).
     _updateFlip();
   }
 
@@ -180,10 +156,8 @@ class CompanionComponent
     scale.x = _direction < 0 ? -absScale : absScale;
   }
 
-  // Speed thresholds (px/s) for animation selection
   static const double _runThreshold = 100.0;
 
-  // FSM states that own their animation — velocity must NOT override these
   static const _fsmOwnedAnimations = {
     PetAnimationState.sleep,
     PetAnimationState.stretch,
@@ -206,19 +180,14 @@ class CompanionComponent
     final vel = nav.velocity;
     final baseSpeed = game.currentTheme.species.defaultProfile.movementSpeed;
 
-    // ALWAYS sync position from navigation service first — before any early
-    // returns — so the component never lags behind the nav service position.
     final servicePos = nav.currentPosition;
     position = Vector2(servicePos.dx, servicePos.dy);
 
-    // Sync horizontal flip from velocity direction
     if (vel.dx.abs() > 0.5) {
       _direction = vel.dx > 0 ? 1.0 : -1.0;
       _updateFlip();
     }
 
-    // --- Dynamic Step Time / Prevents Foot-sliding ---
-    // Scaled dt based on velocity ratio, ensuring perfect physical pacing
     double scaledDt = dt;
     if (current == PetAnimationState.walkSide ||
         current == PetAnimationState.walkUp ||
@@ -241,15 +210,13 @@ class CompanionComponent
     super.update(scaledDt);
     _stateElapsed += dt;
 
-    // Advance cross-fade timer (req 10.2).
     if (_crossFadeState != null) {
       _crossFadeState!.elapsed += dt;
       if (_crossFadeState!.elapsed >= _CrossFadeState.duration) {
-        _crossFadeState = null; // fade complete
+        _crossFadeState = null;
       }
     }
 
-    // Auto-revert non-looping animations back to previous (or idle)
     final currentAnim = animations?[current];
     if (currentAnim != null && !currentAnim.loop) {
       final ticker = animationTickers?[current];
@@ -260,27 +227,21 @@ class CompanionComponent
         if (newAnim != null &&
             !newAnim.loop &&
             current != (_previousState ?? PetAnimationState.idle)) {
-          return; // FSM chained to another non-looping anim — let it play
+          return;
         }
         changeState(_previousState ?? PetAnimationState.idle);
         return;
       }
     }
 
-    // Loop-blocked detection (req 10.5, 10.7):
-    // When a looping animation ticker returns done() == true (blocked),
-    // emit PetEvent.loopBlocked each tick and hold the final frame.
     if (currentAnim != null && currentAnim.loop) {
       final ticker = animationTickers?[current];
       if (ticker != null && ticker.done()) {
-        // Hold on the final frame — do not reset or advance.
         game.petService.handleEvent(PetEvent.loopBlocked);
-        // Skip super.update to keep the ticker frozen.
         return;
       }
     }
 
-    // --- Directional Walk & Deceleration Transitions ---
     final cur = current ?? PetAnimationState.idle;
     final isNavMoving = nav.isMoving;
     final isFsmOwned = _fsmOwnedAnimations.contains(cur);
@@ -291,7 +252,6 @@ class CompanionComponent
         if (speed > _runThreshold) {
           changeState(PetAnimationState.run);
         } else {
-          // Dominant vector direction logic for 4-way selection
           PetAnimationState walkState = PetAnimationState.walkSide;
           if (vel.dy.abs() > vel.dx.abs()) {
             if (vel.dy < 0) {
@@ -305,7 +265,6 @@ class CompanionComponent
           changeState(walkState);
         }
       } else {
-        // Deceleration Stride-Sync: Let the current walking cycle reach index 0 before going to idle
         if (_isMovementState(cur)) {
           final ticker = animationTickers?[cur];
           if (ticker == null || ticker.currentIndex == 0) {
@@ -315,7 +274,6 @@ class CompanionComponent
       }
     }
 
-    // --- Dynamic Leaning & Squash-and-Stretch for Vertical Movement ---
     final bool isMovingVertically = vel.dy.abs() > 1.5 && speed > 5.0;
     final bool isUsingFallbackWalk = current == PetAnimationState.walkSide;
     final profile = game.currentTheme.species.defaultProfile;
@@ -325,18 +283,15 @@ class CompanionComponent
             current == PetAnimationState.run ||
             current == PetAnimationState.excited ||
             current == PetAnimationState.fly)) {
-      // 3D Tilt: Rotate sprite based on vertical speed and orientation
       final double maxSpeed = profile.movementSpeed;
-      final double maxTilt = profile.maxTilt; // species specific tilt limit
+      final double maxTilt = profile.maxTilt;
       final double tiltFactor = (vel.dy / maxSpeed).clamp(-1.0, 1.0);
       angle = _direction * tiltFactor * maxTilt;
 
-      // Squash and stretch vertical scaling based on vertical speed
       final double stretch = (vel.dy.abs() / 220.0).clamp(0.0, 0.12);
       scale.y = scale.x.abs() * (1.0 + stretch);
     } else {
       angle = 0.0;
-      // Idle breathing / celebration micro-bob
       if (current == PetAnimationState.idle ||
           current == PetAnimationState.celebrate) {
         scale.y =
@@ -350,28 +305,25 @@ class CompanionComponent
       }
     }
 
-    // --- Procedural Fire Particle Emitter for Dragon Snout ---
     _updateFireParticles(dt);
   }
 
   void _updateFireParticles(double dt) {
-    // 1. Update and decay active particles
     for (final p in _particles) {
       p.position += p.velocity * dt;
       p.age += dt;
     }
     _particles.removeWhere((p) => p.age >= p.maxAge);
 
-    // 2. Spawn new particles during Dragon's fire-breath state
     if (current == PetAnimationState.breatheFire) {
       final origin = _snoutOffset;
       for (int i = 0; i < 2; i++) {
         final double vx = _direction * (60.0 + _rng.nextDouble() * 50.0);
         final double vy = -15.0 + _rng.nextDouble() * 30.0;
         final colors = [
-          const Color(0xFFFF3D00), // Pure Red-Orange
-          const Color(0xFFFF9100), // Deep Orange
-          const Color(0xFFFFD600), // Fire Yellow
+          const Color(0xFFFF3D00),
+          const Color(0xFFFF9100),
+          const Color(0xFFFFD600),
         ];
         _particles.add(
           _FireParticle(
@@ -395,12 +347,10 @@ class CompanionComponent
 
   @override
   void render(Canvas canvas) {
-    // Cross-fade rendering (req 10.2).
     final cf = _crossFadeState;
     if (cf != null) {
       final double t = (cf.elapsed / _CrossFadeState.duration).clamp(0.0, 1.0);
 
-      // Render "from" animation at opacity (1 - t).
       final fromAnim = animations?[cf.from];
       if (fromAnim != null) {
         final fromTicker = animationTickers?[cf.from];
@@ -424,8 +374,6 @@ class CompanionComponent
         }
       }
 
-      // Render "to" animation at opacity t — the normal super.render() handles
-      // the current animation but at full opacity, so we replicate it here.
       final toAnim = animations?[cf.to];
       if (toAnim != null) {
         final toTicker = animationTickers?[cf.to];
@@ -445,8 +393,6 @@ class CompanionComponent
         }
       }
 
-      // Still render overlays (meeting badge, fire particles) via the rest of
-      // this method without calling super.render() again.
       _renderOverlays(canvas);
       return;
     }
@@ -455,9 +401,7 @@ class CompanionComponent
     _renderOverlays(canvas);
   }
 
-  /// Renders the meeting indicator badge and fire particles.
   void _renderOverlays(Canvas canvas) {
-    // Render "ON AIR" / Meeting Indicator
     if (game.petService.context.isMeetingDetected) {
       final double spriteSize = game.currentTheme.spriteSize.toDouble();
       final Offset badgePos = Offset(spriteSize * 0.3, -spriteSize * 0.4);
@@ -466,11 +410,9 @@ class CompanionComponent
         ..color = const Color(0xFFFF3B30)
         ..style = PaintingStyle.fill;
 
-      // Draw a small pulsating red dot
       final double pulse = 1.0 + sin(_stateElapsed * 4.0) * 0.2;
       canvas.drawCircle(badgePos, 3.0 * pulse, paint);
 
-      // Draw "ON AIR" text badge if space permits
       const textStyle = TextStyle(
         color: Colors.white,
         fontSize: 5,
@@ -485,7 +427,6 @@ class CompanionComponent
       textPainter.paint(canvas, badgePos + const Offset(5, -3));
     }
 
-    // Render Dragon Snout Fire Particles procedurally over the sprite
     if (_particles.isNotEmpty) {
       final paint = Paint()..style = PaintingStyle.fill;
       for (final p in _particles) {
@@ -495,8 +436,6 @@ class CompanionComponent
       }
     }
   }
-
-  // --- Tap / Hover ---
 
   DateTime? _lastTapTime;
 
@@ -519,8 +458,6 @@ class CompanionComponent
 
   @override
   void onHoverEnter() => game.onUserInteraction('hover');
-
-  // --- Mouse follow ---
 
   void updateMouseFollow(Map<dynamic, dynamic> data) {
     final bool enabled = data['enabled'] as bool? ?? false;

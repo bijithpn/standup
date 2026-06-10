@@ -1,8 +1,6 @@
 // Integration test: constrained mode pet relocation.
 //
-// Task 20.4 — Validates: Requirements 4.6
 //
-// Requirement 4.6: IF the Constraint_Window is moved to a position where the
 //   Pet's current location is outside the new bounds, THEN THE Behavior_Engine
 //   SHALL reposition the Pet to the nearest point inside the Constraint_Window
 //   bounds within one Tick.

@@ -1,11 +1,8 @@
 // Property tests for MicroParticleFactory QuietMode suppression.
 //
-// Task 2.2 from .kiro/specs/desktop-companion-interaction/tasks.md
 //
 // Property 10: QuietMode suppresses all particle spawns.
-//              Validates: Requirements 13.7, 15.5, 19.5.
 //
-// Unit tests for particle factory (covers Tasks 5.11 support):
 //   - Each factory method returns non-null with quietMode=false
 //   - Each factory method returns null with quietMode=true
 

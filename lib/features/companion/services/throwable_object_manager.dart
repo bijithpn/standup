@@ -8,8 +8,6 @@ import 'package:breakmate/features/companion/domain/behavior_engine_models.dart'
 import 'package:breakmate/features/companion/services/physics_simulator.dart';
 
 /// Manages the lifecycle of up to 5 throwable objects.
-///
-/// Requirements: 7.1, 7.2, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 7.10
 class ThrowableObjectManager {
   ThrowableObjectManager({
     required PhysicsSimulator physicsSimulator,
@@ -37,11 +35,9 @@ class ThrowableObjectManager {
   final List<_ThrowableRecord> _throwables = [];
   int _spawnCounter = 0;
 
-  // ---- Public API -----------------------------------------------------------
+  // Public API
 
   /// Spawn a throwable at [releasePoint] with velocity derived from [dragVector].
-  ///
-  /// Requirements 7.1, 7.9
   PhysicsEntityId? spawnThrowable(
     Offset releasePoint,
     Offset dragVector, {
@@ -55,7 +51,7 @@ class ThrowableObjectManager {
       return null;
     }
 
-    // Enforce max 5 active throwables (req 7.9).
+    // Enforce max 5 active throwables .
     final int activeCount = _throwables
         .where((r) => r.lifecycle != ThrowableLifecycle.disposed)
         .length;
@@ -107,11 +103,8 @@ class ThrowableObjectManager {
   }
 
   /// Tick all active throwables and advance lifecycle state.
-  ///
   /// Call once per game tick (60 Hz). [petBounds] is the pet's current bounding
   /// rect; [petAnchor] is the pet's anchor point.
-  ///
-  /// Requirements: 7.4, 7.6, 7.7, 7.8, 7.10
   void tick(double dt, {required Rect petBounds, required Offset petAnchor}) {
     final DateTime now = DateTime.now();
 
@@ -151,7 +144,7 @@ class ThrowableObjectManager {
           }
 
         case ThrowableLifecycle.stationary:
-          // Auto-dispose after 30s stationary (req 7.10).
+          // Auto-dispose after 30s stationary .
           if (record.stationaryAt != null &&
               now.difference(record.stationaryAt!).inSeconds >=
                   stationaryDisposalSeconds) {
@@ -159,7 +152,7 @@ class ThrowableObjectManager {
             break;
           }
 
-          // Pet overlap → beingFetched (req 7.7).
+          // Pet overlap → beingFetched .
           if (petBounds.overlaps(throwableBounds)) {
             _throwables[i] = record.withLifecycle(
               ThrowableLifecycle.beingFetched,
@@ -171,7 +164,7 @@ class ThrowableObjectManager {
           }
 
         case ThrowableLifecycle.beingFetched:
-          // Return to origin → disposed (req 7.8).
+          // Return to origin → disposed .
           final double distToOrigin = (petAnchor - record.spawnOrigin).distance;
           if (distToOrigin <= fetchReturnRadius) {
             _eventBus.emit(ThrowableReturnedEvent(objectId: record.physicsId));
@@ -188,8 +181,7 @@ class ThrowableObjectManager {
   }
 
   /// Return the non-disposed throwable with the highest spawn priority.
-  ///
-  /// This is the pet's current chase target (req 7.4).
+  /// This is the pet's current chase target .
   PhysicsEntityId? get chaseTarget {
     _ThrowableRecord? best;
     for (final r in _throwables) {
@@ -202,7 +194,6 @@ class ThrowableObjectManager {
   }
 
   /// Public getter exposing the physics ID of the current chase target.
-  ///
   /// Equivalent to [chaseTarget].
   PhysicsEntityId? get chaseTargetPhysicsId => chaseTarget;
 
@@ -230,7 +221,6 @@ class ThrowableObjectManager {
   }
 
   /// Mark a throwable as unreachable (called by navigation layer).
-  ///
   /// The manager will dispose it after [unreachableDisposalSeconds].
   void markUnreachable(PhysicsEntityId id) {
     final DateTime now = DateTime.now();
@@ -248,7 +238,7 @@ class ThrowableObjectManager {
     }
   }
 
-  // ---- Private helpers ------------------------------------------------------
+  // Private helpers
 
   void _disposeThrowable(int index) {
     final record = _throwables[index];
@@ -261,9 +251,7 @@ class ThrowableObjectManager {
   }
 }
 
-// ---------------------------------------------------------------------------
 // Internal mutable record
-// ---------------------------------------------------------------------------
 
 class _ThrowableRecord {
   const _ThrowableRecord({
