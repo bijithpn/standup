@@ -4,7 +4,6 @@ import 'package:breakmate/core/display/models/display_info.dart';
 import 'package:breakmate/core/native/macos_bridge.dart';
 import 'package:breakmate/core/native/windows_bridge.dart';
 
-/// Data models for native bridge method arguments
 class OverlayArgs {
   final Map<String, dynamic>? args;
 
@@ -195,7 +194,6 @@ class WindowInfo {
 /// Platform boundary for desktop features implemented outside Flutter.
 /// The Dart layer still receives several platform payloads as maps because
 /// MethodChannel is the compatibility boundary between the Flutter engines and
-/// native runners.
 abstract class NativeBridgePlatform {
   Future<void> showOverlay([OverlayArgs? args]);
   Future<void> hideOverlay({bool restoreMainWindow = true});
@@ -235,47 +233,27 @@ abstract class NativeBridgePlatform {
     List<String>? calendarIds,
   );
 
-  /// Returns a list of connected displays with NativeDisplayInfo objects
   Future<List<NativeDisplayInfo>> enumerateDisplays();
 
-  /// Registers a callback that is invoked when displays change (connect /
-  /// disconnect / resolution change). The callback receives the updated list
-  /// of NativeDisplayInfo objects.
-  void registerDisplayChangeCallback(
-    void Function(List<NativeDisplayInfo>) cb,
-  );
+  void registerDisplayChangeCallback(void Function(List<NativeDisplayInfo>) cb);
 
-  /// Returns the current cursor position in global screen coordinates.
   Future<Offset> getCursorPosition();
 
-  /// Returns the list of currently visible, non-minimized application windows
-  /// with WindowInfo objects.
   Future<List<WindowInfo>> getVisibleWindows();
 
-  /// Shows the constraint window using the provided [args].
-  /// Expected keys: x, y, width, height.
   Future<void> showConstraintWindow(ConstraintWindowArgs args);
 
-  /// Hides the constraint window.
   Future<void> hideConstraintWindow();
 
-  /// Registers a callback invoked when the constraint window is moved or
-  /// resized. The callback receives the [args] map.
   void registerConstraintWindowBoundsCallback(
     void Function(ConstraintWindowArgs) callback,
   );
 
-  /// Shows the PiP companion window.
-  /// Expected keys: x, y, width, height, themeId, petName, scale.
   Future<void> showPipWindow(PipWindowArgs args);
 
-  /// Hides the PiP companion window.
   Future<void> hidePipWindow();
 }
 
-/// A fallback/no-op implementation for unsupported platforms.
-/// All new PAL methods return safe defaults without throwing so that
-/// upper-layer subsystems can be exercised on unsupported platforms in tests.
 class FallbackBridge implements NativeBridgePlatform {
   const FallbackBridge();
 
@@ -375,9 +353,7 @@ class FallbackBridge implements NativeBridgePlatform {
   @override
   void registerDisplayChangeCallback(
     void Function(List<NativeDisplayInfo>) cb,
-  ) {
-    // No-op: no displays to report on unsupported platforms.
-  }
+  ) {}
 
   @override
   Future<Offset> getCursorPosition() async => Offset.zero;
@@ -394,9 +370,7 @@ class FallbackBridge implements NativeBridgePlatform {
   @override
   void registerConstraintWindowBoundsCallback(
     void Function(ConstraintWindowArgs) cb,
-  ) {
-    // No-op: constraint window is never shown on unsupported platforms.
-  }
+  ) {}
 
   @override
   Future<void> showPipWindow(PipWindowArgs args) async {}
@@ -405,15 +379,9 @@ class FallbackBridge implements NativeBridgePlatform {
   Future<void> hidePipWindow() async {}
 }
 
-/// Unified entry point to call native bridge features.
-/// Automatically detects platform and delegates to the appropriate bridge.
 class NativeBridge {
   static final NativeBridgePlatform _platform = _getPlatformBridge();
 
-  /// The underlying platform bridge instance.
-  /// Exposed so that service classes (e.g., [DisplayManager]) can be
-  /// constructed with the singleton bridge by default while still accepting
-  /// an injected [NativeBridgePlatform] for testing.
   static NativeBridgePlatform get instance => _platform;
 
   static NativeBridgePlatform _getPlatformBridge() {
@@ -484,8 +452,6 @@ class NativeBridge {
     List<String>? calendarIds,
   ) => _platform.getEvents(startMs, endMs, calendarIds);
 
-  // New PAL forwarding methods
-
   static Future<List<DisplayInfo>> enumerateDisplays() async {
     final nativeDisplays = await _platform.enumerateDisplays();
     return nativeDisplays.map((nativeDisplay) {
@@ -516,7 +482,9 @@ class NativeBridge {
   static void registerDisplayChangeCallback(
     void Function(List<DisplayInfo>) cb,
   ) {
-    _platform.registerDisplayChangeCallback((List<NativeDisplayInfo> nativeDisplays) {
+    _platform.registerDisplayChangeCallback((
+      List<NativeDisplayInfo> nativeDisplays,
+    ) {
       final displays = nativeDisplays.map((nativeDisplay) {
         return DisplayInfo(
           id: nativeDisplay.id,
@@ -537,7 +505,8 @@ class NativeBridge {
             nativeDisplay.height,
           ),
           position: Offset(nativeDisplay.x, nativeDisplay.y),
-          refreshRate: 60.0, // Default value since not available in native bridge
+          refreshRate:
+              60.0, // Default value since not available in native bridge
         );
       }).toList();
       cb(displays);
@@ -558,8 +527,6 @@ class NativeBridge {
   static void registerConstraintWindowBoundsCallback(
     void Function(ConstraintWindowArgs) cb,
   ) => _platform.registerConstraintWindowBoundsCallback(cb);
-
-  // PiP window
 
   static Future<void> showPipWindow(PipWindowArgs args) =>
       _platform.showPipWindow(args);

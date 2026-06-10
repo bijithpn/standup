@@ -1,6 +1,7 @@
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/storage/models/session_state.dart';
 import 'package:objectbox/objectbox.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class SessionStateRepository {
   final StorageService _storage;
@@ -12,7 +13,6 @@ class SessionStateRepository {
     _box = _storage.store.box<SessionState>();
   }
 
-  /// Get today's session (or null if different day)
   SessionState? getSessionForToday() {
     try {
       final session = _box.get(1);
@@ -21,7 +21,6 @@ class SessionStateRepository {
       final today = DateTime.now();
       final todayStr = _formatDate(today);
 
-      // If session is from a different day, don't return it
       if (session.lastSessionDate != todayStr) {
         return null;
       }
@@ -31,7 +30,6 @@ class SessionStateRepository {
     }
   }
 
-  /// Save current session state
   void saveSession({
     required Duration workElapsed,
     required Duration totalWorkToday,
@@ -58,17 +56,16 @@ class SessionStateRepository {
       );
 
       _box.put(session);
-    } catch (_) {
-      // Silently fail - not critical if session save fails
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
   }
 
-  /// Clear session (call on new day or when disabled)
   void clearSession() {
     try {
       _box.remove(1);
-    } catch (_) {
-      // Silently fail
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
   }
 

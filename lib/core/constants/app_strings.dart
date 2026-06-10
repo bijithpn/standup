@@ -3,7 +3,6 @@ class AppStrings {
 
   static const String appName = 'BreakMate';
 
-  // Dashboard
   static const String today = 'Today';
   static const String readyToFocus = 'Ready to focus';
   static const String focusing = 'Focusing...';
@@ -26,7 +25,6 @@ class AppStrings {
   static const String noActivityRecorded =
       'No activity recorded yet. Start focusing to see your progress.';
 
-  // Navigation
   static const String navBreaks = 'Breaks';
   static const String navFocusMode = 'Focus mode';
   static const String navExercises = 'Exercises';
@@ -38,7 +36,6 @@ class AppStrings {
   static const String navSoftwareUpdate = 'Software Update';
   static const String navAbout = 'About';
 
-  // Onboarding
   static const String welcomeTitle = 'Welcome to BreakMate';
   static const String welcomeSubtitle =
       "A quiet, modern way to maintain your wellness while working. Let's get you set up in a few seconds.";
@@ -54,7 +51,6 @@ class AppStrings {
   static const String buddySubtitle =
       'An optional animated companion to keep you company and remind you to rest.';
 
-  // Analytics
   static const String analytics = 'Analytics';
   static const String analyticsSubtitle =
       'Insights into your focus and wellness balance.';
@@ -78,7 +74,6 @@ class AppStrings {
   static const String wellnessInsightLow =
       'You\'re pushing hard. Take a 5-minute break soon.';
 
-  // Settings
   static const String settings = 'Settings';
   static const String general = 'General';
   static const String breaks = 'Breaks';

@@ -41,7 +41,6 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
   }
 
   Future<void> _loadImage() async {
-    // Attempt to load via settings custom image path or fallback
     final path = widget.settings.customImagePath;
     final isCustomEnabled = path != null && !path.startsWith('disabled:');
     final actualPath = (path != null && path.startsWith('disabled:'))

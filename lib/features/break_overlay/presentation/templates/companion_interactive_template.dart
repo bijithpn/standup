@@ -84,7 +84,6 @@ class _CompanionInteractiveTemplateState
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Top timer capsule
               Positioned(
                 top: compact ? 20 : 36,
                 left: 0,
@@ -146,7 +145,6 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Static speech bubble above sprite
               AnimatedPositioned(
                 duration: _isDragging
                     ? Duration.zero
@@ -183,7 +181,6 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Draggable companion sprite
               AnimatedPositioned(
                 duration: _isDragging
                     ? Duration.zero
@@ -221,7 +218,6 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Bottom bar
               Positioned(
                 bottom: compact ? 20 : 36,
                 left: compact ? 24 : 40,

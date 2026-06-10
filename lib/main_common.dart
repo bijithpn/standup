@@ -21,6 +21,15 @@ import 'features/features.dart';
 import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
+  void handleFatalError(Object error, StackTrace? stack) {
+    ErrorHandler().handleError(error, stack, type: AppErrorType.general);
+    // If it's a major error, we gracefully shutdown and kill the process.
+    Future.delayed(const Duration(seconds: 2), () async {
+      await _gracefulShutdown(_globalSingleInstanceServer);
+      exit(1);
+    });
+  }
+
   FlutterError.onError = (FlutterErrorDetails details) {
     debugPrint('=== FLUTTER ERROR ===');
     debugPrint(details.exceptionAsString());
@@ -32,16 +41,27 @@ void _setupGlobalErrors() {
         exceptionStr.contains('_pressedKeys.containsKey');
 
     if (!details.silent && !isHardwareKeyboardAssert) {
+      ErrorHandler().handleError(details.exception, details.stack);
       ErrorToastService.showError('Oops! An internal error occurred.');
+
+      // If flutter considers it a fatal error, initiate shutdown
+      // (Or we can define our own criteria. For now, unhandled build errors aren't strictly fatal,
+      // but if the UI is completely broken, we might want to kill it).
     }
     FlutterError.presentError(details);
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('=== ASYNC DART ERROR ===');
+    debugPrint('=== ASYNC DART ERROR (FATAL) ===');
     debugPrint(error.toString());
     debugPrint(stack.toString());
-    ErrorToastService.showError('Oops! An action failed. Please try again.');
+
+    // Treat unhandled async errors as major errors
+    handleFatalError(error, stack);
+
+    ErrorToastService.showError(
+      'A critical error occurred. App will close shortly.',
+    );
     return true;
   };
 
@@ -52,64 +72,97 @@ void _setupGlobalErrors() {
       )) {
         try {
           callback(details);
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
       return const Material(color: Color(0xFF0A0A0F), child: SizedBox.shrink());
     }
 
+    // Nice UI for unexpected build errors instead of the red screen
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
-        color: const Color(0xFF161616),
+        color: const Color(0xFF1E1E2E), // A nice dark slate
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.all(32.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.error_outline,
-                  color: Colors.redAccent,
-                  size: 48,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    color: Colors.redAccent,
+                    size: 56,
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
                 const Text(
-                  'Oops! Something went wrong.',
+                  'Application Error',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
                     fontFamily: 'Inter',
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 const Text(
-                  'An unexpected error occurred. We have logged the details.',
+                  'Something unexpected happened.\nWe are sorry for the inconvenience.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Colors.white70,
-                    fontSize: 14,
+                    fontSize: 15,
+                    height: 1.4,
                     fontFamily: 'Inter',
                   ),
                 ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white10,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    _gracefulShutdown(
+                      _globalSingleInstanceServer,
+                    ).then((_) => exit(1));
+                  },
+                  icon: const Icon(Icons.power_settings_new, size: 18),
+                  label: const Text('Close App'),
+                ),
                 if (kDebugMode) ...[
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.black45,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: Colors.redAccent.withValues(alpha: 0.3),
+                        color: Colors.redAccent.withValues(alpha: 0.2),
                       ),
                     ),
                     child: SingleChildScrollView(
                       child: Text(
-                        details.exceptionAsString(),
+                        '${details.exceptionAsString()}\n\n${details.stack?.toString() ?? "No stack trace available."}',
                         style: const TextStyle(
                           color: Colors.redAccent,
-                          fontSize: 11,
+                          fontSize: 12,
                           fontFamily: 'monospace',
                         ),
                       ),
@@ -475,10 +528,13 @@ void mainCommon(FlavorConfig config) async {
         if (kReleaseMode &&
             config.sentryDsn.isNotEmpty &&
             config.sentryDsn != 'DEV_DSN_HERE') {
-          await SentryFlutter.init((options) {
-            options.dsn = config.sentryDsn;
-            options.enableAppHangTracking = false;
-          }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
+          await SentryFlutter.init(
+            (options) {
+              options.dsn = config.sentryDsn;
+              options.enableAppHangTracking = false;
+            },
+            appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
+          );
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             logStartup('first dashboard frame rendered');
@@ -610,7 +666,9 @@ Future<void> companionMain() async {
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),
     );
-  } catch (_) {}
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st);
+  }
 
   runApp(
     const MaterialApp(
@@ -644,7 +702,9 @@ Future<void> pipMain() async {
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),
     );
-  } catch (_) {}
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st);
+  }
 
   runApp(
     const MaterialApp(

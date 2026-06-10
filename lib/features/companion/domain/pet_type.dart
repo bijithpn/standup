@@ -1,14 +1,11 @@
-/// Defines the species and variant types for pet companions.
 enum MovementType { walk, hop, fly }
 
-/// Species-specific behavior parameters.
 class PetBehaviorProfile {
   final double mouseAttraction; // Curiosity multiplier
   final double sleepLikelihood; // Fatigue rate multiplier
   final double edgePreference; // Likelihood to stay near boundaries
   final List<String> customActions;
 
-  // Decoupled physics & render traits
   final double movementSpeed; // max follow/wander speed
   final double acceleration; // stiffness rate (springStiffness)
   final double damping; // damping factor for spring system
@@ -97,7 +94,6 @@ enum PetSpecies {
   const PetSpecies(this.movementType, this.defaultProfile);
 }
 
-/// Represents a visual variant of a specific pet species.
 class PetVariant {
   final String id;
   final String name;

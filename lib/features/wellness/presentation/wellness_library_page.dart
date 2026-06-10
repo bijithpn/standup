@@ -156,7 +156,6 @@ class ExerciseCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title & Icon Header
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -178,7 +177,6 @@ class ExerciseCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Description Text
             Expanded(
               child: Text(
                 exercise.instructions,
@@ -194,7 +192,6 @@ class ExerciseCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Bottom Action Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

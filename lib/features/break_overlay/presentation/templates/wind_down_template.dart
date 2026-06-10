@@ -9,8 +9,6 @@ class WindDownTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use ListenableBuilder on sl<> directly so this works in both the main
-    // engine (with Provider) and the standalone overlay engine (no Provider tree).
     return ListenableBuilder(
       listenable: Listenable.merge([sl<StatsService>(), sl<BreakController>()]),
       builder: (context, _) {

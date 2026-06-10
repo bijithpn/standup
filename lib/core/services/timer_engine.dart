@@ -14,6 +14,7 @@ import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 export 'package:breakmate/features/break_system/domain/break_model.dart'
     show BreakType;
@@ -63,7 +64,6 @@ class TimerEngine extends ChangeNotifier {
     );
     _syncSettingsFromRepo();
 
-    // Initialize notifiers
     countdownNotifier.value = _stateData.countdownSeconds;
     workElapsedNotifier.value = _stateData.workElapsed;
     totalWorkTodayNotifier.value = _stateData.totalWorkToday;
@@ -84,7 +84,6 @@ class TimerEngine extends ChangeNotifier {
     _resetTimerAfterMinutes = s.resetTimerAfterMinutes;
   }
 
-  // Exposed getters and setters for the coordinator/orchestrator
   TimerStateData get stateData => _stateData;
   TimerContextManager get contextManager => _contextManager;
 
@@ -139,7 +138,6 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Delegate getters/setters to _stateData and _contextManager
   TimerState get state => _stateData.state;
   WorkMode get mode => _stateData.mode;
   BreakModel? get activeBreak => _stateData.activeBreak;
@@ -180,7 +178,6 @@ class TimerEngine extends ChangeNotifier {
   void startTimers() {
     _syncSettingsFromRepo();
 
-    // If it was already running or break active, keep it that way
     if (state == TimerState.idle) {
       _stateData.state = TimerState.running;
       _stateData.isPreBreak = false;
@@ -240,7 +237,6 @@ class TimerEngine extends ChangeNotifier {
       }
 
       if (state == TimerState.paused || state == TimerState.idle) {
-        // notifyListeners; // REMOVED: redundant as state is stable
         return;
       }
 
@@ -283,7 +279,6 @@ class TimerEngine extends ChangeNotifier {
         }
       }
 
-      // Update target times if they changed
       final prevWorkEndTime = _stateData.workEndTime;
       final prevBreakEndTime = _stateData.breakEndTime;
 
@@ -360,7 +355,6 @@ class TimerEngine extends ChangeNotifier {
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
 
-      // Calendar awareness
       _contextManager.isMeetingUpcoming().then((isMeeting) {
         if (isMeeting) {
           _logger.info('Delaying break due to imminent meeting');
@@ -500,13 +494,15 @@ class TimerEngine extends ChangeNotifier {
       _stateData.isCompletionState = true;
       notifyListeners();
 
-      NativeBridge.updateOverlayData(OverlayData(<String, dynamic>{
-        'title': 'Well Done!',
-        'remainingSeconds': 0,
-        'durationSeconds':
-            activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
-        'strictMode': false,
-      }));
+      NativeBridge.updateOverlayData(
+        OverlayData(<String, dynamic>{
+          'title': 'Well Done!',
+          'remainingSeconds': 0,
+          'durationSeconds':
+              activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
+          'strictMode': false,
+        }),
+      );
     }
 
     _emit(BreakEndedEvent(skipped: skipped));
@@ -536,8 +532,8 @@ class TimerEngine extends ChangeNotifier {
     try {
       final tray = sl<TrayManagerService>();
       tray.setIconModeFromStyle(style);
-    } catch (_) {
-      // Guard in case sl<TrayManagerService> is not registered in tests
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
     notifyListeners();
   }

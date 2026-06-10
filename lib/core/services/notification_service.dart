@@ -35,7 +35,6 @@ class NotificationService {
       const settings = InitializationSettings(macOS: macOS, windows: windows);
       await _plugin.initialize(settings: settings);
 
-      // Request permission asynchronously without blocking the app loader
       unawaited(_checkAndRequestPermission());
 
       _logger.info('Notification service initialized (async permission)');
@@ -53,7 +52,6 @@ class NotificationService {
       _notificationsEnabled = false;
 
       try {
-        // Update settings repo to reflect that notifications are disabled
         final settingsRepo = sl<SettingsRepository>();
         final newSettings = settingsRepo.currentSettings.copyWith(
           notificationsEnabled: false,
@@ -63,7 +61,6 @@ class NotificationService {
         _logger.error('Failed to update notification settings: $e');
       }
 
-      // Emit event so the UI can navigate the user to settings
       sl<EventBus>().emit(NotificationPermissionDeniedEvent());
     }
   }
@@ -161,7 +158,6 @@ class NotificationService {
             windows: WindowsNotificationDetails(),
           );
         } else {
-          // Retrieve selected companion theme
           final settingsRepo = sl<SettingsRepository>();
           final selectedThemeId =
               settingsRepo.currentSettings.companionPetTheme;

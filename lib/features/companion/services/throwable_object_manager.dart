@@ -7,7 +7,6 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:breakmate/features/companion/services/physics_simulator.dart';
 
-/// Manages the lifecycle of up to 5 throwable objects.
 class ThrowableObjectManager {
   ThrowableObjectManager({
     required PhysicsSimulator physicsSimulator,
@@ -25,7 +24,6 @@ class ThrowableObjectManager {
   static const double unreachableDisposalSeconds = 10.0;
   static const double fetchReturnRadius = 10.0;
 
-  /// Default throwable bounding box size (logical px).
   static const double throwableSize = 20.0;
 
   final PhysicsSimulator _physics;
@@ -35,9 +33,6 @@ class ThrowableObjectManager {
   final List<_ThrowableRecord> _throwables = [];
   int _spawnCounter = 0;
 
-  // Public API
-
-  /// Spawn a throwable at [releasePoint] with velocity derived from [dragVector].
   PhysicsEntityId? spawnThrowable(
     Offset releasePoint,
     Offset dragVector, {
@@ -51,7 +46,6 @@ class ThrowableObjectManager {
       return null;
     }
 
-    // Enforce max 5 active throwables .
     final int activeCount = _throwables
         .where((r) => r.lifecycle != ThrowableLifecycle.disposed)
         .length;
@@ -63,7 +57,6 @@ class ThrowableObjectManager {
       return null;
     }
 
-    // Compute initial velocity: direction × min(magnitude × scale, 2000).
     final Offset direction = dragVector / magnitude;
     final double speed = math.min(magnitude * velocityScaleFactor, maxVelocity);
     final Offset initialVelocity = direction * speed;
@@ -102,9 +95,6 @@ class ThrowableObjectManager {
     return physicsId;
   }
 
-  /// Tick all active throwables and advance lifecycle state.
-  /// Call once per game tick (60 Hz). [petBounds] is the pet's current bounding
-  /// rect; [petAnchor] is the pet's anchor point.
   void tick(double dt, {required Rect petBounds, required Offset petAnchor}) {
     final DateTime now = DateTime.now();
 
@@ -116,7 +106,6 @@ class ThrowableObjectManager {
       try {
         state = _physics.getState(record.physicsId);
       } catch (_) {
-        // Entity already removed.
         _throwables[i] = record.withLifecycle(ThrowableLifecycle.disposed);
         continue;
       }
@@ -129,7 +118,6 @@ class ThrowableObjectManager {
 
       switch (record.lifecycle) {
         case ThrowableLifecycle.flying:
-          // Transition to stationary when physics reports stationary for ≥3 ticks.
           if (state.isStationary) {
             _throwables[i] = record.copyWith(
               lifecycle: ThrowableLifecycle.stationary,
@@ -144,7 +132,6 @@ class ThrowableObjectManager {
           }
 
         case ThrowableLifecycle.stationary:
-          // Auto-dispose after 30s stationary .
           if (record.stationaryAt != null &&
               now.difference(record.stationaryAt!).inSeconds >=
                   stationaryDisposalSeconds) {
@@ -152,7 +139,6 @@ class ThrowableObjectManager {
             break;
           }
 
-          // Pet overlap → beingFetched .
           if (petBounds.overlaps(throwableBounds)) {
             _throwables[i] = record.withLifecycle(
               ThrowableLifecycle.beingFetched,
@@ -164,7 +150,6 @@ class ThrowableObjectManager {
           }
 
         case ThrowableLifecycle.beingFetched:
-          // Return to origin → disposed .
           final double distToOrigin = (petAnchor - record.spawnOrigin).distance;
           if (distToOrigin <= fetchReturnRadius) {
             _eventBus.emit(ThrowableReturnedEvent(objectId: record.physicsId));
@@ -176,12 +161,9 @@ class ThrowableObjectManager {
       }
     }
 
-    // Prune fully-disposed records from the list to keep it compact.
     _throwables.removeWhere((r) => r.lifecycle == ThrowableLifecycle.disposed);
   }
 
-  /// Return the non-disposed throwable with the highest spawn priority.
-  /// This is the pet's current chase target .
   PhysicsEntityId? get chaseTarget {
     _ThrowableRecord? best;
     for (final r in _throwables) {
@@ -193,8 +175,6 @@ class ThrowableObjectManager {
     return best?.physicsId;
   }
 
-  /// Public getter exposing the physics ID of the current chase target.
-  /// Equivalent to [chaseTarget].
   PhysicsEntityId? get chaseTargetPhysicsId => chaseTarget;
 
   List<ThrowableObjectState> snapshots() {
@@ -220,8 +200,6 @@ class ThrowableObjectManager {
     return result;
   }
 
-  /// Mark a throwable as unreachable (called by navigation layer).
-  /// The manager will dispose it after [unreachableDisposalSeconds].
   void markUnreachable(PhysicsEntityId id) {
     final DateTime now = DateTime.now();
     for (int i = 0; i < _throwables.length; i++) {
@@ -238,8 +216,6 @@ class ThrowableObjectManager {
     }
   }
 
-  // Private helpers
-
   void _disposeThrowable(int index) {
     final record = _throwables[index];
     _physics.removeEntity(record.physicsId);
@@ -250,8 +226,6 @@ class ThrowableObjectManager {
     );
   }
 }
-
-// Internal mutable record
 
 class _ThrowableRecord {
   const _ThrowableRecord({

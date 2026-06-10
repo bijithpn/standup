@@ -130,7 +130,6 @@ class OverlayHiddenEvent extends AppEvent {
   OverlayHiddenEvent({required this.overlayType, super.timestamp});
 }
 
-// Display Management Events
 class DisplayConnectedEvent extends AppEvent {
   final String displayId;
   DisplayConnectedEvent({required this.displayId, super.timestamp});
@@ -164,9 +163,6 @@ class NotificationPermissionDeniedEvent extends AppEvent {
   NotificationPermissionDeniedEvent({super.timestamp});
 }
 
-// ─── Behavior Engine Events ────────────────────────────────────────────────
-
-// Cursor Events
 class CursorEnteredZoneEvent extends AppEvent {
   final double velocity;
   CursorEnteredZoneEvent({required this.velocity, super.timestamp});
@@ -186,7 +182,6 @@ class CursorFastMoveEvent extends AppEvent {
   CursorFastMoveEvent({required this.velocity, super.timestamp});
 }
 
-// Throwable Events
 class ThrowableSpawnedEvent extends AppEvent {
   final int objectId;
   ThrowableSpawnedEvent({required this.objectId, super.timestamp});
@@ -216,13 +211,10 @@ class ThrowRejectedEvent extends AppEvent {
   ThrowRejectedEvent({super.timestamp});
 }
 
-/// Emitted by [InteractionController] when both attempts to spawn a treat
-/// throwable return `null` .
 class TreatSpawnFailedEvent extends AppEvent {
   TreatSpawnFailedEvent({super.timestamp});
 }
 
-// Window Events
 class PetWindowOverlapEvent extends AppEvent {
   final bool started;
   PetWindowOverlapEvent({required this.started, super.timestamp});
@@ -237,12 +229,10 @@ class PetStandingWindowMovedEvent extends AppEvent {
   PetStandingWindowMovedEvent({required this.newBounds, super.timestamp});
 }
 
-// Physics Events
 class PetLandedEvent extends AppEvent {
   PetLandedEvent({super.timestamp});
 }
 
-// Platform Events
 class PlatformErrorEvent extends AppEvent {
   final String message;
   PlatformErrorEvent({required this.message, super.timestamp});
@@ -253,7 +243,6 @@ class ConstraintWindowBoundsChangedEvent extends AppEvent {
   ConstraintWindowBoundsChangedEvent({required this.bounds, super.timestamp});
 }
 
-/// Emitted by [InteractionController] when the low-power flag changes so that
 class LowPowerModeChangedEvent extends AppEvent {
   final bool isLowPower;
   LowPowerModeChangedEvent({required this.isLowPower, super.timestamp});

@@ -119,7 +119,6 @@ class CalendarSection extends StatelessWidget {
       );
     }
 
-    // Group events by date
     final groupedEvents = <DateTime, List<CalendarEvent>>{};
     for (var event in events) {
       final date = DateTime(
@@ -519,7 +518,6 @@ class _CalendarEventRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          // Time indicator
           Container(
             width: 44,
             height: 44,

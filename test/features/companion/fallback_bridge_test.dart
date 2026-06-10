@@ -1,4 +1,3 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
@@ -32,12 +31,9 @@ void main() {
 
     test('showConstraintWindow does not throw', () async {
       expect(
-        () async => bridge.showConstraintWindow(ConstraintWindowArgs(
-          x: 0,
-          y: 0,
-          width: 300,
-          height: 300,
-        )),
+        () async => bridge.showConstraintWindow(
+          ConstraintWindowArgs(x: 0, y: 0, width: 300, height: 300),
+        ),
         returnsNormally,
       );
     });
@@ -55,15 +51,17 @@ void main() {
 
     test('showPipWindow does not throw', () async {
       expect(
-        () async => bridge.showPipWindow(PipWindowArgs(
-          x: 0,
-          y: 0,
-          width: 280,
-          height: 320,
-          themeId: 'grey_cat',
-          petName: 'Mochi',
-          scale: 6.0,
-        )),
+        () async => bridge.showPipWindow(
+          PipWindowArgs(
+            x: 0,
+            y: 0,
+            width: 280,
+            height: 320,
+            themeId: 'grey_cat',
+            petName: 'Mochi',
+            scale: 6.0,
+          ),
+        ),
         returnsNormally,
       );
     });

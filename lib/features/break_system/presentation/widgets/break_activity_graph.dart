@@ -51,7 +51,6 @@ class _GraphPainter extends CustomPainter {
         .toDouble()
         .clamp(5.0, double.infinity);
 
-    // Normalize data points to height
     List<Offset> points = [];
     for (int i = 0; i < dataPoints.length; i++) {
       final x = i * stepX;
@@ -59,7 +58,6 @@ class _GraphPainter extends CustomPainter {
       points.add(Offset(x, y));
     }
 
-    // Draw curvy line (Bezier)
     path.moveTo(points[0].dx, points[0].dy);
     for (int i = 0; i < points.length - 1; i++) {
       final p0 = points[i];
@@ -78,12 +76,10 @@ class _GraphPainter extends CustomPainter {
 
     canvas.drawPath(path, paint);
 
-    // Draw dots
     for (final point in points) {
       canvas.drawCircle(point, 3, dotPaint);
     }
 
-    // Draw end icon (Fire/Streak)
     final lastPoint = points.last;
     final iconPaint = Paint()
       ..color = color
@@ -91,7 +87,6 @@ class _GraphPainter extends CustomPainter {
 
     canvas.drawCircle(lastPoint, 10, iconPaint);
 
-    // Simplified fire icon drawing (Triangle-ish)
     final iconPath = Path()
       ..moveTo(lastPoint.dx, lastPoint.dy - 5)
       ..lineTo(lastPoint.dx - 4, lastPoint.dy + 3)

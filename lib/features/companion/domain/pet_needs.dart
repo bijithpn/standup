@@ -93,13 +93,8 @@ class PetNeeds {
 
 class NeedsEngine {
   NeedsEngine({SettingsRepository? settingsRepository, AppLogger? logger})
-    :
-      // ignore: unused_field
-      _settingsRepository = settingsRepository,
-      _logger = logger ?? AppLogger();
+    : _logger = logger ?? AppLogger();
 
-  // ignore: unused_field
-  final SettingsRepository? _settingsRepository;
   final AppLogger _logger;
 
   PetNeeds _needs = const PetNeeds();

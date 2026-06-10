@@ -67,7 +67,6 @@ class ErrorToastService {
       if (overlay.mounted) {
         overlay.insert(overlayEntry);
 
-        // Remove after 3.5 seconds
         Timer(const Duration(milliseconds: 3500), () {
           if (overlayEntry.mounted) {
             overlayEntry.remove();

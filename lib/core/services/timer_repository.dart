@@ -2,7 +2,6 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-/// Repository class responsible for persisting and restoring the operational state of the timers.
 class TimerRepository {
   final StorageService _storageService;
   final AppLogger _logger = AppLogger();

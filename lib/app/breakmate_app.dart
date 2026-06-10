@@ -107,24 +107,18 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
 
   @override
   void onWindowMinimize() {
-    // Tray app on both platforms — minimize hides the window rather than
-    // shrinking to taskbar/Dock. User brings it back via the tray/menu-bar icon.
     windowManager.hide();
   }
 
   @override
   void onWindowClose() async {
     // `preventClose` is true by default (menu-bar app – closing hides it).
-    // When the user explicitly chooses Quit from the menu bar, MenuBarController
-    // sets preventClose = false before calling destroy.
-    // If preventClose is false, we trigger a clean exit of the entire app.
     final prevent = await windowManager.isPreventClose();
     if (!prevent) {
       await gracefulShutdown();
       return;
     }
 
-    // Default behavior: hide the window (menu-bar app style)
     await sl<OverlayWindowService>().reset();
     await windowManager.hide();
   }

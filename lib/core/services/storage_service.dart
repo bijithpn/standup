@@ -10,6 +10,7 @@ import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/objectbox.g.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class StorageService {
   static Store? _store;
@@ -208,7 +209,9 @@ class StorageService {
                     }
                   }
                 }
-              } catch (_) {}
+              } catch (e, st) {
+                ErrorHandler().handleError(e, st);
+              }
             }
 
             if (pids.isNotEmpty) {
@@ -296,7 +299,9 @@ class StorageService {
               );
               openDurationMs = openStopwatch.elapsedMilliseconds;
               activeDatabasePath = legacyStoreDir;
-            } catch (_) {}
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
           }
 
           if (_store == null) {
@@ -468,7 +473,9 @@ class StorageService {
       if (await file.exists()) {
         return await file.length();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     return 0;
   }
 

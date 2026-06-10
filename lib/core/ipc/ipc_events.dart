@@ -12,8 +12,6 @@ abstract class IpcEvent {
   }
 
   /// Parses untrusted IPC payloads at the engine boundary.
-  /// Unknown events are preserved instead of rejected so older secondary
-  /// engines can keep running while the main engine rolls forward.
   static IpcEvent parse(String eventName, Map<String, dynamic> payload) {
     switch (eventName) {
       case IpcEventNames.timerStateChanged:
@@ -57,7 +55,6 @@ class IpcEventNames {
   static const String companionStateChanged = 'companion.stateChanged';
 }
 
-/// Reads a required payload field and fails before it reaches app state.
 T _readRequired<T>(Map<String, dynamic> payload, String key) {
   final value = payload[key];
   if (value is T) return value;

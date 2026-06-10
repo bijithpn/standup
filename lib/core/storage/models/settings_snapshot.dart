@@ -15,14 +15,12 @@ class SettingsSnapshot {
   String menuBarStyle;
   bool focusModeEnabled;
 
-  // Break timings
   int shortBreakIntervalMinutes;
   int shortBreakDurationSeconds;
   int preBreakWarningSeconds;
   int longBreakIntervalMinutes;
   int longBreakDurationMinutes;
 
-  // Notifications
   bool soundEnabled;
   bool notificationsEnabled;
   bool postureReminderEnabled;
@@ -32,7 +30,6 @@ class SettingsSnapshot {
   int eyeBlinkReminderIntervalMinutes;
   String eyeBlinkReminderType;
 
-  // Break Screen
   bool showOnAllDisplays;
   String breakTheme;
   String breakTemplate;
@@ -42,52 +39,42 @@ class SettingsSnapshot {
   bool playMusicDuringBreak;
   bool autoPauseMedia;
 
-  // Clock face
   int clockFaceTextColorHex;
   bool clockFaceBlurEnabled;
   String? customImagePath;
 
-  // Idle/reset
   int resetTimerAfterMinutes;
 
-  // Working hours
   bool workingHoursEnabled;
   String workingDaysJson; // Stored as JSON string
   String workStartTime;
   String workEndTime;
 
-  // Smart detection
   bool detectVideoCalls;
   bool detectMeetings;
   bool respectFocusMode;
 
-  // Clock out
   bool enableClockOut;
   String clockOutTime;
 
-  // Exercises
   String exercisesJson; // Stored as JSON string
 
-  // Misc
   bool autoSuggestExercises;
   bool useCursorCountdown;
   bool enableAnimations;
   String trayIconStyle;
 
-  // UX & Onboarding
   bool hasCompletedOnboarding;
   bool quietModeEnabled;
   String quietModePreset;
   int lastSnoozeDurationMinutes;
   String intensityLevel;
 
-  // Goals & Contextual
   int dailyBreakGoalCount;
   int maxContinuousSittingMinutes;
   int weeklyConsistencyTargetDays;
   bool calendarEnabled;
 
-  // Session Management
   bool enableSessionResume;
 
   SettingsSnapshot({

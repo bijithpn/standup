@@ -3,37 +3,28 @@ import 'package:flutter/services.dart';
 import '../domain/pet_profile.dart';
 import '../domain/pet_type.dart';
 
-/// Service responsible for discovering, loading, and managing pet companion profiles.
-/// Handles runtime registration of new pet types from asset metadata and user preferences.
 class PetRegistryService {
   static const String _manifestPath = 'assets/animations/pets/pets.json';
   final Map<String, PetProfile> _profiles = {};
   String? _activePetId;
 
-  /// Returns all registered pet profiles.
   Map<String, PetProfile> get profiles => Map.unmodifiable(_profiles);
 
-  /// Returns the currently active pet profile, or null if none selected.
   PetProfile? get activeProfile =>
       _activePetId != null ? _profiles[_activePetId] : null;
 
-  /// Returns the ID of the active pet.
   String? get activePetId => _activePetId;
 
-  /// Registers a pet profile manually (for programmatic addition).
   void registerProfile(PetProfile profile) {
     _profiles[profile.id] = profile;
   }
 
-  /// Sets the active pet by ID. Returns true if the profile exists.
   bool setActivePet(String petId) {
     if (!_profiles.containsKey(petId)) return false;
     _activePetId = petId;
     return true;
   }
 
-  /// Loads pet metadata from the central manifest file.
-  /// Populates the registry with profiles derived from manifest entries.
   Future<void> loadFromManifest() async {
     try {
       final manifestString = await rootBundle.loadString(_manifestPath);
@@ -48,7 +39,6 @@ class PetRegistryService {
         }
       }
 
-      // Auto-select first available pet if none active
       if (_activePetId == null && _profiles.isNotEmpty) {
         _activePetId = _profiles.keys.first;
       }
@@ -58,12 +48,9 @@ class PetRegistryService {
     }
   }
 
-  /// Discovers pets from the legacy asset structure.
-  /// Scans known paths and registers profiles for found sprite sheets.
   Future<void> discoverFromLegacyAssets() async {
     _registerDefaultPresets();
 
-    // Additional legacy paths can be scanned here
     const legacyPaths = [
       'assets/animations/cats/cat_1/',
       'assets/animations/cats/cat_2/',
@@ -81,21 +68,17 @@ class PetRegistryService {
     }
   }
 
-  /// Unregisters a pet profile by ID. Cannot remove the active pet.
   bool unregisterProfile(String petId) {
     if (petId == _activePetId) return false;
     return _profiles.remove(petId) != null;
   }
 
-  /// Gets a profile by ID, or null if not found.
   PetProfile? getProfile(String petId) => _profiles[petId];
 
-  /// Gets all profiles for a specific species.
   List<PetProfile> getProfilesBySpecies(PetSpecies species) {
     return _profiles.values.where((p) => p.species == species).toList();
   }
 
-  /// Gets all enabled profiles.
   List<PetProfile> getEnabledProfiles() {
     return _profiles.values.where((p) => p.isEnabled).toList();
   }

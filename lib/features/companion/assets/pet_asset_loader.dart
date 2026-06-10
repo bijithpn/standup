@@ -13,6 +13,7 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class PetAssetLoader {
   static final Map<String, ByteData> _byteCache = {};
@@ -100,7 +101,6 @@ class PetAssetLoader {
       p.join(supportDir.path, 'bm_selected_pet_${theme.id}.png'),
     );
 
-    // If already extracted, return cached path
     if (await file.exists()) {
       return file.path;
     }
@@ -378,7 +378,6 @@ class PetAssetLoader {
 
       final variantConfig = petConfig?['variant'];
 
-      // Find matching PetTheme to use as a fallback/config provider
       final matchingTheme = PetTheme.themes.firstWhere(
         (t) => t.id == profile.variant.id,
         orElse: () => PetTheme.themes.first,
@@ -576,8 +575,6 @@ class PetAssetLoader {
     }
   }
 
-  // Native Tray Caching, Cropping & Whitening Logic
-
   /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
   static Future<void> preCacheTrayIcons(PetTheme theme) async {
     final states = [
@@ -602,8 +599,6 @@ class PetAssetLoader {
     }
   }
 
-  /// Loads a static asset file, auto-crops, resizes to targetSize x targetSize (default 44.0 px @2x template)
-  /// with template-white color filter, and writes to target path.
   static Future<String> extractAndWhitenAsset(
     String assetPath,
     String outputPath, {
@@ -725,12 +720,13 @@ class PetAssetLoader {
         if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
         file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
         return file.path;
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
     return '';
   }
 
-  /// Extracts a specific frame of a companion's animation state as a cropped 44x44 (@2x retina Template) PNG file for the status bar tray.
   static Future<String> extractPetFramePath({
     required PetTheme theme,
     required PetAnimationState state,

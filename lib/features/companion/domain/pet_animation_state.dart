@@ -1,16 +1,5 @@
-/// Defines how a pet's animation frames are organized.
-enum SpriteLayout {
-  /// All frames in a single sprite sheet grid.
-  spriteSheet,
+enum SpriteLayout { spriteSheet, individualFrames, mixed }
 
-  /// Individual image files per animation state.
-  individualFrames,
-
-  /// Mixed: some states use sprite sheets, others use individual frames.
-  mixed,
-}
-
-/// Generic pet animation states.
 enum PetAnimationState {
   idle,
   walkUp,
@@ -40,12 +29,10 @@ enum PetAnimationState {
   reacting,
 }
 
-/// Configuration for a specific animation state's visual representation.
 class PetAnimationConfig {
   final String stateName;
   final SpriteLayout layout;
 
-  // Sprite sheet properties
   final int? frameX;
   final int? frameY;
   final int? frameWidth;
@@ -53,16 +40,13 @@ class PetAnimationConfig {
   final int? totalFrames;
   final double? stepTime;
 
-  // Directional sprite sheet rows (optional)
   final int? rowUp;
   final int? rowDown;
   final int? rowSide;
 
-  // Individual frames
   final List<String>? framePaths;
   final double? individualFrameStepTime;
 
-  // Fallback
   final String? fallbackStateName;
 
   const PetAnimationConfig({
@@ -82,7 +66,6 @@ class PetAnimationConfig {
     this.fallbackStateName,
   });
 
-  /// Creates an animation from a sprite sheet row.
   factory PetAnimationConfig.sheetRow({
     required String stateName,
     required int frameY,
@@ -111,7 +94,6 @@ class PetAnimationConfig {
     );
   }
 
-  /// Creates an animation from individual frame files.
   factory PetAnimationConfig.frames({
     required String stateName,
     required List<String> framePaths,
@@ -163,7 +145,6 @@ class PetAnimationConfig {
   }
 }
 
-/// Maps pet states to their animation configurations.
 class PetAnimationRegistry {
   final Map<String, PetAnimationConfig> _configs = {};
 

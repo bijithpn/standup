@@ -29,7 +29,6 @@ class StrictModeController {
   bool get isInMeeting => _isInMeeting;
   bool get isFocusMode => _isFocusMode;
 
-  /// Call this when a break starts that requires strict enforcement
   Future<void> enableStrictMode() async {
     if (_isInMeeting) {
       debugPrint('Break suppressed: User is in a meeting.');
