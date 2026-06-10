@@ -1,5 +1,3 @@
-// Task 5.2 — Unit tests for FallbackBridge PAL stubs
-// Requirement 1.8 — safe defaults without throwing
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/native/native_bridge.dart';

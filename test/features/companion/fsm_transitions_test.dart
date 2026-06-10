@@ -1,4 +1,3 @@
-// Unit tests for new FSM transitions (Task 3.6)
 //
 // Tests:
 //   - chasing  + throwableStationary → fetching
@@ -7,7 +6,6 @@
 //   - idle     + surfaceLost         → falling (priority 5 wins)
 //   - chasing  + surfaceLost         → falling
 //
-// Requirements: 8.2, 8.7, 8.8, 5.5
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';

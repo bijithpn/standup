@@ -39,7 +39,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
     // Apply pending settings before completing
     final repo = sl<SettingsRepository>();
     await repo.save(_pendingSettings.copyWith(hasCompletedOnboarding: true));
-    // Actually, save() already handles notifyListeners(), but let's be explicit
+    // Actually, save already handles notifyListeners, but let's be explicit
     // Rebuild is handled by Consumer in lib/app/app.dart
   }
 

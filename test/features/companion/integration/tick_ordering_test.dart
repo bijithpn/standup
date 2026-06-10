@@ -1,10 +1,7 @@
 // Integration test: tick ordering and settings-load-before-tick guarantee.
 //
-// Validates: Requirements 11.1, 1.6
 //
-// Requirement 11.1: When the application launches, THE Behavior_Engine SHALL
 //   load persisted settings before the first Tick executes.
-// Requirement 1.6: THE Behavior_Engine SHALL not execute its first Tick until
 //   Display_Manager enumeration completes successfully.
 //
 // Strategy:
@@ -170,10 +167,8 @@ Future<void> _simulateOnLoad({
   required TestSettingsPersistence settings,
   required _StubDisplayManager displayManager,
 }) async {
-  // Step 1: load settings (requirement 11.1 — before everything).
   settings.loadSync();
 
-  // Step 2: enumerate displays (requirement 1.6 — before first tick).
   await displayManager.enumerateDisplays();
 }
 
@@ -203,7 +198,6 @@ Future<void> _simulateSubsystemTick({
 void main() {
   group('Tick ordering integration — settings-load-before-tick guarantee', () {
     // -----------------------------------------------------------------------
-    // Requirement 11.1: loadSync() must complete before the first subsystem
     // tick method fires.
     // -----------------------------------------------------------------------
 
@@ -370,7 +364,6 @@ void main() {
     });
 
     // -----------------------------------------------------------------------
-    // Requirement 1.6: first Tick must not fire until enumerateDisplays()
     // completes successfully.
     // -----------------------------------------------------------------------
 
@@ -390,10 +383,8 @@ void main() {
           () => enumerateCompleted,
         );
 
-        // loadSync first (req 11.1).
         settings.loadSync();
 
-        // Enumerate (req 1.6).
         await displayManager.enumerateDisplays();
         enumerateCompleted = true;
 

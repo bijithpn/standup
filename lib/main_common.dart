@@ -14,18 +14,18 @@ import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 import 'app/app.dart';
+import 'app/bootstrapping/service_bootstrapper.dart';
+import 'app/bootstrapping/ipc_coordinator.dart';
 import 'core/core.dart';
 import 'features/features.dart';
 import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
-  // 1. Log Flutter errors to console
   FlutterError.onError = (FlutterErrorDetails details) {
     debugPrint('=== FLUTTER ERROR ===');
     debugPrint(details.exceptionAsString());
     debugPrint(details.stack?.toString());
 
-    // Ignore harmless framework-level hardware keyboard assertions on desktop
     final exceptionStr = details.exceptionAsString();
     final isHardwareKeyboardAssert =
         exceptionStr.contains('HardwareKeyboard') ||
@@ -34,21 +34,18 @@ void _setupGlobalErrors() {
     if (!details.silent && !isHardwareKeyboardAssert) {
       ErrorToastService.showError('Oops! An internal error occurred.');
     }
-    FlutterError.presentError(details); // Calls ErrorWidget.builder
+    FlutterError.presentError(details);
   };
 
-  // 2. Async Dart errors
   PlatformDispatcher.instance.onError = (error, stack) {
     debugPrint('=== ASYNC DART ERROR ===');
     debugPrint(error.toString());
     debugPrint(stack.toString());
     ErrorToastService.showError('Oops! An action failed. Please try again.');
-    return true; // Prevent default crash behavior
+    return true;
   };
 
-  // 3. User friendly UI for render errors
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // Notify active standalone break overlays to fall back to minimal
     if (StandaloneBreakOverlay.onErrorCallbacks.isNotEmpty) {
       for (final callback in List.from(
         StandaloneBreakOverlay.onErrorCallbacks,
@@ -128,14 +125,11 @@ void _setupGlobalErrors() {
   };
 }
 
-// Top-level reference so signal handlers and the socket listener can
-// both call _gracefulShutdown with the same server socket.
 ServerSocket? _globalSingleInstanceServer;
 
 Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
   debugPrint('[Shutdown] Starting graceful shutdown...');
 
-  // 1. Flush settings first so that notifications don't fire to disposed services
   try {
     if (sl.isRegistered<SettingsRepository>()) {
       final settingsRepo = sl<SettingsRepository>();
@@ -146,7 +140,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error saving settings: $e');
   }
 
-  // 2. Close overlays
   try {
     if (sl.isRegistered<OverlayWindowService>()) {
       await sl<OverlayWindowService>().reset();
@@ -156,7 +149,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error resetting OverlayWindowService: $e');
   }
 
-  // 3. Close companion windows
   try {
     await NativeBridge.hideCompanion();
     debugPrint('[Shutdown] Companion hidden.');
@@ -164,7 +156,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error hiding companion: $e');
   }
 
-  // 4. Stop timers
   try {
     if (sl.isRegistered<TimerEngine>()) {
       sl<TimerEngine>().dispose();
@@ -183,7 +174,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error shutting down TimerOrchestrator: $e');
   }
 
-  // 5. Dispose smart detection
   try {
     if (sl.isRegistered<SmartDetectionService>()) {
       sl<SmartDetectionService>().dispose();
@@ -193,7 +183,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error disposing SmartDetectionService: $e');
   }
 
-  // 6. Close sockets
   try {
     if (serverSocket != null) {
       await serverSocket.close();
@@ -203,7 +192,6 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     debugPrint('[Shutdown] Error closing server socket: $e');
   }
 
-  // 7. Close ObjectBox store cleanly
   try {
     if (sl.isRegistered<StorageService>()) {
       sl<StorageService>().close();
@@ -223,13 +211,10 @@ Future<void> gracefulShutdown() async {
 
 void mainCommon(FlavorConfig config) async {
   final isolateName = Isolate.current.debugName ?? '';
-  // On macOS desktop, secondary engines often have names like "OverlayEngine-..."
   final isMainIsolate =
       !isolateName.toLowerCase().contains('overlay') &&
       !isolateName.toLowerCase().contains('companion');
 
-  // If we are in an overlay or companion isolate, jump to the correct entry point.
-  // This is a safety layer for when the Flutter engine runs main() by default.
   debugPrint('[Main] Isolate name: "$isolateName"');
   if (isolateName.toLowerCase().contains('overlaymain')) {
     overlayMain();
@@ -283,9 +268,6 @@ void mainCommon(FlavorConfig config) async {
           debugPrint(
             '[Main] Secondary engine detected in main(). Redirecting...',
           );
-          // On macOS, secondary engines should have their own entry points.
-          // If we reach here, it means the isolate name didn't match but it's not the main engine.
-          // We must NOT call initDependencies() here.
           return;
         }
 
@@ -293,14 +275,12 @@ void mainCommon(FlavorConfig config) async {
         MemoryCheckpoints.instance.logCheckpoint('startup');
         _setupGlobalErrors();
 
-        // Initialize flutter_acrylic for glassmorphic effect
         if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
           await Window.initialize();
         }
 
         ServerSocket? singleInstanceServer;
 
-        // ONLY the main isolate should perform the port check and potentially call exit().
         if (isMainIsolate) {
           int port = 10425;
           bool bound = false;
@@ -317,7 +297,6 @@ void mainCommon(FlavorConfig config) async {
               'Startup: Primary port $port in use. Attempting process replacement...',
             );
 
-            // Connect to the existing instance and send 'shutdown\n'
             try {
               final socket = await Socket.connect(
                 InternetAddress.loopbackIPv4,
@@ -331,8 +310,6 @@ void mainCommon(FlavorConfig config) async {
                 'Startup: Sent shutdown command to existing instance.',
               );
 
-              // Wait briefly (500ms to 3000ms) for shutdown completion.
-              // Check every 200ms by trying to bind to port 10425.
               int elapsed = 0;
               const int checkIntervalMs = 200;
               const int maxWaitMs = 3000;
@@ -369,7 +346,6 @@ void mainCommon(FlavorConfig config) async {
                 'Startup: Graceful shutdown failed. Force terminating stale process on port $port...',
               );
               try {
-                // Find and kill only the process listening on port 10425 on macOS
                 final result = await Process.run('sh', [
                   '-c',
                   'PID=\$(lsof -t -s TCP:LISTEN -i :$port); [ -n "\$PID" ] && kill -9 \$PID',
@@ -404,15 +380,9 @@ void mainCommon(FlavorConfig config) async {
           }
         }
 
-        // Store globally so signal handlers can reference it.
         _globalSingleInstanceServer = singleInstanceServer;
 
-        // Register OS-level signal handlers so SIGTERM (system kill) and
-        // SIGINT (Ctrl+C / force-quit from Activity Monitor / Task Manager)
-        // both trigger a graceful shutdown that calls exit(0) — this kills
-        // all Dart background isolates and releases the ObjectBox DB lock.
         if (!Platform.isWindows) {
-          // POSIX signals — Windows doesn't support SIGTERM/SIGINT via Dart.
           ProcessSignal.sigterm.watch().listen((_) async {
             debugPrint('[Signal] SIGTERM received — shutting down.');
             await _gracefulShutdown(_globalSingleInstanceServer);
@@ -423,16 +393,14 @@ void mainCommon(FlavorConfig config) async {
           });
         }
 
-        // Initialize SimplePrefs (file-based) FIRST — it is the most reliable
-        // persistence layer and must be ready before any service reads settings.
         await SimplePrefs.instance.init();
         logStartup('SimplePrefs.init');
 
-        // Initialize all dependencies
         await initDependencies();
-        logStartup('initDependencies complete');
+        await ServiceBootstrapper.bootstrap();
+        IpcCoordinator.coordinate();
+        logStartup('bootstrapping complete');
 
-        // Initialize Window Manager
         await windowManager.ensureInitialized();
         logStartup('windowManager.ensureInitialized');
 
@@ -492,7 +460,6 @@ void mainCommon(FlavorConfig config) async {
           });
         }
 
-        // Setup Launch at Startup
         try {
           PackageInfo packageInfo = await PackageInfo.fromPlatform();
           if (packageInfo.appName.isNotEmpty) {
@@ -510,12 +477,9 @@ void mainCommon(FlavorConfig config) async {
             config.sentryDsn != 'DEV_DSN_HERE') {
           await SentryFlutter.init((options) {
             options.dsn = config.sentryDsn;
-            // Disable App Hang tracking to prevent native modal/alert blocking windows
-            // (e.g. Sparkle updater prompts/errors) from triggering watchdog crash reports.
             options.enableAppHangTracking = false;
           }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
         } else {
-          // Log first dashboard frame time in debug mode
           WidgetsBinding.instance.addPostFrameCallback((_) {
             logStartup('first dashboard frame rendered');
           });
@@ -537,56 +501,53 @@ void mainCommon(FlavorConfig config) async {
 
 void _setupMinimalIpc() {
   final eventBus = EventBus.instance;
-  IpcBridge.instance.setEventHandler((event, data) {
-    switch (event) {
-      case IpcEventNames.timerStateChanged:
-        final stateStr = data['state'] as String?;
-        final countdown = (data['countdownSeconds'] as num?)?.toInt() ?? 0;
-        final elapsed = (data['workElapsedSeconds'] as num?)?.toInt() ?? 0;
-        final targetEndMs = data['targetEndTime'] as int?;
-        final targetEndTime = targetEndMs != null
-            ? DateTime.fromMillisecondsSinceEpoch(targetEndMs)
-            : null;
-        final totalWorkTodaySecs = (data['totalWorkTodaySeconds'] as num?)
-            ?.toInt();
-        TimerStateEvent? timerState;
-        switch (stateStr) {
-          case 'running':
-            timerState = TimerStateEvent.running;
-          case 'breakActive':
-            timerState = TimerStateEvent.breakActive;
-          case 'paused':
-            timerState = TimerStateEvent.paused;
-          case 'idle':
-            timerState = TimerStateEvent.idle;
-        }
-        if (timerState != null) {
-          eventBus.emit(
-            TimerStateChangedEvent(
-              state: timerState,
-              countdownSeconds: countdown,
-              workElapsedSeconds: elapsed,
-              targetEndTime: targetEndTime,
-              totalWorkTodaySeconds: totalWorkTodaySecs,
-            ),
-          );
-        }
-      case 'detection.meeting':
+  IpcBridge.instance.setTypedEventHandler((event) {
+    if (event is TimerStateChangedIpcEvent) {
+      final targetEndTime = event.targetEndTime != null
+          ? DateTime.fromMillisecondsSinceEpoch(event.targetEndTime!)
+          : null;
+
+      TimerStateEvent? timerState;
+      switch (event.stateName) {
+        case 'running':
+          timerState = TimerStateEvent.running;
+          break;
+        case 'breakActive':
+          timerState = TimerStateEvent.breakActive;
+          break;
+        case 'paused':
+          timerState = TimerStateEvent.paused;
+          break;
+        case 'idle':
+          timerState = TimerStateEvent.idle;
+          break;
+      }
+
+      if (timerState != null) {
         eventBus.emit(
-          MeetingDetectedEvent(
-            isActive: data['isActive'] as bool? ?? false,
-            bundleId: data['bundleId'] as String? ?? '',
+          TimerStateChangedEvent(
+            state: timerState,
+            countdownSeconds: event.countdownSeconds,
+            workElapsedSeconds: event.workElapsedSeconds,
+            targetEndTime: targetEndTime,
+            totalWorkTodaySeconds: event.totalWorkTodaySeconds,
           ),
         );
-      case IpcEventNames.companionInteraction:
-        eventBus.emit(
-          CompanionInteractionEvent(
-            interactionType: data['interactionType'] as String? ?? 'click',
-            metadata: data['metadata'] != null
-                ? Map<String, dynamic>.from(data['metadata'] as Map)
-                : null,
-          ),
-        );
+      }
+    } else if (event is MeetingDetectedIpcEvent) {
+      eventBus.emit(
+        MeetingDetectedEvent(
+          isActive: event.isActive,
+          bundleId: event.bundleId,
+        ),
+      );
+    } else if (event is CompanionInteractionIpcEvent) {
+      eventBus.emit(
+        CompanionInteractionEvent(
+          interactionType: event.interactionType,
+          metadata: event.metadata,
+        ),
+      );
     }
   });
 }
@@ -609,7 +570,6 @@ Future<void> overlayMain() async {
     }
   }
 
-  // Register fake services in GetIt (sl) for templates
   if (!sl.isRegistered<StatsService>()) {
     sl.registerSingleton<StatsService>(FakeStatsService());
   }
@@ -633,7 +593,6 @@ Future<void> companionMain() async {
   _setupGlobalErrors();
   _setupMinimalIpc();
 
-  // On macOS and Windows, initialize flutter_acrylic and set transparency.
   if (Platform.isMacOS || Platform.isWindows) {
     await Window.initialize();
     try {
@@ -646,8 +605,6 @@ Future<void> companionMain() async {
     }
   }
 
-  // Pre-load the default cat theme to warm up the Flame engine and image codec
-  // This significantly reduces the "blank screen" time when the companion is first shown.
   try {
     final defaultTheme = PetTheme.getTheme('grey_cat');
     await PetAssetLoader.loadAnimations(
@@ -663,10 +620,6 @@ Future<void> companionMain() async {
   );
 }
 
-/// PiP (Picture-in-Picture) mode entry point.
-///
-/// Runs a compact companion window with interaction buttons.
-/// Spawned by [PiPWindowManager.swift] via a dedicated Flutter engine.
 @pragma('vm:entry-point')
 Future<void> pipMain() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -686,7 +639,6 @@ Future<void> pipMain() async {
     }
   }
 
-  // Warm up default theme assets.
   try {
     final defaultTheme = PetTheme.getTheme('grey_cat');
     await PetAssetLoader.loadAnimations(

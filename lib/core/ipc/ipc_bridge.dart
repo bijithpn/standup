@@ -30,7 +30,6 @@ class IpcBridge {
   }
 
   /// Preferred entry point for IPC consumers.
-  ///
   /// This keeps validation in [IpcEvent.parse] and prevents callers from
   /// spreading native map parsing across UI and service layers.
   void setTypedEventHandler(void Function(IpcEvent event) handler) {
@@ -40,7 +39,7 @@ class IpcBridge {
   }
 
   // Convenience notify methods migrated to build typed IpcEvent instances
-  // and call dispatch(). sendEvent() is kept for temporary native compatibility.
+  // and call dispatch. sendEvent is kept for temporary native compatibility.
   Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
     int retries = 3;
     while (retries > 0) {

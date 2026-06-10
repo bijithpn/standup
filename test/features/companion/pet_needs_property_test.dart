@@ -1,12 +1,9 @@
 // Property tests for PetNeeds and NeedsEngine.
 //
-// Tasks 1.2, 1.4 from .kiro/specs/desktop-companion-interaction/tasks.md
 //
 // Property 7: PetNeeds values are always within [0.0, 1.0] after any sequence
-//             of mutations.  Validates: Requirements 10.1, 10.2-10.7, 19.3.
 //
 // Property 8: Idle PetNeeds decay converges toward 0.5 and never overshoots.
-//             Validates: Requirement 10.8.
 
 // ignore_for_file: prefer_const_constructors
 
@@ -278,7 +275,6 @@ void main() {
     },
   );
 
-  // ── NeedsEngine event methods (Req 10.2–10.4) ────────────────────────────
   group('NeedsEngine event methods produce clamped results', () {
     test('onPetted increases affection by 0.1, stays clamped', () {
       final engine = NeedsEngine();
@@ -313,7 +309,6 @@ void main() {
     });
   });
 
-  // ── NeedsEngine active-movement drain (Req 10.5) ──────────────────────────
   group('NeedsEngine active-movement drain (Req 10.5)', () {
     test('energy is NOT drained before 60 s cumulative active movement', () {
       final engine = NeedsEngine();
@@ -338,7 +333,6 @@ void main() {
     });
   });
 
-  // ── NeedsEngine rest regen (Req 10.6) ────────────────────────────────────
   group('NeedsEngine rest regen (Req 10.6)', () {
     test('restfulness increases after 30 s of continuous sleep', () {
       final engine = NeedsEngine();

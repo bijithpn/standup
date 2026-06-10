@@ -240,7 +240,7 @@ class TimerEngine extends ChangeNotifier {
       }
 
       if (state == TimerState.paused || state == TimerState.idle) {
-        // notifyListeners(); // REMOVED: redundant as state is stable
+        // notifyListeners; // REMOVED: redundant as state is stable
         return;
       }
 

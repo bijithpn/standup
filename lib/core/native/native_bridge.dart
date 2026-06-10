@@ -51,52 +51,55 @@ class ConstraintWindowArgs {
 
   factory ConstraintWindowArgs.fromMap(Map<String, dynamic> map) {
     return ConstraintWindowArgs(
-      x: map['x'] as double,
-      y: map['y'] as double,
-      width: map['width'] as double,
-      height: map['height'] as double,
+      x: (map['x'] as num?)?.toDouble() ?? 0.0,
+      y: (map['y'] as num?)?.toDouble() ?? 0.0,
+      width: (map['width'] as num?)?.toDouble() ?? 0.0,
+      height: (map['height'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }
 
 class PipWindowArgs {
-  final double x;
-  final double y;
-  final double width;
-  final double height;
+  final double? x;
+  final double? y;
+  final double? width;
+  final double? height;
   final String themeId;
   final String petName;
   final double scale;
 
   const PipWindowArgs({
-    required this.x,
-    required this.y,
-    required this.width,
-    required this.height,
+    this.x,
+    this.y,
+    this.width,
+    this.height,
     required this.themeId,
     required this.petName,
     required this.scale,
   });
 
-  Map<String, dynamic> toMap() => {
-    'x': x,
-    'y': y,
-    'width': width,
-    'height': height,
-    'themeId': themeId,
-    'petName': petName,
-    'scale': scale,
-  };
+  Map<String, dynamic> toMap() {
+    final map = <String, dynamic>{
+      'themeId': themeId,
+      'petName': petName,
+      'scale': scale,
+    };
+    if (x != null) map['x'] = x;
+    if (y != null) map['y'] = y;
+    if (width != null) map['width'] = width;
+    if (height != null) map['height'] = height;
+    return map;
+  }
 
   factory PipWindowArgs.fromMap(Map<String, dynamic> map) {
     return PipWindowArgs(
-      x: map['x'] as double,
-      y: map['y'] as double,
-      width: map['width'] as double,
-      height: map['height'] as double,
-      themeId: map['themeId'] as String,
-      petName: map['petName'] as String,
-      scale: map['scale'] as double,
+      x: (map['x'] as num?)?.toDouble(),
+      y: (map['y'] as num?)?.toDouble(),
+      width: (map['width'] as num?)?.toDouble(),
+      height: (map['height'] as num?)?.toDouble(),
+      themeId: map['themeId'] as String? ?? 'black_cat',
+      petName: map['petName'] as String? ?? 'Mochi',
+      scale: (map['scale'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }
@@ -133,12 +136,12 @@ class NativeDisplayInfo {
   factory NativeDisplayInfo.fromMap(Map<String, dynamic> map) {
     return NativeDisplayInfo(
       id: map['id'] as String,
-      x: map['x'] as double,
-      y: map['y'] as double,
-      width: map['width'] as double,
-      height: map['height'] as double,
-      dpiScale: map['dpiScale'] as double,
-      isPrimary: map['isPrimary'] as bool,
+      x: (map['x'] as num?)?.toDouble() ?? 0.0,
+      y: (map['y'] as num?)?.toDouble() ?? 0.0,
+      width: (map['width'] as num?)?.toDouble() ?? 0.0,
+      height: (map['height'] as num?)?.toDouble() ?? 0.0,
+      dpiScale: (map['dpiScale'] as num?)?.toDouble() ?? 1.0,
+      isPrimary: map['isPrimary'] as bool? ?? false,
     );
   }
 }
@@ -177,20 +180,19 @@ class WindowInfo {
 
   factory WindowInfo.fromMap(Map<String, dynamic> map) {
     return WindowInfo(
-      windowId: map['windowId'] as String,
-      windowTitle: map['windowTitle'] as String,
-      x: map['x'] as double,
-      y: map['y'] as double,
-      width: map['width'] as double,
-      height: map['height'] as double,
-      isMinimized: map['isMinimized'] as bool,
-      isVisible: map['isVisible'] as bool,
+      windowId: map['windowId'] as String? ?? '',
+      windowTitle: map['windowTitle'] as String? ?? '',
+      x: (map['x'] as num?)?.toDouble() ?? 0.0,
+      y: (map['y'] as num?)?.toDouble() ?? 0.0,
+      width: (map['width'] as num?)?.toDouble() ?? 0.0,
+      height: (map['height'] as num?)?.toDouble() ?? 0.0,
+      isMinimized: map['isMinimized'] as bool? ?? false,
+      isVisible: map['isVisible'] as bool? ?? false,
     );
   }
 }
 
 /// Platform boundary for desktop features implemented outside Flutter.
-///
 /// The Dart layer still receives several platform payloads as maps because
 /// MethodChannel is the compatibility boundary between the Flutter engines and
 /// native runners.
@@ -219,7 +221,6 @@ abstract class NativeBridgePlatform {
   Future<void> setCompanionWandering(bool enabled);
   Future<void> setCompanionFollowMouse(bool enabled);
 
-  // Calendar support.
   Future<bool> requestCalendarPermissions();
   Future<bool> hasCalendarPermissions();
   Future<String> getCalendarPermissionStatus();
@@ -234,7 +235,6 @@ abstract class NativeBridgePlatform {
     List<String>? calendarIds,
   );
 
-  // Display management.
   /// Returns a list of connected displays with NativeDisplayInfo objects
   Future<List<NativeDisplayInfo>> enumerateDisplays();
 
@@ -245,16 +245,13 @@ abstract class NativeBridgePlatform {
     void Function(List<NativeDisplayInfo>) cb,
   );
 
-  // Cursor position in global screen coordinates.
   /// Returns the current cursor position in global screen coordinates.
   Future<Offset> getCursorPosition();
 
-  // Window enumeration.
   /// Returns the list of currently visible, non-minimized application windows
   /// with WindowInfo objects.
   Future<List<WindowInfo>> getVisibleWindows();
 
-  // Constraint window.
   /// Shows the constraint window using the provided [args].
   /// Expected keys: x, y, width, height.
   Future<void> showConstraintWindow(ConstraintWindowArgs args);
@@ -268,7 +265,6 @@ abstract class NativeBridgePlatform {
     void Function(ConstraintWindowArgs) callback,
   );
 
-  // PiP companion window.
   /// Shows the PiP companion window.
   /// Expected keys: x, y, width, height, themeId, petName, scale.
   Future<void> showPipWindow(PipWindowArgs args);
@@ -278,7 +274,6 @@ abstract class NativeBridgePlatform {
 }
 
 /// A fallback/no-op implementation for unsupported platforms.
-///
 /// All new PAL methods return safe defaults without throwing so that
 /// upper-layer subsystems can be exercised on unsupported platforms in tests.
 class FallbackBridge implements NativeBridgePlatform {
@@ -416,7 +411,6 @@ class NativeBridge {
   static final NativeBridgePlatform _platform = _getPlatformBridge();
 
   /// The underlying platform bridge instance.
-  ///
   /// Exposed so that service classes (e.g., [DisplayManager]) can be
   /// constructed with the singleton bridge by default while still accepting
   /// an injected [NativeBridgePlatform] for testing.
@@ -490,7 +484,7 @@ class NativeBridge {
     List<String>? calendarIds,
   ) => _platform.getEvents(startMs, endMs, calendarIds);
 
-  // --- New PAL forwarding methods ---
+  // New PAL forwarding methods
 
   static Future<List<DisplayInfo>> enumerateDisplays() async {
     final nativeDisplays = await _platform.enumerateDisplays();
@@ -565,7 +559,7 @@ class NativeBridge {
     void Function(ConstraintWindowArgs) cb,
   ) => _platform.registerConstraintWindowBoundsCallback(cb);
 
-  // --- PiP window ---
+  // PiP window
 
   static Future<void> showPipWindow(PipWindowArgs args) =>
       _platform.showPipWindow(args);

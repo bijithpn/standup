@@ -87,13 +87,12 @@ class CompanionWindowController {
   }
 
   /// Initiates a native window-drag so the OS handles repositioning.
-  ///
-  /// Call this from the drag-handle gesture handler (Req 1.5).
+  /// Call this from the drag-handle gesture handler .
   Future<void> startDrag() async {
     await _windowService.startDrag();
   }
 
-  /// Applies / removes the non-activating window style (Req 18.2).
+  /// Applies / removes the non-activating window style .
   Future<void> setNonActivating(bool nonActivating) async {
     await _windowService.setNonActivating(nonActivating);
   }

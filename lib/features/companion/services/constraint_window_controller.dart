@@ -8,14 +8,10 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:breakmate/features/companion/services/physics_simulator.dart';
 
-// ---------------------------------------------------------------------------
 // Abstract interface
-// ---------------------------------------------------------------------------
 
 /// Controls the constraint window: a resizable, always-on-top native window
 /// that defines the spatial boundary for Constrained Mode.
-///
-/// Requirements: 4.1, 4.2, 4.3, 4.4, 4.6, 4.7
 abstract class ConstraintWindowController {
   /// Show the constraint window centered on the primary display.
   Future<void> show({Size initialSize = const Size(300, 300)});
@@ -31,9 +27,7 @@ abstract class ConstraintWindowController {
   void onBoundsChanged(Rect newBounds);
 }
 
-// ---------------------------------------------------------------------------
 // Concrete implementation
-// ---------------------------------------------------------------------------
 
 /// [ConstraintWindowController] backed by [NativeBridgePlatform].
 class NativeConstraintWindowController implements ConstraintWindowController {
@@ -67,7 +61,7 @@ class NativeConstraintWindowController implements ConstraintWindowController {
 
   Rect _bounds = Rect.zero;
 
-  // ---- ConstraintWindowController interface --------------------------------
+  // ConstraintWindowController interface
 
   @override
   Future<void> show({
@@ -115,7 +109,7 @@ class NativeConstraintWindowController implements ConstraintWindowController {
 
   @override
   void onBoundsChanged(Rect newBounds) {
-    // Clamp each dimension to [max(200, petDim), 800] (req 4.2, 4.7).
+    // Clamp each dimension to [max(200, petDim), 800] .
     final double clampedWidth = newBounds.width.clamp(
       math.max(_minSize, _petSize.width),
       _maxSize,
@@ -132,14 +126,14 @@ class NativeConstraintWindowController implements ConstraintWindowController {
       clampedHeight,
     );
 
-    // Update physics boundary within this tick (req 4.3).
+    // Update physics boundary within this tick .
     _physics.setConstraintBoundary(_bounds);
 
     _eventBus.emit(ConstraintWindowBoundsChangedEvent(bounds: _bounds));
     _logger.info('ConstraintWindowController: bounds changed to $_bounds');
   }
 
-  // ---- Private callback from native layer -----------------------------------
+  // Private callback from native layer
 
   void _onNativeBoundsChanged(ConstraintWindowArgs args) {
     onBoundsChanged(Rect.fromLTWH(args.x, args.y, args.width, args.height));

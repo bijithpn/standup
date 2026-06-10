@@ -1,5 +1,4 @@
 // Unit and property tests for SettingsPersistence
-// Tasks 6.2 and 6.3 — Requirements 11.2, 11.4, 11.5, 11.6, 11.7
 
 import 'dart:io';
 import 'dart:ui';

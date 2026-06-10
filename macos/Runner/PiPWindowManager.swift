@@ -1,24 +1,6 @@
-// PiPWindowManager.swift
-//
-// Manages the Picture-in-Picture (PiP) companion window — a small, always-on-top
-// floating NSPanel that contains a dedicated Flutter engine running `pipMain`.
-//
-// The pet roams freely inside the window using the Flame game engine.
-// Interaction buttons (Feed, Play, Pet, Wave) are rendered by Flutter on top of
-// the Flame canvas and fire FSM events back to the game via EventBus.
-//
-// Bridge channel: com.breakmate.desktop/bridge
-//   - showPipWindow(args)  — creates / shows the PiP window
-//   - hidePipWindow        — hides and disposes the PiP window
-//
-// Data channel:  com.breakmate.desktop/pip_data  (inside PiP engine)
-//   - getInitialSettings   — Flutter pulls its initial config on startup
-//   - syncPiPSettings      — push live updates (theme, scale, petName)
 
 import Cocoa
 import FlutterMacOS
-
-// MARK: - PiPWindowManager
 
 final class PiPWindowManager: NSObject {
     static let shared = PiPWindowManager()
@@ -34,10 +16,6 @@ final class PiPWindowManager: NSObject {
 
     private override init() { super.init() }
 
-    // MARK: - Public API
-
-    /// Show the PiP window, spawning a new Flutter engine if needed.
-    /// `args` may contain: x, y, width, height, themeId, petName, scale.
     func showPipWindow(args: [String: Any]?) {
         guard pipInstance == nil && !isSettingUp else {
             if let args = args { syncSettings(args) }
@@ -45,7 +23,6 @@ final class PiPWindowManager: NSObject {
         }
         isSettingUp = true
 
-        // Geometry — default to bottom-right of primary display.
         let screen = NSScreen.main ?? NSScreen.screens.first
         let screenFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
 
@@ -58,7 +35,6 @@ final class PiPWindowManager: NSObject {
 
         let window = PiPPanel(frame: frame)
 
-        // Dedicated Flutter engine running the pipMain entry point.
         let engine = FlutterEngine(
             name: "PiPEngine-\(UUID().uuidString)",
             project: nil,
@@ -80,7 +56,6 @@ final class PiPWindowManager: NSObject {
 
         pipInstance = PiPInstance(window: window, engine: engine, controller: controller)
 
-        // Data channel — Flutter pulls initial settings and receives live updates.
         let pendingArgs = args ?? [:]
         let dataChannel = FlutterMethodChannel(
             name: "com.breakmate.desktop/pip_data",
@@ -97,7 +72,6 @@ final class PiPWindowManager: NSObject {
             }
         }
 
-        // Setup MethodChannel for behavior engine bridge
         let bridgeChannel = FlutterMethodChannel(
             name: "com.breakmate.desktop/bridge",
             binaryMessenger: engine.binaryMessenger
@@ -116,7 +90,6 @@ final class PiPWindowManager: NSObject {
         }
     }
 
-    /// Hide and dispose the PiP window.
     func hidePipWindow() {
         isSettingUp = false
         guard let inst = pipInstance else { return }
@@ -141,7 +114,6 @@ final class PiPWindowManager: NSObject {
         })
     }
 
-    /// Push live settings update to the Flutter PiP engine.
     func syncSettings(_ args: [String: Any]) {
         guard let inst = pipInstance else { return }
         let dataChannel = FlutterMethodChannel(
@@ -152,13 +124,6 @@ final class PiPWindowManager: NSObject {
     }
 }
 
-// MARK: - PiPPanel
-
-/// A compact, frameless, always-on-top floating panel.
-/// - Transparent background so the Flame canvas is the only visual surface.
-/// - Draggable by its background (isMovableByWindowBackground).
-/// - Resizable within [200, 600] logical px range.
-/// - Has a thin rounded-rect border drawn by the Flutter widget.
 final class PiPPanel: NSPanel, NSWindowDelegate {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
@@ -176,7 +141,7 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
             defer: false
         )
 
-        backgroundColor       = NSColor(white: 0.08, alpha: 0.82)
+        backgroundColor       = NSColor.clear
         isOpaque              = false
         hasShadow             = true
         level                 = .floating
@@ -187,11 +152,9 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
             .ignoresCycle
         ]
 
-        // Size constraints
         minSize = NSSize(width: 200, height: 200)
         maxSize = NSSize(width: 600, height: 600)
 
-        // Corner radius via the backing layer
         contentView?.wantsLayer = true
         contentView?.layer?.cornerRadius   = 14
         contentView?.layer?.masksToBounds  = true
@@ -199,14 +162,12 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
         delegate = self
     }
 
-    // Enforce min/max during live resize
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
         let clampedW = max(200, min(600, frameSize.width))
         let clampedH = max(200, min(600, frameSize.height))
         return NSSize(width: clampedW, height: clampedH)
     }
 
-    // Close button = hide (not terminate)
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         PiPWindowManager.shared.hidePipWindow()
         return false

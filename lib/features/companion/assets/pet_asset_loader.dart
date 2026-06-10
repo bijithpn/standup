@@ -576,7 +576,7 @@ class PetAssetLoader {
     }
   }
 
-  // --- Native Tray Caching, Cropping & Whitening Logic ---
+  // Native Tray Caching, Cropping & Whitening Logic
 
   /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
   static Future<void> preCacheTrayIcons(PetTheme theme) async {

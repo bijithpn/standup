@@ -1,6 +1,5 @@
 // Property 14: State transition log completeness
 //
-// Validates: Requirements 8.9
 //
 // - transitionLog.length equals the number of actual transitions made
 //   (same → same is a no-op and must NOT append an entry)
@@ -120,7 +119,6 @@ void main() {
     // Glados property-based tests
     // -------------------------------------------------------------------------
 
-    /// Validates: Requirements 8.9
     Glados(
       // Generate lists of at least 10 state indices using listWithLengthInRange.
       any.listWithLengthInRange(
@@ -154,7 +152,6 @@ void main() {
       );
     });
 
-    /// Validates: Requirements 8.9
     Glados(
       any.listWithLengthInRange(
         10,
@@ -181,7 +178,6 @@ void main() {
       }
     });
 
-    /// Validates: Requirements 8.9
     Glados(
       any.listWithLengthInRange(
         10,

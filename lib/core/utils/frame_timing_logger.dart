@@ -2,14 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 /// Frame-timing logger for BreakMate.
-///
 /// Enable by setting [kEnableFrameTimingLog] to `true` (debug builds only).
 /// Reports slow frames to the console with the current app state label.
-///
 /// Usage:
-///   FrameTimingLogger.instance.start();
+///   FrameTimingLogger.instance.start;
 ///   FrameTimingLogger.instance.setAppState('dashboard');
-///   FrameTimingLogger.instance.stop();
+///   FrameTimingLogger.instance.stop;
 const bool kEnableFrameTimingLog = false;
 
 class FrameTimingLogger {

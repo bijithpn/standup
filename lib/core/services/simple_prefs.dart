@@ -5,10 +5,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 /// A lightweight, file-based key-value store for critical one-way flags.
-///
 /// Intentionally separate from ObjectBox so that if the database fails to open
 /// or writes to a different path, these values are still reliably persisted.
-///
 /// Uses a JSON file at `<ApplicationSupportDirectory>/breakmate_critical.json`.
 /// Writes are synchronous and atomic (temp-file + rename) so they survive
 /// partial writes / process kills.

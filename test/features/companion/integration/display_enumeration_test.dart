@@ -1,5 +1,4 @@
 // Integration test: display enumeration timing
-// Task 20.2 — Validates: Requirements 1.5
 //
 // Verifies that DisplayManager.enumerateDisplays() completes within 500 ms
 // even when the underlying native bridge takes 400 ms to respond.
@@ -61,8 +60,6 @@ void main() {
       mockBridge = _SlowDisplayBridge();
       displayManager = NativeDisplayManager(bridge: mockBridge);
     });
-
-    // ---- Timing requirement (Req 1.5) ----------------------------------------
 
     test(
       'completes within 500 ms when native bridge takes 400 ms (Req 1.5)',

@@ -3,10 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 
 /// Memory checkpoint logger for BreakMate long-session testing.
-///
 /// Enable by setting [kEnableMemoryCheckpoints] to `true` (debug builds only).
 /// Logs memory usage at key app lifecycle points.
-///
 /// Usage:
 ///   MemoryCheckpoints.instance.logCheckpoint('startup');
 ///   MemoryCheckpoints.instance.logCheckpoint('after_companion_show');
@@ -39,9 +37,9 @@ class MemoryCheckpoints {
 
     logCheckpoint('startup');
     // Other checkpoints called manually at appropriate times:
-    // - after_first_companion_show
-    // - after_pet_theme_switch_5x
-    // - after_ten_break_overlays
-    // - after_one_hour_idle
+    // after_first_companion_show
+    // after_pet_theme_switch_5x
+    // after_ten_break_overlays
+    // after_one_hour_idle
   }
 }

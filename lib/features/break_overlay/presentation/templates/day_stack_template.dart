@@ -32,7 +32,7 @@ class DayStackTemplate extends StatelessWidget {
     final breakName = isShort ? 'Eye rest' : 'Long break';
     const accent = Color(0xFF93C5FD);
 
-    // Use ListenableBuilder on sl<StatsService>() so this works in both the main
+    // Use ListenableBuilder on sl<StatsService> so this works in both the main
     // engine (with Provider) and the standalone overlay engine (no Provider tree).
     return ListenableBuilder(
       listenable: sl<StatsService>(),

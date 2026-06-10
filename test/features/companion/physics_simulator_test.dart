@@ -1,5 +1,3 @@
-// Tasks 10.2–10.7 — PhysicsSimulator tests
-// Requirements 2.2, 2.3, 4.1, 4.4, 7.2, 7.3, 9.1–9.7
 
 import 'dart:math' as math;
 import 'dart:ui';
@@ -235,7 +233,6 @@ void main() {
     );
   });
 
-  // ── Unit tests (Task 10.7) ───────────────────────────────────────────────
   group('PhysicsSimulator unit tests (Task 10.7)', () {
     test(
       'entity placed 5px inside wall resolves to boundary edge after 1 step',

@@ -31,7 +31,7 @@ class WarmAmberTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     const accent = Color(0xFFC49A4A);
 
-    // Use ListenableBuilder on sl<StatsService>() so this works in both the main
+    // Use ListenableBuilder on sl<StatsService> so this works in both the main
     // engine (with Provider) and the standalone overlay engine (no Provider tree).
     return ListenableBuilder(
       listenable: sl<StatsService>(),

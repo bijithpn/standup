@@ -1,5 +1,4 @@
 // Unit tests for PetConfigV2 and WindowInfo
-// Tasks 1.2 and 1.3 — Requirements 11.2, 11.4, 11.5
 
 import 'dart:ui';
 

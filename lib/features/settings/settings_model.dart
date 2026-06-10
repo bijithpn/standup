@@ -94,7 +94,7 @@ class SettingsModel {
   final String companionToyType;
   final String companionTreatType;
 
-  // Companion feature toggles (Req 18.8)
+  // Companion feature toggles
   final bool pettingEnabled;
   final bool ballThrowEnabled;
   final bool treatEnabled;

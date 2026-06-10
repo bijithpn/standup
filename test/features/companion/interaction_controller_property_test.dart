@@ -1,6 +1,5 @@
 // Property tests for InteractionController guards and cursor behaviour.
 //
-// Tasks 7.1 – 7.8 from .kiro/specs/desktop-companion-interaction/tasks.md
 //
 // Properties 1, 2, 3, 9, 11, 12, 13, 15 from design.md §Correctness Properties.
 // Library: glados (already in dev_dependencies).
@@ -120,7 +119,6 @@ const _blockedStates = [
   PetState.focusMode,
 ];
 
-// PetEvents that constitute play or affection actions (Req 4.6, 9.3).
 const _playAffectionEvents = {
   PetEvent.userClick,
   PetEvent.userDoubleClick,
@@ -138,7 +136,6 @@ void main() {
   // and emits CursorFastMoveEvent instead.  The threshold lives in
   // CursorTracker.fastVelocityThreshold (800.0 px/s).
   //
-  // Validates: Requirements 2.1, 2.2, 3.1
 
   group('Property 1: Velocity threshold determines zone entry event', () {
     Glados(
@@ -182,7 +179,6 @@ void main() {
   // For any cursor position relative to the pet center, the nearest of the
   // 8 discrete compass directions has angular error ≤ 45°.
   //
-  // Validates: Requirements 2.3
 
   group('Property 2: Facing direction error is always ≤ 45 degrees', () {
     // Inline angle-snapping helper — maps any angle (deg) to the nearest
@@ -229,7 +225,6 @@ void main() {
   // onPetClicked or onPetDoubleClicked must not forward any play/affection
   // PetEvent and the FSM state must remain unchanged.
   //
-  // Validates: Requirements 4.6, 9.3
 
   group('Property 3: Blocked states suppress all play and affection events', () {
     Glados(any.intInRange(0, _blockedStates.length - 1)).test(
@@ -284,7 +279,6 @@ void main() {
   // QuietMode is active iff _quietModeTriggers != 0.
   // Clearing any strict subset of set bits must leave the value non-zero.
   //
-  // Validates: Requirements 15.6, 15.7
 
   group('Property 9: QuietMode requires all triggers cleared to deactivate', () {
     // All 7 non-zero combinations of {0x01, 0x02, 0x04}.
@@ -361,7 +355,6 @@ void main() {
   // (AppLogger.warning is called internally — verified indirectly by ensuring
   // no handleEvent call occurs, matching the code path in triggerCompanionReaction.)
   //
-  // Validates: Requirements 9.6, 17.3
 
   group('Property 11: triggerCompanionReaction blocks protected states', () {
     Glados(any.intInRange(0, _blockedStates.length - 1)).test(
@@ -417,7 +410,6 @@ void main() {
   // on InteractionController must be a complete no-op: handleEvent is never
   // called and NeedsEngine is never mutated.
   //
-  // Validates: Requirements 18.8
 
   group('Property 12: Feature toggle disables interactions as no-ops', () {
     // Build a SettingsRepository that reports companionEnabled=false.
@@ -484,10 +476,8 @@ void main() {
   // breakCompleted) are not directly emittable via the current public methods.
   //
   // NOTE: Full wiring of the reducedMotion guard into _guardPasses is
-  // implemented in task 11.2.  This test validates that the events emittable
   // through the immediate API path are already restricted to calm states.
   //
-  // Validates: Requirements 18.4
 
   // Events that lead exclusively to restricted states.
   const restrictedStateEvents = {
@@ -552,7 +542,6 @@ void main() {
   //   - Point inside interactionBarRect or dragHandleRect → interactive.
   //   - Point outside both → pass-through.
   //
-  // Validates: Requirements 1.6, 18.1
 
   // Inline hit-test function that mirrors the logic pip_overlay_window.dart
   // must implement.
@@ -634,7 +623,6 @@ void main() {
   // When companionEnabled == true but specific feature toggles are false,
   // the corresponding public methods on InteractionController must be no-ops.
   //
-  // Validates: Requirements 18.8
 
   group(
     'Property 16: Feature-specific toggles disable individual interactions',

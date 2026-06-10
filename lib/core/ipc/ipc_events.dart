@@ -12,7 +12,6 @@ abstract class IpcEvent {
   }
 
   /// Parses untrusted IPC payloads at the engine boundary.
-  ///
   /// Unknown events are preserved instead of rejected so older secondary
   /// engines can keep running while the main engine rolls forward.
   static IpcEvent parse(String eventName, Map<String, dynamic> payload) {

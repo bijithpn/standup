@@ -188,7 +188,7 @@ class PetCompanionService extends ChangeNotifier {
 
     _applyStateBehavior();
 
-    // DO NOT call notifyListeners() here — this runs at 60fps and would
+    // DO NOT call notifyListeners here — this runs at 60fps and would
     // cause Provider to rebuild the entire widget tree every frame.
     // Listeners are notified only on profile changes (updateProfile).
   }

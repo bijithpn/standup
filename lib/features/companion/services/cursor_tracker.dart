@@ -9,8 +9,6 @@ import 'package:breakmate/core/native/native_bridge.dart';
 
 /// Polls the cursor position at 60 Hz, computes a smoothed velocity via EMA,
 /// and emits typed EventBus events for the behavior engine.
-///
-/// Requirements: 5.1, 5.2, 5.3, 5.5, 5.6
 class CursorTracker {
   CursorTracker({NativeBridgePlatform? bridge, EventBus? eventBus})
     : _bridge = bridge ?? NativeBridge.instance,
@@ -37,8 +35,7 @@ class CursorTracker {
   Offset get lastPosition => _lastPosition;
   Offset get velocity => _velocity;
 
-  /// Called from `CompanionGame.update()` at 60 Hz.
-  ///
+  /// Called from `CompanionGame.update` at 60 Hz.
   /// Reads the native cursor position, updates the EMA-smoothed velocity,
   /// and emits zone-transition events.
   Future<void> sample(double dt, Offset petCenter) async {
@@ -66,7 +63,7 @@ class CursorTracker {
     final double distToPet = (rawPos - petCenter).distance;
     final bool nowInZone = distToPet <= interactionZoneRadius;
 
-    // --- Fast move (any position) ---
+    // Fast move (any position)
     if (speed > fastVelocityThreshold) {
       _eventBus.emit(CursorFastMoveEvent(velocity: speed));
       // Fast move clears dwell state.
@@ -74,7 +71,7 @@ class CursorTracker {
       _dwellEmitted = false;
     }
 
-    // --- Zone enter/exit ---
+    // Zone enter/exit
     if (nowInZone && !_inZone) {
       // Only emit CursorEnteredZoneEvent when speed is within threshold.
       if (speed <= fastVelocityThreshold) {
@@ -90,7 +87,7 @@ class CursorTracker {
       _dwellEmitted = false;
     }
 
-    // --- Dwell detection (cursor stationary inside zone ≥ 3s) ---
+    // Dwell detection (cursor stationary inside zone ≥ 3s)
     if (_inZone && speed < _stationarySpeedThreshold) {
       _dwellSeconds += dt;
       if (_dwellSeconds >= dwellTimeThreshold && !_dwellEmitted) {
@@ -105,12 +102,10 @@ class CursorTracker {
   }
 
   /// Convert a macOS screen-bottom-left coordinate to Flame screen-top-left.
-  ///
   /// This requires knowledge of the primary screen height. On macOS,
   /// `NSScreen.mainScreen.frame.size.height` is the reference.  We approximate
   /// this at runtime using the first display enumerated by the native bridge;
   /// fall back to a no-op if unavailable.
-  ///
   /// In practice the caller (CursorTracker.sample) passes the raw Offset from
   /// the native bridge.  The bridge already compensates on modern macOS if
   /// possible; this is a belt-and-suspenders conversion.
@@ -119,7 +114,6 @@ class CursorTracker {
     // normalised to screen-top-left origin (consistent with Flutter's
     // coordinate system). If the native side does not perform this conversion,
     // callers can override this method in a subclass or mock.
-    //
     // For now, return as-is and document the expectation.
     return macOsPos;
   }

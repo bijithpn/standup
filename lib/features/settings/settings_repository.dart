@@ -563,7 +563,7 @@ class SettingsRepository extends ChangeNotifier {
 
     // Mirror ALL critical settings to the KV store for reliability.
     // This is a belt-and-suspenders approach: ObjectBox is the primary store,
-    // but if it fails on next launch, _loadFromLegacy() will read these KV values
+    // but if it fails on next launch, _loadFromLegacy will read these KV values
     // and correctly restore the user's choices instead of falling back to defaults.
     await _storage.setBool(
       'has_completed_onboarding',
