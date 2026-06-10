@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Eye Sync widget implementing the 20-20-20 rule.
 class EyeSyncGameWidget extends StatefulWidget {
   final int targetSessions;
 

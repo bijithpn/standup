@@ -3,13 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-/// Windows implementation of the platform native bridge interface.
 class WindowsBridge implements NativeBridgePlatform {
   static const MethodChannel _channel = MethodChannel(
     'com.breakmate.desktop/bridge',
   );
   static final Set<String> _loggedMissingMethods = {};
-static final AppLogger _logger = AppLogger();
+  static final AppLogger _logger = AppLogger();
 
   @override
   Future<void> showOverlay([OverlayArgs? args]) async {
@@ -25,14 +24,12 @@ static final AppLogger _logger = AppLogger();
 
   @override
   Future<void> skipBreak() async {
-    // Windows fallback: no-op / graceful log
     developer.log('skipBreak not supported on Windows', name: 'BreakMate');
     return;
   }
 
   @override
   Future<void> setVisualEffect(String material) async {
-    // Windows fallback: no-op / graceful log
     developer.log(
       'setVisualEffect not supported on Windows',
       name: 'BreakMate',
@@ -54,7 +51,6 @@ static final AppLogger _logger = AppLogger();
     required bool hideDock,
     required bool hideMenu,
   }) async {
-    // Windows fallback: no-op / graceful log
     developer.log(
       'setPresentationOptions not supported on Windows',
       name: 'BreakMate',
@@ -190,8 +186,6 @@ static final AppLogger _logger = AppLogger();
     return events.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
-  /// Enumerates connected displays.
-  /// Returns maps with keys: {id, x, y, width, height, dpiScale, isPrimary}.
   @override
   Future<List<NativeDisplayInfo>> enumerateDisplays() async {
     const channel = MethodChannel('com.breakmate/display_bridge');
@@ -214,8 +208,6 @@ static final AppLogger _logger = AppLogger();
     }
   }
 
-  /// Registers a native callback for display change notifications (WM_DISPLAYCHANGE).
-  /// Uses EventChannel 'com.breakmate/display_events'.
   @override
   void registerDisplayChangeCallback(
     void Function(List<NativeDisplayInfo>) cb,
@@ -237,7 +229,6 @@ static final AppLogger _logger = AppLogger();
     );
   }
 
-  /// Returns the current global cursor position via GetCursorPos.
   @override
   Future<Offset> getCursorPosition() async {
     final Map<dynamic, dynamic>? result =
@@ -248,9 +239,6 @@ static final AppLogger _logger = AppLogger();
     return Offset(x, y);
   }
 
-  /// Returns visible, non-minimized application windows via EnumWindows.
-  /// Maps contain keys: {windowId, windowTitle, x, y, width, height,
-  /// isMinimized, isVisible}.
   @override
   Future<List<WindowInfo>> getVisibleWindows() async {
     final List<dynamic>? windows = await _invokeSafely<List<dynamic>>(
@@ -262,22 +250,16 @@ static final AppLogger _logger = AppLogger();
         .toList();
   }
 
-  /// Shows the constraint window (WS_EX_TOOLWINDOW, always-on-top).
-  /// [args] must contain keys: x, y, width, height.
   @override
   Future<void> showConstraintWindow(ConstraintWindowArgs args) async {
     await _invokeSafely('showConstraintWindow', args.toMap());
   }
 
-  /// Hides the constraint window.
   @override
   Future<void> hideConstraintWindow() async {
     await _invokeSafely('hideConstraintWindow');
   }
 
-  /// Registers a native callback for constraint window bounds changes
-  /// (WM_SIZING / WM_MOVING). Uses EventChannel
-  /// 'com.breakmate.desktop/constraintWindowBounds'.
   @override
   void registerConstraintWindowBoundsCallback(
     void Function(ConstraintWindowArgs) callback,
@@ -300,13 +282,11 @@ static final AppLogger _logger = AppLogger();
     );
   }
 
-  /// Shows the PiP companion window.
   @override
   Future<void> showPipWindow(PipWindowArgs args) async {
     await _invokeSafely('showPipWindow', args.toMap());
   }
 
-  /// Hides the PiP companion window.
   @override
   Future<void> hidePipWindow() async {
     await _invokeSafely('hidePipWindow');
@@ -321,7 +301,10 @@ static final AppLogger _logger = AppLogger();
       }
       return null;
     } catch (e, stackTrace) {
-      _logger.error('Windows bridge method failed: $method', stackTrace: stackTrace);
+      _logger.error(
+        'Windows bridge method failed: $method',
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }

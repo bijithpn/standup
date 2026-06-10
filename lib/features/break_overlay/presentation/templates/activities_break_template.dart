@@ -92,7 +92,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
               child: Column(
                 children: [
-                  // Top bar: break type + remaining
                   Row(
                     children: [
                       Text(
@@ -119,7 +118,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   ),
                   const SizedBox(height: 28),
 
-                  // Tab switcher — plain text with underline indicator
                   _TabSwitcher(
                     selected: _selected,
                     onSelect: _switch,
@@ -128,7 +126,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   ),
                   const SizedBox(height: 36),
 
-                  // Activity panel — plain column, no card
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(

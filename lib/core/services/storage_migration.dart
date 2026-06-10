@@ -7,7 +7,6 @@ class StorageMigrationLayer {
     final int version = data['schema_version'] ?? 1;
 
     if (version < 2) {
-      // Migrate old keys such as companion_cat_theme to pet-neutral names
       if (data.containsKey(AppConstants.legacyKeyCompanionCatTheme)) {
         data[AppConstants.keyCompanionPetTheme] =
             data[AppConstants.legacyKeyCompanionCatTheme];

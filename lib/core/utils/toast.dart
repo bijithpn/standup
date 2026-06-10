@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Simple error/success toast utility
 class Toast {
   static void showError(BuildContext context, String message) {
     _showToast(context, message, Colors.red.shade700);
@@ -65,7 +64,6 @@ class Toast {
 
     overlay.insert(entry);
 
-    // Remove after 3 seconds
     Future.delayed(const Duration(seconds: 3), () {
       entry.remove();
     });

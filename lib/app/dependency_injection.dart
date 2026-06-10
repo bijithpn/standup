@@ -38,11 +38,7 @@ import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart
 
 final sl = GetIt.instance;
 
-/// Configures dependency graph mapping for the application.
-/// Registers all singletons and factories, resolving dependencies where required.
-/// Actual asynchronous initialization is handled by ServiceBootstrapper.
 Future<void> initDependencies() async {
-  // Core services
   sl.registerSingleton<EventBus>(EventBus.instance);
   sl.registerSingleton<StorageService>(StorageService());
   sl.registerSingleton<SessionStateRepository>(SessionStateRepository(sl()));
@@ -56,35 +52,23 @@ Future<void> initDependencies() async {
   sl.registerSingleton<DisplayManager>(DisplayManager());
   sl.registerSingleton<OverlayFitService>(OverlayFitService());
 
-  // Controllers / Presenters
-  sl.registerSingleton<DisplayController>(
-    DisplayController(sl(), sl()),
-  );
+  sl.registerSingleton<DisplayController>(DisplayController(sl(), sl()));
 
-  // Engine services
   sl.registerSingleton<WellnessEngine>(
     WellnessEngine(appTracking: AppTrackingService()),
   );
   sl.registerSingleton<AdaptiveBreakService>(
-    AdaptiveBreakService(
-      storage: sl(),
-      wellnessEngine: sl(),
-    ),
+    AdaptiveBreakService(storage: sl(), wellnessEngine: sl()),
   );
   sl.registerSingleton<SmartDetectionService>(SmartDetectionService());
-  
-  // Calendar integrations
+
   sl.registerSingleton<CalendarRepository>(CalendarRepository());
   sl.registerSingleton<CalendarPermissionService>(CalendarPermissionService());
   sl.registerSingleton<CalendarEventService>(CalendarEventService(sl()));
   sl.registerSingleton<CalendarService>(
-    CalendarService(
-      permissionService: sl(),
-      eventService: sl(),
-    ),
+    CalendarService(permissionService: sl(), eventService: sl()),
   );
 
-  // Stats & Timers
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
   sl.registerSingleton<TimerEngine>(
     TimerEngine(
@@ -95,13 +79,12 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // Pet companion registry & controllers
   sl.registerSingleton<PetRegistryService>(PetRegistryService());
   sl.registerSingleton<CompanionOverlayController>(
     CompanionOverlayController(settingsRepo: sl()),
   );
   sl.registerSingleton<TrayManagerService>(TrayManagerService());
-  
+
   sl.registerSingleton<TimerOrchestrator>(
     TimerOrchestrator(
       timerEngine: sl(),
@@ -117,34 +100,22 @@ Future<void> initDependencies() async {
     ),
   );
 
-  // Background systems
   sl.registerSingleton<MeetingDetectionService>(MeetingDetectionService());
   sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
   sl.registerLazySingleton<WellnessLibraryRepository>(
     () => WellnessLibraryRepository(settingsRepo: sl()),
   );
 
-  // Native systems
   sl.registerSingleton<FocusModeService>(FocusModeService());
-  sl.registerSingleton<StrictModeController>(
-    StrictModeController(sl(), sl()),
-  );
+  sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
 
-  // User flow controllers
   sl.registerSingleton<BreakController>(
-    BreakController(
-      timerEngine: sl(),
-      settingsRepo: sl(),
-      statsService: sl(),
-    ),
+    BreakController(timerEngine: sl(), settingsRepo: sl(), statsService: sl()),
   );
   sl.registerSingleton<MenuBarController>(MenuBarController());
 
-  // Companion UI state and layout handlers
   sl.registerSingleton<CompanionStateManager>(
     CompanionStateManager(eventBus: sl()),
   );
-  sl.registerSingleton<CompanionWindowController>(
-    CompanionWindowController(),
-  );
+  sl.registerSingleton<CompanionWindowController>(CompanionWindowController());
 }

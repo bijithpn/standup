@@ -1,5 +1,3 @@
-/// Represents the current mood state of a pet companion.
-/// Moods influence behavior frequency, animation selection, and interaction responses.
 enum PetMood {
   happy,
   playful,
@@ -15,7 +13,6 @@ enum PetMood {
   mischievous,
 }
 
-/// Tracks mood state with intensity and decay over time.
 class PetMoodState {
   final PetMood mood;
   final double intensity; // 0.0 to 1.0
@@ -29,7 +26,6 @@ class PetMoodState {
     this.decayDuration = const Duration(minutes: 5),
   });
 
-  /// Calculates current intensity after decay.
   double getCurrentIntensity([DateTime? now]) {
     final currentTime = now ?? DateTime.now();
     final elapsed = currentTime.difference(since);
@@ -38,7 +34,6 @@ class PetMoodState {
         (1.0 - elapsed.inMilliseconds / decayDuration.inMilliseconds);
   }
 
-  /// Whether this mood is still active.
   bool isActive([DateTime? now]) => getCurrentIntensity(now) > 0.0;
 
   PetMoodState copyWith({

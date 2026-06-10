@@ -90,8 +90,7 @@ class PetTransition {
   final PetEvent event;
   final PetState targetState;
   final double weight;
-  final Duration?
-  minDuration;
+  final Duration? minDuration;
   final Duration? cooldown;
   final bool Function(PetMoodState? currentMood, PetPersonality personality)?
   condition;
@@ -958,14 +957,12 @@ class PetStateMachine extends ChangeNotifier {
     PetState.reacting: [
       PetTransition(
         event: PetEvent.cursorExitedZone,
-        targetState:
-            PetState.idle,
+        targetState: PetState.idle,
         weight: 1.0,
       ),
       PetTransition(
         event: PetEvent.windowOverlapEnded,
-        targetState:
-            PetState.idle,
+        targetState: PetState.idle,
         weight: 1.0,
       ),
       PetTransition(

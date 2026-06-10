@@ -18,13 +18,11 @@ class SystemMediaService {
   }
 
   Future<void> _pauseMacOSMedia() async {
-    // Pause Spotify
     await Process.run('osascript', [
       '-e',
       'if application "Spotify" is running then tell application "Spotify" to pause',
     ]);
 
-    // Pause Apple Music
     await Process.run('osascript', [
       '-e',
       'if application "Music" is running then tell application "Music" to pause',
@@ -34,10 +32,6 @@ class SystemMediaService {
   }
 
   Future<void> _pauseWindowsMedia() async {
-    // Send a global Media Play/Pause key (0xB3 / 179)
-    // This is a toggle, but most media players treat it as pause if playing.
-    // Tricky to detect if it's already paused without native bridge,
-    // but the roadmap specifically asks for auto-pause.
     await Process.run('powershell', [
       '-Command',
       '(New-Object -ComObject WScript.Shell).SendKeys([char]179)',

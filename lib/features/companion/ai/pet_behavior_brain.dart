@@ -3,14 +3,12 @@ import '../domain/pet_behavior_context.dart';
 import '../domain/pet_state_machine.dart';
 import '../domain/pet_mood.dart';
 
-/// AI decision engine that evaluates context and determines optimal pet behavior.
 /// Uses weighted scoring across multiple factors to avoid repetitive actions.
 class PetBehaviorBrain {
   final Random _random = Random();
   final Map<PetState, DateTime> _lastStateTimes = {};
   final Map<PetState, int> _stateFrequency = {};
 
-  /// Evaluates context and returns the most appropriate next state.
   PetState decideNextState(PetBehaviorContext context) {
     final candidates = _getCandidateStates(context);
 
@@ -18,16 +16,13 @@ class PetBehaviorBrain {
       return PetState.idle;
     }
 
-    // Score each candidate based on multiple factors
     final scored = candidates.map((state) {
       final score = _calculateStateScore(state, context);
       return MapEntry(state, score);
     }).toList();
 
-    // Sort by score descending
     scored.sort((a, b) => b.value.compareTo(a.value));
 
-    // Weighted random selection from top candidates
     final topCandidates = scored.take(3).toList();
     final totalWeight = topCandidates.fold<double>(
       0,
@@ -61,7 +56,6 @@ class PetBehaviorBrain {
       PetState.curious,
     ]);
 
-    // Context-aware candidates
     if (context.isBreakActive) {
       candidates.addAll([
         PetState.celebrating,
@@ -102,7 +96,6 @@ class PetBehaviorBrain {
       candidates.addAll([PetState.sleep, PetState.resting, PetState.bored]);
     }
 
-    // Personality-driven candidates
     if (context.profile.personality.curiosity > 0.7) {
       candidates.add(PetState.exploring);
     }
@@ -117,7 +110,6 @@ class PetBehaviorBrain {
   double _calculateStateScore(PetState state, PetBehaviorContext context) {
     var score = 1.0;
 
-    // Recency penalty - discourage recently used states
     final lastUsed = _lastStateTimes[state];
     if (lastUsed != null) {
       final secondsSince = DateTime.now().difference(lastUsed).inSeconds;
@@ -125,29 +117,23 @@ class PetBehaviorBrain {
       score *= (1.0 - recencyPenalty);
     }
 
-    // Frequency penalty - discourage overused states
     final frequency = _stateFrequency[state] ?? 0;
     if (frequency > 3) {
       score *= (1.0 - (frequency - 3) * 0.15).clamp(0.2, 1.0);
     }
 
-    // Mood alignment bonus
     final moodAlignment = _getMoodAlignmentScore(state, context.currentMood);
     score *= (1.0 + moodAlignment * 0.5);
 
-    // Personality alignment bonus
     final personalityAlignment = _getPersonalityAlignmentScore(
       state,
       context.profile,
     );
     score *= (1.0 + personalityAlignment * 0.3);
 
-    // Context relevance bonus
     final contextBonus = _getContextRelevanceBonus(state, context);
     score *= (1.0 + contextBonus);
 
-    // Dynamic Needs Influence
-    // Fatigue Impact
     if (context.fatigue > 0.6) {
       if (state == PetState.sleep) {
         score *= (1.0 + (context.fatigue - 0.6) * 10.0);
@@ -160,8 +146,6 @@ class PetBehaviorBrain {
       }
     }
 
-    // Daily Cumulative Work Fatigue (Phase 3.1)
-    // Shift probability to sleeping/resting if totalWorkToday > 3-4 hours
     final double workHours = context.totalWorkToday.inSeconds / 3600.0;
     if (workHours >= 3.0) {
       final double fatigueMultiplier = 1.0 + (workHours - 3.0) * 1.5;
@@ -176,7 +160,6 @@ class PetBehaviorBrain {
       }
     }
 
-    // Curiosity Impact
     if (context.curiosity > 0.6) {
       if (state == PetState.following ||
           state == PetState.interacting ||
@@ -186,7 +169,6 @@ class PetBehaviorBrain {
       }
     }
 
-    // Boredom Impact
     if (context.boredom > 0.5) {
       if (state == PetState.exploring ||
           state == PetState.walk ||
@@ -196,7 +178,6 @@ class PetBehaviorBrain {
       }
     }
 
-    // Random variance (±20%)
     score *= (0.8 + _random.nextDouble() * 0.4);
 
     return score.clamp(0.1, 10.0);
@@ -281,7 +262,6 @@ class PetBehaviorBrain {
     }
   }
 
-  /// Records that a state was selected for tracking.
   void recordStateSelection(PetState state) {
     _lastStateTimes[state] = DateTime.now();
     _stateFrequency[state] = (_stateFrequency[state] ?? 0) + 1;
@@ -292,7 +272,6 @@ class PetBehaviorBrain {
     }
   }
 
-  /// Resets tracking data.
   void reset() {
     _lastStateTimes.clear();
     _stateFrequency.clear();

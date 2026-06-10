@@ -5,8 +5,8 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
-/// Service to manage system-wide overlay windows that appear on top of all applications
 class OverlayWindowService extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
   bool _isOverlayVisible = false;
@@ -213,19 +213,25 @@ class OverlayWindowService extends ChangeNotifier {
       if (Platform.isWindows) {
         try {
           await _windowsChannel.invokeMethod('resetToNormal');
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       } else if (Platform.isMacOS) {
         try {
           await NativeBridge.hideOverlay(
             restoreMainWindow: _wasMainVisibleBeforeOverlay,
           );
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
         try {
           await NativeBridge.setPresentationOptions(
             hideDock: false,
             hideMenu: false,
           );
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
 
       await windowManager.setAlwaysOnTop(false);
@@ -261,7 +267,9 @@ class OverlayWindowService extends ChangeNotifier {
         _currentOverlayType = null;
         await windowManager.show();
         await windowManager.focus();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
       notifyListeners();
     }
   }

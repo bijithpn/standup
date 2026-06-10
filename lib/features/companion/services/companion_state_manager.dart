@@ -186,9 +186,6 @@ class CompanionStateManager {
   void _setState(CompanionState newState) {
     if (_state == newState) return;
     _state = newState;
-    // Emit the typed AppEvent so the companion isolate's Flame FSM handles it
-    // via _mapAppEventToPetEvent — do NOT call NativeBridge.triggerCompanionState
-    // which bypasses the FSM and sets a raw animation state.
     _eventBus.emit(CompanionStateChangedEvent(state: newState));
     _logger.info('Companion state changed to: ${newState.name}');
   }

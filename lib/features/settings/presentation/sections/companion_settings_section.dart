@@ -279,7 +279,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             borderRadius: BorderRadius.circular(32),
             child: Stack(
               children: [
-                // Full Screen Background & Grounded Pet
                 Positioned.fill(
                   child: InteractiveViewer(
                     panEnabled: true,
@@ -302,7 +301,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   ),
                 ),
 
-                // Vignette/Overlay for info
                 Positioned.fill(
                   child: Container(
                     decoration: BoxDecoration(
@@ -319,7 +317,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   ),
                 ),
 
-                // Pet Info & Sync Button at Bottom
                 Positioned(
                   left: 28,
                   bottom: 28,
@@ -515,7 +512,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
                   children: [
-                    // Full-card Background and Pet
                     Positioned.fill(
                       child: CompanionSpriteWidget(
                         petTheme: theme,

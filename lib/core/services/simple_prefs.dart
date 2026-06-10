@@ -4,12 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
-/// A lightweight, file-based key-value store for critical one-way flags.
-/// Intentionally separate from ObjectBox so that if the database fails to open
-/// or writes to a different path, these values are still reliably persisted.
-/// Uses a JSON file at `<ApplicationSupportDirectory>/breakmate_critical.json`.
-/// Writes are synchronous and atomic (temp-file + rename) so they survive
-/// partial writes / process kills.
 class SimplePrefs {
   SimplePrefs._();
 
@@ -19,8 +13,6 @@ class SimplePrefs {
   Map<String, dynamic> _data = {};
 
   bool get isReady => _filePath != null;
-
-  // ── Initialization ──────────────────────────────────────────────────────────
 
   Future<void> init() async {
     try {
@@ -58,7 +50,6 @@ class SimplePrefs {
     if (_filePath == null) return;
     try {
       final json = jsonEncode(_data);
-      // Write to a temp file then rename for atomicity.
       final tmp = File('$_filePath.tmp');
       tmp.writeAsStringSync(json, flush: true);
       tmp.renameSync(_filePath!);
@@ -66,8 +57,6 @@ class SimplePrefs {
       debugPrint('[SimplePrefs] _persist() error: $e');
     }
   }
-
-  // ── API ─────────────────────────────────────────────────────────────────────
 
   bool getBool(String key, {bool defaultValue = false}) {
     final v = _data[key];

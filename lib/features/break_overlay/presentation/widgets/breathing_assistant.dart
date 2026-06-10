@@ -54,7 +54,6 @@ class _BreathingAssistantState extends State<BreathingAssistant>
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                // Outer glow
                 Container(
                   width: 140 * _scaleAnimation.value,
                   height: 140 * _scaleAnimation.value,
@@ -68,7 +67,6 @@ class _BreathingAssistantState extends State<BreathingAssistant>
                     ),
                   ),
                 ),
-                // Inner ring
                 Container(
                   width: 90 * _scaleAnimation.value,
                   height: 90 * _scaleAnimation.value,
@@ -80,7 +78,6 @@ class _BreathingAssistantState extends State<BreathingAssistant>
                     ),
                   ),
                 ),
-                // Core dot
                 Container(
                   width: 10,
                   height: 10,

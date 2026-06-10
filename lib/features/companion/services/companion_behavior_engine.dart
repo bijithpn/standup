@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class CompanionBehaviorEngine with WidgetsBindingObserver {
   CompanionBehaviorEngine({EventBus? eventBus})
@@ -24,8 +25,6 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
-  /// While [DateTime.now.isBefore(_interactionSuppressUntil)], random
-  /// behavior emission is suppressed .
   DateTime _interactionSuppressUntil = DateTime.fromMillisecondsSinceEpoch(0);
 
   void start() {
@@ -36,7 +35,6 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
         return;
       }
     } catch (_) {
-      // DI failed (e.g. background isolate), do not start
       return;
     }
     if (!_isEnabled) return;
@@ -72,11 +70,10 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
         stop();
         return;
       }
-    } catch (_) {
-      // Safe fallback
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
 
-    // Skip random behavior while an active interaction is suppressing it
     if (DateTime.now().isBefore(_interactionSuppressUntil)) return;
 
     _idleCycles++;
@@ -91,7 +88,6 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
     final behavior = _random.nextDouble();
 
     if (behavior < 0.4) {
-      // Increased blink frequency
       _triggerBlink();
     } else if (behavior < 0.6) {
       _triggerStretch();
@@ -154,10 +150,6 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
     _logger.info('Companion: happy behavior');
   }
 
-  /// Suppresses random behavior emission until [suppress] duration elapses.
-  /// Called by [InteractionController] at the start of any active user
-  /// interaction . An ongoing suppress timestamp is extended
-  /// when called again before expiry.
   void suppressRandomBehavior(Duration suppress) {
     _interactionSuppressUntil = DateTime.now().add(suppress);
     _logger.info(

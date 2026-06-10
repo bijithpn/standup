@@ -56,7 +56,6 @@ class WellnessLibraryRepository extends ChangeNotifier {
         : visibleExercises;
     if (pool.isEmpty) return null;
 
-    // Prioritize favorites
     final favPool = pool.where((e) => e.isFavorite).toList();
     final selectionPool = favPool.isNotEmpty ? favPool : pool;
 

@@ -1,3 +1,4 @@
+import 'package:breakmate/core/errors/error_handler.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -15,13 +16,10 @@ class CompanionWindowManager {
     DisplayManager? displayManager,
     AppLogger? logger,
   }) : _windowController = windowController ?? CompanionWindowController(),
-       _settingsRepository = settingsRepository,
        _displayManager = displayManager,
        _logger = logger ?? AppLogger();
 
   final CompanionWindowController _windowController;
-  // ignore: unused_field
-  final SettingsRepository? _settingsRepository;
   final DisplayManager? _displayManager;
   final AppLogger _logger;
 
@@ -221,10 +219,7 @@ class CompanionWindowManager {
       Offset(displayRect.left, displayRect.top),
       Offset(displayRect.right - size.width, displayRect.top),
       Offset(displayRect.left, displayRect.bottom - size.height),
-      Offset(
-        displayRect.right - size.width,
-        displayRect.bottom - size.height,
-      ),
+      Offset(displayRect.right - size.width, displayRect.bottom - size.height),
     ];
 
     Offset best = candidates.first;
@@ -265,8 +260,8 @@ class CompanionWindowManager {
     try {
       SimplePrefs.instance.setDouble(_keyWindowWidth, size.width);
       SimplePrefs.instance.setDouble(_keyWindowHeight, size.height);
-    } catch (e) {
-      _logger.warning('CompanionWindowManager._persistSize() failed: $e');
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
   }
 
@@ -274,8 +269,8 @@ class CompanionWindowManager {
     try {
       SimplePrefs.instance.setDouble(_keyWindowX, position.dx);
       SimplePrefs.instance.setDouble(_keyWindowY, position.dy);
-    } catch (e) {
-      _logger.warning('CompanionWindowManager._persistPosition() failed: $e');
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
   }
 }

@@ -89,7 +89,6 @@ class _UpdateSectionState extends State<UpdateSection> {
       }
     });
 
-    // Automatically trigger a background check when entering the update section
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
     });
@@ -134,7 +133,6 @@ class _UpdateSectionState extends State<UpdateSection> {
   String _formatReleaseNotes(String rawNotes) {
     if (rawNotes.isEmpty) return 'No release notes available.';
 
-    // 1. Unescape XML entities to get the "intended" content
     String notes = rawNotes
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
@@ -142,14 +140,12 @@ class _UpdateSectionState extends State<UpdateSection> {
         .replaceAll('&quot;', '"')
         .replaceAll('&#39;', "'");
 
-    // 2. Convert Markdown to HTML (preserves existing structure but might escape tags)
     String html = md.markdownToHtml(
       notes,
       extensionSet: md.ExtensionSet.gitHubFlavored,
     );
 
     // 3. SURGICAL FIX: Restore the HTML tags that the markdown parser escaped.
-    // This allows us to support both MD headers (##) and HTML headers (<h3>).
     html = html.replaceAll(RegExp(r'&lt;(/?[a-z0-9]+.*?)&gt;'), r'<$1>');
 
     return html;

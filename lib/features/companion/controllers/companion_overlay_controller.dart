@@ -16,8 +16,8 @@ import 'package:breakmate/core/services/timer_engine.dart';
 
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/services/pet_registry_service.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
-/// Controls the desktop companion pet window.
 class CompanionOverlayController extends ChangeNotifier {
   final SettingsRepository _settingsRepo;
 
@@ -204,10 +204,11 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionToyType = settings.companionToyType;
     _companionTreatType = settings.companionTreatType;
 
-    // Check initial break state if possible, though TimerEngine usually starts later
     try {
       _isBreakActive = sl<TimerEngine>().state == TimerState.breakActive;
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
 
     final shouldShow =
         _companionEnabled && !_isBreakActive && settings.hasCompletedOnboarding;
@@ -308,7 +309,9 @@ class CompanionOverlayController extends ChangeNotifier {
             toyTypeChanged ||
             treatTypeChanged) {
           if (_pipModeEnabled) {
-            NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
+            NativeBridge.showPipWindow(
+              PipWindowArgs.fromMap(_companionPayload()),
+            );
           } else {
             NativeBridge.showCompanion(CompanionArgs(_companionPayload()));
           }
@@ -331,7 +334,9 @@ class CompanionOverlayController extends ChangeNotifier {
 
     _isCompanionShown = true;
     if (_pipModeEnabled) {
-      await NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
+      await NativeBridge.showPipWindow(
+        PipWindowArgs.fromMap(_companionPayload()),
+      );
     } else {
       await NativeBridge.showCompanion(CompanionArgs(_companionPayload()));
     }
@@ -354,7 +359,6 @@ class CompanionOverlayController extends ChangeNotifier {
     };
   }
 
-  /// Toggles preview mode. When true, the native companion is hidden.
   void setPreviewMode(bool isPreview) {
     if (_isPreviewMode == isPreview) return;
     _isPreviewMode = isPreview;
@@ -376,22 +380,18 @@ class CompanionOverlayController extends ChangeNotifier {
     }
   }
 
-  /// Toggles whether the desktop pet companion window is visible.
   Future<void> toggleCompanion(bool enabled) async {
     if (_companionEnabled == enabled) return;
 
-    // Just update settings, _handleSettingsChanged will handle the rest
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
     );
     await _settingsRepo.save(updated);
   }
 
-  /// Dynamic updater for switching companion themes.
   Future<void> changeTheme(String themeId) async {
     if (_companionPetTheme == themeId) return;
 
-    // Evict old pet theme assets aggressively from main isolate
     PetAssetLoader.clearCache();
     Flame.images.clear(themeId);
 
@@ -409,7 +409,6 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final randomName = names[random.nextInt(names.length)];
 
-    // Update settings, listener will handle native updates
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetTheme: themeId,
       companionPetName: randomName,
@@ -418,7 +417,9 @@ class CompanionOverlayController extends ChangeNotifier {
 
     try {
       await sl<TrayManagerService>().updateSelectedBreed(themeId);
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
   }
 
   Future<void> changePetName(String petName) async {

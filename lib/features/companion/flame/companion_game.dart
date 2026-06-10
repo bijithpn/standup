@@ -30,6 +30,7 @@ import 'package:breakmate/features/companion/services/physics_simulator.dart';
 import 'package:breakmate/features/companion/services/settings_persistence.dart';
 import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
 import 'package:breakmate/features/companion/services/window_monitor.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({
@@ -413,8 +414,7 @@ class CompanionGame extends FlameGame {
     _sleepBubbleActive = false;
   }
 
-  void _onQuietModeDeactivated() {
-  }
+  void _onQuietModeDeactivated() {}
 
   void _spawnParticle(ParticleSystemComponent? component) {
     if (component != null) {
@@ -933,7 +933,9 @@ class CompanionGame extends FlameGame {
           final state = _physicsSimulator.getState(targetId);
           _petService.navigation.setTarget(Offset(state.x, state.y));
           _petService.navigation.updateConfig(wanderSpeed: 160.0);
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
     } else if (curState == PetState.fetching) {
       final snapshots = _throwableManager.snapshots();
@@ -1126,7 +1128,9 @@ class CompanionGame extends FlameGame {
       PhysicsEntityState? state;
       try {
         state = _physicsSimulator.getState(toy.physicsId);
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
 
       if (state != null && toy.lifecycle == ThrowableLifecycle.flying) {
         final double vx = state.vx;

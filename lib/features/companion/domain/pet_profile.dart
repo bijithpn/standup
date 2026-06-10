@@ -3,7 +3,6 @@ import 'pet_type.dart';
 import 'pet_personality.dart';
 import 'pet_mood.dart';
 
-/// Complete configuration for a pet companion instance.
 class PetProfile {
   final String id;
   final String name;
@@ -31,7 +30,6 @@ class PetProfile {
     this.isEnabled = true,
   });
 
-  /// Preset: Classic orange cat
   static const orangeCat = PetProfile(
     id: 'orange_cat_01',
     name: 'Ginger',

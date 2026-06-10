@@ -55,29 +55,21 @@ class TimerOrchestrator {
   void initialize() {
     _logger.info('Initializing TimerOrchestrator...');
 
-    // 1. Restore State
     _restoreState();
 
-    // 2. Start listening to EventBus
     _eventSubscription = eventBus.stream.listen(_handleEvent);
 
-    // 3. Listen to high-frequency notifiers for tray updates
     timerEngine.countdownNotifier.addListener(_updateTray);
     timerEngine.workElapsedNotifier.addListener(_updateTray);
 
-    // Listen for low-frequency changes (state, mode, etc.) for state saving
     timerEngine.addListener(_onTimerEngineChanged);
 
-    // 4. Setup ActivityMonitor callback
     _setupActivityMonitor();
 
-    // 5. Start usage tracking
     _startUsageTracking();
 
-    // 6. Perform initial update of the tray to reflect restored state immediately
     _updateTray();
 
-    // 7. Start periodic state auto-saving for crash/restart resilience (every 10 seconds)
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (timerEngine.state == TimerState.running ||
           timerEngine.state == TimerState.breakActive) {
@@ -93,7 +85,6 @@ class TimerOrchestrator {
   void _handleEvent(AppEvent event) {
     _logger.info('Received event in Orchestrator: $event');
 
-    // Handle IPC and side effects
     if (event is TimerStateChangedEvent) {
       _dispatchTimerStateIpc(event);
       saveState(); // Immediately save state on pause/resume transitions
@@ -149,7 +140,6 @@ class TimerOrchestrator {
     if (event.skipped) {
       statsService.recordSkippedBreak();
     } else {
-      // Completed break
       await Future.delayed(const Duration(seconds: 2));
       statsService.recordCompletedBreak();
 
@@ -157,7 +147,6 @@ class TimerOrchestrator {
         await notificationService.showBreakFinished();
       }
 
-      // Record actual session duration
       final now = DateTime.now();
       final lastBreakFinishedAt = timerEngine.stateData.lastBreakFinishedAt;
       final sessionDuration = lastBreakFinishedAt != null
@@ -177,7 +166,6 @@ class TimerOrchestrator {
         activityLevel: activityLevel,
       );
 
-      // Fetch suggested next break interval
       final suggestedInterval = adaptiveBreakService
           ?.getSuggestedBreakInterval();
       if (suggestedInterval != null && suggestedInterval > 0) {
@@ -234,9 +222,7 @@ class TimerOrchestrator {
     }
   }
 
-  void _handleBreakPostponed(BreakPostponedEvent event) {
-    // Notify IPC or perform postponement side effects if needed
-  }
+  void _handleBreakPostponed(BreakPostponedEvent event) {}
 
   void _updateTray() {
     final settings = settingsRepository.currentSettings;
@@ -325,7 +311,6 @@ class TimerOrchestrator {
       resetTimerAfterMinutes: timerEngine.resetTimerAfterMinutes,
     );
 
-    // Save session state if feature is enabled
     if (settingsRepository.currentSettings.enableSessionResume) {
       sessionStateRepository.saveSession(
         workElapsed: timerEngine.workElapsed,
@@ -370,7 +355,6 @@ class TimerOrchestrator {
           },
     );
 
-    // Restore session state if feature is enabled
     if (settingsRepository.currentSettings.enableSessionResume) {
       final savedSession = sessionStateRepository.getSessionForToday();
       if (savedSession != null) {
@@ -391,7 +375,6 @@ class TimerOrchestrator {
           'Session restored from today: ${savedSession.workElapsedSeconds}s work elapsed',
         );
       } else {
-        // New day or no saved session exists - reset all progress to zero
         timerEngine.stateData.workElapsed = Duration.zero;
         timerEngine.stateData.totalWorkToday = Duration.zero;
         timerEngine.stateData.postureElapsedSeconds = 0;
@@ -405,7 +388,6 @@ class TimerOrchestrator {
         );
       }
     } else {
-      // Feature disabled - clear any saved session and start fresh from zero
       sessionStateRepository.clearSession();
       timerEngine.stateData.workElapsed = Duration.zero;
       timerEngine.stateData.totalWorkToday = Duration.zero;
@@ -418,7 +400,6 @@ class TimerOrchestrator {
       _logger.info('Session resume disabled. Started fresh from zero.');
     }
 
-    // Synchronize all value notifiers (visuals/GUI, tray) with the restored state
     timerEngine.syncNotifiersFromState();
   }
 
@@ -427,7 +408,6 @@ class TimerOrchestrator {
     timerEngine.pauseTimers(isManual: true);
     saveState();
 
-    // Clear session on shutdown if feature is disabled
     if (!settingsRepository.currentSettings.enableSessionResume) {
       sessionStateRepository.clearSession();
     }

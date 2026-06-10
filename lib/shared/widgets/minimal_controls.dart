@@ -175,14 +175,12 @@ class _MinimalSliderState extends State<MinimalSlider> {
                     alignment: Alignment.centerLeft,
                     clipBehavior: Clip.none,
                     children: [
-                      // Track background
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      // Active track
                       FractionallySizedBox(
                         widthFactor: percent,
                         child: Container(
@@ -192,7 +190,6 @@ class _MinimalSliderState extends State<MinimalSlider> {
                           ),
                         ),
                       ),
-                      // Thumb
                       Positioned(
                         left: (width * percent) - 6,
                         child: AnimatedContainer(
