@@ -6,6 +6,7 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 /// Background isolate entry point for idle and smart-detection polling.
 /// MethodChannel calls are proxied through the main isolate because plugin
@@ -179,7 +180,9 @@ class BackgroundPollingService {
             final idleSeconds = (message['idleSeconds'] as num).toDouble();
             try {
               sl<ActivityMonitor>().updateIdleStatus(isIdle, idleSeconds);
-            } catch (_) {}
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
           } else if (type == 'smartDetectionChanged') {
             final isVideoCallActive = message['isVideoCallActive'] as bool;
             final isFocusModeActive = message['isFocusModeActive'] as bool;
@@ -190,7 +193,9 @@ class BackgroundPollingService {
                 isFocusModeActive,
                 frontApp,
               );
-            } catch (_) {}
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
           } else if (type == 'invokeMethod') {
             final id = message['id'] as int;
             final method = message['method'] as String;

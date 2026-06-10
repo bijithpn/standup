@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'pet_mood.dart';
 import 'pet_profile.dart';
 
-/// Contextual data used by the AI decision engine to determine pet behavior.
 class PetBehaviorContext {
   final PetProfile profile;
   final PetMoodState currentMood;
@@ -21,7 +20,6 @@ class PetBehaviorContext {
   final int interactionCount;
   final DateTime? lastInteractionTime;
 
-  // Stateful Needs (from 0.0 to 1.0)
   final double curiosity;
   final double fatigue;
   final double boredom;

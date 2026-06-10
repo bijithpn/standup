@@ -191,7 +191,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // _buildSettingsTools,
         if (_settingsWarnings.isNotEmpty) ...[
           const SizedBox(height: 12),
           _buildSettingsWarnings(),

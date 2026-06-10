@@ -46,7 +46,6 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // App came back to foreground, check if permissions changed in settings
       _checkPermission();
     }
   }
@@ -54,7 +53,6 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
   @override
   void didUpdateWidget(FocusDetectionSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Re-check if calendarEnabled just flipped on (e.g. reset-section)
     if (!oldWidget.settings.calendarEnabled &&
         widget.settings.calendarEnabled) {
       _checkPermission();
@@ -89,14 +87,11 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
     }
   }
 
-  /// Called when the user toggles Meeting Detection.
   Future<void> _handleMeetingDetectionToggle(bool value) async {
-    // Save the new setting immediately (this also sets calendarEnabled).
     _save(_settings.copyWith(detectMeetings: value, calendarEnabled: value));
 
     if (!value) return; // Turning off — no permission work needed.
 
-    // Turning ON → request permission proactively.
     if (_permState == CalendarPermissionStatus.granted) return; // already OK
 
     await _requestCalendarAccess();
@@ -107,7 +102,6 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
 
     final currentStatus = await sl<CalendarPermissionService>().getStatus();
     if (currentStatus == CalendarPermissionStatus.denied) {
-      // If permanently denied, redirect the user to settings directly.
       await sl<CalendarPermissionService>().openSettings();
       return;
     }
@@ -167,7 +161,6 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
           ),
         ),
 
-        // ── Main toggle card ──────────────────────────────────────────────
         buildCard([
           toggleRow(
             'Video Calls Detection',
@@ -182,7 +175,6 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
             _settings.detectMeetings,
             _handleMeetingDetectionToggle,
           ),
-          // Calendar permission banner — only shown when Meeting Detection is ON
           if (_settings.detectMeetings || _settings.calendarEnabled)
             _buildCalendarPermissionBanner(),
           divider(),

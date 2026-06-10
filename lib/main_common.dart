@@ -52,7 +52,9 @@ void _setupGlobalErrors() {
       )) {
         try {
           callback(details);
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
       return const Material(color: Color(0xFF0A0A0F), child: SizedBox.shrink());
     }
@@ -475,10 +477,13 @@ void mainCommon(FlavorConfig config) async {
         if (kReleaseMode &&
             config.sentryDsn.isNotEmpty &&
             config.sentryDsn != 'DEV_DSN_HERE') {
-          await SentryFlutter.init((options) {
-            options.dsn = config.sentryDsn;
-            options.enableAppHangTracking = false;
-          }, appRunner: () => runApp(SentryWidget(child: const BreakMateApp())));
+          await SentryFlutter.init(
+            (options) {
+              options.dsn = config.sentryDsn;
+              options.enableAppHangTracking = false;
+            },
+            appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
+          );
         } else {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             logStartup('first dashboard frame rendered');
@@ -610,7 +615,9 @@ Future<void> companionMain() async {
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),
     );
-  } catch (_) {}
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st);
+  }
 
   runApp(
     const MaterialApp(
@@ -644,7 +651,9 @@ Future<void> pipMain() async {
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),
     );
-  } catch (_) {}
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st);
+  }
 
   runApp(
     const MaterialApp(

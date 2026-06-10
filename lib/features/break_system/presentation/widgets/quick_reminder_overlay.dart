@@ -76,7 +76,6 @@ class QuickReminderOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Subtle top label
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,

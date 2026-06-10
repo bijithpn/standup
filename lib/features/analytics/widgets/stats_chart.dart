@@ -10,7 +10,6 @@ class DailyStatsChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the maximum value for any day to scale the chart correctly
     double maxTotal = 10;
     for (final day in stats.weeklyData) {
       final total = (day.breaksCompleted + day.breaksSkipped).toDouble();

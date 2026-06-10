@@ -11,14 +11,12 @@ class SettingsModel {
   final String menuBarStyle;
   final bool focusModeEnabled;
 
-  // Break timings
   final int shortBreakIntervalMinutes;
   final int shortBreakDurationSeconds;
   final int preBreakWarningSeconds;
   final int longBreakIntervalMinutes;
   final int longBreakDurationMinutes;
 
-  // Notifications
   final bool soundEnabled;
   final bool notificationsEnabled;
   final bool postureReminderEnabled;
@@ -28,7 +26,6 @@ class SettingsModel {
   final int eyeBlinkReminderIntervalMinutes;
   final String eyeBlinkReminderType;
 
-  // Break Screen
   final bool showOnAllDisplays;
   final String breakTheme;
   final String breakTemplate;
@@ -38,33 +35,26 @@ class SettingsModel {
   final bool playMusicDuringBreak;
   final bool autoPauseMedia;
 
-  // Clock face
   final int clockFaceTextColorHex;
   final bool clockFaceBlurEnabled;
   final String? customImagePath;
 
-  // Idle/reset
   final int resetTimerAfterMinutes;
 
-  // Working hours
   final bool workingHoursEnabled;
   final List<int> workingDays; // 1=Mon … 7=Sun
   final String workStartTime; // "HH:mm"
   final String workEndTime; // "HH:mm"
 
-  // Smart detection
   final bool detectVideoCalls;
   final bool detectMeetings;
   final bool respectFocusMode;
 
-  // Clock out
   final bool enableClockOut;
   final String clockOutTime; // "HH:mm"
 
-  // Exercises
   final List<ExerciseModel> exercises;
 
-  // Misc
   final bool autoSuggestExercises;
   final bool useCursorCountdown;
   final bool enableAnimations;
@@ -79,29 +69,24 @@ class SettingsModel {
   final String companionPreviewBackground;
   final List<String> unlockedPets;
 
-  // Companion window geometry (persisted across sessions)
   final double companionWindowWidth;
   final double companionWindowHeight;
   final double? companionWindowX; // null = use platform default
   final double? companionWindowY; // null = use platform default
 
-  // PiP settings
   final String pipBackgroundStyle;
   final double pipOpacity;
   final bool pipDraggableClickable;
 
-  // Companion Customizations
   final String companionToyType;
   final String companionTreatType;
 
-  // Companion feature toggles
   final bool pettingEnabled;
   final bool ballThrowEnabled;
   final bool treatEnabled;
   final bool developerReactions;
   final bool quietModeAutoActivate;
 
-  // UX & Onboarding
   final bool hasCompletedOnboarding;
   final bool quietModeEnabled;
   final String
@@ -109,13 +94,11 @@ class SettingsModel {
   final int lastSnoozeDurationMinutes;
   final String intensityLevel; // 'gentle', 'standard', 'strict', 'locked'
 
-  // Goals & Contextual
   final int dailyBreakGoalCount;
   final int maxContinuousSittingMinutes;
   final int weeklyConsistencyTargetDays;
   final bool calendarEnabled;
 
-  // Session Management
   final bool enableSessionResume;
 
   const SettingsModel({

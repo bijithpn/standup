@@ -10,6 +10,7 @@ import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
@@ -33,7 +34,6 @@ class SettingsRepository extends ChangeNotifier {
       }
     }
 
-    // Startup Diagnostics
     debugPrint('=== STARTUP STORAGE DIAGNOSTICS ===');
     debugPrint('storage.isReady: ${_storage.isReady}');
     debugPrint('storage.hasFailed: ${_storage.hasFailed}');
@@ -87,12 +87,7 @@ class SettingsRepository extends ChangeNotifier {
         }
       }
 
-      // ── Critical flag reconciliation ─────────────────────────────────────
       // hasCompletedOnboarding is a ONE-WAY flag (false → true, never back).
-      // We read from:
-      // 1. The ObjectBox snapshot
-      // 2. The ObjectBox KV store
-      // 3. The file-based SimplePrefs
       // We take the OR so that the onboarding is NEVER shown again if any of them is true.
       final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
       final kvOnboarding = _storage.getBool('has_completed_onboarding');
@@ -111,8 +106,6 @@ class SettingsRepository extends ChangeNotifier {
         _current = _current.copyWith(hasCompletedOnboarding: true);
       }
 
-      // Back-fill whichever store was missing the flag so future launches
-      // don't need to rely on this reconciliation guard.
       if (onboardingDone && !kvOnboarding) {
         debugPrint('[SettingsRepo] Back-filling KV onboarding flag.');
         unawaited(_storage.setBool('has_completed_onboarding', true));
@@ -125,14 +118,12 @@ class SettingsRepository extends ChangeNotifier {
         debugPrint('[SettingsRepo] Back-filling snapshot onboarding flag.');
         unawaited(save(_current));
       }
-      // ─────────────────────────────────────────────────────────────────────
 
       debugPrint(
         '[SettingsRepo] Final hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
       );
     } catch (e) {
       debugPrint('[SettingsRepo] Fatal error in load(): $e');
-      // Ensure we have at least defaults
       _current = const SettingsModel();
     }
   }
@@ -146,7 +137,9 @@ class SettingsRepository extends ChangeNotifier {
           if (decoded is List) {
             return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
           }
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
     }
     return _loadExercises();
@@ -253,7 +246,9 @@ class SettingsRepository extends ChangeNotifier {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is List) return List<String>.from(decoded);
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     return [];
   }
 
@@ -264,7 +259,9 @@ class SettingsRepository extends ChangeNotifier {
       if (decoded is List) {
         return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     return ExerciseModel.defaults;
   }
 
@@ -446,12 +443,9 @@ class SettingsRepository extends ChangeNotifier {
   Future<void> completeOnboarding() async {
     debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
-    // Write the KV flag first — it is the fastest and most reliable path.
     await _storage.setBool('has_completed_onboarding', true);
     SimplePrefs.instance.setBool('has_completed_onboarding', true);
-    // Write the full snapshot so every field is up to date.
     await save(_current);
-    // Post-write verification so we can detect silent failures in the logs.
     final kvVerify = _storage.getBool('has_completed_onboarding');
     final simpleVerify = SimplePrefs.instance.getBool(
       'has_completed_onboarding',
@@ -561,10 +555,6 @@ class SettingsRepository extends ChangeNotifier {
       enableSessionResume: settings.enableSessionResume,
     );
 
-    // Mirror ALL critical settings to the KV store for reliability.
-    // This is a belt-and-suspenders approach: ObjectBox is the primary store,
-    // but if it fails on next launch, _loadFromLegacy will read these KV values
-    // and correctly restore the user's choices instead of falling back to defaults.
     await _storage.setBool(
       'has_completed_onboarding',
       settings.hasCompletedOnboarding,
@@ -580,7 +570,6 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('strict_mode', settings.strictMode);
     await _storage.setBool('companion_enabled', settings.companionEnabled);
 
-    // Break settings
     await _storage.setString('break_template', settings.breakTemplate);
     await _storage.setString('break_theme', settings.breakTheme);
     await _storage.setString('clock_face_style', settings.clockFaceStyle);
@@ -600,7 +589,6 @@ class SettingsRepository extends ChangeNotifier {
       settings.customImagePath ?? '',
     );
 
-    // Timer intervals
     await _storage.setInt(
       AppConstants.keyShortBreakInterval,
       settings.shortBreakIntervalMinutes,
@@ -622,14 +610,12 @@ class SettingsRepository extends ChangeNotifier {
       settings.longBreakDurationMinutes,
     );
 
-    // Notifications
     await _storage.setBool(AppConstants.keySoundEnabled, settings.soundEnabled);
     await _storage.setBool(
       'notifications_enabled',
       settings.notificationsEnabled,
     );
 
-    // Smart detection
     await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
     await _storage.setBool('detect_meetings', settings.detectMeetings);
     await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
@@ -646,7 +632,6 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('enable_animations', settings.enableAnimations);
     await _storage.setString('intensity_level', settings.intensityLevel);
 
-    // Companion
     await _storage.setString(
       AppConstants.keyCompanionPetTheme,
       settings.companionPetTheme,
@@ -667,7 +652,6 @@ class SettingsRepository extends ChangeNotifier {
       settings.companionTreatType,
     );
 
-    // Write the full snapshot to ObjectBox.
     _storage.settingsBox!.put(snapshot);
     debugPrint(
       '[SettingsRepo] Snapshot written. '

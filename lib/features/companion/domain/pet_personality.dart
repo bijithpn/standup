@@ -1,28 +1,18 @@
-/// Defines the personality traits of a pet companion.
-/// These traits influence behavior frequency, mood transitions, and interaction responses.
 class PetPersonality {
-  /// How active the pet is (0.0 = lazy, 1.0 = hyperactive)
   final double activityLevel;
 
-  /// How social the pet is (0.0 = aloof, 1.0 = affectionate)
   final double sociability;
 
-  /// How playful the pet is (0.0 = serious, 1.0 = playful)
   final double playfulness;
 
-  /// How curious the pet is (0.0 = indifferent, 1.0 = very curious)
   final double curiosity;
 
-  /// How easily startled the pet is (0.0 = brave, 1.0 = skittish)
   final double skittishness;
 
-  /// How independent the pet is (0.0 = needy, 1.0 = independent)
   final double independence;
 
-  /// How vocal the pet is (0.0 = silent, 1.0 = vocal)
   final double vocalness;
 
-  /// How sleepy the pet is (0.0 = alert, 1.0 = sleepy)
   final double sleepiness;
 
   const PetPersonality({
@@ -36,7 +26,6 @@ class PetPersonality {
     this.sleepiness = 0.4,
   });
 
-  /// Preset: Energetic and playful (typical dog)
   static const energetic = PetPersonality(
     activityLevel: 0.8,
     sociability: 0.9,
@@ -48,7 +37,6 @@ class PetPersonality {
     sleepiness: 0.3,
   );
 
-  /// Preset: Lazy and independent (typical cat)
   static const lazy = PetPersonality(
     activityLevel: 0.3,
     sociability: 0.4,
@@ -60,7 +48,6 @@ class PetPersonality {
     sleepiness: 0.7,
   );
 
-  /// Preset: Balanced and friendly
   static const friendly = PetPersonality(
     activityLevel: 0.5,
     sociability: 0.8,
@@ -72,7 +59,6 @@ class PetPersonality {
     sleepiness: 0.4,
   );
 
-  /// Preset: Shy and cautious
   static const shy = PetPersonality(
     activityLevel: 0.3,
     sociability: 0.2,
@@ -84,7 +70,6 @@ class PetPersonality {
     sleepiness: 0.5,
   );
 
-  /// Calculates a weighted behavior score for decision making.
   double behaviorScore({
     required double baseWeight,
     double? activityModifier,

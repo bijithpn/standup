@@ -192,7 +192,6 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Row(
                           children: [
-                            // Pulsing dot
                             AnimatedBuilder(
                               animation: _pulseController,
                               builder: (_, _) => Container(
@@ -227,7 +226,6 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                                 fontFamily: 'Inter',
                               ),
                             ),
-                            // Expanded tip on hover
                             Expanded(
                               child: ClipRect(
                                 child: AnimatedOpacity(

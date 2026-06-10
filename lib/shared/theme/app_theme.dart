@@ -4,14 +4,12 @@ import 'package:macos_ui/macos_ui.dart';
 class AppTheme {
   AppTheme._();
 
-  // Minimal Modern Color Palette (Zinc/Slate)
   static const Color primary = Color(0xFF18181B); // Zinc 900
   static const Color primaryLight = Color(0xFF3F3F46); // Zinc 700
   static const Color primaryDark = Color(0xFF09090B); // Zinc 950
 
   static const Color accent = Color(0xFF5f68e9);
 
-  // Neutral Grays
   static const Color gray50 = Color(0xFFFAFAFA);
   static const Color gray100 = Color(0xFFF4F4F5);
   static const Color gray200 = Color(0xFFE4E4E7);
@@ -24,29 +22,24 @@ class AppTheme {
   static const Color gray900 = Color(0xFF18181B);
   static const Color gray950 = Color(0xFF09090B);
 
-  // Dark Mode Surfaces
   static const Color surface = Color(0xFF09090B); // Pure dark
   static const Color surfaceElevated = Color(0xFF18181B); // Slight elevation
   static const Color surfaceCard = Color(0xFF121214); // Distinct card back
   static const Color border = Color(0xFF27272A);
   static const Color borderSubtle = Color(0xFF18181B);
 
-  // Text
   static const Color textPrimary = Color(0xFFF4F4F5); // Zinc 100
   static const Color textSecondary = Color(0xFFA1A1AA); // Zinc 400
   static const Color textMuted = Color(0xFF71717A); // Zinc 500
 
-  // Semantic Colors
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
 
-  // Break Type Colors
   static const Color shortBreak = Color(0xFF0EA5E9); // Restrained Cyan
   static const Color longBreak = Color(0xFF8B5CF6); // Soft Purple
 
-  // Radii
   static const double radiusXs = 4.0;
   static const double radiusSm = 8.0;
   static const double radiusMd = 12.0;
@@ -203,13 +196,11 @@ class AppTheme {
     );
   }
 
-  // Legacy compatibility - old property names
   static BoxDecoration get cleanCardDecoration => cardDecoration();
   static BoxDecoration get glassCardDecoration =>
       cardDecoration(elevated: true);
   static Color get overlayBackground => Colors.black.withValues(alpha: 0.85);
 
-  // Legacy color names
   static Color get accentColor => accent;
   static Color get sidebarBackground => surface;
   static Color get contentBackground => surface;
@@ -222,7 +213,6 @@ class AppTheme {
   static Color get upcomingBreakColor => warning;
   static Color get destructiveColor => error;
 
-  // Legacy text styles
   static const TextStyle sidebarItemStyle = TextStyle(
     fontSize: 13,
     fontWeight: FontWeight.w500,
@@ -288,7 +278,6 @@ class AppTheme {
     fontFamily: 'Inter',
   );
 
-  // Legacy glass container method
   static Widget glassContainer({
     required Widget child,
     double opacity = 0.05,

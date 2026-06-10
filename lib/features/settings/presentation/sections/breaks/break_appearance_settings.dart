@@ -375,7 +375,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         ),
         const SizedBox(height: 16),
         buildCard([
-          // Custom color swatches row
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -470,7 +469,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             ),
           ),
           divider(),
-          // Fine-grained Opacity Customizer
           sliderRow(
             'Clock Text Opacity',
             currentOpacity,
@@ -484,7 +482,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             max: 1.0,
           ),
           divider(),
-          // Background Blur
           sliderRow(
             'Background Blur Intensity',
             widget.settings.clockFaceBlurEnabled ? 1.0 : 0.0,
@@ -504,7 +501,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
               if (v) {
                 if (widget.settings.customImagePath != null &&
                     widget.settings.customImagePath!.startsWith("disabled:")) {
-                  // Re-enable existing path by removing the prefix
                   final actualPath = widget.settings.customImagePath!.substring(
                     9,
                   );
@@ -517,7 +513,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     'Custom wallpaper background enabled!',
                   );
                 } else {
-                  // No path exists, pick a new file
                   try {
                     final result = await FilePicker.pickFiles(
                       type: FileType.custom,
@@ -544,7 +539,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   }
                 }
               } else {
-                // Disable by adding "disabled:" prefix (only if a path exists)
                 if (widget.settings.customImagePath != null &&
                     !widget.settings.customImagePath!.startsWith("disabled:")) {
                   widget.onSave(
@@ -917,8 +911,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   }
 }
 
-/// Static icon-based card for each break template.
-/// Replaces the live timer preview — no timers, no rebuilds, just clean themed visuals.
 class _BreakTemplateIconPreview extends StatelessWidget {
   final String id;
 
@@ -938,7 +930,6 @@ class _BreakTemplateIconPreview extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Subtle dot-grid pattern overlay
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
@@ -946,7 +937,6 @@ class _BreakTemplateIconPreview extends StatelessWidget {
               child: CustomPaint(painter: _DotGridPainter(config.accentColor)),
             ),
           ),
-          // Glowing halo behind icon
           Center(
             child: Container(
               width: 42,
@@ -1292,7 +1282,6 @@ class _TemplateConfig {
   });
 }
 
-/// Subtle dot-grid background painter for template cards.
 class _DotGridPainter extends CustomPainter {
   final Color color;
   _DotGridPainter(this.color);

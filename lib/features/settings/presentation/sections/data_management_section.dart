@@ -19,6 +19,7 @@ import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
@@ -54,7 +55,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       bool isDownloads = true;
       try {
         dir = await getDownloadsDirectory();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
 
       if (dir == null) {
         dir = await getApplicationDocumentsDirectory();
@@ -62,7 +65,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       final Map<String, dynamic> backup = {
-        // Backup schema version - increment this when making changes to the backup format
         'schemaVersion': AppConstants.backupSchemaVersion,
         'timestamp': DateTime.now().toIso8601String(),
         'settings': _storage.settingsBox?.get(1)?.toMap() ?? {},
@@ -112,7 +114,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       bool isDownloads = true;
       try {
         dir = await getDownloadsDirectory();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
 
       if (dir == null) {
         dir = await getApplicationDocumentsDirectory();
@@ -165,7 +169,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       Directory? dir;
       try {
         dir = await getDownloadsDirectory();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
 
       dir ??= await getApplicationDocumentsDirectory();
 
@@ -200,7 +206,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         );
       }
 
-      // Restore settings through the repository so it remains the source of truth.
       if (data.containsKey('settings') && data['settings'] is Map) {
         final settingsMap = Map<String, dynamic>.from(data['settings']);
         if (settingsMap.isNotEmpty) {
@@ -211,7 +216,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       // Global and daily stats are restored directly because their ObjectBox
-      // boxes are the canonical local store for analytics history.
       if (data.containsKey('global_stats') && data['global_stats'] is Map) {
         final globalStatsMap = Map<String, dynamic>.from(data['global_stats']);
         if (globalStatsMap.isNotEmpty) {
@@ -226,7 +230,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Restore daily stats.
       if (data.containsKey('daily_stats') && data['daily_stats'] is List) {
         final dailyList = data['daily_stats'] as List;
         _storage.dailyStatsBox?.removeAll();
@@ -246,8 +249,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Restore key-value records and mirror them into SimplePrefs for legacy
-      // readers that have not moved fully behind StorageService yet.
       if (data.containsKey('kv_records') && data['kv_records'] is List) {
         final kvList = data['kv_records'] as List;
         _storage.kvBox?.removeAll();
@@ -260,7 +261,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
               final record = KeyValueRecord(key: key, value: value, type: type);
               _storage.kvBox?.put(record);
 
-              // Mirror to SimplePrefs
               if (type == 'int') {
                 final intVal = int.tryParse(value);
                 if (intVal != null) SimplePrefs.instance.setInt(key, intVal);
@@ -279,7 +279,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         }
       }
 
-      // Reload settings repository to apply to UI immediately
       await sl<SettingsRepository>().load();
       if (sl.isRegistered<StatsService>()) {
         await sl<StatsService>().initialize();
@@ -297,7 +296,9 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       Directory? dir;
       try {
         dir = await getDownloadsDirectory();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
 
       dir ??= await getApplicationDocumentsDirectory();
 
@@ -332,7 +333,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       }
 
       final List<DailyStats> statsList = [];
-      // Skip header
       for (int i = 1; i < lines.length; i++) {
         final line = lines[i].trim();
         if (line.isEmpty) continue;
@@ -366,16 +366,13 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         );
       }
 
-      // Write to DailyStatsBox
       _storage.dailyStatsBox?.removeAll();
       for (final s in statsList) {
         _storage.dailyStatsBox?.put(s);
       }
 
-      // Sort chronologically for weekly_stats JSON
       statsList.sort((a, b) => a.date.compareTo(b.date));
 
-      // Build weekly_stats JSON
       final jsonList = statsList
           .map(
             (e) => {
@@ -395,7 +392,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         weeklyDataJson,
       );
 
-      // Sum totals
       int totalCompleted = 0;
       int totalSkipped = 0;
       for (final s in statsList) {
@@ -412,7 +408,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       await _storage.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
       SimplePrefs.instance.setInt(AppConstants.keyBreaksSkipped, totalSkipped);
 
-      // Check if we have today's row to restore daily counts
       final now = DateTime.now();
       final todayStr =
           '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
@@ -438,7 +433,6 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         SimplePrefs.instance.setInt(AppConstants.keyDailyUsageMinutes, 0);
       }
 
-      // Re-initialize stats service
       if (sl.isRegistered<StatsService>()) {
         await sl<StatsService>().initialize();
       }
@@ -480,17 +474,14 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _clearAllData() async {
     try {
-      // Clear database boxes
       _storage.settingsBox?.removeAll();
       _storage.companionPreferencesBox?.removeAll();
       _storage.globalStatsBox?.removeAll();
       _storage.dailyStatsBox?.removeAll();
       _storage.kvBox?.removeAll();
 
-      // Clear SimplePrefs
       SimplePrefs.instance.clear();
 
-      // Reload settings repository & stats service
       await sl<SettingsRepository>().load();
       if (sl.isRegistered<StatsService>()) {
         await sl<StatsService>().initialize();

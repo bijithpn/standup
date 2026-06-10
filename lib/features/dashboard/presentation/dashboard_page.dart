@@ -37,12 +37,10 @@ class _DashboardPageState extends State<DashboardPage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadCalendarEvents();
-    // Refresh calendar events every 2 minutes
     _refreshTimer = Timer.periodic(const Duration(minutes: 2), (_) {
       _loadCalendarEvents();
     });
 
-    // Listen for setting changes to refresh calendar data if enabled
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         sl<SettingsRepository>().addListener(_handleSettingsChange);
@@ -101,7 +99,6 @@ class _DashboardPageState extends State<DashboardPage>
       _calendarPermissionGranted = true;
       _calendarPermissionDenied = false; // Reset if confirmed
 
-      // Query events for the entire current day (from start of today to end of today)
       final now = DateTime.now();
       final startOfToday = DateTime(now.year, now.month, now.day);
       final endOfToday = DateTime(now.year, now.month, now.day, 23, 59, 59);
