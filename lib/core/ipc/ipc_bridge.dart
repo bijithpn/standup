@@ -29,17 +29,13 @@ class IpcBridge {
     });
   }
 
-  /// Preferred entry point for IPC consumers.
   /// This keeps validation in [IpcEvent.parse] and prevents callers from
-  /// spreading native map parsing across UI and service layers.
   void setTypedEventHandler(void Function(IpcEvent event) handler) {
     setEventHandler((event, data) {
       handler(IpcEvent.parse(event, data));
     });
   }
 
-  // Convenience notify methods migrated to build typed IpcEvent instances
-  // and call dispatch. sendEvent is kept for temporary native compatibility.
   Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
     int retries = 3;
     while (retries > 0) {
@@ -102,17 +98,21 @@ class IpcBridge {
     int? targetEndTime,
     int? totalWorkTodaySeconds,
   }) async {
-    await dispatch(TimerStateChangedIpcEvent(
-      stateName: state,
-      countdownSeconds: countdownSeconds,
-      workElapsedSeconds: workElapsedSeconds,
-      targetEndTime: targetEndTime,
-      totalWorkTodaySeconds: totalWorkTodaySeconds,
-    ));
+    await dispatch(
+      TimerStateChangedIpcEvent(
+        stateName: state,
+        countdownSeconds: countdownSeconds,
+        workElapsedSeconds: workElapsedSeconds,
+        targetEndTime: targetEndTime,
+        totalWorkTodaySeconds: totalWorkTodaySeconds,
+      ),
+    );
   }
 
   Future<void> notifyMeetingDetected(bool isActive, {String? bundleId}) async {
-    await dispatch(MeetingDetectedIpcEvent(isActive: isActive, bundleId: bundleId ?? ''));
+    await dispatch(
+      MeetingDetectedIpcEvent(isActive: isActive, bundleId: bundleId ?? ''),
+    );
   }
 
   Future<void> notifyFocusMode(bool isActive) async {

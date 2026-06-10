@@ -4,7 +4,6 @@ enum TimerState { running, paused, idle, breakActive, windDown }
 
 enum WorkMode { pomodoro, deepWork, flexible, strict }
 
-/// Container class that encapsulates the operational state variables of the TimerEngine.
 class TimerStateData {
   TimerState state = TimerState.idle;
   WorkMode mode = WorkMode.flexible;

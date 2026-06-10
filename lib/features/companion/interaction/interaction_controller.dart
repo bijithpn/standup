@@ -267,8 +267,7 @@ class InteractionController with WidgetsBindingObserver {
       return;
     }
 
-    final double velocityTarget =
-        400.0 + _random.nextDouble() * 800.0;
+    final double velocityTarget = 400.0 + _random.nextDouble() * 800.0;
     final double angle = _random.nextDouble() * math.pi * 2;
     final Offset direction = Offset(math.cos(angle), math.sin(angle));
 
@@ -320,7 +319,7 @@ class InteractionController with WidgetsBindingObserver {
     if (manager == null) return;
 
     final petPosition = _petCompanionService?.position ?? Offset.zero;
-    const Offset defaultFacing = Offset(0, 1); 
+    const Offset defaultFacing = Offset(0, 1);
     const double treatOffset = 20.0;
     final Offset releasePoint = petPosition + defaultFacing * treatOffset;
 
@@ -405,6 +404,7 @@ class InteractionController with WidgetsBindingObserver {
       return true;
     }
   }
+
   bool _guardPasses(String featureKey) {
     if (!_isFeatureEnabled('companionEnabled')) return false;
 

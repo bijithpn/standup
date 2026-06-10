@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class SettingsPersistence {
   SettingsPersistence({AppLogger? logger, String? configPathOverride})
@@ -33,6 +34,7 @@ class SettingsPersistence {
       'Only macOS and Windows are supported.',
     );
   }
+
   PetConfigV2 loadSync() {
     final path = _configPath;
     try {
@@ -109,7 +111,8 @@ class SettingsPersistence {
       try {
         final tmpFile = File(tmpPath);
         if (tmpFile.existsSync()) tmpFile.deleteSync();
-      } catch (_) {
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
       }
     }
   }

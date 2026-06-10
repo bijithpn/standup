@@ -86,13 +86,10 @@ class CompanionWindowController {
     await _windowService.orderFrontRegardless();
   }
 
-  /// Initiates a native window-drag so the OS handles repositioning.
-  /// Call this from the drag-handle gesture handler .
   Future<void> startDrag() async {
     await _windowService.startDrag();
   }
 
-  /// Applies / removes the non-activating window style .
   Future<void> setNonActivating(bool nonActivating) async {
     await _windowService.setNonActivating(nonActivating);
   }

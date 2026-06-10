@@ -3,7 +3,6 @@ import 'package:breakmate/core/display/models/display_info.dart';
 import 'package:breakmate/core/display/models/overlay_display_config.dart';
 
 class OverlayFitService {
-  /// Calculates the best layout bounds for an overlay given the display
   Rect calculateBounds(DisplayInfo display, OverlayDisplayConfig config) {
     if (config.ignoreSafeAreas) {
       return Rect.fromLTWH(0, 0, display.bounds.width, display.bounds.height);
@@ -33,7 +32,6 @@ class OverlayFitService {
     switch (mode) {
       case OverlayFitMode.contain:
         if (contentAspect > targetAspect) {
-          // Content is wider
           double height = targetSize.width / contentAspect;
           return Rect.fromLTWH(
             0,
@@ -42,7 +40,6 @@ class OverlayFitService {
             height,
           );
         } else {
-          // Content is taller
           double width = targetSize.height * contentAspect;
           return Rect.fromLTWH(
             (targetSize.width - width) / 2,
@@ -54,7 +51,6 @@ class OverlayFitService {
       case OverlayFitMode.cover:
       case OverlayFitMode.adaptive:
         if (contentAspect > targetAspect) {
-          // Target is taller, scale by height
           double width = targetSize.height * contentAspect;
           return Rect.fromLTWH(
             (targetSize.width - width) / 2,
@@ -63,7 +59,6 @@ class OverlayFitService {
             targetSize.height,
           );
         } else {
-          // Target is wider, scale by width
           double height = targetSize.width / contentAspect;
           return Rect.fromLTWH(
             0,

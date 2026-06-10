@@ -2,12 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 
-/// Navigation service for autonomous pet movement and cursor following.
-/// Uses a spring-damper model for natural, organic motion.
 class PetNavigationService {
   PetNavigationService();
 
-  // Config
   double _wanderSpeed = 0.0;
   double _paddingLeft = 50.0;
   double _paddingRight = 50.0;
@@ -16,7 +13,6 @@ class PetNavigationService {
   bool _isWanderingEnabled = true;
   PetSpecies _species = PetSpecies.cat;
 
-  // State
   Offset _pos = Offset.zero;
   Offset _vel = Offset.zero;
   Offset _wanderTarget = Offset.zero;
@@ -24,16 +20,13 @@ class PetNavigationService {
   bool _hasWanderTarget = false;
   DateTime? _lastWanderTime;
 
-  // Cursor follow
   bool _isCursorFollowing = false;
   Offset _cursorPos = Offset.zero;
   double _lookTimer = 0.0; // Cat look-before-move delay
 
-  // Hopping and Flying procedural math offsets
   double _hopY = 0.0;
   double _flyY = 0.0;
 
-  // Annoyance tracking: if cursor moves too much, pet gets angry
   int _cursorMoveCount = 0;
   DateTime _lastCursorMoveReset = DateTime.now();
   static const int _annoyanceThreshold = 15; // moves per 3 seconds
@@ -42,7 +35,6 @@ class PetNavigationService {
   Duration _currentWanderCooldown = const Duration(seconds: 3);
   static final _rng = Random();
 
-  // Getters
   Offset get currentPosition => _pos + Offset(0, _hopY + _flyY);
   Offset get velocity => _vel;
   double get speed =>
@@ -105,9 +97,7 @@ class PetNavigationService {
     _wanderSpeed = wanderSpeed ?? _wanderSpeed;
   }
 
-  /// Called with the raw cursor position in the game/canvas coordinate space.
   void updateCursorPosition(Offset gameSpaceCursor, {bool? forceFollowing}) {
-    // Track cursor movement for annoyance detection
     if ((_cursorPos - gameSpaceCursor).distance > 5.0) {
       _cursorMoveCount++;
       final now = DateTime.now();
@@ -146,7 +136,6 @@ class PetNavigationService {
       return;
     }
 
-    // Unpredictable movement: 75% chance of short local wanders, 25% chance of long-distance prowls
     final bool isProwl = _rng.nextDouble() < 0.25;
     if (isProwl) {
       final double widthRange = _screen.width - _paddingLeft - _paddingRight;
@@ -156,7 +145,6 @@ class PetNavigationService {
         _paddingTop + (heightRange > 0 ? _rng.nextDouble() * heightRange : 0),
       );
     } else {
-      // Local wander within 100 to 250 pixels of current position
       final double distance = 100.0 + _rng.nextDouble() * 150.0;
       final double angle = _rng.nextDouble() * 2 * pi;
       final double targetX = (_pos.dx + cos(angle) * distance).clamp(
@@ -173,7 +161,6 @@ class PetNavigationService {
     _hasWanderTarget = true;
     _lastWanderTime = now;
 
-    // Dynamic unpredictable cooldown: 2 to 7 seconds
     _currentWanderCooldown = Duration(seconds: 2 + _rng.nextInt(6));
   }
 
@@ -213,7 +200,6 @@ class PetNavigationService {
     final toTarget = _cursorPos - _pos;
     final dist = toTarget.distance;
 
-    // Within stop radius — damp to rest
     if (dist <= profile.stopRadius) {
       _vel = Offset(_vel.dx * 0.75, _vel.dy * 0.75);
       if (_vel.distance < 0.5) _vel = Offset.zero;
@@ -221,14 +207,12 @@ class PetNavigationService {
       return;
     }
 
-    // Species look-delay: stand still and "look" before moving
     if (profile.lookDelay > 0.0 && _lookTimer < profile.lookDelay) {
       _lookTimer += dt;
       _vel = Offset(_vel.dx * 0.8, _vel.dy * 0.8);
       return;
     }
 
-    // Spring-damper: F = stiffness * displacement - damping * velocity
     final dir = toTarget / dist;
     final targetSpeed = (profile.acceleration * dist).clamp(
       0.0,
@@ -236,7 +220,6 @@ class PetNavigationService {
     );
     final targetVel = dir * targetSpeed;
 
-    // Critically-damped spring integration
     _vel = Offset(
       _vel.dx + (targetVel.dx - _vel.dx) * profile.damping * dt * 10.0,
       _vel.dy + (targetVel.dy - _vel.dy) * profile.damping * dt * 10.0,
@@ -245,7 +228,6 @@ class PetNavigationService {
 
   void _updateWander(double dt) {
     if (!_isWanderingEnabled || _wanderSpeed <= 0) {
-      // Decelerate smoothly
       final decay = (1.0 - 8.0 * dt).clamp(0.0, 1.0);
       _vel = Offset(_vel.dx * decay, _vel.dy * decay);
       if (_vel.distance < 0.5) _vel = Offset.zero;
@@ -261,7 +243,6 @@ class PetNavigationService {
     }
 
     final dir = toTarget / dist;
-    // Ease in/out: slow down as we approach target
     final speedFactor = (dist / 80.0).clamp(0.3, 1.0);
     final targetVel = dir * (_wanderSpeed * speedFactor);
     // Smooth velocity change (avoids instant direction snaps)

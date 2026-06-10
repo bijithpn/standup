@@ -4,7 +4,6 @@ class AppConstants {
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
-  // Wellness Slideshow
   static const List<String> wellnessSlideshow = [
     'assets/slideshow/slide_1.jpeg',
     'assets/slideshow/slide_2.jpeg',
@@ -13,30 +12,23 @@ class AppConstants {
     'assets/slideshow/slide_5.jpeg',
   ];
 
-  // Short break defaults
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
   static const int defaultPreBreakWarningSeconds = 60;
 
-  // Long break defaults
   static const int defaultLongBreakIntervalMinutes = 60;
   static const int defaultLongBreakDurationMinutes = 5;
 
-  // Activity detection
   static const int idleThresholdMinutes = 3;
 
-  // Retry policy
   static const int maxRetries = 3;
   static const int initialRetryDelayMs = 500;
 
-  // Notification channels
   static const String notificationChannelId = 'breakloop_breaks';
   static const String notificationChannelName = 'Break Reminders';
 
-  // Backup schema version
   static const int backupSchemaVersion = 1;
 
-  // Storage keys
   static const String keyShortBreakInterval = 'short_break_interval';
   static const String keyShortBreakDuration = 'short_break_duration';
   static const String keyPreBreakWarningSeconds = 'pre_break_warning_seconds';
@@ -58,10 +50,8 @@ class AppConstants {
   static const String keyCompanionPetTheme = 'companion_pet_theme';
   static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
-  // Streak configuration
   static const int breaksPerDayForStreak = 5;
 
-  // Health tips shown during breaks
   static const List<String> shortBreakTips = [
     'Look at something 20 feet away for 20 seconds',
     'Blink your eyes slowly 5 times',

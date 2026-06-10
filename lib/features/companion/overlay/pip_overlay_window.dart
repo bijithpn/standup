@@ -15,6 +15,7 @@ import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/interaction/interaction_controller.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
@@ -143,7 +144,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         await _windowManager.initialize();
         return;
       }
-    } catch (_) {
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
     _initGameWithDefaults();
     await _windowManager.initialize();

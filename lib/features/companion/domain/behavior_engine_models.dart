@@ -1,23 +1,9 @@
 import 'dart:ui';
 import 'pet_state_machine.dart';
 
-enum PetMode {
-  freeRoam,
+enum PetMode { freeRoam, constrained, singleDisplay }
 
-  constrained,
-
-  singleDisplay,
-}
-
-enum ThrowableLifecycle {
-  flying,
-
-  stationary,
-
-  beingFetched,
-
-  disposed,
-}
+enum ThrowableLifecycle { flying, stationary, beingFetched, disposed }
 
 typedef PhysicsEntityId = int;
 

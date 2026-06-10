@@ -6,8 +6,8 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
-/// The companion pet overlay window.
 class CompanionOverlayWindow extends StatefulWidget {
   const CompanionOverlayWindow({super.key});
 
@@ -30,15 +30,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   @override
   void initState() {
     super.initState();
-    // Register handler for live setting updates pushed by the native side
     _setupMethodChannel();
-    // Pull the initial settings immediately
     _fetchAndApplyInitialSettings();
   }
-
-  // ──────────────────────────────────────────────────────────────
-  // MethodChannel setup
-  // ──────────────────────────────────────────────────────────────
 
   void _setupMethodChannel() {
     _channel.setMethodCallHandler((call) async {
@@ -54,8 +48,6 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     });
   }
 
-  /// Pulls initial companion settings from the native side.
-  /// Falls back to default grey-cat if the channel is unavailable.
   Future<void> _fetchAndApplyInitialSettings() async {
     try {
       final result = await _channel.invokeMethod<Map<dynamic, dynamic>>(
@@ -71,11 +63,10 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         );
         return;
       }
-    } catch (_) {
-      // Channel not available (e.g., hot-restart); fall through to default.
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
 
-    // Default initialisation
     if (mounted && !_gameInitialized) {
       setState(() {
         _game = CompanionGame(
@@ -93,21 +84,15 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     }
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // Settings application
-  // ──────────────────────────────────────────────────────────────
-
   void _applySettings(Map<String, dynamic> args) {
     if (!mounted) return;
 
-    // Extract theme + scale before game init so we can start with right values
     final newThemeId = (args['themeId'] as String?) ?? _themeId;
     final newScale = (args['scale'] as num?)?.toDouble() ?? _scale;
     final newToyType = (args['companionToyType'] as String?) ?? 'tennis_ball';
     final newTreatType = (args['companionTreatType'] as String?) ?? 'sushi';
 
     if (!_gameInitialized) {
-      // First call: initialise the game with the provided settings
       setState(() {
         _themeId = newThemeId;
         _scale = newScale;
@@ -119,7 +104,6 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         );
         _gameInitialized = true;
       });
-      // Apply any additional fields (clickThrough, followMouse, petName…)
       _applySettingsToGame(args);
       return;
     }
@@ -211,29 +195,21 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     return null;
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // Lifecycle
-  // ──────────────────────────────────────────────────────────────
-
   @override
   void dispose() {
     _channel.setMethodCallHandler(null);
     super.dispose();
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // Gesture handling (drag to move the companion window)
-  // ──────────────────────────────────────────────────────────────
-
   void _onPanStart(DragStartDetails details) {
-    // On both platforms, use window_manager to drag the frameless window
     // (window_manager.startDragging works on macOS and Windows)
     try {
-      // Attempt platform drag; ignore errors (e.g., in unit tests)
       const MethodChannel(
         'com.leanflutter.plugins/window_manager',
       ).invokeMethod<void>('startDragging');
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     _isDragging = true;
     _game?.onUserInteraction('dragStart');
     EventBus.instance.emit(
@@ -259,14 +235,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     );
   }
 
-  // ──────────────────────────────────────────────────────────────
-  // Build
-  // ──────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     if (!_gameInitialized || _game == null) {
-      // Transparent until the first settings push arrives
       return const SizedBox.shrink();
     }
     return GestureDetector(

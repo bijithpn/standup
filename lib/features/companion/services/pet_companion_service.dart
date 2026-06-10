@@ -16,7 +16,6 @@ class PetCompanionService extends ChangeNotifier {
   PetMoodState _mood;
   PetBehaviorContext _context;
 
-  // Throttle AI decisions to every 4s — no need for frame-rate precision
   DateTime _lastBehaviorDecision = DateTime.now();
   static const Duration _decisionInterval = Duration(seconds: 4);
 
@@ -106,7 +105,6 @@ class PetCompanionService extends ChangeNotifier {
     if (totalWorkTodaySeconds != null) {
       _totalWorkToday = Duration(seconds: totalWorkTodaySeconds);
     }
-    // Flags change infrequently — safe to copyWith here
     _context = _context.copyWith(
       isBreakActive: _isBreakActive,
       isMeetingDetected: _isMeetingDetected,
@@ -120,7 +118,6 @@ class PetCompanionService extends ChangeNotifier {
   void update(double dt) {
     final now = DateTime.now();
 
-    // Mood decay check (cheap — just a DateTime comparison)
     if (!_mood.isActive(now)) {
       _mood = PetMoodState(
         mood: PetMood.relaxed,
@@ -131,7 +128,6 @@ class PetCompanionService extends ChangeNotifier {
       _stateMachine.setMood(_mood);
     }
 
-    // Tick needs
     final profileMultiplier = _profile.species.defaultProfile;
     if (_stateMachine.currentState == PetState.sleep) {
       _fatigue = (_fatigue - 0.1 * dt).clamp(0.0, 1.0);
@@ -165,7 +161,6 @@ class PetCompanionService extends ChangeNotifier {
       _boredom = (_boredom - 0.05 * dt).clamp(0.0, 1.0);
     }
 
-    // Navigation update (always runs — drives position)
     final newPos = _navigation.update(dt);
 
     // Throttle context.copyWith to avoid per-frame object allocation
@@ -180,21 +175,15 @@ class PetCompanionService extends ChangeNotifier {
       _lastContextUpdate = now;
     }
 
-    // AI behavior decision at low frequency
     if (now.difference(_lastBehaviorDecision) >= _decisionInterval) {
       _makeBehaviorDecision();
       _lastBehaviorDecision = now;
     }
 
     _applyStateBehavior();
-
-    // DO NOT call notifyListeners here — this runs at 60fps and would
-    // cause Provider to rebuild the entire widget tree every frame.
-    // Listeners are notified only on profile changes (updateProfile).
   }
 
   void updateCursorPosition(Offset cursorPos, {bool? forceFollowing}) {
-    // Increase curiosity when cursor moves
     final double dist = (_navigation.currentPosition - cursorPos).distance;
     if (dist > 10.0) {
       final profileMultiplier = _profile.species.defaultProfile;
@@ -204,7 +193,6 @@ class PetCompanionService extends ChangeNotifier {
 
     _navigation.updateCursorPosition(cursorPos, forceFollowing: forceFollowing);
 
-    // Check if cat is annoyed by excessive cursor movement
     if (_navigation.isAnnoyed &&
         _stateMachine.currentState == PetState.following) {
       _stateMachine.transitionTo(PetState.angry);
@@ -215,7 +203,6 @@ class PetCompanionService extends ChangeNotifier {
     final isNowFollowing = forceFollowing ?? wasFollowing;
 
     if (isNowFollowing) {
-      // Only follow if not in a non-looping animation (lick, stretch, etc.)
       final cur = _stateMachine.currentState;
       if (cur == PetState.grooming ||
           cur == PetState.stretch ||
@@ -230,12 +217,10 @@ class PetCompanionService extends ChangeNotifier {
         return; // Don't interrupt these states
       }
 
-      // Ensure FSM is in following state so _applyStateBehavior enables navigation
       if (cur != PetState.following) {
         _stateMachine.transitionTo(PetState.following);
       }
     } else if (wasFollowing && !isNowFollowing) {
-      // Cursor left — let FSM revert naturally via cursorLeft event
       _stateMachine.handleEvent(PetEvent.cursorLeft);
     }
   }
@@ -252,7 +237,6 @@ class PetCompanionService extends ChangeNotifier {
 
   void _makeBehaviorDecision() {
     final cur = _stateMachine.currentState;
-    // Only transition spontaneously if currently in an ambient/relaxed state
     if (cur == PetState.idle ||
         cur == PetState.resting ||
         cur == PetState.bored ||
@@ -269,7 +253,6 @@ class PetCompanionService extends ChangeNotifier {
     switch (_stateMachine.currentState) {
       case PetState.walk:
       case PetState.exploring:
-        // Unpredictable/variable walking speeds
         final double speed = 45.0 + _rng.nextDouble() * 30.0;
         _navigation.updateConfig(wanderSpeed: speed);
         if (_navigation.needsWanderTarget) _navigation.generateWanderTarget();
@@ -280,20 +263,16 @@ class PetCompanionService extends ChangeNotifier {
         break;
       case PetState.run:
       case PetState.jumping:
-        // Unpredictable sprinting speeds
         final double speed = 140.0 + _rng.nextDouble() * 50.0;
         _navigation.updateConfig(wanderSpeed: speed);
         if (_navigation.needsWanderTarget) _navigation.generateWanderTarget();
         break;
       case PetState.following:
       case PetState.playing:
-        // Cursor following is handled by navigation's _updateCursorFollow.
-        // Set wanderSpeed=0 so _updateWander doesn't fight it.
         _navigation.updateConfig(wanderSpeed: 0.0);
         break;
       case PetState.chasing:
       case PetState.fetching:
-        // Movement speed and targeting are set externally in CompanionGame
         break;
       default:
         _navigation.updateConfig(wanderSpeed: 0.0);

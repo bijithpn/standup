@@ -41,7 +41,6 @@ class SplitViewTemplate extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Left panel
               Expanded(
                 flex: 55,
                 child: Padding(
@@ -90,12 +89,10 @@ class SplitViewTemplate extends StatelessWidget {
                   ),
                 ),
               ),
-              // Right panel
               Expanded(
                 flex: 45,
                 child: Stack(
                   children: [
-                    // Divider line
                     Positioned(
                       left: 0,
                       top: 80,

@@ -17,9 +17,7 @@ class CompanionSpriteWidget extends StatefulWidget {
   final double petYOffset;
   final double petXOffset;
 
-  static void clearCache() {
-    // PetAssetLoader handles the byte cache now
-  }
+  static void clearCache() {}
 
   static Future<void> precacheSpriteSheet(String path) async {
     try {
@@ -213,7 +211,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   Future<void> _loadImage(String path) async {
     final ui.Image img = await PetAssetLoader.loadImage(path);
     if (mounted) {
-      // Do not dispose the old image as it is cached in PetAssetLoader._imageCache
       setState(() {
         _loadedImage = img;
         _currentLoadedPath = path;
@@ -224,7 +221,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Normalize all sprite sizes to the 32x32 baseline visual size to ensure consistency with game rendering
     final double effectiveScale =
         widget.scale * (32.0 / widget.petTheme.spriteSize);
 
@@ -261,10 +257,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     _lastFrameCount = frameCount;
 
-    // ── Aspect-ratio-correct frame dimensions ────────────────────────────────
-    // For separate-image pets (one PNG per animation) the image is a horizontal
-    // strip: width = frameCount * frameWidth, height = frameHeight.  Use the
-    // actual pixel dimensions rather than the square spriteSize so tall or wide
     // animations (e.g. jumps) are never squished.
     double frameWidth = widget.petTheme.spriteSize.toDouble();
     double frameHeight = widget.petTheme.spriteSize.toDouble();
@@ -356,11 +348,9 @@ class _SpritePainter extends CustomPainter {
 
     final src = Rect.fromLTWH(srcX, srcY, frameWidth, frameHeight);
 
-    // Calculate actual pixel size based on scale
     final double drawWidth = frameWidth * scale;
     final double drawHeight = frameHeight * scale;
 
-    // Position the pet at the bottom of the available space, centered horizontally, with offsets
     final dst = Rect.fromLTWH(
       (size.width - drawWidth) / 2 + petXOffset,
       size.height - drawHeight + petYOffset,

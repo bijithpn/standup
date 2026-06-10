@@ -78,7 +78,6 @@ class WellnessEngine {
     if (available.isEmpty) return '';
     final context = await getCurrentContext();
 
-    // Simple mapping of context to exercise category
     ExerciseCategory targetCategory = ExerciseCategory.stretch;
     switch (context) {
       case WellnessContext.coding:

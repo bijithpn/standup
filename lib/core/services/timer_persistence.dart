@@ -1,10 +1,7 @@
 class TimerPersistence {
-  void storeTargetEndTimestamp(DateTime time) {
-    // Save to storage to recover after crash or system sleep
-  }
+  void storeTargetEndTimestamp(DateTime time) {}
 
   DateTime? recoverTargetEndTimestamp() {
-    // Restore logic
     return null;
   }
 }

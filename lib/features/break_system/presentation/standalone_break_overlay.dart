@@ -42,6 +42,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glo
 import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 enum BreakTheme {
   image,
@@ -55,7 +56,6 @@ enum BreakTheme {
   zen, // Soft earth tones and cream
 }
 
-// Templates that own their own chrome (skip button, top rail, etc.)
 const _kTemplatesWithChrome = {
   'minimal',
   'activities',
@@ -150,9 +150,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _isDismissing = false;
 
   // KEY PERFORMANCE FIX: ValueNotifier for countdown allows ValueListenableBuilder
-  // to isolate rebuilds to only the template widget, not the entire screen.
-  // This keeps StatefulWidget templates (WaveCalm, BreatheLineTemplate, etc.)
-  // alive across every-second ticks — preserving their AnimationControllers.
   late final ValueNotifier<int> _remainingSecondsNotifier;
 
   void _loadInitialSettings() {
@@ -207,8 +204,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           _customImagePath = customImg == "" ? null : customImg;
         });
       }
-    } catch (_) {
-      // Fallback to defaults
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
   }
 
@@ -219,7 +216,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _durationSeconds = widget.durationSeconds;
     _remainingSeconds = widget.durationSeconds;
 
-    // Resolve user's actual selected template and settings from SimplePrefs on startup
     _loadInitialSettings();
 
     _currentTemplate =
@@ -279,10 +275,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             (service as dynamic).updateBreaksCompleted(count);
           }
         }
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
 
-    // If targetEndTime is passed, use it to count down locally!
     final targetEndMs = args['targetEndTime'] as int?;
     if (targetEndMs != null) {
       _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
@@ -293,8 +290,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       _localTimer = null;
     }
 
-    // If we are transitioning to zero remaining seconds (auto-close),
-    // or explicitly told to close, trigger fade out.
     final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
     if (newRemaining == 0 && _remainingSeconds > 0) {
       _fadeController.reverse();
@@ -324,7 +319,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           orElse: () => _currentTheme,
         );
       }
-      // Use the coordinator-chosen image so all displays show the same one
       if (args['classicImage'] != null) {
         _currentTemplate = args['classicImage'] as String;
       }
@@ -366,7 +360,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         _maxWarningSeconds = newRemaining;
       }
 
-      // Auto-dismiss quick reminders / prebreak warnings after 5/3 seconds
       if (_overlayType == 'quickReminder' ||
           _overlayType == 'preBreakWarning') {
         _fadeController.duration = const Duration(milliseconds: 400);
@@ -404,8 +397,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             _completeBreak();
           }
           _remainingSeconds = newRemaining;
-          // Update the notifier directly — only rebuilds ValueListenableBuilder subtree,
-          // NOT the entire widget tree. This preserves StatefulWidget template states.
           _remainingSecondsNotifier.value = newRemaining;
         }
       }
@@ -458,7 +449,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (_isInternalPreview ||
           _overlayType == 'preBreakWarning' ||
           _overlayType == 'quickReminder') {
-        // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
         _bridge.invokeMethod('completeBreak');
@@ -468,7 +458,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
     Timer(const Duration(milliseconds: 800), triggerDismiss);
 
-    // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
       triggerDismiss();
     });
@@ -485,7 +474,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (_isInternalPreview ||
           _overlayType == 'preBreakWarning' ||
           _overlayType == 'quickReminder') {
-        // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
         NativeBridge.skipBreak();
@@ -503,7 +491,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _handleKeyEvent(KeyEvent event) {
     if (!mounted) return false;
 
-    // Check for Command/Control + Shift + B to quit the app
     final isModifierPressed =
         HardwareKeyboard.instance.isMetaPressed ||
         HardwareKeyboard.instance.isControlPressed;
@@ -573,7 +560,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             : Colors.black,
         child: GestureDetector(
           onVerticalDragUpdate: (details) {
-            // If dragging up, dismiss the overlay completely (only if not in strict mode, or preview/warning).
             if (_canDismiss && details.primaryDelta! < -10) {
               _skipBreak();
             }
@@ -630,7 +616,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
 
     final total = _durationSeconds;
-    // Only provide a live skip callback when not in strict mode (or in preview/warning).
     final VoidCallback? onSkip = _canDismiss ? _skipBreak : null;
 
     return Stack(
@@ -638,10 +623,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       fit: StackFit.expand,
       children: [
         // KEY PERFORMANCE FIX: ValueListenableBuilder wraps ONLY the template.
-        // The outer Stack (chrome items) stays stable — only the template
-        // rebuilds each second. Flutter's element reconciliation keeps the same
-        // StatefulWidget element alive (same runtimeType), so AnimationControllers
-        // in WaveCalm, BreatheLineTemplate, ActivitiesBreak, etc. are preserved.
         RepaintBoundary(
           child: ValueListenableBuilder<int>(
             valueListenable: _remainingSecondsNotifier,
@@ -735,7 +716,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        // Global visual indicator to swipe up to dismiss
         if (_canDismiss && !_templateOwnsChrome)
           Positioned(
             bottom: 24,
@@ -1002,9 +982,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   bool get _templateOwnsChrome {
-    // All named templates self-manage their chrome (top rail, skip, hints).
     // This prevents the global pill / close / swipe-hint from being stacked
-    // on top of template-owned header and footer areas.
     final isWindDown =
         _title.toUpperCase().contains('WIND DOWN') ||
         (_breakTypeStr == 'windDown');

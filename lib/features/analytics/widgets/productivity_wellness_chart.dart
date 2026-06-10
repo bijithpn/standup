@@ -9,7 +9,6 @@ class ProductivityWellnessChart extends StatelessWidget {
 
   const ProductivityWellnessChart({super.key, required this.stats});
 
-  /// Build a Sun–Sat grid for the current week, mapped by date.
   List<_WeekSlot> _buildWeekSlots() {
     final now = DateTime.now();
     final daysFromSunday = now.weekday % 7;

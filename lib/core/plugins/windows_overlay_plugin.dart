@@ -2,13 +2,11 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 
-/// Windows-specific overlay window plugin for native window manipulation
 class WindowsOverlayPlugin {
   static const MethodChannel _channel = MethodChannel(
     'com.breakmate/overlay_window',
   );
 
-  /// Configure the window as a full-screen overlay (always on top, no borders)
   static Future<void> configureAsOverlay() async {
     if (!Platform.isWindows) return;
     try {
@@ -21,7 +19,6 @@ class WindowsOverlayPlugin {
     }
   }
 
-  /// Reset the window to normal state
   static Future<void> resetToNormal() async {
     if (!Platform.isWindows) return;
     try {
@@ -34,7 +31,6 @@ class WindowsOverlayPlugin {
     }
   }
 
-  /// Set window transparency (opacity 0.0 - 1.0)
   static Future<void> setTransparency(double opacity) async {
     if (!Platform.isWindows) return;
     try {
@@ -47,7 +43,6 @@ class WindowsOverlayPlugin {
     }
   }
 
-  /// Set window to ignore mouse events (click-through)
   static Future<void> setIgnoreMouseEvents(bool ignore) async {
     if (!Platform.isWindows) return;
     try {

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Guided breathing widget using the 4-7-8 technique.
 class GuidedBreathingWidget extends StatefulWidget {
   final int targetCycles;
 
