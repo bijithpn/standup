@@ -12,7 +12,7 @@
         "isSpriteSheet": true,
         "rowCount": 12,
         "frameCount": 8,
-        "spriteSize": 16
+        "spriteSize": 32
       },
       "personality": "balanced",
       "initialMood": "relaxed",
@@ -29,7 +29,7 @@
         "isSpriteSheet": true,
         "rowCount": 12,
         "frameCount": 8,
-        "spriteSize": 16
+        "spriteSize": 32
       },
       "personality": "playful",
       "initialMood": "happy",
@@ -46,7 +46,7 @@
         "isSpriteSheet": true,
         "rowCount": 12,
         "frameCount": 8,
-        "spriteSize": 16
+        "spriteSize": 32
       },
       "personality": "cool",
       "initialMood": "relaxed",

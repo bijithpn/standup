@@ -5,6 +5,7 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 
 class _FireParticle {
@@ -266,42 +267,55 @@ class CompanionComponent
         }
       } else {
         if (_isMovementState(cur)) {
-          final ticker = animationTickers?[cur];
-          if (ticker == null || ticker.currentIndex == 0) {
-            changeState(_previousState ?? PetAnimationState.idle);
-          }
+          changeState(_previousState ?? PetAnimationState.idle);
         }
       }
     }
 
-    final bool isMovingVertically = vel.dy.abs() > 1.5 && speed > 5.0;
     final bool isUsingFallbackWalk = current == PetAnimationState.walkSide;
+    final bool isWalkOnly = game.currentTheme.species.movementType == MovementType.walk;
     final profile = game.currentTheme.species.defaultProfile;
 
-    if (isMovingVertically &&
-        (isUsingFallbackWalk ||
-            current == PetAnimationState.run ||
-            current == PetAnimationState.excited ||
-            current == PetAnimationState.fly)) {
-      final double maxSpeed = profile.movementSpeed;
-      final double maxTilt = profile.maxTilt;
-      final double tiltFactor = (vel.dy / maxSpeed).clamp(-1.0, 1.0);
-      angle = _direction * tiltFactor * maxTilt;
-
-      final double stretch = (vel.dy.abs() / 220.0).clamp(0.0, 0.12);
-      scale.y = scale.x.abs() * (1.0 + stretch);
-    } else {
+    if (isWalkOnly) {
       angle = 0.0;
       if (current == PetAnimationState.idle ||
           current == PetAnimationState.celebrate) {
         scale.y =
             scale.x.abs() *
             (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
-      } else if (isMovingVertically && _isMovementState(current)) {
+      } else if (_isMovementState(current)) {
         final double bob = sin(_stateElapsed * 10.0) * profile.bobIntensity;
         scale.y = scale.x.abs() * (1.0 + bob);
       } else {
         scale.y = scale.x.abs();
+      }
+    } else {
+      final bool isMovingVertically = vel.dy.abs() > 1.5 && speed > 5.0;
+      if (isMovingVertically &&
+          (isUsingFallbackWalk ||
+              current == PetAnimationState.run ||
+              current == PetAnimationState.excited ||
+              current == PetAnimationState.fly)) {
+        final double maxSpeed = profile.movementSpeed;
+        final double maxTilt = profile.maxTilt;
+        final double tiltFactor = (vel.dy / maxSpeed).clamp(-1.0, 1.0);
+        angle = _direction * tiltFactor * maxTilt;
+
+        final double stretch = (vel.dy.abs() / 220.0).clamp(0.0, 0.12);
+        scale.y = scale.x.abs() * (1.0 + stretch);
+      } else {
+        angle = 0.0;
+        if (current == PetAnimationState.idle ||
+            current == PetAnimationState.celebrate) {
+          scale.y =
+              scale.x.abs() *
+              (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
+        } else if (_isMovementState(current)) {
+          final double bob = sin(_stateElapsed * 10.0) * profile.bobIntensity;
+          scale.y = scale.x.abs() * (1.0 + bob);
+        } else {
+          scale.y = scale.x.abs();
+        }
       }
     }
 
@@ -464,8 +478,11 @@ class CompanionComponent
     game.petService.setCursorFollowing(enabled);
 
     final double? mx = (data['mouseX'] as num?)?.toDouble();
-    final double? my = (data['mouseY'] as num?)?.toDouble();
+    double? my = (data['mouseY'] as num?)?.toDouble();
     if (mx != null && my != null) {
+      if (game.isPiP) {
+        my = position.y;
+      }
       game.petService.updateCursorPosition(
         Offset(mx, my),
         forceFollowing: enabled,

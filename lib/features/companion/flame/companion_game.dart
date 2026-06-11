@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/game.dart';
@@ -31,6 +30,8 @@ import 'package:breakmate/features/companion/services/settings_persistence.dart'
 import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
 import 'package:breakmate/features/companion/services/window_monitor.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/features/companion/flame/components/environment_component.dart';
+import 'package:breakmate/features/companion/flame/components/throwable_toy_component.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({
@@ -39,6 +40,7 @@ class CompanionGame extends FlameGame {
     this.isPiP = false,
     this.toyType = 'tennis_ball',
     this.treatType = 'sushi',
+    this.backgroundImagePath = 'assets/background/sky/background.png',
   }) : _eventBus = EventBus.instance,
        _petService = PetCompanionService(
          stateMachine: PetStateMachine(personality: PetPersonality()),
@@ -46,11 +48,26 @@ class CompanionGame extends FlameGame {
          navigation: PetNavigationService(),
          profile: getProfileFromTheme(initialTheme),
        ),
-       _theme = initialTheme;
+       _theme = initialTheme,
+       _physicsSimulator = PhysicsSimulator(),
+       _needsEngine = NeedsEngine(logger: AppLogger()) {
+    _throwableManager = ThrowableObjectManager(
+      physicsSimulator: _physicsSimulator,
+    );
+  }
 
   final bool isPiP;
   String toyType;
   String treatType;
+  String backgroundImagePath;
+
+  Future<void> updateBackgroundImagePath(String path) async {
+    if (backgroundImagePath == path) return;
+    backgroundImagePath = path;
+    if (_environmentComponent != null) {
+      await _environmentComponent!.updateSkyImage(path);
+    }
+  }
 
   static PetProfile getProfileFromTheme(PetTheme theme) {
     final species = theme.species;
@@ -102,7 +119,6 @@ class CompanionGame extends FlameGame {
   double _sleepBubbleCooldown = 0.0;
   static const double _sleepBubbleDuration = 2.0;
   PetState _previousState = PetState.idle;
-  double _totalTime = 0.0;
 
   late final _DeveloperReactionController _devReaction;
 
@@ -118,6 +134,13 @@ class CompanionGame extends FlameGame {
   PetTheme get currentTheme => _theme;
   PetState get companionState => _petService.currentState;
   PetCompanionService get petService => _petService;
+  ThrowableObjectManager get throwableManager => _throwableManager;
+  NeedsEngine get needsEngine => _needsEngine;
+  PhysicsSimulator get physicsSimulator => _physicsSimulator;
+
+  Color get environmentTint => _environmentComponent?.ambientTint ?? Colors.white;
+  EnvironmentComponent? _environmentComponent;
+  PositionComponent? _pipWorld;
 
   @override
   Color backgroundColor() => Colors.transparent;
@@ -137,15 +160,10 @@ class CompanionGame extends FlameGame {
     _settingsPersistence = SettingsPersistence();
     _petConfig = _settingsPersistence.loadSync();
 
-    _physicsSimulator = PhysicsSimulator();
     _displayManager = NativeDisplayManager();
     _cursorTracker = CursorTracker();
     _windowMonitor = NativeWindowMonitor();
-    _throwableManager = ThrowableObjectManager(
-      physicsSimulator: _physicsSimulator,
-    );
 
-    _needsEngine = NeedsEngine(logger: AppLogger());
     _needsEngine.restore();
 
     _devReaction = _DeveloperReactionController(game: this);
@@ -174,8 +192,18 @@ class CompanionGame extends FlameGame {
     }
 
     if (isPiP) {
+      try {
+        _pipWorld = PositionComponent();
+        _environmentComponent = EnvironmentComponent(
+          backgroundImagePath: backgroundImagePath,
+        );
+        _pipWorld!.add(_environmentComponent!);
+        await add(_pipWorld!);
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
       _physicsSimulator.setBoundary(
-        Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+        Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
       );
     } else {
       _physicsSimulator.setBoundary(_displayManager.unionBounds);
@@ -348,6 +376,22 @@ class CompanionGame extends FlameGame {
       _petService.handleEvent(PetEvent.cursorFastMove);
     } else if (event is ThrowableSpawnedEvent) {
       _petService.handleEvent(PetEvent.throwableSpawned);
+      final snapshots = _throwableManager.snapshots();
+      final toyState = snapshots.firstWhere(
+        (t) => t.id == event.objectId,
+        orElse: () => snapshots.first,
+      );
+      final toyComponent = ThrowableToyComponent(
+        physicsId: event.objectId,
+        kind: toyState.kind,
+        type: toyState.kind == 'treat' ? treatType : toyType,
+        spawnOrigin: toyState.spawnOrigin,
+      )..priority = 10;
+      if (isPiP && _pipWorld != null) {
+        _pipWorld!.add(toyComponent);
+      } else {
+        add(toyComponent);
+      }
     } else if (event is ThrowableStationaryEvent) {
       _petService.handleEvent(PetEvent.throwableStationary);
       _spawnBounceParticle();
@@ -355,8 +399,30 @@ class CompanionGame extends FlameGame {
       _petService.handleEvent(PetEvent.throwableFetched);
     } else if (event is ThrowableReturnedEvent) {
       _petService.handleEvent(PetEvent.throwableReturned);
+      _needsEngine.onBallFetched();
+      _petService.stateMachine.transitionTo(PetState.celebrating);
+    } else if (event is ThrowableEatenEvent) {
+      _petService.handleEvent(PetEvent.throwableEaten);
+      _needsEngine.onTreatEaten();
+      _onEatingStarted();
     } else if (event is ThrowableDisposedEvent) {
-      _petService.handleEvent(PetEvent.throwableReturned);
+      ThrowableToyComponent? target;
+      if (isPiP && _pipWorld != null) {
+        target = _pipWorld!.children
+            .whereType<ThrowableToyComponent>()
+            .cast<ThrowableToyComponent?>()
+            .firstWhere((c) => c?.physicsId == event.objectId, orElse: () => null);
+      } else {
+        target = children
+            .whereType<ThrowableToyComponent>()
+            .cast<ThrowableToyComponent?>()
+            .firstWhere((c) => c?.physicsId == event.objectId, orElse: () => null);
+      }
+      final isTreat = target?.kind == 'treat';
+      if (!isTreat) {
+        _petService.handleEvent(PetEvent.throwableReturned);
+      }
+      target?.removeFromParent();
     } else if (event is PetWindowOverlapEvent) {
       if (event.started) {
         _petService.handleEvent(PetEvent.windowOverlap);
@@ -430,6 +496,11 @@ class CompanionGame extends FlameGame {
   void _onPettingTick() {
     final pos = _petCenter;
     _spawnParticle(MicroParticleFactory.heart(pos, quietMode: isQuietMode));
+  }
+
+  void _onEatingStarted() {
+    final pos = _petCenter;
+    _spawnParticle(MicroParticleFactory.crumbs(pos, quietMode: isQuietMode));
   }
 
   void _onEatingToHappy() {
@@ -563,6 +634,11 @@ class CompanionGame extends FlameGame {
         }
         return PetAnimationState.idle;
       case PetState.eating:
+        if (_theme.animations.containsKey(PetAnimationState.lick1)) {
+          return PetAnimationState.lick1;
+        } else if (_theme.animations.containsKey(PetAnimationState.excited)) {
+          return PetAnimationState.excited;
+        }
         return PetAnimationState.idle;
       case PetState.drag:
         return PetAnimationState.idle;
@@ -594,15 +670,23 @@ class CompanionGame extends FlameGame {
     scale = scale * (32.0 / spriteSize);
 
     if (isPiP) {
-      scale *= 1.5;
+      scale *= 1.0;
     }
 
     return scale;
   }
 
   double _getGroundOffset() {
-    if (_petService.profile.species == PetSpecies.flamingo) {
-      return _effectiveScale(_theme.spriteSize.toDouble()) * 20.0;
+    final double spriteSize = _theme.spriteSize.toDouble();
+    final double scale = _effectiveScale(spriteSize);
+    if (_theme.spriteSize == 32) {
+      return scale * 5.0;
+    } else if (_theme.spriteSize == 50) {
+      return scale * 18.0;
+    } else if (_theme.spriteSize == 64) {
+      return scale * 16.0;
+    } else if (_theme.spriteSize == 128) {
+      return scale * 20.0;
     }
     return 0.0;
   }
@@ -615,34 +699,24 @@ class CompanionGame extends FlameGame {
     final double scaledHalfH = (spriteSize * scale) / 2;
     final double groundOffset = _getGroundOffset();
 
+    final double worldWidth = isPiP ? size.x * 1.3 : size.x;
+
     double minX = scaledHalfW + 4.0;
-    double maxX = size.x - scaledHalfW - 4.0;
+    double maxX = worldWidth - scaledHalfW - 4.0;
     if (minX > maxX) {
-      minX = size.x / 2;
-      maxX = size.x / 2;
+      minX = worldWidth / 2;
+      maxX = worldWidth / 2;
     }
 
-    double minY = isPiP
-        ? (24.0 + scaledHalfH + 4.0 - groundOffset)
-        : (scaledHalfH + 4.0 - groundOffset);
-
-    double maxY = isPiP
-        ? (size.y - 44.0 - scaledHalfH - 4.0 + groundOffset)
+    final double groundY = isPiP
+        ? (size.y - 52.0 - scaledHalfH + groundOffset)
         : (size.y - scaledHalfH - 4.0 + groundOffset);
-
-    if (minY > maxY) {
-      final double safeCenterY = isPiP
-          ? 24.0 + (size.y - 24.0 - 44.0) / 2
-          : size.y / 2;
-      minY = safeCenterY;
-      maxY = safeCenterY;
-    }
 
     _petService.navigation.updatePaddings(
       left: minX,
-      right: size.x - maxX,
-      top: minY,
-      bottom: size.y - maxY,
+      right: worldWidth - maxX,
+      top: groundY,
+      bottom: size.y - groundY,
     );
   }
 
@@ -653,6 +727,9 @@ class CompanionGame extends FlameGame {
     children.whereType<CompanionComponent>().toList().forEach(
       (c) => c.removeFromParent(),
     );
+    _pipWorld?.children.whereType<CompanionComponent>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
 
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
@@ -660,7 +737,7 @@ class CompanionGame extends FlameGame {
     petComponent = CompanionComponent(
       animations: animations,
       initialState: _mapPetStateToAnimationState(_petService.currentState),
-    );
+    )..priority = 5;
 
     petComponent!.size = Vector2(spriteSize, spriteSize);
     petComponent!.scale = Vector2.all(scale);
@@ -669,31 +746,41 @@ class CompanionGame extends FlameGame {
     final double scaledHalfH = (spriteSize * scale) / 2;
     final double groundOffset = _getGroundOffset();
     final double initialY = isPiP
-        ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+        ? size.y - 52.0 - scaledHalfH + groundOffset
         : size.y - scaledHalfH - 4.0 + groundOffset;
 
-    petComponent!.position = Vector2(size.x / 2, initialY);
+    final double worldWidth = isPiP ? size.x * 1.3 : size.x;
+    petComponent!.position = Vector2(worldWidth / 2, initialY);
 
-    add(petComponent!);
+    if (isPiP && _pipWorld != null) {
+      _pipWorld!.add(petComponent!);
+    } else {
+      add(petComponent!);
+    }
 
     _updateNavigationPaddings();
 
     final currentPos = _petService.navigation.currentPosition;
     final minY = isPiP
-        ? (24.0 + scaledHalfH + 4.0 - groundOffset)
+        ? (size.y - 52.0 - scaledHalfH + groundOffset)
         : (scaledHalfH + 4.0 - groundOffset);
     final maxY = isPiP
-        ? (size.y - 44.0 - scaledHalfH - 4.0 + groundOffset)
+        ? (size.y - 52.0 - scaledHalfH + groundOffset)
         : (size.y - scaledHalfH - 4.0 + groundOffset);
     if (currentPos.dy < minY ||
         currentPos.dy > maxY ||
         currentPos.dx < scaledHalfW + 4.0 ||
-        currentPos.dx > size.x - scaledHalfW - 4.0) {
-      _petService.navigation.teleport(Offset(size.x / 2, initialY));
+        currentPos.dx > worldWidth - scaledHalfW - 4.0) {
+      _petService.navigation.teleport(Offset(worldWidth / 2, initialY));
     }
 
     final syncedPos = _petService.navigation.currentPosition;
     petComponent!.position = Vector2(syncedPos.dx, syncedPos.dy);
+  }
+
+  Offset screenToWorld(Offset screenOffset) {
+    if (!isPiP || _pipWorld == null) return screenOffset;
+    return screenOffset - _pipWorld!.position.toOffset();
   }
 
   Future<void> updateTheme(PetTheme newTheme) async {
@@ -732,7 +819,7 @@ class CompanionGame extends FlameGame {
     final double scaledHalfH = (spriteSize * scale) / 2;
     final double groundOffset = _getGroundOffset();
     final double initialY = isPiP
-        ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+        ? size.y - 52.0 - scaledHalfH + groundOffset
         : size.y - scaledHalfH - 4.0 + groundOffset;
 
     petComponent!.position = Vector2(petComponent!.position.x, initialY);
@@ -782,7 +869,16 @@ class CompanionGame extends FlameGame {
   void onDragEnd(Offset releasePosition) {
     if (_isDragging && _dragStartPosition != null) {
       final Offset dragVector = releasePosition - _dragStartPosition!;
-      _throwableManager.spawnThrowable(releasePosition, dragVector);
+      final double worldWidth = size.x * 1.3;
+      final double groundHeight = size.y - 52.0 - (_theme.spriteSize.toDouble() * _effectiveScale(_theme.spriteSize.toDouble())) / 2 + _getGroundOffset();
+      final returnTarget = isPiP ? Offset(worldWidth / 2, groundHeight) : null;
+      final double toySize = isPiP ? 10.0 : 20.0;
+      _throwableManager.spawnThrowable(
+        releasePosition,
+        dragVector,
+        returnTarget: returnTarget,
+        customSize: toySize,
+      );
     }
     _dragStartPosition = null;
     _isDragging = false;
@@ -813,7 +909,7 @@ class CompanionGame extends FlameGame {
         _physicsSimulator.setConstraintBoundary(null);
         if (isPiP) {
           _physicsSimulator.setBoundary(
-            Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+            Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
           );
         } else {
           _physicsSimulator.setBoundary(_displayManager.unionBounds);
@@ -824,7 +920,7 @@ class CompanionGame extends FlameGame {
         _physicsSimulator.setConstraintBoundary(null);
         if (isPiP) {
           _physicsSimulator.setBoundary(
-            Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+            Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
           );
         } else {
           _physicsSimulator.setBoundary(_displayManager.unionBounds);
@@ -846,7 +942,7 @@ class CompanionGame extends FlameGame {
     );
     if (isPiP) {
       _physicsSimulator.setBoundary(
-        Rect.fromLTWH(0, 24.0, size.x, size.y - 24.0 - 44.0),
+        Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
       );
     } else {
       _physicsSimulator.setBoundary(
@@ -877,7 +973,6 @@ class CompanionGame extends FlameGame {
 
   @override
   void update(double dt) {
-    _totalTime += dt;
     if (isThrottled) {
       _timeSinceLastFrame += dt;
       const throttledFrameTime = 1.0 / 15.0;
@@ -931,7 +1026,14 @@ class CompanionGame extends FlameGame {
       if (targetId != null) {
         try {
           final state = _physicsSimulator.getState(targetId);
-          _petService.navigation.setTarget(Offset(state.x, state.y));
+          final double spriteSize = _theme.spriteSize.toDouble();
+          final double scale = _effectiveScale(spriteSize);
+          final double scaledHalfH = (spriteSize * scale) / 2;
+          final double groundOffset = _getGroundOffset();
+          final double targetY = isPiP
+              ? size.y - 52.0 - scaledHalfH + groundOffset
+              : size.y - scaledHalfH - 4.0 + groundOffset;
+          _petService.navigation.setTarget(Offset(state.x, targetY));
           _petService.navigation.updateConfig(wanderSpeed: 160.0);
         } catch (e, st) {
           ErrorHandler().handleError(e, st);
@@ -946,11 +1048,19 @@ class CompanionGame extends FlameGame {
               t.lifecycle == ThrowableLifecycle.beingFetched,
           orElse: () => snapshots.first,
         );
+        final double spriteSize = _theme.spriteSize.toDouble();
+        final double scale = _effectiveScale(spriteSize);
+        final double scaledHalfH = (spriteSize * scale) / 2;
+        final double groundOffset = _getGroundOffset();
+        final double groundY = isPiP
+            ? size.y - 52.0 - scaledHalfH + groundOffset
+            : size.y - scaledHalfH - 4.0 + groundOffset;
+
         if (activeToy.lifecycle == ThrowableLifecycle.stationary) {
-          _petService.navigation.setTarget(activeToy.position);
+          _petService.navigation.setTarget(Offset(activeToy.position.dx, groundY));
           _petService.navigation.updateConfig(wanderSpeed: 100.0);
         } else if (activeToy.lifecycle == ThrowableLifecycle.beingFetched) {
-          _petService.navigation.setTarget(activeToy.spawnOrigin);
+          _petService.navigation.setTarget(Offset(activeToy.spawnOrigin.dx, groundY));
           _petService.navigation.updateConfig(wanderSpeed: 70.0);
         }
       }
@@ -978,6 +1088,7 @@ class CompanionGame extends FlameGame {
 
     if (currentState == PetState.happy && _previousState == PetState.eating) {
       _onEatingToHappy();
+      _spawnParticle(MicroParticleFactory.heart(_petCenter, quietMode: isQuietMode));
     }
 
     if (_isPettingActive) {
@@ -989,6 +1100,14 @@ class CompanionGame extends FlameGame {
     _previousState = currentState;
 
     _devReaction.tick(dt);
+
+    if (isPiP && petComponent != null && _pipWorld != null) {
+      final petX = petComponent!.position.x;
+      final viewHalfW = size.x / 2;
+      final double worldWidth = size.x * 1.3;
+      final double camX = petX.clamp(viewHalfW, worldWidth - viewHalfW);
+      _pipWorld!.position = Vector2(-(camX - viewHalfW), 0.0);
+    }
   }
 
   Offset get _petCenter {
@@ -998,8 +1117,8 @@ class CompanionGame extends FlameGame {
 
   Rect get _petBounds {
     if (petComponent == null) return Rect.zero;
-    final double hw = petComponent!.size.x / 2;
-    final double hh = petComponent!.size.y / 2;
+    final double hw = (petComponent!.size.x * petComponent!.scale.x.abs()) / 2;
+    final double hh = (petComponent!.size.y * petComponent!.scale.y.abs()) / 2;
     final Offset center = _petCenter;
     return Rect.fromLTWH(center.dx - hw, center.dy - hh, hw * 2, hh * 2);
   }
@@ -1053,7 +1172,8 @@ class CompanionGame extends FlameGame {
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
     if (size.x > 0 && size.y > 0) {
-      final newSize = Size(size.x, size.y);
+      final double worldWidth = isPiP ? size.x * 1.3 : size.x;
+      final newSize = Size(worldWidth, size.y);
       if (_lastInitializedSize != newSize) {
         _lastInitializedSize = newSize;
         final double spriteSize = _theme.spriteSize.toDouble();
@@ -1062,12 +1182,12 @@ class CompanionGame extends FlameGame {
         final double groundOffset = _getGroundOffset();
 
         final double initialY = isPiP
-            ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+            ? size.y - 52.0 - scaledHalfH + groundOffset
             : size.y - scaledHalfH - 4.0 + groundOffset;
 
         _petService.initialize(
           screenSize: newSize,
-          startPosition: Offset(size.x / 2, initialY),
+          startPosition: Offset(worldWidth / 2, initialY),
         );
       }
     }
@@ -1078,287 +1198,27 @@ class CompanionGame extends FlameGame {
       petComponent!.scale = Vector2.all(scale);
 
       final double scaledHalfW = (spriteSize * scale) / 2;
+      final double worldWidth = isPiP ? size.x * 1.3 : size.x;
       double newX;
-      if (spriteSize * scale < size.x) {
+      if (spriteSize * scale < worldWidth) {
         newX = petComponent!.position.x.clamp(
           scaledHalfW,
-          size.x - scaledHalfW,
+          worldWidth - scaledHalfW,
         );
       } else {
-        newX = size.x / 2;
+        newX = worldWidth / 2;
       }
 
       final double scaledHalfH = (spriteSize * scale) / 2;
       final double groundOffset = _getGroundOffset();
       final double initialY = isPiP
-          ? size.y - 44.0 - scaledHalfH - 4.0 + groundOffset
+          ? size.y - 52.0 - scaledHalfH + groundOffset
           : size.y - scaledHalfH - 4.0 + groundOffset;
 
       petComponent!.position = Vector2(newX, initialY);
       _updateNavigationPaddings();
       _petService.navigation.teleport(Offset(newX, initialY));
     }
-  }
-
-  @override
-  void render(Canvas canvas) {
-    super.render(canvas);
-
-    final snapshots = _throwableManager.snapshots();
-    for (final toy in snapshots) {
-      canvas.save();
-
-      Offset position;
-      if (toy.lifecycle == ThrowableLifecycle.beingFetched) {
-        if (petComponent != null) {
-          final direction = petComponent!.scale.x.sign;
-          final snoutOffset = Offset(
-            direction *
-                (petComponent!.size.x * petComponent!.scale.x.abs() * 0.3),
-            -petComponent!.size.y * petComponent!.scale.y.abs() * 0.1,
-          );
-          position = petComponent!.position.toOffset() + snoutOffset;
-        } else {
-          position = toy.position;
-        }
-      } else {
-        position = toy.position;
-      }
-
-      PhysicsEntityState? state;
-      try {
-        state = _physicsSimulator.getState(toy.physicsId);
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
-      }
-
-      if (state != null && toy.lifecycle == ThrowableLifecycle.flying) {
-        final double vx = state.vx;
-        final double vy = state.vy;
-        final double speed = sqrt(vx * vx + vy * vy);
-        if (speed > 10.0) {
-          final double dx = vx / speed;
-          final double dy = vy / speed;
-          final double baseOffset = (speed * 0.02).clamp(4.0, 15.0);
-          for (int step = 3; step >= 1; step--) {
-            final double offsetDist = baseOffset * step;
-            final double trailX = -dx * offsetDist;
-            final double trailY = -dy * offsetDist;
-            final double opacity = 0.15 * (4 - step);
-
-            canvas.save();
-            canvas.translate(position.dx + trailX, position.dy + trailY);
-            canvas.rotate((_totalTime - step * 0.016) * (speed * 0.01));
-
-            if (toy.kind == 'treat') {
-              _drawSushiVector(canvas, opacity);
-            } else {
-              _drawTennisBallVector(canvas, opacity);
-            }
-            canvas.restore();
-          }
-        }
-      }
-
-      Offset renderPos = position;
-      if (toy.lifecycle == ThrowableLifecycle.beingFetched) {
-        final comp = petComponent;
-        if (comp != null) {
-          double snoutX = 0;
-          double snoutY = comp.size.y * 0.35;
-
-          final species = _petService.profile.species;
-          if (species == PetSpecies.cat) {
-            snoutX = comp.isFlipped ? -comp.size.x * 0.25 : comp.size.x * 0.25;
-            snoutY = comp.size.y * 0.45;
-          } else if (species == PetSpecies.dog) {
-            snoutX = comp.isFlipped ? -comp.size.x * 0.35 : comp.size.x * 0.35;
-            snoutY = comp.size.y * 0.55;
-          } else if (species == PetSpecies.flamingo) {
-            snoutX = comp.isFlipped ? -comp.size.x * 0.15 : comp.size.x * 0.15;
-            snoutY = comp.size.y * 0.25;
-          }
-
-          renderPos =
-              comp.position.toOffset() +
-              Offset(comp.size.x / 2 + snoutX, snoutY);
-        }
-      }
-
-      canvas.translate(renderPos.dx, renderPos.dy);
-
-      if (toy.lifecycle == ThrowableLifecycle.flying && state != null) {
-        final double vx = state.vx;
-        final double vy = state.vy;
-        final double speed = sqrt(vx * vx + vy * vy);
-        final double spinSpeed = speed * 0.01;
-        canvas.rotate(_totalTime * spinSpeed);
-      }
-
-      if (toy.kind == 'treat') {
-        _drawTreat(
-          canvas,
-          toy.lifecycle == ThrowableLifecycle.beingFetched,
-          1.0,
-        );
-      } else {
-        _drawToy(canvas, toy.lifecycle == ThrowableLifecycle.beingFetched, 1.0);
-      }
-
-      canvas.restore();
-    }
-  }
-
-  void _drawToy(Canvas canvas, bool isBeingCarried, [double opacity = 1.0]) {
-    if (!isBeingCarried) {
-      final shadowPaint = Paint()
-        ..color = Colors.black.withValues(alpha: 0.2 * opacity)
-        ..style = PaintingStyle.fill;
-      canvas.drawOval(
-        Rect.fromCenter(center: const Offset(0, 9), width: 14, height: 4),
-        shadowPaint,
-      );
-    }
-
-    final destRect = Rect.fromCenter(
-      center: Offset.zero,
-      width: 20,
-      height: 20,
-    );
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: opacity)
-      ..filterQuality = FilterQuality.medium;
-
-    if (toyType == 'toy_mouse' && mouseImage != null) {
-      canvas.drawImageRect(
-        mouseImage!,
-        const Rect.fromLTWH(0, 0, 32, 32),
-        destRect,
-        paint,
-      );
-    } else if (toyType == 'pink_yarn' && pinkBallImage != null) {
-      canvas.drawImageRect(
-        pinkBallImage!,
-        const Rect.fromLTWH(0, 0, 15, 16),
-        destRect,
-        paint,
-      );
-    } else if (toyType == 'orange_yarn' && orangeBallImage != null) {
-      canvas.drawImageRect(
-        orangeBallImage!,
-        const Rect.fromLTWH(0, 0, 15, 16),
-        destRect,
-        paint,
-      );
-    } else if (toyType == 'tennis_ball' && blueBallImage != null) {
-      canvas.drawImageRect(
-        blueBallImage!,
-        const Rect.fromLTWH(0, 0, 15, 16),
-        destRect,
-        paint,
-      );
-    } else {
-      _drawTennisBallVector(canvas, opacity);
-    }
-  }
-
-  void _drawTennisBallVector(Canvas canvas, double opacity) {
-    final ballPaint = Paint()
-      ..shader = ui.Gradient.radial(
-        const Offset(-3, -3),
-        10.0,
-        [
-          const Color(0xFFE6FF55).withValues(alpha: opacity),
-          const Color(0xFF9EBF00).withValues(alpha: opacity),
-          const Color(0xFF5D7300).withValues(alpha: opacity),
-        ],
-        [0.0, 0.7, 1.0],
-      )
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset.zero, 10.0, ballPaint);
-
-    final seamPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.85 * opacity)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0
-      ..isAntiAlias = true;
-
-    final path1 = Path();
-    path1.addArc(
-      Rect.fromCircle(center: const Offset(-10, 0), radius: 10),
-      -pi / 3,
-      2 * pi / 3,
-    );
-    canvas.drawPath(path1, seamPaint);
-
-    final path2 = Path();
-    path2.addArc(
-      Rect.fromCircle(center: const Offset(10, 0), radius: 10),
-      2 * pi / 3,
-      2 * pi / 3,
-    );
-    canvas.drawPath(path2, seamPaint);
-  }
-
-  void _drawTreat(Canvas canvas, bool isBeingCarried, [double opacity = 1.0]) {
-    if (!isBeingCarried) {
-      final shadowPaint = Paint()
-        ..color = Colors.black.withValues(alpha: 0.2 * opacity)
-        ..style = PaintingStyle.fill;
-      canvas.drawOval(
-        Rect.fromCenter(center: const Offset(0, 9), width: 14, height: 4),
-        shadowPaint,
-      );
-    }
-
-    final destRect = Rect.fromCenter(
-      center: Offset.zero,
-      width: 20,
-      height: 20,
-    );
-    final paint = Paint()
-      ..color = Colors.white.withValues(alpha: opacity)
-      ..filterQuality = FilterQuality.medium;
-
-    if (treatType == 'carrot' && bunnyFoodsImage != null) {
-      canvas.drawImageRect(
-        bunnyFoodsImage!,
-        const Rect.fromLTWH(0, 0, 16, 16),
-        destRect,
-        paint,
-      );
-    } else if (treatType == 'bone' && dogItemsImage != null) {
-      canvas.drawImageRect(
-        dogItemsImage!,
-        const Rect.fromLTWH(0, 0, 32, 32),
-        destRect,
-        paint,
-      );
-    } else {
-      _drawSushiVector(canvas, opacity);
-    }
-  }
-
-  void _drawSushiVector(Canvas canvas, double opacity) {
-    final noriPaint = Paint()
-      ..color = const Color(0xFF1B2421).withValues(alpha: opacity)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset.zero, 10.0, noriPaint);
-
-    final ricePaint = Paint()
-      ..color = const Color(0xFFF5F5F0).withValues(alpha: opacity)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(Offset.zero, 7.5, ricePaint);
-
-    final salmonPaint = Paint()
-      ..color = const Color(0xFFFF5C5C).withValues(alpha: opacity)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(-1.5, -0.5), 3.5, salmonPaint);
-
-    final avocadoPaint = Paint()
-      ..color = const Color(0xFF7CB342).withValues(alpha: opacity)
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(const Offset(2.0, 1.5), 2.0, avocadoPaint);
   }
 }
 

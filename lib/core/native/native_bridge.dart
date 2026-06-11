@@ -66,6 +66,16 @@ class PipWindowArgs {
   final String themeId;
   final String petName;
   final double scale;
+  final bool? clickThrough;
+  final bool? followMouse;
+  final bool? wanderingEnabled;
+  final bool? isLowPowerMode;
+  final String? pipBackgroundStyle;
+  final double? pipOpacity;
+  final bool? pipDraggableClickable;
+  final String? companionToyType;
+  final String? companionTreatType;
+  final String? previewBackground;
 
   const PipWindowArgs({
     this.x,
@@ -75,6 +85,16 @@ class PipWindowArgs {
     required this.themeId,
     required this.petName,
     required this.scale,
+    this.clickThrough,
+    this.followMouse,
+    this.wanderingEnabled,
+    this.isLowPowerMode,
+    this.pipBackgroundStyle,
+    this.pipOpacity,
+    this.pipDraggableClickable,
+    this.companionToyType,
+    this.companionTreatType,
+    this.previewBackground,
   });
 
   Map<String, dynamic> toMap() {
@@ -87,6 +107,16 @@ class PipWindowArgs {
     if (y != null) map['y'] = y;
     if (width != null) map['width'] = width;
     if (height != null) map['height'] = height;
+    if (clickThrough != null) map['clickThrough'] = clickThrough;
+    if (followMouse != null) map['followMouse'] = followMouse;
+    if (wanderingEnabled != null) map['wanderingEnabled'] = wanderingEnabled;
+    if (isLowPowerMode != null) map['isLowPowerMode'] = isLowPowerMode;
+    if (pipBackgroundStyle != null) map['pipBackgroundStyle'] = pipBackgroundStyle;
+    if (pipOpacity != null) map['pipOpacity'] = pipOpacity;
+    if (pipDraggableClickable != null) map['pipDraggableClickable'] = pipDraggableClickable;
+    if (companionToyType != null) map['companionToyType'] = companionToyType;
+    if (companionTreatType != null) map['companionTreatType'] = companionTreatType;
+    if (previewBackground != null) map['previewBackground'] = previewBackground;
     return map;
   }
 
@@ -99,6 +129,16 @@ class PipWindowArgs {
       themeId: map['themeId'] as String? ?? 'black_cat',
       petName: map['petName'] as String? ?? 'Mochi',
       scale: (map['scale'] as num?)?.toDouble() ?? 1.0,
+      clickThrough: map['clickThrough'] as bool?,
+      followMouse: map['followMouse'] as bool?,
+      wanderingEnabled: map['wanderingEnabled'] as bool?,
+      isLowPowerMode: map['isLowPowerMode'] as bool?,
+      pipBackgroundStyle: map['pipBackgroundStyle'] as String?,
+      pipOpacity: (map['pipOpacity'] as num?)?.toDouble(),
+      pipDraggableClickable: map['pipDraggableClickable'] as bool?,
+      companionToyType: map['companionToyType'] as String?,
+      companionTreatType: map['companionTreatType'] as String?,
+      previewBackground: map['previewBackground'] as String?,
     );
   }
 }
@@ -134,7 +174,7 @@ class NativeDisplayInfo {
 
   factory NativeDisplayInfo.fromMap(Map<String, dynamic> map) {
     return NativeDisplayInfo(
-      id: map['id'] as String,
+      id: map['id']?.toString() ?? '',
       x: (map['x'] as num?)?.toDouble() ?? 0.0,
       y: (map['y'] as num?)?.toDouble() ?? 0.0,
       width: (map['width'] as num?)?.toDouble() ?? 0.0,
@@ -179,7 +219,7 @@ class WindowInfo {
 
   factory WindowInfo.fromMap(Map<String, dynamic> map) {
     return WindowInfo(
-      windowId: map['windowId'] as String? ?? '',
+      windowId: map['windowId']?.toString() ?? '',
       windowTitle: map['windowTitle'] as String? ?? '',
       x: (map['x'] as num?)?.toDouble() ?? 0.0,
       y: (map['y'] as num?)?.toDouble() ?? 0.0,

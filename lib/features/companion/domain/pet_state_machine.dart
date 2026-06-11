@@ -79,6 +79,7 @@ enum PetEvent {
   throwableStationary,
   throwableFetched,
   throwableReturned,
+  throwableEaten,
   landedOnSurface,
   windowOverlap,
   windowOverlapEnded,
@@ -393,6 +394,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.stretch: [
       PetTransition(
@@ -409,6 +415,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -510,6 +521,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.breakReminder,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.alert: [
       PetTransition(
@@ -533,6 +549,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.happy: [
       PetTransition(
@@ -549,6 +570,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -577,6 +603,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -637,6 +668,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.bored: [
       PetTransition(
@@ -666,6 +702,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -744,6 +785,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.breakReminder,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.sad: [
       PetTransition(
@@ -755,6 +801,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.petPlayed,
         targetState: PetState.happy,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -775,13 +826,28 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.eating: [
       PetTransition(
         event: PetEvent.tick,
-        targetState: PetState.idle,
+        targetState: PetState.happy,
         weight: 1.0,
-        minDuration: const Duration(seconds: 4),
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
       ),
     ],
     PetState.jumping: [
@@ -991,6 +1057,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.throwableFetched,
         targetState: PetState.fetching,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableEaten,
+        targetState: PetState.eating,
         weight: 1.0,
       ),
       PetTransition(

@@ -193,7 +193,7 @@ class MacOSBridge implements NativeBridgePlatform {
     );
     if (displays == null) return [];
     return displays
-        .map((e) => NativeDisplayInfo.fromMap(e as Map<String, dynamic>))
+        .map((e) => NativeDisplayInfo.fromMap(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
@@ -208,7 +208,7 @@ class MacOSBridge implements NativeBridgePlatform {
       (dynamic event) {
         if (event is List) {
           final displays = event
-              .map((e) => NativeDisplayInfo.fromMap(e as Map<String, dynamic>))
+              .map((e) => NativeDisplayInfo.fromMap(Map<String, dynamic>.from(e as Map)))
               .toList();
           cb(displays);
         }
@@ -240,7 +240,7 @@ class MacOSBridge implements NativeBridgePlatform {
     );
     if (windows == null) return [];
     return windows
-        .map((e) => WindowInfo.fromMap(e as Map<String, dynamic>))
+        .map((e) => WindowInfo.fromMap(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
@@ -263,8 +263,8 @@ class MacOSBridge implements NativeBridgePlatform {
     );
     eventChannel.receiveBroadcastStream().listen(
       (dynamic event) {
-        if (event is Map<String, dynamic>) {
-          callback(ConstraintWindowArgs.fromMap(event));
+        if (event is Map) {
+          callback(ConstraintWindowArgs.fromMap(Map<String, dynamic>.from(event)));
         }
       },
       onError: (Object error) {

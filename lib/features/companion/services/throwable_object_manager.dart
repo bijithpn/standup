@@ -22,7 +22,7 @@ class ThrowableObjectManager {
   static const double maxVelocity = 2000.0;
   static const double stationaryDisposalSeconds = 30.0;
   static const double unreachableDisposalSeconds = 10.0;
-  static const double fetchReturnRadius = 10.0;
+  static const double fetchReturnRadius = 25.0;
 
   static const double throwableSize = 20.0;
 
@@ -37,6 +37,8 @@ class ThrowableObjectManager {
     Offset releasePoint,
     Offset dragVector, {
     String kind = 'ball',
+    Offset? returnTarget,
+    double? customSize,
   }) {
     final double magnitude = dragVector.distance;
     if (magnitude < minDragMagnitude) {
@@ -61,6 +63,7 @@ class ThrowableObjectManager {
     final double speed = math.min(magnitude * velocityScaleFactor, maxVelocity);
     final Offset initialVelocity = direction * speed;
 
+    final double entitySize = customSize ?? throwableSize;
     final PhysicsEntityId physicsId = _physics.addEntity(
       PhysicsEntity(
         initialState: PhysicsEntityState(
@@ -68,8 +71,8 @@ class ThrowableObjectManager {
           y: releasePoint.dy,
           vx: initialVelocity.dx,
           vy: initialVelocity.dy,
-          width: throwableSize,
-          height: throwableSize,
+          width: entitySize,
+          height: entitySize,
           isAirborne: true,
           isStationary: false,
           stationaryTicks: 0,
@@ -80,7 +83,7 @@ class ThrowableObjectManager {
     final int priority = _spawnCounter++;
     final record = _ThrowableRecord(
       spawnPriority: priority,
-      spawnOrigin: releasePoint,
+      spawnOrigin: returnTarget ?? releasePoint,
       physicsId: physicsId,
       lifecycle: ThrowableLifecycle.flying,
       kind: kind,
@@ -139,14 +142,22 @@ class ThrowableObjectManager {
             break;
           }
 
-          if (petBounds.overlaps(throwableBounds)) {
-            _throwables[i] = record.withLifecycle(
-              ThrowableLifecycle.beingFetched,
-            );
-            _eventBus.emit(ThrowableFetchedEvent(objectId: record.physicsId));
-            _logger.info(
-              'ThrowableObjectManager: throwable ${record.physicsId} being fetched',
-            );
+          final double horizontalDist = (petAnchor.dx - throwableBounds.center.dx).abs();
+          final double verticalDist = (petAnchor.dy - throwableBounds.center.dy).abs();
+          if (horizontalDist <= (petBounds.width / 2 + throwableBounds.width / 2 + 8.0) &&
+              verticalDist <= (petBounds.height / 2 + throwableBounds.height / 2 + 25.0)) {
+            if (record.kind == 'treat') {
+              _eventBus.emit(ThrowableEatenEvent(objectId: record.physicsId));
+              _disposeThrowable(i);
+            } else {
+              _throwables[i] = record.withLifecycle(
+                ThrowableLifecycle.beingFetched,
+              );
+              _eventBus.emit(ThrowableFetchedEvent(objectId: record.physicsId));
+              _logger.info(
+                'ThrowableObjectManager: throwable ${record.physicsId} being fetched',
+              );
+            }
           }
 
         case ThrowableLifecycle.beingFetched:

@@ -28,6 +28,10 @@ class PetAssetLoader {
   static List<String> get lastValidationReport =>
       List.unmodifiable(_lastValidationReport);
 
+  static ui.Image? getImageSync(String path) {
+    return _imageCache[path];
+  }
+
   static Future<ui.Image> loadImage(String path) async {
     // Return cached decoded image — avoids codec instantiation overhead every tick.
     final cached = _imageCache[path];
@@ -905,6 +909,28 @@ class PetAssetLoader {
     }
 
     return '';
+  }
+
+  static Future<void> preCacheBackgrounds() async {
+    const List<String> paths = [
+      'assets/background/forest/background.png',
+      'assets/background/autumn/background.png',
+      'assets/background/winter/background.png',
+      'assets/background/beach/background-light.png',
+      'assets/background/cave/background.png',
+      'assets/background/desert/background.png',
+      'assets/background/sky/background.png',
+      'assets/background/night_town/background.png',
+      'assets/background/mist_forest/background.png',
+      'assets/background/urban/background.png',
+    ];
+    for (final path in paths) {
+      try {
+        await loadImage(path);
+      } catch (e) {
+        debugPrint('Failed to pre-cache background: $path: $e');
+      }
+    }
   }
 
   static void clearCache() {

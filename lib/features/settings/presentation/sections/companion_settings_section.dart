@@ -8,6 +8,7 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/shared/widgets/app_dropdown.dart';
 
 class CompanionSettingsSection extends StatefulWidget {
   final CompanionOverlayController controller;
@@ -123,7 +124,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   dropdownRow(
                     'Background Style',
                     widget.controller.pipBackgroundStyle,
-                    const ['dark', 'light', 'transparent'],
+                    const ['dark', 'light'],
                     (v) {
                       if (v != null) {
                         widget.controller.changePipBackgroundStyle(v);
@@ -260,118 +261,66 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          height: 280, // Taller header
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceCard,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: AppTheme.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: InteractiveViewer(
-                    panEnabled: true,
-                    scaleEnabled: false,
-                    constrained:
-                        false, // Allow child to be wider than container
-                    boundaryMargin: const EdgeInsets.symmetric(
-                      horizontal: 1000,
-                    ),
-                    child: CompanionSpriteWidget(
-                      petTheme: currentTheme,
-                      animationState: PetAnimationState.idle,
-                      scale: 6.0, // Large prominent pet
-                      backgroundImagePath:
-                          widget.controller.companionPreviewBackground,
-                      isStatic: false,
-                      size: const Size(2000, 280), // Panoramic width
-                      petYOffset: 0.0, // Grounded by Alignment.bottomCenter
-                    ),
-                  ),
-                ),
-
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0.5, 1.0],
-                        colors: [
-                          Colors.black.withValues(alpha: 0.0),
-                          Colors.black.withValues(alpha: 0.8),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                Positioned(
-                  left: 28,
-                  bottom: 28,
-                  right: 28,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                currentTheme.species.name.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              widget.controller.companionEnabled
-                                  ? widget.controller.companionPetName
-                                  : 'Companion',
-                              style: const TextStyle(
-                                fontSize: 36, // Large bold name
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: -1.5,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        widget.controller.companionEnabled
+                            ? widget.controller.companionPetName
+                            : 'Companion',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                      _buildSyncCard(), // Unified Sync Button
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.accentColor.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Text(
+                          currentTheme.species.name.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.accentColor,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Customize and preview your companion settings.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            _buildSyncCard(),
+          ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         _buildBackgroundPicker(),
       ],
     );
@@ -397,75 +346,86 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {'name': 'Urban', 'path': 'assets/background/urban/background.png'},
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'PREVIEW ENVIRONMENT',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: AppTheme.textSecondary,
-            letterSpacing: 1.5,
+    final currentBgPath = widget.controller.companionPreviewBackground;
+    final selectedBg = backgrounds.firstWhere(
+      (bg) => bg['path'] == currentBgPath,
+      orElse: () => backgrounds.first,
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceElevated.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Preview Environment',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Used to preview sprites below',
+                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: backgrounds.map((bg) {
-              final isSelected =
-                  widget.controller.companionPreviewBackground == bg['path'];
-              return GestureDetector(
-                onTap: () =>
-                    widget.controller.changePreviewBackground(bg['path']!),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.accentColor
-                        : AppTheme.surfaceElevated,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppTheme.accentColor
-                          : AppTheme.border,
-                      width: isSelected ? 2 : 1,
+          AppDropdown<String>(
+            value: selectedBg['path']!,
+            width: 180,
+            onChanged: (path) {
+              if (path != null) {
+                widget.controller.changePreviewBackground(path);
+              }
+            },
+            items: backgrounds.map((bg) {
+              final isThisSelected = bg['path'] == currentBgPath;
+              return AppDropdownItem<String>(
+                value: bg['path']!,
+                label: bg['name']!,
+                customChild: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.asset(
+                        bg['path']!,
+                        width: 28,
+                        height: 18,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(
-                                alpha: 0.25,
-                              ),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    bg['name']!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected
-                          ? FontWeight.w800
-                          : FontWeight.w600,
-                      color: isSelected ? Colors.white : AppTheme.textPrimary,
+                    const SizedBox(width: 8),
+                    Text(
+                      bg['name']!,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12.5,
+                        fontWeight: isThisSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isThisSelected
+                            ? AppTheme.accentColor
+                            : AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               );
             }).toList(),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -520,6 +480,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             : PetAnimationState.idle,
                         scale: 2.5, // Significantly larger to fill space
                         isStatic: true,
+                        size: Size.infinite,
                         backgroundImagePath:
                             widget.controller.companionPreviewBackground,
                       ),

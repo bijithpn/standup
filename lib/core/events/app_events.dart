@@ -207,6 +207,11 @@ class ThrowableDisposedEvent extends AppEvent {
   ThrowableDisposedEvent({required this.objectId, super.timestamp});
 }
 
+class ThrowableEatenEvent extends AppEvent {
+  final int objectId;
+  ThrowableEatenEvent({required this.objectId, super.timestamp});
+}
+
 class ThrowRejectedEvent extends AppEvent {
   ThrowRejectedEvent({super.timestamp});
 }

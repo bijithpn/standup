@@ -195,7 +195,7 @@ class WindowsBridge implements NativeBridgePlatform {
       );
       if (displays == null) return [];
       return displays
-          .map((e) => NativeDisplayInfo.fromMap(e as Map<String, dynamic>))
+          .map((e) => NativeDisplayInfo.fromMap(Map<String, dynamic>.from(e as Map)))
           .toList();
     } catch (e, stackTrace) {
       developer.log(
@@ -246,7 +246,7 @@ class WindowsBridge implements NativeBridgePlatform {
     );
     if (windows == null) return [];
     return windows
-        .map((e) => WindowInfo.fromMap(e as Map<String, dynamic>))
+        .map((e) => WindowInfo.fromMap(Map<String, dynamic>.from(e as Map)))
         .toList();
   }
 
@@ -269,8 +269,8 @@ class WindowsBridge implements NativeBridgePlatform {
     );
     eventChannel.receiveBroadcastStream().listen(
       (dynamic event) {
-        if (event is Map<String, dynamic>) {
-          callback(ConstraintWindowArgs.fromMap(event));
+        if (event is Map) {
+          callback(ConstraintWindowArgs.fromMap(Map<String, dynamic>.from(event)));
         }
       },
       onError: (Object error) {

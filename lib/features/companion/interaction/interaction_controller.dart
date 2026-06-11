@@ -28,6 +28,7 @@ class InteractionController with WidgetsBindingObserver {
     SettingsRepository? settingsRepository,
     AppLogger? logger,
     CompanionBehaviorEngine? behaviorEngine,
+    this.isPiP = false,
   }) : _stateMachine = stateMachine ?? PetStateMachine(),
        _eventBus = eventBus ?? EventBus.instance,
        _cursorTracker = cursorTracker ?? CursorTracker(),
@@ -47,6 +48,7 @@ class InteractionController with WidgetsBindingObserver {
   final SettingsRepository? _settingsRepository;
   final AppLogger _logger;
   final CompanionBehaviorEngine? _behaviorEngine;
+  final bool isPiP;
 
   bool reducedMotion = false;
 
@@ -280,7 +282,8 @@ class InteractionController with WidgetsBindingObserver {
       -(_random.nextDouble() * 80 + 20),
     );
 
-    manager.spawnThrowable(releasePoint, dragVector, kind: 'ball');
+    final double toySize = isPiP ? 10.0 : 20.0;
+    manager.spawnThrowable(releasePoint, dragVector, kind: 'ball', customSize: toySize);
     _suppressBehavior();
   }
 
@@ -325,10 +328,12 @@ class InteractionController with WidgetsBindingObserver {
 
     final Offset dragVector = defaultFacing * treatOffset;
 
+    final double treatSize = isPiP ? 10.0 : 20.0;
     final result = manager.spawnThrowable(
       releasePoint,
       dragVector,
       kind: 'treat',
+      customSize: treatSize,
     );
 
     if (result == null) {
