@@ -120,6 +120,10 @@ class CompanionGame extends FlameGame {
   static const double _sleepBubbleDuration = 2.0;
   PetState _previousState = PetState.idle;
 
+  // Throttle anchor-point persistence: at most once every 10 seconds.
+  DateTime? _lastAnchorWriteTime;
+  static const Duration _anchorWriteInterval = Duration(seconds: 10);
+
   late final _DeveloperReactionController _devReaction;
 
   ui.Image? mouseImage;
@@ -677,27 +681,16 @@ class CompanionGame extends FlameGame {
   }
 
   double _getGroundOffset() {
-    final double spriteSize = _theme.spriteSize.toDouble();
-    final double scale = _effectiveScale(spriteSize);
-    if (_theme.spriteSize == 32) {
-      return scale * 5.0;
-    } else if (_theme.spriteSize == 50) {
-      return scale * 18.0;
-    } else if (_theme.spriteSize == 64) {
-      return scale * 16.0;
-    } else if (_theme.spriteSize == 128) {
-      return scale * 20.0;
-    }
     return 0.0;
   }
 
   void _updateNavigationPaddings() {
-    if (petComponent == null) return;
+    // Do not gate on petComponent: paddings must be set before the first
+    // navigation update tick, which happens before petComponent is created.
+    if (size.x <= 0 || size.y <= 0) return;
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
     final double scaledHalfW = (spriteSize * scale) / 2;
-    final double scaledHalfH = (spriteSize * scale) / 2;
-    final double groundOffset = _getGroundOffset();
 
     final double worldWidth = isPiP ? size.x * 1.3 : size.x;
 
@@ -708,9 +701,7 @@ class CompanionGame extends FlameGame {
       maxX = worldWidth / 2;
     }
 
-    final double groundY = isPiP
-        ? (size.y - 52.0 - scaledHalfH + groundOffset)
-        : (size.y - scaledHalfH - 4.0 + groundOffset);
+    final double groundY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
 
     _petService.navigation.updatePaddings(
       left: minX,
@@ -742,12 +733,7 @@ class CompanionGame extends FlameGame {
     petComponent!.size = Vector2(spriteSize, spriteSize);
     petComponent!.scale = Vector2.all(scale);
 
-    final double scaledHalfW = (spriteSize * scale) / 2;
-    final double scaledHalfH = (spriteSize * scale) / 2;
-    final double groundOffset = _getGroundOffset();
-    final double initialY = isPiP
-        ? size.y - 52.0 - scaledHalfH + groundOffset
-        : size.y - scaledHalfH - 4.0 + groundOffset;
+    final double initialY = isPiP ? size.y - 52.0 : size.y - 4.0;
 
     final double worldWidth = isPiP ? size.x * 1.3 : size.x;
     petComponent!.position = Vector2(worldWidth / 2, initialY);
@@ -761,14 +747,9 @@ class CompanionGame extends FlameGame {
     _updateNavigationPaddings();
 
     final currentPos = _petService.navigation.currentPosition;
-    final minY = isPiP
-        ? (size.y - 52.0 - scaledHalfH + groundOffset)
-        : (scaledHalfH + 4.0 - groundOffset);
-    final maxY = isPiP
-        ? (size.y - 52.0 - scaledHalfH + groundOffset)
-        : (size.y - scaledHalfH - 4.0 + groundOffset);
-    if (currentPos.dy < minY ||
-        currentPos.dy > maxY ||
+    final double scaledHalfW = (spriteSize * scale) / 2;
+
+    if (currentPos.dy != initialY ||
         currentPos.dx < scaledHalfW + 4.0 ||
         currentPos.dx > worldWidth - scaledHalfW - 4.0) {
       _petService.navigation.teleport(Offset(worldWidth / 2, initialY));
@@ -1069,7 +1050,14 @@ class CompanionGame extends FlameGame {
     final Offset currentPos = petCenter;
     if (currentPos != _petConfig.lastAnchorPoint) {
       _petConfig = _petConfig.copyWith(lastAnchorPoint: currentPos);
-      _settingsPersistence.scheduleWrite(_petConfig);
+      // Throttle disk writes: at most once every 10 seconds to prevent
+      // synchronous IO stutter on every movement frame.
+      final now = DateTime.now();
+      if (_lastAnchorWriteTime == null ||
+          now.difference(_lastAnchorWriteTime!) >= _anchorWriteInterval) {
+        _settingsPersistence.scheduleWrite(_petConfig);
+        _lastAnchorWriteTime = now;
+      }
     }
 
     _needsEngine.tick(
@@ -1174,21 +1162,28 @@ class CompanionGame extends FlameGame {
     if (size.x > 0 && size.y > 0) {
       final double worldWidth = isPiP ? size.x * 1.3 : size.x;
       final newSize = Size(worldWidth, size.y);
-      if (_lastInitializedSize != newSize) {
+      if (_lastInitializedSize == null) {
+        // First-ever call: full initialization including position reset.
         _lastInitializedSize = newSize;
         final double spriteSize = _theme.spriteSize.toDouble();
         final double scale = _effectiveScale(spriteSize);
         final double scaledHalfH = (spriteSize * scale) / 2;
         final double groundOffset = _getGroundOffset();
-
         final double initialY = isPiP
             ? size.y - 52.0 - scaledHalfH + groundOffset
             : size.y - scaledHalfH - 4.0 + groundOffset;
-
         _petService.initialize(
           screenSize: newSize,
           startPosition: Offset(worldWidth / 2, initialY),
         );
+        // Set floor paddings immediately so the navigation service has the
+        // correct _paddingTop before the first update() tick.
+        _updateNavigationPaddings();
+      } else if (_lastInitializedSize != newSize) {
+        // Subsequent resize: update bounds only — do NOT reset position or velocity.
+        _lastInitializedSize = newSize;
+        _petService.navigation.updateScreenSize(newSize);
+        _updateNavigationPaddings();
       }
     }
 
@@ -1209,15 +1204,16 @@ class CompanionGame extends FlameGame {
         newX = worldWidth / 2;
       }
 
-      final double scaledHalfH = (spriteSize * scale) / 2;
-      final double groundOffset = _getGroundOffset();
-      final double initialY = isPiP
-          ? size.y - 52.0 - scaledHalfH + groundOffset
-          : size.y - scaledHalfH - 4.0 + groundOffset;
+      // Clamp Y to the correct floor without teleporting.
+      // Dynamic padding handles the visual offset.
+      final double floorY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
+      final double clampedY = petComponent!.position.y.clamp(
+        0.0,
+        floorY,
+      );
 
-      petComponent!.position = Vector2(newX, initialY);
+      petComponent!.position = Vector2(newX, clampedY);
       _updateNavigationPaddings();
-      _petService.navigation.teleport(Offset(newX, initialY));
     }
   }
 }

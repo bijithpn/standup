@@ -77,7 +77,12 @@ final class PiPWindowManager: NSObject {
             binaryMessenger: engine.binaryMessenger
         )
         bridgeChannel.setMethodCallHandler { call, result in
-            BehaviorEngineBridge.shared.handle(call, result: result)
+            if call.method == "hidePipWindow" {
+                PiPWindowManager.shared.hidePipWindow()
+                result(nil)
+            } else {
+                BehaviorEngineBridge.shared.handle(call, result: result)
+            }
         }
 
         isSettingUp = false

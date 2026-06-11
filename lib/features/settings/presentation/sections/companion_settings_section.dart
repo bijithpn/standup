@@ -114,7 +114,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     widget.controller.changeScale(snapped);
                   },
                   min: 2.0,
-                  max: 8.0,
+                  max: 15.0,
                 ),
               ]),
 
