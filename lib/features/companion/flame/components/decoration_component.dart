@@ -15,6 +15,8 @@ class DecorationComponent extends SpriteComponent with HasGameReference<Companio
   final DecorationType type;
   final ThemeAssetConfig assetConfig;
   final double xRatio; // Horizontal position ratio (0.0 to 1.0) of the screen width
+  double _bottomPadding = 0.0;
+  double _scaleFactor = 1.0;
 
   DecorationComponent({
     required this.type,
@@ -42,29 +44,37 @@ class DecorationComponent extends SpriteComponent with HasGameReference<Companio
 
     // Dynamic sizes and scaling based on type
     if (type == DecorationType.rock) {
-      final double targetScale = 0.9 + _rng.nextDouble() * 0.4;
+      _scaleFactor = 0.9 + _rng.nextDouble() * 0.4;
       size = Vector2(
-        assetConfig.spriteWidth * targetScale,
-        assetConfig.spriteHeight * targetScale,
+        (assetConfig.isSpriteSheet ? assetConfig.spriteWidth : image.width.toDouble()) * _scaleFactor,
+        (assetConfig.isSpriteSheet ? assetConfig.spriteHeight : image.height.toDouble()) * _scaleFactor,
       );
     } else {
-      final double targetScale = 0.8 + _rng.nextDouble() * 0.4;
+      _scaleFactor = 0.8 + _rng.nextDouble() * 0.4;
       size = Vector2(
-        assetConfig.spriteWidth * targetScale,
-        assetConfig.spriteHeight * targetScale,
+        (assetConfig.isSpriteSheet ? assetConfig.spriteWidth : image.width.toDouble()) * _scaleFactor,
+        (assetConfig.isSpriteSheet ? assetConfig.spriteHeight : image.height.toDouble()) * _scaleFactor,
       );
     }
+
+    // Scan transparent bottom padding of the first frame / image
+    final rect = assetConfig.isSpriteSheet
+        ? Rect.fromLTWH(assetConfig.srcX, assetConfig.srcY, assetConfig.spriteWidth, assetConfig.spriteHeight)
+        : Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    _bottomPadding = await PetAssetLoader.computeImageRectBottomPadding(image, rect);
 
     _updatePosition();
   }
 
   void _updatePosition() {
-    final double groundY = game.isPiP ? (game.size.y - 52.0) : (game.size.y - 4.0);
+    final double groundY = game.isPiP ? (game.size.y - 32.0) : (game.size.y - 4.0);
     final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     final double posX = worldWidth * xRatio;
 
     // Place background mountains slightly lower so they look integrated behind the tiles
-    final double posY = type == DecorationType.mountain ? groundY + 8.0 : groundY + 2.0;
+    final double posY = type == DecorationType.mountain 
+        ? groundY + 8.0 
+        : groundY + 2.0 + (_bottomPadding * _scaleFactor);
 
     position = Vector2(posX, posY);
   }

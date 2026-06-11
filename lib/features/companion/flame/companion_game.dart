@@ -224,7 +224,7 @@ class CompanionGame extends FlameGame {
         ErrorHandler().handleError(e, st);
       }
       _physicsSimulator.setBoundary(
-        Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
+        Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 32.0),
       );
     } else {
       _physicsSimulator.setBoundary(_displayManager.unionBounds);
@@ -721,7 +721,7 @@ class CompanionGame extends FlameGame {
       maxX = worldWidth / 2;
     }
 
-    final double groundY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
+    final double groundY = isPiP ? (size.y - 32.0) : (size.y - 4.0);
 
     _petService.navigation.updatePaddings(
       left: minX,
@@ -753,7 +753,7 @@ class CompanionGame extends FlameGame {
     petComponent!.size = Vector2(spriteSize, spriteSize);
     petComponent!.scale = Vector2.all(scale);
 
-    final double initialY = isPiP ? size.y - 52.0 : size.y - 4.0;
+    final double initialY = isPiP ? size.y - 32.0 : size.y - 4.0;
 
     final double worldWidth = isPiP ? size.x * 1.3 : size.x;
     petComponent!.position = Vector2(worldWidth / 2, initialY);
@@ -820,7 +820,7 @@ class CompanionGame extends FlameGame {
     final double scaledHalfH = (spriteSize * scale) / 2;
     final double groundOffset = _getGroundOffset();
     final double initialY = isPiP
-        ? size.y - 52.0 - scaledHalfH + groundOffset
+        ? size.y - 32.0 - scaledHalfH + groundOffset
         : size.y - scaledHalfH - 4.0 + groundOffset;
 
     petComponent!.position = Vector2(petComponent!.position.x, initialY);
@@ -871,7 +871,7 @@ class CompanionGame extends FlameGame {
     if (_isDragging && _dragStartPosition != null) {
       final Offset dragVector = releasePosition - _dragStartPosition!;
       final double worldWidth = size.x * 1.3;
-      final double groundHeight = size.y - 52.0 - (_theme.spriteSize.toDouble() * _effectiveScale(_theme.spriteSize.toDouble())) / 2 + _getGroundOffset();
+      final double groundHeight = size.y - 32.0 - (_theme.spriteSize.toDouble() * _effectiveScale(_theme.spriteSize.toDouble())) / 2 + _getGroundOffset();
       final returnTarget = isPiP ? Offset(worldWidth / 2, groundHeight) : null;
       final double toySize = isPiP ? 10.0 : 20.0;
       _throwableManager.spawnThrowable(
@@ -910,7 +910,7 @@ class CompanionGame extends FlameGame {
         _physicsSimulator.setConstraintBoundary(null);
         if (isPiP) {
           _physicsSimulator.setBoundary(
-            Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
+            Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 32.0),
           );
         } else {
           _physicsSimulator.setBoundary(_displayManager.unionBounds);
@@ -921,7 +921,7 @@ class CompanionGame extends FlameGame {
         _physicsSimulator.setConstraintBoundary(null);
         if (isPiP) {
           _physicsSimulator.setBoundary(
-            Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
+            Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 32.0),
           );
         } else {
           _physicsSimulator.setBoundary(_displayManager.unionBounds);
@@ -943,7 +943,7 @@ class CompanionGame extends FlameGame {
     );
     if (isPiP) {
       _physicsSimulator.setBoundary(
-        Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 52.0),
+        Rect.fromLTWH(0, 24.0, size.x * 1.3, size.y - 24.0 - 32.0),
       );
     } else {
       _physicsSimulator.setBoundary(
@@ -1028,7 +1028,7 @@ class CompanionGame extends FlameGame {
         try {
           final state = _physicsSimulator.getState(targetId);
           // The pet is bottom-anchored to the floor. Use the floor Y as the target.
-          final double groundY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
+          final double groundY = isPiP ? (size.y - 32.0) : (size.y - 4.0);
           _petService.navigation.setTarget(Offset(state.x, groundY));
           _petService.navigation.updateConfig(wanderSpeed: 160.0);
         } catch (e, st) {
@@ -1045,7 +1045,7 @@ class CompanionGame extends FlameGame {
           orElse: () => snapshots.first,
         );
         // The pet is bottom-anchored to the floor. Use the floor Y as the target.
-        final double groundY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
+        final double groundY = isPiP ? (size.y - 32.0) : (size.y - 4.0);
 
         if (activeToy.lifecycle == ThrowableLifecycle.stationary) {
           _petService.navigation.setTarget(Offset(activeToy.position.dx, groundY));
@@ -1180,7 +1180,7 @@ class CompanionGame extends FlameGame {
         final double scaledHalfH = (spriteSize * scale) / 2;
         final double groundOffset = _getGroundOffset();
         final double initialY = isPiP
-            ? size.y - 52.0 - scaledHalfH + groundOffset
+            ? size.y - 32.0 - scaledHalfH + groundOffset
             : size.y - scaledHalfH - 4.0 + groundOffset;
         _petService.initialize(
           screenSize: newSize,
@@ -1216,7 +1216,7 @@ class CompanionGame extends FlameGame {
 
       // Clamp Y to the correct floor without teleporting.
       // Dynamic padding handles the visual offset.
-      final double floorY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
+      final double floorY = isPiP ? (size.y - 32.0) : (size.y - 4.0);
       final double clampedY = petComponent!.position.y.clamp(
         0.0,
         floorY,
