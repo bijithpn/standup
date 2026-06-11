@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
-import 'package:breakmate/core/errors/error_handler.dart';
 
 class CompanionBehaviorEngine with WidgetsBindingObserver {
   CompanionBehaviorEngine({EventBus? eventBus})
@@ -29,12 +28,11 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
 
   void start() {
     stop();
-    try {
-      final settingsRepo = sl<SettingsRepository>();
-      if (!settingsRepo.currentSettings.companionEnabled) {
-        return;
-      }
-    } catch (_) {
+    if (!sl.isRegistered<SettingsRepository>()) {
+      return;
+    }
+    final settingsRepo = sl<SettingsRepository>();
+    if (!settingsRepo.currentSettings.companionEnabled) {
       return;
     }
     if (!_isEnabled) return;
@@ -64,14 +62,14 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
       stop();
       return;
     }
-    try {
-      final settingsRepo = sl<SettingsRepository>();
-      if (!settingsRepo.currentSettings.companionEnabled) {
-        stop();
-        return;
-      }
-    } catch (e, st) {
-      ErrorHandler().handleError(e, st);
+    if (!sl.isRegistered<SettingsRepository>()) {
+      stop();
+      return;
+    }
+    final settingsRepo = sl<SettingsRepository>();
+    if (!settingsRepo.currentSettings.companionEnabled) {
+      stop();
+      return;
     }
 
     if (DateTime.now().isBefore(_interactionSuppressUntil)) return;

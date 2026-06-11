@@ -184,9 +184,20 @@ class PetNavigationService {
       _updateWander(dt);
     }
 
+    // Ground-based walking pets should not have vertical velocity to prevent jitter/tilt/stretch deforming
+    if (_species.movementType == MovementType.walk) {
+      _vel = Offset(_vel.dx, 0.0);
+    }
+
     _pos = Offset(_pos.dx + _vel.dx * dt, _pos.dy + _vel.dy * dt);
 
     _clampToBounds();
+
+    if (_species.movementType == MovementType.walk) {
+      // Force Y position to stay at the vertical limit
+      _pos = Offset(_pos.dx, _paddingTop);
+      _vel = Offset(_vel.dx, 0.0);
+    }
 
     _hopY = 0.0;
     _flyY = 0.0;

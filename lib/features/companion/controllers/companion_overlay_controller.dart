@@ -137,11 +137,8 @@ class CompanionOverlayController extends ChangeNotifier {
 
     if (!_companionEnabled) return;
 
-    if (isBreak) {
-      NativeBridge.hideCompanion();
-    } else {
-      _showNativeCompanion();
-    }
+    // Do not hide the companion or PiP window during breaks.
+    _showNativeCompanion();
   }
 
   bool get companionEnabled => _companionEnabled;
@@ -168,9 +165,6 @@ class CompanionOverlayController extends ChangeNotifier {
   String get companionStateExplanation {
     if (!_companionEnabled) {
       return 'Companion is disabled in settings.';
-    }
-    if (_isBreakActive) {
-      return 'Companion is hidden while a break overlay is active.';
     }
     if (isLowDistractionMode) {
       return 'Companion is quiet, click-through, and throttled for focus.';
@@ -211,7 +205,7 @@ class CompanionOverlayController extends ChangeNotifier {
     }
 
     final shouldShow =
-        _companionEnabled && !_isBreakActive && settings.hasCompletedOnboarding;
+        _companionEnabled && settings.hasCompletedOnboarding;
     if (shouldShow) {
       unawaited(_showNativeCompanion());
     }
@@ -274,9 +268,8 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final shouldShow =
         _companionEnabled &&
-        !_isBreakActive &&
         settings.hasCompletedOnboarding &&
-        !_isPreviewMode;
+        (!_isPreviewMode || _pipModeEnabled);
 
     if (shouldShow) {
       if (!_isCompanionShown || pipModeChanged) {
@@ -303,6 +296,7 @@ class CompanionOverlayController extends ChangeNotifier {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
         if (animationsChanged ||
+            backgroundChanged ||
             pipBackgroundStyleChanged ||
             pipOpacityChanged ||
             pipDraggableClickableChanged ||
@@ -330,7 +324,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   Future<void> _showNativeCompanion() async {
     if (_isCompanionShown) return;
-    if (_isPreviewMode) return;
+    if (_isPreviewMode && !_pipModeEnabled) return;
 
     _isCompanionShown = true;
     if (_pipModeEnabled) {
@@ -356,6 +350,7 @@ class CompanionOverlayController extends ChangeNotifier {
       'pipDraggableClickable': _pipDraggableClickable,
       'companionToyType': _companionToyType,
       'companionTreatType': _companionTreatType,
+      'previewBackground': _companionPreviewBackground,
     };
   }
 
@@ -364,15 +359,17 @@ class CompanionOverlayController extends ChangeNotifier {
     _isPreviewMode = isPreview;
 
     if (_isPreviewMode) {
-      if (_isCompanionShown) {
-        _isCompanionShown = false;
-        NativeBridge.hideCompanion();
+      if (!_pipModeEnabled) {
+        if (_isCompanionShown) {
+          _isCompanionShown = false;
+          NativeBridge.hideCompanion();
+          NativeBridge.hidePipWindow();
+        }
       }
     } else {
       final settings = _settingsRepo.currentSettings;
       final shouldShow =
           _companionEnabled &&
-          !_isBreakActive &&
           settings.hasCompletedOnboarding;
       if (shouldShow && !_isCompanionShown) {
         _showNativeCompanion();

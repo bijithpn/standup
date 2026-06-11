@@ -371,6 +371,8 @@ class TimerOrchestrator {
         timerEngine.stateData.isPreBreak = savedSession.isPreBreak;
         timerEngine.stateData.longBreakWindowStartedAt =
             savedSession.longBreakWindowStartedAt;
+        timerEngine.stateData.countdownSeconds =
+            timerEngine.timeUntilNextShortBreak.inSeconds;
         _logger.info(
           'Session restored from today: ${savedSession.workElapsedSeconds}s work elapsed',
         );

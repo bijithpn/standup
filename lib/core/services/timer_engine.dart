@@ -88,7 +88,9 @@ class TimerEngine extends ChangeNotifier {
   TimerContextManager get contextManager => _contextManager;
 
   void syncNotifiersFromState() {
-    if (state == TimerState.running || state == TimerState.idle) {
+    if (state == TimerState.running ||
+        state == TimerState.paused ||
+        state == TimerState.idle) {
       _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     }
     countdownNotifier.value = _stateData.countdownSeconds;
@@ -142,7 +144,9 @@ class TimerEngine extends ChangeNotifier {
   WorkMode get mode => _stateData.mode;
   BreakModel? get activeBreak => _stateData.activeBreak;
   int get countdownSeconds {
-    if (state == TimerState.running) {
+    if (state == TimerState.running ||
+        state == TimerState.paused ||
+        state == TimerState.idle) {
       return timeUntilNextShortBreak.inSeconds;
     }
     return _stateData.countdownSeconds;
@@ -268,7 +272,9 @@ class TimerEngine extends ChangeNotifier {
 
         workElapsedNotifier.value = _stateData.workElapsed;
         totalWorkTodayNotifier.value = _stateData.totalWorkToday;
-        countdownNotifier.value = timeUntilNextShortBreak.inSeconds;
+        final remainingSeconds = timeUntilNextShortBreak.inSeconds;
+        _stateData.countdownSeconds = remainingSeconds;
+        countdownNotifier.value = remainingSeconds;
       } else if (state == TimerState.breakActive) {
         _stateData.countdownSeconds--;
         countdownNotifier.value = _stateData.countdownSeconds;
@@ -583,6 +589,7 @@ class TimerEngine extends ChangeNotifier {
 
   void pauseTimers({bool isManual = false}) {
     if (state == TimerState.breakActive) return;
+    _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     _stateData.state = TimerState.paused;
     if (isManual) {
       _stateData.isManuallyPaused = true;
@@ -610,6 +617,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.lastTickTime = DateTime.now();
     _stateData.breakEndTime = null;
     _stateData.workEndTime = DateTime.now().add(timeUntilNextShortBreak);
+    _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     _emit(
       TimerStateChangedEvent(
         state: state == TimerState.running

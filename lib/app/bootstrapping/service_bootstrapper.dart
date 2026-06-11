@@ -71,6 +71,7 @@ class ServiceBootstrapper {
         settingsRepo.currentSettings.companionPetTheme,
       );
       PetAssetLoader.preCacheTrayIcons(theme);
+      unawaited(PetAssetLoader.preCacheBackgrounds());
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }

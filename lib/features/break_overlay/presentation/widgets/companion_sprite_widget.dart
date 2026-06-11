@@ -5,6 +5,7 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
@@ -51,6 +52,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   int _lastFrameCount = 1;
   ui.Image? _loadedImage;
   ui.Image? _backgroundImage;
+  ui.Image? _groundImage;
+  ui.Image? _cloudImage;
   bool _isLoading = false;
   String _currentLoadedPath = '';
   String? _currentBackgroundPath;
@@ -95,55 +98,76 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     if (path.isEmpty) return;
 
     if (path == _currentLoadedPath &&
+        widget.backgroundImagePath == _currentBackgroundPath &&
         _loadedImage != null &&
-        widget.backgroundImagePath == _currentBackgroundPath) {
+        _groundImage != null &&
+        _cloudImage != null) {
       _setupTicker();
       return;
     }
 
-    if (mounted) {
+    final cachedSprite = PetAssetLoader.getImageSync(path);
+    final cachedBg = widget.backgroundImagePath != null
+        ? PetAssetLoader.getImageSync(widget.backgroundImagePath!)
+        : null;
+    final cachedGround = PetAssetLoader.getImageSync('assets/tilesets/ground_2.png');
+    final cachedCloud = PetAssetLoader.getImageSync('assets/tilesets/cloud_2.png');
+
+    if (cachedSprite != null &&
+        (widget.backgroundImagePath == null || cachedBg != null) &&
+        cachedGround != null &&
+        cachedCloud != null) {
+      if (mounted) {
+        setState(() {
+          _loadedImage = cachedSprite;
+          _currentLoadedPath = path;
+          _backgroundImage = cachedBg;
+          _currentBackgroundPath = widget.backgroundImagePath;
+          _groundImage = cachedGround;
+          _cloudImage = cachedCloud;
+          _isLoading = false;
+        });
+        _setupTicker();
+      }
+      return;
+    }
+
+    if (_loadedImage == null && mounted) {
       setState(() {
         _isLoading = true;
       });
     }
 
     try {
-      await _loadImage(path);
-      if (widget.backgroundImagePath != null &&
-          widget.backgroundImagePath != _currentBackgroundPath) {
-        await _loadBackground(widget.backgroundImagePath!);
-      } else if (widget.backgroundImagePath == null &&
-          _backgroundImage != null) {
-        _backgroundImage = null;
-        _currentBackgroundPath = null;
-      }
+      final results = await Future.wait([
+        PetAssetLoader.loadImage(path),
+        if (widget.backgroundImagePath != null)
+          PetAssetLoader.loadImage(widget.backgroundImagePath!)
+        else
+          Future.value(null),
+        PetAssetLoader.loadImage('assets/tilesets/ground_2.png'),
+        PetAssetLoader.loadImage('assets/tilesets/cloud_2.png'),
+      ]);
 
+      if (mounted) {
+        setState(() {
+          _loadedImage = results[0] as ui.Image;
+          _currentLoadedPath = path;
+          _backgroundImage = results[1];
+          _currentBackgroundPath = widget.backgroundImagePath;
+          _groundImage = results[2] as ui.Image;
+          _cloudImage = results[3] as ui.Image;
+          _isLoading = false;
+        });
+        _setupTicker();
+      }
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    } catch (e) {
-      debugPrint('CompanionSpriteWidget: Error loading asset $path: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadBackground(String path) async {
-    try {
-      final ui.Image bg = await PetAssetLoader.loadImage(path);
-      if (mounted) {
-        setState(() {
-          _backgroundImage = bg;
-          _currentBackgroundPath = path;
-        });
-      }
-    } catch (e) {
-      debugPrint('CompanionSpriteWidget: Error loading background $path: $e');
     }
   }
 
@@ -208,23 +232,13 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
   }
 
-  Future<void> _loadImage(String path) async {
-    final ui.Image img = await PetAssetLoader.loadImage(path);
-    if (mounted) {
-      setState(() {
-        _loadedImage = img;
-        _currentLoadedPath = path;
-      });
-      _setupTicker();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final double effectiveScale =
         widget.scale * (32.0 / widget.petTheme.spriteSize);
 
-    if (_isLoading || _loadedImage == null) {
+    final bool loading = _isLoading;
+    if (_loadedImage == null || (loading && _backgroundImage == null)) {
       return SizedBox(
         width:
             (widget.size?.width) ??
@@ -267,6 +281,19 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       frameHeight = _loadedImage!.height.toDouble();
     }
 
+    double finalPetYOffset = widget.petYOffset;
+    if (finalPetYOffset == 0.0) {
+      if (widget.petTheme.spriteSize == 32) {
+        finalPetYOffset = 5.0 * effectiveScale;
+      } else if (widget.petTheme.spriteSize == 50) {
+        finalPetYOffset = 18.0 * effectiveScale;
+      } else if (widget.petTheme.spriteSize == 64) {
+        finalPetYOffset = 16.0 * effectiveScale;
+      } else if (widget.petTheme.spriteSize == 128) {
+        finalPetYOffset = 20.0 * effectiveScale;
+      }
+    }
+
     return RepaintBoundary(
       child: ValueListenableBuilder<int>(
         valueListenable: _frameIndexNotifier,
@@ -293,8 +320,11 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
                 row: row,
                 frameIndex: frameIndex,
                 backgroundImage: _backgroundImage,
+                groundImage: _groundImage,
+                cloudImage: _cloudImage,
+                backgroundImagePath: widget.backgroundImagePath,
                 scale: effectiveScale,
-                petYOffset: widget.petYOffset,
+                petYOffset: finalPetYOffset,
                 petXOffset: widget.petXOffset,
               ),
             ),
@@ -313,6 +343,9 @@ class _SpritePainter extends CustomPainter {
   final int row;
   final int frameIndex;
   final ui.Image? backgroundImage;
+  final ui.Image? groundImage;
+  final ui.Image? cloudImage;
+  final String? backgroundImagePath;
   final double scale;
   final double petYOffset;
   final double petXOffset;
@@ -325,13 +358,101 @@ class _SpritePainter extends CustomPainter {
     required this.row,
     required this.frameIndex,
     this.backgroundImage,
+    this.groundImage,
+    this.cloudImage,
+    this.backgroundImagePath,
     required this.scale,
     this.petYOffset = 0.0,
     this.petXOffset = 0.0,
   });
 
+  Color _getAmbientTint() {
+    final now = DateTime.now();
+    final double hour = now.hour + now.minute / 60.0;
+
+    if (hour < 4.0) {
+      return const Color(0xFF16182C);
+    } else if (hour < 6.0) {
+      final double t = (hour - 4.0) / 2.0;
+      return Color.lerp(const Color(0xFF16182C), const Color(0xFFFF8A65), t)!;
+    } else if (hour < 8.0) {
+      final double t = (hour - 6.0) / 2.0;
+      return Color.lerp(const Color(0xFFFF8A65), const Color(0xFFFFECB3), t)!;
+    } else if (hour < 16.0) {
+      return const Color(0xFFFFFFFF);
+    } else if (hour < 18.0) {
+      final double t = (hour - 16.0) / 2.0;
+      return Color.lerp(const Color(0xFFFFFFFF), const Color(0xFFE57373), t)!;
+    } else if (hour < 20.0) {
+      final double t = (hour - 18.0) / 2.0;
+      return Color.lerp(const Color(0xFFE57373), const Color(0xFF3F3D56), t)!;
+    } else {
+      final double t = (hour - 20.0) / 4.0;
+      return Color.lerp(const Color(0xFF3F3D56), const Color(0xFF16182C), t)!;
+    }
+  }
+
+  Color _combineTints(Color baseTint, Color ambient) {
+    final double r = baseTint.r * ambient.r;
+    final double g = baseTint.g * ambient.g;
+    final double b = baseTint.b * ambient.b;
+    final double a = baseTint.a * ambient.a;
+    return Color.fromARGB(
+      (a * 255.0).round().clamp(0, 255),
+      (r * 255.0).round().clamp(0, 255),
+      (g * 255.0).round().clamp(0, 255),
+      (b * 255.0).round().clamp(0, 255),
+    );
+  }
+
+  Color _getGroundTint(String path) {
+    final lower = path.toLowerCase();
+    if (lower.contains('autumn')) {
+      return const Color(0xFFD47A3B); // Warm orange-brown for Autumn
+    } else if (lower.contains('winter')) {
+      return const Color(0xFFE0F7FA); // Snow white/light-blue for Winter
+    } else if (lower.contains('beach')) {
+      return const Color(0xFFFFE082); // Sandy yellow/beige for Beach
+    } else if (lower.contains('desert')) {
+      return const Color(0xFFFFCC80); // Deep sand orange/yellow for Desert
+    } else if (lower.contains('cave')) {
+      return const Color(0xFF424242); // Dark grey rock for Cave
+    } else if (lower.contains('urban')) {
+      return const Color(0xFF757575); // Asphalt grey for Urban
+    } else if (lower.contains('night_town')) {
+      return const Color(0xFF263238); // Dark blue-grey for Night Town
+    } else if (lower.contains('mist_forest')) {
+      return const Color(0xFF90A4AE); // Misty grey-green for Mist Forest
+    }
+    return const Color(0xFFFFFFFF); // Default white
+  }
+
+  Color _getCloudTint(String path) {
+    final lower = path.toLowerCase();
+    if (lower.contains('autumn')) {
+      return const Color(0xFFFFECB3); // Warm cream for Autumn clouds
+    } else if (lower.contains('winter')) {
+      return const Color(0xFFE0F2F1); // Ice blue/white for Winter clouds
+    } else if (lower.contains('beach')) {
+      return const Color(0xFFFFFFFF); // Pure white for Beach clouds
+    } else if (lower.contains('desert')) {
+      return const Color(0xFFFFF9C4); // Light warm yellow for Desert clouds
+    } else if (lower.contains('cave')) {
+      return const Color(0xFF37474F).withValues(alpha: 0.3); // Faint dark smoke for Cave clouds
+    } else if (lower.contains('urban')) {
+      return const Color(0xFFCFD8DC); // Greyish city smog/clouds
+    } else if (lower.contains('night_town')) {
+      return const Color(0xFF37474F); // Dark purple-blue clouds
+    } else if (lower.contains('mist_forest')) {
+      return const Color(0xFFB0BEC5); // Thick mist grey clouds
+    }
+    return const Color(0xFFFFFFFF); // Default white
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
+    final tint = _getAmbientTint();
+
     if (backgroundImage != null) {
       paintImage(
         canvas: canvas,
@@ -339,21 +460,93 @@ class _SpritePainter extends CustomPainter {
         image: backgroundImage!,
         fit: BoxFit.cover,
         alignment: Alignment.bottomCenter, // Keep floor visible
-        filterQuality: FilterQuality.none,
+        filterQuality: FilterQuality.medium,
+        colorFilter: ColorFilter.mode(tint, BlendMode.modulate),
       );
     }
 
+    final String path = backgroundImagePath ?? '';
+
+    // Draw cloud if available
+    if (cloudImage != null) {
+      final cloudBaseTint = _getCloudTint(path);
+      final finalCloudTint = _combineTints(
+        cloudBaseTint.withValues(alpha: 0.45),
+        tint,
+      );
+      final cloudPaint = Paint()
+        ..colorFilter = ColorFilter.mode(finalCloudTint, BlendMode.modulate)
+        ..filterQuality = FilterQuality.medium;
+
+      final double cloudScale = 0.45;
+      final double cw = cloudImage!.width * cloudScale;
+      final double ch = cloudImage!.height * cloudScale;
+      canvas.drawImageRect(
+        cloudImage!,
+        Rect.fromLTWH(0, 0, cloudImage!.width.toDouble(), cloudImage!.height.toDouble()),
+        Rect.fromLTWH(size.width * 0.15, size.height * 0.12, cw, ch),
+        cloudPaint,
+      );
+    }
+
+    // Draw ground if available
+    final double groundY = size.height - 20.0;
+    if (groundImage != null) {
+      final groundBaseTint = _getGroundTint(path);
+      final finalGroundTint = _combineTints(groundBaseTint, tint);
+
+      final groundPaint = Paint()
+        ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate)
+        ..filterQuality = FilterQuality.none;
+
+      final double groundTileWidth = 32.0;
+      final double groundTileHeight = 22.0;
+
+      // Draw the dirt base at the very bottom
+      final basePaint = Paint()
+        ..color = const Color(0xFF2E2625).withValues(alpha: 0.95)
+        ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
+      canvas.drawRect(
+        Rect.fromLTWH(0, groundY + 8.0, size.width, size.height - groundY - 8.0),
+        basePaint,
+      );
+
+      // Tiled ground
+      double x = 0;
+      while (x < size.width + groundTileWidth) {
+        canvas.drawImageRect(
+          groundImage!,
+          Rect.fromLTWH(0, 0, groundImage!.width.toDouble(), groundImage!.height.toDouble()),
+          Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
+          groundPaint,
+        );
+        x += groundTileWidth;
+      }
+    }
+
+    // Draw pet
     final double srcX = frameIndex * frameWidth;
     final double srcY = row * frameHeight;
 
     final src = Rect.fromLTWH(srcX, srcY, frameWidth, frameHeight);
 
-    final double drawWidth = frameWidth * scale;
-    final double drawHeight = frameHeight * scale;
+    double drawWidth = frameWidth * scale;
+    double drawHeight = frameHeight * scale;
 
+    // If drawing dimensions exceed the widget's canvas size, scale down to fit.
+    if (drawWidth > size.width || drawHeight > size.height) {
+      final double fitScale = (size.width / drawWidth) < (size.height / drawHeight)
+          ? (size.width / drawWidth)
+          : (size.height / drawHeight);
+      const double paddingFactor = 0.9;
+      drawWidth *= fitScale * paddingFactor;
+      drawHeight *= fitScale * paddingFactor;
+    }
+
+    // Align pet's feet to groundY
     final dst = Rect.fromLTWH(
       (size.width - drawWidth) / 2 + petXOffset,
-      size.height - drawHeight + petYOffset,
+      groundY - drawHeight + petYOffset,
       drawWidth,
       drawHeight,
     );
@@ -373,6 +566,9 @@ class _SpritePainter extends CustomPainter {
         oldDelegate.row != row ||
         oldDelegate.frameIndex != frameIndex ||
         oldDelegate.backgroundImage != backgroundImage ||
+        oldDelegate.groundImage != groundImage ||
+        oldDelegate.cloudImage != cloudImage ||
+        oldDelegate.backgroundImagePath != backgroundImagePath ||
         oldDelegate.scale != scale ||
         oldDelegate.petYOffset != petYOffset ||
         oldDelegate.petXOffset != petXOffset;

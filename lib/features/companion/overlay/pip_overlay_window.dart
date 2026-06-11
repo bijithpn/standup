@@ -16,6 +16,8 @@ import 'package:breakmate/features/companion/interaction/interaction_controller.
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
@@ -35,11 +37,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   String _petName = 'Mochi';
   double _scale = 3.0;
   bool _gameInitialized = false;
+  String _previewBackground = 'assets/background/sky/background.png';
 
   late final CompanionWindowManager _windowManager = CompanionWindowManager(
     displayManager: NativeDisplayManager(),
   );
-  final InteractionController _interactionController = InteractionController();
+  InteractionController? _interactionController;
 
   bool _clickThrough = false;
   bool _acceptsMouse = true;
@@ -64,8 +67,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   bool _pipDraggableClickable = true;
 
   Offset? _dragStartPosition;
-
   Offset? _lastDragPosition;
+  Offset? _lastLocalDragPosition;
 
   String? _feedbackText;
 
@@ -82,7 +85,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     _channel.setMethodCallHandler(_handleMethodCall);
     _fetchInitialSettings();
-    _interactionController.initialize();
 
     _clickThroughTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _checkClickThrough();
@@ -96,7 +98,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   void dispose() {
     _channel.setMethodCallHandler(null);
     _barAnim.dispose();
-    _interactionController.dispose();
+    _interactionController?.dispose();
     _throwEventSub?.cancel();
     _treatEventSub?.cancel();
     _treatCooldownTimer?.cancel();
@@ -158,8 +160,20 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         initialTheme: PetTheme.getTheme(_themeId),
         scaleOverride: _scale,
         isPiP: true,
+        backgroundImagePath: _previewBackground,
       );
       _gameInitialized = true;
+      _interactionController?.dispose();
+      _interactionController = InteractionController(
+        throwableObjectManager: _game!.throwableManager,
+        petCompanionService: _game!.petService,
+        needsEngine: _game!.needsEngine,
+        settingsRepository: sl.isRegistered<SettingsRepository>()
+            ? sl<SettingsRepository>()
+            : null,
+        isPiP: true,
+      );
+      _interactionController!.initialize();
     });
   }
 
@@ -177,6 +191,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         (args['pipDraggableClickable'] as bool?) ?? _pipDraggableClickable;
     final newToyType = (args['companionToyType'] as String?) ?? 'tennis_ball';
     final newTreatType = (args['companionTreatType'] as String?) ?? 'sushi';
+    final newPreviewBackground =
+        (args['previewBackground'] as String?) ?? _previewBackground;
 
     if (!_gameInitialized) {
       setState(() {
@@ -187,14 +203,27 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         _pipBackgroundStyle = newPipBackgroundStyle;
         _pipOpacity = newPipOpacity;
         _pipDraggableClickable = newPipDraggableClickable;
+        _previewBackground = newPreviewBackground;
         _game = CompanionGame(
           initialTheme: PetTheme.getTheme(_themeId),
           scaleOverride: _scale,
           isPiP: true,
           toyType: newToyType,
           treatType: newTreatType,
+          backgroundImagePath: newPreviewBackground,
         );
         _gameInitialized = true;
+        _interactionController?.dispose();
+        _interactionController = InteractionController(
+          throwableObjectManager: _game!.throwableManager,
+          petCompanionService: _game!.petService,
+          needsEngine: _game!.needsEngine,
+          settingsRepository: sl.isRegistered<SettingsRepository>()
+              ? sl<SettingsRepository>()
+              : null,
+          isPiP: true,
+        );
+        _interactionController!.initialize();
       });
     } else {
       setState(() {
@@ -217,6 +246,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         }
         if (newTreatType != _game?.treatType) {
           _game?.updateTreatType(newTreatType);
+        }
+        if (newPreviewBackground != _previewBackground) {
+          _previewBackground = newPreviewBackground;
+          _game?.updateBackgroundImagePath(newPreviewBackground);
         }
         _pipBackgroundStyle = newPipBackgroundStyle;
         _pipOpacity = newPipOpacity;
@@ -328,13 +361,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   void _throwBall() {
     if (_throwDisabled) return;
-    _interactionController.throwToy();
+    _interactionController?.throwToy();
     _flashFeedback('Fetch!');
   }
 
   void _giveTreat() {
     if (_treatOnCooldown) return;
-    _interactionController.giveTreat();
+    _interactionController?.giveTreat();
     _flashFeedback('Treat!');
 
     setState(() => _treatOnCooldown = true);
@@ -368,16 +401,22 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   static const double _dragHandleHeight = CompanionWindowManager.handleHeight;
 
   void _onPetTap() {
-    _interactionController.onPetClicked();
+    _interactionController?.onPetClicked();
   }
 
   void _onPetDoubleTap() {
-    _interactionController.onPetDoubleClicked();
+    _interactionController?.onPetDoubleClicked();
   }
 
   void _onDragStart(DragStartDetails details) {
     _dragStartPosition = details.globalPosition;
     _lastDragPosition = details.globalPosition;
+    _lastLocalDragPosition = details.localPosition;
+
+    final worldPos = _game?.screenToWorld(details.localPosition);
+    if (worldPos != null) {
+      _game?.onDragStart(worldPos);
+    }
   }
 
   void _onDragUpdate(DragUpdateDetails details) {
@@ -386,34 +425,40 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     final delta = details.globalPosition - (_lastDragPosition ?? start);
     _lastDragPosition = details.globalPosition;
-    _interactionController.onPetDragged(delta);
+    _lastLocalDragPosition = details.localPosition;
+    _interactionController?.onPetDragged(delta);
   }
 
   void _onDragEnd(DragEndDetails details) {
     final start = _dragStartPosition;
     final last = _lastDragPosition;
     if (start != null && last != null) {
-      final dragVector = last - start;
-      _interactionController.onPetDragReleased(dragVector);
+      _interactionController?.onPetDragReleased(Offset.zero);
     }
+
+    final lastLocal = _lastLocalDragPosition;
+    if (lastLocal != null) {
+      final worldPos = _game?.screenToWorld(lastLocal);
+      if (worldPos != null) {
+        _game?.onDragEnd(worldPos);
+      }
+    }
+
     _dragStartPosition = null;
     _lastDragPosition = null;
+    _lastLocalDragPosition = null;
   }
 
   void _onHover(PointerHoverEvent event) {
-    _interactionController.onPetPetted();
+    _interactionController?.onPetPetted();
   }
 
   bool get _isLightBackground => _pipBackgroundStyle == 'light';
 
   Decoration _buildContainerDecoration() {
-    if (_pipBackgroundStyle == 'transparent') {
-      return const BoxDecoration(color: Colors.transparent);
-    }
-
     if (_pipBackgroundStyle == 'light') {
       return BoxDecoration(
-        color: const Color(0xFFF5F5FA).withValues(alpha: 0.9),
+        color: const Color(0xFFF5F5FA),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
           color: const Color(0xFF161622).withValues(alpha: 0.1),
@@ -431,7 +476,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
 
     return BoxDecoration(
-      color: const Color(0xFF161622).withValues(alpha: 0.9),
+      color: const Color(0xFF161622),
       borderRadius: BorderRadius.circular(24),
       border: Border.all(
         color: Colors.white.withValues(alpha: 0.1),
@@ -877,8 +922,8 @@ class _BarButtonState extends State<_BarButton>
               children: [
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  width: 40,
-                  height: 40,
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
                     color: isHoverActive
                         ? (widget.isLightBackground
@@ -887,7 +932,7 @@ class _BarButtonState extends State<_BarButton>
                         : (widget.isLightBackground
                               ? Colors.black.withValues(alpha: 0.05)
                               : Colors.white.withValues(alpha: 0.05)),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isHoverActive
                           ? (widget.isLightBackground
@@ -901,13 +946,13 @@ class _BarButtonState extends State<_BarButton>
                     child: widget.iconPath != null
                         ? Image.asset(
                             widget.iconPath!,
-                            width: 22,
-                            height: 22,
+                            width: 18,
+                            height: 18,
                             fit: BoxFit.contain,
                           )
                         : Text(
                             widget.emoji!,
-                            style: const TextStyle(fontSize: 18),
+                            style: const TextStyle(fontSize: 15),
                           ),
                   ),
                 ),
