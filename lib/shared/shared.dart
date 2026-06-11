@@ -7,3 +7,5 @@ export 'widgets/minimal_controls.dart';
 export 'widgets/pressable_button.dart';
 export 'widgets/progress_ring.dart';
 export 'widgets/staggered_fade_in.dart';
+export 'widgets/desktop_drag_scroll_behavior.dart';
+

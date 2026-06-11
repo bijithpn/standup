@@ -1,7 +1,9 @@
 #include "companion_window_manager.h"
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
+#include <dwmapi.h>
 #include "ipc_bridge_manager.h"
+
 
 CompanionWindowManager* CompanionWindowManager::instance_ = nullptr;
 
@@ -290,15 +292,21 @@ void CompanionWindowManager::ShowPiP(
   HWND hwnd = pip_window_->GetHandle();
 
   LONG style = GetWindowLong(hwnd, GWL_STYLE);
-  style &= ~(WS_CAPTION | WS_THICKFRAME | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+  style &= ~(WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU);
+  style |= WS_THICKFRAME;
   SetWindowLong(hwnd, GWL_STYLE, style);
 
   LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-  exStyle |= WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
-  if (click_through) exStyle |= WS_EX_TRANSPARENT;
+  exStyle |= WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE;
+  if (click_through) {
+    exStyle |= WS_EX_TRANSPARENT;
+    pip_window_->SetIgnoreMouseEvents(true);
+  }
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+  // Enable transparent background so Flutter's rounded corners blend correctly
+  MARGINS margins = {-1, -1, -1, -1};
+  DwmExtendFrameIntoClientArea(hwnd, &margins);
 
   SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH,
                SWP_NOACTIVATE | SWP_SHOWWINDOW | SWP_FRAMECHANGED);
