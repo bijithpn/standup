@@ -6,6 +6,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_theme.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/shared.dart';
 import 'environment_builder_controller.dart';
 import 'widgets/env_preview_panel.dart';
 import 'widgets/asset_picker_section.dart';
@@ -33,16 +34,19 @@ class _EnvironmentBuilderBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.surface,
-      appBar: _buildAppBar(context),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth >= 800) {
-            return _WideLayout();
-          }
-          return _NarrowLayout();
-        },
+    return ScrollConfiguration(
+      behavior: const DesktopDragScrollBehavior(),
+      child: Scaffold(
+        backgroundColor: AppTheme.surface,
+        appBar: _buildAppBar(context),
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth >= 800) {
+              return _WideLayout();
+            }
+            return _NarrowLayout();
+          },
+        ),
       ),
     );
   }

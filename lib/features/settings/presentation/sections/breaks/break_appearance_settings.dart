@@ -1303,11 +1303,3 @@ class _DotGridPainter extends CustomPainter {
   bool shouldRepaint(_DotGridPainter oldDelegate) => oldDelegate.color != color;
 }
 
-class DesktopDragScrollBehavior extends MaterialScrollBehavior {
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-    PointerDeviceKind.touch,
-    PointerDeviceKind.mouse,
-    PointerDeviceKind.trackpad,
-  };
-}

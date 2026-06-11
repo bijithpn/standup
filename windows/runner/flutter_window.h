@@ -103,6 +103,7 @@ class FlutterWindow : public Win32Window {
   LONG original_style_ = 0;
   LONG original_ex_style_ = 0;
   bool is_overlay_mode_ = false;
+  bool ignore_mouse_events_ = false;
 
   std::unique_ptr<CalendarBridge> calendar_bridge_;
 

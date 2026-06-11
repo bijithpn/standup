@@ -156,7 +156,7 @@ class MeetingDetectionStreamHandler : public flutter::StreamHandler<flutter::Enc
 static DisplayStreamHandler* g_display_stream_handler = nullptr;
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
-    : project_(project) {}
+    : project_(project), ignore_mouse_events_(false) {}
 
 FlutterWindow::~FlutterWindow() {}
 
@@ -268,6 +268,8 @@ void FlutterWindow::SetupWindowBridge() {
           flutter::EncodableMap pos;
           pos[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(rect.left));
           pos[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(rect.top));
+          pos[flutter::EncodableValue("width")] = flutter::EncodableValue(static_cast<double>(rect.right - rect.left));
+          pos[flutter::EncodableValue("height")] = flutter::EncodableValue(static_cast<double>(rect.bottom - rect.top));
           result->Success(flutter::EncodableValue(pos));
         }
         else if (method_name == "setWindowOpacity") {
@@ -318,7 +320,7 @@ void FlutterWindow::SetupWindowBridge() {
           // the caption hit-test — the standard mechanism for borderless windows.
           HWND hwnd = GetHandle();
           ReleaseCapture();
-          PostMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+          SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
           result->Success();
         }
         else if (method_name == "setNonActivating") {
@@ -858,6 +860,9 @@ void FlutterWindow::SetWindowTransparency(double opacity) {
   HWND hwnd = GetHandle();
   if (!hwnd) return;
 
+  // Bypass native layered window opacity for PiP windows to preserve transparent rounded corners
+  if (is_pip_) return;
+
   // Clamp opacity to valid range
   opacity = opacity < 0.0 ? 0.0 : (opacity > 1.0 ? 1.0 : opacity);
   
@@ -868,6 +873,8 @@ void FlutterWindow::SetWindowTransparency(double opacity) {
 
 // Set window to ignore mouse events (click-through)
 void FlutterWindow::SetIgnoreMouseEvents(bool ignore) {
+  ignore_mouse_events_ = ignore;
+
   HWND hwnd = GetHandle();
   if (!hwnd) return;
 
@@ -878,6 +885,10 @@ void FlutterWindow::SetIgnoreMouseEvents(bool ignore) {
     exStyle &= ~WS_EX_TRANSPARENT; // Normal mouse interaction
   }
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
+
+  // Trigger WM_NCHITTEST update
+  SetWindowPos(hwnd, nullptr, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED | SWP_NOACTIVATE);
 }
 
 void FlutterWindow::SetupOverlayBridge() {
@@ -948,6 +959,63 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (is_pip_) {
+    switch (message) {
+      case WM_NCCALCSIZE: {
+        if (wparam == TRUE) {
+          return 0; // Client area occupies the entire window (removing frame borders)
+        }
+        break;
+      }
+      case WM_NCHITTEST: {
+        if (ignore_mouse_events_) {
+          return HTTRANSPARENT;
+        }
+
+        short x_pos = static_cast<short>(LOWORD(lparam));
+        short y_pos = static_cast<short>(HIWORD(lparam));
+        POINT pt = { x_pos, y_pos };
+        ScreenToClient(hwnd, &pt);
+        RECT rect;
+        GetClientRect(hwnd, &rect);
+        
+        const int border_width = 8;
+        
+        bool left = pt.x < border_width;
+        bool right = pt.x >= rect.right - border_width;
+        bool top = pt.y < border_width;
+        bool bottom = pt.y >= rect.bottom - border_width;
+        
+        if (top && left) return HTTOPLEFT;
+        if (top && right) return HTTOPRIGHT;
+        if (bottom && left) return HTBOTTOMLEFT;
+        if (bottom && right) return HTBOTTOMRIGHT;
+        if (left) return HTLEFT;
+        if (right) return HTRIGHT;
+        if (top) return HTTOP;
+        if (bottom) return HTBOTTOM;
+
+        // Custom drag handle region:
+        // Card is inset by 12px margin. Drag handle height is 32px.
+        // So drag handle runs vertically from y = 12 to y = 44.
+        // Avoid the close button region on the top-right of the card.
+        if (pt.y >= 12 && pt.y < 44 && pt.x >= 12 && pt.x < (rect.right - 50)) {
+          return HTCAPTION;
+        }
+
+        break;
+      }
+      case WM_GETMINMAXINFO: {
+        MINMAXINFO* mmi = reinterpret_cast<MINMAXINFO*>(lparam);
+        mmi->ptMinTrackSize.x = 200;
+        mmi->ptMinTrackSize.y = 200;
+        mmi->ptMaxTrackSize.x = 600;
+        mmi->ptMaxTrackSize.y = 600;
+        return 0;
+      }
+    }
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =
