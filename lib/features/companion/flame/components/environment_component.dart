@@ -12,7 +12,7 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
   EnvironmentComponent({
     this.backgroundImagePath = 'assets/environments/sky/sky_back.png',
-  });
+  }) : super(priority: -10);
 
   ui.Image? _skyImage;
   ui.Image? _groundImage;
@@ -178,7 +178,7 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
       final double groundTileWidth = 48.0;
       final double groundTileHeight = 32.0;
-      final double groundY = size.y - 52.0;
+      final double groundY = size.y - 32.0;
 
       final basePaint = Paint()
         ..color = config.baseColor.withValues(alpha: 0.95)

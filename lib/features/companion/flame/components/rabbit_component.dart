@@ -78,7 +78,7 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
     animation = _idleAnimation;
 
     // Initial position placement on ground Y
-    final double groundY = game.isPiP ? (game.size.y - 52.0) : (game.size.y - 4.0);
+    final double groundY = game.isPiP ? (game.size.y - 32.0) : (game.size.y - 4.0);
     final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     final double startX = 30.0 + _rng.nextDouble() * (worldWidth - 60.0);
 
@@ -110,7 +110,7 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
   void update(double dt) {
     super.update(dt);
 
-    final double groundY = game.isPiP ? (game.size.y - 52.0) : (game.size.y - 4.0);
+    final double groundY = game.isPiP ? (game.size.y - 32.0) : (game.size.y - 4.0);
     position.y = groundY + (_bottomPadding * _scaleFactor) + 2.0;
 
     if (!_isMoving) {
