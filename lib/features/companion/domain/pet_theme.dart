@@ -596,7 +596,7 @@ class PetTheme {
     PetTheme(
       id: keyFlamingo,
       name: 'Pinky Flamingo',
-      basePath: 'assets/animations/flaming/PixelFlamingoSpriteSheet.png',
+      basePath: 'assets/animations/flamingo/pixelflamingospritesheet.png',
       type: PetType.composite,
       spriteSize: 128,
       animations: _flamingoSheetAnimations,

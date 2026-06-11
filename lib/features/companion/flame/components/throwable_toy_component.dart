@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 
 class ThrowableToyComponent extends PositionComponent
     with HasGameReference<CompanionGame> {
@@ -21,12 +23,29 @@ class ThrowableToyComponent extends PositionComponent
   }) : super(anchor: Anchor.center);
 
   final Paint _paint = Paint();
+  ThemeAssetConfig? _assetConfig;
+  ui.Image? _image;
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
     final double baseSize = game.isPiP ? 10.0 : 20.0;
     size = Vector2(baseSize, baseSize);
+
+    final config = EnvironmentThemeConfig.getByPath(game.backgroundImagePath);
+    if (kind == 'treat') {
+      _assetConfig = config.foodAssets[type];
+    } else {
+      _assetConfig = config.toyAssets[type];
+    }
+
+    if (_assetConfig != null) {
+      try {
+        _image = await PetAssetLoader.loadImage(_assetConfig!.path);
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
+    }
   }
 
   @override
@@ -139,7 +158,28 @@ class ThrowableToyComponent extends PositionComponent
   }
 
   void _drawToy(ui.Canvas canvas, Rect destRect, Paint paint) {
-    if (type == 'toy_mouse' && game.mouseImage != null) {
+    if (_image != null && _assetConfig != null) {
+      if (_assetConfig!.isSpriteSheet) {
+        canvas.drawImageRect(
+          _image!,
+          Rect.fromLTWH(
+            _assetConfig!.srcX,
+            _assetConfig!.srcY,
+            _assetConfig!.spriteWidth,
+            _assetConfig!.spriteHeight,
+          ),
+          destRect,
+          paint,
+        );
+      } else {
+        canvas.drawImageRect(
+          _image!,
+          Rect.fromLTWH(0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
+          destRect,
+          paint,
+        );
+      }
+    } else if (type == 'toy_mouse' && game.mouseImage != null) {
       canvas.drawImageRect(
         game.mouseImage!,
         const Rect.fromLTWH(0, 0, 32, 32),
@@ -163,7 +203,28 @@ class ThrowableToyComponent extends PositionComponent
     } else if (type == 'tennis_ball' && game.blueBallImage != null) {
       canvas.drawImageRect(
         game.blueBallImage!,
-        const Rect.fromLTWH(0, 0, 15, 16),
+        Rect.fromLTWH(0, 0, game.blueBallImage!.width.toDouble(), game.blueBallImage!.height.toDouble()),
+        destRect,
+        paint,
+      );
+    } else if (type == 'base_ball' && game.baseballImage != null) {
+      canvas.drawImageRect(
+        game.baseballImage!,
+        Rect.fromLTWH(0, 0, game.baseballImage!.width.toDouble(), game.baseballImage!.height.toDouble()),
+        destRect,
+        paint,
+      );
+    } else if (type == 'basket_ball' && game.basketballImage != null) {
+      canvas.drawImageRect(
+        game.basketballImage!,
+        Rect.fromLTWH(0, 0, game.basketballImage!.width.toDouble(), game.basketballImage!.height.toDouble()),
+        destRect,
+        paint,
+      );
+    } else if (type == 'football' && game.footballImage != null) {
+      canvas.drawImageRect(
+        game.footballImage!,
+        Rect.fromLTWH(0, 0, game.footballImage!.width.toDouble(), game.footballImage!.height.toDouble()),
         destRect,
         paint,
       );
@@ -173,7 +234,28 @@ class ThrowableToyComponent extends PositionComponent
   }
 
   void _drawTreat(ui.Canvas canvas, Rect destRect, Paint paint) {
-    if (type == 'carrot' && game.bunnyFoodsImage != null) {
+    if (_image != null && _assetConfig != null) {
+      if (_assetConfig!.isSpriteSheet) {
+        canvas.drawImageRect(
+          _image!,
+          Rect.fromLTWH(
+            _assetConfig!.srcX,
+            _assetConfig!.srcY,
+            _assetConfig!.spriteWidth,
+            _assetConfig!.spriteHeight,
+          ),
+          destRect,
+          paint,
+        );
+      } else {
+        canvas.drawImageRect(
+          _image!,
+          Rect.fromLTWH(0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
+          destRect,
+          paint,
+        );
+      }
+    } else if (type == 'carrot' && game.bunnyFoodsImage != null) {
       canvas.drawImageRect(
         game.bunnyFoodsImage!,
         const Rect.fromLTWH(0, 0, 16, 16),

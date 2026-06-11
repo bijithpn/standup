@@ -234,7 +234,7 @@
       "variant": {
         "id": "flamingo",
         "name": "Pinky Flamingo",
-        "assetPath": "assets/animations/flaming/PixelFlamingoSpriteSheet.png",
+        "assetPath": "assets/animations/flamingo/pixelflamingospritesheet.png",
         "isSpriteSheet": true,
         "rowCount": 4,
         "frameCount": 5,

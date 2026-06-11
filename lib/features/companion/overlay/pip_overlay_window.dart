@@ -37,7 +37,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   String _petName = 'Mochi';
   double _scale = 3.0;
   bool _gameInitialized = false;
-  String _previewBackground = 'assets/background/sky/background.png';
+  String _previewBackground = 'assets/environments/sky/sky_back.png';
 
   late final CompanionWindowManager _windowManager = CompanionWindowManager(
     displayManager: NativeDisplayManager(),
@@ -63,7 +63,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   StreamSubscription<AppEvent>? _treatEventSub;
 
   String _pipBackgroundStyle = 'dark';
-  double _pipOpacity = 0.9;
+  double _pipOpacity = 1;
   bool _pipDraggableClickable = true;
 
   Offset? _dragStartPosition;
@@ -285,13 +285,16 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       double top = pos.dy;
 
       if (Platform.isMacOS) {
-        final displays = await _windowManager.displayManager
-            ?.enumerateDisplays();
+        var displays = _windowManager.displayManager?.displays;
+        if (displays == null || displays.isEmpty) {
+          displays = await _windowManager.displayManager?.enumerateDisplays();
+        }
         double primaryScreenHeight = 1080.0;
-        if (displays != null && displays.isNotEmpty) {
-          final primary = displays.firstWhere(
+        final nonNullDisplays = displays;
+        if (nonNullDisplays != null && nonNullDisplays.isNotEmpty) {
+          final primary = nonNullDisplays.firstWhere(
             (d) => d.isPrimary,
-            orElse: () => displays.first,
+            orElse: () => nonNullDisplays.first,
           );
           primaryScreenHeight = primary.rect.height;
         }
@@ -340,15 +343,15 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   String _getToyIconPath() {
     switch (_game?.toyType) {
-      case 'toy_mouse':
-        return 'assets/ui/icons/mouse_sheet.png';
-      case 'pink_yarn':
-        return 'assets/ui/icons/pinkball_sheet.png';
-      case 'orange_yarn':
-        return 'assets/ui/icons/orangeball_sheet.png';
+      case 'base_ball':
+        return 'assets/animations/throw_particles/base_ball.png';
+      case 'basket_ball':
+        return 'assets/animations/throw_particles/basket_ball.png';
+      case 'football':
+        return 'assets/animations/throw_particles/football.png';
       case 'tennis_ball':
       default:
-        return 'assets/animations/throw_particles/tennis-ball.png';
+        return 'assets/animations/throw_particles/tennis_ball.png';
     }
   }
 
@@ -507,94 +510,103 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         margin: const EdgeInsets.all(12.0),
         decoration: _buildContainerDecoration(),
         clipBehavior: Clip.antiAlias,
-        child: Stack(
+        child: Column(
           children: [
-            if (_gameInitialized && _game != null)
-              Positioned.fill(child: GameWidget(game: _game!))
-            else
-              const Positioned.fill(
-                child: Center(
-                  child: CircularProgressIndicator(
-                    strokeWidth: 1.5,
-                    color: Colors.white38,
-                  ),
-                ),
-              ),
+            Expanded(
+              child: Stack(
+                children: [
+                  if (_gameInitialized && _game != null)
+                    Positioned.fill(child: GameWidget(game: _game!))
+                  else
+                    const Positioned.fill(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: Colors.white38,
+                        ),
+                      ),
+                    ),
 
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: _dragHandleHeight,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanStart: (_) => _windowManager.startDrag(),
-                child: Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: isLight
-                          ? const Color(0xFF161622).withValues(alpha: 0.15)
-                          : Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(2),
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: _dragHandleHeight,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onPanStart: (_) => _windowManager.startDrag(),
+                      child: Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isLight
+                                ? const Color(0xFF161622).withValues(alpha: 0.15)
+                                : Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
 
-            Positioned(
-              top: 14,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _PetNameBadge(
-                  name: _petName,
-                  isLightBackground: isLight,
-                ),
-              ),
-            ),
-
-            Positioned(
-              top: _dragHandleHeight,
-              left: 0,
-              right: 0,
-              bottom: _kInteractionBarHeight,
-              child: Listener(
-                onPointerHover: _onHover,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: _onPetTap,
-                  onDoubleTap: _onPetDoubleTap,
-                  onPanStart: _onDragStart,
-                  onPanUpdate: _onDragUpdate,
-                  onPanEnd: _onDragEnd,
-                ),
-              ),
-            ),
-
-            if (_feedbackText != null)
-              Positioned(
-                top: 50,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 150),
-                    child: _FeedbackToast(
-                      key: ValueKey(_feedbackText),
-                      text: _feedbackText!,
+                  Positioned(
+                    top: 14,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: _PetNameBadge(
+                        name: _petName,
+                        isLightBackground: isLight,
+                      ),
                     ),
                   ),
-                ),
-              ),
 
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _InteractionBar(
+                  Positioned(
+                    top: _dragHandleHeight,
+                    left: 0,
+                    right: 0,
+                    bottom: _kInteractionBarHeight,
+                    child: Listener(
+                      onPointerHover: _onHover,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        onTap: _onPetTap,
+                        onDoubleTap: _onPetDoubleTap,
+                        onPanStart: _onDragStart,
+                        onPanUpdate: _onDragUpdate,
+                        onPanEnd: _onDragEnd,
+                      ),
+                    ),
+                  ),
+
+                  if (_feedbackText != null)
+                    Positioned(
+                      top: 50,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 150),
+                          child: _FeedbackToast(
+                            key: ValueKey(_feedbackText),
+                            text: _feedbackText!,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: _CloseButton(
+                      onTap: _closeWindow,
+                      isLightBackground: isLight,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _InteractionBar(
                 expandFraction: _barWidth,
                 isExpanded: _barExpanded,
                 throwDisabled: _throwDisabled,
@@ -606,16 +618,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 onToggleCollapse: _toggleBar,
                 isLightBackground: isLight,
               ),
-            ),
-
-            Positioned(
-              top: 10,
-              right: 10,
-              child: _CloseButton(
-                onTap: _closeWindow,
-                isLightBackground: isLight,
-              ),
-            ),
           ],
         ),
       ),

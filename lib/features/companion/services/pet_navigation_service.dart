@@ -59,16 +59,26 @@ class PetNavigationService {
       }
       return (_cursorPos - _pos).distance > profile.stopRadius;
     } else {
-      return _isWanderingEnabled &&
-          _wanderSpeed > 0 &&
-          _hasWanderTarget &&
-          (_wanderTarget - _pos).distance >= 12.0;
+      if (!_isWanderingEnabled || _wanderSpeed <= 0 || !_hasWanderTarget) {
+        return false;
+      }
+
+      if (_species.movementType == MovementType.walk) {
+        return (_wanderTarget.dx - _pos.dx).abs() >= 12.0;
+      }
+
+      return (_wanderTarget - _pos).distance >= 12.0;
     }
   }
 
   bool get needsWanderTarget {
     if (!_isWanderingEnabled || _wanderSpeed <= 0) return false;
     if (!_hasWanderTarget) return true;
+
+    if (_species.movementType == MovementType.walk) {
+      return (_wanderTarget.dx - _pos.dx).abs() < 12.0;
+    }
+
     return (_wanderTarget - _pos).distance < 12.0;
   }
 
@@ -170,6 +180,10 @@ class PetNavigationService {
         max(_paddingTop, _screen.height - _paddingBottom),
       );
       _wanderTarget = Offset(targetX, targetY);
+    }
+
+    if (_species.movementType == MovementType.walk) {
+      _wanderTarget = Offset(_wanderTarget.dx, _paddingTop);
     }
 
     _hasWanderTarget = true;

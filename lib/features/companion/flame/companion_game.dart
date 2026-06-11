@@ -32,6 +32,10 @@ import 'package:breakmate/features/companion/services/window_monitor.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/features/companion/flame/components/environment_component.dart';
 import 'package:breakmate/features/companion/flame/components/throwable_toy_component.dart';
+import 'package:breakmate/features/companion/flame/components/bird_component.dart';
+import 'package:breakmate/features/companion/flame/components/rabbit_component.dart';
+import 'package:breakmate/features/companion/flame/components/decoration_component.dart';
+import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({
@@ -40,7 +44,7 @@ class CompanionGame extends FlameGame {
     this.isPiP = false,
     this.toyType = 'tennis_ball',
     this.treatType = 'sushi',
-    this.backgroundImagePath = 'assets/background/sky/background.png',
+    this.backgroundImagePath = 'assets/environments/sky/sky_back.png',
   }) : _eventBus = EventBus.instance,
        _petService = PetCompanionService(
          stateMachine: PetStateMachine(personality: PetPersonality()),
@@ -64,8 +68,13 @@ class CompanionGame extends FlameGame {
   Future<void> updateBackgroundImagePath(String path) async {
     if (backgroundImagePath == path) return;
     backgroundImagePath = path;
+    final config = EnvironmentThemeConfig.getByPath(path);
+    await preCacheThemeAssets(config);
     if (_environmentComponent != null) {
       await _environmentComponent!.updateSkyImage(path);
+    }
+    if (isPiP) {
+      _rebuildScenery();
     }
   }
 
@@ -122,7 +131,7 @@ class CompanionGame extends FlameGame {
 
   // Throttle anchor-point persistence: at most once every 10 seconds.
   DateTime? _lastAnchorWriteTime;
-  static const Duration _anchorWriteInterval = Duration(seconds: 10);
+  static const Duration _anchorWriteInterval = Duration(seconds: 60);
 
   late final _DeveloperReactionController _devReaction;
 
@@ -132,6 +141,9 @@ class CompanionGame extends FlameGame {
   ui.Image? blueBallImage;
   ui.Image? bunnyFoodsImage;
   ui.Image? dogItemsImage;
+  ui.Image? baseballImage;
+  ui.Image? basketballImage;
+  ui.Image? footballImage;
 
   CompanionComponent? petComponent;
 
@@ -170,6 +182,9 @@ class CompanionGame extends FlameGame {
 
     _needsEngine.restore();
 
+    final initialConfig = EnvironmentThemeConfig.getByPath(backgroundImagePath);
+    await preCacheThemeAssets(initialConfig);
+
     _devReaction = _DeveloperReactionController(game: this);
 
     List<DisplayBounds> displays;
@@ -202,7 +217,9 @@ class CompanionGame extends FlameGame {
           backgroundImagePath: backgroundImagePath,
         );
         _pipWorld!.add(_environmentComponent!);
+
         await add(_pipWorld!);
+        _rebuildScenery();
       } catch (e, st) {
         ErrorHandler().handleError(e, st);
       }
@@ -235,20 +252,23 @@ class CompanionGame extends FlameGame {
     }
 
     try {
-      mouseImage = await PetAssetLoader.loadImage(
-        'assets/ui/icons/mouse_sheet.png',
-      );
-      pinkBallImage = await PetAssetLoader.loadImage(
-        'assets/ui/icons/pinkball_sheet.png',
-      );
-      orangeBallImage = await PetAssetLoader.loadImage(
-        'assets/ui/icons/orangeball_sheet.png',
-      );
       bunnyFoodsImage = await PetAssetLoader.loadImage(
-        'assets/characters/pets/bunnyfoods_2.png',
+        'assets/environments/throwable/throwable_grass_wood_snacks.png',
       );
       dogItemsImage = await PetAssetLoader.loadImage(
-        'assets/characters/pets/dogitems_2.png',
+        'assets/environments/throwable/throwable_dog_items.png',
+      );
+      baseballImage = await PetAssetLoader.loadImage(
+        'assets/animations/throw_particles/base_ball.png',
+      );
+      basketballImage = await PetAssetLoader.loadImage(
+        'assets/animations/throw_particles/basket_ball.png',
+      );
+      footballImage = await PetAssetLoader.loadImage(
+        'assets/animations/throw_particles/football.png',
+      );
+      blueBallImage = await PetAssetLoader.loadImage(
+        'assets/animations/throw_particles/tennis_ball.png',
       );
     } catch (e) {
       debugPrint('Error loading companion toy/treat assets: $e');
@@ -961,7 +981,7 @@ class CompanionGame extends FlameGame {
         return;
       }
 
-      _runSubsystemTick(_timeSinceLastFrame);
+      unawaited(_runSubsystemTick(_timeSinceLastFrame));
       super.update(_timeSinceLastFrame);
 
       _tickAccumulator += _timeSinceLastFrame;
@@ -974,7 +994,7 @@ class CompanionGame extends FlameGame {
 
       _timeSinceLastFrame = 0.0;
     } else {
-      _runSubsystemTick(dt);
+      unawaited(_runSubsystemTick(dt));
       super.update(dt);
 
       _tickAccumulator += dt;
@@ -987,8 +1007,8 @@ class CompanionGame extends FlameGame {
     }
   }
 
-  void _runSubsystemTick(double dt) {
-    _settingsPersistence.flushPendingWrite();
+  Future<void> _runSubsystemTick(double dt) async {
+    unawaited(_settingsPersistence.flushPendingWrite());
 
     _displayManager.poll();
 
@@ -1007,14 +1027,9 @@ class CompanionGame extends FlameGame {
       if (targetId != null) {
         try {
           final state = _physicsSimulator.getState(targetId);
-          final double spriteSize = _theme.spriteSize.toDouble();
-          final double scale = _effectiveScale(spriteSize);
-          final double scaledHalfH = (spriteSize * scale) / 2;
-          final double groundOffset = _getGroundOffset();
-          final double targetY = isPiP
-              ? size.y - 52.0 - scaledHalfH + groundOffset
-              : size.y - scaledHalfH - 4.0 + groundOffset;
-          _petService.navigation.setTarget(Offset(state.x, targetY));
+          // The pet is bottom-anchored to the floor. Use the floor Y as the target.
+          final double groundY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
+          _petService.navigation.setTarget(Offset(state.x, groundY));
           _petService.navigation.updateConfig(wanderSpeed: 160.0);
         } catch (e, st) {
           ErrorHandler().handleError(e, st);
@@ -1029,13 +1044,8 @@ class CompanionGame extends FlameGame {
               t.lifecycle == ThrowableLifecycle.beingFetched,
           orElse: () => snapshots.first,
         );
-        final double spriteSize = _theme.spriteSize.toDouble();
-        final double scale = _effectiveScale(spriteSize);
-        final double scaledHalfH = (spriteSize * scale) / 2;
-        final double groundOffset = _getGroundOffset();
-        final double groundY = isPiP
-            ? size.y - 52.0 - scaledHalfH + groundOffset
-            : size.y - scaledHalfH - 4.0 + groundOffset;
+        // The pet is bottom-anchored to the floor. Use the floor Y as the target.
+        final double groundY = isPiP ? (size.y - 52.0) : (size.y - 4.0);
 
         if (activeToy.lifecycle == ThrowableLifecycle.stationary) {
           _petService.navigation.setTarget(Offset(activeToy.position.dx, groundY));
@@ -1214,6 +1224,79 @@ class CompanionGame extends FlameGame {
 
       petComponent!.position = Vector2(newX, clampedY);
       _updateNavigationPaddings();
+    }
+  }
+
+  void _rebuildScenery() {
+    if (_pipWorld == null) return;
+
+    // Remove existing DecorationComponent, BirdComponent, RabbitComponent
+    _pipWorld!.children.whereType<DecorationComponent>().toList().forEach((c) => c.removeFromParent());
+    _pipWorld!.children.whereType<BirdComponent>().toList().forEach((c) => c.removeFromParent());
+    _pipWorld!.children.whereType<RabbitComponent>().toList().forEach((c) => c.removeFromParent());
+
+    final config = EnvironmentThemeConfig.getByPath(backgroundImagePath);
+
+    // Spawn background mountains/trees on the left and right sides (priority -5)
+    _pipWorld!.add(DecorationComponent(
+      type: DecorationType.mountain,
+      assetConfig: config.mountainLeftAsset,
+      xRatio: 0.1,
+    ));
+    _pipWorld!.add(DecorationComponent(
+      type: DecorationType.mountain,
+      assetConfig: config.mountainRightAsset,
+      xRatio: 0.9,
+    ));
+
+    // Spawn rocks on the ground floor on the left and right sides (priority 1)
+    _pipWorld!.add(DecorationComponent(
+      type: DecorationType.rock,
+      assetConfig: config.rockLeftAsset,
+      xRatio: 0.18,
+    ));
+    _pipWorld!.add(DecorationComponent(
+      type: DecorationType.rock,
+      assetConfig: config.rockRightAsset,
+      xRatio: 0.82,
+    ));
+
+    // Spawn flying birds (priority -4)
+    _pipWorld!.add(BirdComponent());
+
+    // Spawn wandering rabbits (priority 2)
+    _pipWorld!.add(RabbitComponent());
+  }
+
+  Future<void> preCacheThemeAssets(EnvironmentThemeConfig config) async {
+    try {
+      // Pre-cache background images
+      await PetAssetLoader.loadImage(config.skyPath);
+      await PetAssetLoader.loadImage(config.groundPath);
+      await PetAssetLoader.loadImage(config.cloudPath);
+
+      // Pre-cache NPCs
+      await PetAssetLoader.loadImage(config.birdAsset.path);
+      await PetAssetLoader.loadImage(config.rabbitIdleAsset.path);
+      await PetAssetLoader.loadImage(config.rabbitRunAsset.path);
+
+      // Pre-cache decorations
+      await PetAssetLoader.loadImage(config.mountainLeftAsset.path);
+      await PetAssetLoader.loadImage(config.mountainRightAsset.path);
+      await PetAssetLoader.loadImage(config.rockLeftAsset.path);
+      await PetAssetLoader.loadImage(config.rockRightAsset.path);
+
+      // Pre-cache toys
+      for (final toy in config.toyAssets.values) {
+        await PetAssetLoader.loadImage(toy.path);
+      }
+
+      // Pre-cache foods
+      for (final food in config.foodAssets.values) {
+        await PetAssetLoader.loadImage(food.path);
+      }
+    } catch (e) {
+      debugPrint('Error pre-caching environment theme assets: $e');
     }
   }
 }

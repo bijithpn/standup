@@ -10,6 +10,8 @@ import 'package:breakmate/features/companion/domain/behavior_engine_models.dart'
 abstract class DisplayManager {
   Future<List<DisplayBounds>> enumerateDisplays();
 
+  List<DisplayBounds> get displays;
+
   Rect get unionBounds;
 
   Offset nearestDisplayPoint(Offset outside);
@@ -37,6 +39,9 @@ class NativeDisplayManager implements DisplayManager {
   final AppLogger _logger;
 
   List<DisplayBounds> _displays = [];
+
+  @override
+  List<DisplayBounds> get displays => _displays;
 
   Rect _unionBounds = Rect.zero;
 
