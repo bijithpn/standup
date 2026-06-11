@@ -51,7 +51,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/
-    - assets/icons/cat/
     - assets/slideshow/
     - assets/animations/throw_particles/
     # Original 4 cats
@@ -71,7 +70,7 @@ flutter:
     - assets/animations/dogs/husky.png
     - assets/animations/dogs/labrador.png
     # Flamingo sprite sheet and gifs
-    - assets/animations/flaming/
+    - assets/animations/flamingo/
     # Modular pets framework
     - assets/animations/pets/pets.json
     - assets/animations/pets/
@@ -80,28 +79,23 @@ flutter:
     - assets/background/beach/
     - assets/background/forest/
     - assets/background/winter/
-    - assets/background/cave/
     - assets/background/desert/
-    - assets/background/sky/
-    - assets/background/night_town/
-    - assets/background/mist_forest/
     - assets/background/urban/
     # Lofi musics
     - assets/music/lofi_1.mp3
 
     # New pet assets folders
     - assets/animations/
-    - assets/characters/pets/
-    - assets/environments/decorations/
-    - assets/environments/plants/
+    - assets/animations/birds/
+    - assets/animations/food/
+    - assets/animations/pet_decoration/
+    - assets/animations/rabbit/
+    - assets/environments/background/
+    - assets/environments/base/
     - assets/environments/rocks/
+    - assets/environments/sky/
+    - assets/environments/throwable/
     - assets/environments/trees/
-    - assets/spritesheets/16x16/
-    - assets/spritesheets/32x32/
-    - assets/spritesheets/64x64/
-    - assets/spritesheets/ui/
-    - assets/tilesets/
-    - assets/ui/icons/
 
   fonts:
     - family: Inter
