@@ -29,6 +29,12 @@ class EnvironmentThemeConfig {
   final Color groundTint;
   final Color cloudTint;
   final Color baseColor;
+  final bool isGroundTiled;
+  final double skyOpacity;
+  final double cloudOpacity;
+  final double groundOpacity;
+  final double mountainOpacity;
+  final double rockOpacity;
 
   // Dynamic theme assets
   final ThemeAssetConfig birdAsset;
@@ -118,6 +124,12 @@ class EnvironmentThemeConfig {
     required this.groundTint,
     required this.cloudTint,
     required this.baseColor,
+    this.isGroundTiled = true,
+    this.skyOpacity = 1.0,
+    this.cloudOpacity = 1.0,
+    this.groundOpacity = 1.0,
+    this.mountainOpacity = 1.0,
+    this.rockOpacity = 1.0,
     this.birdAsset = _defaultBird,
     this.rabbitIdleAsset = _defaultRabbitIdle,
     this.rabbitRunAsset = _defaultRabbitRun,
@@ -302,9 +314,15 @@ class EnvironmentThemeConfig {
       ),
     ),
   ];
+  static List<EnvironmentThemeConfig> customThemes = [];
 
   static EnvironmentThemeConfig getByPath(String path) {
     final lower = path.toLowerCase();
+    for (final theme in customThemes) {
+      if (lower.contains(theme.id) || lower.contains(theme.skyPath.toLowerCase())) {
+        return theme;
+      }
+    }
     for (final theme in themes) {
       if (lower.contains(theme.id) || lower.contains(theme.skyPath.toLowerCase())) {
         return theme;

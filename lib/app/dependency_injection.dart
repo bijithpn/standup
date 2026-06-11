@@ -24,6 +24,7 @@ import 'package:breakmate/features/wellness/data/wellness_library_repository.dar
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/core/display/services/overlay_fit_service.dart';
@@ -80,6 +81,9 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<PetRegistryService>(PetRegistryService());
+  sl.registerSingleton<CustomEnvironmentRepository>(
+    CustomEnvironmentRepository()..loadSync(),
+  );
   sl.registerSingleton<CompanionOverlayController>(
     CompanionOverlayController(settingsRepo: sl()),
   );

@@ -32,6 +32,11 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
     final idleAsset = config.rabbitIdleAsset;
     final runAsset = config.rabbitRunAsset;
 
+    if (idleAsset.path.isEmpty || idleAsset.path == 'none' || runAsset.path.isEmpty || runAsset.path == 'none') {
+      removeFromParent();
+      return;
+    }
+
     final idleImage = await PetAssetLoader.loadImage(idleAsset.path);
     final runImage = await PetAssetLoader.loadImage(runAsset.path);
 
@@ -77,12 +82,11 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
 
     animation = _idleAnimation;
 
-    // Initial position placement on ground Y
-    final double groundY = game.isPiP ? (game.size.y - 32.0) : (game.size.y - 4.0);
     final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     final double startX = 30.0 + _rng.nextDouble() * (worldWidth - 60.0);
 
-    position = Vector2(startX, groundY + (_bottomPadding * _scaleFactor) + 2.0);
+    final double targetGroundY = game.isPiP ? game.size.y - 20.0 : game.size.y - 2.0;
+    position = Vector2(startX, targetGroundY + (_bottomPadding * _scaleFactor));
     _targetX = startX;
 
     _waitTimer = 1.0 + _rng.nextDouble() * 4.0;
@@ -110,8 +114,8 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
   void update(double dt) {
     super.update(dt);
 
-    final double groundY = game.isPiP ? (game.size.y - 32.0) : (game.size.y - 4.0);
-    position.y = groundY + (_bottomPadding * _scaleFactor) + 2.0;
+    final double targetGroundY = game.isPiP ? game.size.y - 20.0 : game.size.y - 2.0;
+    position.y = targetGroundY + (_bottomPadding * _scaleFactor);
 
     if (!_isMoving) {
       _waitTimer -= dt;

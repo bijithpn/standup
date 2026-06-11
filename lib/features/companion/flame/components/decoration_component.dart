@@ -74,7 +74,7 @@ class DecorationComponent extends SpriteComponent with HasGameReference<Companio
     // Place background mountains slightly lower so they look integrated behind the tiles
     final double posY = type == DecorationType.mountain 
         ? groundY + 8.0 
-        : groundY + 2.0 + (_bottomPadding * _scaleFactor);
+        : (game.isPiP ? game.size.y - 20.0 : game.size.y - 2.0) + (_bottomPadding * _scaleFactor);
 
     position = Vector2(posX, posY);
   }
@@ -100,7 +100,13 @@ class DecorationComponent extends SpriteComponent with HasGameReference<Companio
     if (env != null) {
       // Tint objects to match the environment color scheme
       final tint = env.ambientTint;
-      paint.colorFilter = ColorFilter.mode(tint, BlendMode.modulate);
+      final double opacity = type == DecorationType.mountain
+          ? env.config.mountainOpacity
+          : env.config.rockOpacity;
+      paint.colorFilter = ColorFilter.mode(
+        tint.withValues(alpha: opacity),
+        BlendMode.modulate,
+      );
     }
   }
 }

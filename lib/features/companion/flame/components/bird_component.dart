@@ -23,6 +23,11 @@ class BirdComponent extends SpriteAnimationComponent with HasGameReference<Compa
     final config = EnvironmentThemeConfig.getByPath(game.backgroundImagePath);
     final birdAsset = config.birdAsset;
 
+    if (birdAsset.path.isEmpty || birdAsset.path == 'none') {
+      removeFromParent();
+      return;
+    }
+
     final image = await PetAssetLoader.loadImage(birdAsset.path);
     final List<Sprite> sprites = [];
     
@@ -60,8 +65,8 @@ class BirdComponent extends SpriteAnimationComponent with HasGameReference<Compa
 
     final worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     final startX = _direction > 0 ? -40.0 : worldWidth + 40.0;
-    // Spawns at the very top of the sky (12 to 50 pixels from top)
-    final startY = 12.0 + _rng.nextDouble() * 38.0;
+    // Spawns lower in the sky to remain visible below header/title bar
+    final startY = 55.0 + _rng.nextDouble() * 45.0;
 
     position = Vector2(startX, startY);
     scale = Vector2(_direction * 0.75, 0.75); // Flip horizontally if flying left and scale down
