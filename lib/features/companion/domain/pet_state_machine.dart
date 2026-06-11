@@ -748,6 +748,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.meetingPaused: [
       PetTransition(
@@ -1054,6 +1059,11 @@ class PetStateMachine extends ChangeNotifier {
     ],
 
     PetState.chasing: [
+      PetTransition(
+        event: PetEvent.throwableStationary,
+        targetState: PetState.fetching,
+        weight: 1.0,
+      ),
       PetTransition(
         event: PetEvent.throwableFetched,
         targetState: PetState.fetching,

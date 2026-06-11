@@ -197,9 +197,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     widget.controller.companionToyType,
                     const [
                       'tennis_ball',
-                      'toy_mouse',
-                      'pink_yarn',
-                      'orange_yarn',
+                      'base_ball',
+                      'basket_ball',
+                      'football',
                     ],
                     (v) {
                       if (v != null) {
@@ -332,16 +332,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {'name': 'Autumn', 'path': 'assets/background/autumn/background.png'},
       {'name': 'Winter', 'path': 'assets/background/winter/background.png'},
       {'name': 'Beach', 'path': 'assets/background/beach/background-light.png'},
-      {'name': 'Cave', 'path': 'assets/background/cave/background.png'},
       {'name': 'Desert', 'path': 'assets/background/desert/background.png'},
-      {'name': 'Sky', 'path': 'assets/background/sky/background.png'},
+      {'name': 'Sky', 'path': 'assets/environments/sky/sky_back.png'},
       {
         'name': 'Night Town',
-        'path': 'assets/background/night_town/background.png',
+        'path': 'assets/environments/background/bg_night_town.png',
       },
       {
         'name': 'Mist Forest',
-        'path': 'assets/background/mist_forest/background.png',
+        'path': 'assets/environments/background/bg_mist_forest.png',
       },
       {'name': 'Urban', 'path': 'assets/background/urban/background.png'},
     ];

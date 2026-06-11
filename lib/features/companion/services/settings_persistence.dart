@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
-import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:flutter/foundation.dart';
 
 class SettingsPersistence {
   SettingsPersistence({AppLogger? logger, String? configPathOverride})
@@ -68,52 +68,56 @@ class SettingsPersistence {
     _dirty = true;
   }
 
-  void flushPendingWrite() {
+  Future<void> flushPendingWrite() async {
     if (!_dirty || _pending == null) return;
-    _atomicWrite(_pending!);
+    final configToWrite = _pending!;
     _dirty = false;
     _pending = null;
+    await _atomicWrite(configToWrite);
   }
 
   Future<void> flush() async {
-    if (!_dirty || _pending == null) return;
-    _atomicWrite(_pending!);
-    _dirty = false;
-    _pending = null;
+    await flushPendingWrite();
   }
 
   PetConfigV2 get current => _config;
 
-  void _atomicWrite(PetConfigV2 config) {
+  Future<void> _atomicWrite(PetConfigV2 config) async {
     final path = _configPath;
     final tmpPath = '$path.tmp';
     try {
-      final jsonString = const JsonEncoder.withIndent(
-        '  ',
-      ).convert(config.toJson());
+      final jsonString = await MapIsolateEncoder.encode(config.toJson());
 
       final dir = File(path).parent;
-      if (!dir.existsSync()) {
-        dir.createSync(recursive: true);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
       }
 
-      File(tmpPath).writeAsStringSync(jsonString, flush: true);
+      final tmpFile = File(tmpPath);
+      await tmpFile.writeAsString(jsonString, flush: true);
 
-      File(tmpPath).renameSync(path);
+      await tmpFile.rename(path);
 
       _logger.info('SettingsPersistence: config written to $path');
-    } on FileSystemException catch (e) {
+    } catch (e) {
       _logger.error(
-        'SettingsPersistence: failed to write config to "$path": '
-        '${e.message} (${e.osError?.message ?? "no OS error"}). '
+        'SettingsPersistence: failed to write config to "$path": $e. '
         'Continuing with in-memory state.',
       );
       try {
         final tmpFile = File(tmpPath);
-        if (tmpFile.existsSync()) tmpFile.deleteSync();
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
-      }
+        if (await tmpFile.exists()) await tmpFile.delete();
+      } catch (_) {}
     }
+  }
+}
+
+class MapIsolateEncoder {
+  static Future<String> encode(Map<String, dynamic> map) async {
+    return compute(_doEncode, map);
+  }
+
+  static String _doEncode(Map<String, dynamic> map) {
+    return const JsonEncoder.withIndent('  ').convert(map);
   }
 }

@@ -382,6 +382,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
+      pipModeEnabled: enabled ? _settingsRepo.currentSettings.pipModeEnabled : false,
     );
     await _settingsRepo.save(updated);
   }
@@ -511,6 +512,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   Future<void> changePipModeEnabled(bool value) async {
     if (_pipModeEnabled == value) return;
+    if (value && !_companionEnabled) return;
     final updated = _settingsRepo.currentSettings.copyWith(
       pipModeEnabled: value,
     );

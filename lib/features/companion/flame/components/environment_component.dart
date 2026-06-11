@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
+import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 
 class EnvironmentComponent extends PositionComponent with HasGameReference<CompanionGame> {
   String backgroundImagePath;
 
   EnvironmentComponent({
-    this.backgroundImagePath = 'assets/background/sky/background.png',
+    this.backgroundImagePath = 'assets/environments/sky/sky_back.png',
   });
 
   ui.Image? _skyImage;
@@ -22,33 +23,29 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
   Color ambientTint = Colors.white;
 
-  Future<void> updateSkyImage(String newPath) async {
+  EnvironmentThemeConfig get config => EnvironmentThemeConfig.getByPath(backgroundImagePath);
+
+  Future<void> updateTheme(String newPath) async {
     backgroundImagePath = newPath;
-    final cached = PetAssetLoader.getImageSync(newPath);
-    if (cached != null) {
-      _skyImage = cached;
-      return;
-    }
+    final cfg = EnvironmentThemeConfig.getByPath(newPath);
     try {
-      final img = await PetAssetLoader.loadImage(newPath);
-      _skyImage = img;
+      _skyImage = await PetAssetLoader.loadImage(cfg.skyPath);
+      _groundImage = await PetAssetLoader.loadImage(cfg.groundPath);
+      _cloudImage = await PetAssetLoader.loadImage(cfg.cloudPath);
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }
   }
 
+  Future<void> updateSkyImage(String newPath) async {
+    await updateTheme(newPath);
+  }
+
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    try {
-      _skyImage = await PetAssetLoader.loadImage(backgroundImagePath);
-      _groundImage = await PetAssetLoader.loadImage('assets/tilesets/ground_2.png');
-      _cloudImage = await PetAssetLoader.loadImage('assets/tilesets/cloud_2.png');
-    } catch (e, st) {
-      ErrorHandler().handleError(e, st);
-    }
+    await updateTheme(backgroundImagePath);
 
-    
     if (_cloudImage != null) {
       for (int i = 0; i < 4; i++) {
         _clouds.add(_Cloud(
@@ -67,7 +64,6 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
     super.update(dt);
     _updateDayNightCycle();
 
-    
     final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     for (final cloud in _clouds) {
       cloud.x -= cloud.speed * dt;
@@ -85,7 +81,6 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
     final now = DateTime.now();
     final double hour = now.hour + now.minute / 60.0;
 
-    
     if (hour < 4.0) {
       ambientTint = const Color(0xFF16182C); 
     } else if (hour < 6.0) {
@@ -121,63 +116,19 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
     );
   }
 
-  Color _getGroundTint() {
-    final path = backgroundImagePath.toLowerCase();
-    if (path.contains('autumn')) {
-      return const Color(0xFFD47A3B); // Warm orange-brown for Autumn
-    } else if (path.contains('winter')) {
-      return const Color(0xFFE0F7FA); // Snow white/light-blue for Winter
-    } else if (path.contains('beach')) {
-      return const Color(0xFFFFE082); // Sandy yellow/beige for Beach
-    } else if (path.contains('desert')) {
-      return const Color(0xFFFFCC80); // Deep sand orange/yellow for Desert
-    } else if (path.contains('cave')) {
-      return const Color(0xFF424242); // Dark grey rock for Cave
-    } else if (path.contains('urban')) {
-      return const Color(0xFF757575); // Asphalt grey for Urban
-    } else if (path.contains('night_town')) {
-      return const Color(0xFF263238); // Dark blue-grey for Night Town
-    } else if (path.contains('mist_forest')) {
-      return const Color(0xFF90A4AE); // Misty grey-green for Mist Forest
-    }
-    return const Color(0xFFFFFFFF); // Default white (no custom tint)
-  }
-
-  Color _getCloudTint() {
-    final path = backgroundImagePath.toLowerCase();
-    if (path.contains('autumn')) {
-      return const Color(0xFFFFECB3); // Warm cream for Autumn clouds
-    } else if (path.contains('winter')) {
-      return const Color(0xFFE0F2F1); // Ice blue/white for Winter clouds
-    } else if (path.contains('beach')) {
-      return const Color(0xFFFFFFFF); // Pure white for Beach clouds
-    } else if (path.contains('desert')) {
-      return const Color(0xFFFFF9C4); // Light warm yellow for Desert clouds
-    } else if (path.contains('cave')) {
-      return const Color(0xFF37474F).withValues(alpha: 0.3); // Faint dark smoke for Cave clouds
-    } else if (path.contains('urban')) {
-      return const Color(0xFFCFD8DC); // Greyish city smog/clouds
-    } else if (path.contains('night_town')) {
-      return const Color(0xFF37474F); // Dark purple-blue clouds
-    } else if (path.contains('mist_forest')) {
-      return const Color(0xFFB0BEC5); // Thick mist grey clouds
-    }
-    return const Color(0xFFFFFFFF); // Default white
-  }
-
   @override
   void render(ui.Canvas canvas) {
     final size = game.size;
     final double worldWidth = game.isPiP ? size.x * 1.3 : size.x;
 
-    
     if (_skyImage != null) {
+      final isSkyOnly = backgroundImagePath.toLowerCase().contains('sky');
       paintImage(
         canvas: canvas,
         rect: Rect.fromLTWH(0, 0, worldWidth, size.y),
         image: _skyImage!,
         fit: BoxFit.cover,
-        alignment: Alignment.bottomCenter,
+        alignment: isSkyOnly ? Alignment.topCenter : Alignment.bottomCenter,
         filterQuality: FilterQuality.medium,
         colorFilter: ColorFilter.mode(ambientTint, BlendMode.modulate),
       );
@@ -191,9 +142,8 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
       canvas.drawRect(Rect.fromLTWH(0, 0, worldWidth, size.y), paint);
     }
 
-    
     if (_cloudImage != null) {
-      final cloudBaseTint = _getCloudTint();
+      final cloudBaseTint = config.cloudTint;
       for (final cloud in _clouds) {
         final finalCloudTint = _combineTints(
           cloudBaseTint.withValues(alpha: cloud.opacity),
@@ -218,9 +168,8 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
       }
     }
 
-    
     if (_groundImage != null) {
-      final groundBaseTint = _getGroundTint();
+      final groundBaseTint = config.groundTint;
       final finalGroundTint = _combineTints(groundBaseTint, ambientTint);
 
       final paint = Paint()
@@ -231,13 +180,11 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
       final double groundTileHeight = 32.0;
       final double groundY = size.y - 52.0;
 
-      
       final basePaint = Paint()
-        ..color = const Color(0xFF2E2625).withValues(alpha: 0.95)
+        ..color = config.baseColor.withValues(alpha: 0.95)
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
       canvas.drawRect(Rect.fromLTWH(0, groundY + 12.0, worldWidth, size.y - groundY - 12.0), basePaint);
 
-      
       double x = 0;
       while (x < worldWidth + groundTileWidth) {
         canvas.drawImageRect(

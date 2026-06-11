@@ -178,34 +178,19 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         if (paths.isNotEmpty) {
           _stateFramePaths[state] = paths;
         } else {
-          String iconName;
-          switch (state) {
-            case PetAnimationState.sleep:
-              iconName = 'sleeping';
-              break;
-            case PetAnimationState.excited:
-              iconName = 'stretch';
-              break;
-            case PetAnimationState.notification:
-              iconName = 'alert';
-              break;
-            case PetAnimationState.idle:
-            default:
-              iconName = 'idle';
-              break;
+          // Fallback to the first frame of the idle animation for the selected theme
+          String fallbackPath = '';
+          if (state != PetAnimationState.idle) {
+            fallbackPath = await PetAssetLoader.extractPetFramePath(
+              theme: theme,
+              state: PetAnimationState.idle,
+              frameIndex: 0,
+            );
           }
-          final fallbackFile = p.join(
-            supportDir.path,
-            'bm_cat_${state.name}.png',
-          );
-          final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
-            'assets/icons/cat/cat_$iconName.png',
-            fallbackFile,
-          );
           if (fallbackPath.isNotEmpty) {
             _stateFramePaths[state] = [fallbackPath];
-          } else {
-            _stateFramePaths[state] = ['assets/icons/cat/cat_$iconName.png'];
+          } else if (_defaultIconPath != null) {
+            _stateFramePaths[state] = [_defaultIconPath!];
           }
         }
       } catch (e) {

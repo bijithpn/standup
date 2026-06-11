@@ -6,6 +6,7 @@ import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
@@ -57,6 +58,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   bool _isLoading = false;
   String _currentLoadedPath = '';
   String? _currentBackgroundPath;
+  double _calculatedBottomPadding = 0.0;
 
   @override
   void initState() {
@@ -65,9 +67,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     _animationController.addListener(() {
       final int frameIndex = _lastFrameCount > 1
           ? (_animationController.value * _lastFrameCount).floor().clamp(
-              0,
-              _lastFrameCount - 1,
-            )
+               0,
+               _lastFrameCount - 1,
+             )
           : 0;
       if (_frameIndexNotifier.value != frameIndex) {
         _frameIndexNotifier.value = frameIndex;
@@ -106,17 +108,21 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       return;
     }
 
+    final String bgPath = widget.backgroundImagePath ?? 'assets/environments/sky/sky_back.png';
+    final config = EnvironmentThemeConfig.getByPath(bgPath);
+
     final cachedSprite = PetAssetLoader.getImageSync(path);
     final cachedBg = widget.backgroundImagePath != null
         ? PetAssetLoader.getImageSync(widget.backgroundImagePath!)
         : null;
-    final cachedGround = PetAssetLoader.getImageSync('assets/tilesets/ground_2.png');
-    final cachedCloud = PetAssetLoader.getImageSync('assets/tilesets/cloud_2.png');
+    final cachedGround = PetAssetLoader.getImageSync(config.groundPath);
+    final cachedCloud = PetAssetLoader.getImageSync(config.cloudPath);
 
     if (cachedSprite != null &&
         (widget.backgroundImagePath == null || cachedBg != null) &&
         cachedGround != null &&
         cachedCloud != null) {
+      final double computedPadding = await _calculateImagePadding(cachedSprite);
       if (mounted) {
         setState(() {
           _loadedImage = cachedSprite;
@@ -125,6 +131,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
           _currentBackgroundPath = widget.backgroundImagePath;
           _groundImage = cachedGround;
           _cloudImage = cachedCloud;
+          _calculatedBottomPadding = computedPadding;
           _isLoading = false;
         });
         _setupTicker();
@@ -145,18 +152,22 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
           PetAssetLoader.loadImage(widget.backgroundImagePath!)
         else
           Future.value(null),
-        PetAssetLoader.loadImage('assets/tilesets/ground_2.png'),
-        PetAssetLoader.loadImage('assets/tilesets/cloud_2.png'),
+        PetAssetLoader.loadImage(config.groundPath),
+        PetAssetLoader.loadImage(config.cloudPath),
       ]);
+
+      final loadedSprite = results[0] as ui.Image;
+      final double computedPadding = await _calculateImagePadding(loadedSprite);
 
       if (mounted) {
         setState(() {
-          _loadedImage = results[0] as ui.Image;
+          _loadedImage = loadedSprite;
           _currentLoadedPath = path;
           _backgroundImage = results[1];
           _currentBackgroundPath = widget.backgroundImagePath;
           _groundImage = results[2] as ui.Image;
           _cloudImage = results[3] as ui.Image;
+          _calculatedBottomPadding = computedPadding;
           _isLoading = false;
         });
         _setupTicker();
@@ -169,6 +180,52 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
         });
       }
     }
+  }
+
+  Future<double> _calculateImagePadding(ui.Image image) async {
+    final dynamic anim =
+        widget.petTheme.animations[widget.animationState] ??
+        widget.petTheme.animations[PetAnimationState.idle] ??
+        widget.petTheme.animations.values.first;
+
+    int row = 0;
+    int frameCount = 1;
+
+    if (widget.petTheme.type == PetType.composite) {
+      if (anim is AnimationRowConfig) {
+        row = anim.row;
+        frameCount = anim.frameCount;
+      }
+    } else {
+      if (anim is SeparateAnimationConfig) {
+        row = 0;
+        frameCount = anim.frameCount;
+      }
+    }
+
+    double frameWidth = widget.petTheme.spriteSize.toDouble();
+    double frameHeight = widget.petTheme.spriteSize.toDouble();
+    if (widget.petTheme.type != PetType.composite) {
+      if (frameCount > 0) {
+        frameWidth = image.width / frameCount;
+      }
+      frameHeight = image.height.toDouble();
+    }
+
+    double paddingSum = 0.0;
+    int count = 0;
+    for (int i = 0; i < frameCount; i++) {
+      final rect = Rect.fromLTWH(
+        i * frameWidth,
+        row * frameHeight,
+        frameWidth,
+        frameHeight,
+      );
+      final p = await PetAssetLoader.computeImageRectBottomPadding(image, rect);
+      paddingSum += p;
+      count++;
+    }
+    return count > 0 ? (paddingSum / count) : 0.0;
   }
 
   String _getAssetPath() {
@@ -283,15 +340,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     double finalPetYOffset = widget.petYOffset;
     if (finalPetYOffset == 0.0) {
-      if (widget.petTheme.spriteSize == 32) {
-        finalPetYOffset = 5.0 * effectiveScale;
-      } else if (widget.petTheme.spriteSize == 50) {
-        finalPetYOffset = 18.0 * effectiveScale;
-      } else if (widget.petTheme.spriteSize == 64) {
-        finalPetYOffset = 16.0 * effectiveScale;
-      } else if (widget.petTheme.spriteSize == 128) {
-        finalPetYOffset = 20.0 * effectiveScale;
-      }
+      finalPetYOffset = _calculatedBottomPadding * effectiveScale;
     }
 
     return RepaintBoundary(
@@ -366,6 +415,8 @@ class _SpritePainter extends CustomPainter {
     this.petXOffset = 0.0,
   });
 
+  EnvironmentThemeConfig get config => EnvironmentThemeConfig.getByPath(backgroundImagePath ?? '');
+
   Color _getAmbientTint() {
     final now = DateTime.now();
     final double hour = now.hour + now.minute / 60.0;
@@ -405,71 +456,28 @@ class _SpritePainter extends CustomPainter {
     );
   }
 
-  Color _getGroundTint(String path) {
-    final lower = path.toLowerCase();
-    if (lower.contains('autumn')) {
-      return const Color(0xFFD47A3B); // Warm orange-brown for Autumn
-    } else if (lower.contains('winter')) {
-      return const Color(0xFFE0F7FA); // Snow white/light-blue for Winter
-    } else if (lower.contains('beach')) {
-      return const Color(0xFFFFE082); // Sandy yellow/beige for Beach
-    } else if (lower.contains('desert')) {
-      return const Color(0xFFFFCC80); // Deep sand orange/yellow for Desert
-    } else if (lower.contains('cave')) {
-      return const Color(0xFF424242); // Dark grey rock for Cave
-    } else if (lower.contains('urban')) {
-      return const Color(0xFF757575); // Asphalt grey for Urban
-    } else if (lower.contains('night_town')) {
-      return const Color(0xFF263238); // Dark blue-grey for Night Town
-    } else if (lower.contains('mist_forest')) {
-      return const Color(0xFF90A4AE); // Misty grey-green for Mist Forest
-    }
-    return const Color(0xFFFFFFFF); // Default white
-  }
-
-  Color _getCloudTint(String path) {
-    final lower = path.toLowerCase();
-    if (lower.contains('autumn')) {
-      return const Color(0xFFFFECB3); // Warm cream for Autumn clouds
-    } else if (lower.contains('winter')) {
-      return const Color(0xFFE0F2F1); // Ice blue/white for Winter clouds
-    } else if (lower.contains('beach')) {
-      return const Color(0xFFFFFFFF); // Pure white for Beach clouds
-    } else if (lower.contains('desert')) {
-      return const Color(0xFFFFF9C4); // Light warm yellow for Desert clouds
-    } else if (lower.contains('cave')) {
-      return const Color(0xFF37474F).withValues(alpha: 0.3); // Faint dark smoke for Cave clouds
-    } else if (lower.contains('urban')) {
-      return const Color(0xFFCFD8DC); // Greyish city smog/clouds
-    } else if (lower.contains('night_town')) {
-      return const Color(0xFF37474F); // Dark purple-blue clouds
-    } else if (lower.contains('mist_forest')) {
-      return const Color(0xFFB0BEC5); // Thick mist grey clouds
-    }
-    return const Color(0xFFFFFFFF); // Default white
-  }
-
   @override
   void paint(Canvas canvas, Size size) {
     final tint = _getAmbientTint();
 
+    final String path = backgroundImagePath ?? '';
+
     if (backgroundImage != null) {
+      final isSkyOnly = path.toLowerCase().contains('sky');
       paintImage(
         canvas: canvas,
         rect: Rect.fromLTWH(0, 0, size.width, size.height),
         image: backgroundImage!,
         fit: BoxFit.cover,
-        alignment: Alignment.bottomCenter, // Keep floor visible
+        alignment: isSkyOnly ? Alignment.topCenter : Alignment.bottomCenter,
         filterQuality: FilterQuality.medium,
         colorFilter: ColorFilter.mode(tint, BlendMode.modulate),
       );
     }
 
-    final String path = backgroundImagePath ?? '';
-
     // Draw cloud if available
     if (cloudImage != null) {
-      final cloudBaseTint = _getCloudTint(path);
+      final cloudBaseTint = config.cloudTint;
       final finalCloudTint = _combineTints(
         cloudBaseTint.withValues(alpha: 0.45),
         tint,
@@ -492,7 +500,7 @@ class _SpritePainter extends CustomPainter {
     // Draw ground if available
     final double groundY = size.height - 20.0;
     if (groundImage != null) {
-      final groundBaseTint = _getGroundTint(path);
+      final groundBaseTint = config.groundTint;
       final finalGroundTint = _combineTints(groundBaseTint, tint);
 
       final groundPaint = Paint()
@@ -504,7 +512,7 @@ class _SpritePainter extends CustomPainter {
 
       // Draw the dirt base at the very bottom
       final basePaint = Paint()
-        ..color = const Color(0xFF2E2625).withValues(alpha: 0.95)
+        ..color = config.baseColor.withValues(alpha: 0.95)
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
       canvas.drawRect(
         Rect.fromLTWH(0, groundY + 8.0, size.width, size.height - groundY - 8.0),

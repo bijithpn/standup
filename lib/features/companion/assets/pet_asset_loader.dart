@@ -38,6 +38,13 @@ class PetAssetLoader {
     return _spriteBottomPaddingCache[identityHashCode(sprite)] ?? 0.0;
   }
 
+  static Future<double> computeImageRectBottomPadding(
+    ui.Image image,
+    ui.Rect rect,
+  ) async {
+    return _computeSpriteBottomPadding(image, rect);
+  }
+
   /// Scans alpha from bottom-up to find the first row that contains a visible
   /// pixel (alpha > 15). Returns the count of empty rows below that row.
   static Future<double> _computeSpriteBottomPadding(
@@ -128,7 +135,7 @@ class PetAssetLoader {
     if (profile.species == PetSpecies.dog) {
       speciesPath = 'dogs';
     } else if (profile.species == PetSpecies.flamingo) {
-      speciesPath = 'flaming';
+      speciesPath = 'flamingo';
     } else {
       speciesPath = 'cats';
     }
@@ -848,19 +855,18 @@ class PetAssetLoader {
         minY = cachedBB.top.toInt();
         maxY = cachedBB.bottom.toInt();
       } else {
-        final rawBytes = await sourceImage.toByteData(
-          format: ui.ImageByteFormat.rawRgba,
-        );
+        final bytes = await _rgbaBytesFor(sourceImage);
         minX = (sourceX + cropW).toInt();
         maxX = sourceX.toInt();
         minY = (sourceY + cropH).toInt();
         maxY = sourceY.toInt();
 
-        if (rawBytes != null) {
-          final bytes = rawBytes.buffer.asUint8List();
+        if (bytes != null) {
           final width = sourceImage.width;
 
+          // Process in small chunks to avoid blocking the UI thread for too long
           for (int y = sourceY.toInt(); y < sourceY + cropH; y++) {
+            if (y % 20 == 0) await Future.delayed(Duration.zero);
             final yOffset = y * width * 4;
             for (int x = sourceX.toInt(); x < sourceX + cropW; x++) {
               final offset = yOffset + (x * 4);
@@ -964,11 +970,10 @@ class PetAssetLoader {
       'assets/background/autumn/background.png',
       'assets/background/winter/background.png',
       'assets/background/beach/background-light.png',
-      'assets/background/cave/background.png',
       'assets/background/desert/background.png',
-      'assets/background/sky/background.png',
-      'assets/background/night_town/background.png',
-      'assets/background/mist_forest/background.png',
+      'assets/environments/sky/sky_back.png',
+      'assets/environments/background/bg_night_town.png',
+      'assets/environments/background/bg_mist_forest.png',
       'assets/background/urban/background.png',
     ];
     for (final path in paths) {
