@@ -471,7 +471,7 @@ class _SpritePainter extends CustomPainter {
         fit: BoxFit.cover,
         alignment: isSkyOnly ? Alignment.topCenter : Alignment.bottomCenter,
         filterQuality: FilterQuality.medium,
-        colorFilter: ColorFilter.mode(tint, BlendMode.modulate),
+        colorFilter: ColorFilter.mode(tint.withValues(alpha: config.skyOpacity), BlendMode.modulate),
       );
     }
 
@@ -479,7 +479,7 @@ class _SpritePainter extends CustomPainter {
     if (cloudImage != null) {
       final cloudBaseTint = config.cloudTint;
       final finalCloudTint = _combineTints(
-        cloudBaseTint.withValues(alpha: 0.45),
+        cloudBaseTint.withValues(alpha: 0.45 * config.cloudOpacity),
         tint,
       );
       final cloudPaint = Paint()
@@ -501,7 +501,7 @@ class _SpritePainter extends CustomPainter {
     final double groundY = size.height - 20.0;
     if (groundImage != null) {
       final groundBaseTint = config.groundTint;
-      final finalGroundTint = _combineTints(groundBaseTint, tint);
+      final finalGroundTint = _combineTints(groundBaseTint.withValues(alpha: config.groundOpacity), tint);
 
       final groundPaint = Paint()
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate)
@@ -512,23 +512,43 @@ class _SpritePainter extends CustomPainter {
 
       // Draw the dirt base at the very bottom
       final basePaint = Paint()
-        ..color = config.baseColor.withValues(alpha: 0.95)
+        ..color = config.baseColor.withValues(alpha: 0.95 * config.groundOpacity)
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
       canvas.drawRect(
         Rect.fromLTWH(0, groundY + 8.0, size.width, size.height - groundY - 8.0),
         basePaint,
       );
 
-      // Tiled ground
-      double x = 0;
-      while (x < size.width + groundTileWidth) {
+      if (config.isGroundTiled) {
+        // Tiled ground
+        double x = 0;
+        while (x < size.width + groundTileWidth) {
+          canvas.drawImageRect(
+            groundImage!,
+            Rect.fromLTWH(0, 0, groundImage!.width.toDouble(), groundImage!.height.toDouble()),
+            Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
+            groundPaint,
+          );
+          x += groundTileWidth;
+        }
+      } else {
+        // Draw the ground as a single stretched image covering the width, anchored at the floorY (groundY)
+        final double imgW = groundImage!.width.toDouble();
+        final double imgH = groundImage!.height.toDouble();
+        
+        final double drawWidth = size.width;
+        final double drawHeight = drawWidth * (imgH / imgW);
+        final double scaledGrassFromBottom = drawHeight * (20.0 / 272.0);
+        
+        final double imageBottomY = groundY + scaledGrassFromBottom;
+        final double imageTopY = imageBottomY - drawHeight;
+
         canvas.drawImageRect(
           groundImage!,
-          Rect.fromLTWH(0, 0, groundImage!.width.toDouble(), groundImage!.height.toDouble()),
-          Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
+          Rect.fromLTWH(0, 0, imgW, imgH),
+          Rect.fromLTWH(0, imageTopY, drawWidth, drawHeight),
           groundPaint,
         );
-        x += groundTileWidth;
       }
     }
 

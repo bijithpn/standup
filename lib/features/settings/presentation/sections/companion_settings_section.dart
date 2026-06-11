@@ -9,6 +9,7 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
+import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_page.dart';
 
 class CompanionSettingsSection extends StatefulWidget {
   final CompanionOverlayController controller;
@@ -247,6 +248,33 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               const SizedBox(height: 32),
               sectionHeader('Animation Lab'),
               _buildInteractionGrid(),
+
+              const SizedBox(height: 32),
+              sectionHeader(
+                'Environment Builder',
+                subtitle: 'Design custom world themes with your own assets',
+              ),
+              buildCard([
+                buildListRow(
+                  'Open Environment Builder',
+                  'Pick sky, ground, rocks, birds, rabbits and colour tints to craft a custom world.',
+                  null,
+                  Icons.landscape_rounded,
+                  null,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EnvironmentBuilderPage(),
+                      fullscreenDialog: true,
+                    ),
+                  ),
+                  trailing: const Icon(
+                    CupertinoIcons.chevron_right,
+                    size: 14,
+                    color: AppTheme.textMuted,
+                  ),
+                ),
+              ]),
             ],
             const SizedBox(height: 40),
           ],

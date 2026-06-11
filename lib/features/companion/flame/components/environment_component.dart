@@ -130,14 +130,14 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
         fit: BoxFit.cover,
         alignment: isSkyOnly ? Alignment.topCenter : Alignment.bottomCenter,
         filterQuality: FilterQuality.medium,
-        colorFilter: ColorFilter.mode(ambientTint, BlendMode.modulate),
+        colorFilter: ColorFilter.mode(ambientTint.withValues(alpha: config.skyOpacity), BlendMode.modulate),
       );
     } else {
       final paint = Paint()
         ..shader = ui.Gradient.linear(
           Offset.zero,
           Offset(0, size.y),
-          [ambientTint.withValues(alpha: 0.85), ambientTint],
+          [ambientTint.withValues(alpha: 0.85 * config.skyOpacity), ambientTint.withValues(alpha: config.skyOpacity)],
         );
       canvas.drawRect(Rect.fromLTWH(0, 0, worldWidth, size.y), paint);
     }
@@ -146,7 +146,7 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
       final cloudBaseTint = config.cloudTint;
       for (final cloud in _clouds) {
         final finalCloudTint = _combineTints(
-          cloudBaseTint.withValues(alpha: cloud.opacity),
+          cloudBaseTint.withValues(alpha: cloud.opacity * config.cloudOpacity),
           ambientTint,
         );
         final paint = Paint()
@@ -170,7 +170,7 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
     if (_groundImage != null) {
       final groundBaseTint = config.groundTint;
-      final finalGroundTint = _combineTints(groundBaseTint, ambientTint);
+      final finalGroundTint = _combineTints(groundBaseTint.withValues(alpha: config.groundOpacity), ambientTint);
 
       final paint = Paint()
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate)
@@ -181,19 +181,40 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
       final double groundY = size.y - 32.0;
 
       final basePaint = Paint()
-        ..color = config.baseColor.withValues(alpha: 0.95)
+        ..color = config.baseColor.withValues(alpha: 0.95 * config.groundOpacity)
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
       canvas.drawRect(Rect.fromLTWH(0, groundY + 12.0, worldWidth, size.y - groundY - 12.0), basePaint);
 
-      double x = 0;
-      while (x < worldWidth + groundTileWidth) {
+      if (config.isGroundTiled) {
+        double x = 0;
+        while (x < worldWidth + groundTileWidth) {
+          canvas.drawImageRect(
+            _groundImage!,
+            Rect.fromLTWH(0, 0, _groundImage!.width.toDouble(), _groundImage!.height.toDouble()),
+            Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
+            paint,
+          );
+          x += groundTileWidth;
+        }
+      } else {
+        // Draw the ground as a single stretched image covering the width, anchored at the floor height
+        final double floorY = game.isPiP ? (size.y - 20.0) : (size.y - 4.0);
+        final double imgW = _groundImage!.width.toDouble();
+        final double imgH = _groundImage!.height.toDouble();
+        
+        final double drawWidth = worldWidth;
+        final double drawHeight = drawWidth * (imgH / imgW);
+        final double scaledGrassFromBottom = drawHeight * (20.0 / 272.0);
+        
+        final double imageBottomY = floorY + scaledGrassFromBottom;
+        final double imageTopY = imageBottomY - drawHeight;
+
         canvas.drawImageRect(
           _groundImage!,
-          Rect.fromLTWH(0, 0, _groundImage!.width.toDouble(), _groundImage!.height.toDouble()),
-          Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
+          Rect.fromLTWH(0, 0, imgW, imgH),
+          Rect.fromLTWH(0, imageTopY, drawWidth, drawHeight),
           paint,
         );
-        x += groundTileWidth;
       }
     }
   }
