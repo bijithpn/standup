@@ -25,8 +25,48 @@ class PetAssetLoader {
   static final Map<String, ui.Rect> _boundingBoxCache = {};
   static final List<String> _lastValidationReport = [];
 
+  /// Bottom padding (px) for each sprite keyed by sprite identity.
+  /// Padding = number of fully-transparent rows at the bottom of the frame.
+  static final Map<int, double> _spriteBottomPaddingCache = {};
+
   static List<String> get lastValidationReport =>
       List.unmodifiable(_lastValidationReport);
+
+  /// Returns the cached bottom-padding (in source pixels) for [sprite].
+  /// Falls back to 0.0 if no value was stored (e.g. fallback idle sprite).
+  static double getSpriteBottomPadding(Sprite sprite) {
+    return _spriteBottomPaddingCache[identityHashCode(sprite)] ?? 0.0;
+  }
+
+  /// Scans alpha from bottom-up to find the first row that contains a visible
+  /// pixel (alpha > 15). Returns the count of empty rows below that row.
+  static Future<double> _computeSpriteBottomPadding(
+    ui.Image image,
+    ui.Rect rect,
+  ) async {
+    final bytes = await _rgbaBytesFor(image);
+    if (bytes == null) return 0.0;
+
+    final left = rect.left.floor().clamp(0, image.width - 1);
+    final right = rect.right.ceil().clamp(left + 1, image.width);
+    final top = rect.top.floor().clamp(0, image.height - 1);
+    final bottom = rect.bottom.ceil().clamp(top + 1, image.height);
+    final imgW = image.width;
+
+    for (int y = bottom - 1; y >= top; y--) {
+      final rowOffset = y * imgW * 4;
+      for (int x = left; x < right; x++) {
+        final offset = rowOffset + x * 4;
+        if (offset + 3 < bytes.length && bytes[offset + 3] > 15) {
+          // y is the bottom-most visible row (0-indexed, inclusive).
+          // Rows from y+1 to bottom-1 are transparent padding.
+          return (bottom - 1 - y).toDouble();
+        }
+      }
+    }
+    // Entire frame is blank — treat as no padding so we don't hide the pet.
+    return 0.0;
+  }
 
   static ui.Image? getImageSync(String path) {
     return _imageCache[path];
@@ -307,13 +347,14 @@ class PetAssetLoader {
         issues.add('$assetPath.${state.name}: skipped blank frame $i');
         continue;
       }
-      frames.add(
-        Sprite(
-          image,
-          srcPosition: Vector2(src.left, src.top),
-          srcSize: Vector2(src.width, src.height),
-        ),
+      final sprite = Sprite(
+        image,
+        srcPosition: Vector2(src.left, src.top),
+        srcSize: Vector2(src.width, src.height),
       );
+      final padding = await _computeSpriteBottomPadding(image, src);
+      _spriteBottomPaddingCache[identityHashCode(sprite)] = padding;
+      frames.add(sprite);
     }
 
     return frames;
@@ -328,8 +369,8 @@ class PetAssetLoader {
   }) async {
     final frames = <Sprite>[];
     final safeCount = requestedFrameCount < 1 ? 1 : requestedFrameCount;
-    final frameWidth = image.width / safeCount;
-    final frameHeight = image.height.toDouble();
+    final int frameWidth = image.width ~/ safeCount;
+    final double frameHeight = image.height.toDouble();
 
     if (requestedFrameCount < 1) {
       issues.add('$assetPath.${state.name}: raised frame count to 1');
@@ -343,7 +384,12 @@ class PetAssetLoader {
     }
 
     for (int i = 0; i < safeCount; i++) {
-      final src = ui.Rect.fromLTWH(i * frameWidth, 0, frameWidth, frameHeight);
+      final src = ui.Rect.fromLTWH(
+        (i * frameWidth).toDouble(),
+        0,
+        frameWidth.toDouble(),
+        frameHeight,
+      );
       if (!_isFrameRectInBounds(image, src)) {
         issues.add(
           '$assetPath.${state.name}: skipped out-of-bounds frame $i '
@@ -355,13 +401,14 @@ class PetAssetLoader {
         issues.add('$assetPath.${state.name}: skipped blank frame $i');
         continue;
       }
-      frames.add(
-        Sprite(
-          image,
-          srcPosition: Vector2(src.left, src.top),
-          srcSize: Vector2(src.width, src.height),
-        ),
+      final sprite = Sprite(
+        image,
+        srcPosition: Vector2(src.left, src.top),
+        srcSize: Vector2(src.width, src.height),
       );
+      final padding = await _computeSpriteBottomPadding(image, src);
+      _spriteBottomPaddingCache[identityHashCode(sprite)] = padding;
+      frames.add(sprite);
     }
 
     return frames;

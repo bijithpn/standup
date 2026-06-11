@@ -1,5 +1,8 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 
 class PetNavigationService {
@@ -12,6 +15,10 @@ class PetNavigationService {
   double _paddingBottom = 50.0;
   bool _isWanderingEnabled = true;
   PetSpecies _species = PetSpecies.cat;
+
+  // True while the pet is in the falling state and has touched the floor.
+  // Cleared when the falling state exits.
+  bool _isLanded = false;
 
   Offset _pos = Offset.zero;
   Offset _vel = Offset.zero;
@@ -91,6 +98,13 @@ class PetNavigationService {
     _paddingRight = right;
     _paddingTop = top;
     _paddingBottom = bottom;
+  }
+
+  /// Resizes the logical screen bounds without resetting movement state.
+  /// Use this for window resize events; use [initialize] only on first load
+  /// or a deliberate position reset.
+  void updateScreenSize(Size newSize) {
+    _screen = newSize;
   }
 
   void updateConfig({double? wanderSpeed}) {
@@ -175,8 +189,46 @@ class PetNavigationService {
     _vel = Offset.zero;
   }
 
-  Offset update(double dt) {
+  Offset update(double dt, {PetState? currentState}) {
     if (_screen == Size.zero) return _pos;
+
+    // Falling state: apply gravity instead of normal wandering so the pet
+    // actually descends. Land when the Y position reaches the floor boundary.
+    if (currentState == PetState.falling) {
+      const double gravity = 980.0; // px/s^2
+      _vel = Offset(_vel.dx, _vel.dy + gravity * dt);
+      _pos = Offset(_pos.dx + _vel.dx * dt, _pos.dy + _vel.dy * dt);
+
+      // Clamp X within bounds during fall.
+      final minX = _paddingLeft;
+      final maxX = _screen.width - _paddingRight;
+      if (_pos.dx < minX) {
+        _pos = Offset(minX, _pos.dy);
+        _vel = Offset(_vel.dx.abs() * 0.3, _vel.dy);
+      } else if (_pos.dx > maxX) {
+        _pos = Offset(maxX, _pos.dy);
+        _vel = Offset(-_vel.dx.abs() * 0.3, _vel.dy);
+      }
+
+      // Landing check: floor is at paddingTop for walk-type pets.
+      // Emit PetLandedEvent exactly once per landing to update the FSM.
+      final floorY = _paddingTop;
+      if (_pos.dy >= floorY) {
+        _pos = Offset(_pos.dx, floorY);
+        _vel = Offset(_vel.dx * 0.4, 0.0);
+        if (!_isLanded) {
+          _isLanded = true;
+          EventBus.instance.emit(PetLandedEvent());
+        }
+      }
+
+      _hopY = 0.0;
+      _flyY = 0.0;
+      return _pos;
+    }
+
+    // Reset landing guard when we leave the falling state.
+    _isLanded = false;
 
     if (_isCursorFollowing) {
       _updateCursorFollow(dt);

@@ -419,7 +419,8 @@ void FlutterWindow::SetupBridge() {
             method_name != "getCursorPosition" &&
             method_name != "getVisibleWindows" &&
             method_name != "showConstraintWindow" &&
-            method_name != "hideConstraintWindow") {
+            method_name != "hideConstraintWindow" &&
+            method_name != "hidePipWindow") {
           result->NotImplemented();
           return;
         }

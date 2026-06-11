@@ -316,7 +316,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
           final inInteractionBar =
               localY >= (size.height - 8.0 - 44.0) &&
               localY <= (size.height - 8.0);
-          accepts = inDragHandle || inInteractionBar;
+          final inCloseButton =
+              localX >= (size.width - 42.0) &&
+              localX <= (size.width - 6.0) &&
+              localY >= 6.0 &&
+              localY <= 42.0;
+          accepts = inDragHandle || inInteractionBar || inCloseButton;
         } else {
           accepts = false;
         }

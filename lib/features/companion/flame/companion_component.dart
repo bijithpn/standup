@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
@@ -47,6 +48,11 @@ class CompanionComponent
 
   _CrossFadeState? _crossFadeState;
 
+  // Stable per-state average bottom padding in source pixels.
+  // Computed once when the active state changes to avoid per-frame jitter
+  // that would occur if we used the raw current-frame value.
+  double _currentStatePadding = 0.0;
+
   static const Set<(PetAnimationState, PetAnimationState)>
   _crossFadeTransitions = {
     (PetAnimationState.idle, PetAnimationState.walkSide),
@@ -68,7 +74,7 @@ class CompanionComponent
   }) : super(
          animations: animations,
          current: initialState,
-         anchor: Anchor.center,
+         anchor: Anchor.bottomCenter,
        );
 
   double get _strideFrequency =>
@@ -79,6 +85,10 @@ class CompanionComponent
     super.onMount();
     paint.filterQuality = FilterQuality.none;
     _updateFlip();
+    // Compute initial ground padding now that animations are available.
+    if (current != null) {
+      _currentStatePadding = _computeStatePadding(current!);
+    }
   }
 
   void changeState(PetAnimationState newState, {bool force = false}) {
@@ -112,6 +122,8 @@ class CompanionComponent
       target = PetAnimationState.idle;
     }
 
+    final bool isSameAnimation = animations?[current] == animations?[target];
+
     if (current == target && !force) {
       final anim = animations?[target];
       if (anim != null && !anim.loop) {
@@ -132,13 +144,22 @@ class CompanionComponent
       _previousState = null;
     }
 
-    if (current != target) {
+    if (current != target && !isSameAnimation) {
       animationTickers?[target]?.reset();
+    } else if (isSameAnimation) {
+      // Sync frame progress if we are switching between states that share
+      // the same sprite sheet row (e.g. walkSide and idle in some packs).
+      final oldTicker = animationTickers?[current];
+      final newTicker = animationTickers?[target];
+      if (oldTicker != null && newTicker != null) {
+        newTicker.elapsed = oldTicker.elapsed;
+      }
     }
 
     final PetAnimationState? fromState = current;
     if (fromState != null &&
-        _crossFadeTransitions.contains((fromState, target))) {
+        _crossFadeTransitions.contains((fromState, target)) &&
+        !isSameAnimation) {
       _crossFadeState = _CrossFadeState(from: fromState, to: target);
     } else {
       _crossFadeState = null;
@@ -146,6 +167,9 @@ class CompanionComponent
 
     current = target;
     _updateFlip();
+    // Recompute the ground padding for the new state so the Y-offset
+    // is stable for the entire duration of the state.
+    _currentStatePadding = _computeStatePadding(target);
   }
 
   void setWanderingEnabled(bool enabled) {
@@ -157,7 +181,11 @@ class CompanionComponent
     scale.x = _direction < 0 ? -absScale : absScale;
   }
 
-  static const double _runThreshold = 100.0;
+  // Hysteresis for run-entry/exit only. Walk is entered freely whenever the
+  // navigation service reports movement, so the pet never stays in idle
+  // while its position is changing.
+  static const double _runStartThreshold = 110.0;
+  static const double _runStopThreshold = 80.0;
 
   static const _fsmOwnedAnimations = {
     PetAnimationState.sleep,
@@ -182,7 +210,7 @@ class CompanionComponent
     final baseSpeed = game.currentTheme.species.defaultProfile.movementSpeed;
 
     final servicePos = nav.currentPosition;
-    position = Vector2(servicePos.dx, servicePos.dy);
+    position.setValues(servicePos.dx, servicePos.dy);
 
     if (vel.dx.abs() > 0.5) {
       _direction = vel.dx > 0 ? 1.0 : -1.0;
@@ -213,6 +241,10 @@ class CompanionComponent
 
     if (_crossFadeState != null) {
       _crossFadeState!.elapsed += dt;
+      // Manually update the 'from' ticker since SpriteAnimationGroupComponent
+      // only updates the 'current' ticker.
+      animationTickers?[_crossFadeState!.from]?.update(scaledDt);
+
       if (_crossFadeState!.elapsed >= _CrossFadeState.duration) {
         _crossFadeState = null;
       }
@@ -249,20 +281,37 @@ class CompanionComponent
     final canOverride = !isFsmOwned || _isMovementState(cur);
 
     if (canOverride) {
-      if (isNavMoving || speed > 0.5) {
-        if (speed > _runThreshold) {
+      final bool isRunning = cur == PetAnimationState.run;
+
+      if (isNavMoving || speed > 1.0) {
+        // Run hysteresis: need higher speed to START running, lower to STAY.
+        final bool shouldRun = isRunning
+            ? speed > _runStopThreshold
+            : speed > _runStartThreshold;
+
+        if (shouldRun) {
           changeState(PetAnimationState.run);
         } else {
-          PetAnimationState walkState = PetAnimationState.walkSide;
-          if (vel.dy.abs() > vel.dx.abs()) {
-            if (vel.dy < 0) {
-              walkState = PetAnimationState.walkUp;
-            } else {
-              walkState = PetAnimationState.walkDown;
-            }
-          } else {
+          // Walk: choose direction from velocity with hysteresis to prevent flicker.
+          PetAnimationState walkState = (current == PetAnimationState.walkUp ||
+                  current == PetAnimationState.walkDown)
+              ? current!
+              : PetAnimationState.walkSide;
+
+          final double dx = vel.dx.abs();
+          final double dy = vel.dy.abs();
+          final double diff = dy - dx;
+
+          if (diff > 5.0) {
+            // Bias towards vertical
+            walkState =
+                vel.dy < 0 ? PetAnimationState.walkUp : PetAnimationState.walkDown;
+          } else if (diff < -5.0) {
+            // Bias towards horizontal
             walkState = PetAnimationState.walkSide;
           }
+          // If within [-5, 5], retain previous state to prevent animation resets.
+
           changeState(walkState);
         }
       } else {
@@ -273,7 +322,8 @@ class CompanionComponent
     }
 
     final bool isUsingFallbackWalk = current == PetAnimationState.walkSide;
-    final bool isWalkOnly = game.currentTheme.species.movementType == MovementType.walk;
+    final bool isWalkOnly =
+        game.currentTheme.species.movementType == MovementType.walk;
     final profile = game.currentTheme.species.defaultProfile;
 
     if (isWalkOnly) {
@@ -352,6 +402,19 @@ class CompanionComponent
     }
   }
 
+  /// Returns the average bottom transparent padding (in source px) across
+  /// all frames of [state]. Called once per state change rather than per
+  /// frame, so the resulting Y-offset is stable across the animation cycle.
+  double _computeStatePadding(PetAnimationState state) {
+    final anim = animations?[state];
+    if (anim == null || anim.frames.isEmpty) return 0.0;
+    double total = 0.0;
+    for (final frame in anim.frames) {
+      total += PetAssetLoader.getSpriteBottomPadding(frame.sprite);
+    }
+    return total / anim.frames.length;
+  }
+
   bool _isMovementState(PetAnimationState? s) =>
       s == PetAnimationState.walkUp ||
       s == PetAnimationState.walkDown ||
@@ -361,6 +424,12 @@ class CompanionComponent
 
   @override
   void render(Canvas canvas) {
+    canvas.save();
+
+    // Align the pet's feet to the component's position (ground) by translating
+    // the canvas down by the calculated source-pixel padding.
+    canvas.translate(0, _currentStatePadding);
+
     final cf = _crossFadeState;
     if (cf != null) {
       final double t = (cf.elapsed / _CrossFadeState.duration).clamp(0.0, 1.0);
@@ -371,17 +440,18 @@ class CompanionComponent
         if (fromTicker != null) {
           final ui.Image? fromFrame =
               fromTicker.currentIndex < fromAnim.frames.length
-              ? fromAnim.frames[fromTicker.currentIndex].sprite.image
-              : null;
+                  ? fromAnim.frames[fromTicker.currentIndex].sprite.image
+                  : null;
           if (fromFrame != null) {
             final alphaPaint = Paint()
               ..color = Color.fromRGBO(255, 255, 255, 1.0 - t)
               ..filterQuality = FilterQuality.none;
             final src = fromAnim.frames[fromTicker.currentIndex].sprite.src;
+            // Align with Flame's transformed coordinate system (0,0 is top-left).
             canvas.drawImageRect(
               fromFrame,
               src,
-              Rect.fromLTWH(-size.x / 2, -size.y / 2, size.x, size.y),
+              Rect.fromLTWH(0, 0, size.x, size.y),
               alphaPaint,
             );
           }
@@ -401,18 +471,20 @@ class CompanionComponent
           canvas.drawImageRect(
             toFrame,
             src,
-            Rect.fromLTWH(-size.x / 2, -size.y / 2, size.x, size.y),
+            Rect.fromLTWH(0, 0, size.x, size.y),
             alphaPaint,
           );
         }
       }
 
       _renderOverlays(canvas);
+      canvas.restore();
       return;
     }
 
     super.render(canvas);
     _renderOverlays(canvas);
+    canvas.restore();
   }
 
   void _renderOverlays(Canvas canvas) {
