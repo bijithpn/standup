@@ -111,11 +111,21 @@ class PipWindowArgs {
     if (followMouse != null) map['followMouse'] = followMouse;
     if (wanderingEnabled != null) map['wanderingEnabled'] = wanderingEnabled;
     if (isLowPowerMode != null) map['isLowPowerMode'] = isLowPowerMode;
-    if (pipBackgroundStyle != null) map['pipBackgroundStyle'] = pipBackgroundStyle;
-    if (pipOpacity != null) map['pipOpacity'] = pipOpacity;
-    if (pipDraggableClickable != null) map['pipDraggableClickable'] = pipDraggableClickable;
-    if (companionToyType != null) map['companionToyType'] = companionToyType;
-    if (companionTreatType != null) map['companionTreatType'] = companionTreatType;
+    if (pipBackgroundStyle != null) {
+      map['pipBackgroundStyle'] = pipBackgroundStyle;
+    }
+    if (pipOpacity != null) {
+      map['pipOpacity'] = pipOpacity;
+    }
+    if (pipDraggableClickable != null) {
+      map['pipDraggableClickable'] = pipDraggableClickable;
+    }
+    if (companionToyType != null) {
+      map['companionToyType'] = companionToyType;
+    }
+    if (companionTreatType != null) {
+      map['companionTreatType'] = companionTreatType;
+    }
     if (previewBackground != null) map['previewBackground'] = previewBackground;
     return map;
   }

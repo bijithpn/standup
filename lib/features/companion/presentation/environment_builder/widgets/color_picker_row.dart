@@ -89,7 +89,9 @@ class _SwatchTile extends StatelessWidget {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? AppTheme.accent : Colors.white.withValues(alpha: 0.1),
+            color: isSelected
+                ? AppTheme.accent
+                : Colors.white.withValues(alpha: 0.1),
             width: isSelected ? 2.5 : 1,
           ),
           boxShadow: isSelected
@@ -128,7 +130,11 @@ class _CustomSwatch extends StatelessWidget {
           shape: BoxShape.circle,
           border: Border.all(color: AppTheme.border),
         ),
-        child: const Icon(Icons.colorize_rounded, size: 14, color: AppTheme.textSecondary),
+        child: const Icon(
+          Icons.colorize_rounded,
+          size: 14,
+          color: AppTheme.textSecondary,
+        ),
       ),
     );
   }
@@ -191,17 +197,37 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
               const SizedBox(height: 20),
               _buildPreview(),
               const SizedBox(height: 16),
-              _buildSlider('Hue', _hsv.hue, 0, 360,
-                  (v) => setState(() => _hsv = _hsv.withHue(v))),
+              _buildSlider(
+                'Hue',
+                _hsv.hue,
+                0,
+                360,
+                (v) => setState(() => _hsv = _hsv.withHue(v)),
+              ),
               const SizedBox(height: 8),
-              _buildSlider('Saturation', _hsv.saturation, 0, 1,
-                  (v) => setState(() => _hsv = _hsv.withSaturation(v))),
+              _buildSlider(
+                'Saturation',
+                _hsv.saturation,
+                0,
+                1,
+                (v) => setState(() => _hsv = _hsv.withSaturation(v)),
+              ),
               const SizedBox(height: 8),
-              _buildSlider('Value', _hsv.value, 0, 1,
-                  (v) => setState(() => _hsv = _hsv.withValue(v))),
+              _buildSlider(
+                'Value',
+                _hsv.value,
+                0,
+                1,
+                (v) => setState(() => _hsv = _hsv.withValue(v)),
+              ),
               const SizedBox(height: 8),
-              _buildSlider('Opacity', _hsv.alpha, 0, 1,
-                  (v) => setState(() => _hsv = _hsv.withAlpha(v))),
+              _buildSlider(
+                'Opacity',
+                _hsv.alpha,
+                0,
+                1,
+                (v) => setState(() => _hsv = _hsv.withAlpha(v)),
+              ),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -218,13 +244,17 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.accent,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                     ),
                     onPressed: () => Navigator.pop(context, _hsv.toColor()),
                     child: const Text(
                       'Apply',
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w700),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],

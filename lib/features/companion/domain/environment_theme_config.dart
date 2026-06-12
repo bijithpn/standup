@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
 class ThemeAssetConfig {
   final String path;
@@ -35,6 +36,8 @@ class EnvironmentThemeConfig {
   final double groundOpacity;
   final double mountainOpacity;
   final double rockOpacity;
+  final double birdScale;
+  final double rabbitScale;
 
   // Dynamic theme assets
   final ThemeAssetConfig birdAsset;
@@ -44,6 +47,7 @@ class EnvironmentThemeConfig {
   final ThemeAssetConfig mountainRightAsset;
   final ThemeAssetConfig rockLeftAsset;
   final ThemeAssetConfig rockRightAsset;
+  final List<CustomEnvironmentLayer> layers;
   final Map<String, ThemeAssetConfig> toyAssets;
   final Map<String, ThemeAssetConfig> foodAssets;
 
@@ -88,10 +92,18 @@ class EnvironmentThemeConfig {
   );
 
   static const _defaultToys = {
-    'tennis_ball': ThemeAssetConfig(path: 'assets/animations/throw_particles/tennis_ball.png'),
-    'base_ball': ThemeAssetConfig(path: 'assets/animations/throw_particles/base_ball.png'),
-    'basket_ball': ThemeAssetConfig(path: 'assets/animations/throw_particles/basket_ball.png'),
-    'football': ThemeAssetConfig(path: 'assets/animations/throw_particles/football.png'),
+    'tennis_ball': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/tennis_ball.png',
+    ),
+    'base_ball': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/base_ball.png',
+    ),
+    'basket_ball': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/basket_ball.png',
+    ),
+    'football': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/football.png',
+    ),
   };
 
   static const _defaultFoods = {
@@ -130,6 +142,8 @@ class EnvironmentThemeConfig {
     this.groundOpacity = 1.0,
     this.mountainOpacity = 1.0,
     this.rockOpacity = 1.0,
+    this.birdScale = 1.0,
+    this.rabbitScale = 1.0,
     this.birdAsset = _defaultBird,
     this.rabbitIdleAsset = _defaultRabbitIdle,
     this.rabbitRunAsset = _defaultRabbitRun,
@@ -137,6 +151,7 @@ class EnvironmentThemeConfig {
     this.mountainRightAsset = _defaultMountainRight,
     this.rockLeftAsset = _defaultRockLeft,
     this.rockRightAsset = _defaultRockRight,
+    this.layers = const [],
     this.toyAssets = _defaultToys,
     this.foodAssets = _defaultFoods,
   });
@@ -319,12 +334,14 @@ class EnvironmentThemeConfig {
   static EnvironmentThemeConfig getByPath(String path) {
     final lower = path.toLowerCase();
     for (final theme in customThemes) {
-      if (lower.contains(theme.id) || lower.contains(theme.skyPath.toLowerCase())) {
+      if (lower.contains(theme.id) ||
+          lower.contains(theme.skyPath.toLowerCase())) {
         return theme;
       }
     }
     for (final theme in themes) {
-      if (lower.contains(theme.id) || lower.contains(theme.skyPath.toLowerCase())) {
+      if (lower.contains(theme.id) ||
+          lower.contains(theme.skyPath.toLowerCase())) {
         return theme;
       }
     }

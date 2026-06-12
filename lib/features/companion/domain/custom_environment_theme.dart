@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
+import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
 // Mutable, JSON-serialisable representation of a user-created environment theme.
 // Built-in EnvironmentThemeConfig.themes remains const and untouched.
@@ -18,6 +19,8 @@ class CustomEnvironmentTheme {
   double groundOpacity;
   double mountainOpacity;
   double rockOpacity;
+  double birdScale;
+  double rabbitScale;
   // NPC and decoration asset paths – stored as plain path strings.
   // isSpriteSheet / frameCount come from the asset catalogue; here we only
   // persist the selected path. The controller resolves full ThemeAssetConfig
@@ -29,6 +32,8 @@ class CustomEnvironmentTheme {
   String mountainRightPath;
   String rockLeftPath;
   String rockRightPath;
+  // Dynamic custom layers
+  List<CustomEnvironmentLayer> layers;
   // Key = toy/food identifier (e.g. 'tennis_ball'), value = asset path.
   Map<String, String> toyPaths;
   Map<String, String> foodPaths;
@@ -48,6 +53,8 @@ class CustomEnvironmentTheme {
     required this.groundOpacity,
     required this.mountainOpacity,
     required this.rockOpacity,
+    required this.birdScale,
+    required this.rabbitScale,
     required this.birdPath,
     required this.rabbitIdlePath,
     required this.rabbitRunPath,
@@ -55,6 +62,7 @@ class CustomEnvironmentTheme {
     required this.mountainRightPath,
     required this.rockLeftPath,
     required this.rockRightPath,
+    required this.layers,
     required this.toyPaths,
     required this.foodPaths,
   });
@@ -62,8 +70,9 @@ class CustomEnvironmentTheme {
   factory CustomEnvironmentTheme.fromDefaults() {
     const src = EnvironmentThemeConfig.themes;
     final base = src.first; // Forest
+    final mSec = DateTime.now().millisecondsSinceEpoch;
     return CustomEnvironmentTheme(
-      id: 'custom_${DateTime.now().millisecondsSinceEpoch}',
+      id: 'custom_$mSec',
       name: 'My Theme',
       skyPath: base.skyPath,
       groundPath: base.groundPath,
@@ -77,6 +86,8 @@ class CustomEnvironmentTheme {
       groundOpacity: base.groundOpacity,
       mountainOpacity: base.mountainOpacity,
       rockOpacity: base.rockOpacity,
+      birdScale: base.birdScale,
+      rabbitScale: base.rabbitScale,
       birdPath: base.birdAsset.path,
       rabbitIdlePath: base.rabbitIdleAsset.path,
       rabbitRunPath: base.rabbitRunAsset.path,
@@ -84,39 +95,132 @@ class CustomEnvironmentTheme {
       mountainRightPath: base.mountainRightAsset.path,
       rockLeftPath: base.rockLeftAsset.path,
       rockRightPath: base.rockRightAsset.path,
-      toyPaths: {
-        for (final e in base.toyAssets.entries) e.key: e.value.path,
-      },
-      foodPaths: {
-        for (final e in base.foodAssets.entries) e.key: e.value.path,
-      },
+      layers: [
+        CustomEnvironmentLayer(
+          id: 'layer_mtn_l_$mSec',
+          assetPath: base.mountainLeftAsset.path,
+          xRatio: 0.1,
+          yRatio: 0.0,
+          scale: 1.0,
+          opacity: 1.0,
+        ),
+        CustomEnvironmentLayer(
+          id: 'layer_mtn_r_$mSec',
+          assetPath: base.mountainRightAsset.path,
+          xRatio: 0.9,
+          yRatio: 0.0,
+          scale: 1.0,
+          opacity: 1.0,
+        ),
+        CustomEnvironmentLayer(
+          id: 'layer_rock_l_$mSec',
+          assetPath: base.rockLeftAsset.path,
+          xRatio: 0.18,
+          yRatio: 0.0,
+          scale: 1.0,
+          opacity: 1.0,
+        ),
+        CustomEnvironmentLayer(
+          id: 'layer_rock_r_$mSec',
+          assetPath: base.rockRightAsset.path,
+          xRatio: 0.82,
+          yRatio: 0.0,
+          scale: 1.0,
+          opacity: 1.0,
+        ),
+      ],
+      toyPaths: {for (final e in base.toyAssets.entries) e.key: e.value.path},
+      foodPaths: {for (final e in base.foodAssets.entries) e.key: e.value.path},
     );
   }
 
   factory CustomEnvironmentTheme.fromJson(Map<String, dynamic> json) {
     final defaults = CustomEnvironmentTheme.fromDefaults();
+    final layersRaw = json['layers'] as List<dynamic>?;
+    final List<CustomEnvironmentLayer> layers;
+    if (layersRaw != null) {
+      layers = layersRaw
+          .map(
+            (e) => CustomEnvironmentLayer.fromJson(e as Map<String, dynamic>),
+          )
+          .toList();
+    } else {
+      final mtnL =
+          json['mountainLeftPath'] as String? ?? defaults.mountainLeftPath;
+      final mtnR =
+          json['mountainRightPath'] as String? ?? defaults.mountainRightPath;
+      final rockL = json['rockLeftPath'] as String? ?? defaults.rockLeftPath;
+      final rockR = json['rockRightPath'] as String? ?? defaults.rockRightPath;
+      layers = [
+        if (mtnL != 'none' && mtnL.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'legacy_mtn_l',
+            assetPath: mtnL,
+            xRatio: 0.1,
+            yRatio: 0.0,
+          ),
+        if (mtnR != 'none' && mtnR.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'legacy_mtn_r',
+            assetPath: mtnR,
+            xRatio: 0.9,
+            yRatio: 0.0,
+          ),
+        if (rockL != 'none' && rockL.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'legacy_rock_l',
+            assetPath: rockL,
+            xRatio: 0.18,
+            yRatio: 0.0,
+          ),
+        if (rockR != 'none' && rockR.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'legacy_rock_r',
+            assetPath: rockR,
+            xRatio: 0.82,
+            yRatio: 0.0,
+          ),
+      ];
+    }
+
     return CustomEnvironmentTheme(
       id: json['id'] as String? ?? defaults.id,
       name: json['name'] as String? ?? defaults.name,
       skyPath: json['skyPath'] as String? ?? defaults.skyPath,
       groundPath: json['groundPath'] as String? ?? defaults.groundPath,
       cloudPath: json['cloudPath'] as String? ?? defaults.cloudPath,
-      groundTintArgb: (json['groundTintArgb'] as num?)?.toInt() ?? defaults.groundTintArgb,
-      cloudTintArgb: (json['cloudTintArgb'] as num?)?.toInt() ?? defaults.cloudTintArgb,
-      baseColorArgb: (json['baseColorArgb'] as num?)?.toInt() ?? defaults.baseColorArgb,
+      groundTintArgb:
+          (json['groundTintArgb'] as num?)?.toInt() ?? defaults.groundTintArgb,
+      cloudTintArgb:
+          (json['cloudTintArgb'] as num?)?.toInt() ?? defaults.cloudTintArgb,
+      baseColorArgb:
+          (json['baseColorArgb'] as num?)?.toInt() ?? defaults.baseColorArgb,
       isGroundTiled: json['isGroundTiled'] as bool? ?? defaults.isGroundTiled,
-      skyOpacity: (json['skyOpacity'] as num?)?.toDouble() ?? defaults.skyOpacity,
-      cloudOpacity: (json['cloudOpacity'] as num?)?.toDouble() ?? defaults.cloudOpacity,
-      groundOpacity: (json['groundOpacity'] as num?)?.toDouble() ?? defaults.groundOpacity,
-      mountainOpacity: (json['mountainOpacity'] as num?)?.toDouble() ?? defaults.mountainOpacity,
-      rockOpacity: (json['rockOpacity'] as num?)?.toDouble() ?? defaults.rockOpacity,
+      skyOpacity:
+          (json['skyOpacity'] as num?)?.toDouble() ?? defaults.skyOpacity,
+      cloudOpacity:
+          (json['cloudOpacity'] as num?)?.toDouble() ?? defaults.cloudOpacity,
+      groundOpacity:
+          (json['groundOpacity'] as num?)?.toDouble() ?? defaults.groundOpacity,
+      mountainOpacity:
+          (json['mountainOpacity'] as num?)?.toDouble() ??
+          defaults.mountainOpacity,
+      rockOpacity:
+          (json['rockOpacity'] as num?)?.toDouble() ?? defaults.rockOpacity,
+      birdScale: (json['birdScale'] as num?)?.toDouble() ?? defaults.birdScale,
+      rabbitScale:
+          (json['rabbitScale'] as num?)?.toDouble() ?? defaults.rabbitScale,
       birdPath: json['birdPath'] as String? ?? defaults.birdPath,
-      rabbitIdlePath: json['rabbitIdlePath'] as String? ?? defaults.rabbitIdlePath,
+      rabbitIdlePath:
+          json['rabbitIdlePath'] as String? ?? defaults.rabbitIdlePath,
       rabbitRunPath: json['rabbitRunPath'] as String? ?? defaults.rabbitRunPath,
-      mountainLeftPath: json['mountainLeftPath'] as String? ?? defaults.mountainLeftPath,
-      mountainRightPath: json['mountainRightPath'] as String? ?? defaults.mountainRightPath,
+      mountainLeftPath:
+          json['mountainLeftPath'] as String? ?? defaults.mountainLeftPath,
+      mountainRightPath:
+          json['mountainRightPath'] as String? ?? defaults.mountainRightPath,
       rockLeftPath: json['rockLeftPath'] as String? ?? defaults.rockLeftPath,
       rockRightPath: json['rockRightPath'] as String? ?? defaults.rockRightPath,
+      layers: layers,
       toyPaths: _stringMap(json['toyPaths']) ?? defaults.toyPaths,
       foodPaths: _stringMap(json['foodPaths']) ?? defaults.foodPaths,
     );
@@ -137,6 +241,8 @@ class CustomEnvironmentTheme {
     'groundOpacity': groundOpacity,
     'mountainOpacity': mountainOpacity,
     'rockOpacity': rockOpacity,
+    'birdScale': birdScale,
+    'rabbitScale': rabbitScale,
     'birdPath': birdPath,
     'rabbitIdlePath': rabbitIdlePath,
     'rabbitRunPath': rabbitRunPath,
@@ -144,6 +250,7 @@ class CustomEnvironmentTheme {
     'mountainRightPath': mountainRightPath,
     'rockLeftPath': rockLeftPath,
     'rockRightPath': rockRightPath,
+    'layers': layers.map((e) => e.toJson()).toList(),
     'toyPaths': toyPaths,
     'foodPaths': foodPaths,
   };
@@ -177,6 +284,8 @@ class CustomEnvironmentTheme {
       groundOpacity: groundOpacity,
       mountainOpacity: mountainOpacity,
       rockOpacity: rockOpacity,
+      birdScale: birdScale,
+      rabbitScale: rabbitScale,
       birdAsset: resolveAsset(
         birdPath,
         () => ThemeAssetConfig(path: birdPath, isSpriteSheet: false),
@@ -205,19 +314,14 @@ class CustomEnvironmentTheme {
         rockRightPath,
         () => ThemeAssetConfig(path: rockRightPath),
       ),
+      layers: layers,
       toyAssets: {
         for (final e in toyPaths.entries)
-          e.key: resolveAsset(
-            e.value,
-            () => ThemeAssetConfig(path: e.value),
-          ),
+          e.key: resolveAsset(e.value, () => ThemeAssetConfig(path: e.value)),
       },
       foodAssets: {
         for (final e in foodPaths.entries)
-          e.key: resolveAsset(
-            e.value,
-            () => ThemeAssetConfig(path: e.value),
-          ),
+          e.key: resolveAsset(e.value, () => ThemeAssetConfig(path: e.value)),
       },
     );
   }
@@ -237,6 +341,8 @@ class CustomEnvironmentTheme {
     double? groundOpacity,
     double? mountainOpacity,
     double? rockOpacity,
+    double? birdScale,
+    double? rabbitScale,
     String? birdPath,
     String? rabbitIdlePath,
     String? rabbitRunPath,
@@ -244,6 +350,7 @@ class CustomEnvironmentTheme {
     String? mountainRightPath,
     String? rockLeftPath,
     String? rockRightPath,
+    List<CustomEnvironmentLayer>? layers,
     Map<String, String>? toyPaths,
     Map<String, String>? foodPaths,
   }) {
@@ -262,6 +369,8 @@ class CustomEnvironmentTheme {
       groundOpacity: groundOpacity ?? this.groundOpacity,
       mountainOpacity: mountainOpacity ?? this.mountainOpacity,
       rockOpacity: rockOpacity ?? this.rockOpacity,
+      birdScale: birdScale ?? this.birdScale,
+      rabbitScale: rabbitScale ?? this.rabbitScale,
       birdPath: birdPath ?? this.birdPath,
       rabbitIdlePath: rabbitIdlePath ?? this.rabbitIdlePath,
       rabbitRunPath: rabbitRunPath ?? this.rabbitRunPath,
@@ -269,6 +378,7 @@ class CustomEnvironmentTheme {
       mountainRightPath: mountainRightPath ?? this.mountainRightPath,
       rockLeftPath: rockLeftPath ?? this.rockLeftPath,
       rockRightPath: rockRightPath ?? this.rockRightPath,
+      layers: layers ?? List.of(this.layers),
       toyPaths: toyPaths ?? Map.of(this.toyPaths),
       foodPaths: foodPaths ?? Map.of(this.foodPaths),
     );
@@ -305,21 +415,71 @@ class EnvironmentAssetCatalogue {
   ];
 
   static const List<ThemeAssetConfig> rabbitIdle = [
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_1.png', isSpriteSheet: true, frameCount: 12, spriteWidth: 32, spriteHeight: 32),
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_2.png', isSpriteSheet: true, frameCount: 12, spriteWidth: 32, spriteHeight: 32),
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_3.png', isSpriteSheet: true, frameCount: 12, spriteWidth: 32, spriteHeight: 32),
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_4.png', isSpriteSheet: true, frameCount: 12, spriteWidth: 32, spriteHeight: 32),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_1.png',
+      isSpriteSheet: true,
+      frameCount: 12,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_2.png',
+      isSpriteSheet: true,
+      frameCount: 12,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_3.png',
+      isSpriteSheet: true,
+      frameCount: 12,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_4.png',
+      isSpriteSheet: true,
+      frameCount: 12,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
   ];
 
   static const List<ThemeAssetConfig> rabbitRun = [
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_1_run.png', isSpriteSheet: true, frameCount: 8, spriteWidth: 32, spriteHeight: 32),
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_2_runing.png', isSpriteSheet: true, frameCount: 8, spriteWidth: 32, spriteHeight: 32),
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_3_running.png', isSpriteSheet: true, frameCount: 8, spriteWidth: 32, spriteHeight: 32),
-    ThemeAssetConfig(path: 'assets/animations/rabbit/rabbit_4_run.png', isSpriteSheet: true, frameCount: 8, spriteWidth: 32, spriteHeight: 32),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_1_run.png',
+      isSpriteSheet: true,
+      frameCount: 8,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_2_runing.png',
+      isSpriteSheet: true,
+      frameCount: 8,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_3_running.png',
+      isSpriteSheet: true,
+      frameCount: 8,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
+    ThemeAssetConfig(
+      path: 'assets/animations/rabbit/rabbit_4_run.png',
+      isSpriteSheet: true,
+      frameCount: 8,
+      spriteWidth: 32,
+      spriteHeight: 32,
+    ),
   ];
 
   static const List<ThemeAssetConfig> mountains = [
-    ThemeAssetConfig(path: 'assets/environments/trees/tree_sunny_mountains.png'),
+    ThemeAssetConfig(
+      path: 'assets/environments/trees/tree_sunny_mountains.png',
+    ),
     ThemeAssetConfig(path: 'assets/environments/trees/tree_nature_1_5.png'),
     ThemeAssetConfig(path: 'assets/environments/trees/tree_nature_1_6.png'),
     ThemeAssetConfig(path: 'assets/environments/trees/tree_nature_1_7.png'),
@@ -400,10 +560,18 @@ class EnvironmentAssetCatalogue {
   ];
 
   static const Map<String, ThemeAssetConfig> toys = {
-    'tennis_ball': ThemeAssetConfig(path: 'assets/animations/throw_particles/tennis_ball.png'),
-    'base_ball': ThemeAssetConfig(path: 'assets/animations/throw_particles/base_ball.png'),
-    'basket_ball': ThemeAssetConfig(path: 'assets/animations/throw_particles/basket_ball.png'),
-    'football': ThemeAssetConfig(path: 'assets/animations/throw_particles/football.png'),
+    'tennis_ball': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/tennis_ball.png',
+    ),
+    'base_ball': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/base_ball.png',
+    ),
+    'basket_ball': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/basket_ball.png',
+    ),
+    'football': ThemeAssetConfig(
+      path: 'assets/animations/throw_particles/football.png',
+    ),
   };
 
   static const Map<String, ThemeAssetConfig> foods = {
@@ -424,7 +592,13 @@ class EnvironmentAssetCatalogue {
   };
 
   static ThemeAssetConfig? findByPath(String path) {
-    for (final c in [...birds, ...rabbitIdle, ...rabbitRun, ...mountains, ...rocks]) {
+    for (final c in [
+      ...birds,
+      ...rabbitIdle,
+      ...rabbitRun,
+      ...mountains,
+      ...rocks,
+    ]) {
       if (c.path == path) return c;
     }
     for (final c in [...toys.values, ...foods.values]) {

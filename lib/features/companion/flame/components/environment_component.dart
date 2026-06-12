@@ -7,7 +7,8 @@ import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 
-class EnvironmentComponent extends PositionComponent with HasGameReference<CompanionGame> {
+class EnvironmentComponent extends PositionComponent
+    with HasGameReference<CompanionGame> {
   String backgroundImagePath;
 
   EnvironmentComponent({
@@ -23,7 +24,8 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
   Color ambientTint = Colors.white;
 
-  EnvironmentThemeConfig get config => EnvironmentThemeConfig.getByPath(backgroundImagePath);
+  EnvironmentThemeConfig get config =>
+      EnvironmentThemeConfig.getByPath(backgroundImagePath);
 
   Future<void> updateTheme(String newPath) async {
     backgroundImagePath = newPath;
@@ -48,13 +50,15 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
     if (_cloudImage != null) {
       for (int i = 0; i < 4; i++) {
-        _clouds.add(_Cloud(
-          x: _rng.nextDouble() * 400.0,
-          y: 20.0 + _rng.nextDouble() * 50.0,
-          speed: 6.0 + _rng.nextDouble() * 12.0,
-          scale: 0.4 + _rng.nextDouble() * 0.5,
-          opacity: 0.25 + _rng.nextDouble() * 0.45,
-        ));
+        _clouds.add(
+          _Cloud(
+            x: _rng.nextDouble() * 400.0,
+            y: 20.0 + _rng.nextDouble() * 50.0,
+            speed: 6.0 + _rng.nextDouble() * 12.0,
+            scale: 0.4 + _rng.nextDouble() * 0.5,
+            opacity: 0.25 + _rng.nextDouble() * 0.45,
+          ),
+        );
       }
     }
   }
@@ -82,24 +86,44 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
     final double hour = now.hour + now.minute / 60.0;
 
     if (hour < 4.0) {
-      ambientTint = const Color(0xFF16182C); 
+      ambientTint = const Color(0xFF16182C);
     } else if (hour < 6.0) {
       final double t = (hour - 4.0) / 2.0;
-      ambientTint = Color.lerp(const Color(0xFF16182C), const Color(0xFFFF8A65), t)!; 
+      ambientTint = Color.lerp(
+        const Color(0xFF16182C),
+        const Color(0xFFFF8A65),
+        t,
+      )!;
     } else if (hour < 8.0) {
       final double t = (hour - 6.0) / 2.0;
-      ambientTint = Color.lerp(const Color(0xFFFF8A65), const Color(0xFFFFECB3), t)!; 
+      ambientTint = Color.lerp(
+        const Color(0xFFFF8A65),
+        const Color(0xFFFFECB3),
+        t,
+      )!;
     } else if (hour < 16.0) {
-      ambientTint = const Color(0xFFFFFFFF); 
+      ambientTint = const Color(0xFFFFFFFF);
     } else if (hour < 18.0) {
       final double t = (hour - 16.0) / 2.0;
-      ambientTint = Color.lerp(const Color(0xFFFFFFFF), const Color(0xFFE57373), t)!; 
+      ambientTint = Color.lerp(
+        const Color(0xFFFFFFFF),
+        const Color(0xFFE57373),
+        t,
+      )!;
     } else if (hour < 20.0) {
       final double t = (hour - 18.0) / 2.0;
-      ambientTint = Color.lerp(const Color(0xFFE57373), const Color(0xFF3F3D56), t)!; 
+      ambientTint = Color.lerp(
+        const Color(0xFFE57373),
+        const Color(0xFF3F3D56),
+        t,
+      )!;
     } else {
       final double t = (hour - 20.0) / 4.0;
-      ambientTint = Color.lerp(const Color(0xFF3F3D56), const Color(0xFF16182C), t)!; 
+      ambientTint = Color.lerp(
+        const Color(0xFF3F3D56),
+        const Color(0xFF16182C),
+        t,
+      )!;
     }
   }
 
@@ -130,15 +154,17 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
         fit: BoxFit.cover,
         alignment: isSkyOnly ? Alignment.topCenter : Alignment.bottomCenter,
         filterQuality: FilterQuality.medium,
-        colorFilter: ColorFilter.mode(ambientTint.withValues(alpha: config.skyOpacity), BlendMode.modulate),
+        colorFilter: ColorFilter.mode(
+          ambientTint.withValues(alpha: config.skyOpacity),
+          BlendMode.modulate,
+        ),
       );
     } else {
       final paint = Paint()
-        ..shader = ui.Gradient.linear(
-          Offset.zero,
-          Offset(0, size.y),
-          [ambientTint.withValues(alpha: 0.85 * config.skyOpacity), ambientTint.withValues(alpha: config.skyOpacity)],
-        );
+        ..shader = ui.Gradient.linear(Offset.zero, Offset(0, size.y), [
+          ambientTint.withValues(alpha: 0.85 * config.skyOpacity),
+          ambientTint.withValues(alpha: config.skyOpacity),
+        ]);
       canvas.drawRect(Rect.fromLTWH(0, 0, worldWidth, size.y), paint);
     }
 
@@ -150,10 +176,7 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
           ambientTint,
         );
         final paint = Paint()
-          ..colorFilter = ColorFilter.mode(
-            finalCloudTint,
-            BlendMode.modulate,
-          )
+          ..colorFilter = ColorFilter.mode(finalCloudTint, BlendMode.modulate)
           ..filterQuality = FilterQuality.medium;
 
         final double cw = _cloudImage!.width * cloud.scale;
@@ -161,7 +184,12 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
         canvas.drawImageRect(
           _cloudImage!,
-          Rect.fromLTWH(0, 0, _cloudImage!.width.toDouble(), _cloudImage!.height.toDouble()),
+          Rect.fromLTWH(
+            0,
+            0,
+            _cloudImage!.width.toDouble(),
+            _cloudImage!.height.toDouble(),
+          ),
           Rect.fromLTWH(cloud.x, cloud.y, cw, ch),
           paint,
         );
@@ -170,27 +198,40 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
 
     if (_groundImage != null) {
       final groundBaseTint = config.groundTint;
-      final finalGroundTint = _combineTints(groundBaseTint.withValues(alpha: config.groundOpacity), ambientTint);
+      final finalGroundTint = _combineTints(
+        groundBaseTint.withValues(alpha: config.groundOpacity),
+        ambientTint,
+      );
 
       final paint = Paint()
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate)
-        ..filterQuality = FilterQuality.none; 
+        ..filterQuality = FilterQuality.none;
 
       final double groundTileWidth = 48.0;
       final double groundTileHeight = 32.0;
       final double groundY = size.y - 32.0;
 
       final basePaint = Paint()
-        ..color = config.baseColor.withValues(alpha: 0.95 * config.groundOpacity)
+        ..color = config.baseColor.withValues(
+          alpha: 0.95 * config.groundOpacity,
+        )
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
-      canvas.drawRect(Rect.fromLTWH(0, groundY + 12.0, worldWidth, size.y - groundY - 12.0), basePaint);
+      canvas.drawRect(
+        Rect.fromLTWH(0, groundY + 12.0, worldWidth, size.y - groundY - 12.0),
+        basePaint,
+      );
 
       if (config.isGroundTiled) {
         double x = 0;
         while (x < worldWidth + groundTileWidth) {
           canvas.drawImageRect(
             _groundImage!,
-            Rect.fromLTWH(0, 0, _groundImage!.width.toDouble(), _groundImage!.height.toDouble()),
+            Rect.fromLTWH(
+              0,
+              0,
+              _groundImage!.width.toDouble(),
+              _groundImage!.height.toDouble(),
+            ),
             Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
             paint,
           );
@@ -201,11 +242,11 @@ class EnvironmentComponent extends PositionComponent with HasGameReference<Compa
         final double floorY = game.isPiP ? (size.y - 20.0) : (size.y - 4.0);
         final double imgW = _groundImage!.width.toDouble();
         final double imgH = _groundImage!.height.toDouble();
-        
+
         final double drawWidth = worldWidth;
         final double drawHeight = drawWidth * (imgH / imgW);
         final double scaledGrassFromBottom = drawHeight * (20.0 / 272.0);
-        
+
         final double imageBottomY = floorY + scaledGrassFromBottom;
         final double imageTopY = imageBottomY - drawHeight;
 

@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/custom_environment_theme.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 // Displays a single selectable thumbnail for an asset path.
@@ -67,7 +68,9 @@ class _AssetPickerTileState extends State<AssetPickerTile> {
     if (widget.assetPath == 'none') return 'None';
     if (widget.label != null) return widget.label!;
     final raw = widget.assetPath.split('/').last;
-    final noExt = raw.contains('.') ? raw.substring(0, raw.lastIndexOf('.')) : raw;
+    final noExt = raw.contains('.')
+        ? raw.substring(0, raw.lastIndexOf('.'))
+        : raw;
     return noExt.replaceAll('_', ' ');
   }
 
@@ -146,6 +149,24 @@ class _AssetPickerTileState extends State<AssetPickerTile> {
       );
     }
     if (_image != null) {
+      final cfg = EnvironmentAssetCatalogue.findByPath(widget.assetPath);
+      if (cfg != null && cfg.isSpriteSheet) {
+        final int frameToShow = cfg.frameCount > 1
+            ? (cfg.frameCount / 2).floor()
+            : 0;
+        final double srcX = cfg.srcX + (frameToShow * cfg.spriteWidth);
+        final src = Rect.fromLTWH(
+          srcX,
+          cfg.srcY,
+          cfg.spriteWidth,
+          cfg.spriteHeight,
+        );
+        return SizedBox.expand(
+          child: CustomPaint(
+            painter: _SpritesheetPainter(image: _image!, srcRect: src),
+          ),
+        );
+      }
       return RawImage(
         image: _image,
         fit: BoxFit.contain,
@@ -166,7 +187,47 @@ class _AssetPickerTileState extends State<AssetPickerTile> {
     }
     // Placeholder for assets that failed to load.
     return const Center(
-      child: Icon(Icons.broken_image_outlined, size: 20, color: AppTheme.textMuted),
+      child: Icon(
+        Icons.broken_image_outlined,
+        size: 20,
+        color: AppTheme.textMuted,
+      ),
     );
+  }
+}
+
+class _SpritesheetPainter extends CustomPainter {
+  final ui.Image image;
+  final Rect srcRect;
+
+  const _SpritesheetPainter({required this.image, required this.srcRect});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final double srcWidth = srcRect.width;
+    final double srcHeight = srcRect.height;
+
+    final double scaleX = size.width / srcWidth;
+    final double scaleY = size.height / srcHeight;
+    final double scale = scaleX < scaleY ? scaleX : scaleY;
+
+    final double drawWidth = srcWidth * scale;
+    final double drawHeight = srcHeight * scale;
+
+    final double dx = (size.width - drawWidth) / 2;
+    final double dy = (size.height - drawHeight) / 2;
+
+    final dstRect = Rect.fromLTWH(dx, dy, drawWidth, drawHeight);
+    canvas.drawImageRect(
+      image,
+      srcRect,
+      dstRect,
+      Paint()..filterQuality = FilterQuality.none,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SpritesheetPainter oldDelegate) {
+    return oldDelegate.image != image || oldDelegate.srcRect != srcRect;
   }
 }

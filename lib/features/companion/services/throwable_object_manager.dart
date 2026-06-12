@@ -142,10 +142,14 @@ class ThrowableObjectManager {
             break;
           }
 
-          final double horizontalDist = (petAnchor.dx - throwableBounds.center.dx).abs();
-          final double verticalDist = (petAnchor.dy - throwableBounds.center.dy).abs();
-          if (horizontalDist <= (petBounds.width / 2 + throwableBounds.width / 2 + 8.0) &&
-              verticalDist <= (petBounds.height / 2 + throwableBounds.height / 2 + 25.0)) {
+          final double horizontalDist =
+              (petAnchor.dx - throwableBounds.center.dx).abs();
+          final double verticalDist = (petAnchor.dy - throwableBounds.center.dy)
+              .abs();
+          if (horizontalDist <=
+                  (petBounds.width / 2 + throwableBounds.width / 2 + 8.0) &&
+              verticalDist <=
+                  (petBounds.height / 2 + throwableBounds.height / 2 + 25.0)) {
             if (record.kind == 'treat') {
               _eventBus.emit(ThrowableEatenEvent(objectId: record.physicsId));
               _disposeThrowable(i);

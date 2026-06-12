@@ -5,16 +5,14 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_theme.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/shared/shared.dart';
 import 'environment_builder_controller.dart';
 import 'widgets/env_preview_panel.dart';
 import 'widgets/asset_picker_section.dart';
 import 'widgets/color_picker_row.dart';
 import 'widgets/code_output_sheet.dart';
+import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
-// Full-screen Environment Builder screen. Provides the controller and splits
-// into a left picker panel and a right sticky preview panel.
 class EnvironmentBuilderPage extends StatelessWidget {
   const EnvironmentBuilderPage({super.key});
 
@@ -53,64 +51,63 @@ class _EnvironmentBuilderBody extends StatelessWidget {
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     final controller = context.read<EnvironmentBuilderController>();
-    return AppBar(
-      backgroundColor: AppTheme.surface,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      leadingWidth: 110,
-      leading: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          IconButton(
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(76),
+      child: Container(
+        margin: const EdgeInsets.only(top: 20),
+        child: AppBar(
+          backgroundColor: AppTheme.surface,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+
+          leading: IconButton(
             icon: const Icon(CupertinoIcons.chevron_left, size: 18),
             color: AppTheme.textSecondary,
             onPressed: () => Navigator.pop(context),
             tooltip: 'Back',
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      title: const Text(
-        'Environment Builder',
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: AppTheme.textPrimary,
-          letterSpacing: -0.2,
-          fontFamily: 'Inter',
-        ),
-      ),
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(0.5),
-        child: Container(height: 0.5, color: AppTheme.border),
-      ),
-      actions: [
-        if (kDebugMode)
-          Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: TextButton.icon(
-              icon: const Icon(Icons.code_rounded, size: 14),
-              label: const Text('Get Code'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.warning,
-                textStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                ),
-              ),
-              onPressed: () => CodeOutputSheet.show(context, controller),
+          titleSpacing: 0,
+
+          title: const Text(
+            'Environment Builder',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+              letterSpacing: -0.2,
+              fontFamily: 'Inter',
             ),
           ),
-        const SizedBox(width: 8),
-      ],
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(0.5),
+            child: Container(height: 0.5, color: AppTheme.border),
+          ),
+          actions: [
+            if (kDebugMode)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: TextButton.icon(
+                  icon: const Icon(Icons.code_rounded, size: 14),
+                  label: const Text('Get Code'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppTheme.warning,
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  onPressed: () => CodeOutputSheet.show(context, controller),
+                ),
+              ),
+            const SizedBox(width: 8),
+          ],
+        ),
+      ),
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Wide layout (≥800px): left picker panel + right sticky preview
-// ──────────────────────────────────────────────────────────────────────────────
 
 class _WideLayout extends StatelessWidget {
   const _WideLayout();
@@ -120,25 +117,14 @@ class _WideLayout extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left: scrollable asset pickers
-        Expanded(
-          flex: 55,
-          child: _PickerPanel(),
-        ),
+        Expanded(flex: 55, child: _PickerPanel()),
         Container(width: 0.5, color: AppTheme.border),
-        // Right: sticky preview + action bar
-        Expanded(
-          flex: 45,
-          child: _PreviewPanel(),
-        ),
+
+        Expanded(flex: 45, child: _PreviewPanel()),
       ],
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Narrow layout (<800px): stacked, preview at top, pickers below
-// ──────────────────────────────────────────────────────────────────────────────
 
 class _NarrowLayout extends StatelessWidget {
   const _NarrowLayout();
@@ -152,8 +138,7 @@ class _NarrowLayout extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Consumer<EnvironmentBuilderController>(
-              builder: (_, ctrl, _) =>
-                  EnvPreviewPanel(theme: ctrl.draft),
+              builder: (_, ctrl, _) => EnvPreviewPanel(theme: ctrl.draft),
             ),
           ),
         ),
@@ -163,10 +148,6 @@ class _NarrowLayout extends StatelessWidget {
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Picker panel — all asset category sections
-// ──────────────────────────────────────────────────────────────────────────────
 
 class _PickerPanel extends StatefulWidget {
   const _PickerPanel();
@@ -183,91 +164,138 @@ class _TabItem {
 
 class _PickerPanelState extends State<_PickerPanel> {
   int _activeTab = 0;
+  String _selectedToyKey = 'tennis_ball';
+  String _selectedFoodKey = 'carrot';
 
   static const List<_TabItem> _tabs = [
     _TabItem(CupertinoIcons.photo, 'Canvas'),
     _TabItem(CupertinoIcons.color_filter, 'Tints & Blend'),
-    _TabItem(CupertinoIcons.tree, 'Decorations'),
+    _TabItem(CupertinoIcons.layers, 'Layers'),
     _TabItem(CupertinoIcons.paw, 'NPCs & Wildlife'),
     _TabItem(CupertinoIcons.bookmark, 'Saved Themes'),
   ];
+
+  String _getToyLabel(String key) {
+    switch (key) {
+      case 'tennis_ball':
+        return 'Tennis Ball';
+      case 'base_ball':
+        return 'Baseball';
+      case 'basket_ball':
+        return 'Basketball';
+      case 'football':
+        return 'Football';
+      default:
+        return 'Toy';
+    }
+  }
+
+  String _getFoodLabel(String key) {
+    switch (key) {
+      case 'carrot':
+        return 'Carrot / Snack';
+      case 'bone':
+        return 'Bone';
+      default:
+        return 'Food';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final ctrl = context.watch<EnvironmentBuilderController>();
     final d = ctrl.draft;
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildTabs(),
+        _buildVerticalTabs(),
+        Container(width: 0.5, color: AppTheme.border),
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: _buildContent(ctrl, d),
-          ),
+          child: ctrl.isLoadingAssets
+              ? const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppTheme.accent,
+                  ),
+                )
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  child: _buildContent(ctrl, d),
+                ),
         ),
       ],
     );
   }
 
-  Widget _buildTabs() {
+  Widget _buildVerticalTabs() {
     return Container(
-      height: 48,
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceCard,
-        border: Border(bottom: BorderSide(color: AppTheme.border, width: 0.5)),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: List.generate(_tabs.length, (idx) {
-            final tab = _tabs[idx];
-            final isSelected = _activeTab == idx;
-            return GestureDetector(
-              onTap: () => setState(() => _activeTab = idx),
-              behavior: HitTestBehavior.opaque,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 16),
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isSelected ? AppTheme.accent : Colors.transparent,
-                      width: 2.5,
-                    ),
+      width: 76,
+      decoration: const BoxDecoration(color: AppTheme.surfaceCard),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: List.generate(_tabs.length, (idx) {
+          final tab = _tabs[idx];
+          final isSelected = _activeTab == idx;
+          return GestureDetector(
+            onTap: () => setState(() => _activeTab = idx),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: isSelected ? AppTheme.accent : Colors.transparent,
+                    width: 3,
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      tab.icon,
-                      size: 14,
-                      color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      tab.label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
+                color: isSelected
+                    ? AppTheme.accent.withValues(alpha: 0.08)
+                    : Colors.transparent,
               ),
-            );
-          }),
-        ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    tab.icon,
+                    size: 18,
+                    color: isSelected
+                        ? AppTheme.accent
+                        : AppTheme.textSecondary,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    tab.label,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppTheme.textPrimary
+                          : AppTheme.textSecondary,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
 
-  Widget _buildContent(EnvironmentBuilderController ctrl, CustomEnvironmentTheme d) {
+  Widget _buildContent(
+    EnvironmentBuilderController ctrl,
+    CustomEnvironmentTheme d,
+  ) {
     switch (_activeTab) {
       case 0:
         return Column(
@@ -276,18 +304,23 @@ class _PickerPanelState extends State<_PickerPanel> {
             _categoryLabel('Background & Sky'),
             AssetPickerSection(
               label: 'Sky / Background',
-              paths: EnvironmentAssetCatalogue.skyPaths,
+              paths: ctrl.skyPaths,
               selectedPath: d.skyPath,
               onSelected: ctrl.updateSky,
             ),
             AssetPickerSection(
               label: 'Ground Tile',
-              paths: EnvironmentAssetCatalogue.groundPaths,
+              paths: ctrl.groundPaths,
               selectedPath: d.groundPath,
               onSelected: ctrl.updateGround,
             ),
             Padding(
-              padding: const EdgeInsets.only(top: 4, bottom: 16, left: 4, right: 4),
+              padding: const EdgeInsets.only(
+                top: 4,
+                bottom: 16,
+                left: 4,
+                right: 4,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -324,7 +357,7 @@ class _PickerPanelState extends State<_PickerPanel> {
             ),
             AssetPickerSection(
               label: 'Cloud Sprite',
-              paths: const ['none', ...EnvironmentAssetCatalogue.cloudPaths],
+              paths: ['none', ...ctrl.cloudPaths],
               selectedPath: d.cloudPath,
               onSelected: ctrl.updateCloud,
             ),
@@ -356,40 +389,8 @@ class _PickerPanelState extends State<_PickerPanel> {
           ],
         );
       case 2:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _categoryLabel('Landscape Decorations'),
-            AssetPickerSection(
-              label: 'Mountain Left',
-              subtitle: 'background midground',
-              paths: ['none', ...EnvironmentAssetCatalogue.mountains.map((c) => c.path)],
-              selectedPath: d.mountainLeftPath,
-              onSelected: ctrl.updateMountainLeft,
-            ),
-            AssetPickerSection(
-              label: 'Mountain Right',
-              subtitle: 'background midground',
-              paths: ['none', ...EnvironmentAssetCatalogue.mountains.map((c) => c.path)],
-              selectedPath: d.mountainRightPath,
-              onSelected: ctrl.updateMountainRight,
-            ),
-            AssetPickerSection(
-              label: 'Rock Left',
-              subtitle: 'ground level',
-              paths: ['none', ...EnvironmentAssetCatalogue.rocks.map((c) => c.path)],
-              selectedPath: d.rockLeftPath,
-              onSelected: ctrl.updateRockLeft,
-            ),
-            AssetPickerSection(
-              label: 'Rock Right',
-              subtitle: 'ground level',
-              paths: ['none', ...EnvironmentAssetCatalogue.rocks.map((c) => c.path)],
-              selectedPath: d.rockRightPath,
-              onSelected: ctrl.updateRockRight,
-            ),
-          ],
-        );
+        return _LayersManagerTab(controller: ctrl, draft: d);
+
       case 3:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -398,72 +399,91 @@ class _PickerPanelState extends State<_PickerPanel> {
             AssetPickerSection(
               label: 'Bird Sprite',
               subtitle: 'spritesheet 7 frames',
-              paths: ['none', ...EnvironmentAssetCatalogue.birds.map((c) => c.path)],
+              paths: ['none', ...ctrl.birdPaths],
               selectedPath: d.birdPath,
               onSelected: ctrl.updateBird,
             ),
+            if (d.birdPath != 'none' && d.birdPath.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _ScaleSliderRow(
+                  label: 'Bird Size Scale',
+                  value: d.birdScale,
+                  onChanged: ctrl.updateBirdScale,
+                ),
+              ),
             AssetPickerSection(
               label: 'Rabbit Idle',
               subtitle: 'spritesheet 12 frames',
-              paths: ['none', ...EnvironmentAssetCatalogue.rabbitIdle.map((c) => c.path)],
+              paths: ['none', ...ctrl.rabbitIdlePaths],
               selectedPath: d.rabbitIdlePath,
               onSelected: ctrl.updateRabbitIdle,
             ),
             AssetPickerSection(
               label: 'Rabbit Run',
               subtitle: 'spritesheet 8 frames',
-              paths: ['none', ...EnvironmentAssetCatalogue.rabbitRun.map((c) => c.path)],
+              paths: ['none', ...ctrl.rabbitRunPaths],
               selectedPath: d.rabbitRunPath,
               onSelected: ctrl.updateRabbitRun,
             ),
+            if (d.rabbitIdlePath != 'none' && d.rabbitIdlePath.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: _ScaleSliderRow(
+                  label: 'Rabbit Size Scale',
+                  value: d.rabbitScale,
+                  onChanged: ctrl.updateRabbitScale,
+                ),
+              ),
             _sectionDivider(),
             _categoryLabel('Throwable Toys'),
-            AssetPickerSection(
-              label: 'Tennis Ball',
-              paths: ['none', ...EnvironmentAssetCatalogue.toys.values.map((c) => c.path)],
-              selectedPath: d.toyPaths['tennis_ball'] ?? EnvironmentAssetCatalogue.toys['tennis_ball']!.path,
-              onSelected: (p) => ctrl.updateToy('tennis_ball', p),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _CustomSegmentedControl(
+                options: const {
+                  'tennis_ball': 'Tennis Ball',
+                  'base_ball': 'Baseball',
+                  'basket_ball': 'Basketball',
+                  'football': 'Football',
+                },
+                selectedValue: _selectedToyKey,
+                onSelected: (val) => setState(() => _selectedToyKey = val),
+              ),
             ),
             AssetPickerSection(
-              label: 'Baseball',
-              paths: ['none', ...EnvironmentAssetCatalogue.toys.values.map((c) => c.path)],
-              selectedPath: d.toyPaths['base_ball'] ?? EnvironmentAssetCatalogue.toys['base_ball']!.path,
-              onSelected: (p) => ctrl.updateToy('base_ball', p),
-            ),
-            AssetPickerSection(
-              label: 'Basketball',
-              paths: ['none', ...EnvironmentAssetCatalogue.toys.values.map((c) => c.path)],
-              selectedPath: d.toyPaths['basket_ball'] ?? EnvironmentAssetCatalogue.toys['basket_ball']!.path,
-              onSelected: (p) => ctrl.updateToy('basket_ball', p),
-            ),
-            AssetPickerSection(
-              label: 'Football',
-              paths: ['none', ...EnvironmentAssetCatalogue.toys.values.map((c) => c.path)],
-              selectedPath: d.toyPaths['football'] ?? EnvironmentAssetCatalogue.toys['football']!.path,
-              onSelected: (p) => ctrl.updateToy('football', p),
+              label: 'Configure ${_getToyLabel(_selectedToyKey)}',
+              paths: ['none', ...ctrl.toyPaths],
+              selectedPath:
+                  d.toyPaths[_selectedToyKey] ??
+                  (EnvironmentAssetCatalogue.toys[_selectedToyKey]?.path ??
+                      'none'),
+              onSelected: (p) => ctrl.updateToy(_selectedToyKey, p),
             ),
             _sectionDivider(),
             _categoryLabel('Food Items'),
-            AssetPickerSection(
-              label: 'Carrot / Snack',
-              paths: ['none', ...EnvironmentAssetCatalogue.foods.values.map((c) => c.path)],
-              selectedPath: d.foodPaths['carrot'] ?? EnvironmentAssetCatalogue.foods['carrot']!.path,
-              onSelected: (p) => ctrl.updateFood('carrot', p),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: _CustomSegmentedControl(
+                options: const {'carrot': 'Carrot / Snack', 'bone': 'Bone'},
+                selectedValue: _selectedFoodKey,
+                onSelected: (val) => setState(() => _selectedFoodKey = val),
+              ),
             ),
             AssetPickerSection(
-              label: 'Bone',
-              paths: ['none', ...EnvironmentAssetCatalogue.foods.values.map((c) => c.path)],
-              selectedPath: d.foodPaths['bone'] ?? EnvironmentAssetCatalogue.foods['bone']!.path,
-              onSelected: (p) => ctrl.updateFood('bone', p),
+              label: 'Configure ${_getFoodLabel(_selectedFoodKey)}',
+              paths: ['none', ...ctrl.foodPaths],
+              selectedPath:
+                  d.foodPaths[_selectedFoodKey] ??
+                  (EnvironmentAssetCatalogue.foods[_selectedFoodKey]?.path ??
+                      'none'),
+              onSelected: (p) => ctrl.updateFood(_selectedFoodKey, p),
             ),
           ],
         );
       case 4:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SavedThemesSection(ctrl: ctrl),
-          ],
+          children: [_SavedThemesSection(ctrl: ctrl)],
         );
       default:
         return const SizedBox.shrink();
@@ -494,9 +514,63 @@ class _PickerPanelState extends State<_PickerPanel> {
   }
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
-// Preview panel — sticky on the right on wide screens
-// ──────────────────────────────────────────────────────────────────────────────
+class _CustomSegmentedControl extends StatelessWidget {
+  final Map<String, String> options;
+  final String selectedValue;
+  final ValueChanged<String> onSelected;
+
+  const _CustomSegmentedControl({
+    required this.options,
+    required this.selectedValue,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceElevated.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.border, width: 0.5),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: options.entries.map((entry) {
+          final isSelected = entry.key == selectedValue;
+          return GestureDetector(
+            onTap: () => onSelected(entry.key),
+            behavior: HitTestBehavior.opaque,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppTheme.accent.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: isSelected ? AppTheme.accent : Colors.transparent,
+                  width: 0.5,
+                ),
+              ),
+              child: Text(
+                entry.value,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
 
 class _PreviewPanel extends StatelessWidget {
   const _PreviewPanel();
@@ -532,7 +606,6 @@ class _ActionBar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Theme name input
           CupertinoTextField(
             placeholder: ctrl.draft.name,
             onSubmitted: ctrl.updateName,
@@ -548,8 +621,11 @@ class _ActionBar extends StatelessWidget {
             ),
             prefix: const Padding(
               padding: EdgeInsets.only(left: 12),
-              child: Icon(Icons.label_outline_rounded,
-                  size: 14, color: AppTheme.textMuted),
+              child: Icon(
+                Icons.label_outline_rounded,
+                size: 14,
+                color: AppTheme.textMuted,
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             placeholderStyle: const TextStyle(
@@ -598,8 +674,9 @@ class _ActionBar extends StatelessWidget {
                   label: Text(ctrl.isSaving ? 'Saving…' : 'Save Theme'),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.accent,
-                    disabledBackgroundColor:
-                        AppTheme.accent.withValues(alpha: 0.5),
+                    disabledBackgroundColor: AppTheme.accent.withValues(
+                      alpha: 0.5,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 11),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -640,10 +717,6 @@ class _ActionBar extends StatelessWidget {
     );
   }
 }
-
-// ──────────────────────────────────────────────────────────────────────────────
-// Saved themes list at the bottom of the picker panel
-// ──────────────────────────────────────────────────────────────────────────────
 
 class _SavedThemesSection extends StatelessWidget {
   final EnvironmentBuilderController ctrl;
@@ -701,7 +774,6 @@ class _SavedThemeTile extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Colour swatch strip
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: SizedBox(
@@ -709,9 +781,7 @@ class _SavedThemeTile extends StatelessWidget {
               height: 36,
               child: Column(
                 children: [
-                  Expanded(
-                    child: Container(color: Color(theme.baseColorArgb)),
-                  ),
+                  Expanded(child: Container(color: Color(theme.baseColorArgb))),
                   Expanded(
                     child: Container(color: Color(theme.groundTintArgb)),
                   ),
@@ -918,6 +988,656 @@ class _OpacitySliderRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ScaleSliderRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final ValueChanged<double> onChanged;
+  final double min;
+  final double max;
+
+  const _ScaleSliderRow({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.min = 0.1,
+    this.max = 3.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.1,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              Text(
+                '${value.toStringAsFixed(2)}x',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.accent,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              trackHeight: 3,
+              activeTrackColor: AppTheme.accent,
+              inactiveTrackColor: AppTheme.border,
+              thumbColor: Colors.white,
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              min: min,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LayersManagerTab extends StatefulWidget {
+  final EnvironmentBuilderController controller;
+  final CustomEnvironmentTheme draft;
+
+  const _LayersManagerTab({required this.controller, required this.draft});
+
+  @override
+  State<_LayersManagerTab> createState() => _LayersManagerTabState();
+}
+
+class _LayersManagerTabState extends State<_LayersManagerTab> {
+  String? _expandedLayerId;
+
+  String _getFriendlyName(String path) {
+    final name = path.split('/').last.replaceAll('.png', '');
+    return name
+        .split(RegExp(r'[-_]'))
+        .map(
+          (s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '',
+        )
+        .join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<CustomEnvironmentLayer> layers = widget.draft.layers;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Scenery Layers',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+                fontFamily: 'Inter',
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: _showAddLayerDialog,
+              icon: const Icon(CupertinoIcons.add, size: 14),
+              label: const Text('Add Layer', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (layers.isEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceCard.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+              border: Border.all(color: AppTheme.border, width: 0.5),
+            ),
+            child: const Column(
+              children: [
+                Icon(
+                  CupertinoIcons.layers,
+                  size: 32,
+                  color: AppTheme.textMuted,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'No scenery layers yet.\nClick "Add Layer" to begin composing!',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.textSecondary,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: layers.length,
+            separatorBuilder: (context, index) => const SizedBox(height: 8),
+            itemBuilder: (context, idx) {
+              final layer = layers[idx];
+              final isExpanded = _expandedLayerId == layer.id;
+              final displayName = _getFriendlyName(layer.assetPath);
+
+              return Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(
+                    color: isExpanded ? AppTheme.accent : AppTheme.border,
+                    width: isExpanded ? 1.0 : 0.5,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    ListTile(
+                      dense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      leading: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.black12,
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusSm,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusSm,
+                          ),
+                          child: Image.asset(
+                            layer.assetPath,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(
+                                  CupertinoIcons.photo,
+                                  size: 14,
+                                  color: AppTheme.textMuted,
+                                ),
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
+                          fontFamily: 'Inter',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        'Layer ${idx + 1} (Priority: ${-8 + idx})',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppTheme.textMuted,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(CupertinoIcons.up_arrow, size: 14),
+                            tooltip: 'Send Backward (Draw Earlier)',
+                            onPressed: idx > 0
+                                ? () => widget.controller.reorderLayers(
+                                    idx,
+                                    idx - 1,
+                                  )
+                                : null,
+                          ),
+                          IconButton(
+                            icon: const Icon(
+                              CupertinoIcons.down_arrow,
+                              size: 14,
+                            ),
+                            tooltip: 'Bring Forward (Draw Later)',
+                            onPressed: idx < layers.length - 1
+                                ? () => widget.controller.reorderLayers(
+                                    idx,
+                                    idx + 2,
+                                  )
+                                : null,
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              isExpanded
+                                  ? CupertinoIcons.chevron_up
+                                  : CupertinoIcons.chevron_down,
+                              size: 14,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _expandedLayerId = isExpanded ? null : layer.id;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (isExpanded) ...[
+                      const Divider(height: 1, color: AppTheme.border),
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildSliderRow(
+                              label: 'Horizontal Pos (X)',
+                              value: layer.xRatio,
+                              min: -0.2,
+                              max: 1.2,
+                              displayValue: layer.xRatio.toStringAsFixed(2),
+                              onChanged: (val) {
+                                widget.controller.updateLayer(
+                                  layer.copyWith(xRatio: val),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildSliderRow(
+                              label: 'Vertical Height (Y)',
+                              value: layer.yRatio,
+                              min: -0.2,
+                              max: 1.2,
+                              displayValue: layer.yRatio.toStringAsFixed(2),
+                              onChanged: (val) {
+                                widget.controller.updateLayer(
+                                  layer.copyWith(yRatio: val),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildSliderRow(
+                              label: 'Scale Size',
+                              value: layer.scale,
+                              min: 0.1,
+                              max: 3.0,
+                              displayValue: layer.scale.toStringAsFixed(2),
+                              onChanged: (val) {
+                                widget.controller.updateLayer(
+                                  layer.copyWith(scale: val),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            _buildSliderRow(
+                              label: 'Opacity',
+                              value: layer.opacity,
+                              min: 0.0,
+                              max: 1.0,
+                              displayValue: layer.opacity.toStringAsFixed(2),
+                              onChanged: (val) {
+                                widget.controller.updateLayer(
+                                  layer.copyWith(opacity: val),
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Text(
+                                      'Flip Horizontally',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: AppTheme.textPrimary,
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    CupertinoSwitch(
+                                      value: layer.flipX,
+                                      activeTrackColor: AppTheme.accent,
+                                      onChanged: (val) {
+                                        widget.controller.updateLayer(
+                                          layer.copyWith(flipX: val),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        widget.controller.duplicateLayer(layer);
+                                      },
+                                      icon: const Icon(
+                                        CupertinoIcons.doc_on_doc,
+                                        size: 12,
+                                      ),
+                                      label: const Text(
+                                        'Duplicate',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: AppTheme.textSecondary,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    TextButton.icon(
+                                      onPressed: () {
+                                        widget.controller.removeLayer(layer.id);
+                                        if (_expandedLayerId == layer.id) {
+                                          _expandedLayerId = null;
+                                        }
+                                      },
+                                      icon: const Icon(
+                                        CupertinoIcons.trash,
+                                        size: 12,
+                                      ),
+                                      label: const Text(
+                                        'Delete',
+                                        style: TextStyle(fontSize: 11),
+                                      ),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.redAccent,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSliderRow({
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required String displayValue,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 5,
+          child: SliderTheme(
+            data: SliderThemeData(
+              trackHeight: 2,
+              activeTrackColor: AppTheme.accent,
+              inactiveTrackColor: AppTheme.border,
+              thumbColor: AppTheme.accent,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              min: min,
+              max: max,
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 36,
+          child: Text(
+            displayValue,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+              fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddLayerDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return _AddLayerDialog(controller: widget.controller);
+      },
+    );
+  }
+}
+
+class _AddLayerDialog extends StatefulWidget {
+  final EnvironmentBuilderController controller;
+
+  const _AddLayerDialog({required this.controller});
+
+  @override
+  State<_AddLayerDialog> createState() => _AddLayerDialogState();
+}
+
+class _AddLayerDialogState extends State<_AddLayerDialog> {
+  int _activeDialogTab = 0;
+
+  String _getFriendlyName(String path) {
+    final name = path.split('/').last.replaceAll('.png', '');
+    return name
+        .split(RegExp(r'[-_]'))
+        .map(
+          (s) => s.isNotEmpty ? '${s[0].toUpperCase()}${s.substring(1)}' : '',
+        )
+        .join(' ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final List<String> paths;
+    if (_activeDialogTab == 0) {
+      paths = widget.controller.mountainPaths;
+    } else if (_activeDialogTab == 1) {
+      paths = widget.controller.rockPaths;
+    } else {
+      paths = widget.controller.cloudPaths;
+    }
+
+    return Dialog(
+      backgroundColor: AppTheme.surfaceCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      ),
+      child: Container(
+        width: 450,
+        height: 400,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Add Scenery Layer',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(CupertinoIcons.xmark, size: 16),
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                _dialogTabButton(0, 'Mountains & Trees'),
+                const SizedBox(width: 8),
+                _dialogTabButton(1, 'Rocks & Stones'),
+                const SizedBox(width: 8),
+                _dialogTabButton(2, 'Clouds'),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.85,
+                ),
+                itemCount: paths.length,
+                itemBuilder: (context, idx) {
+                  final path = paths[idx];
+                  final name = _getFriendlyName(path);
+                  return GestureDetector(
+                    onTap: () {
+                      widget.controller.addLayer(path);
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceCard.withValues(alpha: 0.5),
+                        border: Border.all(color: AppTheme.border, width: 0.5),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: Image.asset(
+                              path,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  const Icon(
+                                    CupertinoIcons.photo,
+                                    size: 24,
+                                    color: AppTheme.textMuted,
+                                  ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppTheme.textSecondary,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dialogTabButton(int idx, String label) {
+    final isSelected = _activeDialogTab == idx;
+    return GestureDetector(
+      onTap: () => setState(() => _activeDialogTab = idx),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.accent : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(
+            color: isSelected ? Colors.transparent : AppTheme.border,
+            width: 0.5,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : AppTheme.textSecondary,
+            fontFamily: 'Inter',
+          ),
+        ),
       ),
     );
   }

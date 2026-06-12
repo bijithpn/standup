@@ -67,9 +67,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     _animationController.addListener(() {
       final int frameIndex = _lastFrameCount > 1
           ? (_animationController.value * _lastFrameCount).floor().clamp(
-               0,
-               _lastFrameCount - 1,
-             )
+              0,
+              _lastFrameCount - 1,
+            )
           : 0;
       if (_frameIndexNotifier.value != frameIndex) {
         _frameIndexNotifier.value = frameIndex;
@@ -108,7 +108,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       return;
     }
 
-    final String bgPath = widget.backgroundImagePath ?? 'assets/environments/sky/sky_back.png';
+    final String bgPath =
+        widget.backgroundImagePath ?? 'assets/environments/sky/sky_back.png';
     final config = EnvironmentThemeConfig.getByPath(bgPath);
 
     final cachedSprite = PetAssetLoader.getImageSync(path);
@@ -415,7 +416,8 @@ class _SpritePainter extends CustomPainter {
     this.petXOffset = 0.0,
   });
 
-  EnvironmentThemeConfig get config => EnvironmentThemeConfig.getByPath(backgroundImagePath ?? '');
+  EnvironmentThemeConfig get config =>
+      EnvironmentThemeConfig.getByPath(backgroundImagePath ?? '');
 
   Color _getAmbientTint() {
     final now = DateTime.now();
@@ -471,7 +473,10 @@ class _SpritePainter extends CustomPainter {
         fit: BoxFit.cover,
         alignment: isSkyOnly ? Alignment.topCenter : Alignment.bottomCenter,
         filterQuality: FilterQuality.medium,
-        colorFilter: ColorFilter.mode(tint.withValues(alpha: config.skyOpacity), BlendMode.modulate),
+        colorFilter: ColorFilter.mode(
+          tint.withValues(alpha: config.skyOpacity),
+          BlendMode.modulate,
+        ),
       );
     }
 
@@ -491,7 +496,12 @@ class _SpritePainter extends CustomPainter {
       final double ch = cloudImage!.height * cloudScale;
       canvas.drawImageRect(
         cloudImage!,
-        Rect.fromLTWH(0, 0, cloudImage!.width.toDouble(), cloudImage!.height.toDouble()),
+        Rect.fromLTWH(
+          0,
+          0,
+          cloudImage!.width.toDouble(),
+          cloudImage!.height.toDouble(),
+        ),
         Rect.fromLTWH(size.width * 0.15, size.height * 0.12, cw, ch),
         cloudPaint,
       );
@@ -501,7 +511,10 @@ class _SpritePainter extends CustomPainter {
     final double groundY = size.height - 20.0;
     if (groundImage != null) {
       final groundBaseTint = config.groundTint;
-      final finalGroundTint = _combineTints(groundBaseTint.withValues(alpha: config.groundOpacity), tint);
+      final finalGroundTint = _combineTints(
+        groundBaseTint.withValues(alpha: config.groundOpacity),
+        tint,
+      );
 
       final groundPaint = Paint()
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate)
@@ -512,10 +525,17 @@ class _SpritePainter extends CustomPainter {
 
       // Draw the dirt base at the very bottom
       final basePaint = Paint()
-        ..color = config.baseColor.withValues(alpha: 0.95 * config.groundOpacity)
+        ..color = config.baseColor.withValues(
+          alpha: 0.95 * config.groundOpacity,
+        )
         ..colorFilter = ColorFilter.mode(finalGroundTint, BlendMode.modulate);
       canvas.drawRect(
-        Rect.fromLTWH(0, groundY + 8.0, size.width, size.height - groundY - 8.0),
+        Rect.fromLTWH(
+          0,
+          groundY + 8.0,
+          size.width,
+          size.height - groundY - 8.0,
+        ),
         basePaint,
       );
 
@@ -525,7 +545,12 @@ class _SpritePainter extends CustomPainter {
         while (x < size.width + groundTileWidth) {
           canvas.drawImageRect(
             groundImage!,
-            Rect.fromLTWH(0, 0, groundImage!.width.toDouble(), groundImage!.height.toDouble()),
+            Rect.fromLTWH(
+              0,
+              0,
+              groundImage!.width.toDouble(),
+              groundImage!.height.toDouble(),
+            ),
             Rect.fromLTWH(x, groundY, groundTileWidth, groundTileHeight),
             groundPaint,
           );
@@ -535,11 +560,11 @@ class _SpritePainter extends CustomPainter {
         // Draw the ground as a single stretched image covering the width, anchored at the floorY (groundY)
         final double imgW = groundImage!.width.toDouble();
         final double imgH = groundImage!.height.toDouble();
-        
+
         final double drawWidth = size.width;
         final double drawHeight = drawWidth * (imgH / imgW);
         final double scaledGrassFromBottom = drawHeight * (20.0 / 272.0);
-        
+
         final double imageBottomY = groundY + scaledGrassFromBottom;
         final double imageTopY = imageBottomY - drawHeight;
 
@@ -563,7 +588,8 @@ class _SpritePainter extends CustomPainter {
 
     // If drawing dimensions exceed the widget's canvas size, scale down to fit.
     if (drawWidth > size.width || drawHeight > size.height) {
-      final double fitScale = (size.width / drawWidth) < (size.height / drawHeight)
+      final double fitScale =
+          (size.width / drawWidth) < (size.height / drawHeight)
           ? (size.width / drawWidth)
           : (size.height / drawHeight);
       const double paddingFactor = 0.9;

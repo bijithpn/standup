@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
@@ -1302,4 +1301,3 @@ class _DotGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(_DotGridPainter oldDelegate) => oldDelegate.color != color;
 }
-

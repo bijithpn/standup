@@ -67,15 +67,18 @@ class ThrowableToyComponent extends PositionComponent
       ),
     );
 
-    final isBeingFetched = toyState.lifecycle == ThrowableLifecycle.beingFetched;
+    final isBeingFetched =
+        toyState.lifecycle == ThrowableLifecycle.beingFetched;
 
     if (isBeingFetched) {
       final pet = game.petComponent;
       if (pet != null) {
-        final snout = pet.position + Vector2(
-          pet.scale.x * (pet.size.x * 0.35),
-          pet.scale.y.abs() * (-pet.size.y * 0.12),
-        );
+        final snout =
+            pet.position +
+            Vector2(
+              pet.scale.x * (pet.size.x * 0.35),
+              pet.scale.y.abs() * (-pet.size.y * 0.12),
+            );
         position = snout;
       }
       angle = 0.0;
@@ -174,7 +177,12 @@ class ThrowableToyComponent extends PositionComponent
       } else {
         canvas.drawImageRect(
           _image!,
-          Rect.fromLTWH(0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
+          Rect.fromLTWH(
+            0,
+            0,
+            _image!.width.toDouble(),
+            _image!.height.toDouble(),
+          ),
           destRect,
           paint,
         );
@@ -203,28 +211,48 @@ class ThrowableToyComponent extends PositionComponent
     } else if (type == 'tennis_ball' && game.blueBallImage != null) {
       canvas.drawImageRect(
         game.blueBallImage!,
-        Rect.fromLTWH(0, 0, game.blueBallImage!.width.toDouble(), game.blueBallImage!.height.toDouble()),
+        Rect.fromLTWH(
+          0,
+          0,
+          game.blueBallImage!.width.toDouble(),
+          game.blueBallImage!.height.toDouble(),
+        ),
         destRect,
         paint,
       );
     } else if (type == 'base_ball' && game.baseballImage != null) {
       canvas.drawImageRect(
         game.baseballImage!,
-        Rect.fromLTWH(0, 0, game.baseballImage!.width.toDouble(), game.baseballImage!.height.toDouble()),
+        Rect.fromLTWH(
+          0,
+          0,
+          game.baseballImage!.width.toDouble(),
+          game.baseballImage!.height.toDouble(),
+        ),
         destRect,
         paint,
       );
     } else if (type == 'basket_ball' && game.basketballImage != null) {
       canvas.drawImageRect(
         game.basketballImage!,
-        Rect.fromLTWH(0, 0, game.basketballImage!.width.toDouble(), game.basketballImage!.height.toDouble()),
+        Rect.fromLTWH(
+          0,
+          0,
+          game.basketballImage!.width.toDouble(),
+          game.basketballImage!.height.toDouble(),
+        ),
         destRect,
         paint,
       );
     } else if (type == 'football' && game.footballImage != null) {
       canvas.drawImageRect(
         game.footballImage!,
-        Rect.fromLTWH(0, 0, game.footballImage!.width.toDouble(), game.footballImage!.height.toDouble()),
+        Rect.fromLTWH(
+          0,
+          0,
+          game.footballImage!.width.toDouble(),
+          game.footballImage!.height.toDouble(),
+        ),
         destRect,
         paint,
       );
@@ -250,7 +278,12 @@ class ThrowableToyComponent extends PositionComponent
       } else {
         canvas.drawImageRect(
           _image!,
-          Rect.fromLTWH(0, 0, _image!.width.toDouble(), _image!.height.toDouble()),
+          Rect.fromLTWH(
+            0,
+            0,
+            _image!.width.toDouble(),
+            _image!.height.toDouble(),
+          ),
           destRect,
           paint,
         );
@@ -333,12 +366,20 @@ class ThrowableToyComponent extends PositionComponent
       ..color = const Color(0xFFFF5C5C)
       ..style = PaintingStyle.fill
       ..colorFilter = _paint.colorFilter;
-    canvas.drawCircle(Offset(-radius * 0.15, -radius * 0.05), radius * 0.35, salmonPaint);
+    canvas.drawCircle(
+      Offset(-radius * 0.15, -radius * 0.05),
+      radius * 0.35,
+      salmonPaint,
+    );
 
     final avocadoPaint = Paint()
       ..color = const Color(0xFF7CB342)
       ..style = PaintingStyle.fill
       ..colorFilter = _paint.colorFilter;
-    canvas.drawCircle(Offset(radius * 0.2, radius * 0.15), radius * 0.2, avocadoPaint);
+    canvas.drawCircle(
+      Offset(radius * 0.2, radius * 0.15),
+      radius * 0.2,
+      avocadoPaint,
+    );
   }
 }

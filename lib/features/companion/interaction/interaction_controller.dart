@@ -283,7 +283,12 @@ class InteractionController with WidgetsBindingObserver {
     );
 
     final double toySize = isPiP ? 10.0 : 20.0;
-    manager.spawnThrowable(releasePoint, dragVector, kind: 'ball', customSize: toySize);
+    manager.spawnThrowable(
+      releasePoint,
+      dragVector,
+      kind: 'ball',
+      customSize: toySize,
+    );
     _suppressBehavior();
   }
 
