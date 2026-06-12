@@ -9,7 +9,6 @@ import 'package:breakmate/shared/shared.dart';
 import 'environment_builder_controller.dart';
 import 'widgets/env_preview_panel.dart';
 import 'widgets/asset_picker_section.dart';
-import 'widgets/color_picker_row.dart';
 import 'widgets/code_output_sheet.dart';
 import 'widgets/hsv_color_picker.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
@@ -132,13 +131,8 @@ class _WideLayoutState extends State<_WideLayout> {
         return Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Left Panel (Picker)
-            SizedBox(
-              width: leftWidth,
-              child: const _PickerPanel(),
-            ),
+            SizedBox(width: leftWidth, child: const _PickerPanel()),
 
-            // Draggable Split Divider
             GestureDetector(
               behavior: HitTestBehavior.opaque,
               onHorizontalDragStart: (_) {
@@ -153,7 +147,10 @@ class _WideLayoutState extends State<_WideLayout> {
               onHorizontalDragUpdate: (details) {
                 setState(() {
                   final deltaRatio = details.delta.dx / totalWidth;
-                  _pickerWidthRatio = (_pickerWidthRatio + deltaRatio).clamp(0.35, 0.75);
+                  _pickerWidthRatio = (_pickerWidthRatio + deltaRatio).clamp(
+                    0.35,
+                    0.75,
+                  );
                 });
               },
               child: MouseRegion(
@@ -190,10 +187,7 @@ class _WideLayoutState extends State<_WideLayout> {
               ),
             ),
 
-            // Right Panel (Preview)
-            const Expanded(
-              child: _PreviewPanel(),
-            ),
+            const Expanded(child: _PreviewPanel()),
           ],
         );
       },
@@ -601,7 +595,10 @@ class _CustomSegmentedControl extends StatelessWidget {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.accent.withValues(alpha: 0.15)
@@ -617,7 +614,9 @@ class _CustomSegmentedControl extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
+                    color: isSelected
+                        ? AppTheme.accent
+                        : AppTheme.textSecondary,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -1657,7 +1656,10 @@ class _FigmaValueInputState extends State<_FigmaValueInput> {
           icon: CupertinoIcons.minus,
           onPressed: widget.value > widget.min
               ? () {
-                  final newVal = (widget.value - widget.step).clamp(widget.min, widget.max);
+                  final newVal = (widget.value - widget.step).clamp(
+                    widget.min,
+                    widget.max,
+                  );
                   widget.onChanged(newVal);
                   _controller.text = newVal.toStringAsFixed(2);
                 }
@@ -1697,7 +1699,10 @@ class _FigmaValueInputState extends State<_FigmaValueInput> {
           icon: CupertinoIcons.plus,
           onPressed: widget.value < widget.max
               ? () {
-                  final newVal = (widget.value + widget.step).clamp(widget.min, widget.max);
+                  final newVal = (widget.value + widget.step).clamp(
+                    widget.min,
+                    widget.max,
+                  );
                   widget.onChanged(newVal);
                   _controller.text = newVal.toStringAsFixed(2);
                 }
@@ -1945,14 +1950,16 @@ class _ColorsSectionTab extends StatefulWidget {
 }
 
 class _ColorsSectionTabState extends State<_ColorsSectionTab> {
-  int _activeProperty = 0; // 0 = Ground Tint, 1 = Cloud Tint, 2 = Base Color
+  int _activeProperty = 0;
   late TextEditingController _hexController;
   late FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
-    _hexController = TextEditingController(text: _colorToHex(_getCurrentColor()));
+    _hexController = TextEditingController(
+      text: _colorToHex(_getCurrentColor()),
+    );
     _focusNode = FocusNode();
     _focusNode.addListener(_onFocusChange);
   }
@@ -2037,44 +2044,44 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
 
   List<Color> get _currentPresets {
     switch (_activeProperty) {
-      case 0: // Ground Tint Presets
+      case 0:
         return const [
-          Color(0xFFFFFFFF), // Neutral White (Forest/Sky default)
-          Color(0xFFD47A3B), // Autumn Amber (Autumn default)
-          Color(0xFFE0F7FA), // Snow Cyan (Winter default)
-          Color(0xFFFFE082), // Sand Gold (Beach default)
-          Color(0xFFFFCC80), // Desert Peach (Desert default)
-          Color(0xFF263238), // Midnight Blue-Grey (Night Town default)
-          Color(0xFF90A4AE), // Mist Blue-Grey (Mist Forest default)
-          Color(0xFF757575), // Asphalt Grey (Urban default)
-          Color(0xFF4CAF50), // Grass Green
-          Color(0xFF3E2723), // Soil Brown
+          Color(0xFFFFFFFF),
+          Color(0xFFD47A3B),
+          Color(0xFFE0F7FA),
+          Color(0xFFFFE082),
+          Color(0xFFFFCC80),
+          Color(0xFF263238),
+          Color(0xFF90A4AE),
+          Color(0xFF757575),
+          Color(0xFF4CAF50),
+          Color(0xFF3E2723),
         ];
-      case 1: // Cloud Tint Presets
+      case 1:
         return const [
-          Color(0xFFFFFFFF), // Neutral Pure White
-          Color(0xFFFFECB3), // Sunset Golden Cloud (Autumn default)
-          Color(0xFFE0F2F1), // Icy Ice Mint Cloud (Winter default)
-          Color(0xFFFFF9C4), // Light Desert Yellow Cloud (Desert default)
-          Color(0xFF37474F), // Nocturnal Dark Cloud (Night Town default)
-          Color(0xFFB0BEC5), // Mist Overcast Grey (Mist Forest default)
-          Color(0xFFCFD8DC), // Urban Cloud Grey (Urban default)
-          Color(0xFFFFCDD2), // Soft Sunset Pink Cloud
-          Color(0xFFE1BEE7), // Twilight Lavender Cloud
-          Color(0xFFB2EBF2), // Sky Cyan Cloud
+          Color(0xFFFFFFFF),
+          Color(0xFFFFECB3),
+          Color(0xFFE0F2F1),
+          Color(0xFFFFF9C4),
+          Color(0xFF37474F),
+          Color(0xFFB0BEC5),
+          Color(0xFFCFD8DC),
+          Color(0xFFFFCDD2),
+          Color(0xFFE1BEE7),
+          Color(0xFFB2EBF2),
         ];
-      case 2: // Base Colour Presets (Sky/Atmosphere)
+      case 2:
         return const [
-          Color(0xFF2E2625), // Dark Umber (Forest/Sky default)
-          Color(0xFF5D4037), // Warm Brown (Autumn default)
-          Color(0xFFECEFF1), // Snow White Grey (Winter default)
-          Color(0xFFFFF8E1), // Sand Cream (Beach default)
-          Color(0xFFFFE0B2), // Peach Glow (Desert default)
-          Color(0xFF37474F), // Nocturnal Blue-Grey (Night Town default)
-          Color(0xFF455A64), // Mist Dark Blue-Grey (Mist Forest default)
-          Color(0xFF9E9E9E), // Concrete Grey (Urban default)
-          Color(0xFF0D47A1), // Deep Midnight Sky Blue
-          Color(0xFFE040FB), // Neon Twilight Purple
+          Color(0xFF2E2625),
+          Color(0xFF5D4037),
+          Color(0xFFECEFF1),
+          Color(0xFFFFF8E1),
+          Color(0xFFFFE0B2),
+          Color(0xFF37474F),
+          Color(0xFF455A64),
+          Color(0xFF9E9E9E),
+          Color(0xFF0D47A1),
+          Color(0xFFE040FB),
         ];
       default:
         return const [Colors.white];
@@ -2088,15 +2095,25 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Property Selector Rows (Ground, Cloud, Base)
-        _buildPropertySelector(0, 'Ground Tint', Color(widget.draft.groundTintArgb)),
+        _buildPropertySelector(
+          0,
+          'Ground Tint',
+          Color(widget.draft.groundTintArgb),
+        ),
         const SizedBox(height: 8),
-        _buildPropertySelector(1, 'Cloud Tint', Color(widget.draft.cloudTintArgb)),
+        _buildPropertySelector(
+          1,
+          'Cloud Tint',
+          Color(widget.draft.cloudTintArgb),
+        ),
         const SizedBox(height: 8),
-        _buildPropertySelector(2, 'Base Colour', Color(widget.draft.baseColorArgb)),
+        _buildPropertySelector(
+          2,
+          'Base Colour',
+          Color(widget.draft.baseColorArgb),
+        ),
         const SizedBox(height: 20),
 
-        // Inline Editor Section Card
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
@@ -2119,7 +2136,7 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
                       fontFamily: 'Inter',
                     ),
                   ),
-                  // Figma-style Hex Input
+
                   Container(
                     width: 90,
                     height: 24,
@@ -2137,11 +2154,15 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
-                        fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
+                        fontFamily:
+                            'SFMono-Regular, Consolas, Courier, monospace',
                       ),
                       decoration: const InputDecoration(
                         isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 2,
+                          vertical: 4,
+                        ),
                         border: InputBorder.none,
                       ),
                       onSubmitted: (_) => _submitHex(),
@@ -2150,13 +2171,13 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
                 ],
               ),
               const SizedBox(height: 16),
-              // Visual 2D Color Picker UI
+
               HsvColorPicker(
                 color: currentColor,
                 onChanged: _updateCurrentColor,
               ),
               const SizedBox(height: 16),
-              // Preset Color Swatches row
+
               const Text(
                 'Presets',
                 style: TextStyle(
@@ -2171,7 +2192,8 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: _currentPresets.map((preset) {
-                    final isSelected = preset.toARGB32() == currentColor.toARGB32();
+                    final isSelected =
+                        preset.toARGB32() == currentColor.toARGB32();
                     return GestureDetector(
                       onTap: () {
                         _updateCurrentColor(preset);
@@ -2185,7 +2207,9 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
                           color: preset,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isSelected ? AppTheme.accent : AppTheme.border,
+                            color: isSelected
+                                ? AppTheme.accent
+                                : AppTheme.border,
                             width: isSelected ? 2.0 : 0.5,
                           ),
                         ),
@@ -2203,7 +2227,6 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
           child: Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
         ),
 
-        // Layer Opacities Title
         const Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Text(
@@ -2216,7 +2239,10 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
             ),
           ),
         ),
-        _OpacitySettingsSection(draft: widget.draft, controller: widget.controller),
+        _OpacitySettingsSection(
+          draft: widget.draft,
+          controller: widget.controller,
+        ),
       ],
     );
   }
@@ -2292,6 +2318,4 @@ class _ColorsSectionTabState extends State<_ColorsSectionTab> {
       ),
     );
   }
-
-
 }

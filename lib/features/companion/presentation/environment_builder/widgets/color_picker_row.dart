@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'hsv_color_picker.dart';
 
-// Renders a row of colour swatches with a "Custom" option that opens a full
-// colour picker. Used for groundTint, cloudTint and baseColor fields.
 class ColorPickerRow extends StatefulWidget {
   final String label;
   final Color selected;
@@ -26,13 +24,13 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
 
   static const List<Color> _presets = [
     Colors.white,
-    Color(0xFFFFECB3), // warm gold
-    Color(0xFFFFCC80), // amber
-    Color(0xFFE57373), // dusk red
-    Color(0xFF90CAF9), // sky blue
-    Color(0xFFA5D6A7), // leaf green
-    Color(0xFFCE93D8), // lavender
-    Color(0xFF80CBC4), // teal
+    Color(0xFFFFECB3),
+    Color(0xFFFFCC80),
+    Color(0xFFE57373),
+    Color(0xFF90CAF9),
+    Color(0xFFA5D6A7),
+    Color(0xFFCE93D8),
+    Color(0xFF80CBC4),
   ];
 
   @override
@@ -46,7 +44,8 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
   @override
   void didUpdateWidget(covariant ColorPickerRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.selected.toARGB32() != widget.selected.toARGB32() && !_focusNode.hasFocus) {
+    if (oldWidget.selected.toARGB32() != widget.selected.toARGB32() &&
+        !_focusNode.hasFocus) {
       _hexController.text = _colorToHex(widget.selected);
     }
   }
@@ -123,7 +122,6 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
           const SizedBox(height: 10),
           Row(
             children: [
-              // Figma-style active Color button (clickable to open dialog picker)
               GestureDetector(
                 onTap: () => _openPicker(context),
                 child: Container(
@@ -151,7 +149,7 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
                 ),
               ),
               const SizedBox(width: 8),
-              // Figma-style hex code input
+
               Container(
                 width: 85,
                 height: 32,
@@ -173,21 +171,20 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
                   ),
                   decoration: const InputDecoration(
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 6,
+                    ),
                     border: InputBorder.none,
                   ),
                   onSubmitted: (_) => _submitHex(),
                 ),
               ),
               const SizedBox(width: 12),
-              // Vertical divider line
-              Container(
-                width: 1,
-                height: 24,
-                color: AppTheme.border,
-              ),
+
+              Container(width: 1, height: 24, color: AppTheme.border),
               const SizedBox(width: 12),
-              // Presets scrollable
+
               Expanded(
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
@@ -196,7 +193,8 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
                       for (final preset in _presets) ...[
                         _SwatchTile(
                           color: preset,
-                          isSelected: preset.toARGB32() == widget.selected.toARGB32(),
+                          isSelected:
+                              preset.toARGB32() == widget.selected.toARGB32(),
                           onTap: () {
                             widget.onChanged(preset);
                             _hexController.text = _colorToHex(preset);
@@ -262,9 +260,6 @@ class _SwatchTile extends StatelessWidget {
   }
 }
 
-
-
-// Minimal HSV colour picker dialog — no external dependency required.
 class _HsvPickerDialog extends StatefulWidget {
   final Color initial;
 
