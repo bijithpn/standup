@@ -228,17 +228,17 @@ class _OnboardingPageState extends State<OnboardingPage> {
       subtitle: AppStrings.boundariesSubtitle,
       child: Column(
         children: [
-          _ProfileOption(
-            title: 'Strict Mode',
-            description: 'Breaks cannot be skipped. Recommended for results.',
-            isSelected: _pendingSettings.strictMode,
-            onTap: () => setState(
-              () => _pendingSettings = _pendingSettings.copyWith(
-                strictMode: true,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+          // _ProfileOption(
+          //   title: 'Strict Mode',
+          //   description: 'Breaks cannot be skipped. Recommended for results.',
+          //   isSelected: _pendingSettings.strictMode,
+          //   onTap: () => setState(
+          //     () => _pendingSettings = _pendingSettings.copyWith(
+          //       strictMode: true,
+          //     ),
+          //   ),
+          // ),
+          // const SizedBox(height: 12),
           _ProfileOption(
             title: 'Gentle Mode',
             description: 'Breaks can be skipped or postponed easily.',

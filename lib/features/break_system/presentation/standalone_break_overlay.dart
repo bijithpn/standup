@@ -504,16 +504,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      if (_canDismiss) {
-        _skipBreak();
-        return true;
-      }
+      _skipBreak();
+      return true;
     }
     return false;
   }
 
   bool get _canDismiss =>
-      (!_strictMode && !_isInternalPreview) ||
+      _isInternalPreview ||
+      (!_strictMode) ||
       _overlayType == 'quickReminder' ||
       _overlayType == 'preBreakWarning';
 
@@ -551,22 +550,27 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       );
     }
 
-    return FadeTransition(
-      opacity: _fadeController,
-      child: Material(
-        color:
-            _overlayType == 'quickReminder' || _overlayType == 'preBreakWarning'
-            ? Colors.black.withValues(alpha: 0.4)
-            : Colors.black,
-        child: GestureDetector(
-          onVerticalDragUpdate: (details) {
-            if (_canDismiss && details.primaryDelta! < -10) {
-              _skipBreak();
-            }
-          },
-          // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
-          onHorizontalDragUpdate: (details) {},
-          child: RepaintBoundary(child: _buildBreakScreen()),
+    return PopScope(
+      canPop: false,
+      child: FadeTransition(
+        opacity: _fadeController,
+        child: Material(
+          color:
+              _overlayType == 'quickReminder' ||
+                  _overlayType == 'preBreakWarning'
+              ? Colors.black.withValues(alpha: 0.4)
+              : Colors.black,
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              final dy = details.delta.dy;
+              if (_canDismiss && dy < -10) {
+                _skipBreak();
+              }
+            },
+            // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
+            onHorizontalDragUpdate: (details) {},
+            child: RepaintBoundary(child: _buildBreakScreen()),
+          ),
         ),
       ),
     );
@@ -616,7 +620,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
 
     final total = _durationSeconds;
-    final VoidCallback? onSkip = _canDismiss ? _skipBreak : null;
+    // Always pass the callback; templates use their own !settings.strictMode guard
+    // to decide whether to render it. The global overlay button below is the
+    // authoritative skip affordance and is controlled by _canDismiss independently.
+    final VoidCallback? onSkip = _skipBreak;
 
     return Stack(
       clipBehavior: Clip.none,
@@ -693,7 +700,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        if (_canDismiss && !_templateOwnsChrome)
+        // Global skip button: shown whenever the overlay is dismissible.
+        // Previously gated on !_templateOwnsChrome, but all templates are in
+        // _kTemplatesWithChrome so that condition was always false — the button
+        // never appeared. Now it shows unconditionally when _canDismiss is true,
+        // floating above the template chrome at the top-right corner.
+        if (_canDismiss)
           Positioned(
             top: 28,
             right: 28,
@@ -716,14 +728,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        if (_canDismiss && !_templateOwnsChrome)
+        if (_canDismiss)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
             child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (!_canDismiss && !_templateOwnsChrome)
+        // Strict mode note: shown at bottom whenever the overlay is NOT dismissible.
+        // Previously gated on !_templateOwnsChrome (which was always false). Fixed
+        // to show unconditionally when the break cannot be skipped so the user
+        // knows why there is no skip affordance visible.
+        if (!_canDismiss)
           Positioned(
             bottom: 24,
             left: 24,

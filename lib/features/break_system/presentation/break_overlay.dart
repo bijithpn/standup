@@ -124,11 +124,8 @@ class _BreakOverlayState extends State<BreakOverlay>
         event.logicalKey == LogicalKeyboardKey.escape) {
       try {
         final controller = context.read<BreakController>();
-        final settings = controller.settingsRepository.currentSettings;
-        if (!settings.strictMode) {
-          controller.skipCurrentBreak();
-          return true;
-        }
+        controller.skipCurrentBreak();
+        return true;
       } catch (e, st) {
         ErrorHandler().handleError(e, st);
       }
@@ -206,25 +203,29 @@ class _BreakOverlayState extends State<BreakOverlay>
 
         final controller = context.read<BreakController>();
 
-        return FadeTransition(
-          opacity: CurvedAnimation(
-            parent: _fadeController,
-            curve: Curves.easeOut,
-            reverseCurve: Curves.easeIn,
-          ),
-          child: GestureDetector(
-            onVerticalDragUpdate: (details) {
-              if (!data.settings.strictMode && details.primaryDelta! < -10) {
-                controller.skipCurrentBreak();
-              }
-            },
-            onHorizontalDragUpdate: (_) {},
-            child: _BreakOverlayContent(
-              layoutData: data,
-              controller: controller,
-              pageController: _pageController,
-              kenBurnsController: _kenBurnsController,
-              countdownNotifier: controller.timerEngine.countdownNotifier,
+        return PopScope(
+          canPop: false,
+          child: FadeTransition(
+            opacity: CurvedAnimation(
+              parent: _fadeController,
+              curve: Curves.easeOut,
+              reverseCurve: Curves.easeIn,
+            ),
+            child: GestureDetector(
+              onVerticalDragUpdate: (details) {
+                final dy = details.delta.dy;
+                if (!data.settings.strictMode && dy < -10) {
+                  controller.skipCurrentBreak();
+                }
+              },
+              onHorizontalDragUpdate: (_) {},
+              child: _BreakOverlayContent(
+                layoutData: data,
+                controller: controller,
+                pageController: _pageController,
+                kenBurnsController: _kenBurnsController,
+                countdownNotifier: controller.timerEngine.countdownNotifier,
+              ),
             ),
           ),
         );
@@ -544,7 +545,7 @@ class _BreakOverlayContent extends StatelessWidget {
               ),
             ),
           ),
-        if (!settings.strictMode && !templateOwnsChrome)
+        if (!settings.strictMode)
           Positioned(
             top: 28,
             right: 28,
@@ -567,14 +568,14 @@ class _BreakOverlayContent extends StatelessWidget {
               ),
             ),
           ),
-        if (!settings.strictMode && !templateOwnsChrome)
+        if (!settings.strictMode)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
             child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (settings.strictMode && !templateOwnsChrome)
+        if (settings.strictMode)
           Positioned(
             bottom: 24,
             left: 24,
