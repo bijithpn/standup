@@ -997,19 +997,17 @@ class _ScaleSliderRow extends StatelessWidget {
   final String label;
   final double value;
   final ValueChanged<double> onChanged;
-  final double min;
-  final double max;
 
   const _ScaleSliderRow({
     required this.label,
     required this.value,
     required this.onChanged,
-    this.min = 0.1,
-    this.max = 3.0,
   });
 
   @override
   Widget build(BuildContext context) {
+    const min = 0.1;
+    const max = 3.0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(

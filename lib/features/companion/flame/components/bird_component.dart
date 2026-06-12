@@ -75,6 +75,7 @@ class BirdComponent extends SpriteAnimationComponent
     _speed = 80.0 + _rng.nextDouble() * 70.0; // 80 to 150 px/s
     _direction = _rng.nextBool() ? 1.0 : -1.0;
 
+    final config = EnvironmentThemeConfig.getByPath(game.backgroundImagePath);
     final worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     final startX = _direction > 0 ? -40.0 : worldWidth + 40.0;
     // Spawns lower in the sky to remain visible below header/title bar
