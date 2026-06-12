@@ -1,12 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'hsv_color_picker.dart';
 
 // Renders a row of colour swatches with a "Custom" option that opens a full
 // colour picker. Used for groundTint, cloudTint and baseColor fields.
-class ColorPickerRow extends StatelessWidget {
+class ColorPickerRow extends StatefulWidget {
   final String label;
   final Color selected;
   final ValueChanged<Color> onChanged;
+
+  const ColorPickerRow({
+    super.key,
+    required this.label,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  State<ColorPickerRow> createState() => _ColorPickerRowState();
+}
+
+class _ColorPickerRowState extends State<ColorPickerRow> {
+  late TextEditingController _hexController;
+  late FocusNode _focusNode;
 
   static const List<Color> _presets = [
     Colors.white,
@@ -19,12 +35,73 @@ class ColorPickerRow extends StatelessWidget {
     Color(0xFF80CBC4), // teal
   ];
 
-  const ColorPickerRow({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onChanged,
-  });
+  @override
+  void initState() {
+    super.initState();
+    _hexController = TextEditingController(text: _colorToHex(widget.selected));
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant ColorPickerRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selected.toARGB32() != widget.selected.toARGB32() && !_focusNode.hasFocus) {
+      _hexController.text = _colorToHex(widget.selected);
+    }
+  }
+
+  @override
+  void dispose() {
+    _hexController.dispose();
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _submitHex();
+    }
+  }
+
+  void _submitHex() {
+    final color = _parseHexColor(_hexController.text);
+    if (color != null) {
+      widget.onChanged(color);
+      _hexController.text = _colorToHex(color);
+    } else {
+      _hexController.text = _colorToHex(widget.selected);
+    }
+  }
+
+  String _colorToHex(Color color) {
+    return '#${color.toARGB32().toRadixString(16).toUpperCase().padLeft(8, '0')}';
+  }
+
+  Color? _parseHexColor(String hexString) {
+    var hex = hexString.replaceAll('#', '').trim();
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+    if (hex.length != 8) return null;
+    final val = int.tryParse(hex, radix: 16);
+    if (val == null) return null;
+    return Color(val);
+  }
+
+  void _openPicker(BuildContext context) {
+    showDialog<Color>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.5),
+      builder: (ctx) => _HsvPickerDialog(initial: widget.selected),
+    ).then((color) {
+      if (color != null) {
+        widget.onChanged(color);
+        _hexController.text = _colorToHex(color);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +111,7 @@ class ColorPickerRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            widget.label,
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -44,21 +121,94 @@ class ColorPickerRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final preset in _presets) ...[
-                  _SwatchTile(
-                    color: preset,
-                    isSelected: preset.toARGB32() == selected.toARGB32(),
-                    onTap: () => onChanged(preset),
+          Row(
+            children: [
+              // Figma-style active Color button (clickable to open dialog picker)
+              GestureDetector(
+                onTap: () => _openPicker(context),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: widget.selected,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppTheme.border, width: 1),
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.selected.withValues(alpha: 0.3),
+                        blurRadius: 6,
+                        spreadRadius: 1,
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                ],
-                _CustomSwatch(current: selected, onChanged: onChanged),
-              ],
-            ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.colorize_rounded,
+                      size: 12,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Figma-style hex code input
+              Container(
+                width: 85,
+                height: 32,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceElevated.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppTheme.border, width: 0.5),
+                ),
+                child: TextField(
+                  controller: _hexController,
+                  focusNode: _focusNode,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
+                  ),
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    border: InputBorder.none,
+                  ),
+                  onSubmitted: (_) => _submitHex(),
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Vertical divider line
+              Container(
+                width: 1,
+                height: 24,
+                color: AppTheme.border,
+              ),
+              const SizedBox(width: 12),
+              // Presets scrollable
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final preset in _presets) ...[
+                        _SwatchTile(
+                          color: preset,
+                          isSelected: preset.toARGB32() == widget.selected.toARGB32(),
+                          onTap: () {
+                            widget.onChanged(preset);
+                            _hexController.text = _colorToHex(preset);
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -112,43 +262,7 @@ class _SwatchTile extends StatelessWidget {
   }
 }
 
-class _CustomSwatch extends StatelessWidget {
-  final Color current;
-  final ValueChanged<Color> onChanged;
 
-  const _CustomSwatch({required this.current, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _openPicker(context),
-      child: Container(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceElevated,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: const Icon(
-          Icons.colorize_rounded,
-          size: 14,
-          color: AppTheme.textSecondary,
-        ),
-      ),
-    );
-  }
-
-  void _openPicker(BuildContext context) {
-    showDialog<Color>(
-      context: context,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
-      builder: (ctx) => _HsvPickerDialog(initial: current),
-    ).then((color) {
-      if (color != null) onChanged(color);
-    });
-  }
-}
 
 // Minimal HSV colour picker dialog — no external dependency required.
 class _HsvPickerDialog extends StatefulWidget {
@@ -197,28 +311,14 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
               const SizedBox(height: 20),
               _buildPreview(),
               const SizedBox(height: 16),
-              _buildSlider(
-                'Hue',
-                _hsv.hue,
-                0,
-                360,
-                (v) => setState(() => _hsv = _hsv.withHue(v)),
-              ),
-              const SizedBox(height: 8),
-              _buildSlider(
-                'Saturation',
-                _hsv.saturation,
-                0,
-                1,
-                (v) => setState(() => _hsv = _hsv.withSaturation(v)),
-              ),
-              const SizedBox(height: 8),
-              _buildSlider(
-                'Value',
-                _hsv.value,
-                0,
-                1,
-                (v) => setState(() => _hsv = _hsv.withValue(v)),
+              HsvColorPicker(
+                color: _hsv.toColor(),
+                onChanged: (newColor) {
+                  setState(() {
+                    final newHsv = HSVColor.fromColor(newColor);
+                    _hsv = newHsv.withAlpha(_hsv.alpha);
+                  });
+                },
               ),
               const SizedBox(height: 8),
               _buildSlider(

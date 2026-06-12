@@ -11,6 +11,7 @@ import 'widgets/env_preview_panel.dart';
 import 'widgets/asset_picker_section.dart';
 import 'widgets/color_picker_row.dart';
 import 'widgets/code_output_sheet.dart';
+import 'widgets/hsv_color_picker.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
 class EnvironmentBuilderPage extends StatelessWidget {
@@ -109,19 +110,93 @@ class _EnvironmentBuilderBody extends StatelessWidget {
   }
 }
 
-class _WideLayout extends StatelessWidget {
+class _WideLayout extends StatefulWidget {
   const _WideLayout();
 
   @override
-  Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(flex: 55, child: _PickerPanel()),
-        Container(width: 0.5, color: AppTheme.border),
+  State<_WideLayout> createState() => _WideLayoutState();
+}
 
-        Expanded(flex: 45, child: _PreviewPanel()),
-      ],
+class _WideLayoutState extends State<_WideLayout> {
+  double _pickerWidthRatio = 0.55;
+  bool _isHoveringDivider = false;
+  bool _isDraggingDivider = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalWidth = constraints.maxWidth;
+        final leftWidth = totalWidth * _pickerWidthRatio;
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Left Panel (Picker)
+            SizedBox(
+              width: leftWidth,
+              child: const _PickerPanel(),
+            ),
+
+            // Draggable Split Divider
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (_) {
+                setState(() => _isDraggingDivider = true);
+              },
+              onHorizontalDragEnd: (_) {
+                setState(() => _isDraggingDivider = false);
+              },
+              onHorizontalDragCancel: () {
+                setState(() => _isDraggingDivider = false);
+              },
+              onHorizontalDragUpdate: (details) {
+                setState(() {
+                  final deltaRatio = details.delta.dx / totalWidth;
+                  _pickerWidthRatio = (_pickerWidthRatio + deltaRatio).clamp(0.35, 0.75);
+                });
+              },
+              child: MouseRegion(
+                cursor: SystemMouseCursors.resizeLeftRight,
+                onEnter: (_) => setState(() => _isHoveringDivider = true),
+                onExit: (_) => setState(() => _isHoveringDivider = false),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 100),
+                  width: 10,
+                  color: (_isHoveringDivider || _isDraggingDivider)
+                      ? AppTheme.accent.withValues(alpha: 0.1)
+                      : Colors.transparent,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 1,
+                        color: (_isHoveringDivider || _isDraggingDivider)
+                            ? AppTheme.accent
+                            : AppTheme.border,
+                      ),
+                      if (_isHoveringDivider || _isDraggingDivider)
+                        Container(
+                          width: 4,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Right Panel (Preview)
+            const Expanded(
+              child: _PreviewPanel(),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -169,7 +244,7 @@ class _PickerPanelState extends State<_PickerPanel> {
 
   static const List<_TabItem> _tabs = [
     _TabItem(CupertinoIcons.photo, 'Canvas'),
-    _TabItem(CupertinoIcons.color_filter, 'Tints & Blend'),
+    _TabItem(CupertinoIcons.color_filter, 'Colors'),
     _TabItem(CupertinoIcons.layers, 'Layers'),
     _TabItem(CupertinoIcons.paw, 'NPCs & Wildlife'),
     _TabItem(CupertinoIcons.bookmark, 'Saved Themes'),
@@ -324,29 +399,32 @@ class _PickerPanelState extends State<_PickerPanel> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Tile Ground Texture',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                          fontFamily: 'Inter',
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Tile Ground Texture',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                            fontFamily: 'Inter',
+                          ),
                         ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Repeat texture or stretch as one image',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textMuted,
-                          fontFamily: 'Inter',
+                        SizedBox(height: 2),
+                        Text(
+                          'Repeat texture or stretch as one image',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textMuted,
+                            fontFamily: 'Inter',
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   CupertinoSwitch(
                     value: d.isGroundTiled,
                     activeTrackColor: AppTheme.accent,
@@ -364,30 +442,7 @@ class _PickerPanelState extends State<_PickerPanel> {
           ],
         );
       case 1:
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _categoryLabel('Tints & Colours'),
-            ColorPickerRow(
-              label: 'Ground Tint',
-              selected: Color(d.groundTintArgb),
-              onChanged: ctrl.updateGroundTint,
-            ),
-            ColorPickerRow(
-              label: 'Cloud Tint',
-              selected: Color(d.cloudTintArgb),
-              onChanged: ctrl.updateCloudTint,
-            ),
-            ColorPickerRow(
-              label: 'Base Colour',
-              selected: Color(d.baseColorArgb),
-              onChanged: ctrl.updateBaseColor,
-            ),
-            _sectionDivider(),
-            _categoryLabel('Layer Opacities'),
-            _OpacitySettingsSection(draft: d, controller: ctrl),
-          ],
-        );
+        return _ColorsSectionTab(controller: ctrl, draft: d);
       case 2:
         return _LayersManagerTab(controller: ctrl, draft: d);
 
@@ -534,39 +589,42 @@ class _CustomSegmentedControl extends StatelessWidget {
         border: Border.all(color: AppTheme.border, width: 0.5),
       ),
       padding: const EdgeInsets.all(4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: options.entries.map((entry) {
-          final isSelected = entry.key == selectedValue;
-          return GestureDetector(
-            onTap: () => onSelected(entry.key),
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTheme.accent.withValues(alpha: 0.15)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: isSelected ? AppTheme.accent : Colors.transparent,
-                  width: 0.5,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: options.entries.map((entry) {
+            final isSelected = entry.key == selectedValue;
+            return GestureDetector(
+              onTap: () => onSelected(entry.key),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppTheme.accent.withValues(alpha: 0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: isSelected ? AppTheme.accent : Colors.transparent,
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  entry.value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ),
-              child: Text(
-                entry.value,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ),
-          );
-        }).toList(),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -943,49 +1001,46 @@ class _OpacitySliderRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.1,
-                  fontFamily: 'Inter',
-                ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+                fontFamily: 'Inter',
               ),
-              Text(
-                '${(value * 100).round()}%',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.accent,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 6),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              trackHeight: 3,
-              activeTrackColor: AppTheme.accent,
-              inactiveTrackColor: AppTheme.border,
-              thumbColor: Colors.white,
+          Expanded(
+            flex: 4,
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 2,
+                activeTrackColor: AppTheme.accent,
+                inactiveTrackColor: AppTheme.border,
+                thumbColor: AppTheme.accent,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              ),
+              child: Slider(
+                value: value.clamp(0.0, 1.0),
+                min: 0.0,
+                max: 1.0,
+                onChanged: onChanged,
+              ),
             ),
-            child: Slider(
-              value: value,
-              min: 0.0,
-              max: 1.0,
-              onChanged: onChanged,
-            ),
+          ),
+          const SizedBox(width: 8),
+          _FigmaValueInput(
+            value: value,
+            min: 0.0,
+            max: 1.0,
+            step: 0.05,
+            onChanged: onChanged,
           ),
         ],
       ),
@@ -1010,49 +1065,46 @@ class _ScaleSliderRow extends StatelessWidget {
     const max = 3.0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.1,
-                  fontFamily: 'Inter',
-                ),
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+                fontFamily: 'Inter',
               ),
-              Text(
-                '${value.toStringAsFixed(2)}x',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.accent,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
+            ),
           ),
-          const SizedBox(height: 6),
-          SliderTheme(
-            data: SliderTheme.of(context).copyWith(
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-              trackHeight: 3,
-              activeTrackColor: AppTheme.accent,
-              inactiveTrackColor: AppTheme.border,
-              thumbColor: Colors.white,
+          Expanded(
+            flex: 4,
+            child: SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 2,
+                activeTrackColor: AppTheme.accent,
+                inactiveTrackColor: AppTheme.border,
+                thumbColor: AppTheme.accent,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+              ),
+              child: Slider(
+                value: value.clamp(min, max),
+                min: min,
+                max: max,
+                onChanged: onChanged,
+              ),
             ),
-            child: Slider(
-              value: value.clamp(min, max),
-              min: min,
-              max: max,
-              onChanged: onChanged,
-            ),
+          ),
+          const SizedBox(width: 8),
+          _FigmaValueInput(
+            value: value,
+            min: min,
+            max: max,
+            step: 0.10,
+            onChanged: onChanged,
           ),
         ],
       ),
@@ -1092,15 +1144,20 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Scenery Layers',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-                fontFamily: 'Inter',
+            const Expanded(
+              child: Text(
+                'Scenery Layers',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                  fontFamily: 'Inter',
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            const SizedBox(width: 8),
             ElevatedButton.icon(
               onPressed: _showAddLayerDialog,
               icon: const Icon(CupertinoIcons.add, size: 14),
@@ -1159,14 +1216,26 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
               final isExpanded = _expandedLayerId == layer.id;
               final displayName = _getFriendlyName(layer.assetPath);
 
-              return Container(
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 decoration: BoxDecoration(
-                  color: AppTheme.surfaceCard,
+                  color: isExpanded
+                      ? AppTheme.surfaceCard
+                      : AppTheme.surfaceCard.withValues(alpha: 0.65),
                   borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                   border: Border.all(
                     color: isExpanded ? AppTheme.accent : AppTheme.border,
-                    width: isExpanded ? 1.0 : 0.5,
+                    width: isExpanded ? 1.2 : 0.5,
                   ),
+                  boxShadow: isExpanded
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ]
+                      : [],
                 ),
                 child: Column(
                   children: [
@@ -1223,8 +1292,8 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: const Icon(CupertinoIcons.up_arrow, size: 14),
+                          _actionIconButton(
+                            icon: CupertinoIcons.chevron_up,
                             tooltip: 'Send Backward (Draw Earlier)',
                             onPressed: idx > 0
                                 ? () => widget.controller.reorderLayers(
@@ -1233,11 +1302,9 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
                                   )
                                 : null,
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              CupertinoIcons.down_arrow,
-                              size: 14,
-                            ),
+                          const SizedBox(width: 4),
+                          _actionIconButton(
+                            icon: CupertinoIcons.chevron_down,
                             tooltip: 'Bring Forward (Draw Later)',
                             onPressed: idx < layers.length - 1
                                 ? () => widget.controller.reorderLayers(
@@ -1246,13 +1313,12 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
                                   )
                                 : null,
                           ),
-                          IconButton(
-                            icon: Icon(
-                              isExpanded
-                                  ? CupertinoIcons.chevron_up
-                                  : CupertinoIcons.chevron_down,
-                              size: 14,
-                            ),
+                          const SizedBox(width: 4),
+                          _actionIconButton(
+                            icon: isExpanded
+                                ? CupertinoIcons.chevron_up_circle_fill
+                                : CupertinoIcons.chevron_down_circle,
+                            color: isExpanded ? AppTheme.accent : null,
                             onPressed: () {
                               setState(() {
                                 _expandedLayerId = isExpanded ? null : layer.id;
@@ -1262,142 +1328,158 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
                         ],
                       ),
                     ),
-                    if (isExpanded) ...[
-                      const Divider(height: 1, color: AppTheme.border),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _buildSliderRow(
-                              label: 'Horizontal Pos (X)',
-                              value: layer.xRatio,
-                              min: -0.2,
-                              max: 1.2,
-                              displayValue: layer.xRatio.toStringAsFixed(2),
-                              onChanged: (val) {
-                                widget.controller.updateLayer(
-                                  layer.copyWith(xRatio: val),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            _buildSliderRow(
-                              label: 'Vertical Height (Y)',
-                              value: layer.yRatio,
-                              min: -0.2,
-                              max: 1.2,
-                              displayValue: layer.yRatio.toStringAsFixed(2),
-                              onChanged: (val) {
-                                widget.controller.updateLayer(
-                                  layer.copyWith(yRatio: val),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            _buildSliderRow(
-                              label: 'Scale Size',
-                              value: layer.scale,
-                              min: 0.1,
-                              max: 3.0,
-                              displayValue: layer.scale.toStringAsFixed(2),
-                              onChanged: (val) {
-                                widget.controller.updateLayer(
-                                  layer.copyWith(scale: val),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 8),
-                            _buildSliderRow(
-                              label: 'Opacity',
-                              value: layer.opacity,
-                              min: 0.0,
-                              max: 1.0,
-                              displayValue: layer.opacity.toStringAsFixed(2),
-                              onChanged: (val) {
-                                widget.controller.updateLayer(
-                                  layer.copyWith(opacity: val),
-                                );
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const Divider(height: 1, color: AppTheme.border),
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Row(
-                                  children: [
-                                    const Text(
-                                      'Flip Horizontally',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: AppTheme.textPrimary,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    CupertinoSwitch(
-                                      value: layer.flipX,
-                                      activeTrackColor: AppTheme.accent,
-                                      onChanged: (val) {
-                                        widget.controller.updateLayer(
-                                          layer.copyWith(flipX: val),
-                                        );
-                                      },
-                                    ),
-                                  ],
+                                _buildSliderRow(
+                                  label: 'Horizontal Pos (X)',
+                                  value: layer.xRatio,
+                                  min: -0.2,
+                                  max: 1.2,
+                                  step: 0.05,
+                                  onChanged: (val) {
+                                    widget.controller.updateLayer(
+                                      layer.copyWith(xRatio: val),
+                                    );
+                                  },
                                 ),
+                                const SizedBox(height: 8),
+                                _buildSliderRow(
+                                  label: 'Vertical Height (Y)',
+                                  value: layer.yRatio,
+                                  min: -0.2,
+                                  max: 1.2,
+                                  step: 0.05,
+                                  onChanged: (val) {
+                                    widget.controller.updateLayer(
+                                      layer.copyWith(yRatio: val),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                _buildSliderRow(
+                                  label: 'Scale Size',
+                                  value: layer.scale,
+                                  min: 0.1,
+                                  max: 3.0,
+                                  step: 0.10,
+                                  onChanged: (val) {
+                                    widget.controller.updateLayer(
+                                      layer.copyWith(scale: val),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 8),
+                                _buildSliderRow(
+                                  label: 'Opacity',
+                                  value: layer.opacity,
+                                  min: 0.0,
+                                  max: 1.0,
+                                  step: 0.05,
+                                  onChanged: (val) {
+                                    widget.controller.updateLayer(
+                                      layer.copyWith(opacity: val),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        widget.controller.duplicateLayer(layer);
-                                      },
-                                      icon: const Icon(
-                                        CupertinoIcons.doc_on_doc,
-                                        size: 12,
-                                      ),
-                                      label: const Text(
-                                        'Duplicate',
-                                        style: TextStyle(fontSize: 11),
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppTheme.textSecondary,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
+                                    Row(
+                                      children: [
+                                        const Text(
+                                          'Flip Horizontally',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppTheme.textPrimary,
+                                            fontFamily: 'Inter',
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(width: 8),
+                                        CupertinoSwitch(
+                                          value: layer.flipX,
+                                          activeTrackColor: AppTheme.accent,
+                                          onChanged: (val) {
+                                            widget.controller.updateLayer(
+                                              layer.copyWith(flipX: val),
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 4),
-                                    TextButton.icon(
-                                      onPressed: () {
-                                        widget.controller.removeLayer(layer.id);
-                                        if (_expandedLayerId == layer.id) {
-                                          _expandedLayerId = null;
-                                        }
-                                      },
-                                      icon: const Icon(
-                                        CupertinoIcons.trash,
-                                        size: 12,
-                                      ),
-                                      label: const Text(
-                                        'Delete',
-                                        style: TextStyle(fontSize: 11),
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: Colors.redAccent,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
+                                    Row(
+                                      children: [
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            widget.controller.duplicateLayer(
+                                              layer,
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            CupertinoIcons.doc_on_doc,
+                                            size: 12,
+                                          ),
+                                          label: const Text(
+                                            'Duplicate',
+                                            style: TextStyle(fontSize: 11),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor:
+                                                AppTheme.textSecondary,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                        const SizedBox(width: 4),
+                                        TextButton.icon(
+                                          onPressed: () {
+                                            widget.controller.removeLayer(
+                                              layer.id,
+                                            );
+                                            if (_expandedLayerId == layer.id) {
+                                              _expandedLayerId = null;
+                                            }
+                                          },
+                                          icon: const Icon(
+                                            CupertinoIcons.trash,
+                                            size: 12,
+                                          ),
+                                          label: const Text(
+                                            'Delete',
+                                            style: TextStyle(fontSize: 11),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor: Colors.redAccent,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                      crossFadeState: isExpanded
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 200),
+                    ),
                   ],
                 ),
               );
@@ -1412,13 +1494,13 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
     required double value,
     required double min,
     required double max,
-    required String displayValue,
+    required double step,
     required ValueChanged<double> onChanged,
   }) {
     return Row(
       children: [
         Expanded(
-          flex: 3,
+          flex: 4,
           child: Text(
             label,
             style: const TextStyle(
@@ -1430,7 +1512,7 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
           ),
         ),
         Expanded(
-          flex: 5,
+          flex: 4,
           child: SliderTheme(
             data: SliderThemeData(
               trackHeight: 2,
@@ -1449,20 +1531,46 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
           ),
         ),
         const SizedBox(width: 8),
-        SizedBox(
-          width: 36,
-          child: Text(
-            displayValue,
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-              fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
-            ),
-          ),
+        _FigmaValueInput(
+          value: value,
+          min: min,
+          max: max,
+          step: step,
+          onChanged: onChanged,
         ),
       ],
+    );
+  }
+
+  Widget _actionIconButton({
+    required IconData icon,
+    String? tooltip,
+    VoidCallback? onPressed,
+    Color? color,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      child: GestureDetector(
+        onTap: onPressed,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: onPressed == null
+                ? Colors.transparent
+                : (color ?? AppTheme.textSecondary).withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            icon,
+            size: 14,
+            color: onPressed == null
+                ? AppTheme.textMuted.withValues(alpha: 0.4)
+                : (color ?? AppTheme.textSecondary),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1472,6 +1580,159 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
       builder: (context) {
         return _AddLayerDialog(controller: widget.controller);
       },
+    );
+  }
+}
+
+class _FigmaValueInput extends StatefulWidget {
+  final double value;
+  final double min;
+  final double max;
+  final double step;
+  final ValueChanged<double> onChanged;
+
+  const _FigmaValueInput({
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.step,
+    required this.onChanged,
+  });
+
+  @override
+  State<_FigmaValueInput> createState() => _FigmaValueInputState();
+}
+
+class _FigmaValueInputState extends State<_FigmaValueInput> {
+  late TextEditingController _controller;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toStringAsFixed(2));
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _FigmaValueInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value && !_focusNode.hasFocus) {
+      _controller.text = widget.value.toStringAsFixed(2);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _submitValue();
+    }
+  }
+
+  void _submitValue() {
+    final parsed = double.tryParse(_controller.text);
+    if (parsed != null) {
+      final clamped = parsed.clamp(widget.min, widget.max);
+      widget.onChanged(clamped);
+      _controller.text = clamped.toStringAsFixed(2);
+    } else {
+      _controller.text = widget.value.toStringAsFixed(2);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _btn(
+          icon: CupertinoIcons.minus,
+          onPressed: widget.value > widget.min
+              ? () {
+                  final newVal = (widget.value - widget.step).clamp(widget.min, widget.max);
+                  widget.onChanged(newVal);
+                  _controller.text = newVal.toStringAsFixed(2);
+                }
+              : null,
+        ),
+        const SizedBox(width: 4),
+        Container(
+          width: 44,
+          height: 22,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceElevated.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(color: AppTheme.border, width: 0.5),
+          ),
+          child: TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+              fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+              border: InputBorder.none,
+            ),
+            onSubmitted: (_) => _submitValue(),
+          ),
+        ),
+        const SizedBox(width: 4),
+        _btn(
+          icon: CupertinoIcons.plus,
+          onPressed: widget.value < widget.max
+              ? () {
+                  final newVal = (widget.value + widget.step).clamp(widget.min, widget.max);
+                  widget.onChanged(newVal);
+                  _controller.text = newVal.toStringAsFixed(2);
+                }
+              : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _btn({required IconData icon, VoidCallback? onPressed}) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 18,
+        height: 22,
+        decoration: BoxDecoration(
+          color: onPressed == null
+              ? Colors.transparent
+              : AppTheme.textSecondary.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: onPressed == null ? Colors.transparent : AppTheme.border,
+            width: 0.5,
+          ),
+        ),
+        child: Center(
+          child: Icon(
+            icon,
+            size: 8,
+            color: onPressed == null
+                ? AppTheme.textMuted.withValues(alpha: 0.3)
+                : AppTheme.textSecondary,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1567,28 +1828,47 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
                       widget.controller.addLayer(path);
                       Navigator.of(context).pop();
                     },
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceCard.withValues(alpha: 0.5),
+                        color: AppTheme.surfaceCard,
                         border: Border.all(color: AppTheme.border, width: 0.5),
-                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      padding: const EdgeInsets.all(6),
+                      padding: const EdgeInsets.all(8),
                       child: Column(
                         children: [
                           Expanded(
-                            child: Image.asset(
-                              path,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Icon(
-                                    CupertinoIcons.photo,
-                                    size: 24,
-                                    color: AppTheme.textMuted,
-                                  ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusSm,
+                                ),
+                              ),
+                              padding: const EdgeInsets.all(4),
+                              child: Center(
+                                child: Image.asset(
+                                  path,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                        CupertinoIcons.photo,
+                                        size: 24,
+                                        color: AppTheme.textMuted,
+                                      ),
+                                ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 6),
                           Text(
                             name,
                             maxLines: 1,
@@ -1596,6 +1876,7 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 10,
+                              fontWeight: FontWeight.w600,
                               color: AppTheme.textSecondary,
                               fontFamily: 'Inter',
                             ),
@@ -1617,21 +1898,33 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
     final isSelected = _activeDialogTab == idx;
     return GestureDetector(
       onTap: () => setState(() => _activeDialogTab = idx),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.accent : Colors.transparent,
+          color: isSelected
+              ? AppTheme.accent
+              : AppTheme.surfaceCard.withValues(alpha: 0.3),
           borderRadius: BorderRadius.circular(AppTheme.radiusSm),
           border: Border.all(
             color: isSelected ? Colors.transparent : AppTheme.border,
             width: 0.5,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppTheme.accent.withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : [],
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 11,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
             color: isSelected ? Colors.white : AppTheme.textSecondary,
             fontFamily: 'Inter',
           ),
@@ -1639,4 +1932,366 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
       ),
     );
   }
+}
+
+class _ColorsSectionTab extends StatefulWidget {
+  final EnvironmentBuilderController controller;
+  final CustomEnvironmentTheme draft;
+
+  const _ColorsSectionTab({required this.controller, required this.draft});
+
+  @override
+  State<_ColorsSectionTab> createState() => _ColorsSectionTabState();
+}
+
+class _ColorsSectionTabState extends State<_ColorsSectionTab> {
+  int _activeProperty = 0; // 0 = Ground Tint, 1 = Cloud Tint, 2 = Base Color
+  late TextEditingController _hexController;
+  late FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _hexController = TextEditingController(text: _colorToHex(_getCurrentColor()));
+    _focusNode = FocusNode();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ColorsSectionTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final currentVal = _getCurrentColor();
+    if (!_focusNode.hasFocus) {
+      _hexController.text = _colorToHex(currentVal);
+    }
+  }
+
+  @override
+  void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _hexController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  Color _getCurrentColor() {
+    switch (_activeProperty) {
+      case 0:
+        return Color(widget.draft.groundTintArgb);
+      case 1:
+        return Color(widget.draft.cloudTintArgb);
+      case 2:
+        return Color(widget.draft.baseColorArgb);
+      default:
+        return Colors.white;
+    }
+  }
+
+  void _updateCurrentColor(Color color) {
+    switch (_activeProperty) {
+      case 0:
+        widget.controller.updateGroundTint(color);
+        break;
+      case 1:
+        widget.controller.updateCloudTint(color);
+        break;
+      case 2:
+        widget.controller.updateBaseColor(color);
+        break;
+    }
+    if (!_focusNode.hasFocus) {
+      _hexController.text = _colorToHex(color);
+    }
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus) {
+      _submitHex();
+    }
+  }
+
+  void _submitHex() {
+    final color = _parseHexColor(_hexController.text);
+    if (color != null) {
+      _updateCurrentColor(color);
+      _hexController.text = _colorToHex(color);
+    } else {
+      _hexController.text = _colorToHex(_getCurrentColor());
+    }
+  }
+
+  String _colorToHex(Color color) {
+    return '#${color.toARGB32().toRadixString(16).toUpperCase().padLeft(8, '0')}';
+  }
+
+  Color? _parseHexColor(String hexString) {
+    var hex = hexString.replaceAll('#', '').trim();
+    if (hex.length == 6) {
+      hex = 'FF$hex';
+    }
+    if (hex.length != 8) return null;
+    final val = int.tryParse(hex, radix: 16);
+    if (val == null) return null;
+    return Color(val);
+  }
+
+  List<Color> get _currentPresets {
+    switch (_activeProperty) {
+      case 0: // Ground Tint Presets
+        return const [
+          Color(0xFFFFFFFF), // Neutral White (Forest/Sky default)
+          Color(0xFFD47A3B), // Autumn Amber (Autumn default)
+          Color(0xFFE0F7FA), // Snow Cyan (Winter default)
+          Color(0xFFFFE082), // Sand Gold (Beach default)
+          Color(0xFFFFCC80), // Desert Peach (Desert default)
+          Color(0xFF263238), // Midnight Blue-Grey (Night Town default)
+          Color(0xFF90A4AE), // Mist Blue-Grey (Mist Forest default)
+          Color(0xFF757575), // Asphalt Grey (Urban default)
+          Color(0xFF4CAF50), // Grass Green
+          Color(0xFF3E2723), // Soil Brown
+        ];
+      case 1: // Cloud Tint Presets
+        return const [
+          Color(0xFFFFFFFF), // Neutral Pure White
+          Color(0xFFFFECB3), // Sunset Golden Cloud (Autumn default)
+          Color(0xFFE0F2F1), // Icy Ice Mint Cloud (Winter default)
+          Color(0xFFFFF9C4), // Light Desert Yellow Cloud (Desert default)
+          Color(0xFF37474F), // Nocturnal Dark Cloud (Night Town default)
+          Color(0xFFB0BEC5), // Mist Overcast Grey (Mist Forest default)
+          Color(0xFFCFD8DC), // Urban Cloud Grey (Urban default)
+          Color(0xFFFFCDD2), // Soft Sunset Pink Cloud
+          Color(0xFFE1BEE7), // Twilight Lavender Cloud
+          Color(0xFFB2EBF2), // Sky Cyan Cloud
+        ];
+      case 2: // Base Colour Presets (Sky/Atmosphere)
+        return const [
+          Color(0xFF2E2625), // Dark Umber (Forest/Sky default)
+          Color(0xFF5D4037), // Warm Brown (Autumn default)
+          Color(0xFFECEFF1), // Snow White Grey (Winter default)
+          Color(0xFFFFF8E1), // Sand Cream (Beach default)
+          Color(0xFFFFE0B2), // Peach Glow (Desert default)
+          Color(0xFF37474F), // Nocturnal Blue-Grey (Night Town default)
+          Color(0xFF455A64), // Mist Dark Blue-Grey (Mist Forest default)
+          Color(0xFF9E9E9E), // Concrete Grey (Urban default)
+          Color(0xFF0D47A1), // Deep Midnight Sky Blue
+          Color(0xFFE040FB), // Neon Twilight Purple
+        ];
+      default:
+        return const [Colors.white];
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentColor = _getCurrentColor();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Property Selector Rows (Ground, Cloud, Base)
+        _buildPropertySelector(0, 'Ground Tint', Color(widget.draft.groundTintArgb)),
+        const SizedBox(height: 8),
+        _buildPropertySelector(1, 'Cloud Tint', Color(widget.draft.cloudTintArgb)),
+        const SizedBox(height: 8),
+        _buildPropertySelector(2, 'Base Colour', Color(widget.draft.baseColorArgb)),
+        const SizedBox(height: 20),
+
+        // Inline Editor Section Card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceCard,
+            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+            border: Border.all(color: AppTheme.border, width: 0.5),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _getPropertyName(_activeProperty),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  // Figma-style Hex Input
+                  Container(
+                    width: 90,
+                    height: 24,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceElevated.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: AppTheme.border, width: 0.5),
+                    ),
+                    child: TextField(
+                      controller: _hexController,
+                      focusNode: _focusNode,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                        fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
+                      ),
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+                        border: InputBorder.none,
+                      ),
+                      onSubmitted: (_) => _submitHex(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              // Visual 2D Color Picker UI
+              HsvColorPicker(
+                color: currentColor,
+                onChanged: _updateCurrentColor,
+              ),
+              const SizedBox(height: 16),
+              // Preset Color Swatches row
+              const Text(
+                'Presets',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textMuted,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _currentPresets.map((preset) {
+                    final isSelected = preset.toARGB32() == currentColor.toARGB32();
+                    return GestureDetector(
+                      onTap: () {
+                        _updateCurrentColor(preset);
+                        _hexController.text = _colorToHex(preset);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: preset,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? AppTheme.accent : AppTheme.border,
+                            width: isSelected ? 2.0 : 0.5,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
+        ),
+
+        // Layer Opacities Title
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Layer Opacities',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ),
+        _OpacitySettingsSection(draft: widget.draft, controller: widget.controller),
+      ],
+    );
+  }
+
+  String _getPropertyName(int active) {
+    switch (active) {
+      case 0:
+        return 'Ground Tint';
+      case 1:
+        return 'Cloud Tint';
+      case 2:
+        return 'Base Colour';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildPropertySelector(int idx, String name, Color color) {
+    final isSelected = _activeProperty == idx;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _activeProperty = idx;
+          _hexController.text = _colorToHex(color);
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppTheme.accent.withValues(alpha: 0.08)
+              : AppTheme.surfaceCard.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          border: Border.all(
+            color: isSelected ? AppTheme.accent : AppTheme.border,
+            width: isSelected ? 1.2 : 0.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 16,
+              height: 16,
+              decoration: BoxDecoration(
+                color: color,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.border, width: 0.5),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: AppTheme.textPrimary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ),
+            Text(
+              _colorToHex(color),
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppTheme.textMuted,
+                fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
 }

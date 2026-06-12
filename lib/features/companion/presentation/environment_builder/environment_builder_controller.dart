@@ -108,6 +108,17 @@ class EnvironmentBuilderController extends ChangeNotifier {
         allAssets = manifestMap.keys.toList();
       }
 
+      // Filter only image and GIF assets
+      allAssets = allAssets.where((path) {
+        final ext = p.extension(path).toLowerCase();
+        return ext == '.png' ||
+            ext == '.gif' ||
+            ext == '.jpg' ||
+            ext == '.jpeg' ||
+            ext == '.webp' ||
+            ext == '.bmp';
+      }).toList();
+
       _skyPaths = allAssets
           .where(
             (p) =>

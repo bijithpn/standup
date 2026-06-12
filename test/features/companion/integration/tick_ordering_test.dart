@@ -71,6 +71,16 @@ class _StubDisplayManager implements DisplayManager {
   _StubDisplayManager(this._isSettingsLoaded);
 
   @override
+  List<DisplayBounds> get displays => [
+    const DisplayBounds(
+      id: 'primary',
+      rect: Rect.fromLTWH(0, 0, 1920, 1080),
+      dpiScale: 1.0,
+      isPrimary: true,
+    ),
+  ];
+
+  @override
   Future<List<DisplayBounds>> enumerateDisplays() async {
     enumerateRecord.called = true;
     enumerateRecord.calledBeforeSettingsLoaded = !_isSettingsLoaded();
@@ -549,6 +559,16 @@ class _RecordingSettingsPersistence {
 class _RecordingDisplayManager implements DisplayManager {
   _RecordingDisplayManager(this._log);
   final List<String> _log;
+
+  @override
+  List<DisplayBounds> get displays => [
+    const DisplayBounds(
+      id: 'primary',
+      rect: Rect.fromLTWH(0, 0, 1920, 1080),
+      dpiScale: 1.0,
+      isPrimary: true,
+    ),
+  ];
 
   @override
   Future<List<DisplayBounds>> enumerateDisplays() async {
