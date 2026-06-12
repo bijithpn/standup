@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// An interactive HSV color picker widget that provides a 2D Saturation-Value box
-/// and a horizontal rainbow Hue slider track. Designed to look clean and premium
-/// like design tool controls.
 class HsvColorPicker extends StatefulWidget {
   final Color color;
   final ValueChanged<Color> onChanged;
@@ -33,8 +30,7 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
   @override
   void didUpdateWidget(covariant HsvColorPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Only synchronize internal HSV state if color changes externally,
-    // which prevents numeric precision/hue loss while dragging.
+
     if (widget.color.toARGB32() != _lastColor?.toARGB32() &&
         widget.color.toARGB32() != oldWidget.color.toARGB32()) {
       _syncHsv();
@@ -50,7 +46,12 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
   }
 
   void _updateColor() {
-    final newColor = HSVColor.fromAHSV(1.0, _hue, _saturation, _value).toColor();
+    final newColor = HSVColor.fromAHSV(
+      1.0,
+      _hue,
+      _saturation,
+      _value,
+    ).toColor();
     _lastColor = newColor;
     widget.onChanged(newColor);
   }
@@ -75,7 +76,6 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // 2D Saturation/Value Grid Box
         LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
@@ -86,8 +86,10 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
 
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onPanDown: (details) => _handleGridGesture(details.localPosition, size),
-              onPanUpdate: (details) => _handleGridGesture(details.localPosition, size),
+              onPanDown: (details) =>
+                  _handleGridGesture(details.localPosition, size),
+              onPanUpdate: (details) =>
+                  _handleGridGesture(details.localPosition, size),
               child: Container(
                 height: height,
                 decoration: BoxDecoration(
@@ -99,7 +101,6 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // Hue base color horizontal gradient
                       Positioned.fill(
                         child: Container(
                           decoration: BoxDecoration(
@@ -109,7 +110,7 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
                           ),
                         ),
                       ),
-                      // Value/Brightness vertical gradient overlay (transparent at top -> black at bottom)
+
                       Positioned.fill(
                         child: Container(
                           decoration: const BoxDecoration(
@@ -121,7 +122,7 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
                           ),
                         ),
                       ),
-                      // Reticle circular indicator representing current (S, V) coordinates
+
                       Positioned(
                         left: (_saturation * width) - 8,
                         top: ((1.0 - _value) * height) - 8,
@@ -152,17 +153,18 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
         ),
         const SizedBox(height: 14),
 
-        // Hue Slider Track (Rainbow Spectrum)
         LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth;
 
             return GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onPanDown: (details) => _handleHueGesture(details.localPosition, width),
-              onPanUpdate: (details) => _handleHueGesture(details.localPosition, width),
+              onPanDown: (details) =>
+                  _handleHueGesture(details.localPosition, width),
+              onPanUpdate: (details) =>
+                  _handleHueGesture(details.localPosition, width),
               child: Container(
-                height: 24, // Expanded gesture area
+                height: 24,
                 alignment: Alignment.center,
                 child: Container(
                   height: 10,
@@ -170,30 +172,32 @@ class _HsvColorPickerState extends State<HsvColorPicker> {
                     borderRadius: BorderRadius.circular(5),
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFFFF0000), // Red
-                        Color(0xFFFFFF00), // Yellow
-                        Color(0xFF00FF00), // Green
-                        Color(0xFF00FFFF), // Cyan
-                        Color(0xFF0000FF), // Blue
-                        Color(0xFFFF00FF), // Magenta
-                        Color(0xFFFF0000), // Red
+                        Color(0xFFFF0000),
+                        Color(0xFFFFFF00),
+                        Color(0xFF00FF00),
+                        Color(0xFF00FFFF),
+                        Color(0xFF0000FF),
+                        Color(0xFFFF00FF),
+                        Color(0xFFFF0000),
                       ],
                     ),
                   ),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      // White sliding thumb indicator showing selected Hue angle
                       Positioned(
                         left: (_hue / 360.0) * width - 8,
-                        top: -3, // Centered vertically on the 10px track
+                        top: -3,
                         child: Container(
                           width: 16,
                           height: 16,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.black26, width: 1.5),
+                            border: Border.all(
+                              color: Colors.black26,
+                              width: 1.5,
+                            ),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.3),
