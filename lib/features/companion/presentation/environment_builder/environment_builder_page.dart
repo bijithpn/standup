@@ -1248,24 +1248,49 @@ class _LayersManagerTabState extends State<_LayersManagerTab> {
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.black12,
+                          color: Color(widget.draft.baseColorArgb),
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusSm,
+                          ),
+                          border: Border.all(
+                            color: AppTheme.border.withValues(alpha: 0.3),
+                            width: 0.5,
                           ),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(
                             AppTheme.radiusSm,
                           ),
-                          child: Image.asset(
-                            layer.assetPath,
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(
-                                  CupertinoIcons.photo,
-                                  size: 14,
-                                  color: AppTheme.textMuted,
+                          child: Stack(
+                            children: [
+                              if (widget.draft.skyPath.isNotEmpty &&
+                                  widget.draft.skyPath != 'none')
+                                Positioned.fill(
+                                  child: Opacity(
+                                    opacity: widget.draft.skyOpacity,
+                                    child: Image.asset(
+                                      widget.draft.skyPath,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
                                 ),
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(2),
+                                  child: Image.asset(
+                                    layer.assetPath,
+                                    fit: BoxFit.contain,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            const Icon(
+                                              CupertinoIcons.photo,
+                                              size: 14,
+                                              color: AppTheme.textMuted,
+                                            ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1767,12 +1792,37 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
   @override
   Widget build(BuildContext context) {
     final List<String> paths;
-    if (_activeDialogTab == 0) {
-      paths = widget.controller.mountainPaths;
-    } else if (_activeDialogTab == 1) {
-      paths = widget.controller.rockPaths;
-    } else {
-      paths = widget.controller.cloudPaths;
+    switch (_activeDialogTab) {
+      case 0:
+        paths = widget.controller.mountainPaths;
+        break;
+      case 1:
+        paths = widget.controller.rockPaths;
+        break;
+      case 2:
+        paths = widget.controller.cloudPaths;
+        break;
+      case 3:
+        paths = widget.controller.skyPaths;
+        break;
+      case 4:
+        paths = widget.controller.groundPaths;
+        break;
+      case 5:
+        paths = [
+          ...widget.controller.birdPaths,
+          ...widget.controller.rabbitIdlePaths,
+          ...widget.controller.rabbitRunPaths,
+        ].toSet().toList();
+        break;
+      case 6:
+        paths = [
+          ...widget.controller.toyPaths,
+          ...widget.controller.foodPaths,
+        ].toSet().toList();
+        break;
+      default:
+        paths = [];
     }
 
     return Dialog(
@@ -1781,8 +1831,8 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Container(
-        width: 450,
-        height: 400,
+        width: 580,
+        height: 480,
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1806,23 +1856,37 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
               ],
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                _dialogTabButton(0, 'Mountains & Trees'),
-                const SizedBox(width: 8),
-                _dialogTabButton(1, 'Rocks & Stones'),
-                const SizedBox(width: 8),
-                _dialogTabButton(2, 'Clouds'),
-              ],
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: [
+                    _dialogTabButton(0, 'Mountains & Trees'),
+                    const SizedBox(width: 8),
+                    _dialogTabButton(1, 'Rocks & Stones'),
+                    const SizedBox(width: 8),
+                    _dialogTabButton(2, 'Clouds'),
+                    const SizedBox(width: 8),
+                    _dialogTabButton(3, 'Backgrounds & Skies'),
+                    const SizedBox(width: 8),
+                    _dialogTabButton(4, 'Ground Tiles'),
+                    const SizedBox(width: 8),
+                    _dialogTabButton(5, 'Wildlife & Pets'),
+                    const SizedBox(width: 8),
+                    _dialogTabButton(6, 'Toys & Foods'),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
+                  crossAxisCount: 5,
                   crossAxisSpacing: 8,
                   mainAxisSpacing: 8,
-                  childAspectRatio: 0.85,
+                  childAspectRatio: 0.82,
                 ),
                 itemCount: paths.length,
                 itemBuilder: (context, idx) {
@@ -1847,40 +1911,77 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
                           ),
                         ],
                       ),
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(6),
                       child: Column(
                         children: [
                           Expanded(
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.03),
+                                color: Color(
+                                  widget.controller.draft.baseColorArgb,
+                                ),
                                 borderRadius: BorderRadius.circular(
                                   AppTheme.radiusSm,
                                 ),
+                                border: Border.all(
+                                  color: AppTheme.border.withValues(alpha: 0.3),
+                                  width: 0.5,
+                                ),
                               ),
-                              padding: const EdgeInsets.all(4),
-                              child: Center(
-                                child: Image.asset(
-                                  path,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      const Icon(
-                                        CupertinoIcons.photo,
-                                        size: 24,
-                                        color: AppTheme.textMuted,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusSm,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    if (widget
+                                            .controller
+                                            .draft
+                                            .skyPath
+                                            .isNotEmpty &&
+                                        widget.controller.draft.skyPath !=
+                                            'none')
+                                      Positioned.fill(
+                                        child: Opacity(
+                                          opacity: widget
+                                              .controller
+                                              .draft
+                                              .skyOpacity,
+                                          child: Image.asset(
+                                            widget.controller.draft.skyPath,
+                                            fit: BoxFit.cover,
+                                          ),
+                                        ),
                                       ),
+                                    Positioned.fill(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Image.asset(
+                                          path,
+                                          fit: BoxFit.contain,
+                                          errorBuilder:
+                                              (context, error, stackTrace) =>
+                                                  const Icon(
+                                                    CupertinoIcons.photo,
+                                                    size: 16,
+                                                    color: AppTheme.textMuted,
+                                                  ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 4),
                           Text(
                             name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
                             style: const TextStyle(
-                              fontSize: 10,
+                              fontSize: 9,
                               fontWeight: FontWeight.w600,
                               color: AppTheme.textSecondary,
                               fontFamily: 'Inter',
