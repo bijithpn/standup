@@ -204,8 +204,7 @@ class CompanionOverlayController extends ChangeNotifier {
       ErrorHandler().handleError(e, st);
     }
 
-    final shouldShow =
-        _companionEnabled && settings.hasCompletedOnboarding;
+    final shouldShow = _companionEnabled && settings.hasCompletedOnboarding;
     if (shouldShow) {
       unawaited(_showNativeCompanion());
     }
@@ -368,9 +367,7 @@ class CompanionOverlayController extends ChangeNotifier {
       }
     } else {
       final settings = _settingsRepo.currentSettings;
-      final shouldShow =
-          _companionEnabled &&
-          settings.hasCompletedOnboarding;
+      final shouldShow = _companionEnabled && settings.hasCompletedOnboarding;
       if (shouldShow && !_isCompanionShown) {
         _showNativeCompanion();
       }
@@ -382,7 +379,9 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
-      pipModeEnabled: enabled ? _settingsRepo.currentSettings.pipModeEnabled : false,
+      pipModeEnabled: enabled
+          ? _settingsRepo.currentSettings.pipModeEnabled
+          : false,
     );
     await _settingsRepo.save(updated);
   }

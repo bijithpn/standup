@@ -9,7 +9,7 @@ import 'package:breakmate/features/companion/domain/environment_theme_config.dar
 // pattern as SettingsPersistence.
 class CustomEnvironmentRepository {
   CustomEnvironmentRepository({AppLogger? logger})
-      : _logger = logger ?? AppLogger();
+    : _logger = logger ?? AppLogger();
 
   final AppLogger _logger;
   List<CustomEnvironmentTheme> _themes = [];
@@ -96,9 +96,9 @@ class CustomEnvironmentRepository {
     final path = _configPath;
     final tmpPath = '$path.tmp';
     try {
-      final jsonString = const JsonEncoder.withIndent('  ').convert(
-        themes.map((t) => t.toJson()).toList(),
-      );
+      final jsonString = const JsonEncoder.withIndent(
+        '  ',
+      ).convert(themes.map((t) => t.toJson()).toList());
       final dir = File(path).parent;
       if (!await dir.exists()) await dir.create(recursive: true);
       final tmpFile = File(tmpPath);

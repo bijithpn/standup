@@ -293,7 +293,8 @@ class CompanionComponent
           changeState(PetAnimationState.run);
         } else {
           // Walk: choose direction from velocity with hysteresis to prevent flicker.
-          PetAnimationState walkState = (current == PetAnimationState.walkUp ||
+          PetAnimationState walkState =
+              (current == PetAnimationState.walkUp ||
                   current == PetAnimationState.walkDown)
               ? current!
               : PetAnimationState.walkSide;
@@ -304,8 +305,9 @@ class CompanionComponent
 
           if (diff > 5.0) {
             // Bias towards vertical
-            walkState =
-                vel.dy < 0 ? PetAnimationState.walkUp : PetAnimationState.walkDown;
+            walkState = vel.dy < 0
+                ? PetAnimationState.walkUp
+                : PetAnimationState.walkDown;
           } else if (diff < -5.0) {
             // Bias towards horizontal
             walkState = PetAnimationState.walkSide;
@@ -440,8 +442,8 @@ class CompanionComponent
         if (fromTicker != null) {
           final ui.Image? fromFrame =
               fromTicker.currentIndex < fromAnim.frames.length
-                  ? fromAnim.frames[fromTicker.currentIndex].sprite.image
-                  : null;
+              ? fromAnim.frames[fromTicker.currentIndex].sprite.image
+              : null;
           if (fromFrame != null) {
             final alphaPaint = Paint()
               ..color = Color.fromRGBO(255, 255, 255, 1.0 - t)

@@ -5,6 +5,8 @@ import 'package:breakmate/features/companion/domain/custom_environment_theme.dar
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
+
 // Displays a live miniature environment preview from the current draft.
 // Renders sky, animated clouds, tiled ground, base fill and decorative
 // foreground in a 16:9-ish panel at reduced scale.
@@ -32,19 +34,19 @@ class _EnvPreviewPanelState extends State<EnvPreviewPanel>
   String? _loadedCloud;
   String? _loadedMountain;
   String? _loadedRock;
+  List<String> _loadedLayerPaths = [];
 
+  final Map<String, ui.Image> _layerImages = {};
   final List<_CloudState> _clouds = [];
   final Random _rng = Random();
 
   @override
   void initState() {
     super.initState();
-    _ticker = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 10),
-    )
-      ..repeat()
-      ..addListener(_onTick);
+    _ticker =
+        AnimationController(vsync: this, duration: const Duration(seconds: 10))
+          ..repeat()
+          ..addListener(_onTick);
     _initClouds();
     _loadAssets(widget.theme);
   }
@@ -52,13 +54,15 @@ class _EnvPreviewPanelState extends State<EnvPreviewPanel>
   void _initClouds() {
     _clouds.clear();
     for (int i = 0; i < 3; i++) {
-      _clouds.add(_CloudState(
-        x: _rng.nextDouble() * 320,
-        y: 16 + _rng.nextDouble() * 40,
-        speed: 8 + _rng.nextDouble() * 10,
-        scale: 0.35 + _rng.nextDouble() * 0.4,
-        opacity: 0.3 + _rng.nextDouble() * 0.4,
-      ));
+      _clouds.add(
+        _CloudState(
+          x: _rng.nextDouble() * 320,
+          y: 16 + _rng.nextDouble() * 40,
+          speed: 8 + _rng.nextDouble() * 10,
+          scale: 0.35 + _rng.nextDouble() * 0.4,
+          opacity: 0.3 + _rng.nextDouble() * 0.4,
+        ),
+      );
     }
   }
 
@@ -82,11 +86,20 @@ class _EnvPreviewPanelState extends State<EnvPreviewPanel>
   void didUpdateWidget(covariant EnvPreviewPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     final t = widget.theme;
+    final layerPathsChanged =
+        t.layers.length != oldWidget.theme.layers.length ||
+        !t.layers.every(
+          (l) => oldWidget.theme.layers.any(
+            (ol) => ol.id == l.id && ol.assetPath == l.assetPath,
+          ),
+        );
+
     if (t.skyPath != _loadedSky ||
         t.groundPath != _loadedGround ||
         t.cloudPath != _loadedCloud ||
         t.mountainLeftPath != _loadedMountain ||
-        t.rockLeftPath != _loadedRock) {
+        t.rockLeftPath != _loadedRock ||
+        layerPathsChanged) {
       _loadAssets(t);
     }
   }
@@ -97,21 +110,37 @@ class _EnvPreviewPanelState extends State<EnvPreviewPanel>
     _loadedCloud = t.cloudPath;
     _loadedMountain = t.mountainLeftPath;
     _loadedRock = t.rockLeftPath;
+    _loadedLayerPaths = t.layers.map((l) => l.assetPath).toList();
 
-    final results = await Future.wait([
-      _safeLoad(t.skyPath),
-      _safeLoad(t.groundPath),
-      _safeLoad(t.cloudPath),
-      _safeLoad(t.mountainLeftPath),
-      _safeLoad(t.rockLeftPath),
-    ]);
+    final pathsToLoad = <String>{
+      if (t.skyPath != 'none') t.skyPath,
+      if (t.groundPath != 'none') t.groundPath,
+      if (t.cloudPath != 'none') t.cloudPath,
+      if (t.mountainLeftPath != 'none') t.mountainLeftPath,
+      if (t.rockLeftPath != 'none') t.rockLeftPath,
+      ..._loadedLayerPaths,
+    };
+
+    final futures = pathsToLoad.map((p) async {
+      final img = await _safeLoad(p);
+      return MapEntry(p, img);
+    });
+
+    final results = await Future.wait(futures);
     if (!mounted) return;
+
     setState(() {
-      _skyImage = results[0];
-      _groundImage = results[1];
-      _cloudImage = results[2];
-      _mountainImage = results[3];
-      _rockImage = results[4];
+      _layerImages.clear();
+      for (final entry in results) {
+        if (entry.value != null) {
+          _layerImages[entry.key] = entry.value!;
+        }
+      }
+      _skyImage = _layerImages[t.skyPath];
+      _groundImage = _layerImages[t.groundPath];
+      _cloudImage = _layerImages[t.cloudPath];
+      _mountainImage = _layerImages[t.mountainLeftPath];
+      _rockImage = _layerImages[t.rockLeftPath];
     });
   }
 
@@ -156,6 +185,8 @@ class _EnvPreviewPanelState extends State<EnvPreviewPanel>
                   mountainImage: _mountainImage,
                   rockImage: _rockImage,
                   clouds: _clouds,
+                  layers: widget.theme.layers,
+                  layerImages: _layerImages,
                   groundTint: Color(widget.theme.groundTintArgb),
                   cloudTint: Color(widget.theme.cloudTintArgb),
                   baseColor: Color(widget.theme.baseColorArgb),
@@ -187,7 +218,11 @@ class _PreviewHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.landscape_rounded, size: 14, color: AppTheme.textSecondary),
+          const Icon(
+            Icons.landscape_rounded,
+            size: 14,
+            color: AppTheme.textSecondary,
+          ),
           const SizedBox(width: 8),
           const Text(
             'Live Preview',
@@ -217,7 +252,11 @@ class _PreviewHeader extends StatelessWidget {
           const SizedBox(width: 5),
           const Text(
             'Live',
-            style: TextStyle(fontSize: 11, color: Color(0xFF10B981), fontFamily: 'Inter'),
+            style: TextStyle(
+              fontSize: 11,
+              color: Color(0xFF10B981),
+              fontFamily: 'Inter',
+            ),
           ),
         ],
       ),
@@ -232,6 +271,8 @@ class _EnvPainter extends CustomPainter {
   final ui.Image? mountainImage;
   final ui.Image? rockImage;
   final List<_CloudState> clouds;
+  final List<CustomEnvironmentLayer> layers;
+  final Map<String, ui.Image> layerImages;
   final Color groundTint;
   final Color cloudTint;
   final Color baseColor;
@@ -249,6 +290,8 @@ class _EnvPainter extends CustomPainter {
     required this.mountainImage,
     required this.rockImage,
     required this.clouds,
+    required this.layers,
+    required this.layerImages,
     required this.groundTint,
     required this.cloudTint,
     required this.baseColor,
@@ -275,7 +318,10 @@ class _EnvPainter extends CustomPainter {
         fit: BoxFit.cover,
         alignment: Alignment.topCenter,
         filterQuality: FilterQuality.medium,
-        colorFilter: ColorFilter.mode(Colors.white.withValues(alpha: skyOpacity), BlendMode.modulate),
+        colorFilter: ColorFilter.mode(
+          Colors.white.withValues(alpha: skyOpacity),
+          BlendMode.modulate,
+        ),
       );
     } else {
       canvas.drawRect(
@@ -297,7 +343,12 @@ class _EnvPainter extends CustomPainter {
         final ch = cloudImage!.height * c.scale;
         canvas.drawImageRect(
           cloudImage!,
-          Rect.fromLTWH(0, 0, cloudImage!.width.toDouble(), cloudImage!.height.toDouble()),
+          Rect.fromLTWH(
+            0,
+            0,
+            cloudImage!.width.toDouble(),
+            cloudImage!.height.toDouble(),
+          ),
           Rect.fromLTWH(c.x, c.y, cw, ch),
           paint,
         );
@@ -315,14 +366,22 @@ class _EnvPainter extends CustomPainter {
       const tileW = 36.0;
       const tileH = 24.0;
       final paint = Paint()
-        ..colorFilter = ColorFilter.mode(groundTint.withValues(alpha: groundOpacity), BlendMode.modulate)
+        ..colorFilter = ColorFilter.mode(
+          groundTint.withValues(alpha: groundOpacity),
+          BlendMode.modulate,
+        )
         ..filterQuality = FilterQuality.none;
       if (isGroundTiled) {
         double x = 0;
         while (x < w + tileW) {
           canvas.drawImageRect(
             groundImage!,
-            Rect.fromLTWH(0, 0, groundImage!.width.toDouble(), groundImage!.height.toDouble()),
+            Rect.fromLTWH(
+              0,
+              0,
+              groundImage!.width.toDouble(),
+              groundImage!.height.toDouble(),
+            ),
             Rect.fromLTWH(x, groundY, tileW, tileH),
             paint,
           );
@@ -333,11 +392,11 @@ class _EnvPainter extends CustomPainter {
         final double floorY = h - 24.0;
         final double imgW = groundImage!.width.toDouble();
         final double imgH = groundImage!.height.toDouble();
-        
+
         final double drawWidth = w;
         final double drawHeight = drawWidth * (imgH / imgW);
         final double scaledGrassFromBottom = drawHeight * (20.0 / 272.0);
-        
+
         final double imageBottomY = floorY + scaledGrassFromBottom;
         final double imageTopY = imageBottomY - drawHeight;
 
@@ -350,53 +409,95 @@ class _EnvPainter extends CustomPainter {
       }
     }
 
-    // Mountain background decoration (Tree)
-    if (mountainImage != null) {
-      final mh = (h * 0.45).clamp(40.0, 160.0);
-      final mw = mh * (mountainImage!.width / mountainImage!.height);
-      canvas.drawImageRect(
-        mountainImage!,
-        Rect.fromLTWH(0, 0, mountainImage!.width.toDouble(), mountainImage!.height.toDouble()),
-        Rect.fromLTWH(w * 0.1, groundY - mh + 10, mw, mh),
-        Paint()
-          ..filterQuality = FilterQuality.none
-          ..colorFilter = ColorFilter.mode(Colors.white.withValues(alpha: mountainOpacity), BlendMode.modulate),
-      );
-    }
+    if (layers.isNotEmpty) {
+      // Paint dynamic layers in sequence
+      for (final layer in layers) {
+        final img = layerImages[layer.assetPath];
+        if (img != null) {
+          final imgW = img.width.toDouble();
+          final imgH = img.height.toDouble();
 
-    // Rock decorations
-    if (rockImage != null) {
-      final rh = (h * 0.18).clamp(18.0, 52.0);
-      final rw = rh * (rockImage!.width / rockImage!.height);
-      final rockPaint = Paint()
-        ..filterQuality = FilterQuality.none
-        ..colorFilter = ColorFilter.mode(Colors.white.withValues(alpha: rockOpacity), BlendMode.modulate);
-      canvas.drawImageRect(
-        rockImage!,
-        Rect.fromLTWH(0, 0, rockImage!.width.toDouble(), rockImage!.height.toDouble()),
-        Rect.fromLTWH(w * 0.72, groundY - rh + 12, rw, rh),
-        rockPaint,
-      );
+          final double scaleFactor = h / 160.0;
+          final double drawW = imgW * layer.scale * scaleFactor;
+          final double drawH = imgH * layer.scale * scaleFactor;
+
+          final double posX = w * layer.xRatio;
+          final double posY = groundY - (layer.yRatio * groundY);
+
+          final paint = Paint()
+            ..filterQuality = FilterQuality.none
+            ..colorFilter = ColorFilter.mode(
+              Colors.white.withValues(alpha: layer.opacity),
+              BlendMode.modulate,
+            );
+
+          canvas.save();
+          if (layer.flipX) {
+            canvas.translate(posX, posY);
+            canvas.scale(-1, 1);
+            canvas.translate(-posX, -posY);
+          }
+
+          canvas.drawImageRect(
+            img,
+            Rect.fromLTWH(0, 0, imgW, imgH),
+            Rect.fromLTWH(posX - drawW / 2, posY - drawH, drawW, drawH),
+            paint,
+          );
+          canvas.restore();
+        }
+      }
+    } else {
+      // Legacy mountain background decoration (Tree)
+      if (mountainImage != null) {
+        final mh = (h * 0.45).clamp(40.0, 160.0);
+        final mw = mh * (mountainImage!.width / mountainImage!.height);
+        canvas.drawImageRect(
+          mountainImage!,
+          Rect.fromLTWH(
+            0,
+            0,
+            mountainImage!.width.toDouble(),
+            mountainImage!.height.toDouble(),
+          ),
+          Rect.fromLTWH(w * 0.1, groundY - mh + 10, mw, mh),
+          Paint()
+            ..filterQuality = FilterQuality.none
+            ..colorFilter = ColorFilter.mode(
+              Colors.white.withValues(alpha: mountainOpacity),
+              BlendMode.modulate,
+            ),
+        );
+      }
+
+      // Legacy rock decorations
+      if (rockImage != null) {
+        final rh = (h * 0.18).clamp(18.0, 52.0);
+        final rw = rh * (rockImage!.width / rockImage!.height);
+        final rockPaint = Paint()
+          ..filterQuality = FilterQuality.none
+          ..colorFilter = ColorFilter.mode(
+            Colors.white.withValues(alpha: rockOpacity),
+            BlendMode.modulate,
+          );
+        canvas.drawImageRect(
+          rockImage!,
+          Rect.fromLTWH(
+            0,
+            0,
+            rockImage!.width.toDouble(),
+            rockImage!.height.toDouble(),
+          ),
+          Rect.fromLTWH(w * 0.72, groundY - rh + 12, rw, rh),
+          rockPaint,
+        );
+      }
     }
   }
 
   @override
   bool shouldRepaint(covariant _EnvPainter old) {
-    return old.skyImage != skyImage ||
-        old.groundImage != groundImage ||
-        old.cloudImage != cloudImage ||
-        old.mountainImage != mountainImage ||
-        old.rockImage != rockImage ||
-        old.groundTint != groundTint ||
-        old.cloudTint != cloudTint ||
-        old.baseColor != baseColor ||
-        old.isGroundTiled != isGroundTiled ||
-        old.skyOpacity != skyOpacity ||
-        old.cloudOpacity != cloudOpacity ||
-        old.groundOpacity != groundOpacity ||
-        old.mountainOpacity != mountainOpacity ||
-        old.rockOpacity != rockOpacity ||
-        true; // clouds animate
+    return true; // clouds animate and layers can be modified in real-time
   }
 }
 

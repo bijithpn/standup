@@ -5,10 +5,12 @@ import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/flame/components/environment_component.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 enum RabbitAnimState { idle, run }
 
-class RabbitComponent extends SpriteAnimationComponent with HasGameReference<CompanionGame> {
+class RabbitComponent extends SpriteAnimationComponent
+    with HasGameReference<CompanionGame> {
   static final _rng = Random();
 
   late SpriteAnimation _idleAnimation;
@@ -32,64 +34,95 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
     final idleAsset = config.rabbitIdleAsset;
     final runAsset = config.rabbitRunAsset;
 
-    if (idleAsset.path.isEmpty || idleAsset.path == 'none' || runAsset.path.isEmpty || runAsset.path == 'none') {
+    if (idleAsset.path.isEmpty ||
+        idleAsset.path == 'none' ||
+        runAsset.path.isEmpty ||
+        runAsset.path == 'none') {
       removeFromParent();
       return;
     }
 
-    final idleImage = await PetAssetLoader.loadImage(idleAsset.path);
-    final runImage = await PetAssetLoader.loadImage(runAsset.path);
+    try {
+      final idleImage = await PetAssetLoader.loadImage(idleAsset.path);
+      final runImage = await PetAssetLoader.loadImage(runAsset.path);
 
-    // Build idle animation
-    final List<Sprite> idleSprites = [];
-    if (idleAsset.isSpriteSheet) {
-      for (int i = 0; i < idleAsset.frameCount; i++) {
-        idleSprites.add(Sprite(
-          idleImage,
-          srcPosition: Vector2(idleAsset.srcX + i * idleAsset.spriteWidth, idleAsset.srcY),
-          srcSize: Vector2(idleAsset.spriteWidth, idleAsset.spriteHeight),
-        ));
+      // Build idle animation
+      final List<Sprite> idleSprites = [];
+      if (idleAsset.isSpriteSheet) {
+        for (int i = 0; i < idleAsset.frameCount; i++) {
+          idleSprites.add(
+            Sprite(
+              idleImage,
+              srcPosition: Vector2(
+                idleAsset.srcX + i * idleAsset.spriteWidth,
+                idleAsset.srcY,
+              ),
+              srcSize: Vector2(idleAsset.spriteWidth, idleAsset.spriteHeight),
+            ),
+          );
+        }
+      } else {
+        idleSprites.add(Sprite(idleImage));
       }
-    } else {
-      idleSprites.add(Sprite(idleImage));
-    }
-    _idleAnimation = SpriteAnimation.spriteList(idleSprites, stepTime: 0.1);
+      _idleAnimation = SpriteAnimation.spriteList(idleSprites, stepTime: 0.1);
 
-    // Build run animation
-    final List<Sprite> runSprites = [];
-    if (runAsset.isSpriteSheet) {
-      for (int i = 0; i < runAsset.frameCount; i++) {
-        runSprites.add(Sprite(
-          runImage,
-          srcPosition: Vector2(runAsset.srcX + i * runAsset.spriteWidth, runAsset.srcY),
-          srcSize: Vector2(runAsset.spriteWidth, runAsset.spriteHeight),
-        ));
+      // Build run animation
+      final List<Sprite> runSprites = [];
+      if (runAsset.isSpriteSheet) {
+        for (int i = 0; i < runAsset.frameCount; i++) {
+          runSprites.add(
+            Sprite(
+              runImage,
+              srcPosition: Vector2(
+                runAsset.srcX + i * runAsset.spriteWidth,
+                runAsset.srcY,
+              ),
+              srcSize: Vector2(runAsset.spriteWidth, runAsset.spriteHeight),
+            ),
+          );
+        }
+      } else {
+        runSprites.add(Sprite(runImage));
       }
-    } else {
-      runSprites.add(Sprite(runImage));
+      _runAnimation = SpriteAnimation.spriteList(runSprites, stepTime: 0.08);
+
+      // Scan transparent bottom padding of the first frame
+      final rect = Rect.fromLTWH(
+        0,
+        0,
+        idleAsset.spriteWidth,
+        idleAsset.spriteHeight,
+      );
+      _bottomPadding = await PetAssetLoader.computeImageRectBottomPadding(
+        idleImage,
+        rect,
+      );
+
+      // Determine scale: since rabbits are smaller than cats/dogs, scale down to ~1.0
+      _scaleFactor = (0.95 + _rng.nextDouble() * 0.15) * config.rabbitScale;
+      scale = Vector2.all(_scaleFactor);
+      size = Vector2(idleAsset.spriteWidth, idleAsset.spriteHeight);
+      anchor = Anchor.bottomCenter;
+
+      animation = _idleAnimation;
+
+      final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
+      final double startX = 30.0 + _rng.nextDouble() * (worldWidth - 60.0);
+
+      final double targetGroundY = game.isPiP
+          ? game.size.y - 20.0
+          : game.size.y - 2.0;
+      position = Vector2(
+        startX,
+        targetGroundY + (_bottomPadding * _scaleFactor),
+      );
+      _targetX = startX;
+
+      _waitTimer = 1.0 + _rng.nextDouble() * 4.0;
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+      removeFromParent();
     }
-    _runAnimation = SpriteAnimation.spriteList(runSprites, stepTime: 0.08);
-
-    // Scan transparent bottom padding of the first frame
-    final rect = Rect.fromLTWH(0, 0, idleAsset.spriteWidth, idleAsset.spriteHeight);
-    _bottomPadding = await PetAssetLoader.computeImageRectBottomPadding(idleImage, rect);
-
-    // Determine scale: since rabbits are smaller than cats/dogs, scale down to ~1.0
-    _scaleFactor = 0.95 + _rng.nextDouble() * 0.15;
-    scale = Vector2.all(_scaleFactor);
-    size = Vector2(idleAsset.spriteWidth, idleAsset.spriteHeight);
-    anchor = Anchor.bottomCenter;
-
-    animation = _idleAnimation;
-
-    final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
-    final double startX = 30.0 + _rng.nextDouble() * (worldWidth - 60.0);
-
-    final double targetGroundY = game.isPiP ? game.size.y - 20.0 : game.size.y - 2.0;
-    position = Vector2(startX, targetGroundY + (_bottomPadding * _scaleFactor));
-    _targetX = startX;
-
-    _waitTimer = 1.0 + _rng.nextDouble() * 4.0;
   }
 
   void _changeState(RabbitAnimState newState) {
@@ -114,7 +147,9 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
   void update(double dt) {
     super.update(dt);
 
-    final double targetGroundY = game.isPiP ? game.size.y - 20.0 : game.size.y - 2.0;
+    final double targetGroundY = game.isPiP
+        ? game.size.y - 20.0
+        : game.size.y - 2.0;
     position.y = targetGroundY + (_bottomPadding * _scaleFactor);
 
     if (!_isMoving) {
@@ -145,7 +180,8 @@ class RabbitComponent extends SpriteAnimationComponent with HasGameReference<Com
       env = game.world.children.whereType<EnvironmentComponent>().first;
     } else {
       for (final child in game.children) {
-        if (child is PositionComponent && child.children.whereType<EnvironmentComponent>().isNotEmpty) {
+        if (child is PositionComponent &&
+            child.children.whereType<EnvironmentComponent>().isNotEmpty) {
           env = child.children.whereType<EnvironmentComponent>().first;
           break;
         }

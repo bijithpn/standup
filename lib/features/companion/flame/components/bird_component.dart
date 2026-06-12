@@ -5,8 +5,10 @@ import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/flame/components/environment_component.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
-class BirdComponent extends SpriteAnimationComponent with HasGameReference<CompanionGame> {
+class BirdComponent extends SpriteAnimationComponent
+    with HasGameReference<CompanionGame> {
   static final _rng = Random();
 
   double _speed = 0.0;
@@ -28,28 +30,38 @@ class BirdComponent extends SpriteAnimationComponent with HasGameReference<Compa
       return;
     }
 
-    final image = await PetAssetLoader.loadImage(birdAsset.path);
-    final List<Sprite> sprites = [];
-    
-    if (birdAsset.isSpriteSheet) {
-      for (int i = 0; i < birdAsset.frameCount; i++) {
-        sprites.add(Sprite(
-          image,
-          srcPosition: Vector2(birdAsset.srcX + i * birdAsset.spriteWidth, birdAsset.srcY),
-          srcSize: Vector2(birdAsset.spriteWidth, birdAsset.spriteHeight),
-        ));
+    try {
+      final image = await PetAssetLoader.loadImage(birdAsset.path);
+      final List<Sprite> sprites = [];
+
+      if (birdAsset.isSpriteSheet) {
+        for (int i = 0; i < birdAsset.frameCount; i++) {
+          sprites.add(
+            Sprite(
+              image,
+              srcPosition: Vector2(
+                birdAsset.srcX + i * birdAsset.spriteWidth,
+                birdAsset.srcY,
+              ),
+              srcSize: Vector2(birdAsset.spriteWidth, birdAsset.spriteHeight),
+            ),
+          );
+        }
+      } else {
+        sprites.add(Sprite(image));
       }
-    } else {
-      sprites.add(Sprite(image));
+
+      animation = SpriteAnimation.spriteList(
+        sprites,
+        stepTime: 0.08 + _rng.nextDouble() * 0.04,
+      );
+
+      size = Vector2(birdAsset.spriteWidth, birdAsset.spriteHeight);
+      _resetBird();
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+      removeFromParent();
     }
-
-    animation = SpriteAnimation.spriteList(
-      sprites,
-      stepTime: 0.08 + _rng.nextDouble() * 0.04,
-    );
-
-    size = Vector2(birdAsset.spriteWidth, birdAsset.spriteHeight);
-    _resetBird();
   }
 
   void _resetBird() {
@@ -69,7 +81,10 @@ class BirdComponent extends SpriteAnimationComponent with HasGameReference<Compa
     final startY = 55.0 + _rng.nextDouble() * 45.0;
 
     position = Vector2(startX, startY);
-    scale = Vector2(_direction * 0.75, 0.75); // Flip horizontally if flying left and scale down
+    scale = Vector2(
+      _direction * 0.75 * config.birdScale,
+      0.75 * config.birdScale,
+    ); // Flip horizontally if flying left and scale
   }
 
   @override
@@ -100,7 +115,8 @@ class BirdComponent extends SpriteAnimationComponent with HasGameReference<Compa
       env = game.world.children.whereType<EnvironmentComponent>().first;
     } else {
       for (final child in game.children) {
-        if (child is PositionComponent && child.children.whereType<EnvironmentComponent>().isNotEmpty) {
+        if (child is PositionComponent &&
+            child.children.whereType<EnvironmentComponent>().isNotEmpty) {
           env = child.children.whereType<EnvironmentComponent>().first;
           break;
         }

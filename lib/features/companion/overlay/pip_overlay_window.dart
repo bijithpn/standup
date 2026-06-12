@@ -541,7 +541,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                           height: 4,
                           decoration: BoxDecoration(
                             color: isLight
-                                ? const Color(0xFF161622).withValues(alpha: 0.15)
+                                ? const Color(
+                                    0xFF161622,
+                                  ).withValues(alpha: 0.15)
                                 : Colors.white.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(2),
                           ),
@@ -607,17 +609,17 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               ),
             ),
             _InteractionBar(
-                expandFraction: _barWidth,
-                isExpanded: _barExpanded,
-                throwDisabled: _throwDisabled,
-                treatOnCooldown: _treatOnCooldown,
-                toyIconPath: _getToyIconPath(),
-                treatEmoji: _getTreatEmoji(),
-                onThrowBall: _throwBall,
-                onGiveTreat: _giveTreat,
-                onToggleCollapse: _toggleBar,
-                isLightBackground: isLight,
-              ),
+              expandFraction: _barWidth,
+              isExpanded: _barExpanded,
+              throwDisabled: _throwDisabled,
+              treatOnCooldown: _treatOnCooldown,
+              toyIconPath: _getToyIconPath(),
+              treatEmoji: _getTreatEmoji(),
+              onThrowBall: _throwBall,
+              onGiveTreat: _giveTreat,
+              onToggleCollapse: _toggleBar,
+              isLightBackground: isLight,
+            ),
           ],
         ),
       ),

@@ -161,7 +161,10 @@ class PetCompanionService extends ChangeNotifier {
       _boredom = (_boredom - 0.05 * dt).clamp(0.0, 1.0);
     }
 
-    final newPos = _navigation.update(dt, currentState: _stateMachine.currentState);
+    final newPos = _navigation.update(
+      dt,
+      currentState: _stateMachine.currentState,
+    );
 
     // Throttle context.copyWith to avoid per-frame object allocation
     if (now.difference(_lastContextUpdate) >= _contextUpdateInterval) {

@@ -36,6 +36,7 @@ import 'package:breakmate/features/companion/flame/components/bird_component.dar
 import 'package:breakmate/features/companion/flame/components/rabbit_component.dart';
 import 'package:breakmate/features/companion/flame/components/decoration_component.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
+import 'package:breakmate/features/companion/flame/components/custom_layer_component.dart';
 
 class CompanionGame extends FlameGame {
   CompanionGame({
@@ -154,7 +155,8 @@ class CompanionGame extends FlameGame {
   NeedsEngine get needsEngine => _needsEngine;
   PhysicsSimulator get physicsSimulator => _physicsSimulator;
 
-  Color get environmentTint => _environmentComponent?.ambientTint ?? Colors.white;
+  Color get environmentTint =>
+      _environmentComponent?.ambientTint ?? Colors.white;
   EnvironmentComponent? _environmentComponent;
   PositionComponent? _pipWorld;
 
@@ -435,12 +437,18 @@ class CompanionGame extends FlameGame {
         target = _pipWorld!.children
             .whereType<ThrowableToyComponent>()
             .cast<ThrowableToyComponent?>()
-            .firstWhere((c) => c?.physicsId == event.objectId, orElse: () => null);
+            .firstWhere(
+              (c) => c?.physicsId == event.objectId,
+              orElse: () => null,
+            );
       } else {
         target = children
             .whereType<ThrowableToyComponent>()
             .cast<ThrowableToyComponent?>()
-            .firstWhere((c) => c?.physicsId == event.objectId, orElse: () => null);
+            .firstWhere(
+              (c) => c?.physicsId == event.objectId,
+              orElse: () => null,
+            );
       }
       final isTreat = target?.kind == 'treat';
       if (!isTreat) {
@@ -1047,10 +1055,14 @@ class CompanionGame extends FlameGame {
         final double groundY = isPiP ? (size.y - 20.0) : (size.y - 4.0);
 
         if (activeToy.lifecycle == ThrowableLifecycle.stationary) {
-          _petService.navigation.setTarget(Offset(activeToy.position.dx, groundY));
+          _petService.navigation.setTarget(
+            Offset(activeToy.position.dx, groundY),
+          );
           _petService.navigation.updateConfig(wanderSpeed: 100.0);
         } else if (activeToy.lifecycle == ThrowableLifecycle.beingFetched) {
-          _petService.navigation.setTarget(Offset(activeToy.spawnOrigin.dx, groundY));
+          _petService.navigation.setTarget(
+            Offset(activeToy.spawnOrigin.dx, groundY),
+          );
           _petService.navigation.updateConfig(wanderSpeed: 70.0);
         }
       }
@@ -1085,7 +1097,9 @@ class CompanionGame extends FlameGame {
 
     if (currentState == PetState.happy && _previousState == PetState.eating) {
       _onEatingToHappy();
-      _spawnParticle(MicroParticleFactory.heart(_petCenter, quietMode: isQuietMode));
+      _spawnParticle(
+        MicroParticleFactory.heart(_petCenter, quietMode: isQuietMode),
+      );
     }
 
     if (_isPettingActive) {
@@ -1213,10 +1227,7 @@ class CompanionGame extends FlameGame {
       // Clamp Y to the correct floor without teleporting.
       // Dynamic padding handles the visual offset.
       final double floorY = isPiP ? (size.y - 20.0) : (size.y - 4.0);
-      final double clampedY = petComponent!.position.y.clamp(
-        0.0,
-        floorY,
-      );
+      final double clampedY = petComponent!.position.y.clamp(0.0, floorY);
 
       petComponent!.position = Vector2(newX, clampedY);
       _updateNavigationPaddings();
@@ -1226,36 +1237,61 @@ class CompanionGame extends FlameGame {
   void _rebuildScenery() {
     if (_pipWorld == null) return;
 
-    // Remove existing DecorationComponent, BirdComponent, RabbitComponent
-    _pipWorld!.children.whereType<DecorationComponent>().toList().forEach((c) => c.removeFromParent());
-    _pipWorld!.children.whereType<BirdComponent>().toList().forEach((c) => c.removeFromParent());
-    _pipWorld!.children.whereType<RabbitComponent>().toList().forEach((c) => c.removeFromParent());
+    // Remove existing DecorationComponent, BirdComponent, RabbitComponent, CustomLayerComponent
+    _pipWorld!.children.whereType<DecorationComponent>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
+    _pipWorld!.children.whereType<CustomLayerComponent>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
+    _pipWorld!.children.whereType<BirdComponent>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
+    _pipWorld!.children.whereType<RabbitComponent>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
 
     final config = EnvironmentThemeConfig.getByPath(backgroundImagePath);
 
-    // Spawn background mountains/trees on the left and right sides (priority -5)
-    _pipWorld!.add(DecorationComponent(
-      type: DecorationType.mountain,
-      assetConfig: config.mountainLeftAsset,
-      xRatio: 0.1,
-    ));
-    _pipWorld!.add(DecorationComponent(
-      type: DecorationType.mountain,
-      assetConfig: config.mountainRightAsset,
-      xRatio: 0.9,
-    ));
+    if (config.layers.isNotEmpty) {
+      for (int i = 0; i < config.layers.length; i++) {
+        _pipWorld!.add(
+          CustomLayerComponent(layer: config.layers[i], priorityIndex: i),
+        );
+      }
+    } else {
+      // Spawn background mountains/trees on the left and right sides (priority -5)
+      _pipWorld!.add(
+        DecorationComponent(
+          type: DecorationType.mountain,
+          assetConfig: config.mountainLeftAsset,
+          xRatio: 0.1,
+        ),
+      );
+      _pipWorld!.add(
+        DecorationComponent(
+          type: DecorationType.mountain,
+          assetConfig: config.mountainRightAsset,
+          xRatio: 0.9,
+        ),
+      );
 
-    // Spawn rocks on the ground floor on the left and right sides (priority 1)
-    _pipWorld!.add(DecorationComponent(
-      type: DecorationType.rock,
-      assetConfig: config.rockLeftAsset,
-      xRatio: 0.18,
-    ));
-    _pipWorld!.add(DecorationComponent(
-      type: DecorationType.rock,
-      assetConfig: config.rockRightAsset,
-      xRatio: 0.82,
-    ));
+      // Spawn rocks on the ground floor on the left and right sides (priority 1)
+      _pipWorld!.add(
+        DecorationComponent(
+          type: DecorationType.rock,
+          assetConfig: config.rockLeftAsset,
+          xRatio: 0.18,
+        ),
+      );
+      _pipWorld!.add(
+        DecorationComponent(
+          type: DecorationType.rock,
+          assetConfig: config.rockRightAsset,
+          xRatio: 0.82,
+        ),
+      );
+    }
 
     // Spawn flying birds (priority -4)
     _pipWorld!.add(BirdComponent());
@@ -1281,6 +1317,11 @@ class CompanionGame extends FlameGame {
       await PetAssetLoader.loadImage(config.mountainRightAsset.path);
       await PetAssetLoader.loadImage(config.rockLeftAsset.path);
       await PetAssetLoader.loadImage(config.rockRightAsset.path);
+
+      // Pre-cache dynamic layers
+      for (final layer in config.layers) {
+        await PetAssetLoader.loadImage(layer.assetPath);
+      }
 
       // Pre-cache toys
       for (final toy in config.toyAssets.values) {
