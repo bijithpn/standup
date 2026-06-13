@@ -781,6 +781,13 @@ void FlutterWindow::OnDestroy() {
     flutter_controller_ = nullptr;
   }
 
+  // If this is the main window, clean up all secondary windows and engines
+  if (!is_companion_ && !is_overlay_ && !is_pip_) {
+    CompanionWindowManager::GetInstance()->HideCompanion();
+    CompanionWindowManager::GetInstance()->HidePiP();
+    OverlayWindowManager::GetInstance()->HideOverlay();
+  }
+
   Win32Window::OnDestroy();
 }
 

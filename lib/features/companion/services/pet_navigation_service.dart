@@ -51,15 +51,18 @@ class PetNavigationService {
   bool get isAnnoyed => _cursorMoveCount > _annoyanceThreshold;
   PetSpecies get species => _species;
 
+  PetState? _lastCurrentState;
+
   bool get isMoving {
-    if (_isCursorFollowing) {
+    final bool isPlayState = _lastCurrentState == PetState.chasing || _lastCurrentState == PetState.fetching;
+    if (_isCursorFollowing && !isPlayState) {
       final profile = _species.defaultProfile;
       if (profile.lookDelay > 0.0 && _lookTimer < profile.lookDelay) {
         return false;
       }
       return (_cursorPos - _pos).distance > profile.stopRadius;
     } else {
-      if (!_isWanderingEnabled || _wanderSpeed <= 0 || !_hasWanderTarget) {
+      if ((!_isWanderingEnabled && !isPlayState) || _wanderSpeed <= 0 || !_hasWanderTarget) {
         return false;
       }
 
@@ -204,6 +207,7 @@ class PetNavigationService {
   }
 
   Offset update(double dt, {PetState? currentState}) {
+    _lastCurrentState = currentState;
     if (_screen == Size.zero) return _pos;
 
     // Falling state: apply gravity instead of normal wandering so the pet
@@ -244,10 +248,11 @@ class PetNavigationService {
     // Reset landing guard when we leave the falling state.
     _isLanded = false;
 
-    if (_isCursorFollowing) {
+    final bool isPlayState = currentState == PetState.chasing || currentState == PetState.fetching;
+    if (_isCursorFollowing && !isPlayState) {
       _updateCursorFollow(dt);
     } else {
-      _updateWander(dt);
+      _updateWander(dt, currentState: currentState);
     }
 
     // Ground-based walking pets should not have vertical velocity to prevent jitter/tilt/stretch deforming
@@ -303,8 +308,9 @@ class PetNavigationService {
     );
   }
 
-  void _updateWander(double dt) {
-    if (!_isWanderingEnabled || _wanderSpeed <= 0) {
+  void _updateWander(double dt, {PetState? currentState}) {
+    final bool isPlayState = currentState == PetState.chasing || currentState == PetState.fetching;
+    if ((!_isWanderingEnabled && !isPlayState) || _wanderSpeed <= 0) {
       final decay = (1.0 - 8.0 * dt).clamp(0.0, 1.0);
       _vel = Offset(_vel.dx * decay, _vel.dy * decay);
       if (_vel.distance < 0.5) _vel = Offset.zero;

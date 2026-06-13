@@ -195,22 +195,24 @@ class StorageService {
             final lockFilePath = p.join(activeStoreDir, 'lock.mdb');
 
             final pids = <int>{};
-            for (final path in [dbFilePath, lockFilePath, activeStoreDir]) {
-              try {
-                final result = await Process.run('lsof', ['-t', path]);
-                if (result.exitCode == 0) {
-                  final stdoutStr = result.stdout.toString().trim();
-                  if (stdoutStr.isNotEmpty) {
-                    for (final line in stdoutStr.split('\n')) {
-                      final parsedPid = int.tryParse(line.trim());
-                      if (parsedPid != null && parsedPid != pid) {
-                        pids.add(parsedPid);
+            if (!Platform.isWindows) {
+              for (final path in [dbFilePath, lockFilePath, activeStoreDir]) {
+                try {
+                  final result = await Process.run('lsof', ['-t', path]);
+                  if (result.exitCode == 0) {
+                    final stdoutStr = result.stdout.toString().trim();
+                    if (stdoutStr.isNotEmpty) {
+                      for (final line in stdoutStr.split('\n')) {
+                        final parsedPid = int.tryParse(line.trim());
+                        if (parsedPid != null && parsedPid != pid) {
+                          pids.add(parsedPid);
+                        }
                       }
                     }
                   }
+                } catch (e, st) {
+                  ErrorHandler().handleError(e, st);
                 }
-              } catch (e, st) {
-                ErrorHandler().handleError(e, st);
               }
             }
 
@@ -220,9 +222,9 @@ class StorageService {
               );
               for (final stalePid in pids) {
                 try {
-                  await Process.run('kill', ['-9', stalePid.toString()]);
+                  final success = Process.killPid(stalePid);
                   debugPrint(
-                    '[Storage] Successfully terminated stale PID $stalePid.',
+                    '[Storage] Terminated stale PID $stalePid (success=$success).',
                   );
                 } catch (killErr) {
                   debugPrint(

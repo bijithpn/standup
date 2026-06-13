@@ -1809,17 +1809,17 @@ class _AddLayerDialogState extends State<_AddLayerDialog> {
         paths = widget.controller.groundPaths;
         break;
       case 5:
-        paths = [
+        paths = {
           ...widget.controller.birdPaths,
           ...widget.controller.rabbitIdlePaths,
           ...widget.controller.rabbitRunPaths,
-        ].toSet().toList();
+        }.toList();
         break;
       case 6:
-        paths = [
+        paths = {
           ...widget.controller.toyPaths,
           ...widget.controller.foodPaths,
-        ].toSet().toList();
+        }.toList();
         break;
       default:
         paths = [];
