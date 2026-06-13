@@ -134,11 +134,8 @@ class CompanionOverlayController extends ChangeNotifier {
     final isBreak = event.state == TimerStateEvent.breakActive;
     if (_isBreakActive == isBreak) return;
     _isBreakActive = isBreak;
-
-    if (!_companionEnabled) return;
-
-    // Do not hide the companion or PiP window during breaks.
-    _showNativeCompanion();
+    // We do not show the companion automatically on timer/break transitions
+    // if the user has explicitly closed it.
   }
 
   bool get companionEnabled => _companionEnabled;

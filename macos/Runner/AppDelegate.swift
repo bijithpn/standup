@@ -87,6 +87,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   override func applicationWillTerminate(_ notification: Notification) {
     OverlayWindowManager.shared.hideOverlay()
     CompanionWindowManager.shared.hideCompanion()
+    PiPWindowManager.shared.hidePipWindow()
     super.applicationWillTerminate(notification)
   }
 

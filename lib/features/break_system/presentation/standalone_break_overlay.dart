@@ -623,7 +623,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // Always pass the callback; templates use their own !settings.strictMode guard
     // to decide whether to render it. The global overlay button below is the
     // authoritative skip affordance and is controlled by _canDismiss independently.
-    final VoidCallback? onSkip = _skipBreak;
+    final VoidCallback onSkip = _skipBreak;
 
     return Stack(
       clipBehavior: Clip.none,

@@ -130,15 +130,15 @@ void main() {
     // Verify throwableFetched (disposal/timeout) from chasing → idle
     // -------------------------------------------------------------------------
     test(
-      'From chasing: throwableFetched fires → state becomes idle (Req 8.2)',
+      'From chasing: throwableReturned fires → state becomes idle (Req 8.2)',
       () {
         final fsm = makeFsm(PetState.chasing);
-        fsm.handleEvent(PetEvent.throwableFetched);
+        fsm.handleEvent(PetEvent.throwableReturned);
         expect(
           fsm.currentState,
           equals(PetState.idle),
           reason:
-              'throwableFetched (throwable disposed/unreachable) from chasing '
+              'throwableReturned (throwable disposed/unreachable) from chasing '
               'should return to idle',
         );
       },

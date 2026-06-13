@@ -12,6 +12,7 @@ import 'package:sentry_flutter/sentry_flutter.dart'
     show SentryFlutter, SentryWidget;
 import 'package:window_manager/window_manager.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:tray_manager/tray_manager.dart';
 
 import 'app/app.dart';
 import 'app/bootstrapping/service_bootstrapper.dart';
@@ -210,6 +211,20 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
   }
 
   try {
+    await NativeBridge.hidePipWindow();
+    debugPrint('[Shutdown] PiP Window hidden.');
+  } catch (e) {
+    debugPrint('[Shutdown] Error hiding PiP Window: $e');
+  }
+
+  try {
+    await NativeBridge.hideOverlay();
+    debugPrint('[Shutdown] Overlay hidden.');
+  } catch (e) {
+    debugPrint('[Shutdown] Error hiding overlay: $e');
+  }
+
+  try {
     if (sl.isRegistered<TimerEngine>()) {
       sl<TimerEngine>().dispose();
       debugPrint('[Shutdown] TimerEngine disposed.');
@@ -246,6 +261,17 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
   }
 
   try {
+    if (sl.isRegistered<TrayManagerService>()) {
+      sl<TrayManagerService>().dispose();
+      debugPrint('[Shutdown] TrayManagerService disposed.');
+    }
+    await trayManager.destroy();
+    debugPrint('[Shutdown] Tray icon destroyed.');
+  } catch (e) {
+    debugPrint('[Shutdown] Error cleaning up tray: $e');
+  }
+
+  try {
     if (sl.isRegistered<StorageService>()) {
       sl<StorageService>().close();
       debugPrint('[Shutdown] StorageService closed cleanly.');
@@ -256,6 +282,48 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
 
   debugPrint('[Shutdown] Graceful shutdown complete. Exiting.');
   exit(0);
+}
+
+Future<List<int>> _getPidsListeningOnPort(int port) async {
+  final pids = <int>[];
+  if (Platform.isWindows) {
+    try {
+      final result = await Process.run('netstat', ['-ano', '-p', 'tcp']);
+      if (result.exitCode == 0) {
+        final lines = LineSplitter.split(result.stdout.toString());
+        for (final line in lines) {
+          final trimmed = line.trim();
+          if (trimmed.contains(':$port') && trimmed.contains('LISTENING')) {
+            final parts = trimmed.split(RegExp(r'\s+'));
+            if (parts.length >= 5) {
+              final pidVal = int.tryParse(parts.last);
+              if (pidVal != null && pidVal != pid) {
+                pids.add(pidVal);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to run netstat: $e');
+    }
+  } else {
+    try {
+      final result = await Process.run('lsof', ['-t', '-s', 'TCP:LISTEN', '-i', ':$port']);
+      if (result.exitCode == 0) {
+        final lines = LineSplitter.split(result.stdout.toString());
+        for (final line in lines) {
+          final pidVal = int.tryParse(line.trim());
+          if (pidVal != null && pidVal != pid) {
+            pids.add(pidVal);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to run lsof: $e');
+    }
+  }
+  return pids;
 }
 
 Future<void> gracefulShutdown() async {
@@ -399,15 +467,19 @@ void mainCommon(FlavorConfig config) async {
                 'Startup: Graceful shutdown failed. Force terminating stale process on port $port...',
               );
               try {
-                final result = await Process.run('sh', [
-                  '-c',
-                  'PID=\$(lsof -t -s TCP:LISTEN -i :$port); [ -n "\$PID" ] && kill -9 \$PID',
-                ]);
-                debugPrint(
-                  'Startup: Force terminate result: exitCode=${result.exitCode}',
-                );
-
-                await Future.delayed(const Duration(milliseconds: 500));
+                final pids = await _getPidsListeningOnPort(port);
+                if (pids.isNotEmpty) {
+                  debugPrint('Startup: Found stale processes holding port $port: $pids. Terminating...');
+                  for (final targetPid in pids) {
+                    try {
+                      final success = Process.killPid(targetPid);
+                      debugPrint('Startup: Terminated stale PID $targetPid (success=$success)');
+                    } catch (e) {
+                      debugPrint('Startup: Failed to terminate PID $targetPid: $e');
+                    }
+                  }
+                  await Future.delayed(const Duration(milliseconds: 500));
+                }
 
                 singleInstanceServer = await ServerSocket.bind(
                   InternetAddress.loopbackIPv4,
