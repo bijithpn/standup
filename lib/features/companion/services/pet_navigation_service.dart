@@ -310,7 +310,7 @@ class PetNavigationService {
 
   void _updateWander(double dt, {PetState? currentState}) {
     final bool isPlayState = currentState == PetState.chasing || currentState == PetState.fetching;
-    if ((!_isWanderingEnabled && !isPlayState) || _wanderSpeed <= 0) {
+    if ((!_isWanderingEnabled && !isPlayState) || _wanderSpeed <= 0 || (!_hasWanderTarget && !isPlayState)) {
       final decay = (1.0 - 8.0 * dt).clamp(0.0, 1.0);
       _vel = Offset(_vel.dx * decay, _vel.dy * decay);
       if (_vel.distance < 0.5) _vel = Offset.zero;

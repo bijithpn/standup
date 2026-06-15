@@ -203,6 +203,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       'base_ball',
                       'basket_ball',
                       'football',
+                      'bone',
+                      'sushi',
+                      'carrot',
                     ],
                     (v) {
                       if (v != null) {

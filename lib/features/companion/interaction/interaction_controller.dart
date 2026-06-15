@@ -327,11 +327,20 @@ class InteractionController with WidgetsBindingObserver {
     if (manager == null) return;
 
     final petPosition = _petCompanionService?.position ?? Offset.zero;
-    const Offset defaultFacing = Offset(0, 1);
-    const double treatOffset = 20.0;
-    final Offset releasePoint = petPosition + defaultFacing * treatOffset;
 
-    final Offset dragVector = defaultFacing * treatOffset;
+    // Similar to throwToy, throw the treat from above (120px above pet) with a downward velocity
+    final double velocityTarget = 300.0 + _random.nextDouble() * 500.0;
+    final double angle = (45.0 + _random.nextDouble() * 90.0) * math.pi / 180.0;
+    final Offset direction = Offset(math.cos(angle), math.sin(angle));
+
+    final double dragMag =
+        velocityTarget / ThrowableObjectManager.velocityScaleFactor;
+    final Offset dragVector = direction * dragMag;
+
+    final Offset releasePoint = Offset(
+      petPosition.dx + (_random.nextDouble() * 100.0 - 50.0),
+      petPosition.dy - 120.0,
+    );
 
     final double treatSize = isPiP ? 10.0 : 20.0;
     final result = manager.spawnThrowable(
