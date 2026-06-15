@@ -532,7 +532,14 @@ class _PickerPanelState extends State<_PickerPanel> {
       case 4:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [_SavedThemesSection(ctrl: ctrl)],
+          children: [
+            _SavedThemesSection(
+              ctrl: ctrl,
+              onLoaded: () {
+                setState(() => _activeTab = 0);
+              },
+            ),
+          ],
         );
       default:
         return const SizedBox.shrink();
@@ -651,21 +658,55 @@ class _PreviewPanel extends StatelessWidget {
   }
 }
 
-class _ActionBar extends StatelessWidget {
+class _ActionBar extends StatefulWidget {
   final EnvironmentBuilderController ctrl;
 
   const _ActionBar({required this.ctrl});
 
   @override
+  State<_ActionBar> createState() => _ActionBarState();
+}
+
+class _ActionBarState extends State<_ActionBar> {
+  late TextEditingController _nameController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.ctrl.draft.name);
+    _nameController.addListener(_onNameChanged);
+  }
+
+  @override
+  void dispose() {
+    _nameController.removeListener(_onNameChanged);
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  void _onNameChanged() {
+    widget.ctrl.updateName(_nameController.text);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (widget.ctrl.draft.name != _nameController.text) {
+      _nameController.removeListener(_onNameChanged);
+      _nameController.text = widget.ctrl.draft.name;
+      _nameController.selection = TextSelection.fromPosition(
+        TextPosition(offset: _nameController.text.length),
+      );
+      _nameController.addListener(_onNameChanged);
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           CupertinoTextField(
-            placeholder: ctrl.draft.name,
-            onSubmitted: ctrl.updateName,
+            controller: _nameController,
+            placeholder: 'Theme Name',
             style: const TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 13,
@@ -711,14 +752,14 @@ class _ActionBar extends StatelessWidget {
                       fontFamily: 'Inter',
                     ),
                   ),
-                  onPressed: ctrl.resetDraft,
+                  onPressed: widget.ctrl.resetDraft,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 flex: 2,
                 child: FilledButton.icon(
-                  icon: ctrl.isSaving
+                  icon: widget.ctrl.isSaving
                       ? const SizedBox(
                           width: 14,
                           height: 14,
@@ -728,7 +769,7 @@ class _ActionBar extends StatelessWidget {
                           ),
                         )
                       : const Icon(Icons.save_rounded, size: 14),
-                  label: Text(ctrl.isSaving ? 'Saving…' : 'Save Theme'),
+                  label: Text(widget.ctrl.isSaving ? 'Saving…' : 'Save Theme'),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppTheme.accent,
                     disabledBackgroundColor: AppTheme.accent.withValues(
@@ -744,7 +785,7 @@ class _ActionBar extends StatelessWidget {
                       fontFamily: 'Inter',
                     ),
                   ),
-                  onPressed: ctrl.isSaving ? null : () => _save(context),
+                  onPressed: widget.ctrl.isSaving ? null : () => _save(context),
                 ),
               ),
             ],
@@ -755,12 +796,32 @@ class _ActionBar extends StatelessWidget {
   }
 
   Future<void> _save(BuildContext context) async {
-    await ctrl.saveCurrentDraft();
+    final name = widget.ctrl.draft.name.trim();
+    if (name.isEmpty || name == 'My Theme') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            'Please enter a custom name for your theme.',
+            style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
+          ),
+          backgroundColor: AppTheme.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: AppTheme.border),
+          ),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    await widget.ctrl.saveCurrentDraft();
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text(
-          'Theme saved',
+          'Theme saved and set as background!',
           style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500),
         ),
         backgroundColor: AppTheme.surfaceElevated,
@@ -777,8 +838,9 @@ class _ActionBar extends StatelessWidget {
 
 class _SavedThemesSection extends StatelessWidget {
   final EnvironmentBuilderController ctrl;
+  final VoidCallback? onLoaded;
 
-  const _SavedThemesSection({required this.ctrl});
+  const _SavedThemesSection({required this.ctrl, this.onLoaded});
 
   @override
   Widget build(BuildContext context) {
@@ -800,7 +862,10 @@ class _SavedThemesSection extends StatelessWidget {
         for (final theme in ctrl.savedThemes)
           _SavedThemeTile(
             theme: theme,
-            onLoad: () => ctrl.loadForEditing(theme),
+            onLoad: () {
+              ctrl.loadForEditing(theme);
+              onLoaded?.call();
+            },
             onDelete: () => ctrl.deleteSavedTheme(theme.id),
           ),
       ],

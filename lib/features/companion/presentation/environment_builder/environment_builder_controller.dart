@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_theme.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
 // Holds all mutable state for the Environment Builder screen.
 // Follows the ChangeNotifier provider pattern used elsewhere in the app.
@@ -275,9 +277,7 @@ class EnvironmentBuilderController extends ChangeNotifier {
   // ── Draft mutations ──────────────────────────────────────────────────────
 
   void updateName(String name) {
-    _draft = _draft.copyWith(
-      name: name.trim().isEmpty ? 'My Theme' : name.trim(),
-    );
+    _draft = _draft.copyWith(name: name);
     notifyListeners();
   }
 
@@ -482,8 +482,11 @@ class EnvironmentBuilderController extends ChangeNotifier {
     try {
       await _repo.upsert(_draft);
       _savedThemes = List.of(_repo.themes);
-      // Advance the draft to a fresh theme so the user can keep composing.
-      _draft = CustomEnvironmentTheme.fromDefaults();
+      final settingsRepo = sl<SettingsRepository>();
+      final updated = settingsRepo.currentSettings.copyWith(
+        companionPreviewBackground: _draft.skyPath,
+      );
+      await settingsRepo.save(updated);
     } finally {
       _isSaving = false;
       notifyListeners();

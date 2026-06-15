@@ -10,6 +10,8 @@ import 'package:breakmate/features/break_overlay/presentation/widgets/companion_
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_page.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+import 'package:breakmate/app/dependency_injection.dart';
 
 class CompanionSettingsSection extends StatefulWidget {
   final CompanionOverlayController controller;
@@ -372,6 +374,19 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       },
       {'name': 'Urban', 'path': 'assets/background/urban/background.png'},
     ];
+
+    try {
+      final repo = sl<CustomEnvironmentRepository>();
+      final customThemes = repo.themes.isEmpty ? repo.loadSync() : repo.themes;
+      for (final theme in customThemes) {
+        if (!backgrounds.any((bg) => bg['path'] == theme.skyPath)) {
+          backgrounds.add({
+            'name': theme.name,
+            'path': theme.skyPath,
+          });
+        }
+      }
+    } catch (_) {}
 
     final currentBgPath = widget.controller.companionPreviewBackground;
     final selectedBg = backgrounds.firstWhere(

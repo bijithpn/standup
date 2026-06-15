@@ -77,29 +77,31 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<StatsService>()),
         ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
-      child: MacosApp(
-        navigatorKey: ErrorToastService.navigatorKey,
-        title: 'BreakMate',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.macosTheme,
-        routes: {'/main': (context) => const MainLayout()},
-        home: Builder(
-          builder: (context) {
-            return Consumer<SettingsRepository>(
-              builder: (context, settingsRepo, _) {
-                final settings = settingsRepo.currentSettings;
-
-                if (!settings.hasCompletedOnboarding) {
-                  return const OnboardingPage();
-                }
-
-                return const Material(
-                  type: MaterialType.transparency,
-                  child: MainLayout(),
-                );
-              },
-            );
-          },
+      child: ScaffoldMessenger(
+        child: MacosApp(
+          navigatorKey: ErrorToastService.navigatorKey,
+          title: 'BreakMate',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.macosTheme,
+          routes: {'/main': (context) => const MainLayout()},
+          home: Builder(
+            builder: (context) {
+              return Consumer<SettingsRepository>(
+                builder: (context, settingsRepo, _) {
+                  final settings = settingsRepo.currentSettings;
+  
+                  if (!settings.hasCompletedOnboarding) {
+                    return const OnboardingPage();
+                  }
+  
+                  return const Material(
+                    type: MaterialType.transparency,
+                    child: MainLayout(),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     );
