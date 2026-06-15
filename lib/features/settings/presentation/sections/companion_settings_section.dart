@@ -45,243 +45,294 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (context, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        final isTransitioning = widget.controller.isTransitioning;
+        return Stack(
           children: [
-            _buildHeroHeader(),
-            const SizedBox(height: 32),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeroHeader(),
+                const SizedBox(height: 32),
 
-            sectionHeader('Status'),
-            buildCard([
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      CupertinoIcons.info_circle,
-                      size: 18,
-                      color: AppTheme.textSecondary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.controller.companionStateExplanation,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              divider(),
-              toggleRow(
-                'Show Companion',
-                'Enable your desktop pet to see it wandering around your screen.',
-                widget.controller.companionEnabled,
-                (v) => widget.controller.toggleCompanion(v),
-              ),
-              if (Platform.isMacOS || Platform.isWindows) ...[
-                divider(),
-                toggleRow(
-                  'Draggable PiP Panel',
-                  'Run the companion in a compact, floating always-on-top window rather than a full-screen transparent overlay.',
-                  widget.controller.pipModeEnabled,
-                  (v) => widget.controller.changePipModeEnabled(v),
-                ),
-              ],
-            ]),
-
-            if (widget.controller.companionEnabled) ...[
-              _buildPetGallery(),
-              const SizedBox(height: 32),
-
-              sectionHeader('Personalization'),
-              buildCard([
-                textFieldRow(
-                  'Companion Name',
-                  widget.controller.companionPetName,
-                  (v) => widget.controller.changePetName(v),
-                ),
-                divider(),
-                sliderRow(
-                  'Visual Scale (${widget.controller.companionScale.toStringAsFixed(1)}x)',
-                  widget.controller.companionScale,
-                  (v) {
-                    final snapped = (v * 2.0).roundToDouble() / 2.0;
-                    widget.controller.changeScale(snapped);
-                  },
-                  min: 2.0,
-                  max: 15.0,
-                ),
-              ]),
-
-              if (widget.controller.pipModeEnabled) ...[
-                sectionHeader('Draggable PiP Panel Settings'),
+                sectionHeader('Status'),
                 buildCard([
-                  dropdownRow(
-                    'Background Style',
-                    widget.controller.pipBackgroundStyle,
-                    const ['dark', 'light'],
-                    (v) {
-                      if (v != null) {
-                        widget.controller.changePipBackgroundStyle(v);
-                      }
-                    },
-                  ),
-                  divider(),
-                  sliderRow(
-                    'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
-                    widget.controller.pipOpacity,
-                    (v) => widget.controller.changePipOpacity(v),
-                    min: 0.1,
-                    max: 1.0,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.info_circle,
+                          size: 18,
+                          color: AppTheme.textSecondary,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.controller.companionStateExplanation,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                   divider(),
                   toggleRow(
-                    'Draggable Area Clickable',
-                    'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
-                    widget.controller.pipDraggableClickable,
-                    (v) => widget.controller.changePipDraggableClickable(v),
+                    'Show Companion',
+                    'Enable your desktop pet to see it wandering around your screen.',
+                    widget.controller.companionEnabled,
+                    (v) => widget.controller.toggleCompanion(v),
                   ),
+                  if (Platform.isMacOS || Platform.isWindows) ...[
+                    divider(),
+                    toggleRow(
+                      'Draggable PiP Panel',
+                      'Run the companion in a compact, floating always-on-top window rather than a full-screen transparent overlay.',
+                      widget.controller.pipModeEnabled,
+                      (v) => widget.controller.changePipModeEnabled(v),
+                    ),
+                  ],
                 ]),
-              ],
 
-              sectionHeader('Behavior'),
-              buildCard([
-                toggleRow(
-                  'Low-distraction Focus Mode',
-                  'Reduces motion, disables cursor chasing, and makes the companion click-through.',
-                  widget.controller.isLowDistractionMode,
-                  (v) => widget.controller.setLowDistractionMode(v),
-                ),
-                divider(),
-                toggleRow(
-                  'Ghost Mode (Click-through)',
-                  'Let the pet stay visible but ignore all mouse interactions.',
-                  widget.controller.companionClickThrough,
-                  (v) => widget.controller.changeClickThrough(v),
-                ),
-                divider(),
-                toggleRow(
-                  'Magnetic Attraction',
-                  'The pet will dynamically move toward and follow your cursor.',
-                  widget.controller.companionFollowMouse,
-                  (v) => widget.controller.changeFollowMouse(v),
-                ),
-              ]),
+                if (widget.controller.companionEnabled) ...[
+                  _buildPetGallery(),
+                  const SizedBox(height: 32),
 
-              const SizedBox(height: 32),
+                  sectionHeader('Personalization'),
+                  buildCard([
+                    textFieldRow(
+                      'Companion Name',
+                      widget.controller.companionPetName,
+                      (v) => widget.controller.changePetName(v),
+                    ),
+                    divider(),
+                    sliderRow(
+                      'Visual Scale (${widget.controller.companionScale.toStringAsFixed(1)}x)',
+                      widget.controller.companionScale,
+                      (v) {
+                        final snapped = (v * 2.0).roundToDouble() / 2.0;
+                        widget.controller.changeScale(snapped);
+                      },
+                      min: 2.0,
+                      max: 15.0,
+                    ),
+                  ]),
 
-              sectionHeader('Interaction Features'),
-              buildCard([
-                toggleRow(
-                  'Petting & Affection',
-                  'Interact with your pet by hovering or moving your cursor over it.',
-                  widget.controller.pettingEnabled,
-                  (v) => widget.controller.changePettingEnabled(v),
-                ),
-                divider(),
-                toggleRow(
-                  'Play Fetch',
-                  'Allow throwing balls from the action bar for the pet to chase.',
-                  widget.controller.ballThrowEnabled,
-                  (v) => widget.controller.changeBallThrowEnabled(v),
-                ),
-                if (widget.controller.ballThrowEnabled) ...[
-                  divider(),
-                  dropdownRow(
-                    'Throwable Toy Type',
-                    widget.controller.companionToyType,
-                    const [
-                      'tennis_ball',
-                      'base_ball',
-                      'basket_ball',
-                      'football',
-                      'bone',
-                      'sushi',
-                      'carrot',
+                  if (widget.controller.pipModeEnabled) ...[
+                    sectionHeader('Draggable PiP Panel Settings'),
+                    buildCard([
+                      dropdownRow(
+                        'Background Style',
+                        widget.controller.pipBackgroundStyle,
+                        const ['dark', 'light'],
+                        (v) {
+                          if (v != null) {
+                            widget.controller.changePipBackgroundStyle(v);
+                          }
+                        },
+                      ),
+                      divider(),
+                      sliderRow(
+                        'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
+                        widget.controller.pipOpacity,
+                        (v) => widget.controller.changePipOpacity(v),
+                        min: 0.1,
+                        max: 1.0,
+                      ),
+                      divider(),
+                      toggleRow(
+                        'Draggable Area Clickable',
+                        'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
+                        widget.controller.pipDraggableClickable,
+                        (v) => widget.controller.changePipDraggableClickable(v),
+                      ),
+                    ]),
+                  ],
+
+                  sectionHeader('Behavior'),
+                  buildCard([
+                    toggleRow(
+                      'Low-distraction Focus Mode',
+                      'Reduces motion, disables cursor chasing, and makes the companion click-through.',
+                      widget.controller.isLowDistractionMode,
+                      (v) => widget.controller.setLowDistractionMode(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Ghost Mode (Click-through)',
+                      'Let the pet stay visible but ignore all mouse interactions.',
+                      widget.controller.companionClickThrough,
+                      (v) => widget.controller.changeClickThrough(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Magnetic Attraction',
+                      'The pet will dynamically move toward and follow your cursor.',
+                      widget.controller.companionFollowMouse,
+                      (v) => widget.controller.changeFollowMouse(v),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 32),
+
+                  sectionHeader('Interaction Features'),
+                  buildCard([
+                    toggleRow(
+                      'Petting & Affection',
+                      'Interact with your pet by hovering or moving your cursor over it.',
+                      widget.controller.pettingEnabled,
+                      (v) => widget.controller.changePettingEnabled(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Play Fetch',
+                      'Allow throwing balls from the action bar for the pet to chase.',
+                      widget.controller.ballThrowEnabled,
+                      (v) => widget.controller.changeBallThrowEnabled(v),
+                    ),
+                    if (widget.controller.ballThrowEnabled) ...[
+                      divider(),
+                      dropdownRow(
+                        'Throwable Toy Type',
+                        widget.controller.companionToyType,
+                        const [
+                          'tennis_ball',
+                          'base_ball',
+                          'basket_ball',
+                          'football',
+                          'bone',
+                          'sushi',
+                          'carrot',
+                        ],
+                        (v) {
+                          if (v != null) {
+                            widget.controller.changeToyType(v);
+                          }
+                        },
+                      ),
                     ],
-                    (v) {
-                      if (v != null) {
-                        widget.controller.changeToyType(v);
-                      }
-                    },
-                  ),
-                ],
-                divider(),
-                toggleRow(
-                  'Feed Treats',
-                  'Allow feeding treats to your pet from the action bar.',
-                  widget.controller.treatEnabled,
-                  (v) => widget.controller.changeTreatEnabled(v),
-                ),
-                if (widget.controller.treatEnabled) ...[
-                  divider(),
-                  dropdownRow(
-                    'Feed Treat Type',
-                    widget.controller.companionTreatType,
-                    const ['sushi', 'bone', 'carrot'],
-                    (v) {
-                      if (v != null) {
-                        widget.controller.changeTreatType(v);
-                      }
-                    },
-                  ),
-                ],
-                divider(),
-                toggleRow(
-                  'Developer Milestones',
-                  'Enable pet reactions triggered by coding accomplishments.',
-                  widget.controller.developerReactions,
-                  (v) => widget.controller.changeDeveloperReactions(v),
-                ),
-                divider(),
-                toggleRow(
-                  'Quiet Mode Auto-Activation',
-                  'Automatically calm the pet during meetings, focus blocks, or battery-saver mode.',
-                  widget.controller.quietModeAutoActivate,
-                  (v) => widget.controller.changeQuietModeAutoActivate(v),
-                ),
-              ]),
+                    divider(),
+                    toggleRow(
+                      'Feed Treats',
+                      'Allow feeding treats to your pet from the action bar.',
+                      widget.controller.treatEnabled,
+                      (v) => widget.controller.changeTreatEnabled(v),
+                    ),
+                    if (widget.controller.treatEnabled) ...[
+                      divider(),
+                      dropdownRow(
+                        'Feed Treat Type',
+                        widget.controller.companionTreatType,
+                        const ['sushi', 'bone', 'carrot'],
+                        (v) {
+                          if (v != null) {
+                            widget.controller.changeTreatType(v);
+                          }
+                        },
+                      ),
+                    ],
+                    divider(),
+                    toggleRow(
+                      'Developer Milestones',
+                      'Enable pet reactions triggered by coding accomplishments.',
+                      widget.controller.developerReactions,
+                      (v) => widget.controller.changeDeveloperReactions(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Quiet Mode Auto-Activation',
+                      'Automatically calm the pet during meetings, focus blocks, or battery-saver mode.',
+                      widget.controller.quietModeAutoActivate,
+                      (v) => widget.controller.changeQuietModeAutoActivate(v),
+                    ),
+                  ]),
 
-              const SizedBox(height: 32),
-              sectionHeader('Animation Lab'),
-              _buildInteractionGrid(),
+                  const SizedBox(height: 32),
+                  sectionHeader('Animation Lab'),
+                  _buildInteractionGrid(),
 
-              const SizedBox(height: 32),
-              sectionHeader(
-                'Environment Builder',
-                subtitle: 'Design custom world themes with your own assets',
-              ),
-              buildCard([
-                buildListRow(
-                  'Open Environment Builder',
-                  'Pick sky, ground, rocks, birds, rabbits and colour tints to craft a custom world.',
-                  null,
-                  Icons.landscape_rounded,
-                  null,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const EnvironmentBuilderPage(),
-                      fullscreenDialog: true,
+                  const SizedBox(height: 32),
+                  sectionHeader(
+                    'Environment Builder',
+                    subtitle: 'Design custom world themes with your own assets',
+                  ),
+                  buildCard([
+                    buildListRow(
+                      'Open Environment Builder',
+                      'Pick sky, ground, rocks, birds, rabbits and colour tints to craft a custom world.',
+                      null,
+                      Icons.landscape_rounded,
+                      null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EnvironmentBuilderPage(),
+                          fullscreenDialog: true,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 14,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                  ]),
+                ],
+                const SizedBox(height: 40),
+              ],
+            ),
+            if (isTransitioning)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceElevated.withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CupertinoActivityIndicator(
+                              color: AppTheme.accentColor,
+                              radius: 10,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Configuring Companion...',
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                  trailing: const Icon(
-                    CupertinoIcons.chevron_right,
-                    size: 14,
-                    color: AppTheme.textMuted,
-                  ),
                 ),
-              ]),
-            ],
-            const SizedBox(height: 40),
+              ),
           ],
         );
       },

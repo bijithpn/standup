@@ -24,6 +24,7 @@ class CompanionOverlayController extends ChangeNotifier {
   List<PetProfile> get availablePets =>
       sl<PetRegistryService>().getEnabledProfiles();
 
+  bool _isTransitioning = false;
   bool _companionEnabled = false;
   bool _pipModeEnabled = false;
   String _companionPetTheme = 'grey_cat';
@@ -138,6 +139,7 @@ class CompanionOverlayController extends ChangeNotifier {
     // if the user has explicitly closed it.
   }
 
+  bool get isTransitioning => _isTransitioning;
   bool get companionEnabled => _companionEnabled;
   bool get pipModeEnabled => _pipModeEnabled;
   String get companionPetTheme => _companionPetTheme;
@@ -267,15 +269,39 @@ class CompanionOverlayController extends ChangeNotifier {
         settings.hasCompletedOnboarding &&
         (!_isPreviewMode || _pipModeEnabled);
 
-    if (shouldShow) {
-      if (!_isCompanionShown || pipModeChanged) {
-        if (_isCompanionShown && pipModeChanged) {
-          _isCompanionShown = false;
-          NativeBridge.hideCompanion();
-          NativeBridge.hidePipWindow();
+    final needsShowOrToggle = shouldShow && (!_isCompanionShown || pipModeChanged);
+    final needsHide = !shouldShow && _isCompanionShown;
+
+    if (needsShowOrToggle || needsHide) {
+      _isTransitioning = true;
+      notifyListeners();
+
+      Future.microtask(() async {
+        // Yield control to let Flutter render the loading overlay frame
+        await Future.delayed(const Duration(milliseconds: 80));
+        try {
+          if (needsShowOrToggle) {
+            if (_isCompanionShown && pipModeChanged) {
+              _isCompanionShown = false;
+              await NativeBridge.hideCompanion();
+              await NativeBridge.hidePipWindow();
+              await Future.delayed(const Duration(milliseconds: 300));
+            }
+            await _showNativeCompanion();
+          } else if (needsHide) {
+            _isCompanionShown = false;
+            await NativeBridge.hideCompanion();
+            await NativeBridge.hidePipWindow();
+          }
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        } finally {
+          _isTransitioning = false;
+          notifyListeners();
         }
-        _showNativeCompanion();
-      } else {
+      });
+    } else {
+      if (shouldShow) {
         if (themeChanged) {
           NativeBridge.updateCompanionTheme(_companionPetTheme);
         }
@@ -306,12 +332,6 @@ class CompanionOverlayController extends ChangeNotifier {
             NativeBridge.showCompanion(CompanionArgs(_companionPayload()));
           }
         }
-      }
-    } else {
-      if (_isCompanionShown) {
-        _isCompanionShown = false;
-        NativeBridge.hideCompanion();
-        NativeBridge.hidePipWindow();
       }
     }
 
@@ -372,7 +392,7 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> toggleCompanion(bool enabled) async {
-    if (_companionEnabled == enabled) return;
+    if (_companionEnabled == enabled || _isTransitioning) return;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
@@ -384,7 +404,7 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> changeTheme(String themeId) async {
-    if (_companionPetTheme == themeId) return;
+    if (_companionPetTheme == themeId || _isTransitioning) return;
 
     PetAssetLoader.clearCache();
     Flame.images.clear(themeId);
@@ -419,7 +439,7 @@ class CompanionOverlayController extends ChangeNotifier {
   Future<void> changePetName(String petName) async {
     final trimmedName = petName.trim();
     final nextName = trimmedName.isEmpty ? 'Mochi' : trimmedName;
-    if (_companionPetName == nextName) return;
+    if (_companionPetName == nextName || _isTransitioning) return;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetName: nextName,
@@ -428,7 +448,7 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> changeScale(double scale) async {
-    if (_companionScale == scale) return;
+    if (_companionScale == scale || _isTransitioning) return;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionScale: scale,
@@ -437,7 +457,7 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> changeClickThrough(bool enabled) async {
-    if (_companionClickThrough == enabled) return;
+    if (_companionClickThrough == enabled || _isTransitioning) return;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionClickThrough: enabled,
@@ -446,7 +466,7 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> changeFollowMouse(bool enabled) async {
-    if (_companionFollowMouse == enabled) return;
+    if (_companionFollowMouse == enabled || _isTransitioning) return;
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionFollowMouse: enabled,
@@ -507,7 +527,7 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> changePipModeEnabled(bool value) async {
-    if (_pipModeEnabled == value) return;
+    if (_pipModeEnabled == value || _isTransitioning) return;
     if (value && !_companionEnabled) return;
     final updated = _settingsRepo.currentSettings.copyWith(
       pipModeEnabled: value,
@@ -554,12 +574,22 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> refreshCompanion() async {
-    if (!_companionEnabled) return;
-    _isCompanionShown = false;
-    await NativeBridge.hideCompanion();
-    await NativeBridge.hidePipWindow();
-    await Future.delayed(const Duration(milliseconds: 300));
-    await _showNativeCompanion();
+    if (!_companionEnabled || _isTransitioning) return;
+    _isTransitioning = true;
+    notifyListeners();
+    await Future.delayed(const Duration(milliseconds: 80));
+    try {
+      _isCompanionShown = false;
+      await NativeBridge.hideCompanion();
+      await NativeBridge.hidePipWindow();
+      await Future.delayed(const Duration(milliseconds: 300));
+      await _showNativeCompanion();
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    } finally {
+      _isTransitioning = false;
+      notifyListeners();
+    }
   }
 
   @override

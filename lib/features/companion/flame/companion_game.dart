@@ -45,7 +45,7 @@ class CompanionGame extends FlameGame {
     this.isPiP = false,
     this.toyType = 'tennis_ball',
     this.treatType = 'sushi',
-    this.backgroundImagePath = 'assets/environments/sky/sky_back.png',
+    this.backgroundImagePath = 'assets/background/forest/background.png',
   }) : _eventBus = EventBus.instance,
        _petService = PetCompanionService(
          stateMachine: PetStateMachine(personality: PetPersonality()),
