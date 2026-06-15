@@ -134,6 +134,12 @@ class PetTheme {
       frameCount: 8,
       stepTime: 0.12,
     ),
+    PetAnimationState.petting: SeparateAnimationConfig(
+      fileName: 'lick_1.png',
+      frameCount: 5,
+      stepTime: 0.16,
+      loop: false,
+    ),
   };
 
   static const Map<PetAnimationState, SeparateAnimationConfig>
@@ -229,6 +235,12 @@ class PetTheme {
       frameCount: 8,
       stepTime: 0.12,
     ),
+    PetAnimationState.petting: SeparateAnimationConfig(
+      fileName: 'lick_1.png',
+      frameCount: 5,
+      stepTime: 0.16,
+      loop: false,
+    ),
   };
 
   static const Map<PetAnimationState, AnimationRowConfig> _dogSheetAnimations =
@@ -300,6 +312,12 @@ class PetTheme {
           row: 0,
           frameCount: 8,
           stepTime: 0.15,
+        ),
+        PetAnimationState.petting: AnimationRowConfig(
+          row: 2,
+          frameCount: 6,
+          stepTime: 0.1,
+          loop: false,
         ),
       };
 
@@ -377,6 +395,12 @@ class PetTheme {
       row: 1,
       frameCount: 4,
       stepTime: 0.15,
+    ),
+    PetAnimationState.petting: AnimationRowConfig(
+      row: 0,
+      frameCount: 5,
+      stepTime: 0.12,
+      loop: false,
     ),
   };
 
@@ -459,6 +483,12 @@ class PetTheme {
           row: 6,
           frameCount: 8,
           stepTime: 0.12,
+        ),
+        PetAnimationState.petting: AnimationRowConfig(
+          row: 9,
+          frameCount: 6,
+          stepTime: 0.12,
+          loop: false,
         ),
       };
 

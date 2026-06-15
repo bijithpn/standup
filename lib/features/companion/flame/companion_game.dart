@@ -32,8 +32,8 @@ import 'package:breakmate/features/companion/services/window_monitor.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/features/companion/flame/components/environment_component.dart';
 import 'package:breakmate/features/companion/flame/components/throwable_toy_component.dart';
-import 'package:breakmate/features/companion/flame/components/bird_component.dart';
-import 'package:breakmate/features/companion/flame/components/rabbit_component.dart';
+import 'package:breakmate/features/companion/flame/components/flying_npc_component.dart';
+import 'package:breakmate/features/companion/flame/components/ground_npc_component.dart';
 import 'package:breakmate/features/companion/flame/components/decoration_component.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 import 'package:breakmate/features/companion/flame/components/custom_layer_component.dart';
@@ -659,8 +659,9 @@ class CompanionGame extends FlameGame {
         return PetAnimationState.notification;
       case PetState.happy:
       case PetState.excited:
-      case PetState.affectionate:
         return PetAnimationState.excited;
+      case PetState.affectionate:
+        return PetAnimationState.petting;
       case PetState.breakReminder:
         return PetAnimationState.breakMode;
       case PetState.meetingPaused:
@@ -1255,10 +1256,10 @@ class CompanionGame extends FlameGame {
     _pipWorld!.children.whereType<CustomLayerComponent>().toList().forEach(
       (c) => c.removeFromParent(),
     );
-    _pipWorld!.children.whereType<BirdComponent>().toList().forEach(
+    _pipWorld!.children.whereType<FlyingNpcComponent>().toList().forEach(
       (c) => c.removeFromParent(),
     );
-    _pipWorld!.children.whereType<RabbitComponent>().toList().forEach(
+    _pipWorld!.children.whereType<GroundNpcComponent>().toList().forEach(
       (c) => c.removeFromParent(),
     );
 
@@ -1304,11 +1305,11 @@ class CompanionGame extends FlameGame {
       );
     }
 
-    // Spawn flying birds (priority -4)
-    _pipWorld!.add(BirdComponent());
+    // Spawn flying NPCs (priority -4)
+    _pipWorld!.add(FlyingNpcComponent());
 
-    // Spawn wandering rabbits (priority 2)
-    _pipWorld!.add(RabbitComponent());
+    // Spawn ground NPCs (priority 2)
+    _pipWorld!.add(GroundNpcComponent());
   }
 
   Future<void> preCacheThemeAssets(EnvironmentThemeConfig config) async {

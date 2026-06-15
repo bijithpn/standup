@@ -9,7 +9,7 @@ import 'package:breakmate/core/errors/error_handler.dart';
 
 enum RabbitAnimState { idle, run }
 
-class RabbitComponent extends SpriteAnimationComponent
+class GroundNpcComponent extends SpriteAnimationComponent
     with HasGameReference<CompanionGame> {
   static final _rng = Random();
 
@@ -23,8 +23,9 @@ class RabbitComponent extends SpriteAnimationComponent
   double _speed = 0.0;
   double _waitTimer = 0.0;
   bool _isMoving = false;
+  double _hopTime = 0.0;
 
-  RabbitComponent() : super(anchor: Anchor.bottomCenter, priority: 2);
+  GroundNpcComponent() : super(anchor: Anchor.bottomCenter, priority: 2);
 
   @override
   Future<void> onLoad() async {
@@ -98,7 +99,7 @@ class RabbitComponent extends SpriteAnimationComponent
         rect,
       );
 
-      // Determine scale: since rabbits are smaller than cats/dogs, scale down to ~1.0
+      // Determine scale: since ground npcs are smaller than cats/dogs, scale down to ~1.0
       _scaleFactor = (0.95 + _rng.nextDouble() * 0.15) * config.rabbitScale;
       scale = Vector2.all(_scaleFactor);
       size = Vector2(idleAsset.spriteWidth, idleAsset.spriteHeight);
@@ -129,10 +130,12 @@ class RabbitComponent extends SpriteAnimationComponent
     if (newState == RabbitAnimState.idle) {
       animation = _idleAnimation;
       _isMoving = false;
+      _hopTime = 0.0;
       _waitTimer = 2.0 + _rng.nextDouble() * 5.0; // Wait 2 to 7 seconds
     } else {
       animation = _runAnimation;
       _isMoving = true;
+      _hopTime = 0.0;
       _speed = 40.0 + _rng.nextDouble() * 30.0; // 40 to 70 px/s
     }
   }
@@ -145,34 +148,47 @@ class RabbitComponent extends SpriteAnimationComponent
 
   @override
   void update(double dt) {
-    super.update(dt);
-
     final double targetGroundY = game.isPiP
         ? game.size.y - 20.0
         : game.size.y - 2.0;
-    position.y = targetGroundY + (_bottomPadding * _scaleFactor);
+
+    double activeDt = dt;
 
     if (!_isMoving) {
+      position.y = targetGroundY + (_bottomPadding * _scaleFactor);
       _waitTimer -= dt;
       if (_waitTimer <= 0.0) {
         _selectNewWanderTarget();
       }
-      return;
+    } else {
+      _hopTime += dt * 8.0;
+      final double sinVal = sin(_hopTime);
+      final double hopHeight = 12.0;
+
+      if (sinVal > 0) {
+        final double hopOffset = sinVal * hopHeight;
+        position.y = targetGroundY + (_bottomPadding * _scaleFactor) - hopOffset;
+
+        final double direction = _targetX > position.x ? 1.0 : -1.0;
+        position.x += direction * _speed * sinVal * 1.5 * dt;
+      } else {
+        position.y = targetGroundY + (_bottomPadding * _scaleFactor);
+      }
+
+      final double direction = _targetX > position.x ? 1.0 : -1.0;
+      scale = Vector2(direction * _scaleFactor, _scaleFactor);
+
+      if ((direction > 0 && position.x >= _targetX) ||
+          (direction < 0 && position.x <= _targetX)) {
+        position.x = _targetX;
+        _changeState(RabbitAnimState.idle);
+      }
+
+      // Sync run animation speed to the hopping phase (faster in air, pauses on landing)
+      activeDt = dt * (sinVal > 0 ? 1.2 : 0.2);
     }
 
-    // Move horizontally towards target X
-    final double direction = _targetX > position.x ? 1.0 : -1.0;
-    position.x += direction * _speed * dt;
-
-    // Flip horizontal direction
-    scale = Vector2(direction * _scaleFactor, _scaleFactor);
-
-    // Check if target reached
-    if ((direction > 0 && position.x >= _targetX) ||
-        (direction < 0 && position.x <= _targetX)) {
-      position.x = _targetX;
-      _changeState(RabbitAnimState.idle);
-    }
+    super.update(activeDt);
 
     // Apply lighting modulation matching EnvironmentComponent
     EnvironmentComponent? env;
@@ -190,7 +206,6 @@ class RabbitComponent extends SpriteAnimationComponent
 
     if (env != null) {
       final groundBaseTint = env.ambientTint;
-      // We also tint rabbits with the ground tint color mode to blend with lighting
       paint.colorFilter = ColorFilter.mode(groundBaseTint, BlendMode.modulate);
     }
   }
