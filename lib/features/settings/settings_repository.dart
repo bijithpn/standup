@@ -242,6 +242,18 @@ class SettingsRepository extends ChangeNotifier {
         'companion_preview_background',
         defaultValue: 'assets/background/forest/background.png',
       ),
+      pipBackgroundStyle: _storage.getString(
+        'pip_background_style',
+        defaultValue: 'dark',
+      ),
+      pipOpacity: _storage.getDouble(
+        'pip_opacity',
+        defaultValue: 1.0,
+      ),
+      pipDraggableClickable: _storage.getBool(
+        'pip_draggable_clickable',
+        defaultValue: true,
+      ),
     );
   }
 
@@ -444,6 +456,18 @@ class SettingsRepository extends ChangeNotifier {
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
         defaultValue: 'assets/background/forest/background.png',
+      ),
+      pipBackgroundStyle: _storage.getString(
+        'pip_background_style',
+        defaultValue: 'dark',
+      ),
+      pipOpacity: _storage.getDouble(
+        'pip_opacity',
+        defaultValue: 1.0,
+      ),
+      pipDraggableClickable: _storage.getBool(
+        'pip_draggable_clickable',
+        defaultValue: true,
       ),
     );
   }
@@ -662,6 +686,18 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'companion_preview_background',
       settings.companionPreviewBackground,
+    );
+    await _storage.setString(
+      'pip_background_style',
+      settings.pipBackgroundStyle,
+    );
+    await _storage.setDouble(
+      'pip_opacity',
+      settings.pipOpacity,
+    );
+    await _storage.setBool(
+      'pip_draggable_clickable',
+      settings.pipDraggableClickable,
     );
 
     _storage.settingsBox!.put(snapshot);

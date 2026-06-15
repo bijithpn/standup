@@ -20,6 +20,7 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
@@ -35,11 +36,20 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   );
 
   CompanionGame? _game;
-  String _themeId = 'grey_cat';
+  late String _themeId = SimplePrefs.instance.getString(
+    'companion_pet_theme',
+    defaultValue: 'grey_cat',
+  );
   String _petName = 'Mochi';
-  double _scale = 3.0;
+  late double _scale = SimplePrefs.instance.getDouble(
+    'companion_scale',
+    defaultValue: 3.0,
+  );
   bool _gameInitialized = false;
-  String _previewBackground = 'assets/environments/sky/sky_back.png';
+  late String _previewBackground = SimplePrefs.instance.getString(
+    'companion_preview_background',
+    defaultValue: 'assets/background/forest/background.png',
+  );
 
   late final CompanionWindowManager _windowManager = CompanionWindowManager(
     displayManager: NativeDisplayManager(),
@@ -64,9 +74,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   StreamSubscription<AppEvent>? _treatEventSub;
 
-  String _pipBackgroundStyle = 'dark';
-  double _pipOpacity = 1;
-  bool _pipDraggableClickable = true;
+  late String _pipBackgroundStyle = SimplePrefs.instance.getString(
+    'pip_background_style',
+    defaultValue: 'dark',
+  );
+  late double _pipOpacity = SimplePrefs.instance.getDouble(
+    'pip_opacity',
+    defaultValue: 1.0,
+  );
+  late bool _pipDraggableClickable = SimplePrefs.instance.getBool(
+    'pip_draggable_clickable',
+    defaultValue: true,
+  );
 
   Offset? _dragStartPosition;
   Offset? _lastDragPosition;
@@ -157,11 +176,21 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   void _initGameWithDefaults() {
     if (!mounted || _gameInitialized) return;
+    final toyType = SimplePrefs.instance.getString(
+      'companion_toy_type',
+      defaultValue: 'tennis_ball',
+    );
+    final treatType = SimplePrefs.instance.getString(
+      'companion_treat_type',
+      defaultValue: 'sushi',
+    );
     setState(() {
       _game = CompanionGame(
         initialTheme: PetTheme.getTheme(_themeId),
         scaleOverride: _scale,
         isPiP: true,
+        toyType: toyType,
+        treatType: treatType,
         backgroundImagePath: _previewBackground,
       );
       _gameInitialized = true;

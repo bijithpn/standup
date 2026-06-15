@@ -109,7 +109,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
 
     final String bgPath =
-        widget.backgroundImagePath ?? 'assets/environments/sky/sky_back.png';
+        widget.backgroundImagePath ?? 'assets/background/forest/background.png';
     final config = EnvironmentThemeConfig.getByPath(bgPath);
 
     final cachedSprite = PetAssetLoader.getImageSync(path);
