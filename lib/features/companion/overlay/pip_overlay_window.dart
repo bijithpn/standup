@@ -352,7 +352,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
   }
 
-  String _getToyIconPath() {
+  String? _getToyIconPath() {
     switch (_game?.toyType) {
       case 'base_ball':
         return 'assets/animations/throw_particles/base_ball.png';
@@ -360,9 +360,26 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         return 'assets/animations/throw_particles/basket_ball.png';
       case 'football':
         return 'assets/animations/throw_particles/football.png';
+      case 'bone':
+      case 'sushi':
+      case 'carrot':
+        return null;
       case 'tennis_ball':
       default:
         return 'assets/animations/throw_particles/tennis_ball.png';
+    }
+  }
+
+  String? _getToyEmoji() {
+    switch (_game?.toyType) {
+      case 'bone':
+        return '🦴';
+      case 'sushi':
+        return '🍣';
+      case 'carrot':
+        return '🥕';
+      default:
+        return null;
     }
   }
 
@@ -656,6 +673,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 throwDisabled: _throwDisabled,
                 treatOnCooldown: _treatOnCooldown,
                 toyIconPath: _getToyIconPath(),
+                toyEmoji: _getToyEmoji(),
                 treatEmoji: _getTreatEmoji(),
                 onThrowBall: _throwBall,
                 onGiveTreat: _giveTreat,
@@ -746,7 +764,8 @@ class _InteractionBar extends StatelessWidget {
     required this.isExpanded,
     required this.throwDisabled,
     required this.treatOnCooldown,
-    required this.toyIconPath,
+    this.toyIconPath,
+    this.toyEmoji,
     required this.treatEmoji,
     required this.onThrowBall,
     required this.onGiveTreat,
@@ -758,7 +777,8 @@ class _InteractionBar extends StatelessWidget {
   final bool isExpanded;
   final bool throwDisabled;
   final bool treatOnCooldown;
-  final String toyIconPath;
+  final String? toyIconPath;
+  final String? toyEmoji;
   final String treatEmoji;
   final VoidCallback onThrowBall;
   final VoidCallback onGiveTreat;
@@ -802,6 +822,7 @@ class _InteractionBar extends StatelessWidget {
               children: [
                 _BarButton(
                   iconPath: toyIconPath,
+                  emoji: toyEmoji,
                   label: 'Throw',
                   disabled: throwDisabled,
                   onTap: onThrowBall,

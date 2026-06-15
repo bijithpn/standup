@@ -36,7 +36,7 @@ class ThrowableToyComponent extends PositionComponent
     if (kind == 'treat') {
       _assetConfig = config.foodAssets[type];
     } else {
-      _assetConfig = config.toyAssets[type];
+      _assetConfig = config.toyAssets[type] ?? config.foodAssets[type];
     }
 
     if (_assetConfig != null) {
@@ -244,15 +244,19 @@ class ThrowableToyComponent extends PositionComponent
         destRect,
         paint,
       );
-    } else if (type == 'football' && game.footballImage != null) {
+    } else if (type == 'sushi') {
+      _drawSushiVector(canvas);
+    } else if (type == 'carrot' && game.bunnyFoodsImage != null) {
       canvas.drawImageRect(
-        game.footballImage!,
-        Rect.fromLTWH(
-          0,
-          0,
-          game.footballImage!.width.toDouble(),
-          game.footballImage!.height.toDouble(),
-        ),
+        game.bunnyFoodsImage!,
+        const Rect.fromLTWH(0, 0, 16, 16),
+        destRect,
+        paint,
+      );
+    } else if (type == 'bone' && game.dogItemsImage != null) {
+      canvas.drawImageRect(
+        game.dogItemsImage!,
+        const Rect.fromLTWH(0, 0, 32, 32),
         destRect,
         paint,
       );

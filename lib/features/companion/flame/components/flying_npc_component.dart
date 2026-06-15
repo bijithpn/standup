@@ -17,7 +17,6 @@ class FlyingNpcComponent extends SpriteAnimationComponent
   bool _active = false;
   double _waveTimer = 0.0;
   double _baseY = 0.0;
-  double _lastY = 0.0;
 
   FlyingNpcComponent() : super(anchor: Anchor.center, priority: -4);
 
@@ -84,7 +83,6 @@ class FlyingNpcComponent extends SpriteAnimationComponent
     // Spawns lower in the sky to remain visible below header/title bar
     final startY = 55.0 + _rng.nextDouble() * 45.0;
     _baseY = startY;
-    _lastY = startY;
     _waveTimer = _rng.nextDouble() * 10.0;
 
     position = Vector2(startX, startY);
