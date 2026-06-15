@@ -29,7 +29,7 @@ void main() {
       expect(config, equals(PetConfigV2.defaults()));
     });
 
-    test('returns defaults and schedules write on corrupt JSON', () {
+    test('returns defaults and schedules write on corrupt JSON', () async {
       final configFile = File(
         '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
       );
@@ -42,11 +42,11 @@ void main() {
       expect(config, equals(PetConfigV2.defaults()));
 
       // dirty flag should be set — flushing should write defaults to disk
-      sp.flushPendingWrite();
+      await sp.flushPendingWrite();
       expect(configFile.existsSync(), isTrue);
     });
 
-    test('loads a previously written config correctly', () {
+    test('loads a previously written config correctly', () async {
       const original = PetConfigV2(
         mode: PetMode.constrained,
         pinnedDisplayId: null,
@@ -59,7 +59,7 @@ void main() {
 
       final sp = _make(tempDir);
       sp.scheduleWrite(original);
-      sp.flushPendingWrite();
+      await sp.flushPendingWrite();
 
       final sp2 = _make(tempDir);
       final loaded = sp2.loadSync();
@@ -83,11 +83,11 @@ void main() {
 
     test(
       'scheduleWrite → flushPendingWrite → loadSync roundtrip for all configs',
-      () {
+      () async {
         for (final config in testConfigs) {
           final sp = _make(tempDir);
           sp.scheduleWrite(config);
-          sp.flushPendingWrite();
+          await sp.flushPendingWrite();
 
           final sp2 = _make(tempDir);
           final loaded = sp2.loadSync();
@@ -100,7 +100,7 @@ void main() {
       },
     );
 
-    test('.tmp file is cleaned up after atomic write (renamed to target)', () {
+    test('.tmp file is cleaned up after atomic write (renamed to target)', () async {
       const config = PetConfigV2(
         mode: PetMode.freeRoam,
         pinnedDisplayId: null,
@@ -113,7 +113,7 @@ void main() {
 
       final sp = _make(tempDir);
       sp.scheduleWrite(config);
-      sp.flushPendingWrite();
+      await sp.flushPendingWrite();
 
       final configFile = File(
         '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
@@ -134,9 +134,9 @@ void main() {
       );
     });
 
-    test('flushPendingWrite is a no-op when nothing is dirty', () {
+    test('flushPendingWrite is a no-op when nothing is dirty', () async {
       final sp = _make(tempDir);
-      sp.flushPendingWrite(); // no-op
+      await sp.flushPendingWrite(); // no-op
       final configFile = File(
         '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
       );
@@ -145,7 +145,7 @@ void main() {
   });
 
   group('SettingsPersistence error handling (Req 11.7)', () {
-    test('write to bad path does not crash — engine continues normally', () {
+    test('write to bad path does not crash — engine continues normally', () async {
       // Use a deeply nested non-existent path with no parent dirs.
       final badPath =
           '${tempDir.path}${Platform.pathSeparator}deep${Platform.pathSeparator}nested${Platform.pathSeparator}missing${Platform.pathSeparator}pet_config_v2.json';
@@ -153,7 +153,7 @@ void main() {
       sp.scheduleWrite(PetConfigV2.defaults());
 
       // Must NOT throw regardless of I/O failure.
-      expect(() => sp.flushPendingWrite(), returnsNormally);
+      expect(sp.flushPendingWrite(), completes);
     });
   });
 }

@@ -146,6 +146,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _clockFaceBlurEnabled = true;
   String? _customImagePath;
 
+  // True once SimplePrefs settings are loaded; the overlay renders immediately.
+  // The async bridge call still runs to refine timer data, but does not gate rendering.
   bool _initialized = false;
   bool _isDismissing = false;
 
@@ -216,7 +218,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _durationSeconds = widget.durationSeconds;
     _remainingSeconds = widget.durationSeconds;
 
+    // Load settings synchronously from SimplePrefs so the template can render
+    // on the first frame without waiting for the async bridge call.
     _loadInitialSettings();
+
+    // Mark initialized now — SimplePrefs settings are sufficient to render.
+    // The async _loadInitialData() will update remaining-seconds and any
+    // per-break fields (exercise, theme, etc.) once the bridge responds.
+    _initialized = true;
 
     _currentTemplate =
         AppConstants.wellnessSlideshow[Random().nextInt(
@@ -254,12 +263,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
     } catch (e) {
       debugPrint('Error getting initial overlay data: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _initialized = true;
-        });
-      }
     }
   }
 

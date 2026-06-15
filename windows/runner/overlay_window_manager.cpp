@@ -53,31 +53,42 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     auto window = std::make_unique<FlutterWindow>(project);
     window->SetIsOverlay(true);
 
-    Win32Window::Point origin(lprcMonitor->left, lprcMonitor->top);
-    Win32Window::Size size(lprcMonitor->right - lprcMonitor->left, lprcMonitor->bottom - lprcMonitor->top);
+    UINT dpiX = 96, dpiY = 96;
+    HMODULE hUser32 = LoadLibrary(L"user32.dll");
+    if (hUser32) {
+        typedef UINT(STDAPICALLTYPE * GetDpiForMonitorFn)(HMONITOR, int, UINT*, UINT*);
+        GetDpiForMonitorFn getDpiForMonitor = (GetDpiForMonitorFn)GetProcAddress(hUser32, "GetDpiForMonitor");
+        if (getDpiForMonitor) {
+            getDpiForMonitor(hMonitor, 0 /* MDT_EFFECTIVE_DPI */, &dpiX, &dpiY);
+        }
+        FreeLibrary(hUser32);
+    }
+    double scale = static_cast<double>(dpiX) / 96.0;
 
-    if (window->Create(L"StandupOverlay", origin, size)) {
+    int logicalLeft = static_cast<int>(lprcMonitor->left / scale);
+    int logicalTop = static_cast<int>(lprcMonitor->top / scale);
+    int logicalWidth = static_cast<int>((lprcMonitor->right - lprcMonitor->left) / scale);
+    int logicalHeight = static_cast<int>((lprcMonitor->bottom - lprcMonitor->top) / scale);
+
+    Win32Window::Point origin(logicalLeft, logicalTop);
+    Win32Window::Size size(logicalWidth, logicalHeight);
+
+    if (window->Create(L"StandupOverlay", origin, size, hMonitor)) {
       window->SetQuitOnClose(false);
       window->ConfigureAsOverlay();
-      
+
       if (data->ignore_mouse) {
         window->SetIgnoreMouseEvents(true);
       }
-      
-      // EnumDisplayMonitors reports virtual-screen coordinates, including
-      // negative origins for monitors placed left or above the primary display.
-      SetWindowPos(window->GetHandle(), HWND_TOPMOST,
-                   lprcMonitor->left, lprcMonitor->top,
-                   lprcMonitor->right - lprcMonitor->left,
-                   lprcMonitor->bottom - lprcMonitor->top,
-                   SWP_NOACTIVATE);
+
+      window->SetOverlayRect(*lprcMonitor);
 
       window->Show();
-      
+
       if (data->is_strict_mode) {
         SetForegroundWindow(window->GetHandle());
       }
-      
+
       IpcBridgeManager::GetInstance()->RegisterEngine(window->GetEngine());
       windows->push_back(std::move(window));
     }
@@ -109,6 +120,31 @@ void OverlayWindowManager::UpdateOverlayData(const flutter::EncodableMap& data) 
           &flutter::StandardMethodCodec::GetInstance());
       
       channel->InvokeMethod("updateOverlayData", std::make_unique<flutter::EncodableValue>(data));
+    }
+  }
+}
+
+void OverlayWindowManager::HandleEscapeKey() {
+  if (overlay_windows_.empty()) return;
+
+  // Respect strict mode: if the break cannot be skipped, swallow the key.
+  bool strict = false;
+  auto it = last_show_args_.find(flutter::EncodableValue("strictMode"));
+  if (it != last_show_args_.end() && std::holds_alternative<bool>(it->second)) {
+    strict = std::get<bool>(it->second);
+  }
+  if (strict) return;
+
+  // Send skipBreak to each overlay engine. The Dart bridge handler in
+  // SetupOverlayBridge forwards this to the main engine and calls HideOverlay.
+  for (auto& window : overlay_windows_) {
+    if (window && window->GetEngine()) {
+      auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+          window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
+          &flutter::StandardMethodCodec::GetInstance());
+      channel->InvokeMethod(
+          "skipBreak",
+          std::make_unique<flutter::EncodableValue>(flutter::EncodableMap()));
     }
   }
 }

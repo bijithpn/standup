@@ -51,6 +51,8 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
 }
 
 HHOOK FlutterWindow::keyboard_hook_ = nullptr;
+int FlutterWindow::keyboard_hook_ref_count_ = 0;
+FlutterWindow* FlutterWindow::main_window_ = nullptr;
 
 LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
   if (nCode == HC_ACTION) {
@@ -65,6 +67,11 @@ LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, L
     // Block Win+Tab (Task View via 3-finger swipe)
     if (winDown && pKeyBoard->vkCode == VK_TAB) {
       return 1; // swallow
+    }
+    // Forward Escape keydown to all active overlay engines so the break can be
+    // dismissed even when the overlay window has no keyboard focus (SWP_NOACTIVATE).
+    if (pKeyBoard->vkCode == VK_ESCAPE && wParam == WM_KEYDOWN) {
+      OverlayWindowManager::GetInstance()->HandleEscapeKey();
     }
   }
   return CallNextHookEx(keyboard_hook_, nCode, wParam, lParam);
@@ -160,6 +167,43 @@ FlutterWindow::FlutterWindow(const flutter::DartProject& project)
 
 FlutterWindow::~FlutterWindow() {}
 
+bool FlutterWindow::Show() {
+  if (is_overlay_) {
+    UINT flags = ignore_mouse_events_ ? SW_SHOWNOACTIVATE : SW_SHOW;
+    BOOL res = ShowWindow(GetHandle(), flags);
+    
+    UINT swp_flags = SWP_FRAMECHANGED;
+    if (ignore_mouse_events_) {
+      swp_flags |= SWP_NOACTIVATE;
+    }
+    
+    int left = 0, top = 0, width = 0, height = 0;
+    if (overlay_rect_.right > overlay_rect_.left && overlay_rect_.bottom > overlay_rect_.top) {
+      left = overlay_rect_.left;
+      top = overlay_rect_.top;
+      width = overlay_rect_.right - overlay_rect_.left;
+      height = overlay_rect_.bottom - overlay_rect_.top;
+    } else {
+      HMONITOR monitor = MonitorFromWindow(GetHandle(), MONITOR_DEFAULTTONEAREST);
+      MONITORINFO monitorInfo = {};
+      monitorInfo.cbSize = sizeof(MONITORINFO);
+      GetMonitorInfo(monitor, &monitorInfo);
+      left = monitorInfo.rcMonitor.left;
+      top = monitorInfo.rcMonitor.top;
+      width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+      height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
+    }
+    
+    SetWindowPos(GetHandle(), HWND_TOPMOST, left, top, width, height, swp_flags);
+                 
+    if (!ignore_mouse_events_) {
+      SetForegroundWindow(GetHandle());
+    }
+    return res;
+  }
+  return Win32Window::Show();
+}
+
 bool FlutterWindow::OnCreate() {
   calendar_bridge_ = std::make_unique<CalendarBridge>();
   if (!Win32Window::OnCreate()) {
@@ -201,6 +245,7 @@ bool FlutterWindow::OnCreate() {
     SetupOverlayBridge();
   } else {
     // Main application window: full channel + event setup
+    main_window_ = this;
     SetupBridge();
     SetupEventChannels();
     SetupWindowBridge();
@@ -257,19 +302,68 @@ void FlutterWindow::SetupWindowBridge() {
             if (x_it != args->end() && y_it != args->end()) {
                 double x = std::get<double>(x_it->second);
                 double y = std::get<double>(y_it->second);
-                SetWindowPos(GetHandle(), NULL, static_cast<int>(x), static_cast<int>(y), 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+                HWND hwnd = GetHandle();
+                double scale = static_cast<double>(GetDpiForWindow(hwnd)) / 96.0;
+                int px = static_cast<int>(x * scale);
+                int py = static_cast<int>(y * scale);
+                
+                // Get the actual monitor at the physical target point to get its correct DPI scale
+                HMONITOR monitor = MonitorFromPoint({px, py}, MONITOR_DEFAULTTONEAREST);
+                UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+                double target_scale = static_cast<double>(dpi) / 96.0;
+                if (target_scale != scale) {
+                  px = static_cast<int>(x * target_scale);
+                  py = static_cast<int>(y * target_scale);
+                }
+                SetWindowPos(hwnd, NULL, px, py, 0, 0, SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE);
+            }
+          }
+          result->Success();
+        }
+        else if (method_name == "setWindowSize") {
+          if (args) {
+            auto width_it = args->find(flutter::EncodableValue("width"));
+            auto height_it = args->find(flutter::EncodableValue("height"));
+            if (width_it != args->end() && height_it != args->end()) {
+                double w = 0.0;
+                if (std::holds_alternative<double>(width_it->second)) {
+                  w = std::get<double>(width_it->second);
+                } else if (std::holds_alternative<int>(width_it->second)) {
+                  w = static_cast<double>(std::get<int>(width_it->second));
+                } else if (std::holds_alternative<int64_t>(width_it->second)) {
+                  w = static_cast<double>(std::get<int64_t>(width_it->second));
+                }
+
+                double h = 0.0;
+                if (std::holds_alternative<double>(height_it->second)) {
+                  h = std::get<double>(height_it->second);
+                } else if (std::holds_alternative<int>(height_it->second)) {
+                  h = static_cast<double>(std::get<int>(height_it->second));
+                } else if (std::holds_alternative<int64_t>(height_it->second)) {
+                  h = static_cast<double>(std::get<int64_t>(height_it->second));
+                }
+
+                if (w > 0 && h > 0) {
+                  HWND hwnd = GetHandle();
+                  double scale = static_cast<double>(GetDpiForWindow(hwnd)) / 96.0;
+                  int pw = static_cast<int>(w * scale);
+                  int ph = static_cast<int>(h * scale);
+                  SetWindowPos(hwnd, NULL, 0, 0, pw, ph, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
+                }
             }
           }
           result->Success();
         }
         else if (method_name == "getWindowPosition") {
+          HWND hwnd = GetHandle();
           RECT rect;
-          GetWindowRect(GetHandle(), &rect);
+          GetWindowRect(hwnd, &rect);
+          double scale = static_cast<double>(GetDpiForWindow(hwnd)) / 96.0;
           flutter::EncodableMap pos;
-          pos[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(rect.left));
-          pos[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(rect.top));
-          pos[flutter::EncodableValue("width")] = flutter::EncodableValue(static_cast<double>(rect.right - rect.left));
-          pos[flutter::EncodableValue("height")] = flutter::EncodableValue(static_cast<double>(rect.bottom - rect.top));
+          pos[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(rect.left) / scale);
+          pos[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(rect.top) / scale);
+          pos[flutter::EncodableValue("width")] = flutter::EncodableValue(static_cast<double>(rect.right - rect.left) / scale);
+          pos[flutter::EncodableValue("height")] = flutter::EncodableValue(static_cast<double>(rect.bottom - rect.top) / scale);
           result->Success(flutter::EncodableValue(pos));
         }
         else if (method_name == "setWindowOpacity") {
@@ -433,9 +527,13 @@ void FlutterWindow::SetupBridge() {
         else if (method_name == "getCursorPosition") {
           POINT pt;
           if (GetCursorPos(&pt)) {
+            HMONITOR monitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+            UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+            double scale = static_cast<double>(dpi) / 96.0;
+
             flutter::EncodableMap pos;
-            pos[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(pt.x));
-            pos[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(pt.y));
+            pos[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(pt.x) / scale);
+            pos[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(pt.y) / scale);
             result->Success(flutter::EncodableValue(pos));
           } else {
             result->Error("CURSOR_ERROR", "Failed to get cursor position");
@@ -464,12 +562,16 @@ void FlutterWindow::SetupBridge() {
               WideCharToMultiByte(CP_UTF8, 0, w.class_name.c_str(), -1, &class_utf8[0], size_needed, NULL, NULL);
             }
 
+            HMONITOR monitor = MonitorFromWindow(w.hwnd, MONITOR_DEFAULTTONEAREST);
+            UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
+            double scale = static_cast<double>(dpi) / 96.0;
+
             map[flutter::EncodableValue("appBundleId")] = flutter::EncodableValue(class_utf8);
             map[flutter::EncodableValue("windowTitle")] = flutter::EncodableValue(title_utf8);
-            map[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(w.rect.left));
-            map[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(w.rect.top));
-            map[flutter::EncodableValue("width")] = flutter::EncodableValue(static_cast<double>(w.rect.right - w.rect.left));
-            map[flutter::EncodableValue("height")] = flutter::EncodableValue(static_cast<double>(w.rect.bottom - w.rect.top));
+            map[flutter::EncodableValue("x")] = flutter::EncodableValue(static_cast<double>(w.rect.left) / scale);
+            map[flutter::EncodableValue("y")] = flutter::EncodableValue(static_cast<double>(w.rect.top) / scale);
+            map[flutter::EncodableValue("width")] = flutter::EncodableValue(static_cast<double>(w.rect.right - w.rect.left) / scale);
+            map[flutter::EncodableValue("height")] = flutter::EncodableValue(static_cast<double>(w.rect.bottom - w.rect.top) / scale);
             map[flutter::EncodableValue("isMinimized")] = flutter::EncodableValue(w.is_minimized);
             map[flutter::EncodableValue("isVisible")] = flutter::EncodableValue(true);
 
@@ -772,13 +874,23 @@ void FlutterWindow::SetupBridge() {
 
 void FlutterWindow::OnDestroy() {
   KillTimer(GetHandle(), 1);
-  if (keyboard_hook_) {
-    UnhookWindowsHookEx(keyboard_hook_);
-    keyboard_hook_ = nullptr;
+
+  // Decrement keyboard hook reference count for overlay windows and unhook if needed
+  if (keyboard_hook_ && is_overlay_) {
+    keyboard_hook_ref_count_--;
+    if (keyboard_hook_ref_count_ <= 0) {
+      UnhookWindowsHookEx(keyboard_hook_);
+      keyboard_hook_ = nullptr;
+      keyboard_hook_ref_count_ = 0;
+    }
   }
   if (flutter_controller_) {
     IpcBridgeManager::GetInstance()->UnregisterEngine(flutter_controller_->engine());
     flutter_controller_ = nullptr;
+  }
+
+  if (main_window_ == this) {
+    main_window_ = nullptr;
   }
 
   // If this is the main window, clean up all secondary windows and engines
@@ -800,12 +912,10 @@ void FlutterWindow::ConfigureAsOverlay() {
   original_style_ = GetWindowLong(hwnd, GWL_STYLE);
   original_ex_style_ = GetWindowLong(hwnd, GWL_EXSTYLE);
 
-  // Remove window borders and title bar (WS_CAPTION = WS_BORDER | WS_DLGFRAME)
+  // Remove all overlapped window styles and make it a borderless WS_POPUP window
   LONG style = GetWindowLong(hwnd, GWL_STYLE);
-  style &= ~WS_CAPTION;      // Remove title bar
-  style &= ~WS_THICKFRAME;   // Remove resize border
-  style &= ~WS_MINIMIZEBOX;  // Remove minimize button
-  style &= ~WS_MAXIMIZEBOX;  // Remove maximize button
+  style &= ~WS_OVERLAPPEDWINDOW;
+  style |= WS_POPUP;
   SetWindowLong(hwnd, GWL_STYLE, style);
 
   // Add layered and topmost extended styles
@@ -814,9 +924,12 @@ void FlutterWindow::ConfigureAsOverlay() {
   exStyle |= WS_EX_TOOLWINDOW;   // Hide from taskbar
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  // Set window as topmost (above all other windows)
+  // Initialize layered window opacity to fully opaque so it actually renders
+  SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+
+  // Set window as topmost (above all other windows) and apply style changes
   SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
   // Get screen dimensions for full-screen
   HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -824,13 +937,13 @@ void FlutterWindow::ConfigureAsOverlay() {
   monitorInfo.cbSize = sizeof(MONITORINFO);
   GetMonitorInfo(monitor, &monitorInfo);
 
-  // Set to full-screen
+  // Set to full-screen and apply style changes
   SetWindowPos(hwnd, HWND_TOPMOST,
                monitorInfo.rcMonitor.left,
                monitorInfo.rcMonitor.top,
                monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
                monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
-               SWP_NOACTIVATE);
+               SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
   is_overlay_mode_ = true;
 
@@ -838,10 +951,15 @@ void FlutterWindow::ConfigureAsOverlay() {
   if (!keyboard_hook_) {
     keyboard_hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
   }
+  if (keyboard_hook_) {
+    keyboard_hook_ref_count_++;
+  }
 }
 
 // Reset window to normal state
 void FlutterWindow::ResetToNormal() {
+  if (!is_overlay_mode_) return;
+
   HWND hwnd = GetHandle();
   if (!hwnd) return;
 
@@ -849,9 +967,9 @@ void FlutterWindow::ResetToNormal() {
   SetWindowLong(hwnd, GWL_STYLE, original_style_);
   SetWindowLong(hwnd, GWL_EXSTYLE, original_ex_style_);
 
-  // Remove topmost status
+  // Remove topmost status and apply style changes
   SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
-               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
   is_overlay_mode_ = false;
 
@@ -901,11 +1019,11 @@ void FlutterWindow::SetIgnoreMouseEvents(bool ignore) {
 void FlutterWindow::SetupOverlayBridge() {
   // Setup com.breakmate.desktop/bridge for overlay isolate (needs getOverlayData)
   if (is_overlay_) {
-    auto overlay_data_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+    bridge_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
         flutter_controller_->engine()->messenger(), "com.breakmate.desktop/bridge",
         &flutter::StandardMethodCodec::GetInstance());
 
-    overlay_data_channel->SetMethodCallHandler(
+    bridge_channel_->SetMethodCallHandler(
         [this](const auto& call, auto result) {
           const std::string& method_name = call.method_name();
 
@@ -921,12 +1039,23 @@ void FlutterWindow::SetupOverlayBridge() {
             result->Success();
           }
           else if (method_name == "skipBreak" || method_name == "completeBreak") {
-            // Forward to main app via IPC
-            IpcBridgeManager::GetInstance()->SendEvent(
-                method_name, 
-                flutter::EncodableValue(flutter::EncodableMap()), 
-                flutter_controller_->engine());
+            // Forward to main app directly on its bridge channel
+            if (main_window_ && main_window_->GetBridgeChannel()) {
+              main_window_->GetBridgeChannel()->InvokeMethod(
+                  method_name, 
+                  std::make_unique<flutter::EncodableValue>(flutter::EncodableMap()));
+            }
             OverlayWindowManager::GetInstance()->HideOverlay();
+            result->Success();
+          }
+          else if (method_name == "setIgnoreMouseEvents") {
+            const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+            if (args) {
+              auto ignore_it = args->find(flutter::EncodableValue("ignore"));
+              if (ignore_it != args->end()) {
+                SetIgnoreMouseEvents(std::get<bool>(ignore_it->second));
+              }
+            }
             result->Success();
           }
           else {
@@ -966,6 +1095,10 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (message == WM_NCHITTEST && ignore_mouse_events_) {
+    return HTTRANSPARENT;
+  }
+
   if (is_pip_) {
     switch (message) {
       case WM_NCCALCSIZE: {
@@ -975,10 +1108,6 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
         break;
       }
       case WM_NCHITTEST: {
-        if (ignore_mouse_events_) {
-          return HTTRANSPARENT;
-        }
-
         short x_pos = static_cast<short>(LOWORD(lparam));
         short y_pos = static_cast<short>(HIWORD(lparam));
         POINT pt = { x_pos, y_pos };

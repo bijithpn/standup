@@ -235,6 +235,7 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
     static func enumerateDisplays() -> [[String: Any]] {
         var displays: [[String: Any]] = []
         let screens = NSScreen.screens
+        let primaryHeight = screens.first?.frame.height ?? 0
         for (index, screen) in screens.enumerated() {
             let frame = screen.frame
             var displayId = "Display_\(index)"
@@ -244,7 +245,7 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
             displays.append([
                 "id":        displayId,
                 "x":         frame.origin.x,
-                "y":         frame.origin.y,
+                "y":         primaryHeight - frame.origin.y - frame.height,
                 "width":     frame.width,
                 "height":    frame.height,
                 "dpiScale":  screen.backingScaleFactor,

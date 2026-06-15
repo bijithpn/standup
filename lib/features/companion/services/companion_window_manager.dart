@@ -130,6 +130,14 @@ class CompanionWindowManager {
   Future<Offset> getPosition() async {
     final pos = await _windowController.getPosition();
     _currentPosition = Offset(pos['x'] as double, pos['y'] as double);
+    if (pos.containsKey('width') && pos.containsKey('height')) {
+      final w = pos['width'] as double;
+      final h = pos['height'] as double;
+      if (w > 0 && h > 0) {
+        _currentSize = Size(w, h);
+        _persistSize(_currentSize);
+      }
+    }
     return _currentPosition;
   }
 

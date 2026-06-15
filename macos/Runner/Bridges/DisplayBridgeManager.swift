@@ -58,6 +58,7 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
                 displayId = screen.localizedName
             }
             
+            let primaryHeight = screens.first?.frame.height ?? 0
             let displayData: [String: Any] = [
                 "id": displayId,
                 "isPrimary": isPrimary,
@@ -65,11 +66,11 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
                 "height": frame.height,
                 "pixelRatio": screen.backingScaleFactor,
                 "boundsX": frame.origin.x,
-                "boundsY": frame.origin.y,
+                "boundsY": primaryHeight - frame.origin.y - frame.height,
                 "boundsWidth": frame.width,
                 "boundsHeight": frame.height,
                 "workAreaX": visibleFrame.origin.x,
-                "workAreaY": visibleFrame.origin.y,
+                "workAreaY": primaryHeight - visibleFrame.origin.y - visibleFrame.height,
                 "workAreaWidth": visibleFrame.width,
                 "workAreaHeight": visibleFrame.height,
                 "refreshRate": 60.0 // macOS refresh rate is tricky without CGDisplayMode, 60 is a safe default

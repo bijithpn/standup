@@ -250,17 +250,17 @@ class PetTheme {
         ),
         PetAnimationState.excited: AnimationRowConfig(
           row: 2,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.1,
         ),
         PetAnimationState.celebrate: AnimationRowConfig(
           row: 2,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.08,
         ),
         PetAnimationState.notification: AnimationRowConfig(
           row: 2,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.12,
           loop: false,
         ),
@@ -271,13 +271,13 @@ class PetTheme {
         ),
         PetAnimationState.stretch: AnimationRowConfig(
           row: 2,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.15,
           loop: false,
         ),
         PetAnimationState.breakMode: AnimationRowConfig(
           row: 2,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.12,
         ),
         PetAnimationState.focusMode: AnimationRowConfig(
@@ -287,7 +287,7 @@ class PetTheme {
         ),
         PetAnimationState.angry: AnimationRowConfig(
           row: 2,
-          frameCount: 8,
+          frameCount: 6,
           stepTime: 0.12,
           loop: false,
         ),
