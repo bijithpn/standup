@@ -61,20 +61,38 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
 
           flutter::EncodableList list;
           for (const auto& d : g_displays) {
+            double scale = d.pixelRatio;
+            double logicalWidth = d.width / scale;
+            double logicalHeight = d.height / scale;
+            double logicalBoundsX = static_cast<double>(d.bounds.left) / scale;
+            double logicalBoundsY = static_cast<double>(d.bounds.top) / scale;
+            double logicalWorkAreaX = static_cast<double>(d.workArea.left) / scale;
+            double logicalWorkAreaY = static_cast<double>(d.workArea.top) / scale;
+            double logicalWorkAreaWidth = static_cast<double>(d.workArea.right - d.workArea.left) / scale;
+            double logicalWorkAreaHeight = static_cast<double>(d.workArea.bottom - d.workArea.top) / scale;
+
             flutter::EncodableMap map;
             map[flutter::EncodableValue("id")] = flutter::EncodableValue(d.id);
             map[flutter::EncodableValue("isPrimary")] = flutter::EncodableValue(d.isPrimary);
-            map[flutter::EncodableValue("width")] = flutter::EncodableValue(d.width);
-            map[flutter::EncodableValue("height")] = flutter::EncodableValue(d.height);
-            map[flutter::EncodableValue("pixelRatio")] = flutter::EncodableValue(d.pixelRatio);
-            map[flutter::EncodableValue("boundsX")] = flutter::EncodableValue(static_cast<double>(d.bounds.left));
-            map[flutter::EncodableValue("boundsY")] = flutter::EncodableValue(static_cast<double>(d.bounds.top));
-            map[flutter::EncodableValue("boundsWidth")] = flutter::EncodableValue(d.width);
-            map[flutter::EncodableValue("boundsHeight")] = flutter::EncodableValue(d.height);
-            map[flutter::EncodableValue("workAreaX")] = flutter::EncodableValue(static_cast<double>(d.workArea.left));
-            map[flutter::EncodableValue("workAreaY")] = flutter::EncodableValue(static_cast<double>(d.workArea.top));
-            map[flutter::EncodableValue("workAreaWidth")] = flutter::EncodableValue(static_cast<double>(d.workArea.right - d.workArea.left));
-            map[flutter::EncodableValue("workAreaHeight")] = flutter::EncodableValue(static_cast<double>(d.workArea.bottom - d.workArea.top));
+            
+            // Expected by both DisplayInfo and NativeDisplayInfo
+            map[flutter::EncodableValue("width")] = flutter::EncodableValue(logicalWidth);
+            map[flutter::EncodableValue("height")] = flutter::EncodableValue(logicalHeight);
+            map[flutter::EncodableValue("pixelRatio")] = flutter::EncodableValue(scale);
+            map[flutter::EncodableValue("dpiScale")] = flutter::EncodableValue(scale);
+            
+            map[flutter::EncodableValue("boundsX")] = flutter::EncodableValue(logicalBoundsX);
+            map[flutter::EncodableValue("boundsY")] = flutter::EncodableValue(logicalBoundsY);
+            map[flutter::EncodableValue("x")] = flutter::EncodableValue(logicalBoundsX);
+            map[flutter::EncodableValue("y")] = flutter::EncodableValue(logicalBoundsY);
+            
+            map[flutter::EncodableValue("boundsWidth")] = flutter::EncodableValue(logicalWidth);
+            map[flutter::EncodableValue("boundsHeight")] = flutter::EncodableValue(logicalHeight);
+            
+            map[flutter::EncodableValue("workAreaX")] = flutter::EncodableValue(logicalWorkAreaX);
+            map[flutter::EncodableValue("workAreaY")] = flutter::EncodableValue(logicalWorkAreaY);
+            map[flutter::EncodableValue("workAreaWidth")] = flutter::EncodableValue(logicalWorkAreaWidth);
+            map[flutter::EncodableValue("workAreaHeight")] = flutter::EncodableValue(logicalWorkAreaHeight);
             map[flutter::EncodableValue("refreshRate")] = flutter::EncodableValue(60.0);
             
             list.push_back(flutter::EncodableValue(map));

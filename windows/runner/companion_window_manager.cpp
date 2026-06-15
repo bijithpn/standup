@@ -69,16 +69,31 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
   follow_mouse_ = false;
 
   HMONITOR primary = MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY);
-  MONITORINFO mi = {sizeof(mi)};
+  MONITORINFOEX mi = {};
+  mi.cbSize = sizeof(mi);
   GetMonitorInfo(primary, &mi);
 
-  const int w = mi.rcMonitor.right  - mi.rcMonitor.left;
-  const int h = mi.rcMonitor.bottom - mi.rcMonitor.top;
+  UINT dpiX = 96, dpiY = 96;
+  HMODULE hUser32 = LoadLibrary(L"user32.dll");
+  if (hUser32) {
+      typedef UINT(STDAPICALLTYPE * GetDpiForMonitorFn)(HMONITOR, int, UINT*, UINT*);
+      GetDpiForMonitorFn getDpiForMonitor = (GetDpiForMonitorFn)GetProcAddress(hUser32, "GetDpiForMonitor");
+      if (getDpiForMonitor) {
+          getDpiForMonitor(primary, 0 /* MDT_EFFECTIVE_DPI */, &dpiX, &dpiY);
+      }
+      FreeLibrary(hUser32);
+  }
+  double dpiScale = static_cast<double>(dpiX) / 96.0;
 
-  Win32Window::Point origin(mi.rcMonitor.left, mi.rcMonitor.top);
-  Win32Window::Size  size(w, h);
+  int logicalLeft = static_cast<int>(mi.rcMonitor.left / dpiScale);
+  int logicalTop = static_cast<int>(mi.rcMonitor.top / dpiScale);
+  int logicalWidth = static_cast<int>((mi.rcMonitor.right - mi.rcMonitor.left) / dpiScale);
+  int logicalHeight = static_cast<int>((mi.rcMonitor.bottom - mi.rcMonitor.top) / dpiScale);
 
-  if (!companion_window_->Create(L"StandupCompanion", origin, size)) {
+  Win32Window::Point origin(logicalLeft, logicalTop);
+  Win32Window::Size  size(logicalWidth, logicalHeight);
+
+  if (!companion_window_->Create(L"StandupCompanion", origin, size, primary)) {
     companion_window_ = nullptr;
     return;
   }
@@ -88,7 +103,9 @@ void CompanionWindowManager::ShowCompanion(const std::string& theme_id,
   ConfigureAsCompanionWindow(hwnd, click_through);
 
   SetWindowPos(hwnd, HWND_TOPMOST,
-               mi.rcMonitor.left, mi.rcMonitor.top, w, h,
+               mi.rcMonitor.left, mi.rcMonitor.top,
+               mi.rcMonitor.right - mi.rcMonitor.left,
+               mi.rcMonitor.bottom - mi.rcMonitor.top,
                SWP_NOACTIVATE | SWP_SHOWWINDOW);
 
   companion_window_->Show();

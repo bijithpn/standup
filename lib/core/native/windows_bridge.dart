@@ -24,8 +24,7 @@ class WindowsBridge implements NativeBridgePlatform {
 
   @override
   Future<void> skipBreak() async {
-    developer.log('skipBreak not supported on Windows', name: 'BreakMate');
-    return;
+    await _invokeSafely('skipBreak');
   }
 
   @override

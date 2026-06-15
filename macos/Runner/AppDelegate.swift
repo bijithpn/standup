@@ -271,10 +271,15 @@ class WindowBridge: NSObject, FlutterPlugin {
     
     private func handleGetWindowPosition(result: FlutterResult) {
         guard let window = self.window else {
-            result(["x": 0.0, "y": 0.0])
+            result(["x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0])
             return
         }
-        result(["x": window.frame.origin.x, "y": window.frame.origin.y])
+        result([
+            "x": window.frame.origin.x,
+            "y": window.frame.origin.y,
+            "width": Double(window.frame.size.width),
+            "height": Double(window.frame.size.height)
+        ])
     }
     
     private func handleSetWindowOpacity(args: [String: Any]?, result: FlutterResult) {

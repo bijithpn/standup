@@ -46,10 +46,10 @@ void main() {
 
     test(
       'config file exists and .tmp file is absent after flushPendingWrite',
-      () {
+      () async {
         final sp = _makePersistence(tempDir);
         sp.scheduleWrite(PetConfigV2.defaults());
-        sp.flushPendingWrite();
+        await sp.flushPendingWrite();
 
         expect(
           configFile.existsSync(),
@@ -65,7 +65,7 @@ void main() {
       },
     );
 
-    test('config file contains correct JSON content after flush', () {
+    test('config file contains correct JSON content after flush', () async {
       const config = PetConfigV2(
         mode: PetMode.constrained,
         pinnedDisplayId: 'monitor_1',
@@ -78,7 +78,7 @@ void main() {
 
       final sp = _makePersistence(tempDir);
       sp.scheduleWrite(config);
-      sp.flushPendingWrite();
+      await sp.flushPendingWrite();
 
       // Verify the file contains real JSON, not just an object instance dump.
       final raw = configFile.readAsStringSync();
@@ -93,9 +93,9 @@ void main() {
       );
     });
 
-    test('no files created when flush is called with nothing pending', () {
+    test('no files created when flush is called with nothing pending', () async {
       final sp = _makePersistence(tempDir);
-      sp.flushPendingWrite(); // nothing scheduled
+      await sp.flushPendingWrite(); // nothing scheduled
 
       expect(
         configFile.existsSync(),
@@ -109,7 +109,7 @@ void main() {
       );
     });
 
-    test('successive flushes overwrite config file and leave no .tmp', () {
+    test('successive flushes overwrite config file and leave no .tmp', () async {
       const configs = [
         PetConfigV2(
           mode: PetMode.freeRoam,
@@ -135,7 +135,7 @@ void main() {
 
       for (final config in configs) {
         sp.scheduleWrite(config);
-        sp.flushPendingWrite();
+        await sp.flushPendingWrite();
 
         expect(
           configFile.existsSync(),
@@ -162,7 +162,7 @@ void main() {
       }
     });
 
-    test('loadSync on a second instance recovers config written atomically', () {
+    test('loadSync on a second instance recovers config written atomically', () async {
       const original = PetConfigV2(
         mode: PetMode.freeRoam,
         pinnedDisplayId: null,
@@ -176,7 +176,7 @@ void main() {
       // Writer instance simulates a settings change at runtime.
       final writer = _makePersistence(tempDir);
       writer.scheduleWrite(original);
-      writer.flushPendingWrite();
+      await writer.flushPendingWrite();
 
       // Verify atomic write completed cleanly.
       expect(configFile.existsSync(), isTrue);
@@ -200,7 +200,7 @@ void main() {
 
     test(
       'corrupt file recovery writes defaults atomically — no .tmp remnant',
-      () {
+      () async {
         // Seed a corrupt config file to exercise the recovery path.
         configFile.writeAsStringSync('}{invalid json{{');
 
@@ -208,7 +208,7 @@ void main() {
         sp.loadSync(); // triggers scheduleWrite(defaults) internally
 
         // The dirty flag is now set; flush should overwrite with defaults.
-        sp.flushPendingWrite();
+        await sp.flushPendingWrite();
 
         expect(
           configFile.existsSync(),

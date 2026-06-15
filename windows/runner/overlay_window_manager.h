@@ -14,6 +14,9 @@ class OverlayWindowManager {
   void ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args);
   void HideOverlay();
   void UpdateOverlayData(const flutter::EncodableMap& data);
+  // Invoked from the low-level keyboard hook when Escape is pressed so that
+  // the overlay can be dismissed even without window focus (SWP_NOACTIVATE).
+  void HandleEscapeKey();
   flutter::EncodableMap GetLastShowArgs() const { return last_show_args_; }
 
  private:
