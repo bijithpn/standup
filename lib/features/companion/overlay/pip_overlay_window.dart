@@ -18,6 +18,7 @@ import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
@@ -179,6 +180,11 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   void _applySettings(Map<String, dynamic> args) {
     if (!mounted) return;
+
+    try {
+      CustomEnvironmentRepository().loadSync();
+    } catch (_) {}
+
     final newThemeId = (args['themeId'] as String?) ?? _themeId;
     final newScale = (args['scale'] as num?)?.toDouble() ?? _scale;
     final newPetName = (args['petName'] as String?) ?? _petName;
@@ -250,6 +256,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         if (newPreviewBackground != _previewBackground) {
           _previewBackground = newPreviewBackground;
           _game?.updateBackgroundImagePath(newPreviewBackground);
+        } else {
+          _game?.reloadEnvironment();
         }
         _pipBackgroundStyle = newPipBackgroundStyle;
         _pipOpacity = newPipOpacity;

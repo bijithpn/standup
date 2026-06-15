@@ -333,18 +333,42 @@ class EnvironmentThemeConfig {
 
   static EnvironmentThemeConfig getByPath(String path) {
     final lower = path.toLowerCase();
+
+    // 1. Prioritize exact match by id (case-insensitive)
     for (final theme in customThemes) {
-      if (lower.contains(theme.id) ||
-          lower.contains(theme.skyPath.toLowerCase())) {
-        return theme;
-      }
+      if (theme.id.toLowerCase() == lower) return theme;
     }
     for (final theme in themes) {
-      if (lower.contains(theme.id) ||
+      if (theme.id.toLowerCase() == lower) return theme;
+    }
+
+    // 2. Exact match by skyPath (case-insensitive)
+    for (final theme in customThemes) {
+      if (theme.skyPath.toLowerCase() == lower) return theme;
+    }
+    for (final theme in themes) {
+      if (theme.skyPath.toLowerCase() == lower) return theme;
+    }
+
+    // 3. Fallback to contains match, sorted by ID length descending to prevent shorter prefix collisions (e.g. 'forest' matching 'mist_forest')
+    final sortedCustom = List<EnvironmentThemeConfig>.from(customThemes)
+      ..sort((a, b) => b.id.length.compareTo(a.id.length));
+    for (final theme in sortedCustom) {
+      if (lower.contains(theme.id.toLowerCase()) ||
           lower.contains(theme.skyPath.toLowerCase())) {
         return theme;
       }
     }
+
+    final sortedPredefined = List<EnvironmentThemeConfig>.from(themes)
+      ..sort((a, b) => b.id.length.compareTo(a.id.length));
+    for (final theme in sortedPredefined) {
+      if (lower.contains(theme.id.toLowerCase()) ||
+          lower.contains(theme.skyPath.toLowerCase())) {
+        return theme;
+      }
+    }
+
     return themes.first; // Default is Forest
   }
 }

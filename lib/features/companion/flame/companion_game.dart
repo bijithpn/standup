@@ -79,6 +79,17 @@ class CompanionGame extends FlameGame {
     }
   }
 
+  Future<void> reloadEnvironment() async {
+    final config = EnvironmentThemeConfig.getByPath(backgroundImagePath);
+    await preCacheThemeAssets(config);
+    if (_environmentComponent != null) {
+      await _environmentComponent!.updateSkyImage(backgroundImagePath);
+    }
+    if (isPiP) {
+      _rebuildScenery();
+    }
+  }
+
   static PetProfile getProfileFromTheme(PetTheme theme) {
     final species = theme.species;
     final variant = PetVariant(

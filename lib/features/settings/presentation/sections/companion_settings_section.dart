@@ -358,40 +358,77 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
   Widget _buildBackgroundPicker() {
     final backgrounds = [
-      {'name': 'Forest', 'path': 'assets/background/forest/background.png'},
-      {'name': 'Autumn', 'path': 'assets/background/autumn/background.png'},
-      {'name': 'Winter', 'path': 'assets/background/winter/background.png'},
-      {'name': 'Beach', 'path': 'assets/background/beach/background-light.png'},
-      {'name': 'Desert', 'path': 'assets/background/desert/background.png'},
-      {'name': 'Sky', 'path': 'assets/environments/sky/sky_back.png'},
+      {
+        'name': 'Forest',
+        'id': 'forest',
+        'path': 'assets/background/forest/background.png'
+      },
+      {
+        'name': 'Autumn',
+        'id': 'autumn',
+        'path': 'assets/background/autumn/background.png'
+      },
+      {
+        'name': 'Winter',
+        'id': 'winter',
+        'path': 'assets/background/winter/background.png'
+      },
+      {
+        'name': 'Beach',
+        'id': 'beach',
+        'path': 'assets/background/beach/background-light.png'
+      },
+      {
+        'name': 'Desert',
+        'id': 'desert',
+        'path': 'assets/background/desert/background.png'
+      },
+      {
+        'name': 'Sky',
+        'id': 'sky',
+        'path': 'assets/environments/sky/sky_back.png'
+      },
       {
         'name': 'Night Town',
+        'id': 'night_town',
         'path': 'assets/environments/background/bg_night_town.png',
       },
       {
         'name': 'Mist Forest',
+        'id': 'mist_forest',
         'path': 'assets/environments/background/bg_mist_forest.png',
       },
-      {'name': 'Urban', 'path': 'assets/background/urban/background.png'},
+      {
+        'name': 'Urban',
+        'id': 'urban',
+        'path': 'assets/background/urban/background.png'
+      },
     ];
 
     try {
       final repo = sl<CustomEnvironmentRepository>();
       final customThemes = repo.themes.isEmpty ? repo.loadSync() : repo.themes;
       for (final theme in customThemes) {
-        if (!backgrounds.any((bg) => bg['path'] == theme.skyPath)) {
+        if (!backgrounds.any((bg) => bg['id'] == theme.id)) {
           backgrounds.add({
             'name': theme.name,
+            'id': theme.id,
             'path': theme.skyPath,
           });
         }
       }
     } catch (_) {}
 
-    final currentBgPath = widget.controller.companionPreviewBackground;
+    final currentBg = widget.controller.companionPreviewBackground;
     final selectedBg = backgrounds.firstWhere(
-      (bg) => bg['path'] == currentBgPath,
-      orElse: () => backgrounds.first,
+      (bg) => bg['id'] == currentBg,
+      orElse: () {
+        // Fallback to match by skyPath (for backward compatibility)
+        return backgrounds.firstWhere(
+          (bg) => bg['path'] == currentBg,
+          orElse: () => backgrounds.first,
+        );
+      },
     );
 
     return Container(
@@ -423,17 +460,17 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             ],
           ),
           AppDropdown<String>(
-            value: selectedBg['path']!,
+            value: selectedBg['id']!,
             width: 180,
-            onChanged: (path) {
-              if (path != null) {
-                widget.controller.changePreviewBackground(path);
+            onChanged: (id) {
+              if (id != null) {
+                widget.controller.changePreviewBackground(id);
               }
             },
             items: backgrounds.map((bg) {
-              final isThisSelected = bg['path'] == currentBgPath;
+              final isThisSelected = bg['id'] == selectedBg['id'];
               return AppDropdownItem<String>(
-                value: bg['path']!,
+                value: bg['id']!,
                 label: bg['name']!,
                 customChild: Row(
                   mainAxisSize: MainAxisSize.min,

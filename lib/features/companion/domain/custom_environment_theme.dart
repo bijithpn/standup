@@ -514,16 +514,26 @@ class EnvironmentAssetCatalogue {
 
   static const List<String> cloudPaths = [
     'assets/environments/sky/sky_cloud.png',
-    'assets/environments/sky/sky_clouds_1_1.png',
-    'assets/environments/sky/sky_clouds_1_2.png',
-    'assets/environments/sky/sky_clouds_2.png',
-    'assets/environments/sky/sky_clouds_2_1.png',
     'assets/environments/sky/sky_clouds_3.png',
-    'assets/environments/sky/sky_clouds_3_1.png',
     'assets/environments/sky/sky_clouds_4.png',
-    'assets/environments/sky/sky_clouds_4_1.png',
     'assets/environments/sky/sky_clouds_5.png',
     'assets/environments/sky/sky_clouds_6.png',
+    'assets/environments/sky/sky_clouds_1_3.png',
+    'assets/environments/sky/sky_clouds_2_4.png',
+    'assets/environments/sky/sky_clouds_2_alt.png',
+    'assets/environments/sky/sky_clouds_3_2.png',
+    'assets/environments/sky/sky_clouds_4_2.png',
+    'assets/environments/sky/sky_clouds_4_3.png',
+    'assets/environments/sky/sky_clouds_4_4.png',
+    'assets/environments/sky/sky_clouds_5_2.png',
+    'assets/environments/sky/sky_clouds_5_3.png',
+    'assets/environments/sky/sky_clouds_5_5.png',
+    'assets/environments/sky/sky_clouds_6_2.png',
+    'assets/environments/sky/sky_clouds_7_3.png',
+    'assets/environments/sky/sky_clouds_7_4.png',
+    'assets/environments/sky/sky_clouds_8_3.png',
+    'assets/environments/sky/sky_clouds_8_4.png',
+    'assets/environments/sky/sky_clouds_8_6.png',
   ];
 
   static const Map<String, ThemeAssetConfig> toys = {

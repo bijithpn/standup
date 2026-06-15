@@ -20,6 +20,7 @@ import 'app/bootstrapping/ipc_coordinator.dart';
 import 'core/core.dart';
 import 'features/features.dart';
 import 'shared/shared.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
 void _setupGlobalErrors() {
   void handleFatalError(Object error, StackTrace? stack) {
@@ -734,6 +735,7 @@ Future<void> companionMain() async {
   }
 
   try {
+    CustomEnvironmentRepository().loadSync();
     final defaultTheme = PetTheme.getTheme('grey_cat');
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),
@@ -770,6 +772,7 @@ Future<void> pipMain() async {
   }
 
   try {
+    CustomEnvironmentRepository().loadSync();
     final defaultTheme = PetTheme.getTheme('grey_cat');
     await PetAssetLoader.loadAnimations(
       CompanionGame.getProfileFromTheme(defaultTheme),

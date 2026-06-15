@@ -238,6 +238,10 @@ class SettingsRepository extends ChangeNotifier {
         'companion_treat_type',
         defaultValue: 'sushi',
       ),
+      companionPreviewBackground: _storage.getString(
+        'companion_preview_background',
+        defaultValue: 'assets/background/forest/background.png',
+      ),
     );
   }
 
@@ -436,6 +440,10 @@ class SettingsRepository extends ChangeNotifier {
       companionTreatType: _storage.getString(
         'companion_treat_type',
         defaultValue: 'sushi',
+      ),
+      companionPreviewBackground: _storage.getString(
+        'companion_preview_background',
+        defaultValue: 'assets/background/forest/background.png',
       ),
     );
   }
@@ -650,6 +658,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'companion_treat_type',
       settings.companionTreatType,
+    );
+    await _storage.setString(
+      'companion_preview_background',
+      settings.companionPreviewBackground,
     );
 
     _storage.settingsBox!.put(snapshot);

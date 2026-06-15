@@ -114,7 +114,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
 
     final cachedSprite = PetAssetLoader.getImageSync(path);
     final cachedBg = widget.backgroundImagePath != null
-        ? PetAssetLoader.getImageSync(widget.backgroundImagePath!)
+        ? PetAssetLoader.getImageSync(config.skyPath)
         : null;
     final cachedGround = PetAssetLoader.getImageSync(config.groundPath);
     final cachedCloud = PetAssetLoader.getImageSync(config.cloudPath);
@@ -150,7 +150,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       final results = await Future.wait([
         PetAssetLoader.loadImage(path),
         if (widget.backgroundImagePath != null)
-          PetAssetLoader.loadImage(widget.backgroundImagePath!)
+          PetAssetLoader.loadImage(config.skyPath)
         else
           Future.value(null),
         PetAssetLoader.loadImage(config.groundPath),
@@ -462,10 +462,8 @@ class _SpritePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final tint = _getAmbientTint();
 
-    final String path = backgroundImagePath ?? '';
-
     if (backgroundImage != null) {
-      final isSkyOnly = path.toLowerCase().contains('sky');
+      final isSkyOnly = config.skyPath.toLowerCase().contains('sky');
       paintImage(
         canvas: canvas,
         rect: Rect.fromLTWH(0, 0, size.width, size.height),
