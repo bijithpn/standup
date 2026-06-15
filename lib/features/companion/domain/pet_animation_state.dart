@@ -27,6 +27,7 @@ enum PetAnimationState {
   fetching,
   falling,
   reacting,
+  petting,
 }
 
 class PetAnimationConfig {

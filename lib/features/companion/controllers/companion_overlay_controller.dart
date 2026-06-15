@@ -39,7 +39,7 @@ class CompanionOverlayController extends ChangeNotifier {
       false; // Hides native companion when viewing settings UI
 
   String _pipBackgroundStyle = 'dark';
-  double _pipOpacity = 0.9;
+  double _pipOpacity = 1.0;
   bool _pipDraggableClickable = true;
   String _companionToyType = 'tennis_ball';
   String _companionTreatType = 'sushi';

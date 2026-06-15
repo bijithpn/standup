@@ -283,7 +283,7 @@ class CompanionComponent
     if (canOverride) {
       final bool isRunning = cur == PetAnimationState.run;
 
-      if (isNavMoving || speed > 1.0) {
+      if (speed > 1.5) {
         // Run hysteresis: need higher speed to START running, lower to STAY.
         final bool shouldRun = isRunning
             ? speed > _runStopThreshold

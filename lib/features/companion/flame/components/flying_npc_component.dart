@@ -7,7 +7,7 @@ import 'package:breakmate/features/companion/flame/components/environment_compon
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
-class BirdComponent extends SpriteAnimationComponent
+class FlyingNpcComponent extends SpriteAnimationComponent
     with HasGameReference<CompanionGame> {
   static final _rng = Random();
 
@@ -15,8 +15,11 @@ class BirdComponent extends SpriteAnimationComponent
   double _direction = 1.0; // 1.0 = right, -1.0 = left
   double _respawnTimer = 0.0;
   bool _active = false;
+  double _waveTimer = 0.0;
+  double _baseY = 0.0;
+  double _lastY = 0.0;
 
-  BirdComponent() : super(anchor: Anchor.center, priority: -4);
+  FlyingNpcComponent() : super(anchor: Anchor.center, priority: -4);
 
   @override
   Future<void> onLoad() async {
@@ -80,6 +83,9 @@ class BirdComponent extends SpriteAnimationComponent
     final startX = _direction > 0 ? -40.0 : worldWidth + 40.0;
     // Spawns lower in the sky to remain visible below header/title bar
     final startY = 55.0 + _rng.nextDouble() * 45.0;
+    _baseY = startY;
+    _lastY = startY;
+    _waveTimer = _rng.nextDouble() * 10.0;
 
     position = Vector2(startX, startY);
     scale = Vector2(
@@ -90,18 +96,33 @@ class BirdComponent extends SpriteAnimationComponent
 
   @override
   void update(double dt) {
-    super.update(dt);
-
     if (!_active) {
       _respawnTimer -= dt;
       if (_respawnTimer <= 0.0) {
         _spawnBird();
       }
+      super.update(dt);
       return;
     }
 
+    final double lastY = position.y;
+
     // Move bird
+    _waveTimer += dt;
     position.x += _direction * _speed * dt;
+    position.y = _baseY + sin(_waveTimer * 4.5) * 6.0 + cos(_waveTimer * 1.8) * 10.0;
+
+    final double dy = position.y - lastY;
+    
+    // Scale animation speed to vertical flight direction (ascending = active wing flap, descending = gliding glide)
+    double animSpeed = 0.8;
+    if (dy < -0.05) {
+      animSpeed = 1.3;
+    } else if (dy > 0.05) {
+      animSpeed = 0.3;
+    }
+    
+    super.update(dt * animSpeed);
 
     // Check if offscreen
     final worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;

@@ -11,6 +11,7 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/features/companion/interaction/interaction_controller.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
@@ -418,6 +419,37 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   static const double _dragHandleHeight = CompanionWindowManager.handleHeight;
 
+  void _handleTapUp(Offset localPos) {
+    if (_game == null || !_gameInitialized) return;
+
+    final gameX = localPos.dx;
+    final gameY = localPos.dy + _dragHandleHeight;
+
+    final pet = _game!.petComponent;
+    if (pet != null) {
+      final petX = pet.position.x;
+      final petY = pet.position.y;
+      final petW = pet.size.x * pet.scale.x.abs();
+      final petH = pet.size.y * pet.scale.y.abs();
+
+      // Since the anchor is Anchor.bottomCenter:
+      final left = petX - petW / 2;
+      final right = petX + petW / 2;
+      final top = petY - petH;
+      final bottom = petY;
+
+      if (gameX >= left && gameX <= right && gameY >= top && gameY <= bottom) {
+        _onPetTap();
+        return;
+      }
+    }
+
+    // Tapped on the background -> move the pet to the horizontal coordinate
+    final targetY = pet?.position.y ?? gameY;
+    _game!.petService.navigation.setTarget(Offset(gameX, targetY));
+    _game!.petService.stateMachine.transitionTo(PetState.walk);
+  }
+
   void _onPetTap() {
     _interactionController?.onPetClicked();
   }
@@ -583,7 +615,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                         onPointerHover: _onHover,
                         child: GestureDetector(
                           behavior: HitTestBehavior.translucent,
-                          onTap: _onPetTap,
+                          onTapUp: (details) => _handleTapUp(details.localPosition),
                           onDoubleTap: _onPetDoubleTap,
                           onPanStart: _onDragStart,
                           onPanUpdate: _onDragUpdate,

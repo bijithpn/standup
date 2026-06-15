@@ -257,7 +257,7 @@ class PetStateMachine extends ChangeNotifier {
     PetState.idle: [
       PetTransition(
         event: PetEvent.userClick,
-        targetState: PetState.alert,
+        targetState: PetState.affectionate,
         weight: 1.0,
         minDuration: const Duration(milliseconds: 500),
       ),
@@ -432,7 +432,7 @@ class PetStateMachine extends ChangeNotifier {
       ),
       PetTransition(
         event: PetEvent.userClick,
-        targetState: PetState.alert,
+        targetState: PetState.affectionate,
         weight: 1.0,
       ),
       PetTransition(
@@ -512,7 +512,7 @@ class PetStateMachine extends ChangeNotifier {
       ),
       PetTransition(
         event: PetEvent.userClick,
-        targetState: PetState.alert,
+        targetState: PetState.affectionate,
         weight: 0.8,
         minDuration: const Duration(seconds: 2),
       ),
@@ -924,6 +924,11 @@ class PetStateMachine extends ChangeNotifier {
       ),
     ],
     PetState.affectionate: [
+      PetTransition(
+        event: PetEvent.animationComplete,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
       PetTransition(
         event: PetEvent.tick,
         targetState: PetState.idle,
