@@ -146,7 +146,7 @@ class EnvironmentComponent extends PositionComponent
     final double worldWidth = game.isPiP ? size.x * 1.3 : size.x;
 
     if (_skyImage != null) {
-      final isSkyOnly = backgroundImagePath.toLowerCase().contains('sky');
+      final isSkyOnly = config.skyPath.toLowerCase().contains('sky');
       paintImage(
         canvas: canvas,
         rect: Rect.fromLTWH(0, 0, worldWidth, size.y),

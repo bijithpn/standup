@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:flutter/services.dart';
@@ -103,11 +102,8 @@ class EnvironmentBuilderController extends ChangeNotifier {
       // If we failed to find any assets via the directory scanner (e.g. platform restrictions),
       // fall back to reading the manifest.
       if (allAssets.isEmpty) {
-        final manifestContent = await rootBundle.loadString(
-          'AssetManifest.json',
-        );
-        final Map<String, dynamic> manifestMap = json.decode(manifestContent);
-        allAssets = manifestMap.keys.toList();
+        final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+        allAssets = manifest.listAssets();
       }
 
       // Filter only image and GIF assets
@@ -484,7 +480,7 @@ class EnvironmentBuilderController extends ChangeNotifier {
       _savedThemes = List.of(_repo.themes);
       final settingsRepo = sl<SettingsRepository>();
       final updated = settingsRepo.currentSettings.copyWith(
-        companionPreviewBackground: _draft.skyPath,
+        companionPreviewBackground: _draft.id,
       );
       await settingsRepo.save(updated);
     } finally {
