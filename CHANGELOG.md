@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 |---|---:|---:|---|---|
+| `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
 | `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
 | `v1.2.1` | 1.2.1 | 31 | 2026-06-01 | Native macOS Calendar and Permission Recovery |
 | `v1.2.0` | 1.2.0 | 30 | 2026-05-31 | Contextual Intelligence and Personal Wellness |
@@ -20,6 +21,34 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Unreleased]
+
+## [1.4.0] - 2026-06-16
+
+Tags: `v1.4.0`  
+Build: `33`  
+Release title: Desktop Companion Engine & Environment Builder
+
+### Added
+
+- **Desktop Companion Engine:** Completely redesigned sprite rendering system with advanced state machines for more fluid and expressive pet behaviors.
+- **Environment Builder:** A new UI system for creating and customizing your companion's world with live previews and theme configuration.
+- **Interactive PiP Overlay:** High-performance Picture-in-Picture window logic for keeping your companion visible across all workspaces.
+- **Dynamic Animation Stabilization:** Implemented ground-padding detection to eliminate jitter and stabilize pet animations on the Y-axis.
+- **Ambient Lighting System:** Integrated a new lighting model for companion sprites that reacts to the selected environment theme.
+- **Environment Decorations:** Added environment-aware decorations and background elements like animated birds to bring the companion world to life.
+
+### Changed
+
+- **Centralized Storage:** Migrated to a unified `StorageService` with built-in migration logic and safe multi-process access management.
+- **Service Bootstrapping:** Modernized the application startup sequence with a dedicated Bootstrapper and refined Dependency Injection.
+- **Unified NPC Components:** Consolidated NPC logic and movement controllers for better maintainability and performance.
+- **Architectural Cleanup:** Migrated environment identification from fragile file paths to robust unique identifiers.
+
+### Fixed
+
+- **Painting Errors:** Resolved "zero-size" painting errors that occurred during window resizing.
+- **Windows DPI Scaling:** Improved high-DPI handling on Windows to ensure crisp rendering on 4K displays.
+- **UI Polish:** Disabled intrusive default scrollbars in settings pages for a cleaner, more native look.
 
 ## [1.3.0] - 2026-06-02
 
@@ -280,7 +309,8 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
-[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0
 [1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1
 [1.2.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.0
