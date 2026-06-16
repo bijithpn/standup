@@ -4,21 +4,16 @@ import 'package:window_manager/window_manager.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-/// Service to manage a floating always-on-top window
-/// This window stays visible even when the app is minimized or other apps are in focus
 class FloatingWindowService {
   final AppLogger _logger = AppLogger();
   bool _isFloating = false;
   FloatingWindowType? _currentType;
   StreamController<FloatingWindowState>? _stateController;
 
-  /// Stream to listen to floating window state changes
   Stream<FloatingWindowState> get stateStream =>
       (_stateController ??= StreamController<FloatingWindowState>.broadcast())
           .stream;
 
-  /// Show a floating window that stays on top of all other windows
-  /// This works even when the main app window is minimized or closed
   Future<void> showFloatingWindow({
     required FloatingWindowType type,
     required Widget content,
@@ -34,17 +29,14 @@ class FloatingWindowService {
     }
 
     try {
-      // Get display information for positioning
       final displays = await ScreenRetriever.instance.getAllDisplays();
       final primaryDisplay = displays.first;
       final screenWidth = primaryDisplay.size.width;
       final screenHeight = primaryDisplay.size.height;
 
-      // Default dimensions
       final windowWidth = width ?? 400;
       final windowHeight = height ?? 100;
 
-      // Default position: top-right corner of screen
       final defaultX = screenWidth - windowWidth - 20;
       final defaultY = 20;
       final defaultPosition =
@@ -54,7 +46,6 @@ class FloatingWindowService {
         'Showing floating window: $type at ${defaultPosition.dx}x${defaultPosition.dy} (${windowWidth}x$windowHeight) on screen height $screenHeight',
       );
 
-      // Configure window as floating
       await windowManager.setAlwaysOnTop(true);
       await windowManager.setSize(Size(windowWidth, windowHeight));
       await windowManager.setPosition(defaultPosition);
@@ -62,12 +53,10 @@ class FloatingWindowService {
       await windowManager.setMinimizable(resizable);
       await windowManager.setClosable(resizable);
 
-      // Don't show in dock if it's a small floating window
       if (!showInDock) {
         await windowManager.setSkipTaskbar(true);
       }
 
-      // Make window visible and focused
       await windowManager.show();
       await windowManager.focus();
       await windowManager.setHasShadow(false);
@@ -84,7 +73,6 @@ class FloatingWindowService {
     }
   }
 
-  /// Hide the floating window and restore normal window state
   Future<void> hideFloatingWindow() async {
     if (!_isFloating) {
       return;
@@ -108,13 +96,10 @@ class FloatingWindowService {
     }
   }
 
-  /// Check if floating window is currently visible
   bool get isFloatingVisible => _isFloating;
 
-  /// Get current floating window type
   FloatingWindowType? get currentFloatingType => _currentType;
 
-  /// Reset floating window state (use when app is closing)
   Future<void> reset() async {
     _isFloating = false;
     _currentType = null;
@@ -124,22 +109,8 @@ class FloatingWindowService {
   }
 }
 
-/// Types of floating windows supported
-enum FloatingWindowType {
-  /// Clock display (shows current time)
-  clock,
+enum FloatingWindowType { clock, timer, breakCountdown, custom }
 
-  /// Timer countdown display
-  timer,
-
-  /// Break countdown display
-  breakCountdown,
-
-  /// Custom content
-  custom,
-}
-
-/// State of the floating window
 class FloatingWindowState {
   final bool isVisible;
   final FloatingWindowType? type;

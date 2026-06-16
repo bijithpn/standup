@@ -35,6 +35,8 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
     
     @objc private func screenParametersChanged() {
         if let sink = eventSink {
+            // Dart re-enumerates displays after this signal so native and
+            // Flutter use the same payload shape for initial and changed state.
             sink(["type": "display_changed"])
         }
     }
@@ -48,13 +50,24 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
             let frame = screen.frame
             let visibleFrame = screen.visibleFrame
             
-            // Generate a persistent ID based on display device UUID if possible, but NSScreen doesn't expose it easily.
-            // Using localizedName as ID for simplicity, or simply an index string
             var displayId = "Display_\(index)"
-            if #available(macOS 10.15, *) {
+            if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
+                let displayID = CGDirectDisplayID(screenNumber.uint32Value)
+                if let uuidRef = CGDisplayCreateUUIDFromDisplayID(displayID) {
+                    let uuidString = CFUUIDCreateString(nil, uuidRef.takeRetainedValue()) as String?
+                    if let uuid = uuidString {
+                        displayId = uuid
+                    } else {
+                        displayId = String(displayID)
+                    }
+                } else {
+                    displayId = String(displayID)
+                }
+            } else if #available(macOS 10.15, *) {
                 displayId = screen.localizedName
             }
             
+            let primaryHeight = screens.first?.frame.height ?? 0
             let displayData: [String: Any] = [
                 "id": displayId,
                 "isPrimary": isPrimary,
@@ -62,11 +75,11 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
                 "height": frame.height,
                 "pixelRatio": screen.backingScaleFactor,
                 "boundsX": frame.origin.x,
-                "boundsY": frame.origin.y,
+                "boundsY": primaryHeight - frame.origin.y - frame.height,
                 "boundsWidth": frame.width,
                 "boundsHeight": frame.height,
                 "workAreaX": visibleFrame.origin.x,
-                "workAreaY": visibleFrame.origin.y,
+                "workAreaY": primaryHeight - visibleFrame.origin.y - visibleFrame.height,
                 "workAreaWidth": visibleFrame.width,
                 "workAreaHeight": visibleFrame.height,
                 "refreshRate": 60.0 // macOS refresh rate is tricky without CGDisplayMode, 60 is a safe default

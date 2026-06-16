@@ -20,8 +20,6 @@ class ProductivityTrendChart extends StatelessWidget {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  // ── Week: Sun–Sat of the current week ──────────────────────────────────────
-
   List<_BarSlot> _weekSlots() {
     final now = DateTime.now();
     final sunday = DateTime(
@@ -46,8 +44,6 @@ class ProductivityTrendChart extends StatelessWidget {
       );
     });
   }
-
-  // ── Month: week-by-week totals for the current month ───────────────────────
 
   List<_BarSlot> _monthSlots() {
     final now = DateTime.now();
@@ -93,16 +89,12 @@ class ProductivityTrendChart extends StatelessWidget {
     return slots;
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     if (period == ChartPeriod.today) return _buildTodayChart();
     final slots = period == ChartPeriod.week ? _weekSlots() : _monthSlots();
     return _buildWeekMonthChart(slots, period == ChartPeriod.week ? 22 : 32);
   }
-
-  // Today: pie chart (Done vs Skipped) + usage minutes ─────────────────────
 
   Widget _buildTodayChart() {
     final today = _todayStr();
@@ -120,7 +112,6 @@ class ProductivityTrendChart extends StatelessWidget {
     final skipped = d.breaksSkipped;
     final total = done + skipped;
 
-    // If no data yet, show an empty-state ring
     final sections = total == 0
         ? [
             PieChartSectionData(
@@ -147,7 +138,6 @@ class ProductivityTrendChart extends StatelessWidget {
 
     return Row(
       children: [
-        // Pie / donut
         SizedBox(
           width: 130,
           height: 130,
@@ -185,7 +175,6 @@ class ProductivityTrendChart extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 24),
-        // Legend + minutes
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -220,8 +209,6 @@ class ProductivityTrendChart extends StatelessWidget {
       ],
     );
   }
-
-  // Week / Month: breaks-per-day or per-week bars ────────────────────────────
 
   Widget _buildWeekMonthChart(List<_BarSlot> slots, double barWidth) {
     double maxY = 5;

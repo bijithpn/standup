@@ -154,16 +154,19 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                     onPanStart: (_) => setState(() => _drag = true),
                     onPanUpdate: (d) {
                       setState(() {
-                        _x = (_x! + d.delta.dx)
-                            .clamp(0.0, constraints.maxWidth - _openW);
-                        _y = (_y! + d.delta.dy)
-                            .clamp(0.0, constraints.maxHeight - _h - 40);
+                        _x = (_x! + d.delta.dx).clamp(
+                          0.0,
+                          constraints.maxWidth - _openW,
+                        );
+                        _y = (_y! + d.delta.dy).clamp(
+                          0.0,
+                          constraints.maxHeight - _h - 40,
+                        );
                       });
                     },
                     onPanEnd: (_) {
                       setState(() => _drag = false);
-                      _snapCorner(
-                          constraints.maxWidth, constraints.maxHeight);
+                      _snapCorner(constraints.maxWidth, constraints.maxHeight);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 220),

@@ -60,9 +60,7 @@ class PrivacySection extends StatelessWidget {
             subtitle:
                 'This will reset all settings and wipe your statistics history. This cannot be undone.',
             buttonText: 'Wipe Data',
-            onPressed: () {
-              // Implementation for data wipe
-            },
+            onPressed: () {},
             isDestructive: true,
           ),
         ]),

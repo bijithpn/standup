@@ -57,16 +57,28 @@ void OverlayWindowPlugin::HandleMethodCall(
   
   const auto& method_name = method_call.method_name();
 
-  // Get the Flutter view's native HWND
+  // Get the Flutter view's native HWND (which is a child of the top-level parent window)
   HWND hwnd = registrar_->GetView()->GetNativeWindow();
   if (!hwnd) {
     result->Error("Window Error", "Could not get window handle");
     return;
   }
 
-  // Retrieve the FlutterWindow pointer stored as GWLP_USERDATA
-  auto* flutter_window = reinterpret_cast<FlutterWindow*>(
-      ::GetWindowLongPtr(hwnd, GWLP_USERDATA));
+  // Retrieve the top-level parent window handle using GetAncestor to handle nested hierarchy safely
+  HWND parent_hwnd = ::GetAncestor(hwnd, GA_ROOT);
+  if (!parent_hwnd) {
+    parent_hwnd = hwnd;
+  }
+
+  // Verify that the parent window class name is indeed "FLUTTER_RUNNER_WIN32_WINDOW" to prevent invalid casts
+  wchar_t class_name[256];
+  ::GetClassNameW(parent_hwnd, class_name, 256);
+  
+  FlutterWindow* flutter_window = nullptr;
+  if (std::wstring(class_name) == L"FLUTTER_RUNNER_WIN32_WINDOW") {
+    flutter_window = reinterpret_cast<FlutterWindow*>(
+        ::GetWindowLongPtr(parent_hwnd, GWLP_USERDATA));
+  }
 
   if (method_name == "configureAsOverlay") {
     if (flutter_window) {

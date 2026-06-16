@@ -42,80 +42,81 @@ class DuskGlowTemplate extends StatelessWidget {
         : 0.0;
     const accent = Color(0xFFC4B5FD);
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        RepaintBoundary(
-          child: CustomPaint(painter: _DuskPainter()),
-        ),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                LucideIcons.moon,
-                size: 20,
-                color: Colors.white.withValues(alpha: 0.38),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                _formatTime(remainingSeconds),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 64,
-                  fontWeight: FontWeight.w200,
-                  fontFamily: 'Inter',
-                  fontFeatures: [FontFeature.tabularFigures()],
-                  letterSpacing: -2,
-                  height: 1.0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _durationLabel(),
-                style: TextStyle(
+    return ColoredBox(
+      color: const Color(0xFF0A0A0F),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          RepaintBoundary(child: CustomPaint(painter: _DuskPainter())),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  LucideIcons.moon,
+                  size: 20,
                   color: Colors.white.withValues(alpha: 0.38),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Inter',
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: 240,
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 1,
-                  backgroundColor: Colors.white.withValues(alpha: 0.08),
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    accent.withValues(alpha: 0.4),
+                const SizedBox(height: 20),
+                Text(
+                  _formatTime(remainingSeconds),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 64,
+                    fontWeight: FontWeight.w200,
+                    fontFamily: 'Inter',
+                    fontFeatures: [FontFeature.tabularFigures()],
+                    letterSpacing: -2,
+                    height: 1.0,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        if (!settings.strictMode && onSkip != null)
-          Positioned(
-            bottom: 36,
-            right: 40,
-            child: GestureDetector(
-              onTap: onSkip,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Text(
-                  'Skip',
+                const SizedBox(height: 12),
+                Text(
+                  _durationLabel(),
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: Colors.white.withValues(alpha: 0.38),
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Inter',
                   ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: 240,
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 1,
+                    backgroundColor: Colors.white.withValues(alpha: 0.08),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      accent.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-      ],
+          if (!settings.strictMode && onSkip != null)
+            Positioned(
+              bottom: 36,
+              right: 40,
+              child: GestureDetector(
+                onTap: onSkip,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -123,6 +124,7 @@ class DuskGlowTemplate extends StatelessWidget {
 class _DuskPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     canvas.drawRect(
       Offset.zero & size,
       Paint()

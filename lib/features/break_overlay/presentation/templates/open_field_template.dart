@@ -41,7 +41,6 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
   }
 
   Future<void> _loadImage() async {
-    // Attempt to load via settings custom image path or fallback
     final path = widget.settings.customImagePath;
     final isCustomEnabled = path != null && !path.startsWith('disabled:');
     final actualPath = (path != null && path.startsWith('disabled:'))
@@ -84,97 +83,100 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
       background = const ColoredBox(color: Color(0xFF0A0A0F));
     }
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        RepaintBoundary(child: background),
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Color(0xBF000000)],
-              stops: [0.3, 1.0],
-            ),
-          ),
-        ),
-        Column(
-          children: [
-            const Spacer(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    breakTitle,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _formatTime(widget.remainingSeconds),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 64,
-                      fontWeight: FontWeight.w200,
-                      fontFamily: 'Inter',
-                      fontFeatures: [FontFeature.tabularFigures()],
-                      letterSpacing: -2,
-                      height: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: 380,
-                    child: Text(
-                      widget.breakInfo.tip,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.55),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
+    return ColoredBox(
+      color: const Color(0xFF0A0A0F),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          RepaintBoundary(child: background),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Color(0xBF000000)],
+                stops: [0.3, 1.0],
               ),
             ),
-            const SizedBox(height: 48),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Row(
-                children: [
-                  const Spacer(),
-                  if (!widget.settings.strictMode && widget.onSkip != null)
-                    GestureDetector(
-                      onTap: widget.onSkip,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Text(
-                          'Skip',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.35),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Inter',
-                          ),
+          ),
+          Column(
+            children: [
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      breakTitle,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _formatTime(widget.remainingSeconds),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 64,
+                        fontWeight: FontWeight.w200,
+                        fontFamily: 'Inter',
+                        fontFeatures: [FontFeature.tabularFigures()],
+                        letterSpacing: -2,
+                        height: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: 380,
+                      child: Text(
+                        widget.breakInfo.tip,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.55),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Inter',
+                          height: 1.5,
                         ),
                       ),
                     ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 36),
-          ],
-        ),
-      ],
+              const SizedBox(height: 48),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Row(
+                  children: [
+                    const Spacer(),
+                    if (!widget.settings.strictMode && widget.onSkip != null)
+                      GestureDetector(
+                        onTap: widget.onSkip,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 36),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

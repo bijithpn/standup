@@ -3,8 +3,6 @@ import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-import 'package:breakmate/core/native/native_bridge.dart';
-
 class CompanionStateManager {
   CompanionStateManager({EventBus? eventBus})
     : _eventBus = eventBus ?? EventBus.instance,
@@ -190,9 +188,6 @@ class CompanionStateManager {
     _state = newState;
     _eventBus.emit(CompanionStateChangedEvent(state: newState));
     _logger.info('Companion state changed to: ${newState.name}');
-
-    // Sync to companion isolate via native bridge
-    NativeBridge.triggerCompanionState(newState.name);
   }
 
   void setVisibility(bool visible) {

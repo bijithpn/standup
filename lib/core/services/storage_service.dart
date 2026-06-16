@@ -10,6 +10,7 @@ import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/objectbox.g.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class StorageService {
   static Store? _store;
@@ -30,7 +31,7 @@ class StorageService {
         isolateName.toLowerCase().contains('companion');
     if (isSecondaryIsolate) {
       debugPrint(
-        '[Storage] 🚨 REJECTED: Secondary isolate "$isolateName" attempted to access ObjectBox store! Rejecting access to prevent corruption.',
+        '[Storage] Rejected ObjectBox access from secondary isolate "$isolateName" to prevent store corruption.',
       );
       throw StateError('Storage access rejected in secondary isolates.');
     }
@@ -48,7 +49,10 @@ class StorageService {
   Box<CompanionPreferences>? companionPreferencesBox;
   Box<KeyValueRecord>? kvBox;
 
-  int migrationDurationMs = 0;
+  int get migrationDurationMs =>
+      SimplePrefs.instance.getInt('database_migration_ms', defaultValue: 0);
+  set migrationDurationMs(int val) =>
+      SimplePrefs.instance.setInt('database_migration_ms', val);
 
   Future<void> init() async {
     if (_store != null) return;
@@ -96,10 +100,14 @@ class StorageService {
         debugPrint(
           '[Storage] Migrating database from legacy location: $legacyStoreDir to $storeDir',
         );
+        final migrationStopwatch = Stopwatch()..start();
         try {
           Directory(storeDir).parent.createSync(recursive: true);
           Directory(legacyStoreDir).renameSync(storeDir);
-          debugPrint('[Storage] Migration successful.');
+          migrationDurationMs = migrationStopwatch.elapsedMilliseconds;
+          debugPrint(
+            '[Storage] Migration successful in ${migrationDurationMs}ms.',
+          );
         } catch (e) {
           debugPrint(
             '[Storage] Migration failed: $e. Staying with existing paths.',
@@ -187,21 +195,25 @@ class StorageService {
             final lockFilePath = p.join(activeStoreDir, 'lock.mdb');
 
             final pids = <int>{};
-            for (final path in [dbFilePath, lockFilePath, activeStoreDir]) {
-              try {
-                final result = await Process.run('lsof', ['-t', path]);
-                if (result.exitCode == 0) {
-                  final stdoutStr = result.stdout.toString().trim();
-                  if (stdoutStr.isNotEmpty) {
-                    for (final line in stdoutStr.split('\n')) {
-                      final parsedPid = int.tryParse(line.trim());
-                      if (parsedPid != null && parsedPid != pid) {
-                        pids.add(parsedPid);
+            if (!Platform.isWindows) {
+              for (final path in [dbFilePath, lockFilePath, activeStoreDir]) {
+                try {
+                  final result = await Process.run('lsof', ['-t', path]);
+                  if (result.exitCode == 0) {
+                    final stdoutStr = result.stdout.toString().trim();
+                    if (stdoutStr.isNotEmpty) {
+                      for (final line in stdoutStr.split('\n')) {
+                        final parsedPid = int.tryParse(line.trim());
+                        if (parsedPid != null && parsedPid != pid) {
+                          pids.add(parsedPid);
+                        }
                       }
                     }
                   }
+                } catch (e, st) {
+                  ErrorHandler().handleError(e, st);
                 }
-              } catch (_) {}
+              }
             }
 
             if (pids.isNotEmpty) {
@@ -210,9 +222,9 @@ class StorageService {
               );
               for (final stalePid in pids) {
                 try {
-                  await Process.run('kill', ['-9', stalePid.toString()]);
+                  final success = Process.killPid(stalePid);
                   debugPrint(
-                    '[Storage] Successfully terminated stale PID $stalePid.',
+                    '[Storage] Terminated stale PID $stalePid (success=$success).',
                   );
                 } catch (killErr) {
                   debugPrint(
@@ -289,7 +301,9 @@ class StorageService {
               );
               openDurationMs = openStopwatch.elapsedMilliseconds;
               activeDatabasePath = legacyStoreDir;
-            } catch (_) {}
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
           }
 
           if (_store == null) {
@@ -356,18 +370,18 @@ class StorageService {
   }
 
   void diagnoseAndLogFailure(String storeDir) {
-    debugPrint('=== 🚨 STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
+    debugPrint('=== STORAGE INITIALIZATION FAILURE DIAGNOSTICS ===');
 
-    // 1. Initialization order issue
+    // Check whether initialization was re-entered or skipped.
     debugPrint('[Diagnostics] 1. Initialization Order Check:');
     debugPrint('   - StorageService._initializing: $_initializing');
     debugPrint('   - StorageService._store != null: ${_store != null}');
 
-    // 2. Existing process ownership
+    // Identify the process that owns this storage attempt.
     debugPrint('[Diagnostics] 2. Existing Process Ownership Check:');
     debugPrint('   - Current Process ID: $pid');
 
-    // 3. Secondary isolate access
+    // Secondary Flutter engines must not open ObjectBox directly.
     final isolateName = Isolate.current.debugName ?? '';
     final isSecondaryIsolate =
         isolateName.toLowerCase().contains('overlay') ||
@@ -376,7 +390,7 @@ class StorageService {
     debugPrint('   - Isolate Name: "$isolateName"');
     debugPrint('   - Is Secondary Isolate: $isSecondaryIsolate');
 
-    // 4. Temporary storage fallback
+    // Temporary storage keeps the app usable but cannot be treated as durable.
     debugPrint('[Diagnostics] 4. Temporary Storage Fallback Check:');
     debugPrint('   - Active database path: $activeDatabasePath');
     final isTemp = activeDatabasePath?.contains('temporary') ?? false;
@@ -387,11 +401,11 @@ class StorageService {
       );
     }
 
-    // 5. ObjectBox open failure
+    // Capture the internal failure flag after all retry paths have run.
     debugPrint('[Diagnostics] 5. ObjectBox Open Failure Check:');
     debugPrint('   - StorageService._failed: $_failed');
 
-    // 6. Database corruption
+    // Inspect the main database file without attempting repair here.
     debugPrint('[Diagnostics] 6. Database Corruption Check:');
     if (storeDir.isNotEmpty) {
       final dbFile = File(p.join(storeDir, 'data.mdb'));
@@ -405,7 +419,7 @@ class StorageService {
       }
     }
 
-    // 7. Lock-file conflict
+    // A leftover lock file usually points to another process or a crash.
     debugPrint('[Diagnostics] 7. Lock-file Conflict Check:');
     if (storeDir.isNotEmpty) {
       final lockFile = File(p.join(storeDir, 'lock.mdb'));
@@ -449,17 +463,25 @@ class StorageService {
 
   Future<int> getDatabaseSize() async {
     try {
+      if (activeDatabasePath != null) {
+        final file = File(p.join(activeDatabasePath!, 'data.mdb'));
+        if (await file.exists()) {
+          return await file.length();
+        }
+      }
       final docsDir = await getApplicationDocumentsDirectory();
       final storeDir = p.join(docsDir.path, 'breakmate_db');
       final file = File(p.join(storeDir, 'data.mdb'));
       if (await file.exists()) {
         return await file.length();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     return 0;
   }
 
-  // --- KeyValue Compatibility Layer ---
+  // KeyValue Compatibility Layer
 
   KeyValueRecord? _getKv(String key) {
     if (kvBox == null) return null;

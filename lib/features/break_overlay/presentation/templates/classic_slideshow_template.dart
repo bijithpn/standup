@@ -76,12 +76,11 @@ class ClassicSlideshowTemplate extends StatelessWidget {
     }
 
     return Material(
-      color: Colors.black,
+      color: const Color(0xFF0A0A0F),
       child: Stack(
         fit: StackFit.expand,
         children: [
           RepaintBoundary(child: background),
-          // Bottom-only gradient
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -92,7 +91,6 @@ class ClassicSlideshowTemplate extends StatelessWidget {
               ),
             ),
           ),
-          // Center card: title, countdown, tip
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),

@@ -1,14 +1,11 @@
-/// Defines the species and variant types for pet companions.
 enum MovementType { walk, hop, fly }
 
-/// Species-specific behavior parameters.
 class PetBehaviorProfile {
   final double mouseAttraction; // Curiosity multiplier
   final double sleepLikelihood; // Fatigue rate multiplier
   final double edgePreference; // Likelihood to stay near boundaries
   final List<String> customActions;
 
-  // Decoupled physics & render traits
   final double movementSpeed; // max follow/wander speed
   final double acceleration; // stiffness rate (springStiffness)
   final double damping; // damping factor for spring system
@@ -68,11 +65,28 @@ class PetBehaviorProfile {
     bobIntensity: 0.02,
     stopRadius: 8.0,
   );
+
+  static const flamingo = PetBehaviorProfile(
+    mouseAttraction: 1.0,
+    sleepLikelihood: 1.0,
+    edgePreference: 0.3,
+    movementSpeed: 110.0,
+    acceleration: 8.0,
+    damping: 0.8,
+    lookDelay: 0.2,
+    wanderRadius: 280.0,
+    specialAbilityProbability: 0.15,
+    strideFrequency: 1.15,
+    maxTilt: 0.15,
+    bobIntensity: 0.03,
+    stopRadius: 32.0,
+  );
 }
 
 enum PetSpecies {
   cat(MovementType.walk, PetBehaviorProfile.cat),
-  dog(MovementType.walk, PetBehaviorProfile.dog);
+  dog(MovementType.walk, PetBehaviorProfile.dog),
+  flamingo(MovementType.walk, PetBehaviorProfile.flamingo);
 
   final MovementType movementType;
   final PetBehaviorProfile defaultProfile;
@@ -80,7 +94,6 @@ enum PetSpecies {
   const PetSpecies(this.movementType, this.defaultProfile);
 }
 
-/// Represents a visual variant of a specific pet species.
 class PetVariant {
   final String id;
   final String name;

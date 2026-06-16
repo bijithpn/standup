@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +15,6 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 
-// --- Nav item model ---
-
 class _NavItem {
   final String label;
   final IconData icon;
@@ -30,8 +29,6 @@ class _NavItem {
   });
 }
 
-// --- Intent classes ---
-
 class _TogglePauseIntent extends Intent {
   const _TogglePauseIntent();
 }
@@ -43,8 +40,6 @@ class _BreakNowIntent extends Intent {
 class _QuitIntent extends Intent {
   const _QuitIntent();
 }
-
-// --- Main Layout ---
 
 class MainLayout extends StatefulWidget {
   const MainLayout({super.key});
@@ -58,7 +53,6 @@ class _MainLayoutState extends State<MainLayout> {
   bool _isMenuOpen = false;
   late final AppNavigationService _navigationService;
 
-  // Primary nav items (shown in the main list)
   static final List<_NavItem> _mainNavItems = [
     _NavItem(
       label: AppStrings.today,
@@ -112,29 +106,30 @@ class _MainLayoutState extends State<MainLayout> {
     ),
   ];
 
-  // Bottom nav items (shown at the footer of the sidebar)
-  static const List<_NavItem> _bottomNavItems = [
-    _NavItem(
-      label: AppStrings.navDataBackup,
-      icon: CupertinoIcons.folder,
-      section: 'Data & Backup',
-      isBottom: true,
-    ),
-    _NavItem(
-      label: AppStrings.navSoftwareUpdate,
-      icon: CupertinoIcons.arrow_down_circle,
-      section: 'Updates',
-      isBottom: true,
-    ),
-    _NavItem(
-      label: AppStrings.navAbout,
-      icon: CupertinoIcons.info_circle,
-      section: 'About',
-      isBottom: true,
-    ),
-  ];
+  List<_NavItem> get _bottomNavItems {
+    return [
+      const _NavItem(
+        label: AppStrings.navDataBackup,
+        icon: CupertinoIcons.folder,
+        section: 'Data & Backup',
+        isBottom: true,
+      ),
+      if (!Platform.isWindows)
+        const _NavItem(
+          label: AppStrings.navSoftwareUpdate,
+          icon: CupertinoIcons.arrow_down_circle,
+          section: 'Updates',
+          isBottom: true,
+        ),
+      const _NavItem(
+        label: AppStrings.navAbout,
+        icon: CupertinoIcons.info_circle,
+        section: 'About',
+        isBottom: true,
+      ),
+    ];
+  }
 
-  // Combined for index mapping
   List<_NavItem> get _allItems => [..._mainNavItems, ..._bottomNavItems];
 
   @override
@@ -229,8 +224,6 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // --- Wide layout ---
-
   Widget _buildWideLayout({Key? key}) {
     return MacosWindow(
       key: key,
@@ -263,8 +256,6 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // --- Narrow layout ---
-
   Widget _buildNarrowLayout({Key? key}) {
     return Material(
       type: MaterialType.transparency,
@@ -272,7 +263,6 @@ class _MainLayoutState extends State<MainLayout> {
         key: key,
         children: [
           _buildMainContent(),
-          // Top bar
           Positioned(
             top: 0,
             left: 0,
@@ -322,7 +312,6 @@ class _MainLayoutState extends State<MainLayout> {
               ),
             ),
           ),
-          // Drawer overlay
           if (_isMenuOpen) ...[
             Positioned.fill(
               child: GestureDetector(
@@ -360,8 +349,6 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
 
-  // --- Content area ---
-
   Widget _buildMainContent() {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 280),
@@ -389,40 +376,42 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   Widget _getPageForIndex(int index) {
-    switch (index) {
-      case 0:
+    if (index < 0 || index >= _allItems.length) {
+      return const DashboardPage();
+    }
+    final section = _allItems[index].section;
+    switch (section) {
+      case 'Today':
         return const DashboardPage();
-      case 1:
+      case 'Breaks & Profiles':
         return const SettingsPage(section: 'Breaks & Profiles');
-      case 2:
+      case 'Intelligent Detection':
         return const SettingsPage(section: 'Intelligent Detection');
-      case 3:
+      case 'Exercises':
         return const SettingsPage(section: 'Exercises');
-      case 4:
+      case 'Notifications':
         return const SettingsPage(section: 'Notifications');
-      case 5:
+      case 'Companion':
         return const SettingsPage(section: 'Companion');
-      case 6:
+      case 'Statistics':
         return const SettingsPage(section: 'Statistics');
-      case 7:
+      case 'Goals':
         return const SettingsPage(section: 'Goals');
-      case 8:
+      case 'Wellness Library':
         return const WellnessLibraryPage();
-      case 9:
+      case 'General':
         return const SettingsPage(section: 'General');
-      case 10:
+      case 'Data & Backup':
         return const SettingsPage(section: 'Data & Backup');
-      case 11:
+      case 'Updates':
         return const SettingsPage(section: 'Updates');
-      case 12:
+      case 'About':
         return const SettingsPage(section: 'About');
       default:
         return const DashboardPage();
     }
   }
 }
-
-// --- Sidebar Content Widget ---
 
 class _SidebarContent extends StatelessWidget {
   final ScrollController? scrollController;
@@ -444,11 +433,9 @@ class _SidebarContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- App brand header ---
         _buildBrandHeader(),
         const SizedBox(height: 8),
 
-        // --- Primary nav items ---
         Expanded(
           child: ListView.builder(
             controller: scrollController,
@@ -468,7 +455,6 @@ class _SidebarContent extends StatelessWidget {
           ),
         ),
 
-        // --- Separator ---
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Divider(
@@ -478,7 +464,6 @@ class _SidebarContent extends StatelessWidget {
           ),
         ),
 
-        // --- Bottom nav items ---
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
           child: Column(
@@ -505,7 +490,6 @@ class _SidebarContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // App icon
           Container(
             width: 72,
             height: 72,
@@ -533,7 +517,6 @@ class _SidebarContent extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          // App name — two-toned
           RichText(
             text: TextSpan(
               children: [
@@ -576,8 +559,6 @@ class _SidebarContent extends StatelessWidget {
     );
   }
 }
-
-// --- Sidebar Nav Item Widget ---
 
 class _SidebarNavItem extends StatefulWidget {
   final _NavItem item;

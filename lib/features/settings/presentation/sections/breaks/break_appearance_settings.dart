@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
@@ -36,33 +35,141 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   final FocusNode _searchFocusNode = FocusNode();
 
   static const _templates = [
-    (id: 'classic', name: 'Gallery Focus', desc: 'Image-backed rest view with a compact progress panel.'),
-    (id: 'minimal', name: 'Quiet Grid', desc: 'Fast-loading custom dial with low-stimulus geometry.'),
-    (id: 'companion', name: 'Companion Dock', desc: 'Draggable companion layer with a clean command rail.'),
-    (id: 'zen', name: 'Breath Lines', desc: 'Minimal breathing guide on a quiet lined surface.'),
-    (id: 'hud', name: 'Focus Card', desc: 'Spacious timer with a single progress bar.'),
-    (id: 'floating', name: 'Floating Dock', desc: 'Snappable compact overlay, desktop stays visible.'),
-    (id: 'activities', name: 'Activity Studio', desc: 'Guided breathing & eye sync exercises.'),
-    (id: 'soft_arc', name: 'Soft Arc', desc: 'Icon, large countdown, and a 1.5px arc. Nothing else.'),
-    (id: 'breathe_line', name: 'Breathe Line', desc: 'Animated line expands and contracts with your breath.'),
-    (id: 'clock_face', name: 'Clock Face', desc: 'Analog-style clock ring with a progress arc.'),
-    (id: 'one_word', name: 'One Word', desc: '"Rest" or "Pause" — giant, quiet, minimal.'),
-    (id: 'open_field', name: 'Open Field', desc: 'Full photo backdrop with bottom text overlay.'),
-    (id: 'haiku_card', name: 'Haiku', desc: 'A rotating haiku poem with your countdown below.'),
-    (id: 'ring_only', name: 'Ring Only', desc: 'Single arc ring, icon, and time. Nothing outside.'),
-    (id: 'step_guide', name: 'Step Guide', desc: 'Numbered steps from your break tip.'),
-    (id: 'time_slice', name: 'Time Slice', desc: 'Full-width progress bar, big word, optional tip.'),
-    (id: 'day_stack', name: 'Day Stack', desc: 'Today\'s break count + countdown stacked cleanly.'),
-    (id: 'pulse_dot', name: 'Pulse Dot', desc: 'Pulsing circle border with countdown center.'),
-    (id: 'mono_time', name: 'Mono Time', desc: 'Monospace terminal-style countdown with accent bar.'),
-    (id: 'split_view', name: 'Split View', desc: 'Tip text left, arc + timer right.'),
-    (id: 'warm_amber', name: 'Warm Amber', desc: 'Sunset-toned wind-down with daily break count.'),
-    (id: 'focus_orb', name: 'Focus Orb', desc: 'Static radial glow behind a clean countdown.'),
-    (id: 'wave_calm', name: 'Wave Calm', desc: 'Animated sine waves behind a centered timer.'),
-    (id: 'iris_rest', name: 'Iris Rest', desc: 'Giant eye icon, a rule, countdown, one-line instruction.'),
-    (id: 'quiet_pill', name: 'Quiet Pill', desc: 'Draggable floating pill — desktop stays fully visible.'),
-    (id: 'paper_light', name: 'Paper Light', desc: 'Light mode template on warm paper background.'),
-    (id: 'dusk_glow', name: 'Dusk Glow', desc: 'Deep purple gradient with moon icon and progress bar.'),
+    (
+      id: 'classic',
+      name: 'Gallery Focus',
+      desc: 'Image-backed rest view with a compact progress panel.',
+    ),
+    (
+      id: 'minimal',
+      name: 'Quiet Grid',
+      desc: 'Fast-loading custom dial with low-stimulus geometry.',
+    ),
+    (
+      id: 'companion',
+      name: 'Companion Dock',
+      desc: 'Draggable companion layer with a clean command rail.',
+    ),
+    (
+      id: 'zen',
+      name: 'Breath Lines',
+      desc: 'Minimal breathing guide on a quiet lined surface.',
+    ),
+    (
+      id: 'hud',
+      name: 'Focus Card',
+      desc: 'Spacious timer with a single progress bar.',
+    ),
+    (
+      id: 'floating',
+      name: 'Floating Dock',
+      desc: 'Snappable compact overlay, desktop stays visible.',
+    ),
+    (
+      id: 'activities',
+      name: 'Activity Studio',
+      desc: 'Guided breathing & eye sync exercises.',
+    ),
+    (
+      id: 'soft_arc',
+      name: 'Soft Arc',
+      desc: 'Icon, large countdown, and a 1.5px arc. Nothing else.',
+    ),
+    (
+      id: 'breathe_line',
+      name: 'Breathe Line',
+      desc: 'Animated line expands and contracts with your breath.',
+    ),
+    (
+      id: 'clock_face',
+      name: 'Clock Face',
+      desc: 'Analog-style clock ring with a progress arc.',
+    ),
+    (
+      id: 'one_word',
+      name: 'One Word',
+      desc: '"Rest" or "Pause" — giant, quiet, minimal.',
+    ),
+    (
+      id: 'open_field',
+      name: 'Open Field',
+      desc: 'Full photo backdrop with bottom text overlay.',
+    ),
+    (
+      id: 'haiku_card',
+      name: 'Haiku',
+      desc: 'A rotating haiku poem with your countdown below.',
+    ),
+    (
+      id: 'ring_only',
+      name: 'Ring Only',
+      desc: 'Single arc ring, icon, and time. Nothing outside.',
+    ),
+    (
+      id: 'step_guide',
+      name: 'Step Guide',
+      desc: 'Numbered steps from your break tip.',
+    ),
+    (
+      id: 'time_slice',
+      name: 'Time Slice',
+      desc: 'Full-width progress bar, big word, optional tip.',
+    ),
+    (
+      id: 'day_stack',
+      name: 'Day Stack',
+      desc: 'Today\'s break count + countdown stacked cleanly.',
+    ),
+    (
+      id: 'pulse_dot',
+      name: 'Pulse Dot',
+      desc: 'Pulsing circle border with countdown center.',
+    ),
+    (
+      id: 'mono_time',
+      name: 'Mono Time',
+      desc: 'Monospace terminal-style countdown with accent bar.',
+    ),
+    (
+      id: 'split_view',
+      name: 'Split View',
+      desc: 'Tip text left, arc + timer right.',
+    ),
+    (
+      id: 'warm_amber',
+      name: 'Warm Amber',
+      desc: 'Sunset-toned wind-down with daily break count.',
+    ),
+    (
+      id: 'focus_orb',
+      name: 'Focus Orb',
+      desc: 'Static radial glow behind a clean countdown.',
+    ),
+    (
+      id: 'wave_calm',
+      name: 'Wave Calm',
+      desc: 'Animated sine waves behind a centered timer.',
+    ),
+    (
+      id: 'iris_rest',
+      name: 'Iris Rest',
+      desc: 'Giant eye icon, a rule, countdown, one-line instruction.',
+    ),
+    (
+      id: 'quiet_pill',
+      name: 'Quiet Pill',
+      desc: 'Draggable floating pill — desktop stays fully visible.',
+    ),
+    (
+      id: 'paper_light',
+      name: 'Paper Light',
+      desc: 'Light mode template on warm paper background.',
+    ),
+    (
+      id: 'dusk_glow',
+      name: 'Dusk Glow',
+      desc: 'Deep purple gradient with moon icon and progress bar.',
+    ),
   ];
 
   @override
@@ -267,7 +374,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         ),
         const SizedBox(height: 16),
         buildCard([
-          // Custom color swatches row
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -345,7 +451,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                                     child: Icon(
                                       CupertinoIcons.checkmark,
                                       size: 14,
-                                      color: preset.color.computeLuminance() > 0.5
+                                      color:
+                                          preset.color.computeLuminance() > 0.5
                                           ? Colors.black87
                                           : Colors.white,
                                     ),
@@ -361,7 +468,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             ),
           ),
           divider(),
-          // Fine-grained Opacity Customizer
           sliderRow(
             'Clock Text Opacity',
             currentOpacity,
@@ -375,7 +481,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             max: 1.0,
           ),
           divider(),
-          // Background Blur
           sliderRow(
             'Background Blur Intensity',
             widget.settings.clockFaceBlurEnabled ? 1.0 : 0.0,
@@ -395,7 +500,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
               if (v) {
                 if (widget.settings.customImagePath != null &&
                     widget.settings.customImagePath!.startsWith("disabled:")) {
-                  // Re-enable existing path by removing the prefix
                   final actualPath = widget.settings.customImagePath!.substring(
                     9,
                   );
@@ -408,7 +512,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     'Custom wallpaper background enabled!',
                   );
                 } else {
-                  // No path exists, pick a new file
                   try {
                     final result = await FilePicker.pickFiles(
                       type: FileType.custom,
@@ -435,7 +538,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   }
                 }
               } else {
-                // Disable by adding "disabled:" prefix (only if a path exists)
                 if (widget.settings.customImagePath != null &&
                     !widget.settings.customImagePath!.startsWith("disabled:")) {
                   widget.onSave(
@@ -808,8 +910,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   }
 }
 
-/// Static icon-based card for each break template.
-/// Replaces the live timer preview — no timers, no rebuilds, just clean themed visuals.
 class _BreakTemplateIconPreview extends StatelessWidget {
   final String id;
 
@@ -829,7 +929,6 @@ class _BreakTemplateIconPreview extends StatelessWidget {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Subtle dot-grid pattern overlay
           Positioned.fill(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
@@ -837,7 +936,6 @@ class _BreakTemplateIconPreview extends StatelessWidget {
               child: CustomPaint(painter: _DotGridPainter(config.accentColor)),
             ),
           ),
-          // Glowing halo behind icon
           Center(
             child: Container(
               width: 42,
@@ -934,45 +1032,225 @@ class _BreakTemplateIconPreview extends StatelessWidget {
           label: 'ACTIVITY STUDIO',
         );
       case 'soft_arc':
-        return _TemplateConfig(icon: LucideIcons.circle, accentColor: const Color(0xFF7EC8E3), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF080B14), Color(0xFF06080C)]), label: 'SOFT ARC');
+        return _TemplateConfig(
+          icon: LucideIcons.circle,
+          accentColor: const Color(0xFF7EC8E3),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080B14), Color(0xFF06080C)],
+          ),
+          label: 'SOFT ARC',
+        );
       case 'breathe_line':
-        return _TemplateConfig(icon: LucideIcons.wind, accentColor: const Color(0xFF7EC8E3), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF07090D), Color(0xFF05070A)]), label: 'BREATHE LINE');
+        return _TemplateConfig(
+          icon: LucideIcons.wind,
+          accentColor: const Color(0xFF7EC8E3),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF07090D), Color(0xFF05070A)],
+          ),
+          label: 'BREATHE LINE',
+        );
       case 'clock_face':
-        return _TemplateConfig(icon: LucideIcons.clock, accentColor: const Color(0xFFF9A875), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF14100A), Color(0xFF0A0807)]), label: 'CLOCK FACE');
+        return _TemplateConfig(
+          icon: LucideIcons.clock,
+          accentColor: const Color(0xFFF9A875),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF14100A), Color(0xFF0A0807)],
+          ),
+          label: 'CLOCK FACE',
+        );
       case 'one_word':
-        return _TemplateConfig(icon: LucideIcons.type, accentColor: const Color(0xFFD4D4D8), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0D0D12), Color(0xFF08080C)]), label: 'ONE WORD');
+        return _TemplateConfig(
+          icon: LucideIcons.type,
+          accentColor: const Color(0xFFD4D4D8),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0D0D12), Color(0xFF08080C)],
+          ),
+          label: 'ONE WORD',
+        );
       case 'open_field':
-        return _TemplateConfig(icon: LucideIcons.image, accentColor: const Color(0xFF86EFAC), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF091409), Color(0xFF060A06)]), label: 'OPEN FIELD');
+        return _TemplateConfig(
+          icon: LucideIcons.image,
+          accentColor: const Color(0xFF86EFAC),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF091409), Color(0xFF060A06)],
+          ),
+          label: 'OPEN FIELD',
+        );
       case 'haiku_card':
-        return _TemplateConfig(icon: LucideIcons.scrollText, accentColor: const Color(0xFFD4D4D8), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0D0D0F), Color(0xFF09090B)]), label: 'HAIKU');
+        return _TemplateConfig(
+          icon: LucideIcons.scrollText,
+          accentColor: const Color(0xFFD4D4D8),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0D0D0F), Color(0xFF09090B)],
+          ),
+          label: 'HAIKU',
+        );
       case 'ring_only':
-        return _TemplateConfig(icon: LucideIcons.circle, accentColor: const Color(0xFF818CF8), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0C0C18), Color(0xFF08080F)]), label: 'RING ONLY');
+        return _TemplateConfig(
+          icon: LucideIcons.circle,
+          accentColor: const Color(0xFF818CF8),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0C0C18), Color(0xFF08080F)],
+          ),
+          label: 'RING ONLY',
+        );
       case 'step_guide':
-        return _TemplateConfig(icon: LucideIcons.listOrdered, accentColor: const Color(0xFF6EE7B7), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF071410), Color(0xFF05090A)]), label: 'STEP GUIDE');
+        return _TemplateConfig(
+          icon: LucideIcons.listOrdered,
+          accentColor: const Color(0xFF6EE7B7),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF071410), Color(0xFF05090A)],
+          ),
+          label: 'STEP GUIDE',
+        );
       case 'time_slice':
-        return _TemplateConfig(icon: LucideIcons.minus, accentColor: const Color(0xFF5BB898), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF071210), Color(0xFF05090A)]), label: 'TIME SLICE');
+        return _TemplateConfig(
+          icon: LucideIcons.minus,
+          accentColor: const Color(0xFF5BB898),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF071210), Color(0xFF05090A)],
+          ),
+          label: 'TIME SLICE',
+        );
       case 'day_stack':
-        return _TemplateConfig(icon: LucideIcons.layers2, accentColor: const Color(0xFF93C5FD), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF080B14), Color(0xFF060810)]), label: 'DAY STACK');
+        return _TemplateConfig(
+          icon: LucideIcons.layers2,
+          accentColor: const Color(0xFF93C5FD),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080B14), Color(0xFF060810)],
+          ),
+          label: 'DAY STACK',
+        );
       case 'pulse_dot':
-        return _TemplateConfig(icon: LucideIcons.loader, accentColor: const Color(0xFF6EE7B7), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF071410), Color(0xFF05090A)]), label: 'PULSE DOT');
+        return _TemplateConfig(
+          icon: LucideIcons.loader,
+          accentColor: const Color(0xFF6EE7B7),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF071410), Color(0xFF05090A)],
+          ),
+          label: 'PULSE DOT',
+        );
       case 'mono_time':
-        return _TemplateConfig(icon: LucideIcons.terminal, accentColor: const Color(0xFFB5CC7A), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0C0D08), Color(0xFF08090A)]), label: 'MONO TIME');
+        return _TemplateConfig(
+          icon: LucideIcons.terminal,
+          accentColor: const Color(0xFFB5CC7A),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0C0D08), Color(0xFF08090A)],
+          ),
+          label: 'MONO TIME',
+        );
       case 'split_view':
-        return _TemplateConfig(icon: LucideIcons.columns2, accentColor: const Color(0xFF86EFAC), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF091409), Color(0xFF060A06)]), label: 'SPLIT VIEW');
+        return _TemplateConfig(
+          icon: LucideIcons.columns2,
+          accentColor: const Color(0xFF86EFAC),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF091409), Color(0xFF060A06)],
+          ),
+          label: 'SPLIT VIEW',
+        );
       case 'warm_amber':
-        return _TemplateConfig(icon: LucideIcons.sunset, accentColor: const Color(0xFFC49A4A), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1A1005), Color(0xFF0A0807)]), label: 'WARM AMBER');
+        return _TemplateConfig(
+          icon: LucideIcons.sunset,
+          accentColor: const Color(0xFFC49A4A),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF1A1005), Color(0xFF0A0807)],
+          ),
+          label: 'WARM AMBER',
+        );
       case 'focus_orb':
-        return _TemplateConfig(icon: LucideIcons.circle, accentColor: const Color(0xFF8BC9D4), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF080C0D), Color(0xFF06090A)]), label: 'FOCUS ORB');
+        return _TemplateConfig(
+          icon: LucideIcons.circle,
+          accentColor: const Color(0xFF8BC9D4),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080C0D), Color(0xFF06090A)],
+          ),
+          label: 'FOCUS ORB',
+        );
       case 'wave_calm':
-        return _TemplateConfig(icon: LucideIcons.waves, accentColor: const Color(0xFF93C5FD), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF080B14), Color(0xFF060810)]), label: 'WAVE CALM');
+        return _TemplateConfig(
+          icon: LucideIcons.waves,
+          accentColor: const Color(0xFF93C5FD),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080B14), Color(0xFF060810)],
+          ),
+          label: 'WAVE CALM',
+        );
       case 'iris_rest':
-        return _TemplateConfig(icon: LucideIcons.eye, accentColor: const Color(0xFF7EC8E3), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF080B14), Color(0xFF06080C)]), label: 'IRIS REST');
+        return _TemplateConfig(
+          icon: LucideIcons.eye,
+          accentColor: const Color(0xFF7EC8E3),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080B14), Color(0xFF06080C)],
+          ),
+          label: 'IRIS REST',
+        );
       case 'quiet_pill':
-        return _TemplateConfig(icon: LucideIcons.layers, accentColor: const Color(0xFF7EC8E3), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF080B0D), Color(0xFF060809)]), label: 'QUIET PILL');
+        return _TemplateConfig(
+          icon: LucideIcons.layers,
+          accentColor: const Color(0xFF7EC8E3),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF080B0D), Color(0xFF060809)],
+          ),
+          label: 'QUIET PILL',
+        );
       case 'paper_light':
-        return _TemplateConfig(icon: LucideIcons.leaf, accentColor: const Color(0xFF2D6A4F), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF5F3EE), Color(0xFFECE9E4)]), label: 'PAPER LIGHT');
+        return _TemplateConfig(
+          icon: LucideIcons.leaf,
+          accentColor: const Color(0xFF2D6A4F),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF5F3EE), Color(0xFFECE9E4)],
+          ),
+          label: 'PAPER LIGHT',
+        );
       case 'dusk_glow':
-        return _TemplateConfig(icon: LucideIcons.moon, accentColor: const Color(0xFFC4B5FD), gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF0D0F14), Color(0xFF06070A)]), label: 'DUSK GLOW');
+        return _TemplateConfig(
+          icon: LucideIcons.moon,
+          accentColor: const Color(0xFFC4B5FD),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0D0F14), Color(0xFF06070A)],
+          ),
+          label: 'DUSK GLOW',
+        );
       case 'minimal':
       default:
         return _TemplateConfig(
@@ -1003,7 +1281,6 @@ class _TemplateConfig {
   });
 }
 
-/// Subtle dot-grid background painter for template cards.
 class _DotGridPainter extends CustomPainter {
   final Color color;
   _DotGridPainter(this.color);
@@ -1023,13 +1300,4 @@ class _DotGridPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DotGridPainter oldDelegate) => oldDelegate.color != color;
-}
-
-class DesktopDragScrollBehavior extends MaterialScrollBehavior {
-  @override
-  Set<PointerDeviceKind> get dragDevices => {
-    PointerDeviceKind.touch,
-    PointerDeviceKind.mouse,
-    PointerDeviceKind.trackpad,
-  };
 }

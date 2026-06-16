@@ -60,6 +60,11 @@ class CompanionWindowController {
     _eventBus.emit(CompanionPositionChangedEvent(x: x, y: y));
   }
 
+  Future<void> setSize(double width, double height) async {
+    await _windowService.setWindowSize(width: width, height: height);
+    _logger.info('Companion window resized to ${width}x$height');
+  }
+
   Future<void> setOpacity(double opacity) async {
     _opacity = opacity.clamp(0.1, 1.0);
     await _windowService.setWindowOpacity(_opacity);
@@ -79,5 +84,13 @@ class CompanionWindowController {
 
   Future<void> bringToFront() async {
     await _windowService.orderFrontRegardless();
+  }
+
+  Future<void> startDrag() async {
+    await _windowService.startDrag();
+  }
+
+  Future<void> setNonActivating(bool nonActivating) async {
+    await _windowService.setNonActivating(nonActivating);
   }
 }

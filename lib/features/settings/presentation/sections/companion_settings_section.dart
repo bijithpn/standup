@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
@@ -7,6 +8,10 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
+import 'package:breakmate/shared/widgets/app_dropdown.dart';
+import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_page.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+import 'package:breakmate/app/dependency_injection.dart';
 
 class CompanionSettingsSection extends StatefulWidget {
   final CompanionOverlayController controller;
@@ -40,102 +45,296 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     return AnimatedBuilder(
       animation: widget.controller,
       builder: (context, _) {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        final isTransitioning = widget.controller.isTransitioning;
+        return Stack(
           children: [
-            _buildHeroHeader(),
-            const SizedBox(height: 32),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeroHeader(),
+                const SizedBox(height: 32),
 
-            sectionHeader('Status'),
-            buildCard([
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      CupertinoIcons.info_circle,
-                      size: 18,
-                      color: AppTheme.textSecondary,
+                sectionHeader('Status'),
+                buildCard([
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 14,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        widget.controller.companionStateExplanation,
-                        style: const TextStyle(
+                    child: Row(
+                      children: [
+                        const Icon(
+                          CupertinoIcons.info_circle,
+                          size: 18,
                           color: AppTheme.textSecondary,
-                          fontSize: 13,
-                          height: 1.35,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            widget.controller.companionStateExplanation,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 13,
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  divider(),
+                  toggleRow(
+                    'Show Companion',
+                    'Enable your desktop pet to see it wandering around your screen.',
+                    widget.controller.companionEnabled,
+                    (v) => widget.controller.toggleCompanion(v),
+                  ),
+                  if (Platform.isMacOS || Platform.isWindows) ...[
+                    divider(),
+                    toggleRow(
+                      'Draggable PiP Panel',
+                      'Run the companion in a compact, floating always-on-top window rather than a full-screen transparent overlay.',
+                      widget.controller.pipModeEnabled,
+                      (v) => widget.controller.changePipModeEnabled(v),
+                    ),
+                  ],
+                ]),
+
+                if (widget.controller.companionEnabled) ...[
+                  _buildPetGallery(),
+                  const SizedBox(height: 32),
+
+                  sectionHeader('Personalization'),
+                  buildCard([
+                    textFieldRow(
+                      'Companion Name',
+                      widget.controller.companionPetName,
+                      (v) => widget.controller.changePetName(v),
+                    ),
+                    divider(),
+                    sliderRow(
+                      'Visual Scale (${widget.controller.companionScale.toStringAsFixed(1)}x)',
+                      widget.controller.companionScale,
+                      (v) {
+                        final snapped = (v * 2.0).roundToDouble() / 2.0;
+                        widget.controller.changeScale(snapped);
+                      },
+                      min: 2.0,
+                      max: 15.0,
+                    ),
+                  ]),
+
+                  if (widget.controller.pipModeEnabled) ...[
+                    sectionHeader('Draggable PiP Panel Settings'),
+                    buildCard([
+                      dropdownRow(
+                        'Background Style',
+                        widget.controller.pipBackgroundStyle,
+                        const ['dark', 'light'],
+                        (v) {
+                          if (v != null) {
+                            widget.controller.changePipBackgroundStyle(v);
+                          }
+                        },
+                      ),
+                      divider(),
+                      sliderRow(
+                        'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
+                        widget.controller.pipOpacity,
+                        (v) => widget.controller.changePipOpacity(v),
+                        min: 0.1,
+                        max: 1.0,
+                      ),
+                      divider(),
+                      toggleRow(
+                        'Draggable Area Clickable',
+                        'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
+                        widget.controller.pipDraggableClickable,
+                        (v) => widget.controller.changePipDraggableClickable(v),
+                      ),
+                    ]),
+                  ],
+
+                  sectionHeader('Behavior'),
+                  buildCard([
+                    toggleRow(
+                      'Low-distraction Focus Mode',
+                      'Reduces motion, disables cursor chasing, and makes the companion click-through.',
+                      widget.controller.isLowDistractionMode,
+                      (v) => widget.controller.setLowDistractionMode(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Ghost Mode (Click-through)',
+                      'Let the pet stay visible but ignore all mouse interactions.',
+                      widget.controller.companionClickThrough,
+                      (v) => widget.controller.changeClickThrough(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Magnetic Attraction',
+                      'The pet will dynamically move toward and follow your cursor.',
+                      widget.controller.companionFollowMouse,
+                      (v) => widget.controller.changeFollowMouse(v),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 32),
+
+                  sectionHeader('Interaction Features'),
+                  buildCard([
+                    toggleRow(
+                      'Petting & Affection',
+                      'Interact with your pet by hovering or moving your cursor over it.',
+                      widget.controller.pettingEnabled,
+                      (v) => widget.controller.changePettingEnabled(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Play Fetch',
+                      'Allow throwing balls from the action bar for the pet to chase.',
+                      widget.controller.ballThrowEnabled,
+                      (v) => widget.controller.changeBallThrowEnabled(v),
+                    ),
+                    if (widget.controller.ballThrowEnabled) ...[
+                      divider(),
+                      dropdownRow(
+                        'Throwable Toy Type',
+                        widget.controller.companionToyType,
+                        const [
+                          'tennis_ball',
+                          'base_ball',
+                          'basket_ball',
+                          'football',
+                          'bone',
+                          'sushi',
+                          'carrot',
+                        ],
+                        (v) {
+                          if (v != null) {
+                            widget.controller.changeToyType(v);
+                          }
+                        },
+                      ),
+                    ],
+                    divider(),
+                    toggleRow(
+                      'Feed Treats',
+                      'Allow feeding treats to your pet from the action bar.',
+                      widget.controller.treatEnabled,
+                      (v) => widget.controller.changeTreatEnabled(v),
+                    ),
+                    if (widget.controller.treatEnabled) ...[
+                      divider(),
+                      dropdownRow(
+                        'Feed Treat Type',
+                        widget.controller.companionTreatType,
+                        const ['sushi', 'bone', 'carrot'],
+                        (v) {
+                          if (v != null) {
+                            widget.controller.changeTreatType(v);
+                          }
+                        },
+                      ),
+                    ],
+                    divider(),
+                    toggleRow(
+                      'Developer Milestones',
+                      'Enable pet reactions triggered by coding accomplishments.',
+                      widget.controller.developerReactions,
+                      (v) => widget.controller.changeDeveloperReactions(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Quiet Mode Auto-Activation',
+                      'Automatically calm the pet during meetings, focus blocks, or battery-saver mode.',
+                      widget.controller.quietModeAutoActivate,
+                      (v) => widget.controller.changeQuietModeAutoActivate(v),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 32),
+                  sectionHeader('Animation Lab'),
+                  _buildInteractionGrid(),
+
+                  const SizedBox(height: 32),
+                  sectionHeader(
+                    'Environment Builder',
+                    subtitle: 'Design custom world themes with your own assets',
+                  ),
+                  buildCard([
+                    buildListRow(
+                      'Open Environment Builder',
+                      'Pick sky, ground, rocks, birds, rabbits and colour tints to craft a custom world.',
+                      null,
+                      Icons.landscape_rounded,
+                      null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EnvironmentBuilderPage(),
+                          fullscreenDialog: true,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 14,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                  ]),
+                ],
+                const SizedBox(height: 40),
+              ],
+            ),
+            if (isTransitioning)
+              Positioned.fill(
+                child: AbsorbPointer(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceElevated.withValues(
+                            alpha: 0.9,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppTheme.border),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CupertinoActivityIndicator(
+                              color: AppTheme.accentColor,
+                              radius: 10,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Configuring Companion...',
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-              divider(),
-              toggleRow(
-                'Show Companion',
-                'Enable your desktop pet to see it wandering around your screen.',
-                widget.controller.companionEnabled,
-                (v) => widget.controller.toggleCompanion(v),
-              ),
-            ]),
-
-            if (widget.controller.companionEnabled) ...[
-              _buildPetGallery(),
-              const SizedBox(height: 32),
-
-              sectionHeader('Personalization'),
-              buildCard([
-                textFieldRow(
-                  'Companion Name',
-                  widget.controller.companionPetName,
-                  (v) => widget.controller.changePetName(v),
-                ),
-                divider(),
-                sliderRow(
-                  'Visual Scale (${widget.controller.companionScale.toStringAsFixed(1)}x)',
-                  widget.controller.companionScale,
-                  (v) {
-                    final snapped = (v * 2.0).roundToDouble() / 2.0;
-                    widget.controller.changeScale(snapped);
-                  },
-                  min: 2.0,
-                  max: 8.0,
-                ),
-              ]),
-
-              sectionHeader('Behavior'),
-              buildCard([
-                toggleRow(
-                  'Low-distraction Focus Mode',
-                  'Reduces motion, disables cursor chasing, and makes the companion click-through.',
-                  widget.controller.isLowDistractionMode,
-                  (v) => widget.controller.setLowDistractionMode(v),
-                ),
-                divider(),
-                toggleRow(
-                  'Ghost Mode (Click-through)',
-                  'Let the pet stay visible but ignore all mouse interactions.',
-                  widget.controller.companionClickThrough,
-                  (v) => widget.controller.changeClickThrough(v),
-                ),
-                divider(),
-                toggleRow(
-                  'Magnetic Attraction',
-                  'The pet will dynamically move toward and follow your cursor.',
-                  widget.controller.companionFollowMouse,
-                  (v) => widget.controller.changeFollowMouse(v),
-                ),
-              ]),
-
-              const SizedBox(height: 32),
-              sectionHeader('Animation Lab'),
-              _buildInteractionGrid(),
-            ],
-            const SizedBox(height: 40),
           ],
         );
       },
@@ -148,110 +347,66 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          height: 280, // Taller header
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceCard,
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(color: AppTheme.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 30,
-                offset: const Offset(0, 15),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(32),
-            child: Stack(
-              children: [
-                // Full Screen Background & Grounded Pet
-                Positioned.fill(
-                  child: CompanionSpriteWidget(
-                    petTheme: currentTheme,
-                    animationState: PetAnimationState.idle,
-                    scale: 6.0, // Large prominent pet
-                    backgroundImagePath:
-                        widget.controller.companionPreviewBackground,
-                    isStatic: false,
-                  ),
-                ),
-
-                // Vignette/Overlay for info
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        stops: const [0.5, 1.0],
-                        colors: [
-                          Colors.black.withValues(alpha: 0.0),
-                          Colors.black.withValues(alpha: 0.8),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Pet Info & Sync Button at Bottom
-                Positioned(
-                  left: 28,
-                  bottom: 28,
-                  right: 28,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentColor,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                currentTheme.species.name.toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.white,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              widget.controller.companionEnabled
-                                  ? widget.controller.companionPetName
-                                  : 'Companion',
-                              style: const TextStyle(
-                                fontSize: 36, // Large bold name
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: -1.5,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        widget.controller.companionEnabled
+                            ? widget.controller.companionPetName
+                            : 'Companion',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textPrimary,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                      _buildSyncCard(), // Unified Sync Button
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.accentColor.withValues(alpha: 0.2),
+                          ),
+                        ),
+                        child: Text(
+                          currentTheme.species.name.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: AppTheme.accentColor,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Customize and preview your companion settings.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
+            _buildSyncCard(),
+          ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
         _buildBackgroundPicker(),
       ],
     );
@@ -259,81 +414,153 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
   Widget _buildBackgroundPicker() {
     final backgrounds = [
-      {'name': 'Forest', 'path': 'assets/background/forest/background.png'},
-      {'name': 'Autumn', 'path': 'assets/background/autumn/background.png'},
-      {'name': 'Winter', 'path': 'assets/background/winter/background.png'},
-      {'name': 'Beach', 'path': 'assets/background/beach/background-light.png'},
+      {
+        'name': 'Forest',
+        'id': 'forest',
+        'path': 'assets/background/forest/background.png',
+      },
+      {
+        'name': 'Autumn',
+        'id': 'autumn',
+        'path': 'assets/background/autumn/background.png',
+      },
+      {
+        'name': 'Winter',
+        'id': 'winter',
+        'path': 'assets/background/winter/background.png',
+      },
+      {
+        'name': 'Beach',
+        'id': 'beach',
+        'path': 'assets/background/beach/background-light.png',
+      },
+      {
+        'name': 'Desert',
+        'id': 'desert',
+        'path': 'assets/background/desert/background.png',
+      },
+      {
+        'name': 'Sky',
+        'id': 'sky',
+        'path': 'assets/environments/sky/sky_back.png',
+      },
+      {
+        'name': 'Night Town',
+        'id': 'night_town',
+        'path': 'assets/environments/background/bg_night_town.png',
+      },
+      {
+        'name': 'Mist Forest',
+        'id': 'mist_forest',
+        'path': 'assets/environments/background/bg_mist_forest.png',
+      },
+      {
+        'name': 'Urban',
+        'id': 'urban',
+        'path': 'assets/background/urban/background.png',
+      },
     ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'PREVIEW ENVIRONMENT',
-          style: TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w900,
-            color: AppTheme.textSecondary,
-            letterSpacing: 1.5,
+    try {
+      final repo = sl<CustomEnvironmentRepository>();
+      final customThemes = repo.themes.isEmpty ? repo.loadSync() : repo.themes;
+      for (final theme in customThemes) {
+        if (!backgrounds.any((bg) => bg['id'] == theme.id)) {
+          backgrounds.add({
+            'name': theme.name,
+            'id': theme.id,
+            'path': theme.skyPath,
+          });
+        }
+      }
+    } catch (_) {}
+
+    final currentBg = widget.controller.companionPreviewBackground;
+    final selectedBg = backgrounds.firstWhere(
+      (bg) => bg['id'] == currentBg,
+      orElse: () {
+        // Fallback to match by skyPath (for backward compatibility)
+        return backgrounds.firstWhere(
+          (bg) => bg['path'] == currentBg,
+          orElse: () => backgrounds.first,
+        );
+      },
+    );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceElevated.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Preview Environment',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                'Used to preview sprites below',
+                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(
-            children: backgrounds.map((bg) {
-              final isSelected =
-                  widget.controller.companionPreviewBackground == bg['path'];
-              return GestureDetector(
-                onTap: () =>
-                    widget.controller.changePreviewBackground(bg['path']!),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.accentColor
-                        : AppTheme.surfaceElevated,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: isSelected
-                          ? AppTheme.accentColor
-                          : AppTheme.border,
-                      width: isSelected ? 2 : 1,
+          AppDropdown<String>(
+            value: selectedBg['id']!,
+            width: 180,
+            onChanged: (id) {
+              if (id != null) {
+                widget.controller.changePreviewBackground(id);
+              }
+            },
+            items: backgrounds.map((bg) {
+              final isThisSelected = bg['id'] == selectedBg['id'];
+              return AppDropdownItem<String>(
+                value: bg['id']!,
+                label: bg['name']!,
+                customChild: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: Image.asset(
+                        bg['path']!,
+                        width: 28,
+                        height: 18,
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withValues(
-                                alpha: 0.25,
-                              ),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text(
-                    bg['name']!,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: isSelected
-                          ? FontWeight.w800
-                          : FontWeight.w600,
-                      color: isSelected ? Colors.white : AppTheme.textPrimary,
+                    const SizedBox(width: 8),
+                    Text(
+                      bg['name']!,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12.5,
+                        fontWeight: isThisSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: isThisSelected
+                            ? AppTheme.accentColor
+                            : AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               );
             }).toList(),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -380,7 +607,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 clipBehavior: Clip.antiAlias,
                 child: Stack(
                   children: [
-                    // Full-card Background and Pet
                     Positioned.fill(
                       child: CompanionSpriteWidget(
                         petTheme: theme,
@@ -389,6 +615,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             : PetAnimationState.idle,
                         scale: 2.5, // Significantly larger to fill space
                         isStatic: true,
+                        size: Size.infinite,
                         backgroundImagePath:
                             widget.controller.companionPreviewBackground,
                       ),
@@ -432,63 +659,24 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   Widget _buildInteractionGrid() {
-    final themeId = widget.controller.companionPetTheme;
     final List<Map<String, dynamic>> interactions;
 
-    if (themeId == PetTheme.keyPixelCat) {
-      interactions = [
-        {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {'label': 'Run', 'icon': CupertinoIcons.wind, 'state': 'excited'},
-        {
-          'label': 'Attack',
-          'icon': CupertinoIcons.shield_fill,
-          'state': 'angry',
-        },
-        {
-          'label': 'Alert',
-          'icon': CupertinoIcons.bell_fill,
-          'state': 'notification',
-        },
-        {'label': 'Hurt', 'icon': CupertinoIcons.bandage_fill, 'state': 'sad'},
-        {'label': 'Win', 'icon': CupertinoIcons.sparkles, 'state': 'celebrate'},
-      ];
-    } else if (themeId == PetTheme.keyLargeCat) {
-      interactions = [
-        {'label': 'Run', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {
-          'label': 'Fall',
-          'icon': CupertinoIcons.cloud_rain_fill,
-          'state': 'sad',
-        },
-        {
-          'label': 'Jump',
-          'icon': CupertinoIcons.bell_fill,
-          'state': 'notification',
-        },
-        {'label': 'Idle', 'icon': CupertinoIcons.hourglass, 'state': 'idle'},
-      ];
-    } else {
-      interactions = [
-        {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-        {
-          'label': 'Nap',
-          'icon': CupertinoIcons.moon_zzz_fill,
-          'state': 'sleep',
-        },
-        {
-          'label': 'Stretch',
-          'icon': CupertinoIcons.sparkles,
-          'state': 'celebrate',
-        },
-        {'label': 'Angry', 'icon': CupertinoIcons.flame_fill, 'state': 'angry'},
-        {
-          'label': 'Alert',
-          'icon': CupertinoIcons.bell_fill,
-          'state': 'notification',
-        },
-        {'label': 'Lick', 'icon': CupertinoIcons.heart_fill, 'state': 'lick1'},
-      ];
-    }
+    interactions = [
+      {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
+      {'label': 'Nap', 'icon': CupertinoIcons.moon_zzz_fill, 'state': 'sleep'},
+      {
+        'label': 'Stretch',
+        'icon': CupertinoIcons.sparkles,
+        'state': 'celebrate',
+      },
+      {'label': 'Angry', 'icon': CupertinoIcons.flame_fill, 'state': 'angry'},
+      {
+        'label': 'Alert',
+        'icon': CupertinoIcons.bell_fill,
+        'state': 'notification',
+      },
+      {'label': 'Lick', 'icon': CupertinoIcons.heart_fill, 'state': 'lick1'},
+    ];
 
     return GridView.builder(
       shrinkWrap: true,

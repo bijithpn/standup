@@ -122,15 +122,19 @@ Win32Window::~Win32Window() {
 
 bool Win32Window::Create(const std::wstring& title,
                          const Point& origin,
-                         const Size& size) {
+                         const Size& size,
+                         HMONITOR target_monitor) {
   Destroy();
 
   const wchar_t* window_class =
       WindowClassRegistrar::GetInstance()->GetWindowClass();
 
-  const POINT target_point = {static_cast<LONG>(origin.x),
-                              static_cast<LONG>(origin.y)};
-  HMONITOR monitor = MonitorFromPoint(target_point, MONITOR_DEFAULTTONEAREST);
+  HMONITOR monitor = target_monitor;
+  if (!monitor) {
+    const POINT target_point = {static_cast<LONG>(origin.x),
+                                static_cast<LONG>(origin.y)};
+    monitor = MonitorFromPoint(target_point, MONITOR_DEFAULTTONEAREST);
+  }
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
@@ -164,14 +168,16 @@ void Win32Window::ConfigureAsOverlay() {
   style &= ~WS_MAXIMIZEBOX;
   SetWindowLong(window_handle_, GWL_STYLE, style);
 
-  // Set window as topmost
-  SetWindowPos(window_handle_, HWND_TOPMOST, 0, 0, 0, 0,
-               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
-
   // Enable layered window for transparency
   LONG exStyle = GetWindowLong(window_handle_, GWL_EXSTYLE);
   exStyle |= WS_EX_LAYERED;
   SetWindowLong(window_handle_, GWL_EXSTYLE, exStyle);
+
+  SetLayeredWindowAttributes(window_handle_, 0, 255, LWA_ALPHA);
+
+  // Set window as topmost and apply style changes
+  SetWindowPos(window_handle_, HWND_TOPMOST, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 }
 
 void Win32Window::SetIgnoreMouseEvents(bool ignore) {

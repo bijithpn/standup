@@ -23,7 +23,6 @@ class CalendarEvent {
     this.url = '',
   });
 
-  /// Detect virtual meeting platform (Zoom, Google Meet, Teams, Webex)
   String? getMeetingPlatform() {
     final searchTargets = [
       title.toLowerCase(),
@@ -53,8 +52,6 @@ class CalendarEvent {
   }
 }
 
-/// Service that routes calendar operations to the appropriate backend.
-/// Preserves the original public API for backward compatibility.
 class CalendarService {
   final AppLogger _logger = AppLogger();
   final CalendarPermissionService _permissionService;
@@ -66,7 +63,6 @@ class CalendarService {
   }) : _permissionService = permissionService,
        _eventService = eventService;
 
-  /// True if the current platform has a native bridge with calendar support.
   bool get _useNativeBridge =>
       !kIsWeb && (Platform.isMacOS || Platform.isWindows);
 
@@ -122,7 +118,6 @@ class CalendarService {
     return [];
   }
 
-  /// Get events for a custom time range
   Future<List<CalendarEvent>> getEvents(
     DateTime start,
     DateTime end, {

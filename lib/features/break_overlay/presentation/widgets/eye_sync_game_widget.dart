@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-/// Eye Sync widget implementing the 20-20-20 rule.
 class EyeSyncGameWidget extends StatefulWidget {
   final int targetSessions;
 
@@ -56,12 +55,13 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
     final fromX = _orbX;
     final fromY = _orbY;
 
-    _orbAnimation = Tween<Offset>(
-      begin: Offset(fromX, fromY),
-      end: Offset(_targetX, _targetY),
-    ).animate(
-      CurvedAnimation(parent: _orbController, curve: Curves.easeInOutCubic),
-    );
+    _orbAnimation =
+        Tween<Offset>(
+          begin: Offset(fromX, fromY),
+          end: Offset(_targetX, _targetY),
+        ).animate(
+          CurvedAnimation(parent: _orbController, curve: Curves.easeInOutCubic),
+        );
 
     _orbController
       ..reset()
@@ -263,9 +263,7 @@ class _EyeSyncViewport extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFF07080A),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.05),
-              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),

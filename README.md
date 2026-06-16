@@ -264,3 +264,54 @@ MIT License - See the `LICENSE` file for details.
 
 ---
 *Built with Flutter by Bijith P N*
+
+## 🎮 Development Plans: 2D Interactive PiP Environment
+
+We are planning to upgrade the PiP (Picture-in-Picture) companion window from a static background to a rich, interactive 2D side-scrolling virtual habitat using the Flame engine.
+
+### AI Implementation Prompt
+*Use the following prompt to instruct an AI coding assistant (like Gemini or Claude) to implement this feature:*
+
+```text
+You are an expert Flutter and Flame Engine developer tasked with completely rebuilding the "PiP (Picture-in-Picture) Companion Window" for the BreakMate desktop application. 
+
+Currently, `PiPOverlayWindow` displays the pet on a static or simple background. We want to transform this into a rich, interactive 2D side-scrolling virtual habitat using the Flame engine. 
+
+I will provide the visual assets (sky, ground, ball, etc.). Please implement the following requirements while strictly adhering to the project's engineering standards (e.g., using `ErrorHandler` for exceptions, proper Dependency Injection, and clean architecture).
+
+### Key Objectives:
+1. **Rich 2D Environment (Procedural World):**
+   - Implement a formal 2D game background inside the PiP window using Flame.
+   - Create a `ParallaxBackgroundComponent` that includes a sky layer (with slowly drifting procedural clouds) and a ground/grass layer.
+   - Add a day/night cycle that dynamically tints the sky and background assets based on the user's local system time.
+
+2. **Free-Roaming Pet Movement:**
+   - Update the pet's logic in Flame so it can freely roam left and right across the ground layer.
+   - Ensure the pet stays within the boundaries of the PiP window (or implement a Flame `CameraComponent` that slightly pans if the pet walks near the edges).
+   - Use the existing state machine (`PetStateMachine` / `PetAnimationState`) to seamlessly transition between idle, walking, and running animations.
+
+3. **Interactive Throwing Mechanic (Fetch):**
+   - Implement physics-based object throwing. When the user clicks the "Throw" button in the PiP UI, or clicks/drags in the window, spawn a throwable toy (e.g., a ball).
+   - Create a `ThrowableToyComponent` that uses basic kinematics (gravity, velocity, bouncing on the ground layer) to simulate the throw.
+   - When the ball lands, trigger an event that makes the pet run towards the ball, pick it up, and return it to the center of the screen (Fetch behavior).
+
+### Files to Modify & Create:
+- **`lib/features/companion/overlay/pip_overlay_window.dart`**: Polish the UI overlay to accommodate the new 2D world. Ensure gesture detectors correctly pass drag/tap coordinates down into the Flame game for the throwing mechanic.
+- **`lib/features/companion/flame/companion_game.dart`**: Register the new background, lighting, and camera systems. Set up collision detection boundaries for the ground and screen edges.
+- **`lib/features/companion/flame/companion_component.dart`**: Update the pet's movement logic to allow horizontal roaming and fetching behaviors.
+- **`lib/features/companion/flame/components/environment_component.dart` (NEW)**: Build the parallax sky, ground, and procedural weather/clouds here.
+- **`lib/features/companion/flame/components/throwable_toy_component.dart` (NEW)**: Build the ball component with gravity, bouncing physics, and collision callbacks.
+
+### Constraints & Standards:
+- **Performance:** Do not use heavy `BackdropFilter` layers inside the Flame game. Rely on optimized sprite rendering and pre-cached assets (`PetAssetLoader`). Ensure 60 FPS on macOS/Windows.
+- **Error Handling:** Never throw or swallow generic Exceptions. Any try/catch blocks must use `ErrorHandler().handleError(e, st, type: AppErrorType.general)`.
+- **Comments:** Provide architectural ("Why") comments for Flame physics and coordinate system conversions. Do not write tutorial-style or obvious "What" comments.
+```
+
+### Required Assets
+To implement this feature, the following assets must be added to the `assets/` directory (e.g., `assets/environments/` and `assets/animations/throw_particles/`):
+
+1. **`sky_background.png`** (or a seamless tiling sky image)
+2. **`ground_tiles.png`** (for the floor the pet walks on)
+3. **`cloud.png`** (for procedural sky generation)
+4. **`ball.png`** (or `tennis-ball.png` for the throwing object)

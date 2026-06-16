@@ -67,6 +67,7 @@ APP_BUILD_SUBPATH="${APP_BUILD_SUBPATH:-build/macos/Build/Products/Release-${APP
 DMG_OUTPUT_SUBDIR="${DMG_OUTPUT_SUBDIR:-release_dmg}"
 APPCAST_SUBPATH="${APPCAST_SUBPATH:-appcast.xml}"
 DEFAULT_SPARKLE_PRIVATE_KEY="${DEFAULT_SPARKLE_PRIVATE_KEY:-$HOME/secrets/breakmate_sparkle_private.pem}"
+NOTARY_KEYCHAIN_PROFILE="${NOTARY_KEYCHAIN_PROFILE:-}"
 
 APP_BUILD_DIR="$PROJECT_ROOT/${APP_BUILD_SUBPATH}/${APP_NAME}.app"
 DMG_OUTPUT_DIR="$PROJECT_ROOT/${DMG_OUTPUT_SUBDIR}"
@@ -148,7 +149,8 @@ fi
 
 [[ -z "$RELEASE_NOTES" ]] && error "Either --notes or --notes-file is required."
 
-# Resolve private key  (env var from .env.release or shell takes priority)
+# Resolve private key (env var from .env.release or shell takes priority).
+# Apple notarization is handled automatically via notarytool if NOTARY_KEYCHAIN_PROFILE is set.
 PRIVATE_KEY_PATH="${SPARKLE_PRIVATE_KEY:-}"
 if [[ -z "$PRIVATE_KEY_PATH" && -f "$DEFAULT_PRIVATE_KEY" ]]; then
   PRIVATE_KEY_PATH="$DEFAULT_PRIVATE_KEY"
@@ -253,6 +255,26 @@ else
   cd "$PROJECT_ROOT"
   appdmg scripts/appdmg.json "$DMG_PATH"
   success "DMG created: $DMG_PATH"
+fi
+
+# ── Notarize DMG ─────────────────────────────────────────────────────────────
+if [[ -n "$NOTARY_KEYCHAIN_PROFILE" ]]; then
+  step "Notarize DMG with Apple notarytool"
+  if [[ "$DRY_RUN" == true ]]; then
+    warn "[DRY-RUN] Would submit $DMG_PATH for notarization using profile $NOTARY_KEYCHAIN_PROFILE"
+    warn "[DRY-RUN] Would staple $DMG_PATH"
+  else
+    info "Submitting DMG for notarization via profile '$NOTARY_KEYCHAIN_PROFILE'... (this may take a few minutes)"
+    xcrun notarytool submit "$DMG_PATH" \
+      --keychain-profile "$NOTARY_KEYCHAIN_PROFILE" \
+      --wait
+    
+    info "Stapling notarization ticket to DMG..."
+    xcrun stapler staple "$DMG_PATH"
+    success "DMG notarized and stapled successfully."
+  fi
+else
+  warn "NOTARY_KEYCHAIN_PROFILE is empty. Skipping Apple notarization."
 fi
 
 # ── STEP 3: Sign the DMG ───────────────────────────────────────────────────────

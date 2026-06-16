@@ -6,8 +6,11 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
-/// Top-level entry point function for the background Dart Isolate.
+/// Background isolate entry point for idle and smart-detection polling.
+/// MethodChannel calls are proxied through the main isolate because plugin
+/// messengers are not available directly inside this spawned isolate.
 void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   final SendPort sendPort = initialData['sendPort'] as SendPort;
   int idleThresholdMinutes = initialData['idleThresholdMinutes'] as int? ?? 3;
@@ -25,7 +28,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   int nextRequestId = 0;
   final Map<int, Completer<dynamic>> pendingRequests = {};
 
-  // Helper to send proxy requests to the main isolate
+  // Proxy platform requests to the main isolate and pair responses by id.
   Future<dynamic> invokeMethodProxy(String method, [dynamic args]) {
     final completer = Completer<dynamic>();
     final requestId = nextRequestId++;
@@ -72,7 +75,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
     }
   });
 
-  // 1. Idle status polling (every 5 seconds)
+  // Idle status polling is deliberately coarse to keep the background isolate cheap.
   idleTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
     try {
       final double? idleSeconds =
@@ -91,11 +94,11 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
         }
       }
     } catch (_) {
-      // Fail silently in background thread
+      // Keep polling alive when a platform call fails during app startup/shutdown.
     }
   });
 
-  // 2. Video calls & Focus Mode polling (every 10 seconds)
+  // Smart detection changes less frequently, so it can run at a slower cadence.
   smartTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
     try {
       // Check Video Call
@@ -135,12 +138,12 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
         });
       }
     } catch (_) {
-      // Fail silently in background thread
+      // Keep polling alive when a platform call fails during app startup/shutdown.
     }
   });
 }
 
-/// Centralized service to spawn a single background Dart isolate and manage OS-level MethodChannel polling.
+/// Owns the single background polling isolate for desktop activity signals.
 class BackgroundPollingService {
   static final BackgroundPollingService instance = BackgroundPollingService._();
   BackgroundPollingService._();
@@ -177,7 +180,9 @@ class BackgroundPollingService {
             final idleSeconds = (message['idleSeconds'] as num).toDouble();
             try {
               sl<ActivityMonitor>().updateIdleStatus(isIdle, idleSeconds);
-            } catch (_) {}
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
           } else if (type == 'smartDetectionChanged') {
             final isVideoCallActive = message['isVideoCallActive'] as bool;
             final isFocusModeActive = message['isFocusModeActive'] as bool;
@@ -188,7 +193,9 @@ class BackgroundPollingService {
                 isFocusModeActive,
                 frontApp,
               );
-            } catch (_) {}
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
           } else if (type == 'invokeMethod') {
             final id = message['id'] as int;
             final method = message['method'] as String;
@@ -204,6 +211,8 @@ class BackgroundPollingService {
   }
 
   void _handleInvokeMethodProxy(int id, String method, dynamic args) async {
+    // All native bridge calls stay on the main isolate; the worker receives
+    // only serializable responses.
     const bridgeChannel = MethodChannel('com.breakmate.desktop/bridge');
     try {
       final result = await bridgeChannel.invokeMethod(method, args);

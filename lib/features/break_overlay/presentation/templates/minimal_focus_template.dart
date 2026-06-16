@@ -96,7 +96,8 @@ class MinimalFocusTemplate extends StatelessWidget {
                     fontFamily: 'Inter',
                   ),
                 ),
-                if (settings.showExercisesInBreak && breakInfo.tip.isNotEmpty) ...[
+                if (settings.showExercisesInBreak &&
+                    breakInfo.tip.isNotEmpty) ...[
                   const SizedBox(height: 32),
                   SizedBox(
                     width: 320,
@@ -150,6 +151,7 @@ class _ArcPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 4;
 

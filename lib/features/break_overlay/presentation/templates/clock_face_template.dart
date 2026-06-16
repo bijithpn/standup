@@ -122,10 +122,10 @@ class _ClockPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 6;
 
-    // Outer ring
     canvas.drawCircle(
       center,
       radius,
@@ -135,7 +135,6 @@ class _ClockPainter extends CustomPainter {
         ..color = Colors.white.withValues(alpha: 0.1),
     );
 
-    // 12 ticks
     final tickPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.18)
       ..strokeWidth = 1;
@@ -152,7 +151,6 @@ class _ClockPainter extends CustomPainter {
       canvas.drawLine(inner, outer, tickPaint);
     }
 
-    // Progress arc
     if (progress > 0) {
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius - 8),
@@ -167,7 +165,6 @@ class _ClockPainter extends CustomPainter {
       );
     }
 
-    // Center time text
     final tp = TextPainter(
       text: TextSpan(
         text: time,

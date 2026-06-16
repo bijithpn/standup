@@ -29,31 +29,11 @@ class IpcBridge {
     });
   }
 
+  /// Binds a handler that processes typed IPC events.
   void setTypedEventHandler(void Function(IpcEvent event) handler) {
     setEventHandler((event, data) {
       handler(IpcEvent.parse(event, data));
     });
-  }
-
-  Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
-    int retries = 3;
-    while (retries > 0) {
-      try {
-        await _ipcChannel.invokeMethod('sendEvent', {
-          'event': event,
-          'data': data ?? {},
-        });
-        _lastSuccessfulEventByName[event] = DateTime.now();
-        return;
-      } catch (e) {
-        retries--;
-        if (retries == 0) {
-          _logger.error('Failed to send IPC event $event: $e');
-        } else {
-          await Future.delayed(const Duration(milliseconds: 50));
-        }
-      }
-    }
   }
 
   Future<void> dispatch(IpcEvent event) async {
@@ -80,14 +60,14 @@ class IpcBridge {
   }
 
   Future<void> notifyCompanionStateChanged(String state) async {
-    await sendEvent('companion.stateChanged', {'state': state});
+    await dispatch(CompanionStateChangedIpcEvent(state: state));
   }
 
   Future<void> notifyCompanionPosition({
     required double x,
     required double y,
   }) async {
-    await sendEvent('companion.positionChanged', {'x': x, 'y': y});
+    await dispatch(CompanionPositionChangedIpcEvent(x: x, y: y));
   }
 
   Future<void> notifyTimerStateChanged(
@@ -97,27 +77,28 @@ class IpcBridge {
     int? targetEndTime,
     int? totalWorkTodaySeconds,
   }) async {
-    await sendEvent(IpcEventNames.timerStateChanged, {
-      'state': state,
-      'countdownSeconds': countdownSeconds,
-      'workElapsedSeconds': workElapsedSeconds,
-      'targetEndTime': targetEndTime,
-      'totalWorkTodaySeconds': totalWorkTodaySeconds,
-    });
+    await dispatch(
+      TimerStateChangedIpcEvent(
+        stateName: state,
+        countdownSeconds: countdownSeconds,
+        workElapsedSeconds: workElapsedSeconds,
+        targetEndTime: targetEndTime,
+        totalWorkTodaySeconds: totalWorkTodaySeconds,
+      ),
+    );
   }
 
   Future<void> notifyMeetingDetected(bool isActive, {String? bundleId}) async {
-    await sendEvent('detection.meeting', {
-      'isActive': isActive,
-      'bundleId': bundleId ?? '',
-    });
+    await dispatch(
+      MeetingDetectedIpcEvent(isActive: isActive, bundleId: bundleId ?? ''),
+    );
   }
 
   Future<void> notifyFocusMode(bool isActive) async {
-    await sendEvent('detection.focusMode', {'isActive': isActive});
+    await dispatch(FocusModeIpcEvent(isActive: isActive));
   }
 
   Future<void> notifyTrayAction(String action) async {
-    await sendEvent('tray.action', {'action': action});
+    await dispatch(TrayActionIpcEvent(action: action));
   }
 }

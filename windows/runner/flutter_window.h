@@ -21,6 +21,9 @@ class FlutterWindow : public Win32Window {
   explicit FlutterWindow(const flutter::DartProject& project);
   virtual ~FlutterWindow();
 
+  // Show the window, overriding base implementation to handle overlays correctly.
+  bool Show() override;
+
   // Configure window as full-screen overlay (always on top, no borders)
   void ConfigureAsOverlay();
 
@@ -38,6 +41,15 @@ class FlutterWindow : public Win32Window {
     return flutter_controller_ ? flutter_controller_->engine() : nullptr;
   }
 
+  // Get the bridge channel of the window
+  flutter::MethodChannel<flutter::EncodableValue>* GetBridgeChannel() {
+    return bridge_channel_.get();
+  }
+
+  static FlutterWindow* GetMainWindow() {
+    return main_window_;
+  }
+
   // Set initial settings for companion
   void SetInitialSettings(const flutter::EncodableMap& settings) {
     initial_settings_ = settings;
@@ -46,6 +58,14 @@ class FlutterWindow : public Win32Window {
 
   void SetIsOverlay(bool is_overlay) {
     is_overlay_ = is_overlay;
+  }
+
+  void SetIsPiP(bool is_pip) {
+    is_pip_ = is_pip;
+  }
+
+  void SetOverlayRect(const RECT& rect) {
+    overlay_rect_ = rect;
   }
 
  protected:
@@ -67,6 +87,9 @@ class FlutterWindow : public Win32Window {
 
   // Sets up the companion data bridge (if is_companion_)
   void SetupCompanionBridge();
+
+  // Sets up the PiP data bridge (if is_pip_)
+  void SetupPiPBridge();
 
   // Sets up the overlay bridge (com.breakmate/overlay)
   void SetupOverlayBridge();
@@ -90,16 +113,21 @@ class FlutterWindow : public Win32Window {
   // Companion state
   bool is_companion_ = false;
   bool is_overlay_ = false;
+  bool is_pip_ = false;
   flutter::EncodableMap initial_settings_;
 
   LONG original_style_ = 0;
   LONG original_ex_style_ = 0;
   bool is_overlay_mode_ = false;
+  bool ignore_mouse_events_ = false;
+  RECT overlay_rect_ = {0, 0, 0, 0};
 
   std::unique_ptr<CalendarBridge> calendar_bridge_;
 
   static HHOOK keyboard_hook_;
+  static int keyboard_hook_ref_count_;
   static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+  static FlutterWindow* main_window_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

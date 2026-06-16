@@ -1,7 +1,7 @@
 name: breakmate
 description: "BreakMate — a macOS menu bar break reminder app for healthy work habits."
 publish_to: "none"
-version: 1.3.0+32
+version: 1.4.0+33
 #BreakMate
 environment:
   sdk: ^3.10.4
@@ -45,37 +45,32 @@ dev_dependencies:
   change_app_package_name: ^1.5.0
   build_runner: ^2.15.0
   objectbox_generator: ^5.3.2
+  glados: ^1.1.7
 
 flutter:
   uses-material-design: true
   assets:
     - assets/icons/
-    - assets/icons/cat/
     - assets/slideshow/
+    - assets/animations/throw_particles/
     # Original 4 cats
     - assets/animations/cats/grey_cat/sprite_sheet.png
     - assets/animations/cats/orange_cat/sprite_sheet.png
     - assets/animations/cats/black_cat/sprite_sheet.png
-    - assets/animations/cats/large_cat/idle.png
-    - assets/animations/cats/large_cat/run.png
-    - assets/animations/cats/large_cat/fall.png
-    - assets/animations/cats/large_cat/jump.png
-    # New cats — separate-file packs
-    - assets/animations/cats/pixel_cat/
     - assets/animations/cats/cat_1/
     - assets/animations/cats/cat_2/
     - assets/animations/cats/cat_3/
     - assets/animations/cats/cat_4/
     - assets/animations/cats/cat_5/
     - assets/animations/cats/cat_6/
-    # New cat — composite sheet
-    - assets/animations/cats/cat_50/cat_sheet.png
     # Dog sprite sheets
     - assets/animations/dogs/collie.png
     - assets/animations/dogs/corgi.png
     - assets/animations/dogs/dalmatian.png
     - assets/animations/dogs/husky.png
     - assets/animations/dogs/labrador.png
+    # Flamingo sprite sheet and gifs
+    - assets/animations/flamingo/
     # Modular pets framework
     - assets/animations/pets/pets.json
     - assets/animations/pets/
@@ -84,8 +79,23 @@ flutter:
     - assets/background/beach/
     - assets/background/forest/
     - assets/background/winter/
+    - assets/background/desert/
+    - assets/background/urban/
     # Lofi musics
     - assets/music/lofi_1.mp3
+
+    # New pet assets folders
+    - assets/animations/
+    - assets/animations/birds/
+    - assets/animations/food/
+    - assets/animations/pet_decoration/
+    - assets/animations/rabbit/
+    - assets/environments/background/
+    - assets/environments/base/
+    - assets/environments/rocks/
+    - assets/environments/sky/
+    - assets/environments/throwable/
+    - assets/environments/trees/
 
   fonts:
     - family: Inter

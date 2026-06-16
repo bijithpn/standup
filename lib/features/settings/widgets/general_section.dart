@@ -30,8 +30,8 @@ class GeneralSection extends StatelessWidget {
           _buildMenuStyle(),
           divider(),
           _buildMenuBarIcon(),
-          divider(),
-          _buildStrictMode(),
+          // divider(),
+          // _buildStrictMode(),
           divider(),
           _buildSessionResume(),
           divider(),
@@ -136,18 +136,18 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  Widget _buildStrictMode() {
-    return buildListRow(
-      'Strict Mode',
-      'No skipping breaks',
-      settings.strictMode,
-      CupertinoIcons.lock_shield,
-      (v) {
-        onSave(settings.copyWith(strictMode: v));
-        sl<TrayManagerService>().triggerActionAnimation();
-      },
-    );
-  }
+  // Widget _buildStrictMode() {
+  //   return buildListRow(
+  //     'Strict Mode',
+  //     'No skipping breaks',
+  //     settings.strictMode,
+  //     CupertinoIcons.lock_shield,
+  //     (v) {
+  //       onSave(settings.copyWith(strictMode: v));
+  //       sl<TrayManagerService>().triggerActionAnimation();
+  //     },
+  //   );
+  // }
 
   Widget _buildQuietModePresets() {
     return buildListRow(

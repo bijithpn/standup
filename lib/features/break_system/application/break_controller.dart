@@ -74,12 +74,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _timerEngine.startTimers();
     _statsService.load();
 
-    // Pre-initialize audio player to eliminate startup lag
     _audioPlayer = AudioPlayer();
     _audioPlayer!.setReleaseMode(ReleaseMode.loop);
     _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
 
-    // Listen for timer events to trigger global overlays
     _timerEngine.addListener(_handleGlobalOverlays);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -90,7 +88,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         state == AppLifecycleState.paused) {
       if (_fadeTimer != null && _fadeTimer!.isActive) {
         _fadeTimer!.cancel();
-        // Snap to target volume
         if (_isPlayingMusic) {
           _currentVolume = 1.0;
         } else {
@@ -123,7 +120,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         _pickRandomExercise();
       }
 
-      // Pick a single random image so all displays show the same one
       _classicImage =
           AppConstants.wellnessSlideshow[Random().nextInt(
             AppConstants.wellnessSlideshow.length,
@@ -166,7 +162,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       if (settings.playMusicDuringBreak) {
         _startMusic();
       }
-    } else if (shouldShowWarning && !_hasShownPreBreakWarning && !overlayService.isOverlayVisible) {
+    } else if (shouldShowWarning &&
+        !_hasShownPreBreakWarning &&
+        !overlayService.isOverlayVisible) {
       _hasShownPreBreakWarning = true;
       overlayService.showOverlay(
         type: OverlayType.preBreakWarning,
@@ -222,7 +220,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     sl<NotificationService>().setSoundEnabled(settings.soundEnabled);
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
 
-    // Dynamic service gating
     final smartDetection = sl<SmartDetectionService>();
     if (settings.detectVideoCalls || settings.respectFocusMode) {
       smartDetection.start();
@@ -238,14 +235,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  // --- Snooze Logic ---
-
   void snooze({int? minutes}) {
     final snoozeMins =
         minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes;
     _timerEngine.pauseTimers(isManual: true);
 
-    // Schedule resume
     Timer(Duration(minutes: snoozeMins), () {
       if (isPaused) {
         _timerEngine.resumeTimers();
@@ -264,8 +258,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     final minutes = endTime.difference(DateTime.now()).inMinutes.clamp(1, 240);
     snooze(minutes: minutes);
   }
-
-  // --- Quiet Mode Logic ---
 
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
   String get quietModePreset => _settingsRepo.currentSettings.quietModePreset;
@@ -328,15 +320,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  // --- Break Actions ---
-
   void takeBreakNow() {
     _timerEngine.triggerBreakNow(isLong: false);
     notifyListeners();
   }
 
-  /// Shows the break overlay for 10 seconds as a preview, without starting
-  /// a real session or affecting any statistics/database.
   void previewBreak({String? templateId}) {
     final overlayService = sl<OverlayWindowService>();
     final settings = _settingsRepo.currentSettings;
@@ -378,7 +366,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       },
     );
 
-    // Auto-close preview after 10 seconds
     Timer(const Duration(seconds: 10), () {
       if (overlayService.isOverlayVisible &&
           overlayService.currentOverlayType == OverlayType.breakScreen) {
@@ -477,8 +464,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     );
     notifyListeners();
   }
-
-  // --- Music Logic ---
 
   Future<void> _startMusic() async {
     if (_isPlayingMusic) return;
