@@ -13,8 +13,16 @@ import window_manager
 
 /// Registers all required Flutter plugins for secondary engines (overlays, companion).
 /// This now uses the standard GeneratedPluginRegistrant for 100% feature parity with the main engine.
+/// Secondary isolates reuse these plugin instances to handle display queries, audio playback, and visual effects.
 func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
-    RegisterGeneratedPlugins(registry: registry)
+    // Register only the critical plugins required for secondary isolates (overlays and companion)
+    // to keep memory and CPU footprint low on lower-end macOS devices.
+    WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
+    ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
+    AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
+    FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+    MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
+    
     WindowBridge.register(with: registry.registrar(forPlugin: "WindowBridge"))
     BehaviorEngineBridge.register(with: registry.registrar(forPlugin: "BehaviorEngineBridge"))
 }

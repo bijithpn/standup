@@ -16,6 +16,7 @@ import 'package:breakmate/core/services/timer_engine.dart';
 
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/services/pet_registry_service.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 class CompanionOverlayController extends ChangeNotifier {
@@ -269,12 +270,29 @@ class CompanionOverlayController extends ChangeNotifier {
         settings.hasCompletedOnboarding &&
         (!_isPreviewMode || _pipModeEnabled);
 
-    final needsShowOrToggle = shouldShow && (!_isCompanionShown || pipModeChanged);
+    final needsShowOrToggle =
+        shouldShow && (!_isCompanionShown || pipModeChanged);
     final needsHide = !shouldShow && _isCompanionShown;
 
     if (needsShowOrToggle || needsHide) {
+      debugPrint(
+        '[CompanionOverlayController] Starting transition... needsShowOrToggle: $needsShowOrToggle, needsHide: $needsHide',
+      );
       _isTransitioning = true;
       notifyListeners();
+
+      // Create a safety timeout timer in case a native call hangs indefinitely.
+      // This is a workaround for platform window-spawning MethodChannels that could block
+      // indefinitely if the native window manager fails to complete high-priority window actions.
+      final safetyTimer = Timer(const Duration(seconds: 3), () {
+        if (_isTransitioning) {
+          debugPrint(
+            '[CompanionOverlayController] WARNING: Transition safety timeout hit! Forcing loader dismissal.',
+          );
+          _isTransitioning = false;
+          notifyListeners();
+        }
+      });
 
       Future.microtask(() async {
         // Yield control to let Flutter render the loading overlay frame
@@ -283,19 +301,35 @@ class CompanionOverlayController extends ChangeNotifier {
           if (needsShowOrToggle) {
             if (_isCompanionShown && pipModeChanged) {
               _isCompanionShown = false;
+              debugPrint(
+                '[CompanionOverlayController] Toggling modes, hiding current companion window...',
+              );
               await NativeBridge.hideCompanion();
               await NativeBridge.hidePipWindow();
               await Future.delayed(const Duration(milliseconds: 300));
             }
+            debugPrint(
+              '[CompanionOverlayController] Spawning new companion/PiP window...',
+            );
             await _showNativeCompanion();
           } else if (needsHide) {
             _isCompanionShown = false;
+            debugPrint(
+              '[CompanionOverlayController] Hiding companion/PiP window...',
+            );
             await NativeBridge.hideCompanion();
             await NativeBridge.hidePipWindow();
           }
+          debugPrint(
+            '[CompanionOverlayController] Transition completed successfully.',
+          );
         } catch (e, st) {
+          debugPrint(
+            '[CompanionOverlayController] Transition failed with error: $e',
+          );
           ErrorHandler().handleError(e, st);
         } finally {
+          safetyTimer.cancel();
           _isTransitioning = false;
           notifyListeners();
         }
@@ -389,6 +423,7 @@ class CompanionOverlayController extends ChangeNotifier {
         _showNativeCompanion();
       }
     }
+    notifyListeners();
   }
 
   Future<void> toggleCompanion(bool enabled) async {
@@ -406,6 +441,8 @@ class CompanionOverlayController extends ChangeNotifier {
   Future<void> changeTheme(String themeId) async {
     if (_companionPetTheme == themeId || _isTransitioning) return;
 
+    // Evict existing pet assets and clear cached SpriteSheets to release memory before loading the new theme.
+    // This prevents GPU memory overhead from accumulative sprite sheets when the breed is toggled.
     PetAssetLoader.clearCache();
     Flame.images.clear(themeId);
 
@@ -421,7 +458,14 @@ class CompanionOverlayController extends ChangeNotifier {
       names = catNames;
     }
 
-    final randomName = names[random.nextInt(names.length)];
+    String randomName = _companionPetName;
+    if (names.length > 1) {
+      do {
+        randomName = names[random.nextInt(names.length)];
+      } while (randomName == _companionPetName);
+    } else if (names.isNotEmpty) {
+      randomName = names.first;
+    }
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionPetTheme: themeId,
@@ -429,10 +473,28 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
 
-    try {
-      await sl<TrayManagerService>().updateSelectedBreed(themeId);
-    } catch (e, st) {
-      ErrorHandler().handleError(e, st);
+    int retries = 0;
+    while (retries < 3) {
+      try {
+        await sl<TrayManagerService>().updateSelectedBreed(themeId);
+        break;
+      } catch (e, st) {
+        retries++;
+        if (retries >= 3) {
+          ErrorHandler().handleError(
+            AppException(
+              type: AppErrorType.ui,
+              message:
+                  'Failed to update selected breed after 3 attempts: ${e.toString()}',
+              originalError: e,
+              stackTrace: st,
+            ),
+            st,
+          );
+        } else {
+          await Future.delayed(Duration(milliseconds: 500 * retries));
+        }
+      }
     }
   }
 
@@ -577,6 +639,17 @@ class CompanionOverlayController extends ChangeNotifier {
     if (!_companionEnabled || _isTransitioning) return;
     _isTransitioning = true;
     notifyListeners();
+
+    final safetyTimer = Timer(const Duration(seconds: 3), () {
+      if (_isTransitioning) {
+        debugPrint(
+          '[CompanionOverlayController] WARNING: Refresh safety timeout hit! Forcing loader dismissal.',
+        );
+        _isTransitioning = false;
+        notifyListeners();
+      }
+    });
+
     await Future.delayed(const Duration(milliseconds: 80));
     try {
       _isCompanionShown = false;
@@ -587,6 +660,7 @@ class CompanionOverlayController extends ChangeNotifier {
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     } finally {
+      safetyTimer.cancel();
       _isTransitioning = false;
       notifyListeners();
     }

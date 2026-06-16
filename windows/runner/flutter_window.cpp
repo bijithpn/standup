@@ -1176,6 +1176,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       if (g_display_stream_handler) {
         g_display_stream_handler->SendUpdate();
       }
+      OverlayWindowManager::GetInstance()->OnDisplayChange();
       break;
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();

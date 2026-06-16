@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/core/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -18,6 +19,9 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
+/// Coordinates cross-service actions driven by the state updates of TimerEngine.
+/// It bridges the core timer system with activity tracking, user alerts, stats logging,
+/// settings changes, and secondary engine UI updates via native IPC.
 class TimerOrchestrator {
   final TimerEngine timerEngine;
   final TimerRepository timerRepository;
@@ -57,6 +61,25 @@ class TimerOrchestrator {
 
     _restoreState();
 
+    if (timerEngine.state == TimerState.running &&
+        timerEngine.stateData.lastTickTime != null) {
+      final lastTick = timerEngine.stateData.lastTickTime!;
+      final durationAway = DateTime.now().difference(lastTick);
+      if (durationAway.inMinutes >= timerEngine.shortBreakIntervalMinutes) {
+        _logger.info(
+          'Cold boot recovery: Away for ${durationAway.inMinutes}m. Resetting focus session.',
+        );
+        timerEngine.resetTimers();
+      } else {
+        _logger.info(
+          'Cold boot recovery: Resuming focus session after ${durationAway.inSeconds}s away.',
+        );
+        timerEngine.stateData.lastTickTime = DateTime.now();
+        timerEngine.startTimers();
+      }
+      sl<StorageService>().setInt('timer_last_tick_time', 0);
+    }
+
     _eventSubscription = eventBus.stream.listen(_handleEvent);
 
     timerEngine.countdownNotifier.addListener(_updateTray);
@@ -82,6 +105,8 @@ class TimerOrchestrator {
     _updateTray();
   }
 
+  /// Routes global application events. High-priority state events (like breaks starting/ending)
+  /// are serialized and dispatched over the IPC channel so secondary window processes stay synchronized.
   void _handleEvent(AppEvent event) {
     _logger.info('Received event in Orchestrator: $event');
 
@@ -222,7 +247,19 @@ class TimerOrchestrator {
     }
   }
 
-  void _handleBreakPostponed(BreakPostponedEvent event) {}
+  void _handleBreakPostponed(BreakPostponedEvent event) {
+    final settings = settingsRepository.currentSettings;
+    if (settings.companionEnabled) {
+      eventBus.emit(CompanionInteractionEvent(interactionType: 'meow'));
+      IpcBridge.instance.dispatch(
+        CompanionInteractionIpcEvent(interactionType: 'meow'),
+      );
+    } else {
+      notificationService.showReminder(
+        message: 'Break postponed by ${event.additionalSeconds ~/ 60} minutes.',
+      );
+    }
+  }
 
   void _updateTray() {
     final settings = settingsRepository.currentSettings;

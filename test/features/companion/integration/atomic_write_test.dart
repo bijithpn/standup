@@ -93,21 +93,24 @@ void main() {
       );
     });
 
-    test('no files created when flush is called with nothing pending', () async {
-      final sp = _makePersistence(tempDir);
-      await sp.flushPendingWrite(); // nothing scheduled
+    test(
+      'no files created when flush is called with nothing pending',
+      () async {
+        final sp = _makePersistence(tempDir);
+        await sp.flushPendingWrite(); // nothing scheduled
 
-      expect(
-        configFile.existsSync(),
-        isFalse,
-        reason: 'Config file must not be created if no write was scheduled',
-      );
-      expect(
-        tmpFile.existsSync(),
-        isFalse,
-        reason: '.tmp file must not be created if no write was scheduled',
-      );
-    });
+        expect(
+          configFile.existsSync(),
+          isFalse,
+          reason: 'Config file must not be created if no write was scheduled',
+        );
+        expect(
+          tmpFile.existsSync(),
+          isFalse,
+          reason: '.tmp file must not be created if no write was scheduled',
+        );
+      },
+    );
 
     test('successive flushes overwrite config file and leave no .tmp', () async {
       const configs = [
@@ -162,41 +165,44 @@ void main() {
       }
     });
 
-    test('loadSync on a second instance recovers config written atomically', () async {
-      const original = PetConfigV2(
-        mode: PetMode.freeRoam,
-        pinnedDisplayId: null,
-        constraintWindowBounds: Rect.fromLTWH(0, 0, 300, 300),
-        lastAnchorPoint: Offset(400, 300),
-        themeId: 'pixel_cat',
-        petName: 'Pixel',
-        scale: 7.0,
-      );
+    test(
+      'loadSync on a second instance recovers config written atomically',
+      () async {
+        const original = PetConfigV2(
+          mode: PetMode.freeRoam,
+          pinnedDisplayId: null,
+          constraintWindowBounds: Rect.fromLTWH(0, 0, 300, 300),
+          lastAnchorPoint: Offset(400, 300),
+          themeId: 'pixel_cat',
+          petName: 'Pixel',
+          scale: 7.0,
+        );
 
-      // Writer instance simulates a settings change at runtime.
-      final writer = _makePersistence(tempDir);
-      writer.scheduleWrite(original);
-      await writer.flushPendingWrite();
+        // Writer instance simulates a settings change at runtime.
+        final writer = _makePersistence(tempDir);
+        writer.scheduleWrite(original);
+        await writer.flushPendingWrite();
 
-      // Verify atomic write completed cleanly.
-      expect(configFile.existsSync(), isTrue);
-      expect(
-        tmpFile.existsSync(),
-        isFalse,
-        reason: 'No .tmp remnant after atomic write',
-      );
+        // Verify atomic write completed cleanly.
+        expect(configFile.existsSync(), isTrue);
+        expect(
+          tmpFile.existsSync(),
+          isFalse,
+          reason: 'No .tmp remnant after atomic write',
+        );
 
-      // Reader instance simulates application restart.
-      final reader = _makePersistence(tempDir);
-      final loaded = reader.loadSync();
+        // Reader instance simulates application restart.
+        final reader = _makePersistence(tempDir);
+        final loaded = reader.loadSync();
 
-      expect(
-        loaded,
-        equals(original),
-        reason:
-            'A fresh SettingsPersistence must load the atomically-written config',
-      );
-    });
+        expect(
+          loaded,
+          equals(original),
+          reason:
+              'A fresh SettingsPersistence must load the atomically-written config',
+        );
+      },
+    );
 
     test(
       'corrupt file recovery writes defaults atomically — no .tmp remnant',

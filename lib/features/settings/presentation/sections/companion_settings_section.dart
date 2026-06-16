@@ -299,7 +299,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           vertical: 16,
                         ),
                         decoration: BoxDecoration(
-                          color: AppTheme.surfaceElevated.withValues(alpha: 0.9),
+                          color: AppTheme.surfaceElevated.withValues(
+                            alpha: 0.9,
+                          ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: AppTheme.border),
                           boxShadow: [
@@ -415,32 +417,32 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {
         'name': 'Forest',
         'id': 'forest',
-        'path': 'assets/background/forest/background.png'
+        'path': 'assets/background/forest/background.png',
       },
       {
         'name': 'Autumn',
         'id': 'autumn',
-        'path': 'assets/background/autumn/background.png'
+        'path': 'assets/background/autumn/background.png',
       },
       {
         'name': 'Winter',
         'id': 'winter',
-        'path': 'assets/background/winter/background.png'
+        'path': 'assets/background/winter/background.png',
       },
       {
         'name': 'Beach',
         'id': 'beach',
-        'path': 'assets/background/beach/background-light.png'
+        'path': 'assets/background/beach/background-light.png',
       },
       {
         'name': 'Desert',
         'id': 'desert',
-        'path': 'assets/background/desert/background.png'
+        'path': 'assets/background/desert/background.png',
       },
       {
         'name': 'Sky',
         'id': 'sky',
-        'path': 'assets/environments/sky/sky_back.png'
+        'path': 'assets/environments/sky/sky_back.png',
       },
       {
         'name': 'Night Town',
@@ -455,7 +457,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {
         'name': 'Urban',
         'id': 'urban',
-        'path': 'assets/background/urban/background.png'
+        'path': 'assets/background/urban/background.png',
       },
     ];
 

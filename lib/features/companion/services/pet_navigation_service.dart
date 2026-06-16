@@ -54,7 +54,9 @@ class PetNavigationService {
   PetState? _lastCurrentState;
 
   bool get isMoving {
-    final bool isPlayState = _lastCurrentState == PetState.chasing || _lastCurrentState == PetState.fetching;
+    final bool isPlayState =
+        _lastCurrentState == PetState.chasing ||
+        _lastCurrentState == PetState.fetching;
     if (_isCursorFollowing && !isPlayState) {
       final profile = _species.defaultProfile;
       if (profile.lookDelay > 0.0 && _lookTimer < profile.lookDelay) {
@@ -62,7 +64,9 @@ class PetNavigationService {
       }
       return (_cursorPos - _pos).distance > profile.stopRadius;
     } else {
-      if ((!_isWanderingEnabled && !isPlayState) || _wanderSpeed <= 0 || !_hasWanderTarget) {
+      if ((!_isWanderingEnabled && !isPlayState) ||
+          _wanderSpeed <= 0 ||
+          !_hasWanderTarget) {
         return false;
       }
 
@@ -248,7 +252,8 @@ class PetNavigationService {
     // Reset landing guard when we leave the falling state.
     _isLanded = false;
 
-    final bool isPlayState = currentState == PetState.chasing || currentState == PetState.fetching;
+    final bool isPlayState =
+        currentState == PetState.chasing || currentState == PetState.fetching;
     if (_isCursorFollowing && !isPlayState) {
       _updateCursorFollow(dt);
     } else {
@@ -309,8 +314,11 @@ class PetNavigationService {
   }
 
   void _updateWander(double dt, {PetState? currentState}) {
-    final bool isPlayState = currentState == PetState.chasing || currentState == PetState.fetching;
-    if ((!_isWanderingEnabled && !isPlayState) || _wanderSpeed <= 0 || (!_hasWanderTarget && !isPlayState)) {
+    final bool isPlayState =
+        currentState == PetState.chasing || currentState == PetState.fetching;
+    if ((!_isWanderingEnabled && !isPlayState) ||
+        _wanderSpeed <= 0 ||
+        (!_hasWanderTarget && !isPlayState)) {
       final decay = (1.0 - 8.0 * dt).clamp(0.0, 1.0);
       _vel = Offset(_vel.dx * decay, _vel.dy * decay);
       if (_vel.distance < 0.5) _vel = Offset.zero;

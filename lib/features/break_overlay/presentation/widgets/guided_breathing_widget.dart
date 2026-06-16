@@ -378,6 +378,7 @@ class _PhaseArcPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 

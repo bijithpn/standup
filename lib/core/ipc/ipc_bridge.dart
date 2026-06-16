@@ -29,32 +29,11 @@ class IpcBridge {
     });
   }
 
-  /// This keeps validation in [IpcEvent.parse] and prevents callers from
+  /// Binds a handler that processes typed IPC events.
   void setTypedEventHandler(void Function(IpcEvent event) handler) {
     setEventHandler((event, data) {
       handler(IpcEvent.parse(event, data));
     });
-  }
-
-  Future<void> sendEvent(String event, [Map<String, dynamic>? data]) async {
-    int retries = 3;
-    while (retries > 0) {
-      try {
-        await _ipcChannel.invokeMethod('sendEvent', {
-          'event': event,
-          'data': data ?? {},
-        });
-        _lastSuccessfulEventByName[event] = DateTime.now();
-        return;
-      } catch (e) {
-        retries--;
-        if (retries == 0) {
-          _logger.error('Failed to send IPC event $event: $e');
-        } else {
-          await Future.delayed(const Duration(milliseconds: 50));
-        }
-      }
-    }
   }
 
   Future<void> dispatch(IpcEvent event) async {

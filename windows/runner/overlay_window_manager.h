@@ -17,6 +17,7 @@ class OverlayWindowManager {
   // Invoked from the low-level keyboard hook when Escape is pressed so that
   // the overlay can be dismissed even without window focus (SWP_NOACTIVATE).
   void HandleEscapeKey();
+  void OnDisplayChange();
   flutter::EncodableMap GetLastShowArgs() const { return last_show_args_; }
 
  private:

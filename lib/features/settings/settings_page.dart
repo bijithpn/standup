@@ -77,18 +77,23 @@ class _SettingsPageState extends State<SettingsPage> {
         final verticalPadding = isSmallScreen ? 20.0 : 32.0;
 
         Widget buildContent(ScrollController? scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isSmallScreen ? double.infinity : 760,
+          return ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isSmallScreen ? double.infinity : 760,
+                  ),
+                  child: _buildContentShell(),
                 ),
-                child: _buildContentShell(),
               ),
             ),
           );

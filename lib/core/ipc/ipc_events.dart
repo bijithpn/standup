@@ -1,4 +1,4 @@
-abstract class IpcEvent {
+sealed class IpcEvent {
   static const int currentVersion = 1;
 
   final String eventName;
@@ -61,7 +61,7 @@ T _readRequired<T>(Map<String, dynamic> payload, String key) {
   throw FormatException('IPC payload field "$key" must be $T');
 }
 
-class TimerStateChangedIpcEvent extends IpcEvent {
+final class TimerStateChangedIpcEvent extends IpcEvent {
   final String stateName;
   final int countdownSeconds;
   final int workElapsedSeconds;
@@ -94,7 +94,7 @@ class TimerStateChangedIpcEvent extends IpcEvent {
   }
 }
 
-class BreakStartedIpcEvent extends IpcEvent {
+final class BreakStartedIpcEvent extends IpcEvent {
   final bool isLongBreak;
   final int durationSeconds;
   final String title;
@@ -118,7 +118,7 @@ class BreakStartedIpcEvent extends IpcEvent {
   }
 }
 
-class BreakEndedIpcEvent extends IpcEvent {
+final class BreakEndedIpcEvent extends IpcEvent {
   final bool skipped;
 
   BreakEndedIpcEvent({required this.skipped})
@@ -129,7 +129,7 @@ class BreakEndedIpcEvent extends IpcEvent {
   }
 }
 
-class CompanionInteractionIpcEvent extends IpcEvent {
+final class CompanionInteractionIpcEvent extends IpcEvent {
   final String interactionType;
   final Map<String, dynamic>? metadata;
 
@@ -149,7 +149,7 @@ class CompanionInteractionIpcEvent extends IpcEvent {
   }
 }
 
-class MeetingDetectedIpcEvent extends IpcEvent {
+final class MeetingDetectedIpcEvent extends IpcEvent {
   final bool isActive;
   final String bundleId;
 
@@ -167,7 +167,7 @@ class MeetingDetectedIpcEvent extends IpcEvent {
   }
 }
 
-class FocusModeIpcEvent extends IpcEvent {
+final class FocusModeIpcEvent extends IpcEvent {
   final bool isActive;
 
   FocusModeIpcEvent({required this.isActive})
@@ -178,7 +178,7 @@ class FocusModeIpcEvent extends IpcEvent {
   }
 }
 
-class TrayActionIpcEvent extends IpcEvent {
+final class TrayActionIpcEvent extends IpcEvent {
   final String action;
 
   TrayActionIpcEvent({required this.action})
@@ -189,11 +189,11 @@ class TrayActionIpcEvent extends IpcEvent {
   }
 }
 
-class CompanionCloseIpcEvent extends IpcEvent {
+final class CompanionCloseIpcEvent extends IpcEvent {
   CompanionCloseIpcEvent() : super(IpcEventNames.companionClose, {});
 }
 
-class CompanionPositionChangedIpcEvent extends IpcEvent {
+final class CompanionPositionChangedIpcEvent extends IpcEvent {
   final double x;
   final double y;
 
@@ -210,7 +210,7 @@ class CompanionPositionChangedIpcEvent extends IpcEvent {
   }
 }
 
-class CompanionStateChangedIpcEvent extends IpcEvent {
+final class CompanionStateChangedIpcEvent extends IpcEvent {
   final String state;
 
   CompanionStateChangedIpcEvent({required this.state})
@@ -223,7 +223,7 @@ class CompanionStateChangedIpcEvent extends IpcEvent {
   }
 }
 
-class UnknownIpcEvent extends IpcEvent {
+final class UnknownIpcEvent extends IpcEvent {
   UnknownIpcEvent({
     required String eventName,
     required Map<String, dynamic> payload,
