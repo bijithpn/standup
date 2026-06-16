@@ -249,7 +249,16 @@ Widget dropdownRow(
                   .map(
                     (option) => AppDropdownItem<String>(
                       value: option,
-                      label: option.toUpperCase(),
+                      label: option.contains('_')
+                          ? option
+                                .split('_')
+                                .map(
+                                  (word) => word.isNotEmpty
+                                      ? '${word[0].toUpperCase()}${word.substring(1)}'
+                                      : '',
+                                )
+                                .join(' ')
+                          : '${option[0].toUpperCase()}${option.substring(1)}',
                     ),
                   )
                   .toList(),
@@ -360,8 +369,7 @@ Widget buildListRow(
               activeTrackColor: AppTheme.accentColor,
             ),
           ),
-        // ignore: use_null_aware_elements
-        if (trailing != null) trailing,
+        ?trailing,
       ],
     ),
   );
@@ -392,7 +400,16 @@ Widget inlineDropdown(
         .map(
           (option) => AppDropdownItem<String>(
             value: option,
-            label: option.toUpperCase(),
+            label: option.contains('_')
+                ? option
+                      .split('_')
+                      .map(
+                        (word) => word.isNotEmpty
+                            ? '${word[0].toUpperCase()}${word.substring(1)}'
+                            : '',
+                      )
+                      .join(' ')
+                : '${option[0].toUpperCase()}${option.substring(1)}',
           ),
         )
         .toList(),
@@ -650,10 +667,7 @@ Widget colorRow(String label, Color color) {
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.3),
-                blurRadius: 6,
-              ),
+              BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 6),
             ],
           ),
         ),

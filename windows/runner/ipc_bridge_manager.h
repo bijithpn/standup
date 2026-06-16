@@ -5,7 +5,7 @@
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
 #include <mutex>
-#include <vector>
+#include <map>
 
 class IpcBridgeManager {
  public:
@@ -21,9 +21,7 @@ class IpcBridgeManager {
 
   static IpcBridgeManager* instance_;
   std::mutex mutex_;
-  std::vector<flutter::FlutterEngine*> engines_;
-  
-  std::vector<std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>> channels_;
+  std::map<flutter::FlutterEngine*, std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>>> engines_map_;
 };
 
 #endif  // IPC_BRIDGE_MANAGER_H_

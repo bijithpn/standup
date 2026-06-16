@@ -67,7 +67,6 @@ class ErrorToastService {
       if (overlay.mounted) {
         overlay.insert(overlayEntry);
 
-        // Remove after 3.5 seconds
         Timer(const Duration(milliseconds: 3500), () {
           if (overlayEntry.mounted) {
             overlayEntry.remove();
@@ -109,11 +108,7 @@ class ErrorToastService {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.info_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
+                  const Icon(Icons.info_outline, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(

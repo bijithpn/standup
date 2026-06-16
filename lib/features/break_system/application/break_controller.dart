@@ -38,6 +38,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   String _classicImage = '';
 
   TimerState? _lastOverlayState;
+  bool _hasShownPreBreakWarning = false;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -73,12 +74,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     _timerEngine.startTimers();
     _statsService.load();
 
-    // Pre-initialize audio player to eliminate startup lag
     _audioPlayer = AudioPlayer();
     _audioPlayer!.setReleaseMode(ReleaseMode.loop);
     _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
 
-    // Listen for timer events to trigger global overlays
     _timerEngine.addListener(_handleGlobalOverlays);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -89,7 +88,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         state == AppLifecycleState.paused) {
       if (_fadeTimer != null && _fadeTimer!.isActive) {
         _fadeTimer!.cancel();
-        // Snap to target volume
         if (_isPlayingMusic) {
           _currentVolume = 1.0;
         } else {
@@ -108,6 +106,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
     bool shouldShowWarning = _timerEngine.isPreBreak;
 
+    if (!shouldShowWarning) {
+      _hasShownPreBreakWarning = false;
+    }
+
     if (shouldShowBreak && _lastOverlayState != TimerState.breakActive) {
       _lastOverlayState = TimerState.breakActive;
 
@@ -118,9 +120,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         _pickRandomExercise();
       }
 
-      // Pick a single random image so all displays show the same one
-      _classicImage = AppConstants.wellnessSlideshow[
-          Random().nextInt(AppConstants.wellnessSlideshow.length)];
+      _classicImage =
+          AppConstants.wellnessSlideshow[Random().nextInt(
+            AppConstants.wellnessSlideshow.length,
+          )];
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
@@ -130,14 +133,25 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         breakTheme: settings.breakTheme,
         overlayData: {
           'isLong': isLong,
+          'breakType': _timerEngine.activeBreak?.type.name,
           'template': _currentTemplate,
           'breakTemplate': _currentTemplate,
           'classicImage': _classicImage,
           'companionPetTheme': settings.companionPetTheme,
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
+          'showWellnessNotes': settings.showExercisesInBreak,
+          'durationSeconds':
+              _timerEngine.activeBreak?.durationSeconds ??
+              _timerEngine.countdownSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+          'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
+          'breaksCompleted': _statsService.stats.breaksCompleted,
+          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'customImagePath': settings.customImagePath ?? '',
         },
       );
 
@@ -148,11 +162,22 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       if (settings.playMusicDuringBreak) {
         _startMusic();
       }
-    } else if (shouldShowWarning && !overlayService.isOverlayVisible) {
+    } else if (shouldShowWarning &&
+        !_hasShownPreBreakWarning &&
+        !overlayService.isOverlayVisible) {
+      _hasShownPreBreakWarning = true;
       overlayService.showOverlay(
         type: OverlayType.preBreakWarning,
         builder: (_) => const SizedBox.shrink(),
-        overlayData: {'secondsRemaining': _timerEngine.countdownSeconds},
+        reminderType: 'breakStart',
+        overlayData: {
+          'secondsRemaining': _timerEngine.countdownSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+          'durationSeconds': _timerEngine.countdownSeconds,
+          'targetEndTime': DateTime.now()
+              .add(Duration(seconds: _timerEngine.countdownSeconds))
+              .millisecondsSinceEpoch,
+        },
       );
     } else if (!shouldShowBreak &&
         !shouldShowWarning &&
@@ -195,7 +220,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     sl<NotificationService>().setSoundEnabled(settings.soundEnabled);
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
 
-    // Dynamic service gating
     final smartDetection = sl<SmartDetectionService>();
     if (settings.detectVideoCalls || settings.respectFocusMode) {
       smartDetection.start();
@@ -211,14 +235,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  // --- Snooze Logic ---
-
   void snooze({int? minutes}) {
     final snoozeMins =
         minutes ?? _settingsRepo.currentSettings.lastSnoozeDurationMinutes;
     _timerEngine.pauseTimers(isManual: true);
 
-    // Schedule resume
     Timer(Duration(minutes: snoozeMins), () {
       if (isPaused) {
         _timerEngine.resumeTimers();
@@ -237,8 +258,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     final minutes = endTime.difference(DateTime.now()).inMinutes.clamp(1, 240);
     snooze(minutes: minutes);
   }
-
-  // --- Quiet Mode Logic ---
 
   bool get quietModeEnabled => _settingsRepo.currentSettings.quietModeEnabled;
   String get quietModePreset => _settingsRepo.currentSettings.quietModePreset;
@@ -301,23 +320,22 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  // --- Break Actions ---
-
   void takeBreakNow() {
     _timerEngine.triggerBreakNow(isLong: false);
     notifyListeners();
   }
 
-  /// Shows the break overlay for 10 seconds as a preview, without starting 
-  /// a real session or affecting any statistics/database.
-  void previewBreak() {
+  void previewBreak({String? templateId}) {
     final overlayService = sl<OverlayWindowService>();
     final settings = _settingsRepo.currentSettings;
+    final activeTemplate = templateId ?? settings.breakTemplate;
 
-    _logger.info('Starting break preview');
+    _logger.info('Starting break preview for template: $activeTemplate');
 
-    _classicImage = AppConstants.wellnessSlideshow[
-        Random().nextInt(AppConstants.wellnessSlideshow.length)];
+    _classicImage =
+        AppConstants.wellnessSlideshow[Random().nextInt(
+          AppConstants.wellnessSlideshow.length,
+        )];
 
     overlayService.showOverlay(
       type: OverlayType.breakScreen,
@@ -325,21 +343,29 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       isPreview: true,
       overlayData: {
         'isLong': false,
-        'template': settings.breakTemplate,
-        'breakTemplate': settings.breakTemplate,
+        'breakType': activeTemplate == 'wind_down' ? 'windDown' : 'short',
+        'template': activeTemplate,
+        'breakTemplate': activeTemplate,
         'classicImage': _classicImage,
         'companionPetTheme': settings.companionPetTheme,
         'enableAnimations': settings.enableAnimations,
         'intensityLevel': settings.intensityLevel,
+        'showWellnessNotes': settings.showExercisesInBreak,
         'exerciseTitle': 'Preview Mode',
         'exerciseInstructions':
             'This is a preview of your selected break template. It will not be recorded in your history.',
-        'durationSeconds': 300,
-        'remainingSeconds': 300,
+        'durationSeconds': settings.shortBreakDurationSeconds,
+        'remainingSeconds': settings.shortBreakDurationSeconds,
+        'targetEndTime': DateTime.now()
+            .add(Duration(seconds: settings.shortBreakDurationSeconds))
+            .millisecondsSinceEpoch,
+        'breaksCompleted': _statsService.stats.breaksCompleted,
+        'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+        'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+        'customImagePath': settings.customImagePath ?? '',
       },
     );
 
-    // Auto-close preview after 10 seconds
     Timer(const Duration(seconds: 10), () {
       if (overlayService.isOverlayVisible &&
           overlayService.currentOverlayType == OverlayType.breakScreen) {
@@ -397,13 +423,24 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         breakTheme: settings.breakTheme,
         overlayData: {
           'isLong': isLong,
+          'breakType': _timerEngine.activeBreak?.type.name,
           'template': settings.breakTemplate,
           'breakTemplate': settings.breakTemplate,
           'companionPetTheme': settings.companionPetTheme,
           'enableAnimations': settings.enableAnimations,
           'intensityLevel': settings.intensityLevel,
+          'showWellnessNotes': settings.showExercisesInBreak,
+          'durationSeconds':
+              _timerEngine.activeBreak?.durationSeconds ??
+              _timerEngine.countdownSeconds,
+          'remainingSeconds': _timerEngine.countdownSeconds,
+          'targetEndTime': _timerEngine.targetEndTime?.millisecondsSinceEpoch,
           'exerciseTitle': _currentExerciseTitle,
           'exerciseInstructions': _currentExerciseInstructions,
+          'breaksCompleted': _statsService.stats.breaksCompleted,
+          'clockFaceTextColorHex': settings.clockFaceTextColorHex,
+          'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'customImagePath': settings.customImagePath ?? '',
         },
       );
     }
@@ -427,8 +464,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     );
     notifyListeners();
   }
-
-  // --- Music Logic ---
 
   Future<void> _startMusic() async {
     if (_isPlayingMusic) return;

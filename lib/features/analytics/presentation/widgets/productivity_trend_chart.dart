@@ -20,12 +20,13 @@ class ProductivityTrendChart extends StatelessWidget {
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
-  // ── Week: Sun–Sat of the current week ──────────────────────────────────────
-
   List<_BarSlot> _weekSlots() {
     final now = DateTime.now();
-    final sunday = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday % 7));
+    final sunday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday % 7));
     final byDate = <String, DailyStats>{for (final d in weeklyData) d.date: d};
     const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -44,8 +45,6 @@ class ProductivityTrendChart extends StatelessWidget {
     });
   }
 
-  // ── Month: week-by-week totals for the current month ───────────────────────
-
   List<_BarSlot> _monthSlots() {
     final now = DateTime.now();
     final byDate = <String, DailyStats>{for (final d in weeklyData) d.date: d};
@@ -63,19 +62,25 @@ class ProductivityTrendChart extends StatelessWidget {
 
       int total = 0;
       bool isCurrent = false;
-      for (var d = cursor; !d.isAfter(bucketEnd); d = d.add(const Duration(days: 1))) {
+      for (
+        var d = cursor;
+        !d.isAfter(bucketEnd);
+        d = d.add(const Duration(days: 1))
+      ) {
         final key =
             '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
         total += byDate[key]?.breaksCompleted ?? 0;
         if (key == todayStr) isCurrent = true;
       }
 
-      slots.add(_BarSlot(
-        label: 'Wk $weekNum',
-        value: total,
-        isToday: isCurrent,
-        isFuture: cursor.isAfter(now),
-      ));
+      slots.add(
+        _BarSlot(
+          label: 'Wk $weekNum',
+          value: total,
+          isToday: isCurrent,
+          isFuture: cursor.isAfter(now),
+        ),
+      );
 
       cursor = bucketEnd.add(const Duration(days: 1));
       weekNum++;
@@ -84,8 +89,6 @@ class ProductivityTrendChart extends StatelessWidget {
     return slots;
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     if (period == ChartPeriod.today) return _buildTodayChart();
@@ -93,21 +96,22 @@ class ProductivityTrendChart extends StatelessWidget {
     return _buildWeekMonthChart(slots, period == ChartPeriod.week ? 22 : 32);
   }
 
-  // Today: pie chart (Done vs Skipped) + usage minutes ─────────────────────
-
   Widget _buildTodayChart() {
     final today = _todayStr();
     final d = weeklyData.firstWhere(
       (s) => s.date == today,
       orElse: () => DailyStats(
-          date: today, breaksCompleted: 0, breaksSkipped: 0, usageMinutes: 0),
+        date: today,
+        breaksCompleted: 0,
+        breaksSkipped: 0,
+        usageMinutes: 0,
+      ),
     );
 
     final done = d.breaksCompleted;
     final skipped = d.breaksSkipped;
     final total = done + skipped;
 
-    // If no data yet, show an empty-state ring
     final sections = total == 0
         ? [
             PieChartSectionData(
@@ -134,7 +138,6 @@ class ProductivityTrendChart extends StatelessWidget {
 
     return Row(
       children: [
-        // Pie / donut
         SizedBox(
           width: 130,
           height: 130,
@@ -164,10 +167,7 @@ class ProductivityTrendChart extends StatelessWidget {
                   ),
                   Text(
                     'of $total',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.textMuted,
-                    ),
+                    style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
                   ),
                 ],
               ),
@@ -175,7 +175,6 @@ class ProductivityTrendChart extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 24),
-        // Legend + minutes
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -211,8 +210,6 @@ class ProductivityTrendChart extends StatelessWidget {
     );
   }
 
-  // Week / Month: breaks-per-day or per-week bars ────────────────────────────
-
   Widget _buildWeekMonthChart(List<_BarSlot> slots, double barWidth) {
     double maxY = 5;
     for (final s in slots) {
@@ -225,8 +222,8 @@ class ProductivityTrendChart extends StatelessWidget {
       final color = slot.isFuture
           ? AppTheme.accentColor.withValues(alpha: 0.15)
           : slot.isToday
-              ? AppTheme.accentColor
-              : AppTheme.accentColor.withValues(alpha: 0.55);
+          ? AppTheme.accentColor
+          : AppTheme.accentColor.withValues(alpha: 0.55);
 
       return BarChartGroupData(
         x: e.key,
@@ -246,55 +243,65 @@ class ProductivityTrendChart extends StatelessWidget {
       );
     }).toList();
 
-    return BarChart(BarChartData(
-      maxY: maxY,
-      barGroups: groups,
-      gridData: const FlGridData(show: false),
-      borderData: FlBorderData(show: false),
-      barTouchData: BarTouchData(
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
-          tooltipBorderRadius: BorderRadius.circular(8),
-          getTooltipItem: (group, gi, rod, ri) {
-            final slot = slots[group.x];
-            return BarTooltipItem(
-              '${slot.label}\n${rod.toY.toInt()} breaks',
-              const TextStyle(color: Colors.white, fontSize: 12),
-            );
-          },
-        ),
-      ),
-      titlesData: FlTitlesData(
-        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 28,
-            getTitlesWidget: (value, meta) {
-              final i = value.toInt();
-              if (i < 0 || i >= slots.length) return const SizedBox.shrink();
-              final slot = slots[i];
-              return SideTitleWidget(
-                meta: meta,
-                space: 6,
-                child: Text(
-                  slot.label,
-                  style: AppTheme.sectionTitle.copyWith(
-                    fontSize: 11,
-                    fontWeight: slot.isToday ? FontWeight.w700 : FontWeight.w500,
-                    color: slot.isToday
-                        ? AppTheme.accentColor
-                        : AppTheme.textMuted.withValues(alpha: 0.8),
-                  ),
-                ),
+    return BarChart(
+      BarChartData(
+        maxY: maxY,
+        barGroups: groups,
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
+            tooltipBorderRadius: BorderRadius.circular(8),
+            getTooltipItem: (group, gi, rod, ri) {
+              final slot = slots[group.x];
+              return BarTooltipItem(
+                '${slot.label}\n${rod.toY.toInt()} breaks',
+                const TextStyle(color: Colors.white, fontSize: 12),
               );
             },
           ),
         ),
+        titlesData: FlTitlesData(
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 28,
+              getTitlesWidget: (value, meta) {
+                final i = value.toInt();
+                if (i < 0 || i >= slots.length) return const SizedBox.shrink();
+                final slot = slots[i];
+                return SideTitleWidget(
+                  meta: meta,
+                  space: 6,
+                  child: Text(
+                    slot.label,
+                    style: AppTheme.sectionTitle.copyWith(
+                      fontSize: 11,
+                      fontWeight: slot.isToday
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: slot.isToday
+                          ? AppTheme.accentColor
+                          : AppTheme.textMuted.withValues(alpha: 0.8),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
-    ));
+    );
   }
 }
 
@@ -330,15 +337,26 @@ class _PieLegendRow extends StatelessWidget {
       children: [
         icon != null
             ? Icon(icon, size: 12, color: color)
-            : Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+            : Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
         const SizedBox(width: 8),
         Expanded(
-          child: Text(label,
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+          child: Text(
+            label,
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+          ),
         ),
-        Text(value,
-            style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
+        ),
       ],
     );
   }

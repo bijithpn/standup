@@ -9,12 +9,14 @@ class ProductivityWellnessChart extends StatelessWidget {
 
   const ProductivityWellnessChart({super.key, required this.stats});
 
-  /// Build a Sun–Sat grid for the current week, mapped by date.
   List<_WeekSlot> _buildWeekSlots() {
     final now = DateTime.now();
     final daysFromSunday = now.weekday % 7;
-    final sunday = DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: daysFromSunday));
+    final sunday = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: daysFromSunday));
 
     final Map<String, DailyStats> byDate = {
       for (final d in stats.weeklyData) d.date: d,
@@ -26,9 +28,8 @@ class ProductivityWellnessChart extends StatelessWidget {
       final dateStr =
           '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
       final s = byDate[dateStr];
-      final isToday = day.year == now.year &&
-          day.month == now.month &&
-          day.day == now.day;
+      final isToday =
+          day.year == now.year && day.month == now.month && day.day == now.day;
       return _WeekSlot(
         label: labels[i],
         breaksCompleted: s?.breaksCompleted ?? 0,
@@ -180,7 +181,9 @@ class ProductivityWellnessChart extends StatelessWidget {
                       ),
                       BarChartRodData(
                         toY: slot.wellnessActions.toDouble(),
-                        color: const Color(0xFF10B981).withValues(alpha: opacity),
+                        color: const Color(
+                          0xFF10B981,
+                        ).withValues(alpha: opacity),
                         width: 9,
                         borderRadius: BorderRadius.circular(4),
                       ),

@@ -6,7 +6,6 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_calculator.dart';
 
-/// Enhanced statistics service with streak tracking, weekly data, and productivity insights
 /// Optimized using background Isolate Pooling for heavy JSON parsing and scoring math.
 class StatsService extends ChangeNotifier {
   final StorageService _storage;
@@ -21,7 +20,6 @@ class StatsService extends ChangeNotifier {
     insight: 'Keep up the good work!',
   );
 
-  // Debounced stats worker: batch small increments, flush on break completion
   Timer? _statsFlushTimer;
   int _pendingBreaksCompleted = 0;
   int _pendingBreaksSkipped = 0;
@@ -50,36 +48,39 @@ class StatsService extends ChangeNotifier {
     final today = _todayString();
     final lastDate = _storage.getString(AppConstants.keyLastActiveDate);
 
-    // Ensure all required keys exist first
     _ensureStorageKeys();
 
-    // Reset daily stats if it's a new day
     if (lastDate != today) {
-      // ⚠️ IMPORTANT: Check streak BEFORE updating lastActiveDate in storage,
-      // otherwise _checkAndUpdateStreak will always see lastActive == today.
+      // calculation will always see lastActive == today.
       _checkAndUpdateStreak(today);
-      
+
       _storage.setString(AppConstants.keyLastActiveDate, today);
       _storage.setInt(AppConstants.keyDailyUsageMinutes, 0);
       _storage.setInt(AppConstants.keyBreaksCompleted, 0);
       _storage.setInt(AppConstants.keyBreaksSkipped, 0);
-      
-      // Also ensure weeklyData has today's entry
+
       final weeklyDataJson = _storage.getString(AppConstants.keyWeeklyStats);
       if (weeklyDataJson.isNotEmpty) {
         try {
           final List<dynamic> jsonData = jsonDecode(weeklyDataJson);
-          final List<DailyStats> weeklyData = jsonData.map((e) => DailyStats.fromJson(e)).toList();
-          
+          final List<DailyStats> weeklyData = jsonData
+              .map((e) => DailyStats.fromJson(e))
+              .toList();
+
           if (!weeklyData.any((d) => d.date == today)) {
-            weeklyData.add(DailyStats(
-              date: today,
-              breaksCompleted: 0,
-              breaksSkipped: 0,
-              usageMinutes: 0,
-            ));
+            weeklyData.add(
+              DailyStats(
+                date: today,
+                breaksCompleted: 0,
+                breaksSkipped: 0,
+                usageMinutes: 0,
+              ),
+            );
             if (weeklyData.length > 365) weeklyData.removeAt(0);
-            _storage.setString(AppConstants.keyWeeklyStats, jsonEncode(weeklyData.map((e) => e.toJson()).toList()));
+            _storage.setString(
+              AppConstants.keyWeeklyStats,
+              jsonEncode(weeklyData.map((e) => e.toJson()).toList()),
+            );
           }
         } catch (e) {
           debugPrint('Error migrating weekly data: $e');
@@ -165,8 +166,6 @@ class StatsService extends ChangeNotifier {
     _pendingWorkSessions = 0;
   }
 
-  // ============ Private Helper Methods ============
-
   Future<void> _refreshStatsAsync() async {
     final weeklyDataJsonString = _storage.getString(
       AppConstants.keyWeeklyStats,
@@ -221,7 +220,6 @@ class StatsService extends ChangeNotifier {
     try {
       final result = StatsCalculator.updateStats(params);
 
-      // Write results to storage on the main isolate
       _storage.setInt(AppConstants.keyBreaksCompleted, result.breaksCompleted);
       _storage.setInt(AppConstants.keyBreaksSkipped, result.breaksSkipped);
       _storage.setInt(
@@ -252,9 +250,7 @@ class StatsService extends ChangeNotifier {
     final lastActive = _storage.getString(AppConstants.keyLastActiveDate);
 
     if (lastActive == yesterday) {
-      // Streak continues
     } else if (lastActive != today) {
-      // Streak broken
       _storage.setInt(AppConstants.keyCurrentStreak, 0);
     }
   }
@@ -275,7 +271,6 @@ class StatsService extends ChangeNotifier {
       }
     }
 
-    // Initialize weekly data if not exists
     if (_storage.getString(AppConstants.keyWeeklyStats).isEmpty) {
       final List<DailyStats> initialWeeklyData = [];
       for (int i = 6; i >= 0; i--) {
@@ -310,8 +305,6 @@ class StatsService extends ChangeNotifier {
 
 // Note: Isolate handlers have been removed in favor of StatsCalculator
 
-// ============ Data Structures for Isolate communication ============
-
 class StatsCalculationResult {
   final StatsModel stats;
   final ProductivityInsights insights;
@@ -342,9 +335,6 @@ class StatsUpdateResult {
   });
 }
 
-// ============ Models ============
-
-/// Daily statistics model
 class DailyStats {
   final String date;
   final int breaksCompleted;
@@ -396,7 +386,6 @@ class DailyStats {
   }
 }
 
-/// Productivity insights model
 class ProductivityInsights {
   final double averageBreaksPerDay;
   final double averageDailyUsageMinutes;

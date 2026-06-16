@@ -9,7 +9,7 @@ import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
-import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
@@ -33,7 +33,6 @@ class SettingsRepository extends ChangeNotifier {
       }
     }
 
-    // Startup Diagnostics
     debugPrint('=== STARTUP STORAGE DIAGNOSTICS ===');
     debugPrint('storage.isReady: ${_storage.isReady}');
     debugPrint('storage.hasFailed: ${_storage.hasFailed}');
@@ -51,7 +50,7 @@ class SettingsRepository extends ChangeNotifier {
 
     if (!_storage.isReady) {
       debugPrint(
-        '[SettingsRepo] 🚨 ERROR: StorageService remains uninitialized after load() retry fallback! Falling back to default settings.',
+        '[SettingsRepo] StorageService remains uninitialized after load() retry fallback. Falling back to default settings.',
       );
       _current = const SettingsModel();
       return;
@@ -87,52 +86,35 @@ class SettingsRepository extends ChangeNotifier {
         }
       }
 
-      // ── Critical flag reconciliation ─────────────────────────────────────
-      // hasCompletedOnboarding is a ONE-WAY flag (false → true, never back).
-      // We read from:
-      // 1. The ObjectBox snapshot
-      // 2. The ObjectBox KV store
-      // 3. The file-based SimplePrefs
-      // We take the OR so that the onboarding is NEVER shown again if any of them is true.
+      // The onboarding completion flag is a one-way toggle (false -> true).
+      // We check both the ObjectBox settings snapshot and the database key-value fallback to ensure consistency.
       final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
       final kvOnboarding = _storage.getBool('has_completed_onboarding');
-      final simplePrefsOnboarding = SimplePrefs.instance.getBool(
-        'has_completed_onboarding',
-      );
-      final onboardingDone =
-          snapshotOnboarding || kvOnboarding || simplePrefsOnboarding;
+      final onboardingDone = snapshotOnboarding || kvOnboarding;
 
       debugPrint(
         '[SettingsRepo] Onboarding reconciliation: '
-        'snapshot=$snapshotOnboarding, kv=$kvOnboarding, simplePrefs=$simplePrefsOnboarding → resolved=$onboardingDone',
+        'snapshot=$snapshotOnboarding, kv=$kvOnboarding → resolved=$onboardingDone',
       );
 
       if (onboardingDone && !_current.hasCompletedOnboarding) {
         _current = _current.copyWith(hasCompletedOnboarding: true);
       }
 
-      // Back-fill whichever store was missing the flag so future launches
-      // don't need to rely on this reconciliation guard.
       if (onboardingDone && !kvOnboarding) {
         debugPrint('[SettingsRepo] Back-filling KV onboarding flag.');
         unawaited(_storage.setBool('has_completed_onboarding', true));
-      }
-      if (onboardingDone && !simplePrefsOnboarding) {
-        debugPrint('[SettingsRepo] Back-filling SimplePrefs onboarding flag.');
-        SimplePrefs.instance.setBool('has_completed_onboarding', true);
       }
       if (onboardingDone && !snapshotOnboarding && snapshot != null) {
         debugPrint('[SettingsRepo] Back-filling snapshot onboarding flag.');
         unawaited(save(_current));
       }
-      // ─────────────────────────────────────────────────────────────────────
 
       debugPrint(
         '[SettingsRepo] Final hasCompletedOnboarding: ${_current.hasCompletedOnboarding}',
       );
     } catch (e) {
       debugPrint('[SettingsRepo] Fatal error in load(): $e');
-      // Ensure we have at least defaults
       _current = const SettingsModel();
     }
   }
@@ -146,7 +128,9 @@ class SettingsRepository extends ChangeNotifier {
           if (decoded is List) {
             return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
           }
-        } catch (_) {}
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
     }
     return _loadExercises();
@@ -216,12 +200,48 @@ class SettingsRepository extends ChangeNotifier {
       calendarEnabled: s.calendarEnabled,
       enableSessionResume: s.enableSessionResume,
       companionEnabled: cp?.companionEnabled ?? false,
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
       companionScale: cp?.companionScale ?? 1.5,
       companionClickThrough: cp?.companionClickThrough ?? false,
       companionFollowMouse: cp?.companionFollowMouse ?? false,
       unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
+      pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      ballThrowEnabled: _storage.getBool(
+        'ball_throw_enabled',
+        defaultValue: true,
+      ),
+      treatEnabled: _storage.getBool('treat_enabled', defaultValue: true),
+      developerReactions: _storage.getBool(
+        'developer_reactions',
+        defaultValue: true,
+      ),
+      quietModeAutoActivate: _storage.getBool(
+        'quiet_mode_auto_activate',
+        defaultValue: true,
+      ),
+      companionToyType: _storage.getString(
+        'companion_toy_type',
+        defaultValue: 'tennis_ball',
+      ),
+      companionTreatType: _storage.getString(
+        'companion_treat_type',
+        defaultValue: 'sushi',
+      ),
+      companionPreviewBackground: _storage.getString(
+        'companion_preview_background',
+        defaultValue: 'assets/background/forest/background.png',
+      ),
+      pipBackgroundStyle: _storage.getString(
+        'pip_background_style',
+        defaultValue: 'dark',
+      ),
+      pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
+      pipDraggableClickable: _storage.getBool(
+        'pip_draggable_clickable',
+        defaultValue: true,
+      ),
     );
   }
 
@@ -230,7 +250,9 @@ class SettingsRepository extends ChangeNotifier {
     try {
       final decoded = jsonDecode(raw);
       if (decoded is List) return List<String>.from(decoded);
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     return [];
   }
 
@@ -241,7 +263,9 @@ class SettingsRepository extends ChangeNotifier {
       if (decoded is List) {
         return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     return ExerciseModel.defaults;
   }
 
@@ -351,9 +375,7 @@ class SettingsRepository extends ChangeNotifier {
               'cat'
           ? 'companion'
           : _storage.getString('tray_icon_style', defaultValue: 'companion'),
-      hasCompletedOnboarding:
-          _storage.getBool('has_completed_onboarding') ||
-          SimplePrefs.instance.getBool('has_completed_onboarding'),
+      hasCompletedOnboarding: _storage.getBool('has_completed_onboarding'),
       dailyWorkGoalHours: _storage.getInt(
         'daily_work_goal_hours',
         defaultValue: 8,
@@ -366,6 +388,7 @@ class SettingsRepository extends ChangeNotifier {
         'companion_enabled',
         defaultValue: true,
       ),
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
       companionPetTheme: _storage.getString(
         AppConstants.keyCompanionPetTheme,
         defaultValue: _storage.getString(
@@ -386,6 +409,20 @@ class SettingsRepository extends ChangeNotifier {
         'companion_follow_mouse',
         defaultValue: false,
       ),
+      pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      ballThrowEnabled: _storage.getBool(
+        'ball_throw_enabled',
+        defaultValue: true,
+      ),
+      treatEnabled: _storage.getBool('treat_enabled', defaultValue: true),
+      developerReactions: _storage.getBool(
+        'developer_reactions',
+        defaultValue: true,
+      ),
+      quietModeAutoActivate: _storage.getBool(
+        'quiet_mode_auto_activate',
+        defaultValue: true,
+      ),
       calendarEnabled: _storage.getBool(
         'calendar_enabled',
         defaultValue: false,
@@ -394,32 +431,46 @@ class SettingsRepository extends ChangeNotifier {
         'enable_session_resume',
         defaultValue: true,
       ),
+      companionToyType: _storage.getString(
+        'companion_toy_type',
+        defaultValue: 'tennis_ball',
+      ),
+      companionTreatType: _storage.getString(
+        'companion_treat_type',
+        defaultValue: 'sushi',
+      ),
+      companionPreviewBackground: _storage.getString(
+        'companion_preview_background',
+        defaultValue: 'assets/background/forest/background.png',
+      ),
+      pipBackgroundStyle: _storage.getString(
+        'pip_background_style',
+        defaultValue: 'dark',
+      ),
+      pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
+      pipDraggableClickable: _storage.getBool(
+        'pip_draggable_clickable',
+        defaultValue: true,
+      ),
     );
   }
 
   Future<void> completeOnboarding() async {
     debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
-    // Write the KV flag first — it is the fastest and most reliable path.
     await _storage.setBool('has_completed_onboarding', true);
-    SimplePrefs.instance.setBool('has_completed_onboarding', true);
-    // Write the full snapshot so every field is up to date.
     await save(_current);
-    // Post-write verification so we can detect silent failures in the logs.
     final kvVerify = _storage.getBool('has_completed_onboarding');
-    final simpleVerify = SimplePrefs.instance.getBool(
-      'has_completed_onboarding',
-    );
     final snapVerify =
         _storage.settingsBox?.get(1)?.hasCompletedOnboarding ?? false;
-    if (!kvVerify || !simpleVerify || !snapVerify) {
+    if (!kvVerify || !snapVerify) {
       debugPrint(
-        '[SettingsRepo] ⚠️ Onboarding flag NOT fully persisted! '
-        'KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
+        '[SettingsRepo] Onboarding flag was not fully persisted. '
+        'KV=$kvVerify, snapshot=$snapVerify',
       );
     } else {
       debugPrint(
-        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify ✓',
+        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, snapshot=$snapVerify',
       );
     }
   }
@@ -440,7 +491,7 @@ class SettingsRepository extends ChangeNotifier {
 
     if (!_storage.isReady || _storage.settingsBox == null) {
       debugPrint(
-        '[SettingsRepo] 🚨 FATAL: StorageService remains uninitialized during save()! settingsBox is null. Diagnostic details: '
+        '[SettingsRepo] StorageService is unavailable during save(); settingsBox is null. Diagnostic details: '
         'Storage ready: ${_storage.isReady}, settingsBox: ${_storage.settingsBox}, companionPrefsBox: ${_storage.companionPreferencesBox}, kvBox: ${_storage.kvBox}',
       );
       throw StateError('Storage unavailable');
@@ -515,15 +566,7 @@ class SettingsRepository extends ChangeNotifier {
       enableSessionResume: settings.enableSessionResume,
     );
 
-    // Mirror ALL critical settings to the KV store for reliability.
-    // This is a belt-and-suspenders approach: ObjectBox is the primary store,
-    // but if it fails on next launch, _loadFromLegacy() will read these KV values
-    // and correctly restore the user's choices instead of falling back to defaults.
     await _storage.setBool(
-      'has_completed_onboarding',
-      settings.hasCompletedOnboarding,
-    );
-    SimplePrefs.instance.setBool(
       'has_completed_onboarding',
       settings.hasCompletedOnboarding,
     );
@@ -534,15 +577,25 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('strict_mode', settings.strictMode);
     await _storage.setBool('companion_enabled', settings.companionEnabled);
 
-    // Break settings
     await _storage.setString('break_template', settings.breakTemplate);
     await _storage.setString('break_theme', settings.breakTheme);
     await _storage.setString('clock_face_style', settings.clockFaceStyle);
     await _storage.setString('menu_bar_style', settings.menuBarStyle);
     await _storage.setString('selected_profile_id', settings.selectedProfileId);
     await _storage.setString('tray_icon_style', settings.trayIconStyle);
+    await _storage.setInt(
+      'clock_face_text_color_hex',
+      settings.clockFaceTextColorHex,
+    );
+    await _storage.setBool(
+      'clock_face_blur_enabled',
+      settings.clockFaceBlurEnabled,
+    );
+    await _storage.setString(
+      'custom_image_path',
+      settings.customImagePath ?? '',
+    );
 
-    // Timer intervals
     await _storage.setInt(
       AppConstants.keyShortBreakInterval,
       settings.shortBreakIntervalMinutes,
@@ -564,28 +617,61 @@ class SettingsRepository extends ChangeNotifier {
       settings.longBreakDurationMinutes,
     );
 
-    // Notifications
     await _storage.setBool(AppConstants.keySoundEnabled, settings.soundEnabled);
     await _storage.setBool(
       'notifications_enabled',
       settings.notificationsEnabled,
     );
 
-    // Smart detection
     await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
     await _storage.setBool('detect_meetings', settings.detectMeetings);
     await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
     await _storage.setBool('calendar_enabled', settings.calendarEnabled);
-    await _storage.setBool('enable_session_resume', settings.enableSessionResume);
+    await _storage.setBool(
+      'enable_session_resume',
+      settings.enableSessionResume,
+    );
 
-    // Companion
+    await _storage.setBool(
+      'show_exercises_in_break',
+      settings.showExercisesInBreak,
+    );
+    await _storage.setBool('enable_animations', settings.enableAnimations);
+    await _storage.setString('intensity_level', settings.intensityLevel);
+
     await _storage.setString(
       AppConstants.keyCompanionPetTheme,
       settings.companionPetTheme,
     );
     await _storage.setDouble('companion_scale', settings.companionScale);
+    await _storage.setBool('petting_enabled', settings.pettingEnabled);
+    await _storage.setBool('ball_throw_enabled', settings.ballThrowEnabled);
+    await _storage.setBool('treat_enabled', settings.treatEnabled);
+    await _storage.setBool('developer_reactions', settings.developerReactions);
+    await _storage.setBool(
+      'quiet_mode_auto_activate',
+      settings.quietModeAutoActivate,
+    );
+    await _storage.setBool('pip_mode_enabled', settings.pipModeEnabled);
+    await _storage.setString('companion_toy_type', settings.companionToyType);
+    await _storage.setString(
+      'companion_treat_type',
+      settings.companionTreatType,
+    );
+    await _storage.setString(
+      'companion_preview_background',
+      settings.companionPreviewBackground,
+    );
+    await _storage.setString(
+      'pip_background_style',
+      settings.pipBackgroundStyle,
+    );
+    await _storage.setDouble('pip_opacity', settings.pipOpacity);
+    await _storage.setBool(
+      'pip_draggable_clickable',
+      settings.pipDraggableClickable,
+    );
 
-    // Write the full snapshot to ObjectBox.
     _storage.settingsBox!.put(snapshot);
     debugPrint(
       '[SettingsRepo] Snapshot written. '

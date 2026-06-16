@@ -23,30 +23,35 @@ class CalendarEvent {
     this.url = '',
   });
 
-  /// Detect virtual meeting platform (Zoom, Google Meet, Teams, Webex)
   String? getMeetingPlatform() {
     final searchTargets = [
       title.toLowerCase(),
       location.toLowerCase(),
       url.toLowerCase(),
-      notes.toLowerCase()
+      notes.toLowerCase(),
     ];
-    
+
     bool containsAny(List<String> keywords) {
-      return searchTargets.any((target) => keywords.any((kw) => target.contains(kw)));
+      return searchTargets.any(
+        (target) => keywords.any((kw) => target.contains(kw)),
+      );
     }
 
     if (containsAny(['zoom.us', '/zoom/'])) return 'Zoom';
     if (containsAny(['meet.google.com', 'google meet'])) return 'Google Meet';
-    if (containsAny(['teams.microsoft.com', 'teams.live.com', 'microsoft teams'])) return 'Teams';
+    if (containsAny([
+      'teams.microsoft.com',
+      'teams.live.com',
+      'microsoft teams',
+    ])) {
+      return 'Teams';
+    }
     if (containsAny(['webex.com', 'cisco webex'])) return 'Webex';
-    
+
     return null;
   }
 }
 
-/// Service that routes calendar operations to the appropriate backend.
-/// Preserves the original public API for backward compatibility.
 class CalendarService {
   final AppLogger _logger = AppLogger();
   final CalendarPermissionService _permissionService;
@@ -55,10 +60,9 @@ class CalendarService {
   CalendarService({
     required CalendarPermissionService permissionService,
     required CalendarEventService eventService,
-  })  : _permissionService = permissionService,
-        _eventService = eventService;
+  }) : _permissionService = permissionService,
+       _eventService = eventService;
 
-  /// True if the current platform has a native bridge with calendar support.
   bool get _useNativeBridge =>
       !kIsWeb && (Platform.isMacOS || Platform.isWindows);
 
@@ -93,15 +97,19 @@ class CalendarService {
     if (_useNativeBridge) {
       try {
         final events = await _eventService.getUpcomingEvents(window: window);
-        return events.map((e) => CalendarEvent(
-          title: e.title.isEmpty ? 'No Title' : e.title,
-          start: e.start,
-          end: e.end,
-          isAllDay: e.allDay,
-          notes: e.notes,
-          location: e.location,
-          url: e.url,
-        )).toList();
+        return events
+            .map(
+              (e) => CalendarEvent(
+                title: e.title.isEmpty ? 'No Title' : e.title,
+                start: e.start,
+                end: e.end,
+                isAllDay: e.allDay,
+                notes: e.notes,
+                location: e.location,
+                url: e.url,
+              ),
+            )
+            .toList();
       } catch (e) {
         _logger.error('Failed to fetch native calendar events: $e');
         return [];
@@ -110,20 +118,31 @@ class CalendarService {
     return [];
   }
 
-  /// Get events for a custom time range
-  Future<List<CalendarEvent>> getEvents(DateTime start, DateTime end, {List<String>? calendarIds}) async {
+  Future<List<CalendarEvent>> getEvents(
+    DateTime start,
+    DateTime end, {
+    List<String>? calendarIds,
+  }) async {
     if (_useNativeBridge) {
       try {
-        final events = await _eventService.getEvents(start, end, calendarIds: calendarIds);
-        return events.map((e) => CalendarEvent(
-          title: e.title.isEmpty ? 'No Title' : e.title,
-          start: e.start,
-          end: e.end,
-          isAllDay: e.allDay,
-          notes: e.notes,
-          location: e.location,
-          url: e.url,
-        )).toList();
+        final events = await _eventService.getEvents(
+          start,
+          end,
+          calendarIds: calendarIds,
+        );
+        return events
+            .map(
+              (e) => CalendarEvent(
+                title: e.title.isEmpty ? 'No Title' : e.title,
+                start: e.start,
+                end: e.end,
+                isAllDay: e.allDay,
+                notes: e.notes,
+                location: e.location,
+                url: e.url,
+              ),
+            )
+            .toList();
       } catch (e) {
         _logger.error('Failed to fetch native calendar events for range: $e');
         return [];

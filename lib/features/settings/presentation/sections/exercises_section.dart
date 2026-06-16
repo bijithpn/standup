@@ -283,8 +283,7 @@ class _ExercisesSectionState extends State<ExercisesSection> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('•', style: TextStyle(color: AppTheme.textMuted),
-              ),
+              const Text('•', style: TextStyle(color: AppTheme.textMuted)),
               const SizedBox(width: 8),
               Text(
                 exercise.category.name.toUpperCase(),

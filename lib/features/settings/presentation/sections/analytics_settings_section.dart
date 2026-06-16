@@ -24,7 +24,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
-    // Recalculate view-specific metrics based on filter
     final viewMetrics = _calculateViewMetrics();
 
     return Column(
@@ -64,10 +63,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               const SizedBox(height: 4),
               const Text(
                 AppStrings.analyticsSubtitle,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                ),
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
             ],
           ),
@@ -91,18 +87,18 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     final chartPeriod = isMonth
         ? ChartPeriod.month
         : _selectedFilter == 1
-            ? ChartPeriod.week
-            : ChartPeriod.today;
+        ? ChartPeriod.week
+        : ChartPeriod.today;
     final chartTitle = _selectedFilter == 0
         ? "Today's Breakdown"
         : _selectedFilter == 1
-            ? 'Weekly Completion'
-            : 'Monthly Overview';
+        ? 'Weekly Completion'
+        : 'Monthly Overview';
     final chartSubtitle = _selectedFilter == 0
         ? 'Completed vs skipped breaks today.'
         : _selectedFilter == 1
-            ? 'Break completions for each day this week.'
-            : 'Total breaks completed per week this month.';
+        ? 'Break completions for each day this week.'
+        : 'Total breaks completed per week this month.';
 
     return Container(
       width: double.infinity,
@@ -178,7 +174,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     int successRate;
 
     if (_selectedFilter == 0) {
-      // TODAY
       final today = _stats.weeklyData.lastWhere(
         (d) => d.date == _todayString(),
         orElse: () => DailyStats(
@@ -197,10 +192,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       final total = today.breaksCompleted + today.breaksSkipped;
       successRate = total > 0 ? (today.breaksCompleted * 100 ~/ total) : 0;
     } else {
-      // THIS WEEK or MONTH — aggregate available data
       final List<DailyStats> rangeData;
       if (_selectedFilter == 2) {
-        // Month: current calendar month
         final now = DateTime.now();
         rangeData = _stats.weeklyData.where((d) {
           final parts = d.date.split('-');
@@ -209,7 +202,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               int.tryParse(parts[1]) == now.month;
         }).toList();
       } else {
-        // Week: last 7 days
         rangeData = _stats.weeklyData.length > 7
             ? _stats.weeklyData.sublist(_stats.weeklyData.length - 7)
             : _stats.weeklyData;
@@ -225,23 +217,18 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       successRate = total > 0 ? (breaksCompleted * 100 ~/ total) : 0;
     }
 
-    // Dynamic score calculation for the view
     final completionRate = successRate / 100.0;
 
-    // Productivity Score calculation
     int productivityScore = (completionRate * 60).round();
     if (_selectedFilter == 0) {
-      // Scale daily productivity by target (e.g. 6 breaks)
       const dailyTarget = 6;
       final targetCompletion = (breaksCompleted / dailyTarget).clamp(0.0, 1.0);
       productivityScore += (targetCompletion * 40).round();
     } else {
-      // Scale weekly productivity by consistency and streak
       productivityScore += (streak.clamp(0, 7) / 7 * 40).round();
     }
     productivityScore = productivityScore.clamp(5, 100);
 
-    // Wellness Score calculation
     int wellnessScore = (completionRate * 40).round();
     final targetActions = _selectedFilter == 0 ? 5 : 30;
     final actionCompletion = (wellnessActions / targetActions).clamp(0.0, 1.0);
@@ -300,7 +287,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
             ),
           ],
         );
-      }
+      },
     );
   }
 

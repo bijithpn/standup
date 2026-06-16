@@ -12,6 +12,8 @@ class OverlayWindowManager: NSObject {
     static let shared = OverlayWindowManager()
     
     private var overlayInstances: [NSScreen: OverlayInstance] = [:]
+    var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
+    private var wasMainWindowVisible: Bool = false
     
     struct OverlayInstance {
         let window: OverlayPanel
@@ -20,10 +22,17 @@ class OverlayWindowManager: NSObject {
     }
     
     func showOverlay(args: [String: Any]? = nil) {
-        if !overlayInstances.isEmpty { return }
+        self.lastShowArgs = args
+        
+        if !overlayInstances.isEmpty {
+            if let args = args {
+                updateData(args)
+            }
+            return
+        }
         
         let type = args?["type"] as? String ?? "breakScreen"
-        let isReminder = type == "quickReminder"
+        let isReminder = type == "quickReminder" || type == "preBreakWarning"
         let isPreview = args?["isPreview"] as? Bool ?? false
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,
@@ -33,6 +42,7 @@ class OverlayWindowManager: NSObject {
         
         // Only hide main window for real full break screens, not for reminders or previews
         if !isReminder && !isPreview {
+            wasMainWindowVisible = mainWindow.isVisible
             mainWindow.orderOut(nil)
         }
         
@@ -69,14 +79,16 @@ class OverlayWindowManager: NSObject {
         let instances = Array(overlayInstances.values)
         overlayInstances.removeAll()
         
+        let shouldRestore = restoreMainWindow && wasMainWindowVisible
+        
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
             for instance in instances {
                 instance.window.animator().alphaValue = 0.0
             }
         }, completionHandler: {
-            // Restore main window visibility only if requested
-            if restoreMainWindow,
+            // Restore main window visibility only if requested and was visible before
+            if shouldRestore,
                let appDelegate = NSApp.delegate as? AppDelegate,
                let mainWindow = appDelegate.mainFlutterWindow {
                 mainWindow.makeKeyAndOrderFront(nil)
@@ -127,9 +139,10 @@ class OverlayWindowManager: NSObject {
     }
     
     @objc private func screenParametersChanged() {
+        let savedArgs = self.lastShowArgs
         hideOverlay()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.showOverlay()
+            self.showOverlay(args: savedArgs)
         }
     }
     
@@ -189,15 +202,29 @@ class OverlayWindowManager: NSObject {
         
         channel.setMethodCallHandler { call, result in
             switch call.method {
+            case "getOverlayData":
+                result(OverlayWindowManager.shared.lastShowArgs)
             case "checkIsMainEngine":
                 result(false)
             case "hideOverlay":
-                OverlayWindowManager.shared.hideOverlay()
+                let restore = (call.arguments as? [String: Any])?["restoreMainWindow"] as? Bool ?? true
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+                    mainWindow.bridgeChannel?.invokeMethod("hideOverlay", arguments: ["restoreMainWindow": restore])
+                }
+                OverlayWindowManager.shared.hideOverlay(restoreMainWindow: restore)
                 result(nil)
             case "skipBreak":
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
                     mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: nil)
+                }
+                OverlayWindowManager.shared.hideOverlay()
+                result(nil)
+            case "completeBreak":
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+                    mainWindow.bridgeChannel?.invokeMethod("completeBreak", arguments: nil)
                 }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)
@@ -208,6 +235,9 @@ class OverlayWindowManager: NSObject {
                 } else {
                     result(FlutterError(code: "INVALID_ARGS", message: "Missing ignore parameter", details: nil))
                 }
+            case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
+                 "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
+                BehaviorEngineBridge.shared.handle(call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -236,6 +266,7 @@ class MainFlutterWindow: NSWindow {
 
     RegisterGeneratedPlugins(registry: flutterViewController)
     configureBridge(binaryMessenger: flutterViewController.engine.binaryMessenger)
+    BehaviorEngineBridge.shared.setup(binaryMessenger: flutterViewController.engine.binaryMessenger)
     
     IpcBridgeManager.shared.register(engine: flutterViewController.engine)
     
@@ -372,6 +403,20 @@ class MainFlutterWindow: NSWindow {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
         }
 
+      case "showPipWindow":
+        PiPWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
+        result(nil)
+
+      case "hidePipWindow":
+        PiPWindowManager.shared.hidePipWindow()
+        result(nil)
+
+      // ── Behavior Engine PAL methods ───────────────────────────────────────
+
+      case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
+           "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
+        BehaviorEngineBridge.shared.handle(call, result: result)
+
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
            let level = args["level"] as? String {
@@ -380,15 +425,6 @@ class MainFlutterWindow: NSWindow {
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing level", details: nil))
         }
-
-      case "getIdleTime":
-        let anyEvent = CGEventType(rawValue: ~0)!
-        let idle = CGEventSource.secondsSinceLastEventType(CGEventSourceStateID.combinedSessionState, eventType: anyEvent)
-        result(idle)
-
-      case "focusApp":
-        NSApp.activate(ignoringOtherApps: true)
-        result(nil)
 
       case "setPresentationOptions":
         if let args = call.arguments as? [String: Any],

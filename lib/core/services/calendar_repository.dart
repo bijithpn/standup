@@ -6,7 +6,8 @@ import 'package:breakmate/core/native/native_bridge.dart';
 class CalendarRepository {
   Future<List<CalendarModel>> getCalendars() async {
     try {
-      final List<Map<String, dynamic>> result = await NativeBridge.getCalendars();
+      final List<Map<String, dynamic>> result =
+          await NativeBridge.getCalendars();
       return result.map((e) => CalendarModel.fromJson(e)).toList();
     } catch (e) {
       debugPrint('[CalendarRepository] Error getting calendars: $e');

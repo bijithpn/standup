@@ -33,11 +33,12 @@ bool IsMeetingActive(std::string& out_bundle_id) {
     DWORD size = MAX_PATH;
     wchar_t buffer[MAX_PATH];
     if (QueryFullProcessImageNameW(process, 0, buffer, &size)) {
-        exe_path_w = buffer;
         std::string name;
-        int size_needed = WideCharToMultiByte(CP_UTF8, 0, &exe_path_w[0], (int)exe_path_w.size(), NULL, 0, NULL, NULL);
-        name.assign(size_needed, 0);
-        WideCharToMultiByte(CP_UTF8, 0, &exe_path_w[0], (int)exe_path_w.size(), &name[0], size_needed, NULL, NULL);
+        int size_needed = WideCharToMultiByte(CP_UTF8, 0, buffer, -1, NULL, 0, NULL, NULL);
+        if (size_needed > 0) {
+            name.assign(size_needed - 1, 0);
+            WideCharToMultiByte(CP_UTF8, 0, buffer, -1, &name[0], size_needed, NULL, NULL);
+        }
 
         // Convert to lowercase for comparison
         std::string lower_name = name;

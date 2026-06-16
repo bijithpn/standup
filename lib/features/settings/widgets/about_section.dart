@@ -6,6 +6,7 @@ import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class AboutSection extends StatefulWidget {
   final SettingsModel settings;
@@ -36,7 +37,9 @@ class _AboutSectionState extends State<AboutSection> {
           _buildNumber = info.buildNumber;
         });
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
   }
 
   Future<void> _launchUrl(String urlString) async {
@@ -45,7 +48,9 @@ class _AboutSectionState extends State<AboutSection> {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
   }
 
   @override
@@ -53,12 +58,10 @@ class _AboutSectionState extends State<AboutSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Premium stylized header logo block
         Center(
           child: Column(
             children: [
               const SizedBox(height: 12),
-              // Beautiful app icon simulated glow container
               Container(
                 width: 72,
                 height: 72,
@@ -86,7 +89,6 @@ class _AboutSectionState extends State<AboutSection> {
                 ),
               ),
               const SizedBox(height: 16),
-              // App Title with premium gradient
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
                   colors: [Colors.white, Color(0xFFE0E0E0)],
@@ -204,7 +206,6 @@ class _AboutSectionState extends State<AboutSection> {
 
         const SizedBox(height: 8),
 
-        // Buy me a Coffee Premium CTA Card
         Container(
           width: double.infinity,
           decoration: BoxDecoration(
@@ -239,7 +240,6 @@ class _AboutSectionState extends State<AboutSection> {
               ),
               const SizedBox(height: 20),
 
-              // Custom interactive golden/amber gradient coffee button
               GestureDetector(
                 onTap: () => _launchUrl('https://buymeacoffee.com/bijithpn'),
                 child: MouseRegion(

@@ -77,18 +77,23 @@ class _SettingsPageState extends State<SettingsPage> {
         final verticalPadding = isSmallScreen ? 20.0 : 32.0;
 
         Widget buildContent(ScrollController? scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isSmallScreen ? double.infinity : 760,
+          return ScrollConfiguration(
+            behavior: ScrollConfiguration.of(
+              context,
+            ).copyWith(scrollbars: false),
+            child: SingleChildScrollView(
+              controller: scrollController,
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isSmallScreen ? double.infinity : 760,
+                  ),
+                  child: _buildContentShell(),
                 ),
-                child: _buildContentShell(),
               ),
             ),
           );
@@ -191,7 +196,6 @@ class _SettingsPageState extends State<SettingsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // _buildSettingsTools(),
         if (_settingsWarnings.isNotEmpty) ...[
           const SizedBox(height: 12),
           _buildSettingsWarnings(),
@@ -201,8 +205,6 @@ class _SettingsPageState extends State<SettingsPage> {
       ],
     );
   }
-
-
 
   List<String> get _settingsWarnings {
     final warnings = <String>[];

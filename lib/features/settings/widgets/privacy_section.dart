@@ -12,10 +12,11 @@ class PrivacySection extends StatelessWidget {
       children: [
         sectionHeader(
           'Privacy Report',
-          subtitle: 'Your data is yours. Learn how BreakMate protects your privacy.',
+          subtitle:
+              'Your data is yours. Learn how BreakMate protects your privacy.',
         ),
         const SizedBox(height: 16),
-        
+
         buildCard([
           const Padding(
             padding: EdgeInsets.all(16),
@@ -24,10 +25,7 @@ class PrivacySection extends StatelessWidget {
               children: [
                 Text(
                   'Local-Only Storage',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 8),
                 Text(
@@ -41,27 +39,28 @@ class PrivacySection extends StatelessWidget {
           _settingsInfoTile(
             context,
             title: 'Native Integrations',
-            subtitle: 'Meeting detection and active app tracking run entirely on your OS. We only check for specific keywords locally to suggest relevant breaks.',
+            subtitle:
+                'Meeting detection and active app tracking run entirely on your OS. We only check for specific keywords locally to suggest relevant breaks.',
             icon: LucideIcons.cpu,
           ),
           divider(),
           _settingsInfoTile(
             context,
             title: 'Calendar Access',
-            subtitle: 'If enabled, we only read event start/end times to avoid interrupting your work. Event titles and details are never processed or saved.',
+            subtitle:
+                'If enabled, we only read event start/end times to avoid interrupting your work. Event titles and details are never processed or saved.',
             icon: LucideIcons.calendar,
           ),
         ]),
-        
+
         const SizedBox(height: 24),
         buildCard([
           actionRow(
             label: 'Delete All Local Data',
-            subtitle: 'This will reset all settings and wipe your statistics history. This cannot be undone.',
+            subtitle:
+                'This will reset all settings and wipe your statistics history. This cannot be undone.',
             buttonText: 'Wipe Data',
-            onPressed: () {
-              // Implementation for data wipe
-            },
+            onPressed: () {},
             isDestructive: true,
           ),
         ]),

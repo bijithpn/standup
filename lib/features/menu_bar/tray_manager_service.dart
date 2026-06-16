@@ -19,6 +19,7 @@ import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'controllers/menu_bar_controller.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
 
@@ -47,26 +48,23 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     trayManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
 
-    // Eagerly sync style from SettingsRepository before icon extraction/load
     final settingsRepo = sl<SettingsRepository>();
     setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
 
     final supportDir = await getApplicationSupportDirectory();
     final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
 
-    // Show initial icon and menu as fast as possible
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
         AppConstants.trayIconPath,
         defaultFile,
       );
     } catch (_) {
-      // Fallback to asset if extraction fails
       _defaultIconPath = AppConstants.trayIconPath;
     }
-    
+
     _defaultIconPath ??= defaultFile;
-    
+
     await _applyIcon();
     await _buildMenu();
 
@@ -75,7 +73,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     _logger.info('Tray manager initialized (mode: $_iconMode)');
 
-    // Listen for meeting events from the main isolate's event bus
     sl<EventBus>().stream.listen((event) {
       if (event is MeetingDetectedEvent) {
         _isMeetingActive = event.isActive;
@@ -93,14 +90,16 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           if (file is File) {
             final filename = p.basename(file.path);
             // Only delete icon frame caches, never touch database or metadata
-            if (filename.startsWith('bm_pframe_') || 
+            if (filename.startsWith('bm_pframe_') ||
                 filename.startsWith('bm_ccat_')) {
               file.deleteSync();
             }
           }
         }
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
 
     await _extractIcons();
     _currentFrameIndex = 0;
@@ -137,9 +136,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       _defaultIconPath = defaultFile;
     }
 
-    // Use raw absolute paths for tray_manager
     if (_defaultIconPath != null) {
-      debugPrint('[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync() || !_defaultIconPath!.startsWith('/')})');
+      debugPrint(
+        '[Tray] Default icon path: $_defaultIconPath (Exists: ${File(_defaultIconPath!).existsSync() || !_defaultIconPath!.startsWith('/')})',
+      );
     }
 
     final settingsRepo = sl<SettingsRepository>();
@@ -178,33 +178,19 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         if (paths.isNotEmpty) {
           _stateFramePaths[state] = paths;
         } else {
-          // Fallback to static asset if frame extraction yielded nothing
-          String iconName;
-          switch (state) {
-            case PetAnimationState.sleep:
-              iconName = 'sleeping';
-              break;
-            case PetAnimationState.excited:
-              iconName = 'stretch';
-              break;
-            case PetAnimationState.notification:
-              iconName = 'alert';
-              break;
-            case PetAnimationState.idle:
-            default:
-              iconName = 'idle';
-              break;
+          // Fallback to the first frame of the idle animation for the selected theme
+          String fallbackPath = '';
+          if (state != PetAnimationState.idle) {
+            fallbackPath = await PetAssetLoader.extractPetFramePath(
+              theme: theme,
+              state: PetAnimationState.idle,
+              frameIndex: 0,
+            );
           }
-          final fallbackFile = p.join(supportDir.path, 'bm_cat_${state.name}.png');
-          final fallbackPath = await PetAssetLoader.extractAndWhitenAsset(
-            'assets/icons/cat/cat_$iconName.png',
-            fallbackFile,
-          );
           if (fallbackPath.isNotEmpty) {
             _stateFramePaths[state] = [fallbackPath];
-          } else {
-            // Ultimate fallback to bundled asset
-            _stateFramePaths[state] = ['assets/icons/cat/cat_$iconName.png'];
+          } else if (_defaultIconPath != null) {
+            _stateFramePaths[state] = [_defaultIconPath!];
           }
         }
       } catch (e) {
@@ -218,7 +204,6 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   Future<void> _resolveWindowsIcoPath() async {
     if (_windowsIcoPath != null) return;
-    // The .ico is copied next to the executable during build
     final exeDir = p.dirname(Platform.resolvedExecutable);
     final icoPath = p.join(exeDir, 'app_icon.ico');
     if (File(icoPath).existsSync()) {
@@ -267,13 +252,20 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
           } else {
             path = _defaultIconPath;
           }
-          if (path != null && (path.startsWith('assets/') || File(path).existsSync())) {
+          if (path != null &&
+              (path.startsWith('assets/') || File(path).existsSync())) {
             await _setTrayIconSafe(path, isTemplate: true);
-          } else if (_defaultIconPath != null && (_defaultIconPath!.startsWith('assets/') || File(_defaultIconPath!).existsSync())) {
-            _logger.warning('Missing primary tray icon asset: $path. Using fallback.');
+          } else if (_defaultIconPath != null &&
+              (_defaultIconPath!.startsWith('assets/') ||
+                  File(_defaultIconPath!).existsSync())) {
+            _logger.warning(
+              'Missing primary tray icon asset: $path. Using fallback.',
+            );
             await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
           } else {
-            _logger.warning('Missing both primary and fallback tray icon assets: $path, $_defaultIconPath');
+            _logger.warning(
+              'Missing both primary and fallback tray icon assets: $path, $_defaultIconPath',
+            );
           }
           break;
         case TrayIconMode.defaultIcon:
@@ -302,19 +294,17 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       if (isPathValid && path != _lastAppliedIconPath) {
         _lastAppliedIconPath = path;
         await _setTrayIconSafe(path!, isTemplate: true);
-        
+
         // On macOS, setting the icon sometimes clears the title depending on implementation.
-        // Re-apply current title if it exists.
         if (_currentTitle.isNotEmpty) {
           if (Platform.isMacOS) {
             await trayManager.setTitle(_currentTitle);
           }
         }
       } else if (!isPathValid && _defaultIconPath != null) {
-        // Fallback to default if primary failed
         if (_lastAppliedIconPath != _defaultIconPath) {
-           _lastAppliedIconPath = _defaultIconPath;
-           await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
+          _lastAppliedIconPath = _defaultIconPath;
+          await _setTrayIconSafe(_defaultIconPath!, isTemplate: true);
         }
       }
     } catch (e) {
@@ -591,11 +581,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         final tooltip = title.isNotEmpty && _currentTooltip.isNotEmpty
             ? '$title — $_currentTooltip'
             : title.isNotEmpty
-                ? title
-                : _currentTooltip;
+            ? title
+            : _currentTooltip;
         await trayManager.setToolTip(tooltip);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
   }
 
   String _currentTooltip = '';
@@ -608,7 +600,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       } else {
         await trayManager.setToolTip(tooltip);
       }
-    } catch (_) {}
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
   }
 
   @override

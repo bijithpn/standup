@@ -23,12 +23,15 @@ class MeetingDetectionService {
           final data = Map<String, dynamic>.from(event);
           return data['isMeetingAppFrontmost'] as bool? ?? false;
         })
-        .listen((isActive) {
-          IpcBridge.instance.notifyMeetingDetected(isActive);
-        }, onError: (error) {
-          debugPrint('Error receiving meeting stream: $error');
-        });
-    
+        .listen(
+          (isActive) {
+            IpcBridge.instance.notifyMeetingDetected(isActive);
+          },
+          onError: (error) {
+            debugPrint('Error receiving meeting stream: $error');
+          },
+        );
+
     debugPrint('MeetingDetectionService started');
   }
 

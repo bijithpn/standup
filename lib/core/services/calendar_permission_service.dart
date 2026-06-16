@@ -1,12 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
-enum CalendarPermissionStatus {
-  notDetermined,
-  restricted,
-  denied,
-  granted,
-}
+enum CalendarPermissionStatus { notDetermined, restricted, denied, granted }
 
 class CalendarPermissionService {
   Future<CalendarPermissionStatus> getStatus() async {
@@ -25,7 +20,9 @@ class CalendarPermissionService {
           return CalendarPermissionStatus.denied;
       }
     } catch (e) {
-      debugPrint('[CalendarPermissionService] Error getting permission status: $e');
+      debugPrint(
+        '[CalendarPermissionService] Error getting permission status: $e',
+      );
       return CalendarPermissionStatus.denied;
     }
   }
@@ -43,7 +40,9 @@ class CalendarPermissionService {
     try {
       await NativeBridge.openCalendarSettings();
     } catch (e) {
-      debugPrint('[CalendarPermissionService] Error opening calendar settings: $e');
+      debugPrint(
+        '[CalendarPermissionService] Error opening calendar settings: $e',
+      );
     }
   }
 }

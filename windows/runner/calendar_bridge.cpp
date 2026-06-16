@@ -19,7 +19,12 @@ CalendarBridge::~CalendarBridge() {}
 
 std::string CalendarBridge::GetCalendarPermissionStatus() {
   try {
+    // Access modern WinRT store through COM. RequestStoreAsync requests a specific access level from the OS.
     auto store_op = AppointmentManager::RequestStoreAsync(AppointmentStoreAccessType::AllCalendarsReadOnly);
+    // .get() synchronously blocks until the WinRT async operation yields a store.
+    // NOTE: This blocking call is safe and does not impact the Flutter UI/event loop
+    // because all platform channel invocations to CalendarBridge are offloaded to
+    // asynchronous background worker threads (detached std::threads) inside flutter_window.cpp.
     auto store = store_op.get();
     return "granted";
   } catch (const winrt::hresult_error& ex) {

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 class StatsCalculator {
   static StatsCalculationResult calculateStats(Map<String, dynamic> params) {
@@ -18,15 +19,15 @@ class StatsCalculator {
       try {
         final List<dynamic> jsonData = jsonDecode(weeklyDataJsonString);
         weeklyData = jsonData.map((e) => DailyStats.fromJson(e)).toList();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
 
-    // Use a sliding window of the last 7 days for 'Weekly' insights and averages
     final recentData = weeklyData.length > 7
         ? weeklyData.sublist(weeklyData.length - 7)
         : weeklyData;
 
-    // 1. Average breaks per day (based on recent data)
     double averageBreaksPerDay = 0.0;
     if (recentData.isNotEmpty) {
       final total = recentData.fold<int>(
@@ -60,7 +61,6 @@ class StatsCalculator {
         ? totalBreaks / (totalBreaks + totalSkipped)
         : 0.0;
 
-    // 2. Productivity score (based on recent data)
     int productivityScore = 0;
     productivityScore += (completionRate * 50).round();
 
@@ -79,7 +79,6 @@ class StatsCalculator {
     }
     productivityScore = productivityScore.clamp(0, 100);
 
-    // 3. Wellness actions & score (based on recent data)
     final totalWellnessActions = recentData.fold<int>(
       0,
       (sum, day) => sum + day.wellnessActions,
@@ -93,7 +92,6 @@ class StatsCalculator {
     }
     wellnessScore = wellnessScore.clamp(0, 100);
 
-    // 4. Productivity insight message
     String insight = 'Keep up the good work!';
     if (avgBreaksPerDay < 3) {
       insight = 'Try to take more breaks for better productivity.';
@@ -105,7 +103,9 @@ class StatsCalculator {
       insight = 'Consider adjusting break intervals to reduce skipping.';
     }
 
-    final consistencyDays = weeklyData.where((day) => day.breaksCompleted > 0).length;
+    final consistencyDays = weeklyData
+        .where((day) => day.breaksCompleted > 0)
+        .length;
 
     final stats = StatsModel(
       breaksCompleted: breaksCompleted,
@@ -163,10 +163,11 @@ class StatsCalculator {
       try {
         final List<dynamic> jsonData = jsonDecode(weeklyDataJsonString);
         weeklyData = jsonData.map((e) => DailyStats.fromJson(e)).toList();
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
 
-    // Initialize weeklyData if empty (fallback)
     if (weeklyData.isEmpty) {
       final baseTime = DateTime.now();
       for (int i = 6; i >= 0; i--) {
@@ -210,7 +211,6 @@ class StatsCalculator {
       }
     }
 
-    // Handle streak progression
     final previousTodayBreaks = todayIndex != -1
         ? weeklyData[todayIndex].breaksCompleted - breaksCompletedDelta
         : 0;
@@ -227,12 +227,10 @@ class StatsCalculator {
       }
     }
 
-    // Use a sliding window of the last 7 days for 'Weekly' insights and averages
     final recentData = weeklyData.length > 7
         ? weeklyData.sublist(weeklyData.length - 7)
         : weeklyData;
 
-    // Calculations
     double averageBreaksPerDay = 0.0;
     if (recentData.isNotEmpty) {
       final total = recentData.fold<int>(
@@ -308,7 +306,9 @@ class StatsCalculator {
       insight = 'Consider adjusting break intervals to reduce skipping.';
     }
 
-    final consistencyDays = weeklyData.where((day) => day.breaksCompleted > 0).length;
+    final consistencyDays = weeklyData
+        .where((day) => day.breaksCompleted > 0)
+        .length;
 
     final stats = StatsModel(
       breaksCompleted: breaksCompleted,

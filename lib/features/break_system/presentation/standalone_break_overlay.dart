@@ -1,11 +1,13 @@
 import 'dart:async' show Timer;
 
+import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
-import 'package:intl/intl.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -17,7 +19,30 @@ import 'package:breakmate/features/break_overlay/presentation/templates/producti
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/activities_break_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/soft_arc_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/breathe_line_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/clock_face_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/one_word_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/open_field_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/haiku_card_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/ring_only_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/step_guide_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/time_slice_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/day_stack_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/pulse_dot_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/mono_time_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/split_view_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/warm_amber_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/focus_orb_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/wave_calm_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/iris_rest_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/quiet_pill_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/paper_light_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glow_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 enum BreakTheme {
   image,
@@ -31,10 +56,42 @@ enum BreakTheme {
   zen, // Soft earth tones and cream
 }
 
+const _kTemplatesWithChrome = {
+  'minimal',
+  'activities',
+  'companion',
+  'zen',
+  'hud',
+  'floating',
+  'classic',
+  'soft_arc',
+  'breathe_line',
+  'clock_face',
+  'one_word',
+  'open_field',
+  'haiku_card',
+  'ring_only',
+  'step_guide',
+  'time_slice',
+  'day_stack',
+  'pulse_dot',
+  'mono_time',
+  'split_view',
+  'warm_amber',
+  'focus_orb',
+  'wave_calm',
+  'iris_rest',
+  'quiet_pill',
+  'paper_light',
+  'dusk_glow',
+};
+
 class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
   final int durationSeconds;
+
+  static final List<void Function(FlutterErrorDetails)> onErrorCallbacks = [];
 
   const StandaloneBreakOverlay({
     super.key,
@@ -64,14 +121,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   int _durationSeconds = 300;
   int _remainingSeconds = 300;
   String _overlayType = 'breakScreen';
-  String _displayId = "Primary";
-  double _displayWidth = 0;
-  double _displayHeight = 0;
   int _screenId = 0;
   bool _strictMode = false;
   bool _enableAnimations = true;
   String _intensityLevel = 'standard';
   String? _reminderType;
+  bool _showWellnessNotes = true;
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
 
@@ -82,6 +137,79 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   String? _exerciseInstructions;
   String _breakTemplate = 'minimal';
   String _companionPetTheme = 'grey_cat';
+  int _maxWarningSeconds = 10;
+
+  bool _templateFailed = false;
+  String? _breakTypeStr;
+
+  int _clockFaceTextColorHex = 0xFFFFFFFF;
+  bool _clockFaceBlurEnabled = true;
+  String? _customImagePath;
+
+  // True once SimplePrefs settings are loaded; the overlay renders immediately.
+  // The async bridge call still runs to refine timer data, but does not gate rendering.
+  bool _initialized = false;
+  bool _isDismissing = false;
+
+  // KEY PERFORMANCE FIX: ValueNotifier for countdown allows ValueListenableBuilder
+  late final ValueNotifier<int> _remainingSecondsNotifier;
+
+  void _loadInitialSettings() {
+    try {
+      if (SimplePrefs.instance.isReady) {
+        final template = SimplePrefs.instance.getString(
+          'break_template',
+          defaultValue: 'minimal',
+        );
+        final petTheme = SimplePrefs.instance.getString(
+          'companion_pet_theme',
+          defaultValue: 'grey_cat',
+        );
+        final showNotes = SimplePrefs.instance.getBool(
+          'show_exercises_in_break',
+          defaultValue: true,
+        );
+        final strict = SimplePrefs.instance.getBool(
+          'strict_mode',
+          defaultValue: false,
+        );
+        final anim = SimplePrefs.instance.getBool(
+          'enable_animations',
+          defaultValue: true,
+        );
+        final intensity = SimplePrefs.instance.getString(
+          'intensity_level',
+          defaultValue: 'standard',
+        );
+        final textColor = SimplePrefs.instance.getInt(
+          'clock_face_text_color_hex',
+          defaultValue: 0xFFFFFFFF,
+        );
+        final blurEnabled = SimplePrefs.instance.getBool(
+          'clock_face_blur_enabled',
+          defaultValue: true,
+        );
+        final customImg = SimplePrefs.instance.getString(
+          'custom_image_path',
+          defaultValue: '',
+        );
+
+        setState(() {
+          _breakTemplate = template;
+          _companionPetTheme = petTheme;
+          _showWellnessNotes = showNotes;
+          _strictMode = strict;
+          _enableAnimations = anim;
+          _intensityLevel = intensity;
+          _clockFaceTextColorHex = textColor;
+          _clockFaceBlurEnabled = blurEnabled;
+          _customImagePath = customImg == "" ? null : customImg;
+        });
+      }
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
+  }
 
   @override
   void initState() {
@@ -89,6 +217,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _title = widget.title;
     _durationSeconds = widget.durationSeconds;
     _remainingSeconds = widget.durationSeconds;
+
+    // Load settings synchronously from SimplePrefs so the template can render
+    // on the first frame without waiting for the async bridge call.
+    _loadInitialSettings();
+
+    // Mark initialized now — SimplePrefs settings are sufficient to render.
+    // The async _loadInitialData() will update remaining-seconds and any
+    // per-break fields (exercise, theme, etc.) once the bridge responds.
+    _initialized = true;
+
     _currentTemplate =
         AppConstants.wellnessSlideshow[Random().nextInt(
           AppConstants.wellnessSlideshow.length,
@@ -106,10 +244,142 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       duration: const Duration(milliseconds: 600),
     );
 
-    _setupBridge();
+    _remainingSecondsNotifier = ValueNotifier<int>(_remainingSeconds);
 
-    // Smoothly fade in
+    _setupBridge();
+    _loadInitialData();
+
     _fadeController.forward();
+
+    StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  Future<void> _loadInitialData() async {
+    try {
+      final Map? data = await _bridge.invokeMethod<Map>('getOverlayData');
+      if (data != null && mounted) {
+        _applyOverlayData(data);
+      }
+    } catch (e) {
+      debugPrint('Error getting initial overlay data: $e');
+    }
+  }
+
+  void _applyOverlayData(Map args) {
+    if (!mounted) return;
+
+    if (args.containsKey('breaksCompleted')) {
+      final count = args['breaksCompleted'] as int;
+      try {
+        if (sl.isRegistered<StatsService>()) {
+          final service = sl<StatsService>();
+          if (service.runtimeType.toString() == 'FakeStatsService') {
+            (service as dynamic).updateBreaksCompleted(count);
+          }
+        }
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
+    }
+
+    final targetEndMs = args['targetEndTime'] as int?;
+    if (targetEndMs != null) {
+      _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
+      _startLocalTimer();
+    } else {
+      _targetEndTime = null;
+      _localTimer?.cancel();
+      _localTimer = null;
+    }
+
+    final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
+    if (newRemaining == 0 && _remainingSeconds > 0) {
+      _fadeController.reverse();
+    }
+
+    setState(() {
+      _title = args['title'] ?? _title;
+      _tip = args['tip'] ?? _tip;
+      _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
+      if (targetEndMs == null) {
+        _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
+      }
+      _overlayType = args['type'] ?? _overlayType;
+      _strictMode = args['strictMode'] ?? _strictMode;
+      _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
+      _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
+      _showWellnessNotes = args['showWellnessNotes'] ?? _showWellnessNotes;
+      _isInternalPreview = args['isPreview'] ?? false;
+      if (args.containsKey('breakType')) {
+        _breakTypeStr = args['breakType'];
+      }
+
+      if (args['theme'] != null) {
+        final String themeStr = args['theme'];
+        _currentTheme = BreakTheme.values.firstWhere(
+          (e) => e.name == themeStr,
+          orElse: () => _currentTheme,
+        );
+      }
+      if (args['classicImage'] != null) {
+        _currentTemplate = args['classicImage'] as String;
+      }
+      if (args['breakTemplate'] != null) {
+        _breakTemplate = args['breakTemplate'];
+      } else if (args['template'] != null) {
+        _breakTemplate = args['template'];
+      }
+      _syncClassicEffects(_breakTemplate == 'classic' && _enableAnimations);
+      if (args['companionPetTheme'] != null) {
+        _companionPetTheme = args['companionPetTheme'];
+      } else if (args['companionCatTheme'] != null) {
+        _companionPetTheme = args['companionCatTheme'];
+      }
+      if (args.containsKey('clockFaceTextColorHex')) {
+        _clockFaceTextColorHex = args['clockFaceTextColorHex'] as int;
+      }
+      if (args.containsKey('clockFaceBlurEnabled')) {
+        _clockFaceBlurEnabled = args['clockFaceBlurEnabled'] as bool;
+      }
+      if (args.containsKey('customImagePath')) {
+        _customImagePath = args['customImagePath'] as String?;
+        if (_customImagePath == "") _customImagePath = null;
+      }
+      if (args.containsKey('exerciseTitle')) {
+        _exerciseTitle = args['exerciseTitle'];
+      }
+      if (args.containsKey('exerciseInstructions')) {
+        _exerciseInstructions = args['exerciseInstructions'];
+      }
+      if (args['reminderType'] != null) {
+        final newReminderType = args['reminderType'];
+        if (newReminderType != _reminderType) {
+          _maxWarningSeconds = newRemaining;
+        }
+        _reminderType = newReminderType;
+      }
+      if (newRemaining > _maxWarningSeconds) {
+        _maxWarningSeconds = newRemaining;
+      }
+
+      if (_overlayType == 'quickReminder' ||
+          _overlayType == 'preBreakWarning') {
+        _fadeController.duration = const Duration(milliseconds: 400);
+        final dismissDelay = _overlayType == 'preBreakWarning'
+            ? const Duration(seconds: 3)
+            : const Duration(seconds: 5);
+        Future.delayed(dismissDelay, () {
+          if (mounted &&
+              (_overlayType == 'quickReminder' ||
+                  _overlayType == 'preBreakWarning')) {
+            _skipBreak();
+          }
+        });
+      } else {
+        _fadeController.duration = const Duration(milliseconds: 600);
+      }
+    });
   }
 
   void _startLocalTimer() {
@@ -127,11 +397,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
         if (newRemaining != _remainingSeconds) {
           if (newRemaining == 0 && _remainingSeconds > 0) {
-            _fadeController.reverse();
+            _completeBreak();
           }
-          setState(() {
-            _remainingSeconds = newRemaining;
-          });
+          _remainingSeconds = newRemaining;
+          _remainingSecondsNotifier.value = newRemaining;
         }
       }
     });
@@ -149,97 +418,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _bridge.setMethodCallHandler((call) async {
       if (call.method == 'updateOverlayData') {
         final args = call.arguments as Map;
-        if (mounted) {
-          // If targetEndTime is passed, use it to count down locally!
-          final targetEndMs = args['targetEndTime'] as int?;
-          if (targetEndMs != null) {
-            _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
-            _startLocalTimer();
-          } else {
-            _targetEndTime = null;
-            _localTimer?.cancel();
-            _localTimer = null;
-          }
-
-          // If we are transitioning to zero remaining seconds (auto-close),
-          // or explicitly told to close, trigger fade out.
-          final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
-          if (newRemaining == 0 && _remainingSeconds > 0) {
-            _fadeController.reverse();
-          }
-
-          setState(() {
-            _title = args['title'] ?? _title;
-            _tip = args['tip'] ?? _tip;
-            _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
-            if (targetEndMs == null) {
-              _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
-            }
-            _overlayType = args['type'] ?? _overlayType;
-            _strictMode = args['strictMode'] ?? _strictMode;
-            _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
-            _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
-            _isInternalPreview = args['isPreview'] ?? false;
-
-            // Display Context
-            final displayId = args['displayId'] as String?;
-            final bWidth = (args['boundsWidth'] as num?)?.toDouble() ?? 0;
-            final bHeight = (args['boundsHeight'] as num?)?.toDouble() ?? 0;
-            if (displayId != null) {
-              _displayId = displayId;
-              _displayWidth = bWidth;
-              _displayHeight = bHeight;
-            }
-
-            if (args['theme'] != null) {
-              final String themeStr = args['theme'];
-              _currentTheme = BreakTheme.values.firstWhere(
-                (e) => e.name == themeStr,
-                orElse: () => _currentTheme,
-              );
-            }
-            // Use the coordinator-chosen image so all displays show the same one
-            if (args['classicImage'] != null) {
-              _currentTemplate = args['classicImage'] as String;
-            }
-            if (args['breakTemplate'] != null) {
-              _breakTemplate = args['breakTemplate'];
-            } else if (args['template'] != null) {
-              _breakTemplate = args['template'];
-            }
-            _syncClassicEffects(
-              _breakTemplate == 'classic' && _enableAnimations,
-            );
-            if (args['companionPetTheme'] != null) {
-              _companionPetTheme = args['companionPetTheme'];
-            } else if (args['companionCatTheme'] != null) {
-              _companionPetTheme = args['companionCatTheme'];
-            }
-            if (args.containsKey('exerciseTitle')) {
-              _exerciseTitle = args['exerciseTitle'];
-            }
-            if (args.containsKey('exerciseInstructions')) {
-              _exerciseInstructions = args['exerciseInstructions'];
-            }
-            if (args['reminderType'] != null) {
-              _reminderType = args['reminderType'];
-            }
-
-            // Auto-dismiss quick reminders after 5 seconds (breakStart gets more time)
-            if (_overlayType == 'quickReminder') {
-              _fadeController.duration = const Duration(milliseconds: 400);
-              final dismissDelay = _reminderType == 'breakStart'
-                  ? Duration(seconds: _remainingSeconds.clamp(5, 30))
-                  : const Duration(seconds: 5);
-              Future.delayed(dismissDelay, () {
-                if (mounted && _overlayType == 'quickReminder') _skipBreak();
-              });
-            } else {
-              // Reset to default duration for normal break screens
-              _fadeController.duration = const Duration(milliseconds: 600);
-            }
-          });
-        }
+        _applyOverlayData(args);
       } else if (call.method == 'setScreenInfo') {
         final args = call.arguments as Map;
         if (mounted) {
@@ -262,22 +441,104 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     }
   }
 
-  void _skipBreak() {
-    // Reverse fade for a smooth exit, then call the native bridge
+  void _completeBreak() {
+    if (_isDismissing) return;
+    _isDismissing = true;
+
+    bool callbackTriggered = false;
+    void triggerDismiss() {
+      if (callbackTriggered) return;
+      callbackTriggered = true;
+      if (_isInternalPreview ||
+          _overlayType == 'preBreakWarning' ||
+          _overlayType == 'quickReminder') {
+        _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
+      } else {
+        _bridge.invokeMethod('completeBreak');
+      }
+    }
+
+    // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
+    Timer(const Duration(milliseconds: 800), triggerDismiss);
+
     _fadeController.reverse().then((_) {
-      if (_isInternalPreview) {
-        // If it's a preview, just hide the overlay without notifying
-        // the main engine or recording a skipped break in the DB.
+      triggerDismiss();
+    });
+  }
+
+  void _skipBreak() {
+    if (_isDismissing) return;
+    _isDismissing = true;
+
+    bool callbackTriggered = false;
+    void triggerDismiss() {
+      if (callbackTriggered) return;
+      callbackTriggered = true;
+      if (_isInternalPreview ||
+          _overlayType == 'preBreakWarning' ||
+          _overlayType == 'quickReminder') {
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
         NativeBridge.skipBreak();
       }
+    }
+
+    // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
+    Timer(const Duration(milliseconds: 800), triggerDismiss);
+
+    _fadeController.reverse().then((_) {
+      triggerDismiss();
     });
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    if (!mounted) return false;
+
+    final isModifierPressed =
+        HardwareKeyboard.instance.isMetaPressed ||
+        HardwareKeyboard.instance.isControlPressed;
+    if (isModifierPressed &&
+        HardwareKeyboard.instance.isShiftPressed &&
+        event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.keyB) {
+      _bridge.invokeMethod('quitApp');
+      return true;
+    }
+
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      _skipBreak();
+      return true;
+    }
+    return false;
+  }
+
+  bool get _canDismiss =>
+      _isInternalPreview ||
+      (!_strictMode) ||
+      _overlayType == 'quickReminder' ||
+      _overlayType == 'preBreakWarning';
+
+  void _handleTemplateError(FlutterErrorDetails details) {
+    if (!_templateFailed) {
+      debugPrint('Template $_breakTemplate failed: ${details.exception}');
+      _templateFailed = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          setState(() {
+            _breakTemplate = 'minimal';
+          });
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
+    StandaloneBreakOverlay.onErrorCallbacks.remove(_handleTemplateError);
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
     _localTimer?.cancel();
+    _remainingSecondsNotifier.dispose();
     _kenBurnsController.dispose();
     _fadeController.dispose();
     super.dispose();
@@ -285,38 +546,66 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fadeController,
-      child: Material(
-        color: _overlayType == 'quickReminder'
-            ? Colors.black.withValues(alpha: 0.4)
-            : Colors.black,
-        child: GestureDetector(
-          onVerticalDragUpdate: (details) {
-            // If dragging up, dismiss the overlay completely (only if not in strict mode).
-            if (!_strictMode && details.primaryDelta! < -10) {
-              _skipBreak();
-            }
-          },
-          // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
-          onHorizontalDragUpdate: (details) {},
-          child: RepaintBoundary(child: _buildBreakScreen()),
+    if (!_initialized) {
+      return const Material(
+        color: Colors.transparent,
+        child: SizedBox.shrink(),
+      );
+    }
+
+    return PopScope(
+      canPop: false,
+      child: FadeTransition(
+        opacity: _fadeController,
+        child: Material(
+          color:
+              _overlayType == 'quickReminder' ||
+                  _overlayType == 'preBreakWarning'
+              ? Colors.black.withValues(alpha: 0.4)
+              : Colors.black,
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              final dy = details.delta.dy;
+              if (_canDismiss && dy < -10) {
+                _skipBreak();
+              }
+            },
+            // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
+            onHorizontalDragUpdate: (details) {},
+            child: RepaintBoundary(child: _buildBreakScreen()),
+          ),
         ),
       ),
     );
   }
 
   Widget _buildBreakScreen() {
-    if (_overlayType == 'quickReminder') {
-      return _buildQuickReminder();
+    if (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning') {
+      return QuickReminderOverlay(
+        reminderType: _reminderType,
+        overlayType: _overlayType,
+        fadeAnimation: _fadeController,
+        title: _title,
+        durationSeconds: _durationSeconds,
+      );
     }
 
-    final breakInfo = BreakModel(
-      type:
+    BreakType type;
+    if (_breakTypeStr != null) {
+      type = BreakType.values.firstWhere(
+        (e) => e.name == _breakTypeStr,
+        orElse: () => BreakType.long,
+      );
+    } else {
+      type =
           _title.toUpperCase().contains('SHORT') ||
               _title.toUpperCase().contains('EYE')
           ? BreakType.short
-          : BreakType.long,
+          : BreakType.long;
+    }
+
+    final breakInfo = BreakModel(
+      type: type,
       durationSeconds: _durationSeconds,
       title: _title,
       tip: _tip,
@@ -327,133 +616,46 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       enableAnimations: _enableAnimations,
       companionPetTheme: _companionPetTheme,
       breakTemplate: _breakTemplate,
-      showExercisesInBreak: _exerciseTitle != null,
+      showExercisesInBreak: _showWellnessNotes,
+      clockFaceTextColorHex: _clockFaceTextColorHex,
+      clockFaceBlurEnabled: _clockFaceBlurEnabled,
+      customImagePath: _customImagePath,
     );
 
     final total = _durationSeconds;
-    final remaining = _remainingSeconds;
-    Future<void> onSkip() async => _skipBreak();
-
-    Widget templateWidget;
-    switch (_breakTemplate) {
-      case 'classic':
-        templateWidget = ClassicSlideshowTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-          singleImage: _currentTemplate,
-          kenBurnsController: _kenBurnsController,
-          exerciseTitle: _exerciseTitle,
-          exerciseInstructions: _exerciseInstructions,
-        );
-        break;
-      case 'companion':
-        templateWidget = CompanionInteractiveTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'zen':
-        templateWidget = ZenModeTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'hud':
-        templateWidget = ProductivityHudTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'floating':
-        templateWidget = SoftFloatingWidgetTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'activities':
-        templateWidget = ActivitiesBreakTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      case 'minimal':
-        templateWidget = MinimalFocusTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-        break;
-      default:
-        templateWidget = Stack(
-          fit: StackFit.expand,
-          children: [
-            // Background Layer - Separated into its own RepaintBoundary to avoid UI invalidation
-            RepaintBoundary(
-              child: AnimatedBuilder(
-                animation: _kenBurnsController,
-                builder: (context, child) {
-                  return _buildBackground();
-                },
-              ),
-            ),
-
-            // UI Content - Wrapped in RepaintBoundary to isolate from background animation
-            SafeArea(
-              child: RepaintBoundary(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Spacer(),
-
-                    // Main content centered
-                    _buildMainContent(),
-
-                    const Spacer(),
-
-                    // Footer
-                    _buildFooter(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        );
-    }
+    // Always pass the callback; templates use their own !settings.strictMode guard
+    // to decide whether to render it. The global overlay button below is the
+    // authoritative skip affordance and is controlled by _canDismiss independently.
+    final VoidCallback onSkip = _skipBreak;
 
     return Stack(
+      clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
-        templateWidget,
-        Positioned(
-          top: 28,
-          left: 28,
-          child: SafeArea(
-            child: BreakContextPill(
+        // KEY PERFORMANCE FIX: ValueListenableBuilder wraps ONLY the template.
+        RepaintBoundary(
+          child: ValueListenableBuilder<int>(
+            valueListenable: _remainingSecondsNotifier,
+            builder: (_, remaining, _) => _buildTemplateWidget(
               breakInfo: breakInfo,
-              exerciseTitle: _exerciseTitle,
+              settings: settings,
+              remaining: remaining,
+              total: total,
+              onSkip: onSkip,
             ),
           ),
         ),
+        if (!_templateOwnsChrome)
+          Positioned(
+            top: 28,
+            left: 28,
+            child: SafeArea(
+              child: BreakContextPill(
+                breakInfo: breakInfo,
+                exerciseTitle: _showWellnessNotes ? _exerciseTitle : null,
+              ),
+            ),
+          ),
         if (_isInternalPreview)
           Positioned(
             top: 32,
@@ -501,7 +703,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        if (!_strictMode)
+        // Global skip button: shown whenever the overlay is dismissible.
+        // Previously gated on !_templateOwnsChrome, but all templates are in
+        // _kTemplatesWithChrome so that condition was always false — the button
+        // never appeared. Now it shows unconditionally when _canDismiss is true,
+        // floating above the template chrome at the top-right corner.
+        if (_canDismiss)
           Positioned(
             top: 28,
             right: 28,
@@ -524,17 +731,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        // Global visual indicator to swipe up to dismiss
-        if (!_strictMode)
+        if (_canDismiss)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
-            child: const IgnorePointer(
-              child: SwipeToDismissHint(),
-            ),
+            child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (_strictMode)
+        // Strict mode note: shown at bottom whenever the overlay is NOT dismissible.
+        // Previously gated on !_templateOwnsChrome (which was always false). Fixed
+        // to show unconditionally when the break cannot be skipped so the user
+        // knows why there is no skip affordance visible.
+        if (!_canDismiss)
           Positioned(
             bottom: 24,
             left: 24,
@@ -547,608 +755,258 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
   }
 
-  Widget _buildQuickReminder() {
-    final isPosture = _reminderType == 'posture';
-    final isBreakStart = _reminderType == 'breakStart';
-
-    if (isBreakStart) {
-      return _buildBreakStartWarning();
+  Widget _buildTemplateWidget({
+    required BreakModel breakInfo,
+    required SettingsModel settings,
+    required int remaining,
+    required int total,
+    required VoidCallback? onSkip,
+  }) {
+    if (breakInfo.type == BreakType.windDown) {
+      return const WindDownTemplate();
     }
 
-    return Center(
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-          CurvedAnimation(
-            parent: _fadeController,
-            curve: Curves.easeOutBack,
-            reverseCurve: Curves.easeIn,
-          ),
-        ),
-        child: Container(
-          width: 380,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E).withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(32),
-            border: Border.all(
-              color: Colors.white.withValues(alpha: 0.08),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 40,
-                spreadRadius: 10,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.06),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isPosture
-                      ? CupertinoIcons.person_crop_circle_badge_checkmark
-                      : CupertinoIcons.eye,
-                  color: Colors.white,
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                isPosture
-                    ? 'Sit up straight, relax your neck, and drop your shoulders.'
-                    : 'Blink a few times and focus on something far away.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.6),
-                  fontSize: 16,
-                  fontFamily: 'Inter',
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBreakStartWarning() {
-    const amber = Color(0xFFF59E0B);
-    const amberDark = Color(0xFFD97706);
-    final secs = _remainingSeconds.clamp(0, 999);
-
-    return Center(
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.88, end: 1.0).animate(
-          CurvedAnimation(
-            parent: _fadeController,
-            curve: Curves.easeOutBack,
-            reverseCurve: Curves.easeIn,
-          ),
-        ),
-        child: Container(
-          width: 420,
-          padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1A1500).withValues(alpha: 0.97),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(color: amber.withValues(alpha: 0.45), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: amber.withValues(alpha: 0.18),
-                blurRadius: 48,
-                spreadRadius: 8,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.55),
-                blurRadius: 24,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Top label pill
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: amber.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(100),
-                  border: Border.all(color: amber.withValues(alpha: 0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: amber,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'POSTURE BREAK',
-                      style: TextStyle(
-                        color: amber,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.4,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Icon
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      amber.withValues(alpha: 0.25),
-                      amberDark.withValues(alpha: 0.05),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: amber.withValues(alpha: 0.3), width: 1.5),
-                ),
-                child: const Icon(
-                  CupertinoIcons.person_fill,
-                  color: amber,
-                  size: 32,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Title
-              const Text(
-                'Break Starts Soon',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Subtitle
-              Text(
-                'Wrap up what you\'re doing. A posture break\nis coming in just a moment.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.55),
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 28),
-
-              // Countdown
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                decoration: BoxDecoration(
-                  color: amber.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: amber.withValues(alpha: 0.2)),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '$secs',
-                      style: const TextStyle(
-                        color: amber,
-                        fontSize: 52,
-                        fontWeight: FontWeight.w200,
-                        fontFamily: 'Inter',
-                        letterSpacing: -2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'seconds remaining',
-                      style: TextStyle(
-                        color: amber.withValues(alpha: 0.7),
-                        fontSize: 12,
-                        fontFamily: 'Inter',
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Tips row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildWarningTip(CupertinoIcons.arrow_up_to_line, 'Sit up straight'),
-                  const SizedBox(width: 16),
-                  _buildWarningTip(CupertinoIcons.hand_raised, 'Save your work'),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWarningTip(IconData icon, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: Colors.white.withValues(alpha: 0.4)),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
-            fontSize: 12,
-            fontFamily: 'Inter',
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMainContent() {
-    return Column(
-      children: [
-        Text(
-          _title.toUpperCase().contains('SHORT') ||
-                  _title.toUpperCase().contains('EYE')
-              ? 'Rest Your Eyes'
-              : 'Time to Recharge',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 2,
-            fontFamily: 'Inter',
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        RepaintBoundary(
-          child: Text(
-            _formatTime(_remainingSeconds),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 160,
-              fontWeight: FontWeight.w200,
-              letterSpacing: -4,
-              fontFamily: 'Inter',
-              fontFeatures: [FontFeature.tabularFigures()],
-              height: 1.0,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 24),
-
-        Container(
-          constraints: const BoxConstraints(maxWidth: 400),
-          child: Text(
-            _tip,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.7),
-              fontSize: 18,
-              fontWeight: FontWeight.w400,
-              fontFamily: 'Inter',
-              height: 1.5,
-            ),
-          ),
-        ),
-
-        if (_exerciseTitle != null && _exerciseInstructions != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 40),
-            child: _buildExerciseCard(),
-          ),
-
-        if (_displayId.isNotEmpty && _displayId != "Primary")
-          Padding(
-            padding: const EdgeInsets.only(top: 24),
-            child: Text(
-              _displayId,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.3),
-                fontSize: 12,
-                fontFamily: 'Inter',
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildFooter() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 30),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            DateFormat('HH:mm').format(DateTime.now()),
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.6),
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-          ),
-          if (true) _buildSkipButton(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExerciseCard() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 450),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                CupertinoIcons.heart_fill,
-                size: 16,
-                color: Colors.white,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Exercise: ${_exerciseTitle!}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            _exerciseInstructions!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              fontFamily: 'Inter',
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBackground() {
-    final screenW = _displayWidth > 0 ? _displayWidth : 1920.0;
-    final screenH = _displayHeight > 0 ? _displayHeight : 1080.0;
-
-    // Using a RepaintBoundary here ensures background animations don't trigger UI rebuilds
-    return RepaintBoundary(child: _buildThemeContent(screenW, screenH));
-  }
-
-  Widget _buildThemeContent(double screenW, double screenH) {
-    switch (_currentTheme) {
-      case BreakTheme.image:
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            // Optimized image loading
-            // Only use transform if NOT in preview to save 100% of that CPU cost
-            (_isInternalPreview || !_enableAnimations)
-                ? Image.asset(
-                    _currentTemplate,
-                    fit: BoxFit.cover,
-                    cacheWidth: screenW.toInt().clamp(100, 1920),
-                    cacheHeight: screenH.toInt().clamp(100, 1080),
-                  )
-                : Transform.scale(
-                    scale: 1.05 + (0.1 * _kenBurnsController.value),
-                    child: Image.asset(
-                      _currentTemplate,
-                      fit: BoxFit.cover,
-                      cacheWidth: screenW.toInt().clamp(100, 1920),
-                      cacheHeight: screenH.toInt().clamp(100, 1080),
-                      filterQuality: FilterQuality.low,
-                    ),
-                  ),
-
-            // Speed optimization: Use simpler solid color with opacity instead of multi-stop gradient when possible
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.6),
-                    Colors.black.withValues(alpha: 0.3),
-                    Colors.black.withValues(alpha: 0.8),
-                  ],
-                  stops: const [0.0, 0.4, 1.0],
-                ),
-              ),
-            ),
-          ],
+    switch (_breakTemplate) {
+      case 'classic':
+        return ClassicSlideshowTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+          singleImage: _currentTemplate,
+          kenBurnsController: _kenBurnsController,
+          exerciseTitle: _exerciseTitle,
+          exerciseInstructions: _exerciseInstructions,
         );
-
-      case BreakTheme.sunset:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: const [Color(0xFFFF512F), Color(0xFFDD2476)],
-              stops: [
-                0.0,
-                0.5 +
-                    (0.1 *
-                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
-              ],
-            ),
-          ),
+      case 'companion':
+        return CompanionInteractiveTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-
-      case BreakTheme.nebula:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius:
-                  1.2 +
-                  (0.3 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
-              colors: const [Color(0xFF6441A5), Color(0xFF2a0845)],
-            ),
-          ),
+      case 'zen':
+        return ZenModeTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-
-      case BreakTheme.midnight:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: const [Color(0xFF000428), Color(0xFF004e92)],
-            ),
-          ),
+      case 'hud':
+        return ProductivityHudTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-
-      case BreakTheme.cyberpunk:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: const [Color(0xFF00F260), Color(0xFF0575E6)],
-              stops: [
-                0.0,
-                0.6 +
-                    (0.1 *
-                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
-              ],
-            ),
-          ),
+      case 'floating':
+        return SoftFloatingWidgetTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-
-      case BreakTheme.zen:
-        return Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              colors: [Color(0xFFe6e9f0), Color(0xFFeef1f5)],
-            ),
-          ),
+      case 'activities':
+        return ActivitiesBreakTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-
-      case BreakTheme.ocean:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              stops: [
-                0.0,
-                0.5 +
-                    (0.05 *
-                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
-                1.0,
-              ],
-              colors: const [
-                Color(0xFF0F2027),
-                Color(0xFF203A43),
-                Color(0xFF2C5364),
-              ],
-            ),
-          ),
+      case 'minimal':
+        return MinimalFocusTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-      case BreakTheme.forest:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.topRight,
-              stops: [
-                0.0,
-                0.5 +
-                    (0.05 *
-                        (_isInternalPreview ? 0 : _kenBurnsController.value)),
-                1.0,
-              ],
-              colors: const [
-                Color(0xFF134E5E),
-                Color(0xFF71B280),
-                Color(0xFF134E5E),
-              ],
-            ),
-          ),
+      case 'soft_arc':
+        return SoftArcTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
-      case BreakTheme.minimal:
-        return Container(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              center: Alignment.center,
-              radius:
-                  0.8 +
-                  (0.2 * (_isInternalPreview ? 0 : _kenBurnsController.value)),
-              colors: const [Color(0xFF1A1A1A), Color(0xFF050505)],
-            ),
-          ),
+      case 'breathe_line':
+        return BreatheLineTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'clock_face':
+        return ClockFaceTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'one_word':
+        return OneWordTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'open_field':
+        return OpenFieldTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'haiku_card':
+        return HaikuCardTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'ring_only':
+        return RingOnlyTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'step_guide':
+        return StepGuideTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'time_slice':
+        return TimeSliceTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'day_stack':
+        return DayStackTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'pulse_dot':
+        return PulseDotTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'mono_time':
+        return MonoTimeTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'split_view':
+        return SplitViewTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'warm_amber':
+        return WarmAmberTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'focus_orb':
+        return FocusOrbTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'wave_calm':
+        return WaveCalmTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'iris_rest':
+        return IrisRestTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'quiet_pill':
+        return QuietPillTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'paper_light':
+        return PaperLightTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'dusk_glow':
+        return DuskGlowTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'wind_down':
+        return const WindDownTemplate();
+      default:
+        return MinimalFocusTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
         );
     }
   }
 
-  Widget _buildSkipButton() {
-    return SkipBreakButton(onSkip: _skipBreak);
-  }
-
-  String _formatTime(int seconds) {
-    final mins = seconds ~/ 60;
-    final secs = seconds % 60;
-    return '${mins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  bool get _templateOwnsChrome {
+    // This prevents the global pill / close / swipe-hint from being stacked
+    final isWindDown =
+        _title.toUpperCase().contains('WIND DOWN') ||
+        (_breakTypeStr == 'windDown');
+    if (isWindDown) return true;
+    return _kTemplatesWithChrome.contains(_breakTemplate) ||
+        _breakTemplate == 'wind_down';
   }
 }

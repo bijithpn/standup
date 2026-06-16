@@ -1,9 +1,12 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
+import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 
 class _FireParticle {
@@ -23,6 +26,16 @@ class _FireParticle {
   }) : age = 0.0;
 }
 
+class _CrossFadeState {
+  _CrossFadeState({required this.from, required this.to}) : elapsed = 0.0;
+
+  static const double duration = 0.1;
+
+  final PetAnimationState from;
+  final PetAnimationState to;
+  double elapsed;
+}
+
 class CompanionComponent
     extends SpriteAnimationGroupComponent<PetAnimationState>
     with HasGameReference<CompanionGame>, TapCallbacks, HoverCallbacks {
@@ -31,11 +44,28 @@ class CompanionComponent
   PetAnimationState? _previousState;
   final Random _rng = Random();
 
-  // Snout offset for Dragon fire breathing particle origin
+  bool get isFlipped => scale.x < 0;
+
+  _CrossFadeState? _crossFadeState;
+
+  // Stable per-state average bottom padding in source pixels.
+  // Computed once when the active state changes to avoid per-frame jitter
+  // that would occur if we used the raw current-frame value.
+  double _currentStatePadding = 0.0;
+
+  static const Set<(PetAnimationState, PetAnimationState)>
+  _crossFadeTransitions = {
+    (PetAnimationState.idle, PetAnimationState.walkSide),
+    (PetAnimationState.walkSide, PetAnimationState.idle),
+    (PetAnimationState.walkSide, PetAnimationState.run),
+    (PetAnimationState.run, PetAnimationState.walkSide),
+    (PetAnimationState.run, PetAnimationState.idle),
+    (PetAnimationState.idle, PetAnimationState.run),
+  };
+
   Offset get _snoutOffset =>
       Offset(_direction * (size.x * 0.35), -size.y * 0.12);
 
-  // Active fire particles
   final List<_FireParticle> _particles = [];
 
   CompanionComponent({
@@ -44,7 +74,7 @@ class CompanionComponent
   }) : super(
          animations: animations,
          current: initialState,
-         anchor: Anchor.center,
+         anchor: Anchor.bottomCenter,
        );
 
   double get _strideFrequency =>
@@ -55,14 +85,15 @@ class CompanionComponent
     super.onMount();
     paint.filterQuality = FilterQuality.none;
     _updateFlip();
+    // Compute initial ground padding now that animations are available.
+    if (current != null) {
+      _currentStatePadding = _computeStatePadding(current!);
+    }
   }
 
-  /// Changes animation state safely.
-  /// Handles fallback of missing directional animations to side-view walking seamlessly.
   void changeState(PetAnimationState newState, {bool force = false}) {
     var target = newState;
 
-    // Directional walk fallback to side walk
     if (target == PetAnimationState.walkUp ||
         target == PetAnimationState.walkDown) {
       if (animations?.containsKey(target) != true) {
@@ -70,19 +101,36 @@ class CompanionComponent
       }
     }
 
-    // Safety fallback: if the requested state has no animation, use idle
+    if (target == PetAnimationState.chasing &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.run;
+    }
+    if (target == PetAnimationState.fetching &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.walkSide;
+    }
+    if (target == PetAnimationState.falling &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.run;
+    }
+    if (target == PetAnimationState.reacting &&
+        animations?.containsKey(target) != true) {
+      target = PetAnimationState.notification;
+    }
+
     if (animations?.containsKey(target) != true) {
       target = PetAnimationState.idle;
     }
 
+    final bool isSameAnimation = animations?[current] == animations?[target];
+
     if (current == target && !force) {
-      // For a non-looping animation already playing, let it finish — don't restart
       final anim = animations?[target];
       if (anim != null && !anim.loop) {
         final ticker = animationTickers?[target];
         if (ticker != null && !ticker.done()) return;
       } else {
-        return; // Same looping state — no-op
+        return;
       }
     }
 
@@ -90,21 +138,38 @@ class CompanionComponent
     final newAnim = animations?[target];
     final isNewLooping = newAnim?.loop ?? true;
 
-    // Save previous looping state to revert to after non-looping finishes
     if (currentAnim != null && currentAnim.loop && !isNewLooping) {
       _previousState = current;
     } else if (isNewLooping) {
       _previousState = null;
     }
 
-    // Reset ticker only when actually changing state
-    if (current != target) {
+    if (current != target && !isSameAnimation) {
       animationTickers?[target]?.reset();
+    } else if (isSameAnimation) {
+      // Sync frame progress if we are switching between states that share
+      // the same sprite sheet row (e.g. walkSide and idle in some packs).
+      final oldTicker = animationTickers?[current];
+      final newTicker = animationTickers?[target];
+      if (oldTicker != null && newTicker != null) {
+        newTicker.elapsed = oldTicker.elapsed;
+      }
+    }
+
+    final PetAnimationState? fromState = current;
+    if (fromState != null &&
+        _crossFadeTransitions.contains((fromState, target)) &&
+        !isSameAnimation) {
+      _crossFadeState = _CrossFadeState(from: fromState, to: target);
+    } else {
+      _crossFadeState = null;
     }
 
     current = target;
-    _stateElapsed = 0.0;
     _updateFlip();
+    // Recompute the ground padding for the new state so the Y-offset
+    // is stable for the entire duration of the state.
+    _currentStatePadding = _computeStatePadding(target);
   }
 
   void setWanderingEnabled(bool enabled) {
@@ -116,10 +181,12 @@ class CompanionComponent
     scale.x = _direction < 0 ? -absScale : absScale;
   }
 
-  // Speed thresholds (px/s) for animation selection
-  static const double _runThreshold = 100.0;
+  // Hysteresis for run-entry/exit only. Walk is entered freely whenever the
+  // navigation service reports movement, so the pet never stays in idle
+  // while its position is changing.
+  static const double _runStartThreshold = 110.0;
+  static const double _runStopThreshold = 80.0;
 
-  // FSM states that own their animation — velocity must NOT override these
   static const _fsmOwnedAnimations = {
     PetAnimationState.sleep,
     PetAnimationState.stretch,
@@ -142,8 +209,14 @@ class CompanionComponent
     final vel = nav.velocity;
     final baseSpeed = game.currentTheme.species.defaultProfile.movementSpeed;
 
-    // --- Dynamic Step Time / Prevents Foot-sliding ---
-    // Scaled dt based on velocity ratio, ensuring perfect physical pacing
+    final servicePos = nav.currentPosition;
+    position.setValues(servicePos.dx, servicePos.dy);
+
+    if (vel.dx.abs() > 0.5) {
+      _direction = vel.dx > 0 ? 1.0 : -1.0;
+      _updateFlip();
+    }
+
     double scaledDt = dt;
     if (current == PetAnimationState.walkSide ||
         current == PetAnimationState.walkUp ||
@@ -159,10 +232,24 @@ class CompanionComponent
       scaledDt = dt * _strideFrequency;
     }
 
+    if (game.isQuietMode) {
+      scaledDt *= 0.6;
+    }
+
     super.update(scaledDt);
     _stateElapsed += dt;
 
-    // Auto-revert non-looping animations back to previous (or idle)
+    if (_crossFadeState != null) {
+      _crossFadeState!.elapsed += dt;
+      // Manually update the 'from' ticker since SpriteAnimationGroupComponent
+      // only updates the 'current' ticker.
+      animationTickers?[_crossFadeState!.from]?.update(scaledDt);
+
+      if (_crossFadeState!.elapsed >= _CrossFadeState.duration) {
+        _crossFadeState = null;
+      }
+    }
+
     final currentAnim = animations?[current];
     if (currentAnim != null && !currentAnim.loop) {
       final ticker = animationTickers?[current];
@@ -173,115 +260,136 @@ class CompanionComponent
         if (newAnim != null &&
             !newAnim.loop &&
             current != (_previousState ?? PetAnimationState.idle)) {
-          return; // FSM chained to another non-looping anim — let it play
+          return;
         }
         changeState(_previousState ?? PetAnimationState.idle);
         return;
       }
     }
 
-    // Sync position from navigation service
-    final servicePos = nav.currentPosition;
-    position = Vector2(servicePos.dx, servicePos.dy);
-
-    // Sync horizontal flip from velocity direction
-    if (vel.dx.abs() > 0.5) {
-      _direction = vel.dx > 0 ? 1.0 : -1.0;
-      _updateFlip();
+    if (currentAnim != null && currentAnim.loop) {
+      final ticker = animationTickers?[current];
+      if (ticker != null && ticker.done()) {
+        game.petService.handleEvent(PetEvent.loopBlocked);
+        return;
+      }
     }
 
-    // --- Directional Walk & Deceleration Transitions ---
     final cur = current ?? PetAnimationState.idle;
     final isNavMoving = nav.isMoving;
     final isFsmOwned = _fsmOwnedAnimations.contains(cur);
     final canOverride = !isFsmOwned || _isMovementState(cur);
 
     if (canOverride) {
-      if (isNavMoving || speed > 0.5) {
-        if (speed > _runThreshold) {
+      final bool isRunning = cur == PetAnimationState.run;
+
+      if (speed > 1.5 && isNavMoving) {
+        // Run hysteresis: need higher speed to START running, lower to STAY.
+        final bool shouldRun = isRunning
+            ? speed > _runStopThreshold
+            : speed > _runStartThreshold;
+
+        if (shouldRun) {
           changeState(PetAnimationState.run);
         } else {
-          // Dominant vector direction logic for 4-way selection
-          PetAnimationState walkState = PetAnimationState.walkSide;
-          if (vel.dy.abs() > vel.dx.abs()) {
-            if (vel.dy < 0) {
-              walkState = PetAnimationState.walkUp;
-            } else {
-              walkState = PetAnimationState.walkDown;
-            }
-          } else {
+          // Walk: choose direction from velocity with hysteresis to prevent flicker.
+          PetAnimationState walkState =
+              (current == PetAnimationState.walkUp ||
+                  current == PetAnimationState.walkDown)
+              ? current!
+              : PetAnimationState.walkSide;
+
+          final double dx = vel.dx.abs();
+          final double dy = vel.dy.abs();
+          final double diff = dy - dx;
+
+          if (diff > 5.0) {
+            // Bias towards vertical
+            walkState = vel.dy < 0
+                ? PetAnimationState.walkUp
+                : PetAnimationState.walkDown;
+          } else if (diff < -5.0) {
+            // Bias towards horizontal
             walkState = PetAnimationState.walkSide;
           }
+          // If within [-5, 5], retain previous state to prevent animation resets.
+
           changeState(walkState);
         }
       } else {
-        // Deceleration Stride-Sync: Let the current walking cycle reach index 0 before going to idle
         if (_isMovementState(cur)) {
-          final ticker = animationTickers?[cur];
-          if (ticker == null || ticker.currentIndex == 0) {
-            changeState(_previousState ?? PetAnimationState.idle);
-          }
+          changeState(_previousState ?? PetAnimationState.idle);
         }
       }
     }
 
-    // --- Dynamic Leaning & Squash-and-Stretch for Vertical Movement ---
-    final bool isMovingVertically = vel.dy.abs() > 1.5 && speed > 5.0;
     final bool isUsingFallbackWalk = current == PetAnimationState.walkSide;
+    final bool isWalkOnly =
+        game.currentTheme.species.movementType == MovementType.walk;
     final profile = game.currentTheme.species.defaultProfile;
 
-    if (isMovingVertically &&
-        (isUsingFallbackWalk ||
-            current == PetAnimationState.run ||
-            current == PetAnimationState.excited ||
-            current == PetAnimationState.fly)) {
-      // 3D Tilt: Rotate sprite based on vertical speed and orientation
-      final double maxSpeed = profile.movementSpeed;
-      final double maxTilt = profile.maxTilt; // species specific tilt limit
-      final double tiltFactor = (vel.dy / maxSpeed).clamp(-1.0, 1.0);
-      angle = _direction * tiltFactor * maxTilt;
-
-      // Squash and stretch vertical scaling based on vertical speed
-      final double stretch = (vel.dy / 220.0).clamp(-0.12, 0.12);
-      scale.y = scale.x.abs() * (1.0 - stretch);
-    } else {
+    if (isWalkOnly) {
       angle = 0.0;
-      // Idle breathing / celebration micro-bob
       if (current == PetAnimationState.idle ||
           current == PetAnimationState.celebrate) {
         scale.y =
             scale.x.abs() *
             (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
-      } else if (isMovingVertically && _isMovementState(current)) {
+      } else if (_isMovementState(current)) {
         final double bob = sin(_stateElapsed * 10.0) * profile.bobIntensity;
         scale.y = scale.x.abs() * (1.0 + bob);
       } else {
         scale.y = scale.x.abs();
       }
+    } else {
+      final bool isMovingVertically = vel.dy.abs() > 1.5 && speed > 5.0;
+      if (isMovingVertically &&
+          (isUsingFallbackWalk ||
+              current == PetAnimationState.run ||
+              current == PetAnimationState.excited ||
+              current == PetAnimationState.fly)) {
+        final double maxSpeed = profile.movementSpeed;
+        final double maxTilt = profile.maxTilt;
+        final double tiltFactor = (vel.dy / maxSpeed).clamp(-1.0, 1.0);
+        angle = _direction * tiltFactor * maxTilt;
+
+        final double stretch = (vel.dy.abs() / 220.0).clamp(0.0, 0.12);
+        scale.y = scale.x.abs() * (1.0 + stretch);
+      } else {
+        angle = 0.0;
+        if (current == PetAnimationState.idle ||
+            current == PetAnimationState.celebrate) {
+          scale.y =
+              scale.x.abs() *
+              (1.0 + sin(_stateElapsed * 4.5) * profile.bobIntensity * 0.5);
+        } else if (_isMovementState(current)) {
+          final double bob = sin(_stateElapsed * 10.0) * profile.bobIntensity;
+          scale.y = scale.x.abs() * (1.0 + bob);
+        } else {
+          scale.y = scale.x.abs();
+        }
+      }
     }
 
-    // --- Procedural Fire Particle Emitter for Dragon Snout ---
     _updateFireParticles(dt);
   }
 
   void _updateFireParticles(double dt) {
-    // 1. Update and decay active particles
     for (final p in _particles) {
       p.position += p.velocity * dt;
       p.age += dt;
     }
     _particles.removeWhere((p) => p.age >= p.maxAge);
 
-    // 2. Spawn new particles during Dragon's fire-breath state
     if (current == PetAnimationState.breatheFire) {
       final origin = _snoutOffset;
       for (int i = 0; i < 2; i++) {
         final double vx = _direction * (60.0 + _rng.nextDouble() * 50.0);
         final double vy = -15.0 + _rng.nextDouble() * 30.0;
         final colors = [
-          const Color(0xFFFF3D00), // Pure Red-Orange
-          const Color(0xFFFF9100), // Deep Orange
-          const Color(0xFFFFD600), // Fire Yellow
+          const Color(0xFFFF3D00),
+          const Color(0xFFFF9100),
+          const Color(0xFFFFD600),
         ];
         _particles.add(
           _FireParticle(
@@ -296,6 +404,19 @@ class CompanionComponent
     }
   }
 
+  /// Returns the average bottom transparent padding (in source px) across
+  /// all frames of [state]. Called once per state change rather than per
+  /// frame, so the resulting Y-offset is stable across the animation cycle.
+  double _computeStatePadding(PetAnimationState state) {
+    final anim = animations?[state];
+    if (anim == null || anim.frames.isEmpty) return 0.0;
+    double total = 0.0;
+    for (final frame in anim.frames) {
+      total += PetAssetLoader.getSpriteBottomPadding(frame.sprite);
+    }
+    return total / anim.frames.length;
+  }
+
   bool _isMovementState(PetAnimationState? s) =>
       s == PetAnimationState.walkUp ||
       s == PetAnimationState.walkDown ||
@@ -305,9 +426,70 @@ class CompanionComponent
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
+    canvas.save();
 
-    // Render "ON AIR" / Meeting Indicator
+    // Align the pet's feet to the component's position (ground) by translating
+    // the canvas down by the calculated source-pixel padding.
+    canvas.translate(0, _currentStatePadding);
+
+    final cf = _crossFadeState;
+    if (cf != null) {
+      final double t = (cf.elapsed / _CrossFadeState.duration).clamp(0.0, 1.0);
+
+      final fromAnim = animations?[cf.from];
+      if (fromAnim != null) {
+        final fromTicker = animationTickers?[cf.from];
+        if (fromTicker != null) {
+          final ui.Image? fromFrame =
+              fromTicker.currentIndex < fromAnim.frames.length
+              ? fromAnim.frames[fromTicker.currentIndex].sprite.image
+              : null;
+          if (fromFrame != null) {
+            final alphaPaint = Paint()
+              ..color = Color.fromRGBO(255, 255, 255, 1.0 - t)
+              ..filterQuality = FilterQuality.none;
+            final src = fromAnim.frames[fromTicker.currentIndex].sprite.src;
+            // Align with Flame's transformed coordinate system (0,0 is top-left).
+            canvas.drawImageRect(
+              fromFrame,
+              src,
+              Rect.fromLTWH(0, 0, size.x, size.y),
+              alphaPaint,
+            );
+          }
+        }
+      }
+
+      final toAnim = animations?[cf.to];
+      if (toAnim != null) {
+        final toTicker = animationTickers?[cf.to];
+        if (toTicker != null && toTicker.currentIndex < toAnim.frames.length) {
+          final ui.Image toFrame =
+              toAnim.frames[toTicker.currentIndex].sprite.image;
+          final alphaPaint = Paint()
+            ..color = Color.fromRGBO(255, 255, 255, t)
+            ..filterQuality = FilterQuality.none;
+          final src = toAnim.frames[toTicker.currentIndex].sprite.src;
+          canvas.drawImageRect(
+            toFrame,
+            src,
+            Rect.fromLTWH(0, 0, size.x, size.y),
+            alphaPaint,
+          );
+        }
+      }
+
+      _renderOverlays(canvas);
+      canvas.restore();
+      return;
+    }
+
+    super.render(canvas);
+    _renderOverlays(canvas);
+    canvas.restore();
+  }
+
+  void _renderOverlays(Canvas canvas) {
     if (game.petService.context.isMeetingDetected) {
       final double spriteSize = game.currentTheme.spriteSize.toDouble();
       final Offset badgePos = Offset(spriteSize * 0.3, -spriteSize * 0.4);
@@ -316,11 +498,9 @@ class CompanionComponent
         ..color = const Color(0xFFFF3B30)
         ..style = PaintingStyle.fill;
 
-      // Draw a small pulsating red dot
       final double pulse = 1.0 + sin(_stateElapsed * 4.0) * 0.2;
       canvas.drawCircle(badgePos, 3.0 * pulse, paint);
 
-      // Draw "ON AIR" text badge if space permits
       const textStyle = TextStyle(
         color: Colors.white,
         fontSize: 5,
@@ -335,7 +515,6 @@ class CompanionComponent
       textPainter.paint(canvas, badgePos + const Offset(5, -3));
     }
 
-    // Render Dragon Snout Fire Particles procedurally over the sprite
     if (_particles.isNotEmpty) {
       final paint = Paint()..style = PaintingStyle.fill;
       for (final p in _particles) {
@@ -345,8 +524,6 @@ class CompanionComponent
       }
     }
   }
-
-  // --- Tap / Hover ---
 
   DateTime? _lastTapTime;
 
@@ -370,15 +547,16 @@ class CompanionComponent
   @override
   void onHoverEnter() => game.onUserInteraction('hover');
 
-  // --- Mouse follow ---
-
   void updateMouseFollow(Map<dynamic, dynamic> data) {
     final bool enabled = data['enabled'] as bool? ?? false;
     game.petService.setCursorFollowing(enabled);
 
     final double? mx = (data['mouseX'] as num?)?.toDouble();
-    final double? my = (data['mouseY'] as num?)?.toDouble();
+    double? my = (data['mouseY'] as num?)?.toDouble();
     if (mx != null && my != null) {
+      if (game.isPiP) {
+        my = position.y;
+      }
       game.petService.updateCursorPosition(
         Offset(mx, my),
         forceFollowing: enabled,

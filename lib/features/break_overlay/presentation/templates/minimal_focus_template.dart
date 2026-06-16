@@ -1,7 +1,5 @@
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -28,372 +26,158 @@ class MinimalFocusTemplate extends StatelessWidget {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  String _durationLabel() {
+    final isShort = breakInfo.type == BreakType.short;
+    final mins = totalSeconds ~/ 60;
+    final secs = totalSeconds % 60;
+    final dur = mins > 0
+        ? (secs > 0 ? '$mins min $secs sec' : '$mins min')
+        : '$totalSeconds sec';
+    return isShort ? 'Eye rest · $dur' : 'Pause · $dur';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isShort = breakInfo.type == BreakType.short;
+    final defaultAccent = isShort
+        ? const Color(0xFF7EC8E3)
+        : const Color(0xFF86EFAC);
+    final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
+        ? Color(settings.clockFaceTextColorHex)
+        : defaultAccent;
     final progress = totalSeconds > 0
-        ? (1 - (remainingSeconds / totalSeconds)).clamp(0.0, 1.0)
+        ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;
-    final isShortBreak = breakInfo.type == BreakType.short;
-    final accent = isShortBreak
-        ? const Color(0xFF7DD3FC)
-        : const Color(0xFFA7F3D0);
-    final media = MediaQuery.of(context).size;
-    final compact = media.width < 760 || media.height < 620;
-    final dialSize = compact ? 224.0 : 292.0;
 
-    return Material(
-      color: const Color(0xFF080A0C),
+    return ColoredBox(
+      color: const Color(0xFF0A0A0F),
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const RepaintBoundary(child: _MinimalField()),
-          SafeArea(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: compact ? 24 : 48,
-                vertical: compact ? 18 : 34,
-              ),
-              child: Column(
-                children: [
-                  _TopRail(
-                    accent: accent,
-                    label: isShortBreak ? 'EYE RESET' : 'PAUSE WINDOW',
-                  ),
-                  const Spacer(),
-                  RepaintBoundary(
-                    child: _BreakDial(
-                      accent: accent,
-                      size: dialSize,
-                      progress: progress,
-                      time: _formatTime(remainingSeconds),
-                      icon: isShortBreak ? LucideIcons.eye : LucideIcons.leaf,
-                    ),
-                  ),
-                  SizedBox(height: compact ? 28 : 40),
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 560),
-                    child: Column(
-                      children: [
-                        Text(
-                          isShortBreak ? 'Look away' : 'Step back',
-                          textAlign: TextAlign.center,
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isShort ? LucideIcons.eye : LucideIcons.leaf,
+                  size: 20,
+                  color: accent.withValues(alpha: 0.55),
+                ),
+                const SizedBox(height: 20),
+                RepaintBoundary(
+                  child: SizedBox(
+                    width: 220,
+                    height: 220,
+                    child: CustomPaint(
+                      painter: _ArcPainter(accent: accent, progress: progress),
+                      child: Center(
+                        child: Text(
+                          _formatTime(remainingSeconds),
                           style: TextStyle(
-                            color: Colors.white,
-                            fontSize: compact ? 30 : 38,
-                            fontWeight: FontWeight.w600,
+                            color: Color(settings.clockFaceTextColorHex),
+                            fontSize: 54,
+                            fontWeight: FontWeight.w200,
                             fontFamily: 'Inter',
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                            letterSpacing: -1.5,
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        if (breakInfo.triggerReason != null) ...[
-                          Text(
-                            'Reason: ${breakInfo.triggerReason}',
-                            style: TextStyle(
-                              color: accent.withValues(alpha: 0.6),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                        Text(
-                          breakInfo.tip,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.64),
-                            fontSize: compact ? 14 : 16,
-                            height: 1.5,
-                            fontFamily: 'Inter',
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                  const Spacer(),
-                  _BottomRail(
-                    currentTime: DateFormat('HH:mm').format(DateTime.now()),
-                    onSkip: settings.strictMode ? null : onSkip,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  _durationLabel(),
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.4),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+                if (settings.showExercisesInBreak &&
+                    breakInfo.tip.isNotEmpty) ...[
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: 320,
+                    child: Text(
+                      breakInfo.tip,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.38),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Inter',
+                        height: 1.6,
+                      ),
+                    ),
                   ),
                 ],
-              ),
+              ],
             ),
           ),
+          if (!settings.strictMode && onSkip != null)
+            Positioned(
+              bottom: 36,
+              right: 40,
+              child: GestureDetector(
+                onTap: onSkip,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
 
-class _MinimalField extends StatelessWidget {
-  const _MinimalField();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(painter: _MinimalFieldPainter());
-  }
-}
-
-class _MinimalFieldPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final background = Paint()..color = const Color(0xFF080A0C);
-    canvas.drawRect(Offset.zero & size, background);
-
-    final linePaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.045)
-      ..strokeWidth = 1;
-    const gap = 48.0;
-    for (double x = 0; x < size.width; x += gap) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-    for (double y = 0; y < size.height; y += gap) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-
-    final glow = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              const Color(0xFF0F766E).withValues(alpha: 0.18),
-              Colors.transparent,
-            ],
-          ).createShader(
-            Rect.fromCircle(
-              center: Offset(size.width * 0.5, size.height * 0.42),
-              radius: math.min(size.width, size.height) * 0.52,
-            ),
-          );
-    canvas.drawRect(Offset.zero & size, glow);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _TopRail extends StatelessWidget {
-  final Color accent;
-  final String label;
-
-  const _TopRail({required this.accent, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.7),
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.4,
-            fontFamily: 'Inter',
-          ),
-        ),
-        const Spacer(),
-        Icon(
-          LucideIcons.sparkles,
-          color: Colors.white.withValues(alpha: 0.42),
-          size: 18,
-        ),
-      ],
-    );
-  }
-}
-
-class _BreakDial extends StatelessWidget {
-  final Color accent;
-  final double size;
-  final double progress;
-  final String time;
-  final IconData icon;
-
-  const _BreakDial({
-    required this.accent,
-    required this.size,
-    required this.progress,
-    required this.time,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(
-            size: Size.square(size),
-            painter: _BreakDialPainter(accent: accent, progress: progress),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 22, color: accent),
-              const SizedBox(height: 18),
-              Text(
-                time,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: size < 250 ? 48 : 62,
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Inter',
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                '${(progress * 100).round()}%',
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.44),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BreakDialPainter extends CustomPainter {
+class _ArcPainter extends CustomPainter {
   final Color accent;
   final double progress;
 
-  const _BreakDialPainter({required this.accent, required this.progress});
+  const _ArcPainter({required this.accent, required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
-    final basePaint = Paint()
+    final radius = size.width / 2 - 4;
+
+    final trackPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = Colors.white.withValues(alpha: 0.12);
-    final progressPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round
-      ..color = accent;
+      ..strokeWidth = 1.5
+      ..color = Colors.white.withValues(alpha: 0.08);
+    canvas.drawCircle(center, radius, trackPaint);
 
-    for (int i = 0; i < 3; i++) {
-      canvas.drawCircle(center, radius - 16 - (i * 30), basePaint);
-    }
-
-    final rect = Rect.fromCircle(center: center, radius: radius - 16);
-    canvas.drawArc(
-      rect,
-      -math.pi / 2,
-      math.pi * 2 * progress,
-      false,
-      progressPaint,
-    );
-
-    final tickPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.18)
-      ..strokeWidth = 1;
-    for (int i = 0; i < 32; i++) {
-      final angle = (math.pi * 2 / 32) * i;
-      final outer = Offset(
-        center.dx + math.cos(angle) * (radius - 2),
-        center.dy + math.sin(angle) * (radius - 2),
+    if (progress > 0) {
+      final arcPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round
+        ..color = accent.withValues(alpha: 0.55);
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: radius),
+        -math.pi / 2,
+        math.pi * 2 * progress,
+        false,
+        arcPaint,
       );
-      final inner = Offset(
-        center.dx + math.cos(angle) * (radius - 10),
-        center.dy + math.sin(angle) * (radius - 10),
-      );
-      canvas.drawLine(inner, outer, tickPaint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _BreakDialPainter oldDelegate) {
-    return oldDelegate.progress != progress || oldDelegate.accent != accent;
-  }
-}
-
-class _BottomRail extends StatelessWidget {
-  final String currentTime;
-  final VoidCallback? onSkip;
-
-  const _BottomRail({required this.currentTime, required this.onSkip});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          currentTime,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.48),
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Inter',
-            fontFeatures: const [FontFeature.tabularFigures()],
-          ),
-        ),
-        const Spacer(),
-        if (onSkip != null) ...[
-          TextButton.icon(
-            onPressed:
-                onSkip, // Assuming postpone might route to same for now or separate
-            icon: Icon(
-              LucideIcons.clock,
-              size: 14,
-              color: Colors.white.withValues(alpha: 0.72),
-            ),
-            label: Text(
-              'Postpone 5m',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.72),
-                fontFamily: 'Inter',
-              ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.04),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          TextButton.icon(
-            onPressed: onSkip,
-            icon: Icon(
-              LucideIcons.skipForward,
-              size: 14,
-              color: Colors.white.withValues(alpha: 0.72),
-            ),
-            label: Text(
-              'Skip Break',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.72),
-                fontFamily: 'Inter',
-              ),
-            ),
-            style: TextButton.styleFrom(
-              backgroundColor: Colors.white.withValues(alpha: 0.08),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  bool shouldRepaint(covariant _ArcPainter old) =>
+      old.progress != progress || old.accent != accent;
 }

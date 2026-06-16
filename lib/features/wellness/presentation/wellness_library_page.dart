@@ -17,7 +17,11 @@ class WellnessLibraryPage extends StatelessWidget {
         final horizontalPadding = isSmall ? 16.0 : 40.0;
         final verticalPadding = isSmall ? 20.0 : 32.0;
 
-        Widget buildContent(ScrollController? scrollController, List<ExerciseModel> exercises, WellnessLibraryRepository repo) {
+        Widget buildContent(
+          ScrollController? scrollController,
+          List<ExerciseModel> exercises,
+          WellnessLibraryRepository repo,
+        ) {
           return SingleChildScrollView(
             controller: scrollController,
             padding: EdgeInsets.symmetric(
@@ -118,11 +122,7 @@ class ExerciseCard extends StatelessWidget {
   final ExerciseModel exercise;
   final WellnessLibraryRepository repo;
 
-  const ExerciseCard({
-    super.key,
-    required this.exercise,
-    required this.repo,
-  });
+  const ExerciseCard({super.key, required this.exercise, required this.repo});
 
   @override
   Widget build(BuildContext context) {
@@ -156,7 +156,6 @@ class ExerciseCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title & Icon Header
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -166,7 +165,9 @@ class ExerciseCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: isHidden ? AppTheme.textMuted : AppTheme.textPrimary,
+                      color: isHidden
+                          ? AppTheme.textMuted
+                          : AppTheme.textPrimary,
                       letterSpacing: -0.2,
                     ),
                     maxLines: 1,
@@ -176,7 +177,6 @@ class ExerciseCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            // Description Text
             Expanded(
               child: Text(
                 exercise.instructions,
@@ -192,7 +192,6 @@ class ExerciseCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Bottom Action Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -203,7 +202,9 @@ class ExerciseCard extends StatelessWidget {
                       icon: exercise.isFavorite
                           ? Icons.star_rounded
                           : Icons.star_outline_rounded,
-                      color: exercise.isFavorite ? Colors.amber : AppTheme.textSecondary,
+                      color: exercise.isFavorite
+                          ? Colors.amber
+                          : AppTheme.textSecondary,
                       onPressed: () => repo.toggleFavorite(exercise.id),
                       semanticsLabel: 'Toggle favorite',
                     ),
@@ -318,11 +319,7 @@ class _ActionButton extends StatelessWidget {
                 width: 0.5,
               ),
             ),
-            child: Icon(
-              icon,
-              size: 16,
-              color: color,
-            ),
+            child: Icon(icon, size: 16, color: color),
           ),
         ),
       ),

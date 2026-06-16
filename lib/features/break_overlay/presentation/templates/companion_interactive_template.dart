@@ -1,13 +1,9 @@
-import 'dart:async';
-import 'dart:math';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
-import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 
 class CompanionInteractiveTemplate extends StatefulWidget {
@@ -32,502 +28,115 @@ class CompanionInteractiveTemplate extends StatefulWidget {
 }
 
 class _CompanionInteractiveTemplateState
-    extends State<CompanionInteractiveTemplate>
-    with WidgetsBindingObserver {
-  // Companion placement and physics snapping
+    extends State<CompanionInteractiveTemplate> {
   double? _x;
   double? _y;
   bool _isDragging = false;
-  bool _isSnapping = false;
 
-  // AI & Conversation State
-  PetAnimationState _animationState = PetAnimationState.breakMode;
-  String _speechText = 'Take a deep breath. I am here to rest with you!';
-  Timer? _aiBehaviorTimer;
-  Timer? _speechBubbleTimer;
-  bool _showInteractionMenu = false;
-  bool _flipX = false;
+  static const double _widgetSize = 130.0;
 
-  final List<String> _companionTips = [
-    'Remember to relax your shoulders!',
-    'How about drinking a glass of water?',
-    'You can pet me by clicking on me!',
-    'Let\'s stretch together. Try matching my pose!',
-    'Look at something far away for 20 seconds.',
-    'Breathe in... and breathe out...',
-    'A rest now makes your next hour twice as productive.',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    _startSpeechCycle();
-    _startAIBehaviorCycle();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.hidden ||
-        state == AppLifecycleState.paused) {
-      _aiBehaviorTimer?.cancel();
-      _speechBubbleTimer?.cancel();
-    } else if (state == AppLifecycleState.resumed) {
-      _startSpeechCycle();
-      _startAIBehaviorCycle();
-    }
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _aiBehaviorTimer?.cancel();
-    _speechBubbleTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startSpeechCycle() {
-    _speechBubbleTimer = Timer.periodic(const Duration(seconds: 12), (timer) {
-      if (!mounted) return;
-      setState(() {
-        _speechText = _companionTips[Random().nextInt(_companionTips.length)];
-      });
-    });
-  }
-
-  void _startAIBehaviorCycle() {
-    _aiBehaviorTimer = Timer.periodic(const Duration(seconds: 7), (timer) {
-      if (!mounted || _isDragging || _isSnapping) return;
-
-      final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
-      final species = petTheme.species;
-      final random = Random().nextDouble();
-
-      setState(() {
-        if (random < 0.25) {
-          _animationState = PetAnimationState.stretch;
-          if (species == PetSpecies.dog) {
-            _speechText = 'A big dog stretch! Ready for action!';
-          } else {
-            _speechText = 'Mmm, cat stretching feels incredible...';
-          }
-        } else if (random < 0.45) {
-          _animationState = PetAnimationState.sleep;
-          if (species == PetSpecies.dog) {
-            _speechText = 'Zzz... Cozy puppy dreams...';
-          } else {
-            _speechText = 'Zzz... Perfect cozy catnap...';
-          }
-        } else if (random < 0.65) {
-          _animationState = PetAnimationState.lick1;
-          if (species == PetSpecies.dog) {
-            _speechText = 'Cleaning up my puppy paws!';
-          } else {
-            _speechText = '*Carefully grooming its soft whiskers...*';
-          }
-        } else if (random < 0.8) {
-          _animationState = PetAnimationState.walkSide;
-          if (species == PetSpecies.dog) {
-            _speechText = 'Walking around! Zoom zoom!';
-          } else {
-            _speechText = 'Prowling around. I see a bug!';
-          }
-        } else {
-          _animationState = PetAnimationState.breakMode;
-          if (species == PetSpecies.dog) {
-            _speechText = 'Let\'s take a break together! Woof!';
-          } else {
-            _speechText = 'Purr... Time to relax and recharge.';
-          }
-        }
-      });
-    });
-  }
-
-  void _snapToEdges(
-    double screenWidth,
-    double screenHeight,
-    double widgetSize,
-  ) {
+  void _snapToEdge(double sw, double sh) {
     if (_x == null || _y == null) return;
-
-    // Snap to the closest edge: Left, Right, Top, Bottom
-    final distLeft = _x!;
-    final distRight = screenWidth - (_x! + widgetSize);
-    final distTop = _y!;
-    final distBottom = screenHeight - (_y! + widgetSize);
-
-    final minDist = [distLeft, distRight, distTop, distBottom].reduce(min);
-
+    final dists = {
+      'left': _x!,
+      'right': sw - (_x! + _widgetSize),
+      'top': _y!,
+      'bottom': sh - (_y! + _widgetSize),
+    };
+    final nearest = dists.entries.reduce((a, b) => a.value < b.value ? a : b);
     setState(() {
-      _isSnapping = true;
-      if (minDist == distLeft) {
-        _x = 20;
-        _flipX = false;
-      } else if (minDist == distRight) {
-        _x = screenWidth - widgetSize - 20;
-        _flipX = true;
-      } else if (minDist == distTop) {
-        _y = 20;
-      } else {
-        _y = screenHeight - widgetSize - 80; // offset for bottom bar
-      }
-    });
-
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        setState(() {
-          _isSnapping = false;
-        });
+      switch (nearest.key) {
+        case 'left':
+          _x = 24;
+          break;
+        case 'right':
+          _x = sw - _widgetSize - 24;
+          break;
+        case 'top':
+          _y = 40;
+          break;
+        case 'bottom':
+          _y = sh - _widgetSize - 90;
+          break;
       }
     });
   }
 
-  String _formatDuration(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  String _formatTime(int s) {
+    final m = s ~/ 60;
+    final sec = s % 60;
+    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
-    final species = petTheme.species;
-    const double widgetSize = 130.0;
-    final bool enableAnimations =
-        widget.settings.enableAnimations &&
-        !MediaQuery.of(context).disableAnimations;
+    final isShort = widget.breakInfo.type == BreakType.short;
+    final compact = MediaQuery.of(context).size.width < 760;
 
-    return Material(
-      color: Colors.transparent,
+    return ColoredBox(
+      color: const Color(0xFF0A0A0F),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          // Initialize coordinates at bottom center if not set
-          if (_x == null || _y == null) {
-            _x = constraints.maxWidth / 2 - (widgetSize / 2);
-            _y = constraints.maxHeight - widgetSize - 120;
-          }
+          _x ??= constraints.maxWidth / 2 - _widgetSize / 2;
+          _y ??= constraints.maxHeight - _widgetSize - 130;
 
           return Stack(
             fit: StackFit.expand,
             children: [
-              const _CompanionBackdrop(),
-
-              // Main Subtle Floating Timer Header Card
               Positioned(
-                top: 40,
+                top: compact ? 20 : 36,
                 left: 0,
                 right: 0,
                 child: Center(
-                  child: RepaintBoundary(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF111318).withValues(alpha: 0.88),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFA7F3D0),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _formatDuration(widget.remainingSeconds),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.5,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Container(
-                            width: 1,
-                            height: 20,
-                            color: Colors.white.withValues(alpha: 0.15),
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            widget.breakInfo.type == BreakType.short
-                                ? 'Mindful Rest'
-                                : 'Step Away & Unwind',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ],
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F1116).withValues(alpha: 0.7),
+                      borderRadius: BorderRadius.circular(100),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
                       ),
                     ),
-                  ),
-                ),
-              ),
-
-              // Interactive Companion Widget
-              AnimatedPositioned(
-                duration: _isDragging || !enableAnimations
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic,
-                left: _x,
-                top: _y,
-                child: GestureDetector(
-                  onPanStart: (details) {
-                    setState(() {
-                      _isDragging = true;
-                      _animationState = PetAnimationState.walkSide;
-                    });
-                  },
-                  onPanUpdate: (details) {
-                    setState(() {
-                      _x = (_x! + details.delta.dx).clamp(
-                        0,
-                        constraints.maxWidth - widgetSize,
-                      );
-                      _y = (_y! + details.delta.dy).clamp(
-                        0,
-                        constraints.maxHeight - widgetSize - 60,
-                      );
-                    });
-                  },
-                  onPanEnd: (details) {
-                    setState(() {
-                      _isDragging = false;
-                    });
-                    _snapToEdges(
-                      constraints.maxWidth,
-                      constraints.maxHeight,
-                      widgetSize,
-                    );
-                  },
-                  onTap: () {
-                    // Quick Action Menu on Click
-                    setState(() {
-                      _showInteractionMenu = !_showInteractionMenu;
-                      _animationState = PetAnimationState.excited;
-                      _speechText = 'Hehe, that tickles!';
-                    });
-                  },
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.grab,
-                    child: Stack(
-                      clipBehavior: Clip.none,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Speech Bubble above Pet
-                        Positioned(
-                          top: -75,
-                          left: -60,
-                          right: -60,
-                          child: Center(
-                            child: AnimatedOpacity(
-                              opacity: 1.0,
-                              duration: enableAnimations
-                                  ? const Duration(milliseconds: 300)
-                                  : Duration.zero,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF1E1E24,
-                                  ).withValues(alpha: 0.85),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.1),
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.3,
-                                      ),
-                                      blurRadius: 12,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    Text(
-                                      _speechText,
-                                      textAlign: TextAlign.center,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                        fontFamily: 'Inter',
-                                      ),
-                                    ),
-                                    // Bubble Tail
-                                    Positioned(
-                                      bottom: -6,
-                                      left: 0,
-                                      right: 0,
-                                      child: Center(
-                                        child: CustomPaint(
-                                          size: const Size(12, 6),
-                                          painter: _BubbleTailPainter(),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF7EC8E3),
+                            shape: BoxShape.circle,
                           ),
                         ),
-
-                        // Custom Hover Interaction Menu
-                        if (_showInteractionMenu)
-                          Positioned(
-                            bottom: -50,
-                            left: -60,
-                            right: -60,
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: const Color(
-                                    0xFF1E1E24,
-                                  ).withValues(alpha: 0.92),
-                                  borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.12),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    // 1. Stretch
-                                    _buildMenuButton(
-                                      icon: CupertinoIcons.sparkles,
-                                      color: const Color(0xFFFFD700),
-                                      onPressed: () {
-                                        setState(() {
-                                          _animationState =
-                                              PetAnimationState.stretch;
-                                          if (species == PetSpecies.dog) {
-                                            _speechText =
-                                                'A big dog stretch! Ready for action!';
-                                          } else {
-                                            _speechText =
-                                                'Mmm, cat stretching feels incredible...';
-                                          }
-                                          _showInteractionMenu = false;
-                                        });
-                                      },
-                                    ),
-                                    // 2. Pet / Groom
-                                    _buildMenuButton(
-                                      icon: CupertinoIcons.hand_raised_fill,
-                                      color: const Color(0xFFFF9500),
-                                      onPressed: () {
-                                        setState(() {
-                                          _animationState =
-                                              PetAnimationState.lick1;
-                                          if (species == PetSpecies.dog) {
-                                            _speechText =
-                                                'Happily licking your screen! Slurp!';
-                                          } else {
-                                            _speechText =
-                                                '*Carefully grooming its soft whiskers...*';
-                                          }
-                                          _showInteractionMenu = false;
-                                        });
-                                      },
-                                    ),
-                                    // 3. Play / Move
-                                    _buildMenuButton(
-                                      icon: CupertinoIcons.play_arrow_solid,
-                                      color: const Color(0xFF34C759),
-                                      onPressed: () {
-                                        setState(() {
-                                          _animationState =
-                                              PetAnimationState.walkSide;
-                                          if (species == PetSpecies.dog) {
-                                            _speechText =
-                                                'Zooms around hyperactively!';
-                                          } else {
-                                            _speechText =
-                                                'Stalking a phantom laser pointer...';
-                                          }
-                                          _showInteractionMenu = false;
-                                        });
-                                      },
-                                    ),
-                                    // 4. Excited / Love
-                                    _buildMenuButton(
-                                      icon: CupertinoIcons.heart_fill,
-                                      color: const Color(0xFFFF453A),
-                                      onPressed: () {
-                                        setState(() {
-                                          _animationState =
-                                              PetAnimationState.excited;
-                                          if (species == PetSpecies.dog) {
-                                            _speechText =
-                                                'Happy barks and tail wags! Woof!';
-                                          } else {
-                                            _speechText =
-                                                '*Happy purrs and headbutts! Meow!*';
-                                          }
-                                          _showInteractionMenu = false;
-                                        });
-                                      },
-                                    ),
-                                    // 5. Sleep
-                                    _buildMenuButton(
-                                      icon: CupertinoIcons.moon_fill,
-                                      color: const Color(0xFF00E5FF),
-                                      onPressed: () {
-                                        setState(() {
-                                          _animationState =
-                                              PetAnimationState.sleep;
-                                          if (species == PetSpecies.dog) {
-                                            _speechText =
-                                                'Soft puppy snores... Zzz.';
-                                          } else {
-                                            _speechText =
-                                                'Cozy catnap mode: activated.';
-                                          }
-                                          _showInteractionMenu = false;
-                                        });
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                        const SizedBox(width: 10),
+                        Text(
+                          _formatTime(widget.remainingSeconds),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w300,
+                            fontFamily: 'Inter',
+                            fontFeatures: [FontFeature.tabularFigures()],
                           ),
-
-                        // Companion Sprite rendering
-                        SizedBox(
-                          width: widgetSize,
-                          height: widgetSize,
-                          child: Center(
-                            child: CompanionSpriteWidget(
-                              petTheme: petTheme,
-                              animationState: _animationState,
-                              scale: 3.5,
-                              flipX: _flipX,
-                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 1,
+                          height: 14,
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          isShort ? 'Mindful rest' : 'Step away & unwind',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.55),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Inter',
                           ),
                         ),
                       ],
@@ -536,67 +145,117 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Bottom Bar: Current Time & Skip
+              AnimatedPositioned(
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                left: _x! - 40,
+                top: _y! - 90,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 220),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F1115).withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Text(
+                      widget.breakInfo.tip,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        fontFamily: 'Inter',
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              AnimatedPositioned(
+                duration: _isDragging
+                    ? Duration.zero
+                    : const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                left: _x,
+                top: _y,
+                child: GestureDetector(
+                  onPanStart: (_) => setState(() => _isDragging = true),
+                  onPanUpdate: (d) {
+                    setState(() {
+                      _x = (_x! + d.delta.dx).clamp(
+                        0.0,
+                        constraints.maxWidth - _widgetSize,
+                      );
+                      _y = (_y! + d.delta.dy).clamp(
+                        0.0,
+                        constraints.maxHeight - _widgetSize - 80,
+                      );
+                    });
+                  },
+                  onPanEnd: (_) {
+                    setState(() => _isDragging = false);
+                    _snapToEdge(constraints.maxWidth, constraints.maxHeight);
+                  },
+                  child: SizedBox(
+                    width: _widgetSize,
+                    height: _widgetSize,
+                    child: CompanionSpriteWidget(
+                      petTheme: petTheme,
+                      animationState: PetAnimationState.idle,
+                      scale: 3.5,
+                    ),
+                  ),
+                ),
+              ),
+
               Positioned(
-                bottom: 30,
-                left: 40,
-                right: 40,
+                bottom: compact ? 20 : 36,
+                left: compact ? 24 : 40,
+                right: compact ? 24 : 40,
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       DateFormat('HH:mm').format(DateTime.now()),
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.3),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
                         fontFamily: 'Inter',
                       ),
                     ),
+                    const Spacer(),
                     Text(
-                      'Drag to reposition',
+                      'Drag companion anywhere',
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        fontSize: 12,
+                        color: Colors.white.withValues(alpha: 0.22),
+                        fontSize: 11,
                         fontStyle: FontStyle.italic,
                         fontFamily: 'Inter',
                       ),
                     ),
-                    if (widget.onSkip != null)
+                    const Spacer(),
+                    if (!widget.settings.strictMode && widget.onSkip != null)
                       GestureDetector(
                         onTap: widget.onSkip,
                         child: MouseRegion(
                           cursor: SystemMouseCursors.click,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 18,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text(
-                                  'Skip Break',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                Icon(
-                                  CupertinoIcons.arrow_right,
-                                  size: 12,
-                                  color: Colors.white.withValues(alpha: 0.8),
-                                ),
-                              ],
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.35),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ),
@@ -610,75 +269,4 @@ class _CompanionInteractiveTemplateState
       ),
     );
   }
-
-  Widget _buildMenuButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onPressed,
-  }) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: const BoxDecoration(shape: BoxShape.circle),
-          child: Icon(icon, size: 14, color: color),
-        ),
-      ),
-    );
-  }
-}
-
-class _BubbleTailPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = const Color(0xFF1E1E24).withValues(alpha: 0.85)
-      ..style = PaintingStyle.fill;
-
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width / 2, size.height)
-      ..lineTo(size.width, 0)
-      ..close();
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _CompanionBackdrop extends StatelessWidget {
-  const _CompanionBackdrop();
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _CompanionBackdropPainter(),
-      child: const SizedBox.expand(),
-    );
-  }
-}
-
-class _CompanionBackdropPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()..color = const Color(0xFF07080A).withValues(alpha: 0.92),
-    );
-
-    final railPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.04)
-      ..strokeWidth = 1;
-    for (double x = 36; x < size.width; x += 84) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), railPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

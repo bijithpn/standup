@@ -51,7 +51,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ── Load release config from .env ─────────────────────────────────────────────
-ENV_FILE="$PROJECT_ROOT/.env"
+ENV_FILE="$PROJECT_ROOT/.env.release"
 if [[ -f "$ENV_FILE" ]]; then
   # shellcheck source=/dev/null
   set -o allexport

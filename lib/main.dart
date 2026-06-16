@@ -1,8 +1,22 @@
 import 'package:breakmate/main_prod.dart' as prod;
 import 'package:breakmate/main_dev.dart' as dev;
 import 'package:flutter/foundation.dart';
+import 'package:breakmate/main_common.dart' as common;
 
-export 'package:breakmate/main_common.dart' show overlayMain, companionMain;
+@pragma('vm:entry-point')
+void overlayMain() {
+  common.overlayMain();
+}
+
+@pragma('vm:entry-point')
+void companionMain() {
+  common.companionMain();
+}
+
+@pragma('vm:entry-point')
+void pipMain() {
+  common.pipMain();
+}
 
 void main() {
   if (kDebugMode) {

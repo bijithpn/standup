@@ -1,7 +1,20 @@
 import 'package:breakmate/core/config/flavor_config.dart';
-import 'package:breakmate/main_common.dart';
+import 'package:breakmate/main_common.dart' as common;
 
-export 'package:breakmate/main_common.dart' show overlayMain, companionMain;
+@pragma('vm:entry-point')
+void overlayMain() {
+  common.overlayMain();
+}
+
+@pragma('vm:entry-point')
+void companionMain() {
+  common.companionMain();
+}
+
+@pragma('vm:entry-point')
+void pipMain() {
+  common.pipMain();
+}
 
 void main() {
   FlavorConfig(
@@ -10,5 +23,5 @@ void main() {
     flavorType: FlavorType.dev,
     sentryDsn: 'DEV_DSN_HERE',
   );
-  mainCommon(FlavorConfig.instance);
+  common.mainCommon(FlavorConfig.instance);
 }

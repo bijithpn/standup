@@ -60,7 +60,6 @@ class _RingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = (size.width - strokeWidth) / 2;
 
-    // Track
     final trackPaint = Paint()
       ..color = trackColor
       ..strokeWidth = strokeWidth
@@ -69,7 +68,6 @@ class _RingPainter extends CustomPainter {
 
     canvas.drawCircle(center, radius, trackPaint);
 
-    // Progress arc
     final progressPaint = Paint()
       ..color = color
       ..strokeWidth = strokeWidth
