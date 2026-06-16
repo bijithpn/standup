@@ -4,7 +4,91 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-        <item>
+                <item>
+            <title>Version 1.4.0</title>
+            <pubDate>Tue, 16 Jun 2026 10:45:38 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.4.0</h3>
+                <p># BreakMate Release Notes — v1.4.0 (Build 33)
+
+**Date:** June 16, 2026  
+**Release Title:** Desktop Companion Engine &amp; Environment Builder
+
+## Summary
+
+This major update introduces a completely overhauled Desktop Companion experience. We've built a custom sprite animation engine, a flexible environment builder, and an interactive Picture-in-Picture (PiP) overlay to ensure your companion stays with you across all your workspaces.
+
+---
+
+## 🚀 What's New
+
+### 🐾 Desktop Companion Engine
+
+A new animation and behavior system that makes your desktop pets feel more alive.
+
+- **Sprite Rendering Engine:** Optimized for low CPU usage while supporting complex animations.
+- **Advanced State Machines:** Pets now have more fluid transitions between idling, moving, and resting.
+- **Ground-Padding Detection:** Dynamic stabilization ensures pets stay perfectly aligned with their environment.
+
+### 🌎 Environment Builder
+
+Customize your companion's world exactly how you like it.
+
+- **Live Preview:** See changes in real-time as you build your environment.
+- **Theme Configuration:** New repository-backed themes for consistent world-building.
+- **Interactive Decorations:** Added background birds and environment-aware props.
+
+### 🖼️ Interactive PiP Overlay
+
+Keep your companion visible without it getting in the way.
+
+- **Cross-Workspace Visibility:** High-performance overlay window that floats above other apps.
+- **Smart Initialization:** Updated persistence for PiP settings.
+
+---
+
+## 🛠️ Improvements &amp; Refinements
+
+### 📦 Centralized Storage System
+
+- Migrated to a unified `StorageService`.
+- Built-in data migration logic for seamless updates.
+- Multi-process access management for improved stability.
+
+### ⚙️ Infrastructure &amp; Architecture
+
+- **Service Bootstrapping:** Modernized startup sequence for faster app launches.
+- **Dependency Injection:** Refined DI configuration using a modular pattern.
+- **NPC Unification:** Consolidated movement and component logic for better performance.
+
+---
+
+## 🐞 Bug Fixes
+
+- **Painting Errors:** Fixed occasional zero-size rendering issues on window resize.
+- **High-DPI Support:** Improved crispness and scaling on 4K Windows displays.
+- **UI Cleanup:** Removed intrusive scrollbars from settings and dashboard pages.
+
+---
+
+## 📊 Build Details
+
+- **Version:** 1.4.0
+- **Build Number:** 33
+- **Commit Range:** v1.3.0...HEAD</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.4.0/BreakMate-Installer.dmg"
+                       sparkle:version="33"
+                       sparkle:shortVersionString="1.4.0"
+                       sparkle:edSignature="B9C1ivZGVoIFTYhKTLEWLjjfWtkKcDc7jOwMVPE8WcspmTY1QGC0HnrIrL6h03bXMz+ouWVLaadB8QOk/y6GCQ=="
+                       length="54769616"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.3.0</title>
             <pubDate>Tue, 02 Jun 2026 10:00:00 +0000</pubDate>
             <description><![CDATA[
