@@ -50,11 +50,20 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
             let frame = screen.frame
             let visibleFrame = screen.visibleFrame
             
-            // TODO(intersamrt): Replace localizedName/index fallback with a
-            // CoreGraphics display UUID so pinned companion displays survive
-            // monitor reorder and duplicate display names.
             var displayId = "Display_\(index)"
-            if #available(macOS 10.15, *) {
+            if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
+                let displayID = CGDirectDisplayID(screenNumber.uint32Value)
+                if let uuidRef = CGDisplayCreateUUIDFromDisplayID(displayID) {
+                    let uuidString = CFUUIDCreateString(nil, uuidRef.takeRetainedValue()) as String?
+                    if let uuid = uuidString {
+                        displayId = uuid
+                    } else {
+                        displayId = String(displayID)
+                    }
+                } else {
+                    displayId = String(displayID)
+                }
+            } else if #available(macOS 10.15, *) {
                 displayId = screen.localizedName
             }
             

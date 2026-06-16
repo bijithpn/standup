@@ -9,7 +9,6 @@ import 'package:breakmate/core/storage/models/settings_snapshot.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
-import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 class SettingsRepository extends ChangeNotifier {
@@ -87,19 +86,15 @@ class SettingsRepository extends ChangeNotifier {
         }
       }
 
-      // hasCompletedOnboarding is a ONE-WAY flag (false → true, never back).
-      // We take the OR so that the onboarding is NEVER shown again if any of them is true.
+      // The onboarding completion flag is a one-way toggle (false -> true).
+      // We check both the ObjectBox settings snapshot and the database key-value fallback to ensure consistency.
       final snapshotOnboarding = snapshot?.hasCompletedOnboarding ?? false;
       final kvOnboarding = _storage.getBool('has_completed_onboarding');
-      final simplePrefsOnboarding = SimplePrefs.instance.getBool(
-        'has_completed_onboarding',
-      );
-      final onboardingDone =
-          snapshotOnboarding || kvOnboarding || simplePrefsOnboarding;
+      final onboardingDone = snapshotOnboarding || kvOnboarding;
 
       debugPrint(
         '[SettingsRepo] Onboarding reconciliation: '
-        'snapshot=$snapshotOnboarding, kv=$kvOnboarding, simplePrefs=$simplePrefsOnboarding → resolved=$onboardingDone',
+        'snapshot=$snapshotOnboarding, kv=$kvOnboarding → resolved=$onboardingDone',
       );
 
       if (onboardingDone && !_current.hasCompletedOnboarding) {
@@ -109,10 +104,6 @@ class SettingsRepository extends ChangeNotifier {
       if (onboardingDone && !kvOnboarding) {
         debugPrint('[SettingsRepo] Back-filling KV onboarding flag.');
         unawaited(_storage.setBool('has_completed_onboarding', true));
-      }
-      if (onboardingDone && !simplePrefsOnboarding) {
-        debugPrint('[SettingsRepo] Back-filling SimplePrefs onboarding flag.');
-        SimplePrefs.instance.setBool('has_completed_onboarding', true);
       }
       if (onboardingDone && !snapshotOnboarding && snapshot != null) {
         debugPrint('[SettingsRepo] Back-filling snapshot onboarding flag.');
@@ -246,10 +237,7 @@ class SettingsRepository extends ChangeNotifier {
         'pip_background_style',
         defaultValue: 'dark',
       ),
-      pipOpacity: _storage.getDouble(
-        'pip_opacity',
-        defaultValue: 1.0,
-      ),
+      pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
       pipDraggableClickable: _storage.getBool(
         'pip_draggable_clickable',
         defaultValue: true,
@@ -387,9 +375,7 @@ class SettingsRepository extends ChangeNotifier {
               'cat'
           ? 'companion'
           : _storage.getString('tray_icon_style', defaultValue: 'companion'),
-      hasCompletedOnboarding:
-          _storage.getBool('has_completed_onboarding') ||
-          SimplePrefs.instance.getBool('has_completed_onboarding'),
+      hasCompletedOnboarding: _storage.getBool('has_completed_onboarding'),
       dailyWorkGoalHours: _storage.getInt(
         'daily_work_goal_hours',
         defaultValue: 8,
@@ -461,10 +447,7 @@ class SettingsRepository extends ChangeNotifier {
         'pip_background_style',
         defaultValue: 'dark',
       ),
-      pipOpacity: _storage.getDouble(
-        'pip_opacity',
-        defaultValue: 1.0,
-      ),
+      pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
       pipDraggableClickable: _storage.getBool(
         'pip_draggable_clickable',
         defaultValue: true,
@@ -476,22 +459,18 @@ class SettingsRepository extends ChangeNotifier {
     debugPrint('[SettingsRepo] Completing onboarding...');
     _current = _current.copyWith(hasCompletedOnboarding: true);
     await _storage.setBool('has_completed_onboarding', true);
-    SimplePrefs.instance.setBool('has_completed_onboarding', true);
     await save(_current);
     final kvVerify = _storage.getBool('has_completed_onboarding');
-    final simpleVerify = SimplePrefs.instance.getBool(
-      'has_completed_onboarding',
-    );
     final snapVerify =
         _storage.settingsBox?.get(1)?.hasCompletedOnboarding ?? false;
-    if (!kvVerify || !simpleVerify || !snapVerify) {
+    if (!kvVerify || !snapVerify) {
       debugPrint(
         '[SettingsRepo] Onboarding flag was not fully persisted. '
-        'KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
+        'KV=$kvVerify, snapshot=$snapVerify',
       );
     } else {
       debugPrint(
-        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, SimplePrefs=$simpleVerify, snapshot=$snapVerify',
+        '[SettingsRepo] Onboarding persisted. KV=$kvVerify, snapshot=$snapVerify',
       );
     }
   }
@@ -591,10 +570,6 @@ class SettingsRepository extends ChangeNotifier {
       'has_completed_onboarding',
       settings.hasCompletedOnboarding,
     );
-    SimplePrefs.instance.setBool(
-      'has_completed_onboarding',
-      settings.hasCompletedOnboarding,
-    );
     await _storage.setInt(
       'short_break_interval',
       settings.shortBreakIntervalMinutes,
@@ -691,10 +666,7 @@ class SettingsRepository extends ChangeNotifier {
       'pip_background_style',
       settings.pipBackgroundStyle,
     );
-    await _storage.setDouble(
-      'pip_opacity',
-      settings.pipOpacity,
-    );
+    await _storage.setDouble('pip_opacity', settings.pipOpacity);
     await _storage.setBool(
       'pip_draggable_clickable',
       settings.pipDraggableClickable,

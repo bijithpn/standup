@@ -76,7 +76,7 @@ class ClassicSlideshowTemplate extends StatelessWidget {
     }
 
     return Material(
-      color: Colors.black,
+      color: const Color(0xFF0A0A0F),
       child: Stack(
         fit: StackFit.expand,
         children: [

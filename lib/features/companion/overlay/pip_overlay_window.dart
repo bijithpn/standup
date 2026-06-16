@@ -17,6 +17,7 @@ import 'package:breakmate/features/companion/interaction/interaction_controller.
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
@@ -376,8 +377,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         _acceptsMouse = accepts;
         await _windowManager.setAcceptsMouse(accepts);
       }
-    } catch (e) {
-      throw Exception(e);
+    } catch (e, st) {
+      throw AppException(
+        type: AppErrorType.ui,
+        message: 'PiP click-through check failed: ${e.toString()}',
+        originalError: e,
+        stackTrace: st,
+      );
     }
   }
 
@@ -617,28 +623,30 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                         ),
                       ),
 
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: _dragHandleHeight,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onPanStart: (_) => _windowManager.startDrag(),
-                      child: Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isLight
-                                ? const Color(0xFF161622).withValues(alpha: 0.15)
-                                : Colors.white.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(2),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: _dragHandleHeight,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onPanStart: (_) => _windowManager.startDrag(),
+                        child: Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isLight
+                                  ? const Color(
+                                      0xFF161622,
+                                    ).withValues(alpha: 0.15)
+                                  : Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
                     Positioned(
                       top: 14,
@@ -661,7 +669,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                         onPointerHover: _onHover,
                         child: GestureDetector(
                           behavior: HitTestBehavior.translucent,
-                          onTapUp: (details) => _handleTapUp(details.localPosition),
+                          onTapUp: (details) =>
+                              _handleTapUp(details.localPosition),
                           onDoubleTap: _onPetDoubleTap,
                           onPanStart: _onDragStart,
                           onPanUpdate: _onDragUpdate,
@@ -670,33 +679,33 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                       ),
                     ),
 
-                  if (_feedbackText != null)
-                    Positioned(
-                      top: 50,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 150),
-                          child: _FeedbackToast(
-                            key: ValueKey(_feedbackText),
-                            text: _feedbackText!,
+                    if (_feedbackText != null)
+                      Positioned(
+                        top: 50,
+                        left: 0,
+                        right: 0,
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 150),
+                            child: _FeedbackToast(
+                              key: ValueKey(_feedbackText),
+                              text: _feedbackText!,
+                            ),
                           ),
                         ),
                       ),
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: _CloseButton(
+                        onTap: _closeWindow,
+                        isLightBackground: isLight,
+                      ),
                     ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: _CloseButton(
-                      onTap: _closeWindow,
-                      isLightBackground: isLight,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            _InteractionBar(
+              _InteractionBar(
                 expandFraction: _barWidth,
                 isExpanded: _barExpanded,
                 throwDisabled: _throwDisabled,
@@ -709,12 +718,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 onToggleCollapse: _toggleBar,
                 isLightBackground: isLight,
               ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
 
 const double _kInteractionBarHeight = 52.0;

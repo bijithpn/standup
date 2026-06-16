@@ -97,6 +97,7 @@ class WindDownTemplate extends StatelessWidget {
 class _WindDownPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final center = Offset(size.width * 0.5, size.height);
     final paint = Paint()
       ..shader =

@@ -167,7 +167,8 @@ class GroundNpcComponent extends SpriteAnimationComponent
 
       if (sinVal > 0) {
         final double hopOffset = sinVal * hopHeight;
-        position.y = targetGroundY + (_bottomPadding * _scaleFactor) - hopOffset;
+        position.y =
+            targetGroundY + (_bottomPadding * _scaleFactor) - hopOffset;
 
         final double direction = _targetX > position.x ? 1.0 : -1.0;
         position.x += direction * _speed * sinVal * 1.5 * dt;

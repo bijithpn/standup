@@ -108,10 +108,11 @@ class FlyingNpcComponent extends SpriteAnimationComponent
     // Move bird
     _waveTimer += dt;
     position.x += _direction * _speed * dt;
-    position.y = _baseY + sin(_waveTimer * 4.5) * 6.0 + cos(_waveTimer * 1.8) * 10.0;
+    position.y =
+        _baseY + sin(_waveTimer * 4.5) * 6.0 + cos(_waveTimer * 1.8) * 10.0;
 
     final double dy = position.y - lastY;
-    
+
     // Scale animation speed to vertical flight direction (ascending = active wing flap, descending = gliding glide)
     double animSpeed = 0.8;
     if (dy < -0.05) {
@@ -119,7 +120,7 @@ class FlyingNpcComponent extends SpriteAnimationComponent
     } else if (dy > 0.05) {
       animSpeed = 0.3;
     }
-    
+
     super.update(dt * animSpeed);
 
     // Check if offscreen

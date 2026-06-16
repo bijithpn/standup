@@ -100,39 +100,42 @@ void main() {
       },
     );
 
-    test('.tmp file is cleaned up after atomic write (renamed to target)', () async {
-      const config = PetConfigV2(
-        mode: PetMode.freeRoam,
-        pinnedDisplayId: null,
-        constraintWindowBounds: Rect.fromLTWH(100, 100, 300, 300),
-        lastAnchorPoint: Offset.zero,
-        themeId: 'grey_cat',
-        petName: 'TestPet',
-        scale: 6.0,
-      );
+    test(
+      '.tmp file is cleaned up after atomic write (renamed to target)',
+      () async {
+        const config = PetConfigV2(
+          mode: PetMode.freeRoam,
+          pinnedDisplayId: null,
+          constraintWindowBounds: Rect.fromLTWH(100, 100, 300, 300),
+          lastAnchorPoint: Offset.zero,
+          themeId: 'grey_cat',
+          petName: 'TestPet',
+          scale: 6.0,
+        );
 
-      final sp = _make(tempDir);
-      sp.scheduleWrite(config);
-      await sp.flushPendingWrite();
+        final sp = _make(tempDir);
+        sp.scheduleWrite(config);
+        await sp.flushPendingWrite();
 
-      final configFile = File(
-        '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
-      );
-      final tmpFile = File(
-        '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json.tmp',
-      );
+        final configFile = File(
+          '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json',
+        );
+        final tmpFile = File(
+          '${tempDir.path}${Platform.pathSeparator}pet_config_v2.json.tmp',
+        );
 
-      expect(
-        configFile.existsSync(),
-        isTrue,
-        reason: 'Config file should exist after flush',
-      );
-      expect(
-        tmpFile.existsSync(),
-        isFalse,
-        reason: '.tmp file should be cleaned up (renamed) after flush',
-      );
-    });
+        expect(
+          configFile.existsSync(),
+          isTrue,
+          reason: 'Config file should exist after flush',
+        );
+        expect(
+          tmpFile.existsSync(),
+          isFalse,
+          reason: '.tmp file should be cleaned up (renamed) after flush',
+        );
+      },
+    );
 
     test('flushPendingWrite is a no-op when nothing is dirty', () async {
       final sp = _make(tempDir);
@@ -145,15 +148,18 @@ void main() {
   });
 
   group('SettingsPersistence error handling (Req 11.7)', () {
-    test('write to bad path does not crash — engine continues normally', () async {
-      // Use a deeply nested non-existent path with no parent dirs.
-      final badPath =
-          '${tempDir.path}${Platform.pathSeparator}deep${Platform.pathSeparator}nested${Platform.pathSeparator}missing${Platform.pathSeparator}pet_config_v2.json';
-      final sp = SettingsPersistence(configPathOverride: badPath);
-      sp.scheduleWrite(PetConfigV2.defaults());
+    test(
+      'write to bad path does not crash — engine continues normally',
+      () async {
+        // Use a deeply nested non-existent path with no parent dirs.
+        final badPath =
+            '${tempDir.path}${Platform.pathSeparator}deep${Platform.pathSeparator}nested${Platform.pathSeparator}missing${Platform.pathSeparator}pet_config_v2.json';
+        final sp = SettingsPersistence(configPathOverride: badPath);
+        sp.scheduleWrite(PetConfigV2.defaults());
 
-      // Must NOT throw regardless of I/O failure.
-      expect(sp.flushPendingWrite(), completes);
-    });
+        // Must NOT throw regardless of I/O failure.
+        expect(sp.flushPendingWrite(), completes);
+      },
+    );
   });
 }

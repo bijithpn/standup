@@ -89,11 +89,11 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
               return Consumer<SettingsRepository>(
                 builder: (context, settingsRepo, _) {
                   final settings = settingsRepo.currentSettings;
-  
+
                   if (!settings.hasCompletedOnboarding) {
                     return const OnboardingPage();
                   }
-  
+
                   return const Material(
                     type: MaterialType.transparency,
                     child: MainLayout(),

@@ -124,6 +124,7 @@ class _WavePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final opacities = [0.07, 0.11, 0.05];
     final cy = size.height / 2;
 

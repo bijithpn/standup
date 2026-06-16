@@ -310,7 +310,13 @@ Future<List<int>> _getPidsListeningOnPort(int port) async {
     }
   } else {
     try {
-      final result = await Process.run('lsof', ['-t', '-s', 'TCP:LISTEN', '-i', ':$port']);
+      final result = await Process.run('lsof', [
+        '-t',
+        '-s',
+        'TCP:LISTEN',
+        '-i',
+        ':$port',
+      ]);
       if (result.exitCode == 0) {
         final lines = LineSplitter.split(result.stdout.toString());
         for (final line in lines) {
@@ -470,13 +476,19 @@ void mainCommon(FlavorConfig config) async {
               try {
                 final pids = await _getPidsListeningOnPort(port);
                 if (pids.isNotEmpty) {
-                  debugPrint('Startup: Found stale processes holding port $port: $pids. Terminating...');
+                  debugPrint(
+                    'Startup: Found stale processes holding port $port: $pids. Terminating...',
+                  );
                   for (final targetPid in pids) {
                     try {
                       final success = Process.killPid(targetPid);
-                      debugPrint('Startup: Terminated stale PID $targetPid (success=$success)');
+                      debugPrint(
+                        'Startup: Terminated stale PID $targetPid (success=$success)',
+                      );
                     } catch (e) {
-                      debugPrint('Startup: Failed to terminate PID $targetPid: $e');
+                      debugPrint(
+                        'Startup: Failed to terminate PID $targetPid: $e',
+                      );
                     }
                   }
                   await Future.delayed(const Duration(milliseconds: 500));

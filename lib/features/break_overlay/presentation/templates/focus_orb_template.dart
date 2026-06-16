@@ -30,62 +30,65 @@ class FocusOrbTemplate extends StatelessWidget {
     final breakName = isShort ? 'Eye rest' : 'Long break';
     const accent = Color(0xFF8BC9D4);
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        RepaintBoundary(
-          child: CustomPaint(painter: _OrbPainter(accent: accent)),
-        ),
-        Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _formatTime(remainingSeconds),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 72,
-                  fontWeight: FontWeight.w200,
-                  fontFamily: 'Inter',
-                  fontFeatures: [FontFeature.tabularFigures()],
-                  letterSpacing: -2,
-                  height: 1.0,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                breakName,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.33),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  fontFamily: 'Inter',
-                ),
-              ),
-            ],
+    return ColoredBox(
+      color: const Color(0xFF0A0A0F),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          RepaintBoundary(
+            child: CustomPaint(painter: _OrbPainter(accent: accent)),
           ),
-        ),
-        if (!settings.strictMode && onSkip != null)
-          Positioned(
-            bottom: 36,
-            right: 40,
-            child: GestureDetector(
-              onTap: onSkip,
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Text(
-                  'Skip',
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _formatTime(remainingSeconds),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 72,
+                    fontWeight: FontWeight.w200,
+                    fontFamily: 'Inter',
+                    fontFeatures: [FontFeature.tabularFigures()],
+                    letterSpacing: -2,
+                    height: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  breakName,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: Colors.white.withValues(alpha: 0.33),
                     fontSize: 13,
                     fontWeight: FontWeight.w400,
                     fontFamily: 'Inter',
                   ),
                 ),
-              ),
+              ],
             ),
           ),
-      ],
+          if (!settings.strictMode && onSkip != null)
+            Positioned(
+              bottom: 36,
+              right: 40,
+              child: GestureDetector(
+                onTap: onSkip,
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.click,
+                  child: Text(
+                    'Skip',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.35),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -97,6 +100,7 @@ class _OrbPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     canvas.drawRect(
       Offset.zero & size,
       Paint()..color = const Color(0xFF0A0A0F),

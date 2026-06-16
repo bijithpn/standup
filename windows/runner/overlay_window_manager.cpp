@@ -53,6 +53,9 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     auto window = std::make_unique<FlutterWindow>(project);
     window->SetIsOverlay(true);
 
+    // Fetch per-monitor DPI dynamically to calculate logical bounds from physical bounds.
+    // This is required because Win32 monitor coordinates are physical pixels, but the
+    // Flutter window framework expects logical points to scale UI consistently.
     UINT dpiX = 96, dpiY = 96;
     HMODULE hUser32 = LoadLibrary(L"user32.dll");
     if (hUser32) {
@@ -86,6 +89,8 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
       window->Show();
 
       if (data->is_strict_mode) {
+        // Enforce strict focus. Note that SetForegroundWindow is subject to Win32 restrictions;
+        // if the main engine process lacks foreground permission, the OS might only flash the taskbar icon.
         SetForegroundWindow(window->GetHandle());
       }
 
@@ -147,4 +152,25 @@ void OverlayWindowManager::HandleEscapeKey() {
           std::make_unique<flutter::EncodableValue>(flutter::EncodableMap()));
     }
   }
+}
+
+void OverlayWindowManager::OnDisplayChange() {
+  if (overlay_windows_.empty()) return;
+
+  // Re-create overlay windows to align with the new display configuration or DPI.
+  bool strict = false;
+  auto it = last_show_args_.find(flutter::EncodableValue("strictMode"));
+  if (it != last_show_args_.end() && std::holds_alternative<bool>(it->second)) {
+    strict = std::get<bool>(it->second);
+  }
+
+  std::map<std::string, flutter::EncodableValue> args;
+  for (const auto& [key, value] : last_show_args_) {
+    if (std::holds_alternative<std::string>(key)) {
+      args[std::get<std::string>(key)] = value;
+    }
+  }
+
+  HideOverlay();
+  ShowOverlay(strict, args);
 }
