@@ -33,6 +33,7 @@ Release title: Desktop Companion Engine & Environment Builder
 - **Desktop Companion Engine:** Completely redesigned sprite rendering system with advanced state machines for more fluid and expressive pet behaviors.
 - **Environment Builder:** A new UI system for creating and customizing your companion's world with live previews and theme configuration.
 - **Interactive PiP Overlay:** High-performance Picture-in-Picture window logic for keeping your companion visible across all workspaces.
+- **Flash Notifications:** Subtle, non-intrusive screen-edge pulse cues rendered via overlay to keep you aware of upcoming breaks without breaking your flow.
 - **Dynamic Animation Stabilization:** Implemented ground-padding detection to eliminate jitter and stabilize pet animations on the Y-axis.
 - **Ambient Lighting System:** Integrated a new lighting model for companion sprites that reacts to the selected environment theme.
 - **Environment Decorations:** Added environment-aware decorations and background elements like animated birds to bring the companion world to life.

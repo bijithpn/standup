@@ -1,6 +1,6 @@
 # BreakMate Roadmap
 
-Last reviewed: 2026-06-02
+Last reviewed: 2026-06-16
 
 ## Project Snapshot
 
@@ -8,10 +8,10 @@ BreakMate is now a fairly broad Flutter desktop wellness product with timer orch
 
 Current evidence from this review:
 
-- App version in `pubspec.yaml`: `1.2.1+31`
+- App version in `pubspec.yaml`: `1.4.0+33`
 - Current `main` HEAD: post-`v1.2.1` packaging/update follow-up work (`feat:new dmg updated`)
 - Dart files under `lib/`: 172
-- Active test files under `test/`: 0
+- Active test files under `test/`: 19
 - Asset tree size: about 21 MB
 - Largest asset groups: `assets/slideshow/` about 13 MB, `assets/music/` about 4.0 MB, `assets/fonts/` about 1.6 MB
 - Largest non-generated Dart files include `dashboard_page.dart`, `standalone_break_overlay.dart`, `pet_state_machine.dart`, `break_appearance_settings.dart`, `timer_engine.dart`, `companion_interactive_template.dart`, `pet_asset_loader.dart`, `settings_repository.dart`, `main_layout.dart`, and `tray_manager_service.dart`
@@ -24,10 +24,12 @@ Current evidence from this review:
 - `v1.1.0` through `v1.1.4` delivered timer/runtime refactoring, companion behavior updates, onboarding persistence fixes, storage hardening, and macOS data migration.
 - `v1.2.0` added contextual wellness guidance, calendar-aware break planning, personal goals, wind-down support, wellness library surfaces, companion consistency progression, and a local privacy report.
 - `v1.2.1` replaced the macOS calendar plugin path with a native EventKit bridge, improved permission recovery, grouped dashboard calendar views, and fixed calendar initialization/meeting-detection failures.
+- `v1.3.0` brought an enhanced dashboard with compact status chips, pause context, settings search, and manual smoke-check documentation.
+- `v1.4.0` delivered the Desktop Companion Engine overhaul, an Interactive Environment Builder with live previews, a high-performance interactive PiP overlay, and Flash Notifications for ambient awareness.
 
-### Present on `main` after `v1.2.1`
+### Present on `main` after `v1.4.0`
 
-- DMG packaging and release-path follow-up commits are present after the `v1.2.1` tag.
+- DMG packaging and release-path follow-up commits are present after the `v1.4.0` tag.
 - Appcast/release automation is still active and worth treating as an ongoing release-safety surface.
 
 ## Product Direction
@@ -177,13 +179,17 @@ The user should be able to answer these quickly:
 - [x] Wellness activity library
 - [x] Companion progression based on consistency rather than punitive streak pressure
 - [x] Wind-down and end-of-day wellness support
+- [x] Desktop Companion Engine with advanced behaviors
+- [x] Interactive Environment Builder
+- [x] High-performance Interactive PiP Overlay
+- [x] Flash Notifications for ambient break awareness
 
 ### Next feature candidates
 
 - [ ] Adaptive break planner that recommends changes without silently mutating user settings
 - [ ] Guided recovery after system sleep or long idle
 - [ ] Optional local template/audio packs to keep the core installer small
-- [ ] Smarter “take a break before meeting” suggestions based on meeting density and active session length
+- [ ] Predictive Fatigue AI to show fatigue behaviors before exhaustion
 
 ### Research only
 
