@@ -45,7 +45,9 @@ class _PressableButtonState extends State<PressableButton>
     return GestureDetector(
       onTapDown: _handleTapDown,
       onTapUp: _handleTapUp,
+      onTapCancel: () => _controller.reverse(),
       onTap: widget.onPressed,
+      behavior: HitTestBehavior.opaque,
       child: ScaleTransition(
         scale: Tween<double>(
           begin: 1.0,

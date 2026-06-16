@@ -41,6 +41,8 @@ import 'package:breakmate/features/break_overlay/presentation/templates/paper_li
 import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 enum BreakTheme {
   image,
@@ -54,13 +56,34 @@ enum BreakTheme {
   zen, // Soft earth tones and cream
 }
 
-// Templates that own their own chrome (skip button, top rail, etc.)
 const _kTemplatesWithChrome = {
-  'minimal', 'activities', 'companion', 'zen', 'hud', 'floating', 'classic',
-  'soft_arc', 'breathe_line', 'clock_face', 'one_word', 'open_field',
-  'haiku_card', 'ring_only', 'step_guide', 'time_slice', 'day_stack',
-  'pulse_dot', 'mono_time', 'split_view', 'warm_amber', 'focus_orb',
-  'wave_calm', 'iris_rest', 'quiet_pill', 'paper_light', 'dusk_glow',
+  'minimal',
+  'activities',
+  'companion',
+  'zen',
+  'hud',
+  'floating',
+  'classic',
+  'soft_arc',
+  'breathe_line',
+  'clock_face',
+  'one_word',
+  'open_field',
+  'haiku_card',
+  'ring_only',
+  'step_guide',
+  'time_slice',
+  'day_stack',
+  'pulse_dot',
+  'mono_time',
+  'split_view',
+  'warm_amber',
+  'focus_orb',
+  'wave_calm',
+  'iris_rest',
+  'quiet_pill',
+  'paper_light',
+  'dusk_glow',
 };
 
 class StandaloneBreakOverlay extends StatefulWidget {
@@ -123,28 +146,54 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _clockFaceBlurEnabled = true;
   String? _customImagePath;
 
+  // True once SimplePrefs settings are loaded; the overlay renders immediately.
+  // The async bridge call still runs to refine timer data, but does not gate rendering.
   bool _initialized = false;
   bool _isDismissing = false;
 
   // KEY PERFORMANCE FIX: ValueNotifier for countdown allows ValueListenableBuilder
-  // to isolate rebuilds to only the template widget, not the entire screen.
-  // This keeps StatefulWidget templates (WaveCalm, BreatheLineTemplate, etc.)
-  // alive across every-second ticks — preserving their AnimationControllers.
   late final ValueNotifier<int> _remainingSecondsNotifier;
 
   void _loadInitialSettings() {
     try {
       if (SimplePrefs.instance.isReady) {
-        final template = SimplePrefs.instance.getString('break_template', defaultValue: 'minimal');
-        final petTheme = SimplePrefs.instance.getString('companion_pet_theme', defaultValue: 'grey_cat');
-        final showNotes = SimplePrefs.instance.getBool('show_exercises_in_break', defaultValue: true);
-        final strict = SimplePrefs.instance.getBool('strict_mode', defaultValue: false);
-        final anim = SimplePrefs.instance.getBool('enable_animations', defaultValue: true);
-        final intensity = SimplePrefs.instance.getString('intensity_level', defaultValue: 'standard');
-        final textColor = SimplePrefs.instance.getInt('clock_face_text_color_hex', defaultValue: 0xFFFFFFFF);
-        final blurEnabled = SimplePrefs.instance.getBool('clock_face_blur_enabled', defaultValue: true);
-        final customImg = SimplePrefs.instance.getString('custom_image_path', defaultValue: '');
-        
+        final template = SimplePrefs.instance.getString(
+          'break_template',
+          defaultValue: 'minimal',
+        );
+        final petTheme = SimplePrefs.instance.getString(
+          'companion_pet_theme',
+          defaultValue: 'grey_cat',
+        );
+        final showNotes = SimplePrefs.instance.getBool(
+          'show_exercises_in_break',
+          defaultValue: true,
+        );
+        final strict = SimplePrefs.instance.getBool(
+          'strict_mode',
+          defaultValue: false,
+        );
+        final anim = SimplePrefs.instance.getBool(
+          'enable_animations',
+          defaultValue: true,
+        );
+        final intensity = SimplePrefs.instance.getString(
+          'intensity_level',
+          defaultValue: 'standard',
+        );
+        final textColor = SimplePrefs.instance.getInt(
+          'clock_face_text_color_hex',
+          defaultValue: 0xFFFFFFFF,
+        );
+        final blurEnabled = SimplePrefs.instance.getBool(
+          'clock_face_blur_enabled',
+          defaultValue: true,
+        );
+        final customImg = SimplePrefs.instance.getString(
+          'custom_image_path',
+          defaultValue: '',
+        );
+
         setState(() {
           _breakTemplate = template;
           _companionPetTheme = petTheme;
@@ -157,8 +206,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           _customImagePath = customImg == "" ? null : customImg;
         });
       }
-    } catch (_) {
-      // Fallback to defaults
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
   }
 
@@ -169,8 +218,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _durationSeconds = widget.durationSeconds;
     _remainingSeconds = widget.durationSeconds;
 
-    // Resolve user's actual selected template and settings from SimplePrefs on startup
+    // Load settings synchronously from SimplePrefs so the template can render
+    // on the first frame without waiting for the async bridge call.
     _loadInitialSettings();
+
+    // Mark initialized now — SimplePrefs settings are sufficient to render.
+    // The async _loadInitialData() will update remaining-seconds and any
+    // per-break fields (exercise, theme, etc.) once the bridge responds.
+    _initialized = true;
 
     _currentTemplate =
         AppConstants.wellnessSlideshow[Random().nextInt(
@@ -194,7 +249,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _setupBridge();
     _loadInitialData();
 
-    // Smoothly fade in
     _fadeController.forward();
 
     StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
@@ -209,12 +263,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
     } catch (e) {
       debugPrint('Error getting initial overlay data: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _initialized = true;
-        });
-      }
     }
   }
 
@@ -230,10 +278,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             (service as dynamic).updateBreaksCompleted(count);
           }
         }
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
 
-    // If targetEndTime is passed, use it to count down locally!
     final targetEndMs = args['targetEndTime'] as int?;
     if (targetEndMs != null) {
       _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
@@ -244,8 +293,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       _localTimer = null;
     }
 
-    // If we are transitioning to zero remaining seconds (auto-close),
-    // or explicitly told to close, trigger fade out.
     final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
     if (newRemaining == 0 && _remainingSeconds > 0) {
       _fadeController.reverse();
@@ -275,7 +322,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           orElse: () => _currentTheme,
         );
       }
-      // Use the coordinator-chosen image so all displays show the same one
       if (args['classicImage'] != null) {
         _currentTemplate = args['classicImage'] as String;
       }
@@ -317,19 +363,20 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         _maxWarningSeconds = newRemaining;
       }
 
-      // Auto-dismiss quick reminders / prebreak warnings after 5/3 seconds
-      if (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning') {
+      if (_overlayType == 'quickReminder' ||
+          _overlayType == 'preBreakWarning') {
         _fadeController.duration = const Duration(milliseconds: 400);
         final dismissDelay = _overlayType == 'preBreakWarning'
             ? const Duration(seconds: 3)
             : const Duration(seconds: 5);
         Future.delayed(dismissDelay, () {
-          if (mounted && (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning')) {
+          if (mounted &&
+              (_overlayType == 'quickReminder' ||
+                  _overlayType == 'preBreakWarning')) {
             _skipBreak();
           }
         });
       } else {
-        // Reset to default duration for normal break screens
         _fadeController.duration = const Duration(milliseconds: 600);
       }
     });
@@ -353,8 +400,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             _completeBreak();
           }
           _remainingSeconds = newRemaining;
-          // Update the notifier directly — only rebuilds ValueListenableBuilder subtree,
-          // NOT the entire widget tree. This preserves StatefulWidget template states.
           _remainingSecondsNotifier.value = newRemaining;
         }
       }
@@ -404,8 +449,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     void triggerDismiss() {
       if (callbackTriggered) return;
       callbackTriggered = true;
-      if (_isInternalPreview || _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder') {
-        // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
+      if (_isInternalPreview ||
+          _overlayType == 'preBreakWarning' ||
+          _overlayType == 'quickReminder') {
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
         _bridge.invokeMethod('completeBreak');
@@ -415,7 +461,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
     Timer(const Duration(milliseconds: 800), triggerDismiss);
 
-    // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
       triggerDismiss();
     });
@@ -429,8 +474,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     void triggerDismiss() {
       if (callbackTriggered) return;
       callbackTriggered = true;
-      if (_isInternalPreview || _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder') {
-        // Just hide the overlay window without skipping the actual upcoming break or reminder statistics
+      if (_isInternalPreview ||
+          _overlayType == 'preBreakWarning' ||
+          _overlayType == 'quickReminder') {
         _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
       } else {
         NativeBridge.skipBreak();
@@ -440,7 +486,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
     Timer(const Duration(milliseconds: 800), triggerDismiss);
 
-    // Reverse fade for a smooth exit, then call the native bridge
     _fadeController.reverse().then((_) {
       triggerDismiss();
     });
@@ -449,8 +494,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _handleKeyEvent(KeyEvent event) {
     if (!mounted) return false;
 
-    // Check for Command/Control + Shift + B to quit the app
-    final isModifierPressed = HardwareKeyboard.instance.isMetaPressed ||
+    final isModifierPressed =
+        HardwareKeyboard.instance.isMetaPressed ||
         HardwareKeyboard.instance.isControlPressed;
     if (isModifierPressed &&
         HardwareKeyboard.instance.isShiftPressed &&
@@ -460,17 +505,17 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       return true;
     }
 
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
-      if (_canDismiss) {
-        _skipBreak();
-        return true;
-      }
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      _skipBreak();
+      return true;
     }
     return false;
   }
 
   bool get _canDismiss =>
-      (!_strictMode && !_isInternalPreview) ||
+      _isInternalPreview ||
+      (!_strictMode) ||
       _overlayType == 'quickReminder' ||
       _overlayType == 'preBreakWarning';
 
@@ -508,22 +553,27 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       );
     }
 
-    return FadeTransition(
-      opacity: _fadeController,
-      child: Material(
-        color: _overlayType == 'quickReminder' || _overlayType == 'preBreakWarning'
-            ? Colors.black.withValues(alpha: 0.4)
-            : Colors.black,
-        child: GestureDetector(
-          onVerticalDragUpdate: (details) {
-            // If dragging up, dismiss the overlay completely (only if not in strict mode, or preview/warning).
-            if (_canDismiss && details.primaryDelta! < -10) {
-              _skipBreak();
-            }
-          },
-          // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
-          onHorizontalDragUpdate: (details) {},
-          child: RepaintBoundary(child: _buildBreakScreen()),
+    return PopScope(
+      canPop: false,
+      child: FadeTransition(
+        opacity: _fadeController,
+        child: Material(
+          color:
+              _overlayType == 'quickReminder' ||
+                  _overlayType == 'preBreakWarning'
+              ? Colors.black.withValues(alpha: 0.4)
+              : Colors.black,
+          child: GestureDetector(
+            onVerticalDragUpdate: (details) {
+              final dy = details.delta.dy;
+              if (_canDismiss && dy < -10) {
+                _skipBreak();
+              }
+            },
+            // We consume horizontal drag so it doesn't do anything (not strict, but prevents movement)
+            onHorizontalDragUpdate: (details) {},
+            child: RepaintBoundary(child: _buildBreakScreen()),
+          ),
         ),
       ),
     );
@@ -531,7 +581,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   Widget _buildBreakScreen() {
     if (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning') {
-      return _buildQuickReminder();
+      return QuickReminderOverlay(
+        reminderType: _reminderType,
+        overlayType: _overlayType,
+        fadeAnimation: _fadeController,
+        title: _title,
+        durationSeconds: _durationSeconds,
+      );
     }
 
     BreakType type;
@@ -541,7 +597,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         orElse: () => BreakType.long,
       );
     } else {
-      type = _title.toUpperCase().contains('SHORT') ||
+      type =
+          _title.toUpperCase().contains('SHORT') ||
               _title.toUpperCase().contains('EYE')
           ? BreakType.short
           : BreakType.long;
@@ -566,18 +623,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
 
     final total = _durationSeconds;
-    // Only provide a live skip callback when not in strict mode (or in preview/warning).
-    final VoidCallback? onSkip = _canDismiss ? _skipBreak : null;
+    // Always pass the callback; templates use their own !settings.strictMode guard
+    // to decide whether to render it. The global overlay button below is the
+    // authoritative skip affordance and is controlled by _canDismiss independently.
+    final VoidCallback onSkip = _skipBreak;
 
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
       children: [
         // KEY PERFORMANCE FIX: ValueListenableBuilder wraps ONLY the template.
-        // The outer Stack (chrome items) stays stable — only the template
-        // rebuilds each second. Flutter's element reconciliation keeps the same
-        // StatefulWidget element alive (same runtimeType), so AnimationControllers
-        // in WaveCalm, BreatheLineTemplate, ActivitiesBreak, etc. are preserved.
         RepaintBoundary(
           child: ValueListenableBuilder<int>(
             valueListenable: _remainingSecondsNotifier,
@@ -648,7 +703,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        if (_canDismiss && !_templateOwnsChrome)
+        // Global skip button: shown whenever the overlay is dismissible.
+        // Previously gated on !_templateOwnsChrome, but all templates are in
+        // _kTemplatesWithChrome so that condition was always false — the button
+        // never appeared. Now it shows unconditionally when _canDismiss is true,
+        // floating above the template chrome at the top-right corner.
+        if (_canDismiss)
           Positioned(
             top: 28,
             right: 28,
@@ -671,15 +731,18 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
               ),
             ),
           ),
-        // Global visual indicator to swipe up to dismiss
-        if (_canDismiss && !_templateOwnsChrome)
+        if (_canDismiss)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
             child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (!_canDismiss && !_templateOwnsChrome)
+        // Strict mode note: shown at bottom whenever the overlay is NOT dismissible.
+        // Previously gated on !_templateOwnsChrome (which was always false). Fixed
+        // to show unconditionally when the break cannot be skipped so the user
+        // knows why there is no skip affordance visible.
+        if (!_canDismiss)
           Positioned(
             bottom: 24,
             left: 24,
@@ -765,45 +828,165 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           onSkip: onSkip,
         );
       case 'soft_arc':
-        return SoftArcTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return SoftArcTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'breathe_line':
-        return BreatheLineTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return BreatheLineTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'clock_face':
-        return ClockFaceTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return ClockFaceTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'one_word':
-        return OneWordTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return OneWordTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'open_field':
-        return OpenFieldTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return OpenFieldTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'haiku_card':
-        return HaikuCardTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return HaikuCardTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'ring_only':
-        return RingOnlyTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return RingOnlyTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'step_guide':
-        return StepGuideTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return StepGuideTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'time_slice':
-        return TimeSliceTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return TimeSliceTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'day_stack':
-        return DayStackTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return DayStackTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'pulse_dot':
-        return PulseDotTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return PulseDotTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'mono_time':
-        return MonoTimeTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return MonoTimeTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'split_view':
-        return SplitViewTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return SplitViewTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'warm_amber':
-        return WarmAmberTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return WarmAmberTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'focus_orb':
-        return FocusOrbTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return FocusOrbTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'wave_calm':
-        return WaveCalmTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return WaveCalmTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'iris_rest':
-        return IrisRestTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return IrisRestTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'quiet_pill':
-        return QuietPillTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return QuietPillTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'paper_light':
-        return PaperLightTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return PaperLightTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'dusk_glow':
-        return DuskGlowTemplate(breakInfo: breakInfo, settings: settings, remainingSeconds: remaining, totalSeconds: total, onSkip: onSkip);
+        return DuskGlowTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
       case 'wind_down':
         return const WindDownTemplate();
       default:
@@ -818,276 +1001,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   bool get _templateOwnsChrome {
-    // All named templates self-manage their chrome (top rail, skip, hints).
     // This prevents the global pill / close / swipe-hint from being stacked
-    // on top of template-owned header and footer areas.
-    final isWindDown = _title.toUpperCase().contains('WIND DOWN') || (_breakTypeStr == 'windDown');
+    final isWindDown =
+        _title.toUpperCase().contains('WIND DOWN') ||
+        (_breakTypeStr == 'windDown');
     if (isWindDown) return true;
-    return _kTemplatesWithChrome.contains(_breakTemplate) || _breakTemplate == 'wind_down';
-  }
-
-  Widget _buildQuickReminder() {
-    final isPosture = _reminderType == 'posture';
-    final isBreakStart = _reminderType == 'breakStart' || _overlayType == 'preBreakWarning';
-
-    if (isBreakStart) {
-      return _buildBreakStartWarning();
-    }
-
-    return Center(
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-          CurvedAnimation(
-            parent: _fadeController,
-            curve: Curves.easeOutBack,
-            reverseCurve: Curves.easeIn,
-          ),
-        ),
-        child: Container(
-          width: 380,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceCard.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            border: Border.all(
-              color: AppTheme.accent.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: AppTheme.accent.withValues(alpha: 0.05),
-                blurRadius: 24,
-                spreadRadius: 2,
-              ),
-            ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.surfaceCard,
-                AppTheme.surfaceCard.withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Subtle top label
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  isPosture ? 'POSTURE CHECK' : 'EYE REFRESH',
-                  style: const TextStyle(
-                    color: AppTheme.accent,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      AppTheme.accent.withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.25),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  isPosture
-                      ? CupertinoIcons.person_crop_circle_badge_checkmark
-                      : CupertinoIcons.eye_fill,
-                  color: AppTheme.accent,
-                  size: 36,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                isPosture
-                    ? 'Sit up straight, relax your neck, and drop your shoulders.'
-                    : 'Blink a few times and focus on something far away.',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  height: 1.45,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBreakStartWarning() {
-    final isPosture = _title.toUpperCase().contains('POSTURE');
-    final isEye = _title.toUpperCase().contains('EYE');
-
-    final String labelText = isPosture
-        ? 'POSTURE BREAK'
-        : isEye
-        ? 'EYE BREAK'
-        : 'UPCOMING BREAK';
-
-    final IconData mainIcon = isPosture
-        ? CupertinoIcons.person_fill
-        : isEye
-        ? CupertinoIcons.eye_fill
-        : CupertinoIcons.timer;
-
-    final String timeLabel = _durationSeconds >= 60
-        ? '${(_durationSeconds / 60).round()} minute${(_durationSeconds / 60).round() > 1 ? 's' : ''}'
-        : '$_durationSeconds seconds';
-
-    final String dynamicMessage = isPosture
-        ? 'A posture break will start in $timeLabel. Prepare to stand up.'
-        : isEye
-        ? 'An eye break will start in $timeLabel. Prepare to look away.'
-        : 'A break will start in $timeLabel. Prepare to step away and rest.';
-
-    return Center(
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-          CurvedAnimation(
-            parent: _fadeController,
-            curve: Curves.easeOutBack,
-            reverseCurve: Curves.easeIn,
-          ),
-        ),
-        child: Container(
-          width: 380,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceCard.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            border: Border.all(
-              color: AppTheme.accent.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: AppTheme.accent.withValues(alpha: 0.05),
-                blurRadius: 24,
-                spreadRadius: 2,
-              ),
-            ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.surfaceCard,
-                AppTheme.surfaceCard.withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  labelText,
-                  style: const TextStyle(
-                    color: AppTheme.accent,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      AppTheme.accent.withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.25),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(mainIcon, color: AppTheme.accent, size: 36),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Break Starts Soon',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                dynamicMessage,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  height: 1.45,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    return _kTemplatesWithChrome.contains(_breakTemplate) ||
+        _breakTemplate == 'wind_down';
   }
 }

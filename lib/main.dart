@@ -13,6 +13,11 @@ void companionMain() {
   common.companionMain();
 }
 
+@pragma('vm:entry-point')
+void pipMain() {
+  common.pipMain();
+}
+
 void main() {
   if (kDebugMode) {
     dev.main();

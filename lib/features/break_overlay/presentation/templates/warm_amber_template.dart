@@ -31,95 +31,95 @@ class WarmAmberTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     const accent = Color(0xFFC49A4A);
 
-    // Use ListenableBuilder on sl<StatsService>() so this works in both the main
-    // engine (with Provider) and the standalone overlay engine (no Provider tree).
-    return ListenableBuilder(
-      listenable: sl<StatsService>(),
-      builder: (context, _) {
-        final stats = sl<StatsService>().stats;
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            RepaintBoundary(
-              child: CustomPaint(painter: _WarmAmberPainter()),
-            ),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 380),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      LucideIcons.sunset,
-                      size: 22,
-                      color: accent.withValues(alpha: 0.48),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Winding down',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.58),
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+    return ColoredBox(
+      color: const Color(0xFF0A0A0F),
+      child: ListenableBuilder(
+        listenable: sl<StatsService>(),
+        builder: (context, _) {
+          final stats = sl<StatsService>().stats;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              RepaintBoundary(child: CustomPaint(painter: _WarmAmberPainter())),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 380),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        LucideIcons.sunset,
+                        size: 22,
+                        color: accent.withValues(alpha: 0.48),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _formatTime(remainingSeconds),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 64,
-                        fontWeight: FontWeight.w200,
-                        fontFamily: 'Inter',
-                        fontFeatures: [FontFeature.tabularFigures()],
-                        letterSpacing: -2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '${stats.breaksCompleted} breaks today',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.33),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: 180,
-                      height: 40,
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.white.withValues(alpha: 0.48),
-                          side: BorderSide(
-                            color: Colors.white.withValues(alpha: 0.18),
-                            width: 0.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          backgroundColor: Colors.transparent,
-                          textStyle: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: 'Inter',
-                          ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Winding down',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.58),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Inter',
                         ),
-                        // Use onSkip prop (works in both engines)
-                        onPressed: onSkip,
-                        child: const Text('Done for today'),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      Text(
+                        _formatTime(remainingSeconds),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 64,
+                          fontWeight: FontWeight.w200,
+                          fontFamily: 'Inter',
+                          fontFeatures: [FontFeature.tabularFigures()],
+                          letterSpacing: -2,
+                          height: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        '${stats.breaksCompleted} breaks today',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.33),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          fontFamily: 'Inter',
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: 180,
+                        height: 40,
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white.withValues(
+                              alpha: 0.48,
+                            ),
+                            side: BorderSide(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              width: 0.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            backgroundColor: Colors.transparent,
+                            textStyle: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w400,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          onPressed: onSkip,
+                          child: const Text('Done for today'),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -127,6 +127,7 @@ class WarmAmberTemplate extends StatelessWidget {
 class _WarmAmberPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final gradient = RadialGradient(
       center: const Alignment(0, 0.5),
       radius: 0.8,

@@ -13,8 +13,18 @@ import window_manager
 
 /// Registers all required Flutter plugins for secondary engines (overlays, companion).
 /// This now uses the standard GeneratedPluginRegistrant for 100% feature parity with the main engine.
+/// Secondary isolates reuse these plugin instances to handle display queries, audio playback, and visual effects.
 func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
-    RegisterGeneratedPlugins(registry: registry)
+    // Register only the critical plugins required for secondary isolates (overlays and companion)
+    // to keep memory and CPU footprint low on lower-end macOS devices.
+    WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
+    ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
+    AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
+    FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
+    MacOSWindowUtilsPlugin.register(with: registry.registrar(forPlugin: "MacOSWindowUtilsPlugin"))
+    
+    WindowBridge.register(with: registry.registrar(forPlugin: "WindowBridge"))
+    BehaviorEngineBridge.register(with: registry.registrar(forPlugin: "BehaviorEngineBridge"))
 }
 
 @main
@@ -85,6 +95,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   override func applicationWillTerminate(_ notification: Notification) {
     OverlayWindowManager.shared.hideOverlay()
     CompanionWindowManager.shared.hideCompanion()
+    PiPWindowManager.shared.hidePipWindow()
     super.applicationWillTerminate(notification)
   }
 
@@ -174,6 +185,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
 
 class WindowBridge: NSObject, FlutterPlugin {
     private let channel: FlutterMethodChannel
+    private weak var registrar: FlutterPluginRegistrar?
     
     static func register(with registrar: FlutterPluginRegistrar) {
         let bridge = WindowBridge(registrar: registrar)
@@ -181,12 +193,17 @@ class WindowBridge: NSObject, FlutterPlugin {
     }
     
     init(registrar: FlutterPluginRegistrar) {
+        self.registrar = registrar
         channel = FlutterMethodChannel(
             name: "com.breakmate/window",
             binaryMessenger: registrar.messenger
         )
         super.init()
         registrar.addMethodCallDelegate(self, channel: channel)
+    }
+    
+    private var window: NSWindow? {
+        return registrar?.view?.window ?? NSApp.mainWindow ?? NSApp.keyWindow
     }
     
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
@@ -215,6 +232,12 @@ class WindowBridge: NSObject, FlutterPlugin {
             handleShowWindow(result: result)
         case "setWindowStyle":
             handleSetWindowStyle(args: args, result: result)
+        case "setWindowSize":
+            handleSetWindowSize(args: args, result: result)
+        case "startDrag":
+            handleStartDrag(result: result)
+        case "setNonActivating":
+            handleSetNonActivating(args: args, result: result)
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -222,7 +245,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     
     private func handleSetWindowLevel(args: [String: Any]?, result: FlutterResult) {
         guard let levelStr = args?["level"] as? String,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -242,7 +265,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     private func handleSetWindowPosition(args: [String: Any]?, result: FlutterResult) {
         guard let x = args?["x"] as? Double,
               let y = args?["y"] as? Double,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -255,16 +278,21 @@ class WindowBridge: NSObject, FlutterPlugin {
     }
     
     private func handleGetWindowPosition(result: FlutterResult) {
-        guard let window = NSApp.mainWindow ?? NSApp.keyWindow else {
-            result(["x": 0.0, "y": 0.0])
+        guard let window = self.window else {
+            result(["x": 0.0, "y": 0.0, "width": 0.0, "height": 0.0])
             return
         }
-        result(["x": window.frame.origin.x, "y": window.frame.origin.y])
+        result([
+            "x": window.frame.origin.x,
+            "y": window.frame.origin.y,
+            "width": Double(window.frame.size.width),
+            "height": Double(window.frame.size.height)
+        ])
     }
     
     private func handleSetWindowOpacity(args: [String: Any]?, result: FlutterResult) {
         guard let opacity = args?["opacity"] as? Double,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -274,7 +302,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     
     private func handleSetIgnoresMouseEvents(args: [String: Any]?, result: FlutterResult) {
         guard let ignore = args?["ignore"] as? Bool,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -284,7 +312,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     
     private func handleSetHasShadow(args: [String: Any]?, result: FlutterResult) {
         guard let hasShadow = args?["hasShadow"] as? Bool,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -294,7 +322,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     
     private func handleSetAcceptsMouseMovedEvents(args: [String: Any]?, result: FlutterResult) {
         guard let accept = args?["accept"] as? Bool,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -303,7 +331,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     }
     
     private func handleOrderFrontRegardless(result: FlutterResult) {
-        guard let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+        guard let window = self.window else {
             result(nil)
             return
         }
@@ -312,7 +340,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     }
     
     private func handleHideWindow(result: FlutterResult) {
-        guard let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+        guard let window = self.window else {
             result(nil)
             return
         }
@@ -321,7 +349,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     }
     
     private func handleShowWindow(result: FlutterResult) {
-        guard let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+        guard let window = self.window else {
             result(nil)
             return
         }
@@ -332,7 +360,7 @@ class WindowBridge: NSObject, FlutterPlugin {
     
     private func handleSetWindowStyle(args: [String: Any]?, result: FlutterResult) {
         guard let style = args?["style"] as? String,
-              let window = NSApp.mainWindow ?? NSApp.keyWindow else {
+              let window = self.window else {
             result(nil)
             return
         }
@@ -343,6 +371,47 @@ class WindowBridge: NSObject, FlutterPlugin {
         case "utility": window.styleMask = [.titled, .closable, .utilityWindow]
         case "hud": window.styleMask = [.titled, .closable, .hudWindow]
         default: break
+        }
+        result(nil)
+    }
+
+    private func handleSetWindowSize(args: [String: Any]?, result: FlutterResult) {
+        guard let width = args?["width"] as? Double,
+              let height = args?["height"] as? Double,
+              let window = self.window else {
+            result(nil)
+            return
+        }
+        var frame = window.frame
+        let deltaY = frame.size.height - CGFloat(height)
+        frame.origin.y += deltaY
+        frame.size.width = CGFloat(width)
+        frame.size.height = CGFloat(height)
+        window.setFrame(frame, display: true, animate: true)
+        result(nil)
+    }
+
+    private func handleStartDrag(result: FlutterResult) {
+        guard let window = self.window else {
+            result(nil)
+            return
+        }
+        if let event = NSApp.currentEvent {
+            window.performDrag(with: event)
+        }
+        result(nil)
+    }
+
+    private func handleSetNonActivating(args: [String: Any]?, result: FlutterResult) {
+        guard let nonActivating = args?["nonActivating"] as? Bool,
+              let window = self.window else {
+            result(nil)
+            return
+        }
+        if nonActivating {
+            window.styleMask.insert(.nonactivatingPanel)
+        } else {
+            window.styleMask.remove(.nonactivatingPanel)
         }
         result(nil)
     }

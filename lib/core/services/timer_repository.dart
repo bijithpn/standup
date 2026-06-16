@@ -2,7 +2,10 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
-/// Repository class responsible for persisting and restoring the operational state of the timers.
+/// Persistence repository for managing the active timer and focus state.
+/// Following our state and storage constraints, this repository acts as the sole source
+/// of truth for timer session storage and routes all access through StorageService
+/// instead of managing SQLite/ObjectBox or preferences directly.
 class TimerRepository {
   final StorageService _storageService;
   final AppLogger _logger = AppLogger();
@@ -74,6 +77,14 @@ class TimerRepository {
           state.lastBreakFinishedAt!.millisecondsSinceEpoch,
         );
       }
+      if (state.lastTickTime != null) {
+        _storageService.setInt(
+          'timer_last_tick_time',
+          state.lastTickTime!.millisecondsSinceEpoch,
+        );
+      } else {
+        _storageService.setInt('timer_last_tick_time', 0);
+      }
       _logger.info('Timer state saved via TimerRepository');
     } catch (e) {
       _logger.error('Failed to save timer state: $e');
@@ -110,7 +121,9 @@ class TimerRepository {
         orElse: () => TimerState.idle,
       );
 
-      // Prevent break screen from showing immediately on application launch
+      // Prevent break screen from showing immediately on application launch.
+      // If the app exited during an active break, displaying a full-screen overlay window immediately on boot
+      // would lock the user out of main control windows or settings page during initial rendering.
       if (state.state == TimerState.breakActive) {
         state.state = TimerState.running;
         state.workElapsed = Duration.zero;
@@ -206,6 +219,16 @@ class TimerRepository {
         state.lastBreakFinishedAt = DateTime.fromMillisecondsSinceEpoch(
           lastBreakMs,
         );
+      }
+
+      final lastTickMs = _storageService.getInt(
+        'timer_last_tick_time',
+        defaultValue: 0,
+      );
+      if (lastTickMs > 0) {
+        state.lastTickTime = DateTime.fromMillisecondsSinceEpoch(lastTickMs);
+      } else {
+        state.lastTickTime = null;
       }
 
       _logger.info(

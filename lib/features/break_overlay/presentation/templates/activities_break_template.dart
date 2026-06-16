@@ -48,7 +48,9 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
       duration: const Duration(milliseconds: 200),
       value: _selected == _Activity.breathing ? 0.0 : 1.0,
     );
-    _underlineWidth = _underlineController.drive(CurveTween(curve: Curves.easeOut));
+    _underlineWidth = _underlineController.drive(
+      CurveTween(curve: Curves.easeOut),
+    );
   }
 
   @override
@@ -90,7 +92,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
               child: Column(
                 children: [
-                  // Top bar: break type + remaining
                   Row(
                     children: [
                       Text(
@@ -117,7 +118,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   ),
                   const SizedBox(height: 28),
 
-                  // Tab switcher — plain text with underline indicator
                   _TabSwitcher(
                     selected: _selected,
                     onSelect: _switch,
@@ -126,7 +126,6 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   ),
                   const SizedBox(height: 36),
 
-                  // Activity panel — plain column, no card
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(
@@ -135,10 +134,8 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                           duration: const Duration(milliseconds: 250),
                           switchInCurve: Curves.easeOut,
                           switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, anim) => FadeTransition(
-                            opacity: anim,
-                            child: child,
-                          ),
+                          transitionBuilder: (child, anim) =>
+                              FadeTransition(opacity: anim, child: child),
                           child: _selected == _Activity.breathing
                               ? GuidedBreathingWidget(
                                   key: _activityKey,

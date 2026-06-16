@@ -24,8 +24,7 @@ class SoftFloatingWidgetTemplate extends StatefulWidget {
       _SoftFloatingWidgetTemplateState();
 }
 
-class _SoftFloatingWidgetTemplateState
-    extends State<SoftFloatingWidgetTemplate>
+class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
     with SingleTickerProviderStateMixin {
   double? _x;
   double? _y;
@@ -159,16 +158,19 @@ class _SoftFloatingWidgetTemplateState
                     onPanStart: (_) => setState(() => _isDragging = true),
                     onPanUpdate: (d) {
                       setState(() {
-                        _x = (_x! + d.delta.dx)
-                            .clamp(0.0, constraints.maxWidth - targetWidth);
-                        _y = (_y! + d.delta.dy)
-                            .clamp(0.0, constraints.maxHeight - _height - 40);
+                        _x = (_x! + d.delta.dx).clamp(
+                          0.0,
+                          constraints.maxWidth - targetWidth,
+                        );
+                        _y = (_y! + d.delta.dy).clamp(
+                          0.0,
+                          constraints.maxHeight - _height - 40,
+                        );
                       });
                     },
                     onPanEnd: (_) {
                       setState(() => _isDragging = false);
-                      _snapCorner(
-                          constraints.maxWidth, constraints.maxHeight);
+                      _snapCorner(constraints.maxWidth, constraints.maxHeight);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 220),
@@ -190,7 +192,6 @@ class _SoftFloatingWidgetTemplateState
                         padding: const EdgeInsets.symmetric(horizontal: 14),
                         child: Row(
                           children: [
-                            // Pulsing dot
                             AnimatedBuilder(
                               animation: _pulseController,
                               builder: (_, _) => Container(
@@ -199,8 +200,7 @@ class _SoftFloatingWidgetTemplateState
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: _accent.withValues(
-                                    alpha: 0.3 +
-                                        0.55 * _pulseController.value,
+                                    alpha: 0.3 + 0.55 * _pulseController.value,
                                   ),
                                 ),
                               ),
@@ -226,7 +226,6 @@ class _SoftFloatingWidgetTemplateState
                                 fontFamily: 'Inter',
                               ),
                             ),
-                            // Expanded tip on hover
                             Expanded(
                               child: ClipRect(
                                 child: AnimatedOpacity(

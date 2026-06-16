@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/core/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -18,6 +19,9 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
+/// Coordinates cross-service actions driven by the state updates of TimerEngine.
+/// It bridges the core timer system with activity tracking, user alerts, stats logging,
+/// settings changes, and secondary engine UI updates via native IPC.
 class TimerOrchestrator {
   final TimerEngine timerEngine;
   final TimerRepository timerRepository;
@@ -55,29 +59,40 @@ class TimerOrchestrator {
   void initialize() {
     _logger.info('Initializing TimerOrchestrator...');
 
-    // 1. Restore State
     _restoreState();
 
-    // 2. Start listening to EventBus
+    if (timerEngine.state == TimerState.running &&
+        timerEngine.stateData.lastTickTime != null) {
+      final lastTick = timerEngine.stateData.lastTickTime!;
+      final durationAway = DateTime.now().difference(lastTick);
+      if (durationAway.inMinutes >= timerEngine.shortBreakIntervalMinutes) {
+        _logger.info(
+          'Cold boot recovery: Away for ${durationAway.inMinutes}m. Resetting focus session.',
+        );
+        timerEngine.resetTimers();
+      } else {
+        _logger.info(
+          'Cold boot recovery: Resuming focus session after ${durationAway.inSeconds}s away.',
+        );
+        timerEngine.stateData.lastTickTime = DateTime.now();
+        timerEngine.startTimers();
+      }
+      sl<StorageService>().setInt('timer_last_tick_time', 0);
+    }
+
     _eventSubscription = eventBus.stream.listen(_handleEvent);
 
-    // 3. Listen to high-frequency notifiers for tray updates
     timerEngine.countdownNotifier.addListener(_updateTray);
     timerEngine.workElapsedNotifier.addListener(_updateTray);
 
-    // Listen for low-frequency changes (state, mode, etc.) for state saving
     timerEngine.addListener(_onTimerEngineChanged);
 
-    // 4. Setup ActivityMonitor callback
     _setupActivityMonitor();
 
-    // 5. Start usage tracking
     _startUsageTracking();
 
-    // 6. Perform initial update of the tray to reflect restored state immediately
     _updateTray();
 
-    // 7. Start periodic state auto-saving for crash/restart resilience (every 10 seconds)
     _autoSaveTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       if (timerEngine.state == TimerState.running ||
           timerEngine.state == TimerState.breakActive) {
@@ -90,10 +105,11 @@ class TimerOrchestrator {
     _updateTray();
   }
 
+  /// Routes global application events. High-priority state events (like breaks starting/ending)
+  /// are serialized and dispatched over the IPC channel so secondary window processes stay synchronized.
   void _handleEvent(AppEvent event) {
     _logger.info('Received event in Orchestrator: $event');
 
-    // Handle IPC and side effects
     if (event is TimerStateChangedEvent) {
       _dispatchTimerStateIpc(event);
       saveState(); // Immediately save state on pause/resume transitions
@@ -149,7 +165,6 @@ class TimerOrchestrator {
     if (event.skipped) {
       statsService.recordSkippedBreak();
     } else {
-      // Completed break
       await Future.delayed(const Duration(seconds: 2));
       statsService.recordCompletedBreak();
 
@@ -157,7 +172,6 @@ class TimerOrchestrator {
         await notificationService.showBreakFinished();
       }
 
-      // Record actual session duration
       final now = DateTime.now();
       final lastBreakFinishedAt = timerEngine.stateData.lastBreakFinishedAt;
       final sessionDuration = lastBreakFinishedAt != null
@@ -177,7 +191,6 @@ class TimerOrchestrator {
         activityLevel: activityLevel,
       );
 
-      // Fetch suggested next break interval
       final suggestedInterval = adaptiveBreakService
           ?.getSuggestedBreakInterval();
       if (suggestedInterval != null && suggestedInterval > 0) {
@@ -235,7 +248,17 @@ class TimerOrchestrator {
   }
 
   void _handleBreakPostponed(BreakPostponedEvent event) {
-    // Notify IPC or perform postponement side effects if needed
+    final settings = settingsRepository.currentSettings;
+    if (settings.companionEnabled) {
+      eventBus.emit(CompanionInteractionEvent(interactionType: 'meow'));
+      IpcBridge.instance.dispatch(
+        CompanionInteractionIpcEvent(interactionType: 'meow'),
+      );
+    } else {
+      notificationService.showReminder(
+        message: 'Break postponed by ${event.additionalSeconds ~/ 60} minutes.',
+      );
+    }
   }
 
   void _updateTray() {
@@ -325,7 +348,6 @@ class TimerOrchestrator {
       resetTimerAfterMinutes: timerEngine.resetTimerAfterMinutes,
     );
 
-    // Save session state if feature is enabled
     if (settingsRepository.currentSettings.enableSessionResume) {
       sessionStateRepository.saveSession(
         workElapsed: timerEngine.workElapsed,
@@ -370,7 +392,6 @@ class TimerOrchestrator {
           },
     );
 
-    // Restore session state if feature is enabled
     if (settingsRepository.currentSettings.enableSessionResume) {
       final savedSession = sessionStateRepository.getSessionForToday();
       if (savedSession != null) {
@@ -387,11 +408,12 @@ class TimerOrchestrator {
         timerEngine.stateData.isPreBreak = savedSession.isPreBreak;
         timerEngine.stateData.longBreakWindowStartedAt =
             savedSession.longBreakWindowStartedAt;
+        timerEngine.stateData.countdownSeconds =
+            timerEngine.timeUntilNextShortBreak.inSeconds;
         _logger.info(
           'Session restored from today: ${savedSession.workElapsedSeconds}s work elapsed',
         );
       } else {
-        // New day or no saved session exists - reset all progress to zero
         timerEngine.stateData.workElapsed = Duration.zero;
         timerEngine.stateData.totalWorkToday = Duration.zero;
         timerEngine.stateData.postureElapsedSeconds = 0;
@@ -405,7 +427,6 @@ class TimerOrchestrator {
         );
       }
     } else {
-      // Feature disabled - clear any saved session and start fresh from zero
       sessionStateRepository.clearSession();
       timerEngine.stateData.workElapsed = Duration.zero;
       timerEngine.stateData.totalWorkToday = Duration.zero;
@@ -418,7 +439,6 @@ class TimerOrchestrator {
       _logger.info('Session resume disabled. Started fresh from zero.');
     }
 
-    // Synchronize all value notifiers (visuals/GUI, tray) with the restored state
     timerEngine.syncNotifiersFromState();
   }
 
@@ -427,7 +447,6 @@ class TimerOrchestrator {
     timerEngine.pauseTimers(isManual: true);
     saveState();
 
-    // Clear session on shutdown if feature is disabled
     if (!settingsRepository.currentSettings.enableSessionResume) {
       sessionStateRepository.clearSession();
     }

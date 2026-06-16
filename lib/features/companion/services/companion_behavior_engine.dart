@@ -20,20 +20,19 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
 
   Timer? _behaviorTimer;
   Timer? _wanderTimer;
-  bool _isEnabled =
-      true; // Default true; disabled only when explicitly set or settings say so
+  bool _isEnabled = true;
   int _idleCycles = 0;
   static const _maxIdleCyclesBeforeAction = 12;
 
+  DateTime _interactionSuppressUntil = DateTime.fromMillisecondsSinceEpoch(0);
+
   void start() {
     stop();
-    try {
-      final settingsRepo = sl<SettingsRepository>();
-      if (!settingsRepo.currentSettings.companionEnabled) {
-        return;
-      }
-    } catch (_) {
-      // If DI fails (e.g. background isolate), do not start
+    if (!sl.isRegistered<SettingsRepository>()) {
+      return;
+    }
+    final settingsRepo = sl<SettingsRepository>();
+    if (!settingsRepo.currentSettings.companionEnabled) {
       return;
     }
     if (!_isEnabled) return;
@@ -63,15 +62,17 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
       stop();
       return;
     }
-    try {
-      final settingsRepo = sl<SettingsRepository>();
-      if (!settingsRepo.currentSettings.companionEnabled) {
-        stop();
-        return;
-      }
-    } catch (_) {
-      // Safe fallback
+    if (!sl.isRegistered<SettingsRepository>()) {
+      stop();
+      return;
     }
+    final settingsRepo = sl<SettingsRepository>();
+    if (!settingsRepo.currentSettings.companionEnabled) {
+      stop();
+      return;
+    }
+
+    if (DateTime.now().isBefore(_interactionSuppressUntil)) return;
 
     _idleCycles++;
 
@@ -85,7 +86,6 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
     final behavior = _random.nextDouble();
 
     if (behavior < 0.4) {
-      // Increased blink frequency
       _triggerBlink();
     } else if (behavior < 0.6) {
       _triggerStretch();
@@ -146,6 +146,13 @@ class CompanionBehaviorEngine with WidgetsBindingObserver {
       ),
     );
     _logger.info('Companion: happy behavior');
+  }
+
+  void suppressRandomBehavior(Duration suppress) {
+    _interactionSuppressUntil = DateTime.now().add(suppress);
+    _logger.info(
+      'CompanionBehaviorEngine: random behavior suppressed for ${suppress.inMilliseconds} ms',
+    );
   }
 
   void onUserInteraction() {

@@ -39,9 +39,8 @@ import 'package:breakmate/features/break_overlay/presentation/templates/quiet_pi
 import 'package:breakmate/features/break_overlay/presentation/templates/paper_light_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
-// Templates that own their own chrome (skip button, top rail, etc.)
-// and should not have the global pill/close/hint layered on top.
 const _kTemplatesWithChrome = {
   'minimal',
   'activities',
@@ -106,8 +105,8 @@ class _BreakOverlayState extends State<BreakOverlay>
   bool _handleKeyEvent(KeyEvent event) {
     if (!mounted) return false;
 
-    // Check for Command/Control + Shift + B to quit the app
-    final isModifierPressed = HardwareKeyboard.instance.isMetaPressed ||
+    final isModifierPressed =
+        HardwareKeyboard.instance.isMetaPressed ||
         HardwareKeyboard.instance.isControlPressed;
     if (isModifierPressed &&
         HardwareKeyboard.instance.isShiftPressed &&
@@ -116,19 +115,20 @@ class _BreakOverlayState extends State<BreakOverlay>
       try {
         sl<MenuBarController>().handleAction('quit');
         return true;
-      } catch (_) {}
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
 
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
       try {
         final controller = context.read<BreakController>();
-        final settings = controller.settingsRepository.currentSettings;
-        if (!settings.strictMode) {
-          controller.skipCurrentBreak();
-          return true;
-        }
-      } catch (_) {}
+        controller.skipCurrentBreak();
+        return true;
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
     }
     return false;
   }
@@ -176,8 +176,6 @@ class _BreakOverlayState extends State<BreakOverlay>
 
   @override
   Widget build(BuildContext context) {
-    // Low-frequency selector: only rebuilds when break state or settings change,
-    // NOT every second. Countdown is isolated below via ValueNotifier prop.
     return Selector<BreakController, _BreakLayoutData?>(
       selector: (_, c) {
         final engine = c.timerEngine;
@@ -205,30 +203,29 @@ class _BreakOverlayState extends State<BreakOverlay>
 
         final controller = context.read<BreakController>();
 
-        return FadeTransition(
-          opacity: CurvedAnimation(
-            parent: _fadeController,
-            curve: Curves.easeOut,
-            reverseCurve: Curves.easeIn,
-          ),
-          child: GestureDetector(
-            onVerticalDragUpdate: (details) {
-              if (!data.settings.strictMode && details.primaryDelta! < -10) {
-                controller.skipCurrentBreak();
-              }
-            },
-            onHorizontalDragUpdate: (_) {},
-            // KEY FIX: Pass the countdownNotifier directly to the content widget.
-            // _BreakOverlayContent reads it internally, keeping template widgets
-            // stable across every-second ticks. Template StatefulWidgets
-            // (WaveCalm, BreatheLineTemplate, Activities, etc.) will NOT be
-            // destroyed and recreated each second anymore.
-            child: _BreakOverlayContent(
-              layoutData: data,
-              controller: controller,
-              pageController: _pageController,
-              kenBurnsController: _kenBurnsController,
-              countdownNotifier: controller.timerEngine.countdownNotifier,
+        return PopScope(
+          canPop: false,
+          child: FadeTransition(
+            opacity: CurvedAnimation(
+              parent: _fadeController,
+              curve: Curves.easeOut,
+              reverseCurve: Curves.easeIn,
+            ),
+            child: GestureDetector(
+              onVerticalDragUpdate: (details) {
+                final dy = details.delta.dy;
+                if (!data.settings.strictMode && dy < -10) {
+                  controller.skipCurrentBreak();
+                }
+              },
+              onHorizontalDragUpdate: (_) {},
+              child: _BreakOverlayContent(
+                layoutData: data,
+                controller: controller,
+                pageController: _pageController,
+                kenBurnsController: _kenBurnsController,
+                countdownNotifier: controller.timerEngine.countdownNotifier,
+              ),
             ),
           ),
         );
@@ -253,10 +250,6 @@ class _BreakLayoutData {
   int get hashCode => Object.hash(breakInfo, settings);
 }
 
-/// Stateful widget that holds the template widget across countdown ticks.
-/// The template is rebuilt by ValueListenableBuilder every second, but
-/// Flutter's element tree reconciliation keeps StatefulWidgets alive as long
-/// as the runtimeType + key match — so AnimationControllers are preserved.
 class _BreakOverlayContent extends StatelessWidget {
   final _BreakLayoutData layoutData;
   final BreakController controller;
@@ -516,7 +509,8 @@ class _BreakOverlayContent extends StatelessWidget {
         ? settings.shortBreakDurationSeconds
         : settings.longBreakDurationMinutes * 60;
 
-    final templateOwnsChrome = breakInfo.type == BreakType.windDown ||
+    final templateOwnsChrome =
+        breakInfo.type == BreakType.windDown ||
         _kTemplatesWithChrome.contains(settings.breakTemplate);
 
     void onSkip() => controller.skipCurrentBreak();
@@ -526,10 +520,6 @@ class _BreakOverlayContent extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // KEY FIX: RepaintBoundary + ValueListenableBuilder wraps the template.
-        // Each second, _buildTemplate is called and Flutter's element reconciliation
-        // keeps the same StatefulWidget element alive (same runtimeType), so
-        // AnimationControllers in WaveCalm, BreatheLineTemplate, etc. are preserved.
-        // This eliminates the dispose/reinit of AnimationControllers every second.
         RepaintBoundary(
           child: ValueListenableBuilder<int>(
             valueListenable: countdownNotifier,
@@ -555,7 +545,7 @@ class _BreakOverlayContent extends StatelessWidget {
               ),
             ),
           ),
-        if (!settings.strictMode && !templateOwnsChrome)
+        if (!settings.strictMode)
           Positioned(
             top: 28,
             right: 28,
@@ -578,14 +568,14 @@ class _BreakOverlayContent extends StatelessWidget {
               ),
             ),
           ),
-        if (!settings.strictMode && !templateOwnsChrome)
+        if (!settings.strictMode)
           Positioned(
             bottom: 24,
             left: 0,
             right: 0,
             child: const IgnorePointer(child: SwipeToDismissHint()),
           ),
-        if (settings.strictMode && !templateOwnsChrome)
+        if (settings.strictMode)
           Positioned(
             bottom: 24,
             left: 24,

@@ -19,11 +19,7 @@ class HaikuCardTemplate extends StatelessWidget {
   });
 
   static const _haikus = [
-    [
-      'Eyes need distance,',
-      'the horizon waits —',
-      'let the screen dissolve.',
-    ],
+    ['Eyes need distance,', 'the horizon waits —', 'let the screen dissolve.'],
     [
       'Shoulders drop. Breath slows.',
       'This moment is the only',

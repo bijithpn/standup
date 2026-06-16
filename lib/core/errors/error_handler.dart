@@ -12,7 +12,7 @@ class ErrorHandler {
 
   Future<T?> guard<T>({
     required Future<T> Function() action,
-    required ErrorType errorType,
+    required AppErrorType errorType,
     T? fallback,
     bool retry = true,
   }) async {
@@ -33,10 +33,10 @@ class ErrorHandler {
     }
   }
 
-  void handleError(Object error, StackTrace? stack, {ErrorType? type}) {
+  void handleError(Object error, StackTrace? stack, {AppErrorType? type}) {
     final exception = AppException(
       message: error.toString(),
-      type: type ?? ErrorType.general,
+      type: type ?? AppErrorType.general,
       originalError: error,
       stackTrace: stack,
     );

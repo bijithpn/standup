@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:breakmate/core/services/calendar_service.dart';
+import 'package:breakmate/core/services/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -14,12 +15,16 @@ import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/core/errors/error_handler.dart';
 
 export 'package:breakmate/features/break_system/domain/break_model.dart'
     show BreakType;
 export 'package:breakmate/core/services/timer_state.dart'
     show TimerState, WorkMode;
 
+/// The central state machine governing focus sessions, break countdowns,
+/// and wellness micro-reminders (posture, eye blinking). It handles the tick loop,
+/// settings synchronization, and system sleep/wake event handling.
 class TimerEngine extends ChangeNotifier {
   final SettingsRepository _settingsRepository;
   final SmartDetectionService? _smartDetectionService;
@@ -63,7 +68,6 @@ class TimerEngine extends ChangeNotifier {
     );
     _syncSettingsFromRepo();
 
-    // Initialize notifiers
     countdownNotifier.value = _stateData.countdownSeconds;
     workElapsedNotifier.value = _stateData.workElapsed;
     totalWorkTodayNotifier.value = _stateData.totalWorkToday;
@@ -84,12 +88,13 @@ class TimerEngine extends ChangeNotifier {
     _resetTimerAfterMinutes = s.resetTimerAfterMinutes;
   }
 
-  // Exposed getters and setters for the coordinator/orchestrator
   TimerStateData get stateData => _stateData;
   TimerContextManager get contextManager => _contextManager;
 
   void syncNotifiersFromState() {
-    if (state == TimerState.running || state == TimerState.idle) {
+    if (state == TimerState.running ||
+        state == TimerState.paused ||
+        state == TimerState.idle) {
       _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     }
     countdownNotifier.value = _stateData.countdownSeconds;
@@ -139,12 +144,13 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Delegate getters/setters to _stateData and _contextManager
   TimerState get state => _stateData.state;
   WorkMode get mode => _stateData.mode;
   BreakModel? get activeBreak => _stateData.activeBreak;
   int get countdownSeconds {
-    if (state == TimerState.running) {
+    if (state == TimerState.running ||
+        state == TimerState.paused ||
+        state == TimerState.idle) {
       return timeUntilNextShortBreak.inSeconds;
     }
     return _stateData.countdownSeconds;
@@ -180,7 +186,6 @@ class TimerEngine extends ChangeNotifier {
   void startTimers() {
     _syncSettingsFromRepo();
 
-    // If it was already running or break active, keep it that way
     if (state == TimerState.idle) {
       _stateData.state = TimerState.running;
       _stateData.isPreBreak = false;
@@ -240,7 +245,6 @@ class TimerEngine extends ChangeNotifier {
       }
 
       if (state == TimerState.paused || state == TimerState.idle) {
-        // notifyListeners(); // REMOVED: redundant as state is stable
         return;
       }
 
@@ -272,7 +276,9 @@ class TimerEngine extends ChangeNotifier {
 
         workElapsedNotifier.value = _stateData.workElapsed;
         totalWorkTodayNotifier.value = _stateData.totalWorkToday;
-        countdownNotifier.value = timeUntilNextShortBreak.inSeconds;
+        final remainingSeconds = timeUntilNextShortBreak.inSeconds;
+        _stateData.countdownSeconds = remainingSeconds;
+        countdownNotifier.value = remainingSeconds;
       } else if (state == TimerState.breakActive) {
         _stateData.countdownSeconds--;
         countdownNotifier.value = _stateData.countdownSeconds;
@@ -283,7 +289,6 @@ class TimerEngine extends ChangeNotifier {
         }
       }
 
-      // Update target times if they changed
       final prevWorkEndTime = _stateData.workEndTime;
       final prevBreakEndTime = _stateData.breakEndTime;
 
@@ -360,8 +365,13 @@ class TimerEngine extends ChangeNotifier {
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
 
-      // Calendar awareness
       _contextManager.isMeetingUpcoming().then((isMeeting) {
+        if (state != TimerState.running) {
+          _logger.info(
+            'Aborting break trigger: timer is no longer running (current state: $state)',
+          );
+          return;
+        }
         if (isMeeting) {
           _logger.info('Delaying break due to imminent meeting');
           _stateData.workElapsed = interval - const Duration(minutes: 5);
@@ -416,7 +426,7 @@ class TimerEngine extends ChangeNotifier {
   void _triggerClockOut() {
     _stateData.state = TimerState.windDown;
     _stateData.workElapsed = Duration.zero;
-    _stateData.countdownSeconds = 300; // 5 minutes wind down
+    _stateData.countdownSeconds = 60;
     _stateData.breakEndTime = DateTime.now().add(
       Duration(seconds: countdownSeconds),
     );
@@ -500,13 +510,15 @@ class TimerEngine extends ChangeNotifier {
       _stateData.isCompletionState = true;
       notifyListeners();
 
-      NativeBridge.updateOverlayData({
-        'title': 'Well Done!',
-        'remainingSeconds': 0,
-        'durationSeconds':
-            activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
-        'strictMode': false,
-      });
+      NativeBridge.updateOverlayData(
+        OverlayData(<String, dynamic>{
+          'title': 'Well Done!',
+          'remainingSeconds': 0,
+          'durationSeconds':
+              activeBreak?.durationSeconds ?? _shortBreakDurationSeconds,
+          'strictMode': false,
+        }),
+      );
     }
 
     _emit(BreakEndedEvent(skipped: skipped));
@@ -536,8 +548,8 @@ class TimerEngine extends ChangeNotifier {
     try {
       final tray = sl<TrayManagerService>();
       tray.setIconModeFromStyle(style);
-    } catch (_) {
-      // Guard in case sl<TrayManagerService> is not registered in tests
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
     notifyListeners();
   }
@@ -587,6 +599,7 @@ class TimerEngine extends ChangeNotifier {
 
   void pauseTimers({bool isManual = false}) {
     if (state == TimerState.breakActive) return;
+    _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     _stateData.state = TimerState.paused;
     if (isManual) {
       _stateData.isManuallyPaused = true;
@@ -614,6 +627,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.lastTickTime = DateTime.now();
     _stateData.breakEndTime = null;
     _stateData.workEndTime = DateTime.now().add(timeUntilNextShortBreak);
+    _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     _emit(
       TimerStateChangedEvent(
         state: state == TimerState.running
@@ -680,20 +694,50 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Handles the transition when the system goes to sleep or the screen locks.
+  /// We persist the current timestamp to storage to calculate elapsed sleep time on wake.
   void handleSystemSleep() {
     _logger.info(
       'System sleep or screen lock detected: pausing break/work timers',
     );
     _stateData.systemSleepPaused = true;
-    _stateData.lastTickTime = DateTime.now();
+    final now = DateTime.now();
+    _stateData.lastTickTime = now;
+    try {
+      sl<StorageService>().setInt(
+        'timer_last_tick_time',
+        now.millisecondsSinceEpoch,
+      );
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
     notifyListeners();
   }
 
+  /// Handles recovery upon system wake or screen unlock.
+  /// If the duration away exceeds the short break interval, we assume the user took an offline break
+  /// and reset the focus session. Otherwise, we resume the timer.
   void handleSystemWake() {
     _logger.info(
       'System wake or screen unlock detected: checking recovery flow',
     );
     _stateData.systemSleepPaused = false;
+
+    if (_stateData.lastTickTime == null) {
+      try {
+        final lastTickMs = sl<StorageService>().getInt(
+          'timer_last_tick_time',
+          defaultValue: 0,
+        );
+        if (lastTickMs > 0) {
+          _stateData.lastTickTime = DateTime.fromMillisecondsSinceEpoch(
+            lastTickMs,
+          );
+        }
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
+    }
 
     final lastTick = _stateData.lastTickTime ?? DateTime.now();
     final durationAway = DateTime.now().difference(lastTick);
@@ -706,6 +750,12 @@ class TimerEngine extends ChangeNotifier {
     } else {
       _stateData.lastTickTime = DateTime.now();
       resumeTimers();
+    }
+
+    try {
+      sl<StorageService>().setInt('timer_last_tick_time', 0);
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
     }
 
     notifyListeners();

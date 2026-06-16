@@ -240,8 +240,9 @@ class CalendarBridge {
         }
     }
 
-    /// Polls `EKEventStore.authorizationStatus` up to `maxAttempts` times (250 ms apart)
-    /// to outlast the macOS TCC write latency.
+    /// Polls the event store authorization status recursively to outlast the macOS TCC write latency.
+    /// This is necessary because macOS 14+ TCC helper processes commit permission updates asynchronously,
+    /// causing immediate checks following authorization callbacks to return stale results.
     private func resolveGrantedWithRetry(attempt: Int, maxAttempts: Int, result: @escaping FlutterResult) {
         let status = EKEventStore.authorizationStatus(for: .event)
         let rawValue = status.rawValue
@@ -261,6 +262,7 @@ class CalendarBridge {
                     NSLog("[BreakMate Calendar] User granted WRITE-ONLY access. This is insufficient for reading events.")
                 }
                 self.logAuthorizationStatus("request-denied-final")
+                self.showDeniedRecoveryAlert()
             }
             self.activeRequestStore = nil
             result(isGranted)
@@ -271,6 +273,7 @@ class CalendarBridge {
         if attempt >= maxAttempts {
             NSLog("[BreakMate Calendar] resolveGrantedWithRetry hit max attempts. Returning false.")
             self.logAuthorizationStatus("request-timeout-final")
+            self.showDeniedRecoveryAlert()
             self.activeRequestStore = nil
             result(false)
             return
@@ -281,6 +284,22 @@ class CalendarBridge {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
             guard let self = self else { result(false); return }
             self.resolveGrantedWithRetry(attempt: attempt + 1, maxAttempts: maxAttempts, result: result)
+        }
+    }
+
+    private func showDeniedRecoveryAlert() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Calendar Permission Denied"
+            alert.informativeText = "BreakMate requires Calendar access to read upcoming meetings and adjust your break schedule accordingly. Would you like to open System Settings to enable it?"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Open Settings")
+            alert.addButton(withTitle: "Cancel")
+            
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                self.openCalendarSettings(result: { _ in })
+            }
         }
     }
 

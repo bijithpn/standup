@@ -84,7 +84,6 @@ class _CompanionInteractiveTemplateState
           return Stack(
             fit: StackFit.expand,
             children: [
-              // Top timer capsule
               Positioned(
                 top: compact ? 20 : 36,
                 left: 0,
@@ -92,12 +91,15 @@ class _CompanionInteractiveTemplateState
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F1116).withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(100),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08)),
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -123,9 +125,10 @@ class _CompanionInteractiveTemplateState
                         ),
                         const SizedBox(width: 12),
                         Container(
-                            width: 1,
-                            height: 14,
-                            color: Colors.white.withValues(alpha: 0.12)),
+                          width: 1,
+                          height: 14,
+                          color: Colors.white.withValues(alpha: 0.12),
+                        ),
                         const SizedBox(width: 12),
                         Text(
                           isShort ? 'Mindful rest' : 'Step away & unwind',
@@ -142,7 +145,6 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Static speech bubble above sprite
               AnimatedPositioned(
                 duration: _isDragging
                     ? Duration.zero
@@ -154,12 +156,15 @@ class _CompanionInteractiveTemplateState
                   constraints: const BoxConstraints(maxWidth: 220),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F1115).withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.08)),
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
                     ),
                     child: Text(
                       widget.breakInfo.tip,
@@ -176,7 +181,6 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Draggable companion sprite
               AnimatedPositioned(
                 duration: _isDragging
                     ? Duration.zero
@@ -188,16 +192,19 @@ class _CompanionInteractiveTemplateState
                   onPanStart: (_) => setState(() => _isDragging = true),
                   onPanUpdate: (d) {
                     setState(() {
-                      _x = (_x! + d.delta.dx)
-                          .clamp(0.0, constraints.maxWidth - _widgetSize);
-                      _y = (_y! + d.delta.dy)
-                          .clamp(0.0, constraints.maxHeight - _widgetSize - 80);
+                      _x = (_x! + d.delta.dx).clamp(
+                        0.0,
+                        constraints.maxWidth - _widgetSize,
+                      );
+                      _y = (_y! + d.delta.dy).clamp(
+                        0.0,
+                        constraints.maxHeight - _widgetSize - 80,
+                      );
                     });
                   },
                   onPanEnd: (_) {
                     setState(() => _isDragging = false);
-                    _snapToEdge(
-                        constraints.maxWidth, constraints.maxHeight);
+                    _snapToEdge(constraints.maxWidth, constraints.maxHeight);
                   },
                   child: SizedBox(
                     width: _widgetSize,
@@ -211,7 +218,6 @@ class _CompanionInteractiveTemplateState
                 ),
               ),
 
-              // Bottom bar
               Positioned(
                 bottom: compact ? 20 : 36,
                 left: compact ? 24 : 40,

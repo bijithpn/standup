@@ -30,7 +30,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   data.bounds = info.rcMonitor;
   data.workArea = info.rcWork;
   
-  // Calculate DPI scale
+  // Use effective DPI because Flutter sizes the desktop UI in logical pixels.
   UINT dpiX = 96, dpiY = 96;
   HMODULE hUser32 = LoadLibrary(L"user32.dll");
   if (hUser32) {
@@ -48,7 +48,7 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
 }
 
 void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler** handler_out) {
-  // Setup Method Channel
+  // This channel is queried by Dart when display geometry is needed.
   auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       engine->messenger(), "com.breakmate/display_bridge",
       &flutter::StandardMethodCodec::GetInstance());
@@ -61,20 +61,38 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
 
           flutter::EncodableList list;
           for (const auto& d : g_displays) {
+            double scale = d.pixelRatio;
+            double logicalWidth = d.width / scale;
+            double logicalHeight = d.height / scale;
+            double logicalBoundsX = static_cast<double>(d.bounds.left) / scale;
+            double logicalBoundsY = static_cast<double>(d.bounds.top) / scale;
+            double logicalWorkAreaX = static_cast<double>(d.workArea.left) / scale;
+            double logicalWorkAreaY = static_cast<double>(d.workArea.top) / scale;
+            double logicalWorkAreaWidth = static_cast<double>(d.workArea.right - d.workArea.left) / scale;
+            double logicalWorkAreaHeight = static_cast<double>(d.workArea.bottom - d.workArea.top) / scale;
+
             flutter::EncodableMap map;
             map[flutter::EncodableValue("id")] = flutter::EncodableValue(d.id);
             map[flutter::EncodableValue("isPrimary")] = flutter::EncodableValue(d.isPrimary);
-            map[flutter::EncodableValue("width")] = flutter::EncodableValue(d.width);
-            map[flutter::EncodableValue("height")] = flutter::EncodableValue(d.height);
-            map[flutter::EncodableValue("pixelRatio")] = flutter::EncodableValue(d.pixelRatio);
-            map[flutter::EncodableValue("boundsX")] = flutter::EncodableValue(static_cast<double>(d.bounds.left));
-            map[flutter::EncodableValue("boundsY")] = flutter::EncodableValue(static_cast<double>(d.bounds.top));
-            map[flutter::EncodableValue("boundsWidth")] = flutter::EncodableValue(d.width);
-            map[flutter::EncodableValue("boundsHeight")] = flutter::EncodableValue(d.height);
-            map[flutter::EncodableValue("workAreaX")] = flutter::EncodableValue(static_cast<double>(d.workArea.left));
-            map[flutter::EncodableValue("workAreaY")] = flutter::EncodableValue(static_cast<double>(d.workArea.top));
-            map[flutter::EncodableValue("workAreaWidth")] = flutter::EncodableValue(static_cast<double>(d.workArea.right - d.workArea.left));
-            map[flutter::EncodableValue("workAreaHeight")] = flutter::EncodableValue(static_cast<double>(d.workArea.bottom - d.workArea.top));
+            
+            // Expected by both DisplayInfo and NativeDisplayInfo
+            map[flutter::EncodableValue("width")] = flutter::EncodableValue(logicalWidth);
+            map[flutter::EncodableValue("height")] = flutter::EncodableValue(logicalHeight);
+            map[flutter::EncodableValue("pixelRatio")] = flutter::EncodableValue(scale);
+            map[flutter::EncodableValue("dpiScale")] = flutter::EncodableValue(scale);
+            
+            map[flutter::EncodableValue("boundsX")] = flutter::EncodableValue(logicalBoundsX);
+            map[flutter::EncodableValue("boundsY")] = flutter::EncodableValue(logicalBoundsY);
+            map[flutter::EncodableValue("x")] = flutter::EncodableValue(logicalBoundsX);
+            map[flutter::EncodableValue("y")] = flutter::EncodableValue(logicalBoundsY);
+            
+            map[flutter::EncodableValue("boundsWidth")] = flutter::EncodableValue(logicalWidth);
+            map[flutter::EncodableValue("boundsHeight")] = flutter::EncodableValue(logicalHeight);
+            
+            map[flutter::EncodableValue("workAreaX")] = flutter::EncodableValue(logicalWorkAreaX);
+            map[flutter::EncodableValue("workAreaY")] = flutter::EncodableValue(logicalWorkAreaY);
+            map[flutter::EncodableValue("workAreaWidth")] = flutter::EncodableValue(logicalWorkAreaWidth);
+            map[flutter::EncodableValue("workAreaHeight")] = flutter::EncodableValue(logicalWorkAreaHeight);
             map[flutter::EncodableValue("refreshRate")] = flutter::EncodableValue(60.0);
             
             list.push_back(flutter::EncodableValue(map));
@@ -85,7 +103,8 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
         }
       });
 
-  // Setup Event Channel
+  // The event channel only signals that display state changed; Dart performs a
+  // fresh enumeration so all geometry comes from one code path.
   auto handler = std::make_unique<DisplayStreamHandler>();
   *handler_out = handler.get();
   auto event_channel = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
@@ -93,7 +112,8 @@ void RegisterDisplayBridge(flutter::FlutterEngine* engine, DisplayStreamHandler*
       &flutter::StandardMethodCodec::GetInstance());
   event_channel->SetStreamHandler(std::move(handler));
 
-  // Must leak channels because they hold raw pointers to lambdas and don't manage lifetime natively well if dropped here in C++ setup func
+  // TODO: Store these channels in a runner-owned registry so their
+  // lifetime is explicit instead of relying on release() from setup code.
   channel.release();
   event_channel.release();
 }

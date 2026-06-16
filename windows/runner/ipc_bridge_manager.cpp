@@ -18,10 +18,7 @@ IpcBridgeManager::~IpcBridgeManager() {}
 void IpcBridgeManager::RegisterEngine(flutter::FlutterEngine* engine) {
   std::lock_guard<std::mutex> lock(mutex_);
   
-  // Only register if not already registered
-  if (std::find(engines_.begin(), engines_.end(), engine) == engines_.end()) {
-    engines_.push_back(engine);
-
+  if (engines_map_.find(engine) == engines_map_.end()) {
     auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
         engine->messenger(), "com.breakmate/ipc",
         &flutter::StandardMethodCodec::GetInstance());
@@ -42,7 +39,8 @@ void IpcBridgeManager::RegisterEngine(flutter::FlutterEngine* engine) {
                   data = data_it->second;
                 }
                 
-                // Broadcast to other engines
+                // Broadcast to other engines; the sender has already handled
+                // its own state update.
                 SendEvent(event_name, data, engine);
               }
             }
@@ -52,31 +50,24 @@ void IpcBridgeManager::RegisterEngine(flutter::FlutterEngine* engine) {
           }
         });
 
-    channels_.push_back(std::move(channel));
+    engines_map_[engine] = std::move(channel);
   }
 }
 
 void IpcBridgeManager::UnregisterEngine(flutter::FlutterEngine* engine) {
   std::lock_guard<std::mutex> lock(mutex_);
-  engines_.erase(std::remove(engines_.begin(), engines_.end(), engine), engines_.end());
-  
-  // It's acceptable to leak the unique_ptrs in channels_ as the app shuts down 
-  // or we can remove them if we track them by engine, but for simplicity here we just leave them.
+  engines_map_.erase(engine);
 }
 
 void IpcBridgeManager::SendEvent(const std::string& event_name, const flutter::EncodableValue& data, flutter::FlutterEngine* sender_engine) {
   std::lock_guard<std::mutex> lock(mutex_);
   
-  for (auto* engine : engines_) {
+  for (const auto& [engine, channel] : engines_map_) {
     if (engine != sender_engine) {
-      flutter::EncodableMap args;
-      args[flutter::EncodableValue("event")] = flutter::EncodableValue(event_name);
-      args[flutter::EncodableValue("data")] = data;
-
-      auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      auto temp_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
           engine->messenger(), "com.breakmate/ipc",
           &flutter::StandardMethodCodec::GetInstance());
-      channel->InvokeMethod("onEvent", std::make_unique<flutter::EncodableValue>(args));
+      temp_channel->InvokeMethod(event_name, std::make_unique<flutter::EncodableValue>(data));
     }
   }
 }

@@ -41,7 +41,6 @@ class SplitViewTemplate extends StatelessWidget {
         children: [
           Row(
             children: [
-              // Left panel
               Expanded(
                 flex: 55,
                 child: Padding(
@@ -90,12 +89,10 @@ class SplitViewTemplate extends StatelessWidget {
                   ),
                 ),
               ),
-              // Right panel
               Expanded(
                 flex: 45,
                 child: Stack(
                   children: [
-                    // Divider line
                     Positioned(
                       left: 0,
                       top: 80,
@@ -186,6 +183,7 @@ class _ArcPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 4;
 

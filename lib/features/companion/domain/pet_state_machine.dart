@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'pet_mood.dart';
 import 'pet_personality.dart';
+import 'behavior_engine_models.dart';
+import '../../../core/utils/logger.dart';
 
-/// Generic pet state for the FSM.
 enum PetState {
   idle,
   blink,
@@ -40,9 +42,12 @@ enum PetState {
   scared,
   breatheFire,
   fly,
+  chasing,
+  fetching,
+  falling,
+  reacting,
 }
 
-/// Generic pet events that trigger state transitions.
 enum PetEvent {
   tick,
   userClick,
@@ -65,17 +70,29 @@ enum PetEvent {
   breakCompleted,
   petFed,
   petPlayed,
-  animationComplete, // fired by CompanionComponent when a non-looping anim finishes
+  animationComplete,
+  cursorEnteredZone,
+  cursorExitedZone,
+  cursorDwell,
+  cursorFastMove,
+  throwableSpawned,
+  throwableStationary,
+  throwableFetched,
+  throwableReturned,
+  throwableEaten,
+  landedOnSurface,
+  windowOverlap,
+  windowOverlapEnded,
+  surfaceLost,
+  loopBlocked,
 }
 
-/// Weighted transition with conditions.
 class PetTransition {
   final PetEvent event;
   final PetState targetState;
-  final double weight; // Higher = more likely when multiple transitions match
-  final Duration?
-  minDuration; // Minimum time in current state before this transition
-  final Duration? cooldown; // Cooldown after this transition fires
+  final double weight;
+  final Duration? minDuration;
+  final Duration? cooldown;
   final bool Function(PetMoodState? currentMood, PetPersonality personality)?
   condition;
 
@@ -89,7 +106,17 @@ class PetTransition {
   });
 }
 
-/// Abstracted state machine with weighted transitions and mood awareness.
+const Map<PetState, int> _statePriority = {
+  PetState.falling: 5,
+  PetState.chasing: 4,
+  PetState.fetching: 4,
+  PetState.run: 3,
+  PetState.reacting: 3,
+  PetState.walk: 2,
+  PetState.resting: 2,
+  PetState.idle: 1,
+};
+
 class PetStateMachine extends ChangeNotifier {
   PetStateMachine({
     PetPersonality? personality,
@@ -105,8 +132,13 @@ class PetStateMachine extends ChangeNotifier {
   final Map<PetTransition, DateTime> _lastTriggered = {};
   PetMoodState? _currentMood;
 
-  // Single Random instance — avoids per-call allocation
   static final _rng = Random();
+
+  PetState? _priorState;
+
+  final List<StateTransitionLog> transitionLog = [];
+
+  static final _logger = AppLogger();
 
   PetState get currentState => _currentState;
   Duration get timeInState => _stateEnteredAt != null
@@ -131,9 +163,7 @@ class PetStateMachine extends ChangeNotifier {
     final now = DateTime.now();
     final elapsed = timeInState;
 
-    // Filter matching transitions inline to avoid list allocation when possible
     PetTransition? selected;
-    double totalWeight = 0;
     final List<PetTransition> matched = [];
 
     for (final t in transitions) {
@@ -147,7 +177,6 @@ class PetStateMachine extends ChangeNotifier {
         continue;
       }
       matched.add(t);
-      totalWeight += t.weight;
     }
 
     if (matched.isEmpty) return;
@@ -155,18 +184,38 @@ class PetStateMachine extends ChangeNotifier {
     if (matched.length == 1) {
       selected = matched.first;
     } else {
-      double threshold = _rng.nextDouble() * totalWeight;
-      for (final t in matched) {
-        threshold -= t.weight;
-        if (threshold <= 0) {
-          selected = t;
-          break;
+      final int maxPriority = matched
+          .map((t) => _statePriority[t.targetState] ?? 0)
+          .reduce((a, b) => a > b ? a : b);
+      final highPriority = matched
+          .where((t) => (_statePriority[t.targetState] ?? 0) == maxPriority)
+          .toList();
+
+      if (highPriority.length == 1) {
+        selected = highPriority.first;
+      } else {
+        double threshold =
+            _rng.nextDouble() *
+            highPriority.fold<double>(0, (s, t) => s + t.weight);
+        for (final t in highPriority) {
+          threshold -= t.weight;
+          if (threshold <= 0) {
+            selected = t;
+            break;
+          }
         }
+        selected ??= highPriority.last;
       }
-      selected ??= matched.last;
     }
 
-    _transitionTo(selected.targetState, selected);
+    var targetState = selected.targetState;
+    if (targetState == PetState.idle &&
+        (event == PetEvent.cursorExitedZone ||
+            event == PetEvent.windowOverlapEnded)) {
+      targetState = _priorState ?? PetState.idle;
+    }
+
+    _transitionTo(targetState, selected);
   }
 
   void transitionTo(PetState newState) {
@@ -175,9 +224,24 @@ class PetStateMachine extends ChangeNotifier {
 
   void _transitionTo(PetState newState, [PetTransition? transition]) {
     if (_currentState == newState) return;
+    final previousState = _currentState;
+
+    if (newState == PetState.reacting) {
+      _priorState = previousState;
+    }
+
     _currentState = newState;
     _stateEnteredAt = DateTime.now();
     if (transition != null) _lastTriggered[transition] = DateTime.now();
+
+    final entry = StateTransitionLog(
+      previousState: previousState,
+      newState: newState,
+      utcTimestamp: DateTime.now().toUtc(),
+    );
+    transitionLog.add(entry);
+    _logger.info(jsonEncode(entry.toJson()));
+
     _onStateChanged?.call(newState);
     _stateController.add(newState);
     notifyListeners();
@@ -189,20 +253,11 @@ class PetStateMachine extends ChangeNotifier {
     super.dispose();
   }
 
-  /// Base transition table.
-  ///
-  /// Design rules:
-  /// - [PetEvent.randomBehavior] transitions ONLY exist on states where ambient
-  ///   AI-driven behavior changes make sense (idle, bored, exploring). This
-  ///   prevents the brain from hijacking high-priority states like drag, sleep,
-  ///   breakReminder, or meetingPaused.
-  /// - High-priority system events (breakStarted, meetingDetected, focusModeOn)
-  ///   are present on every interruptible state so they always win.
   static final Map<PetState, List<PetTransition>> _baseTransitions = {
     PetState.idle: [
       PetTransition(
         event: PetEvent.userClick,
-        targetState: PetState.alert,
+        targetState: PetState.affectionate,
         weight: 1.0,
         minDuration: const Duration(milliseconds: 500),
       ),
@@ -248,7 +303,31 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.curious,
         weight: 1.5,
       ),
-      // Ambient AI-driven behaviors — only fire from idle
+      PetTransition(
+        event: PetEvent.cursorEnteredZone,
+        targetState: PetState.reacting,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.windowOverlap,
+        targetState: PetState.reacting,
+        weight: 1.0,
+      ),
       PetTransition(
         event: PetEvent.randomBehavior,
         targetState: PetState.blink,
@@ -315,6 +394,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.stretch: [
       PetTransition(
@@ -333,6 +417,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.walk: [
       PetTransition(
@@ -343,7 +432,7 @@ class PetStateMachine extends ChangeNotifier {
       ),
       PetTransition(
         event: PetEvent.userClick,
-        targetState: PetState.alert,
+        targetState: PetState.affectionate,
         weight: 1.0,
       ),
       PetTransition(
@@ -359,6 +448,31 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorEnteredZone,
+        targetState: PetState.reacting,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.windowOverlap,
+        targetState: PetState.reacting,
         weight: 1.0,
       ),
     ],
@@ -379,6 +493,16 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
     ],
     PetState.sleep: [
       PetTransition(
@@ -388,13 +512,18 @@ class PetStateMachine extends ChangeNotifier {
       ),
       PetTransition(
         event: PetEvent.userClick,
-        targetState: PetState.alert,
+        targetState: PetState.affectionate,
         weight: 0.8,
         minDuration: const Duration(seconds: 2),
       ),
       PetTransition(
         event: PetEvent.breakStarted,
         targetState: PetState.breakReminder,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -420,6 +549,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.happy: [
       PetTransition(
@@ -436,6 +570,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -466,6 +605,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.exploring: [
       PetTransition(
@@ -489,7 +633,6 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
-      // Can chain into another walk from exploring
       PetTransition(
         event: PetEvent.randomBehavior,
         targetState: PetState.walk,
@@ -498,7 +641,6 @@ class PetStateMachine extends ChangeNotifier {
       ),
     ],
     PetState.grooming: [
-      // animationComplete fires when lick1 finishes — chain to lick2 (grooming2)
       PetTransition(
         event: PetEvent.animationComplete,
         targetState: PetState.grooming,
@@ -524,6 +666,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -555,6 +702,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.meetingDetected,
         targetState: PetState.meetingPaused,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -596,6 +748,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.meetingPaused: [
       PetTransition(
@@ -633,6 +790,11 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.breakReminder,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.sad: [
       PetTransition(
@@ -644,6 +806,11 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.petPlayed,
         targetState: PetState.happy,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
         weight: 1.0,
       ),
     ],
@@ -664,13 +831,28 @@ class PetStateMachine extends ChangeNotifier {
         targetState: PetState.meetingPaused,
         weight: 1.0,
       ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
     ],
     PetState.eating: [
       PetTransition(
         event: PetEvent.tick,
-        targetState: PetState.idle,
+        targetState: PetState.happy,
         weight: 1.0,
-        minDuration: const Duration(seconds: 4),
+        minDuration: const Duration(seconds: 3),
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
       ),
     ],
     PetState.jumping: [
@@ -743,6 +925,11 @@ class PetStateMachine extends ChangeNotifier {
     ],
     PetState.affectionate: [
       PetTransition(
+        event: PetEvent.animationComplete,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
         event: PetEvent.tick,
         targetState: PetState.idle,
         weight: 1.0,
@@ -767,6 +954,26 @@ class PetStateMachine extends ChangeNotifier {
       PetTransition(
         event: PetEvent.activityDetected,
         targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorExitedZone,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
         weight: 1.0,
       ),
     ],
@@ -820,6 +1027,88 @@ class PetStateMachine extends ChangeNotifier {
         event: PetEvent.cursorNearby,
         targetState: PetState.following,
         weight: 1.5,
+      ),
+    ],
+
+    PetState.reacting: [
+      PetTransition(
+        event: PetEvent.cursorExitedZone,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.windowOverlapEnded,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorDwell,
+        targetState: PetState.resting,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.cursorFastMove,
+        targetState: PetState.run,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableSpawned,
+        targetState: PetState.chasing,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+    ],
+
+    PetState.chasing: [
+      PetTransition(
+        event: PetEvent.throwableStationary,
+        targetState: PetState.fetching,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableFetched,
+        targetState: PetState.fetching,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableEaten,
+        targetState: PetState.eating,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.throwableReturned,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+    ],
+
+    PetState.fetching: [
+      PetTransition(
+        event: PetEvent.throwableReturned,
+        targetState: PetState.idle,
+        weight: 1.0,
+      ),
+      PetTransition(
+        event: PetEvent.surfaceLost,
+        targetState: PetState.falling,
+        weight: 1.0,
+      ),
+    ],
+
+    PetState.falling: [
+      PetTransition(
+        event: PetEvent.landedOnSurface,
+        targetState: PetState.idle,
+        weight: 1.0,
       ),
     ],
   };

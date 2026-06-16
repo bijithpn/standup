@@ -16,7 +16,6 @@ class ShutdownCoordinator {
     _logger.info('Initiating graceful shutdown...');
 
     try {
-      // 1. Save timer state and stop timers
       if (sl.isRegistered<TimerOrchestrator>()) {
         final orchestrator = sl<TimerOrchestrator>();
         orchestrator.shutdown();
@@ -27,7 +26,6 @@ class ShutdownCoordinator {
     }
 
     try {
-      // 2. Flush stats
       if (sl.isRegistered<StatsService>()) {
         sl<StatsService>().flush();
         _logger.info('StatsService flushed.');
@@ -37,7 +35,6 @@ class ShutdownCoordinator {
     }
 
     try {
-      // 3. Stop background polling
       if (sl.isRegistered<BackgroundPollingService>()) {
         sl<BackgroundPollingService>().stop();
         _logger.info('BackgroundPollingService stopped.');
@@ -47,7 +44,6 @@ class ShutdownCoordinator {
     }
 
     try {
-      // 4. Hide overlays
       if (sl.isRegistered<OverlayWindowService>()) {
         sl<OverlayWindowService>().hideOverlay();
         _logger.info('Overlays hidden.');
@@ -57,7 +53,6 @@ class ShutdownCoordinator {
     }
 
     try {
-      // 5. Dispose tray resources
       if (sl.isRegistered<TrayManagerService>()) {
         final tray = sl<TrayManagerService>();
         tray.dispose();

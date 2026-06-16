@@ -65,6 +65,7 @@ class _MinimalButtonState extends State<MinimalButton>
       onExit: (_) => setState(() => _isHovering = false),
       cursor: isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
         onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
         onTapCancel: isDisabled
@@ -154,6 +155,7 @@ class _MinimalSliderState extends State<MinimalSlider> {
           onExit: (_) => setState(() => _isHovering = false),
           cursor: SystemMouseCursors.click,
           child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onPanStart: (details) {
               setState(() => _isDragging = true);
               _updateValue(details.localPosition, width);
@@ -173,14 +175,12 @@ class _MinimalSliderState extends State<MinimalSlider> {
                     alignment: Alignment.centerLeft,
                     clipBehavior: Clip.none,
                     children: [
-                      // Track background
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      // Active track
                       FractionallySizedBox(
                         widthFactor: percent,
                         child: Container(
@@ -190,7 +190,6 @@ class _MinimalSliderState extends State<MinimalSlider> {
                           ),
                         ),
                       ),
-                      // Thumb
                       Positioned(
                         left: (width * percent) - 6,
                         child: AnimatedContainer(
