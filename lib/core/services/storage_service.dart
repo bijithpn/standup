@@ -9,6 +9,7 @@ import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/objectbox.g.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
@@ -33,11 +34,16 @@ class StorageService {
       debugPrint(
         '[Storage] Rejected ObjectBox access from secondary isolate "$isolateName" to prevent store corruption.',
       );
-      throw StateError('Storage access rejected in secondary isolates.');
+      throw AppException(
+        type: AppErrorType.storage,
+        message: 'Storage access rejected in secondary isolates.',
+      );
     }
     if (_store == null) {
-      throw StateError(
-        'StorageService not initialized. Call init() first and wait for completion.',
+      throw AppException(
+        type: AppErrorType.storage,
+        message:
+            'StorageService not initialized. Call init() first and wait for completion.',
       );
     }
     return _store!;

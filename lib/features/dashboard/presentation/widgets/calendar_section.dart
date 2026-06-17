@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
-import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/dashboard/presentation/widgets/calendar_event_row.dart';
+import 'package:breakmate/features/dashboard/presentation/widgets/calendar_action_card.dart';
 
 class CalendarSection extends StatelessWidget {
   final List<CalendarEvent>? calendarEvents;
@@ -136,7 +136,7 @@ class CalendarSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (conflict != null) ...[
-          _CalendarActionCard(event: conflict),
+          CalendarActionCard(event: conflict),
           const SizedBox(height: 24),
         ],
         for (var date in sortedDates) ...[
@@ -155,7 +155,7 @@ class CalendarSection extends StatelessWidget {
           ...groupedEvents[date]!.map((event) {
             return Column(
               children: [
-                _CalendarEventRow(event: event),
+                CalendarEventRow(event: event),
                 if (event != groupedEvents[date]!.last)
                   const Padding(
                     padding: EdgeInsets.only(left: 54),
@@ -374,257 +374,6 @@ class CalendarSection extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _CalendarActionCard extends StatelessWidget {
-  final CalendarEvent event;
-
-  const _CalendarActionCard({required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final isLive = event.start.isBefore(now) && event.end.isAfter(now);
-    final title = isLive
-        ? 'Meeting is active'
-        : 'Meeting starts in ${event.start.difference(now).inMinutes.clamp(1, 999)}m';
-    final actionLabel = isLive
-        ? 'Snooze until meeting ends'
-        : 'Take break before meeting';
-
-    return Consumer<BreakController>(
-      builder: (context, controller, _) {
-        return Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: const Color(0xFF6366F1).withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: const Color(0xFF6366F1).withValues(alpha: 0.16),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.event_available_rounded,
-                color: Color(0xFF6366F1),
-                size: 18,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      event.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              _SmallActionButton(
-                label: actionLabel,
-                onTap: isLive
-                    ? () => controller.snoozeUntil(event.end)
-                    : () => controller.takeBreakNow(),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _SmallActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _SmallActionButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppTheme.accent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CalendarEventRow extends StatelessWidget {
-  final CalendarEvent event;
-
-  const _CalendarEventRow({required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final isHappeningNow =
-        !event.isAllDay && event.start.isBefore(now) && event.end.isAfter(now);
-    final isUpcoming = event.start.isAfter(now);
-    final minutesUntil = event.start.difference(now).inMinutes;
-
-    final timeLabel = event.isAllDay
-        ? 'All day'
-        : '${_formatTime(event.start)} – ${_formatTime(event.end)}';
-
-    String? badge;
-    Color badgeColor = AppTheme.accent;
-    if (isHappeningNow) {
-      badge = 'Live';
-      badgeColor = AppTheme.error;
-    } else if (isUpcoming && minutesUntil <= 15) {
-      badge = 'In ${minutesUntil}m';
-      badgeColor = AppTheme.warning;
-    } else if (isUpcoming && minutesUntil <= 60) {
-      badge = 'In ${minutesUntil}m';
-      badgeColor = const Color(0xFF6366F1);
-    }
-
-    final meetingPlatform = event.getMeetingPlatform();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: isHappeningNow
-                  ? AppTheme.error.withValues(alpha: 0.1)
-                  : const Color(0xFF6366F1).withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(
-              isHappeningNow
-                  ? Icons.fiber_manual_record_rounded
-                  : Icons.event_rounded,
-              size: 20,
-              color: isHappeningNow ? AppTheme.error : const Color(0xFF6366F1),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        event.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: isHappeningNow
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                          color: AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (meetingPlatform != null) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF6366F1,
-                          ).withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          meetingPlatform,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF6366F1),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                    if (badge != null) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: badgeColor.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                        child: Text(
-                          badge,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: badgeColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  timeLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textMuted,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatTime(DateTime dt) {
-    final h = dt.hour;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final period = h >= 12 ? 'PM' : 'AM';
-    final hour12 = h % 12 == 0 ? 12 : h % 12;
-    return '$hour12:$m $period';
   }
 }
 
