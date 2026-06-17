@@ -3,23 +3,24 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
+
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:sentry_flutter/sentry_flutter.dart'
-    show SentryFlutter, SentryWidget;
-import 'package:window_manager/window_manager.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
-import 'app/bootstrapping/service_bootstrapper.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
+import 'app/bootstrapping/service_bootstrapper.dart';
 import 'core/core.dart';
 import 'features/features.dart';
-import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'shared/shared.dart';
 
 void _setupGlobalErrors() {

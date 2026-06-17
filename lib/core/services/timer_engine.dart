@@ -204,6 +204,7 @@ class TimerEngine extends ChangeNotifier {
 
     _stateData.lastTickTime = DateTime.now();
 
+    // Recalculate target end times based on the current system clock to prevent drift after suspension.
     if (state == TimerState.breakActive) {
       _stateData.breakEndTime = DateTime.now().add(
         Duration(seconds: countdownSeconds),
@@ -239,6 +240,7 @@ class TimerEngine extends ChangeNotifier {
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final now = DateTime.now();
 
+      // Skip processing while the system is asleep to avoid state corruption from stale deltas.
       if (_stateData.systemSleepPaused) {
         _stateData.lastTickTime = now;
         return;
@@ -255,6 +257,8 @@ class TimerEngine extends ChangeNotifier {
 
       if (state == TimerState.running) {
         if (_checkClockOut(now)) return;
+
+        // Context-aware pausing (e.g., active meeting detection).
         if (_contextManager.shouldRunWorkTimer()) {
           _stateData.manualOverride = false;
         } else {
