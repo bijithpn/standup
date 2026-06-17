@@ -47,4 +47,5 @@ app.*.map.json
 sentry.properties
 
 .env.release
-.env
+.env 
+build_tmp/

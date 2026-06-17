@@ -19,8 +19,8 @@ import 'app/bootstrapping/service_bootstrapper.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
 import 'core/core.dart';
 import 'features/features.dart';
-import 'shared/shared.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
   void handleFatalError(Object error, StackTrace? stack) {

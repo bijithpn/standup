@@ -9,7 +9,6 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:breakmate/app/main_layout.dart';
@@ -58,8 +57,6 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     final controller = sl<BreakController>();
 
     controller.addListener(() {
-      sl<TrayManagerService>().updatePauseState(controller.isPaused);
-
       final overlayService = sl<OverlayWindowService>();
       if (!controller.isBreakActive &&
           overlayService.currentOverlayType == OverlayType.breakScreen) {

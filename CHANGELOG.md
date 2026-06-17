@@ -20,7 +20,7 @@ All notable changes to BreakMate are documented in this file.
 
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
-## [Unreleased]
+## [Released]
 
 ## [1.4.0] - 2026-06-16
 
@@ -310,7 +310,6 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
-[Unreleased]: https://github.com/bijithintersmart/standup/compare/v1.4.0...HEAD
 [1.4.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0
 [1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1

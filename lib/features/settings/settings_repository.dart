@@ -10,6 +10,7 @@ import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 
 class SettingsRepository extends ChangeNotifier {
   final StorageService _storage;
@@ -494,7 +495,10 @@ class SettingsRepository extends ChangeNotifier {
         '[SettingsRepo] StorageService is unavailable during save(); settingsBox is null. Diagnostic details: '
         'Storage ready: ${_storage.isReady}, settingsBox: ${_storage.settingsBox}, companionPrefsBox: ${_storage.companionPreferencesBox}, kvBox: ${_storage.kvBox}',
       );
-      throw StateError('Storage unavailable');
+      throw AppException(
+        type: AppErrorType.storage,
+        message: 'Storage unavailable',
+      );
     }
 
     _current = settings;

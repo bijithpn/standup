@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'dart:math' as math;
 import 'dart:ui';
@@ -22,6 +23,21 @@ class CompanionWindowManager {
   final CompanionWindowController _windowController;
   final DisplayManager? _displayManager;
   final AppLogger _logger;
+
+  Future<double> _getPrimaryScreenHeight() async {
+    if (_displayManager == null) return 1080.0;
+    try {
+      final displays = await _displayManager.enumerateDisplays();
+      if (displays.isNotEmpty) {
+        final primary = displays.firstWhere(
+          (d) => d.isPrimary,
+          orElse: () => displays.first,
+        );
+        return primary.rect.height;
+      }
+    } catch (_) {}
+    return 1080.0;
+  }
 
   Size _currentSize = defaultSize;
   Offset _currentPosition = Offset.zero;
@@ -53,11 +69,42 @@ class CompanionWindowManager {
       _keyWindowHeight,
       defaultValue: defaultSize.height,
     );
-    final persistedX = prefs.getDouble(_keyWindowX, defaultValue: 0.0);
-    final persistedY = prefs.getDouble(_keyWindowY, defaultValue: 0.0);
+    final persistedX = prefs.getDouble(_keyWindowX, defaultValue: -1.0);
+    final persistedY = prefs.getDouble(_keyWindowY, defaultValue: -1.0);
 
     _currentSize = _clampSize(Size(persistedWidth, persistedHeight));
-    _currentPosition = Offset(persistedX, persistedY);
+
+    double x = persistedX;
+    double y = persistedY;
+    bool needsPersist = false;
+
+    if (x == -1.0 || y == -1.0) {
+      needsPersist = true;
+      if (_displayManager != null) {
+        try {
+          final displays = await _displayManager.enumerateDisplays();
+          if (displays.isNotEmpty) {
+            final primary = displays.firstWhere(
+              (d) => d.isPrimary,
+              orElse: () => displays.first,
+            );
+            x = primary.rect.right - _currentSize.width - 20;
+            y = primary.rect.bottom - _currentSize.height - 20;
+          } else {
+            x = 1000;
+            y = 500;
+          }
+        } catch (_) {
+          x = 1000;
+          y = 500;
+        }
+      } else {
+        x = 1000;
+        y = 500;
+      }
+    }
+
+    _currentPosition = Offset(x, y);
 
     _logger.info(
       'CompanionWindowManager.initialize(): restoring '
@@ -74,12 +121,21 @@ class CompanionWindowManager {
         '$_currentPosition → $recovered',
       );
       _currentPosition = recovered;
+      needsPersist = true;
+    }
+
+    if (needsPersist) {
       _persistPosition(_currentPosition);
     }
 
+    double targetY = _currentPosition.dy;
+    if (Platform.isMacOS) {
+      final primaryHeight = await _getPrimaryScreenHeight();
+      targetY = primaryHeight - _currentPosition.dy - _currentSize.height;
+    }
     await _windowController.setPosition(
       _currentPosition.dx,
-      _currentPosition.dy,
+      targetY,
     );
 
     await _windowController.setNonActivating(true);
@@ -107,7 +163,12 @@ class CompanionWindowManager {
     }
 
     _currentPosition = resolved;
-    await _windowController.setPosition(resolved.dx, resolved.dy);
+    double targetY = resolved.dy;
+    if (Platform.isMacOS) {
+      final primaryHeight = await _getPrimaryScreenHeight();
+      targetY = primaryHeight - resolved.dy - _currentSize.height;
+    }
+    await _windowController.setPosition(resolved.dx, targetY);
     _persistPosition(_currentPosition);
   }
 
@@ -129,7 +190,12 @@ class CompanionWindowManager {
 
   Future<Offset> getPosition() async {
     final pos = await _windowController.getPosition();
-    _currentPosition = Offset(pos['x'] as double, pos['y'] as double);
+    double y = pos['y'] as double;
+    if (Platform.isMacOS) {
+      final primaryHeight = await _getPrimaryScreenHeight();
+      y = primaryHeight - y - _currentSize.height;
+    }
+    _currentPosition = Offset(pos['x'] as double, y);
     if (pos.containsKey('width') && pos.containsKey('height')) {
       final w = pos['width'] as double;
       final h = pos['height'] as double;

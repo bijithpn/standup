@@ -1,6 +1,7 @@
 import 'package:breakmate/app/dependency_injection.dart';
 import 'dart:async';
 import 'package:breakmate/core/errors/app_exception.dart';
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
@@ -32,6 +33,7 @@ class ServiceBootstrapper {
     }
 
     sl<SessionStateRepository>().initialize();
+    sl<CustomEnvironmentRepository>().loadSync();
 
     final settingsRepo = sl<SettingsRepository>();
     await settingsRepo.load();
