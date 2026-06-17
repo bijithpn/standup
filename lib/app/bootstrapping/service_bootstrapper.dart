@@ -6,7 +6,6 @@ import 'package:breakmate/core/display/services/display_manager.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/storage_service.dart';
-import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -16,7 +15,6 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
-import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 /// Decoupling initialization from GetIt registration prevents circular dependency
@@ -61,11 +59,6 @@ class ServiceBootstrapper {
 
     sl<TimerOrchestrator>().initialize();
     sl<BreakController>().initialize();
-
-    trayManager.setDependencies(sl<TimerEngine>(), sl());
-    trayManager.setMenuBarController(sl());
-
-    sl<MenuBarController>().setDependencies(sl());
 
     // Pre-cache tray animation frames on startup to avoid frame drops on macOS Menubar updates.
     try {
