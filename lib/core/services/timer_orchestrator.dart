@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:breakmate/core/services/storage_service.dart';
-import 'package:flutter/material.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
+import 'package:flutter/widgets.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';

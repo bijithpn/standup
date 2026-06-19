@@ -551,6 +551,12 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   void _onTimerChanged() {
     final timerEngine = _timerEngine;
     if (timerEngine != null) {
+      if (timerEngine.systemSleepPaused) {
+        _animTimer?.cancel();
+        _actionAnimTimer?.cancel();
+        _lastState = null; // Reset to force rebuild on wake
+        return;
+      }
       final state = timerEngine.state;
       if (_lastState != state) {
         _lastState = state;

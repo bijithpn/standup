@@ -4,6 +4,9 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_theme.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 
+import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
+
 // Persists the user's list of custom EnvironmentThemeConfig entries as a JSON
 // sidecar file alongside pet_config_v2.json. Follows the same atomic-write
 // pattern as SettingsPersistence.
@@ -108,9 +111,12 @@ class CustomEnvironmentRepository {
       _logger.info(
         'CustomEnvironmentRepository: saved ${themes.length} custom themes.',
       );
-    } catch (e) {
-      _logger.error(
-        'CustomEnvironmentRepository: write to "$path" failed: $e.',
+    } catch (e, st) {
+      ErrorHandler().handleError(
+        e,
+        st,
+        type: AppErrorType.storage,
+        message: 'Failed to write custom environments to "$path"',
       );
       try {
         final tmp = File(tmpPath);

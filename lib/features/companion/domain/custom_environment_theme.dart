@@ -71,6 +71,10 @@ class CustomEnvironmentTheme {
     const src = EnvironmentThemeConfig.themes;
     final base = src.first; // Forest
     final mSec = DateTime.now().millisecondsSinceEpoch;
+    final mtnL = base.mountainLeftAsset.path;
+    final mtnR = base.mountainRightAsset.path;
+    final rockL = base.rockLeftAsset.path;
+    final rockR = base.rockRightAsset.path;
     return CustomEnvironmentTheme(
       id: 'custom_$mSec',
       name: 'My Theme',
@@ -91,11 +95,40 @@ class CustomEnvironmentTheme {
       birdPath: base.birdAsset.path,
       rabbitIdlePath: base.rabbitIdleAsset.path,
       rabbitRunPath: base.rabbitRunAsset.path,
-      mountainLeftPath: base.mountainLeftAsset.path,
-      mountainRightPath: base.mountainRightAsset.path,
-      rockLeftPath: base.rockLeftAsset.path,
-      rockRightPath: base.rockRightAsset.path,
-      layers: const [],
+      mountainLeftPath: mtnL,
+      mountainRightPath: mtnR,
+      rockLeftPath: rockL,
+      rockRightPath: rockR,
+      layers: [
+        if (mtnL != 'none' && mtnL.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'default_mtn_l',
+            assetPath: mtnL,
+            xRatio: 0.1,
+            yRatio: 0.0,
+          ),
+        if (mtnR != 'none' && mtnR.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'default_mtn_r',
+            assetPath: mtnR,
+            xRatio: 0.9,
+            yRatio: 0.0,
+          ),
+        if (rockL != 'none' && rockL.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'default_rock_l',
+            assetPath: rockL,
+            xRatio: 0.18,
+            yRatio: 0.0,
+          ),
+        if (rockR != 'none' && rockR.isNotEmpty)
+          CustomEnvironmentLayer(
+            id: 'default_rock_r',
+            assetPath: rockR,
+            xRatio: 0.82,
+            yRatio: 0.0,
+          ),
+      ],
       toyPaths: {for (final e in base.toyAssets.entries) e.key: e.value.path},
       foodPaths: {for (final e in base.foodAssets.entries) e.key: e.value.path},
     );

@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
+import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 
 class SimplePrefs {
   SimplePrefs._();
@@ -20,8 +22,13 @@ class SimplePrefs {
       _filePath = p.join(dir.path, 'breakmate_critical.json');
       debugPrint('[SimplePrefs] Path: $_filePath');
       _load();
-    } catch (e) {
-      debugPrint('[SimplePrefs] init() failed: $e');
+    } catch (e, st) {
+      ErrorHandler().handleError(
+        e,
+        st,
+        type: AppErrorType.storage,
+        message: 'SimplePrefs init() failed',
+      );
     }
   }
 
@@ -40,8 +47,13 @@ class SimplePrefs {
         }
       }
       debugPrint('[SimplePrefs] No existing data file — starting fresh.');
-    } catch (e) {
-      debugPrint('[SimplePrefs] _load() error: $e. Starting fresh.');
+    } catch (e, st) {
+      ErrorHandler().handleError(
+        e,
+        st,
+        type: AppErrorType.storage,
+        message: 'SimplePrefs _load() error. Starting fresh.',
+      );
       _data = {};
     }
   }
@@ -53,8 +65,13 @@ class SimplePrefs {
       final tmp = File('$_filePath.tmp');
       tmp.writeAsStringSync(json, flush: true);
       tmp.renameSync(_filePath!);
-    } catch (e) {
-      debugPrint('[SimplePrefs] _persist() error: $e');
+    } catch (e, st) {
+      ErrorHandler().handleError(
+        e,
+        st,
+        type: AppErrorType.storage,
+        message: 'SimplePrefs _persist() error',
+      );
     }
   }
 

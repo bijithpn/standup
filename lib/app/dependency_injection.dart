@@ -91,10 +91,12 @@ Future<void> initDependencies() async {
   );
   sl.registerSingleton<TrayManagerService>(TrayManagerService());
 
+  sl.registerSingleton<TimerRepository>(TimerRepository(sl()));
+
   sl.registerSingleton<TimerOrchestrator>(
     TimerOrchestrator(
       timerEngine: sl(),
-      timerRepository: TimerRepository(sl()),
+      timerRepository: sl(),
       sessionStateRepository: sl(),
       activityMonitor: sl(),
       notificationService: sl(),

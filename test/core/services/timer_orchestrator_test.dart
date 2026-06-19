@@ -404,7 +404,7 @@ void main() {
       expect(fakeTrayManagerService.breakActive, isFalse);
     });
 
-    test('BreakStartedEvent triggers notification and updates tray', () {
+    test('BreakStartedEvent triggers notification and updates tray', () async {
       eventBus.emit(
         BreakStartedEvent(
           isLongBreak: false,
@@ -413,6 +413,8 @@ void main() {
         ),
       );
 
+      await Future.microtask(() {});
+
       // Notification is triggered and tray status transitions to active
       expect(fakeNotificationService.showBreakReminderCalled, isTrue);
       expect(fakeTrayManagerService.breakActive, isTrue);
@@ -420,7 +422,7 @@ void main() {
 
     test(
       'BreakStartedEvent for long break triggers clock out notification',
-      () {
+      () async {
         eventBus.emit(
           BreakStartedEvent(
             isLongBreak: true,
@@ -429,13 +431,17 @@ void main() {
           ),
         );
 
+        await Future.microtask(() {});
+
         expect(fakeNotificationService.showClockOutReminderCalled, isTrue);
         expect(fakeTrayManagerService.breakActive, isTrue);
       },
     );
 
-    test('BreakEndedEvent resets tray state', () {
+    test('BreakEndedEvent resets tray state', () async {
       eventBus.emit(BreakEndedEvent(skipped: false));
+
+      await Future.microtask(() {});
 
       expect(fakeTrayManagerService.breakActive, isFalse);
     });

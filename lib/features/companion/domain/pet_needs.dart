@@ -2,7 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
-import '../../../core/services/simple_prefs.dart';
+import '../../../core/services/storage_service.dart';
+import '../../../app/dependency_injection.dart';
 import '../../../core/utils/logger.dart';
 import '../../../features/settings/settings_repository.dart';
 import 'pet_state_machine.dart';
@@ -226,7 +227,7 @@ class NeedsEngine {
   void persist() {
     try {
       final json = jsonEncode(_needs.toJson());
-      SimplePrefs.instance.setString(_persistKey, json);
+      sl<StorageService>().setString(_persistKey, json);
       _logger.info('NeedsEngine.persist(): $json');
     } catch (e, st) {
       _logger.error('NeedsEngine.persist() failed: $e', stackTrace: st);
@@ -235,7 +236,7 @@ class NeedsEngine {
 
   void restore() {
     try {
-      final raw = SimplePrefs.instance.getString(_persistKey);
+      final raw = sl<StorageService>().getString(_persistKey);
       if (raw.isEmpty) {
         _logger.info(
           'NeedsEngine.restore(): no persisted data, using defaults',

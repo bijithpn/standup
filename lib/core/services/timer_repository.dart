@@ -86,8 +86,8 @@ class TimerRepository {
         _storageService.setInt('timer_last_tick_time', 0);
       }
       _logger.info('Timer state saved via TimerRepository');
-    } catch (e) {
-      _logger.error('Failed to save timer state: $e');
+    } catch (e, st) {
+      _logger.error('Failed to save timer state: $e', stackTrace: st);
     }
   }
 
@@ -234,8 +234,8 @@ class TimerRepository {
       _logger.info(
         'Timer state restored via TimerRepository: ${state.state}, elapsed=${state.workElapsed.inSeconds}s',
       );
-    } catch (e) {
-      _logger.error('Failed to restore timer state: $e');
+    } catch (e, st) {
+      _logger.error('Failed to restore timer state: $e', stackTrace: st);
     }
   }
 }

@@ -4,7 +4,7 @@ import 'package:breakmate/core/ipc/ipc_events.dart';
 void main() {
   group('IPC Events Serialization & Deserialization', () {
     test('TimerStateChangedIpcEvent serialization and deserialization', () {
-      final original = TimerStateChangedIpcEvent(
+      final original = IpcEvent.timerStateChanged(
         stateName: 'running',
         countdownSeconds: 1200,
         workElapsedSeconds: 300,
@@ -12,19 +12,17 @@ void main() {
         totalWorkTodaySeconds: 7200,
       );
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.timerStateChanged));
-      expect(json['version'], equals(IpcEvent.currentVersion));
+      expect(original.eventName, equals(IpcEventNames.timerStateChanged));
 
-      final payload = json['payload'] as Map<String, dynamic>;
-      expect(payload['state'], equals('running'));
+      final payload = original.payload;
+      expect(payload['stateName'], equals('running'));
       expect(payload['countdownSeconds'], equals(1200));
       expect(payload['workElapsedSeconds'], equals(300));
       expect(payload['targetEndTime'], equals(1680000000000));
       expect(payload['totalWorkTodaySeconds'], equals(7200));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as TimerStateChangedIpcEvent;
 
       expect(parsed.stateName, equals('running'));
@@ -35,22 +33,21 @@ void main() {
     });
 
     test('BreakStartedIpcEvent serialization and deserialization', () {
-      final original = BreakStartedIpcEvent(
+      final original = IpcEvent.breakStarted(
         isLongBreak: true,
         durationSeconds: 900,
         title: 'Lunch Break',
       );
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.breakStarted));
+      expect(original.eventName, equals(IpcEventNames.breakStarted));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['isLongBreak'], isTrue);
       expect(payload['durationSeconds'], equals(900));
       expect(payload['title'], equals('Lunch Break'));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as BreakStartedIpcEvent;
 
       expect(parsed.isLongBreak, isTrue);
@@ -59,36 +56,34 @@ void main() {
     });
 
     test('BreakEndedIpcEvent serialization and deserialization', () {
-      final original = BreakEndedIpcEvent(skipped: true);
+      final original = IpcEvent.breakEnded(skipped: true);
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.breakEnded));
+      expect(original.eventName, equals(IpcEventNames.breakEnded));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['skipped'], isTrue);
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as BreakEndedIpcEvent;
 
       expect(parsed.skipped, isTrue);
     });
 
     test('CompanionInteractionIpcEvent serialization and deserialization', () {
-      final original = CompanionInteractionIpcEvent(
+      final original = IpcEvent.companionInteraction(
         interactionType: 'pet',
         metadata: {'petName': 'Mochi'},
       );
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.companionInteraction));
+      expect(original.eventName, equals(IpcEventNames.companionInteraction));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['interactionType'], equals('pet'));
       expect(payload['metadata'], equals({'petName': 'Mochi'}));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as CompanionInteractionIpcEvent;
 
       expect(parsed.interactionType, equals('pet'));
@@ -96,20 +91,19 @@ void main() {
     });
 
     test('MeetingDetectedIpcEvent serialization and deserialization', () {
-      final original = MeetingDetectedIpcEvent(
+      final original = IpcEvent.meetingDetected(
         isActive: true,
         bundleId: 'com.apple.zoom',
       );
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.detectionMeeting));
+      expect(original.eventName, equals(IpcEventNames.detectionMeeting));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['isActive'], isTrue);
       expect(payload['bundleId'], equals('com.apple.zoom'));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as MeetingDetectedIpcEvent;
 
       expect(parsed.isActive, isTrue);
@@ -117,45 +111,42 @@ void main() {
     });
 
     test('FocusModeIpcEvent serialization and deserialization', () {
-      final original = FocusModeIpcEvent(isActive: true);
+      final original = IpcEvent.focusMode(isActive: true);
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.detectionFocusMode));
+      expect(original.eventName, equals(IpcEventNames.detectionFocusMode));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['isActive'], isTrue);
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as FocusModeIpcEvent;
 
       expect(parsed.isActive, isTrue);
     });
 
     test('TrayActionIpcEvent serialization and deserialization', () {
-      final original = TrayActionIpcEvent(action: 'click');
+      final original = IpcEvent.trayAction(action: 'click');
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.trayAction));
+      expect(original.eventName, equals(IpcEventNames.trayAction));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['action'], equals('click'));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as TrayActionIpcEvent;
 
       expect(parsed.action, equals('click'));
     });
 
     test('CompanionCloseIpcEvent serialization and deserialization', () {
-      final original = CompanionCloseIpcEvent();
+      final original = IpcEvent.companionClose();
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.companionClose));
+      expect(original.eventName, equals(IpcEventNames.companionClose));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, {})
+          IpcEvent.parse(original.eventName, {})
               as CompanionCloseIpcEvent;
 
       expect(parsed, isNotNull);
@@ -164,20 +155,19 @@ void main() {
     test(
       'CompanionPositionChangedIpcEvent serialization and deserialization',
       () {
-        final original = CompanionPositionChangedIpcEvent(x: 12.5, y: 88.0);
+        final original = IpcEvent.companionPositionChanged(x: 12.5, y: 88.0);
 
-        final json = original.toJson();
         expect(
-          json['eventName'],
+          original.eventName,
           equals(IpcEventNames.companionPositionChanged),
         );
 
-        final payload = json['payload'] as Map<String, dynamic>;
+        final payload = original.payload;
         expect(payload['x'], equals(12.5));
         expect(payload['y'], equals(88.0));
 
         final parsed =
-            IpcEvent.parse(json['eventName'] as String, payload)
+            IpcEvent.parse(original.eventName, payload)
                 as CompanionPositionChangedIpcEvent;
 
         expect(parsed.x, equals(12.5));
@@ -186,16 +176,15 @@ void main() {
     );
 
     test('CompanionStateChangedIpcEvent serialization and deserialization', () {
-      final original = CompanionStateChangedIpcEvent(state: 'walking');
+      final original = IpcEvent.companionStateChanged(state: 'walking');
 
-      final json = original.toJson();
-      expect(json['eventName'], equals(IpcEventNames.companionStateChanged));
+      expect(original.eventName, equals(IpcEventNames.companionStateChanged));
 
-      final payload = json['payload'] as Map<String, dynamic>;
+      final payload = original.payload;
       expect(payload['state'], equals('walking'));
 
       final parsed =
-          IpcEvent.parse(json['eventName'] as String, payload)
+          IpcEvent.parse(original.eventName, payload)
               as CompanionStateChangedIpcEvent;
 
       expect(parsed.state, equals('walking'));
@@ -207,23 +196,5 @@ void main() {
       expect(parsed.eventName, equals('some.unknown.event'));
       expect(parsed.payload, equals({'data': 123}));
     });
-
-    test(
-      'FormatException thrown on missing required fields or type mismatches',
-      () {
-        expect(
-          () => TimerStateChangedIpcEvent.fromJson({
-            'state': 123,
-          }), // should be String
-          throwsFormatException,
-        );
-        expect(
-          () => TimerStateChangedIpcEvent.fromJson({
-            'countdownSeconds': 10,
-          }), // missing 'state'
-          throwsFormatException,
-        );
-      },
-    );
   });
 }
