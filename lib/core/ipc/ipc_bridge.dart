@@ -60,14 +60,14 @@ class IpcBridge {
   }
 
   Future<void> notifyCompanionStateChanged(String state) async {
-    await dispatch(CompanionStateChangedIpcEvent(state: state));
+    await dispatch(IpcEvent.companionStateChanged(state: state));
   }
 
   Future<void> notifyCompanionPosition({
     required double x,
     required double y,
   }) async {
-    await dispatch(CompanionPositionChangedIpcEvent(x: x, y: y));
+    await dispatch(IpcEvent.companionPositionChanged(x: x, y: y));
   }
 
   Future<void> notifyTimerStateChanged(
@@ -78,7 +78,7 @@ class IpcBridge {
     int? totalWorkTodaySeconds,
   }) async {
     await dispatch(
-      TimerStateChangedIpcEvent(
+      IpcEvent.timerStateChanged(
         stateName: state,
         countdownSeconds: countdownSeconds,
         workElapsedSeconds: workElapsedSeconds,
@@ -90,15 +90,15 @@ class IpcBridge {
 
   Future<void> notifyMeetingDetected(bool isActive, {String? bundleId}) async {
     await dispatch(
-      MeetingDetectedIpcEvent(isActive: isActive, bundleId: bundleId ?? ''),
+      IpcEvent.meetingDetected(isActive: isActive, bundleId: bundleId ?? ''),
     );
   }
 
   Future<void> notifyFocusMode(bool isActive) async {
-    await dispatch(FocusModeIpcEvent(isActive: isActive));
+    await dispatch(IpcEvent.focusMode(isActive: isActive));
   }
 
   Future<void> notifyTrayAction(String action) async {
-    await dispatch(TrayActionIpcEvent(action: action));
+    await dispatch(IpcEvent.trayAction(action: action));
   }
 }

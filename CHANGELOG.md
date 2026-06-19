@@ -5,7 +5,7 @@ All notable changes to BreakMate are documented in this file.
 ## Tag And Version Index
 
 | Tag | Version | Build | Date | Summary |
-|---|---:|---:|---|---|
+| --- | ---: | ---: | --- | --- |
 | `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
 | `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
 | `v1.2.1` | 1.2.1 | 31 | 2026-06-01 | Native macOS Calendar and Permission Recovery |

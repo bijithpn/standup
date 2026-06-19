@@ -1,21 +1,20 @@
-import 'dart:async' show Timer;
 
 import 'package:breakmate/core/services/simple_prefs.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math';
 import 'package:breakmate/core/constants/app_constants.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
-import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/ipc/overlay_window_config.dart';
+
+import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
+import 'package:breakmate/features/break_system/presentation/standalone_overlay/overlay_chrome.dart';
 
 enum BreakTheme {
   image,
@@ -62,7 +61,7 @@ const _kTemplatesWithChrome = {
 class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
-  final int durationSeconds;
+  final int initialDurationSeconds;
 
   static final List<void Function(FlutterErrorDetails)> onErrorCallbacks = [];
 
@@ -70,7 +69,7 @@ class StandaloneBreakOverlay extends StatefulWidget {
     super.key,
     this.title = "Time for a Break",
     this.message = "Take a moment to stretch and breathe",
-    this.durationSeconds = 300,
+    this.initialDurationSeconds = 300,
   });
 
   @override
@@ -78,7 +77,7 @@ class StandaloneBreakOverlay extends StatefulWidget {
 }
 
 class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, BreakTimerManager {
   static const MethodChannel _bridge = MethodChannel(
     'com.breakmate.desktop/bridge',
   );
@@ -91,8 +90,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   String _title = "Time for a Break";
   String _tip = "Take a moment to recharge.";
-  int _durationSeconds = 300;
-  int _remainingSeconds = 300;
   String _overlayType = 'breakScreen';
   int _screenId = 0;
   bool _strictMode = false;
@@ -102,9 +99,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _showWellnessNotes = true;
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
-
-  DateTime? _targetEndTime;
-  Timer? _localTimer;
 
   String? _exerciseTitle;
   String? _exerciseInstructions;
@@ -122,10 +116,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   // True once SimplePrefs settings are loaded; the overlay renders immediately.
   // The async bridge call still runs to refine timer data, but does not gate rendering.
   bool _initialized = false;
-  bool _isDismissing = false;
-
-  // KEY PERFORMANCE FIX: ValueNotifier for countdown allows ValueListenableBuilder
-  late final ValueNotifier<int> _remainingSecondsNotifier;
 
   void _loadInitialSettings() {
     try {
@@ -188,8 +178,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void initState() {
     super.initState();
     _title = widget.title;
-    _durationSeconds = widget.durationSeconds;
-    _remainingSeconds = widget.durationSeconds;
+    durationSeconds = widget.initialDurationSeconds;
+    remainingSeconds = widget.initialDurationSeconds;
 
     // Load settings synchronously from SimplePrefs so the template can render
     // on the first frame without waiting for the async bridge call.
@@ -217,8 +207,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       duration: const Duration(milliseconds: 600),
     );
 
-    _remainingSecondsNotifier = ValueNotifier<int>(_remainingSeconds);
-
     _setupBridge();
     _loadInitialData();
 
@@ -242,8 +230,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _applyOverlayData(Map args) {
     if (!mounted) return;
 
-    if (args.containsKey('breaksCompleted')) {
-      final count = args['breaksCompleted'] as int;
+    final config = OverlayWindowConfig.fromJson(Map<String, dynamic>.from(args));
+
+    if (config.breaksCompleted != null) {
+      final count = config.breaksCompleted!;
       try {
         if (sl.isRegistered<StatsService>()) {
           final service = sl<StatsService>();
@@ -256,77 +246,62 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
     }
 
-    final targetEndMs = args['targetEndTime'] as int?;
+    final targetEndMs = config.targetEndTime;
     if (targetEndMs != null) {
-      _targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
-      _startLocalTimer();
+      targetEndTime = DateTime.fromMillisecondsSinceEpoch(targetEndMs);
+      startLocalTimer(_completeBreak);
     } else {
-      _targetEndTime = null;
-      _localTimer?.cancel();
-      _localTimer = null;
+      targetEndTime = null;
+      cancelTimer();
     }
 
-    final newRemaining = args['remainingSeconds'] ?? _remainingSeconds;
-    if (newRemaining == 0 && _remainingSeconds > 0) {
+    final newRemaining = config.remainingSeconds;
+    if (newRemaining == 0 && remainingSeconds > 0) {
       _fadeController.reverse();
     }
 
     setState(() {
-      _title = args['title'] ?? _title;
-      _tip = args['tip'] ?? _tip;
-      _durationSeconds = args['durationSeconds'] ?? _durationSeconds;
+      _title = config.title;
+      _tip = config.tip;
+      durationSeconds = config.durationSeconds;
       if (targetEndMs == null) {
-        _remainingSeconds = args['remainingSeconds'] ?? _remainingSeconds;
+        remainingSeconds = config.remainingSeconds;
+        remainingSecondsNotifier.value = remainingSeconds;
       }
-      _overlayType = args['type'] ?? _overlayType;
-      _strictMode = args['strictMode'] ?? _strictMode;
-      _enableAnimations = args['enableAnimations'] ?? _enableAnimations;
-      _intensityLevel = args['intensityLevel'] ?? _intensityLevel;
-      _showWellnessNotes = args['showWellnessNotes'] ?? _showWellnessNotes;
-      _isInternalPreview = args['isPreview'] ?? false;
-      if (args.containsKey('breakType')) {
-        _breakTypeStr = args['breakType'];
+      _overlayType = config.overlayType;
+      _strictMode = config.strictMode;
+      _enableAnimations = config.enableAnimations;
+      _intensityLevel = config.intensityLevel;
+      _showWellnessNotes = config.showWellnessNotes;
+      _isInternalPreview = config.isPreview;
+      if (config.breakType != null) {
+        _breakTypeStr = config.breakType;
       }
 
-      if (args['theme'] != null) {
-        final String themeStr = args['theme'];
+      if (config.theme != null) {
+        final String themeStr = config.theme!;
         _currentTheme = BreakTheme.values.firstWhere(
           (e) => e.name == themeStr,
           orElse: () => _currentTheme,
         );
       }
-      if (args['classicImage'] != null) {
-        _currentTemplate = args['classicImage'] as String;
+      if (config.classicImage != null) {
+        _currentTemplate = config.classicImage!;
       }
-      if (args['breakTemplate'] != null) {
-        _breakTemplate = args['breakTemplate'];
-      } else if (args['template'] != null) {
-        _breakTemplate = args['template'];
-      }
+      _breakTemplate = config.breakTemplate;
       _syncClassicEffects(_breakTemplate == 'classic' && _enableAnimations);
-      if (args['companionPetTheme'] != null) {
-        _companionPetTheme = args['companionPetTheme'];
-      } else if (args['companionCatTheme'] != null) {
-        _companionPetTheme = args['companionCatTheme'];
+      _companionPetTheme = config.companionPetTheme;
+      _clockFaceTextColorHex = config.clockFaceTextColorHex;
+      _clockFaceBlurEnabled = config.clockFaceBlurEnabled;
+      _customImagePath = config.customImagePath;
+      if (config.exerciseTitle != null) {
+        _exerciseTitle = config.exerciseTitle;
       }
-      if (args.containsKey('clockFaceTextColorHex')) {
-        _clockFaceTextColorHex = args['clockFaceTextColorHex'] as int;
+      if (config.exerciseInstructions != null) {
+        _exerciseInstructions = config.exerciseInstructions;
       }
-      if (args.containsKey('clockFaceBlurEnabled')) {
-        _clockFaceBlurEnabled = args['clockFaceBlurEnabled'] as bool;
-      }
-      if (args.containsKey('customImagePath')) {
-        _customImagePath = args['customImagePath'] as String?;
-        if (_customImagePath == "") _customImagePath = null;
-      }
-      if (args.containsKey('exerciseTitle')) {
-        _exerciseTitle = args['exerciseTitle'];
-      }
-      if (args.containsKey('exerciseInstructions')) {
-        _exerciseInstructions = args['exerciseInstructions'];
-      }
-      if (args['reminderType'] != null) {
-        final newReminderType = args['reminderType'];
+      if (config.reminderType != null) {
+        final newReminderType = config.reminderType;
         if (newReminderType != _reminderType) {
           _maxWarningSeconds = newRemaining;
         }
@@ -351,30 +326,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         });
       } else {
         _fadeController.duration = const Duration(milliseconds: 600);
-      }
-    });
-  }
-
-  void _startLocalTimer() {
-    _localTimer?.cancel();
-    _localTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_targetEndTime != null) {
-        final newRemaining = _targetEndTime!
-            .difference(DateTime.now())
-            .inSeconds
-            .clamp(0, _durationSeconds);
-
-        if (newRemaining != _remainingSeconds) {
-          if (newRemaining == 0 && _remainingSeconds > 0) {
-            _completeBreak();
-          }
-          _remainingSeconds = newRemaining;
-          _remainingSecondsNotifier.value = newRemaining;
-        }
       }
     });
   }
@@ -415,53 +366,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   void _completeBreak() {
-    if (_isDismissing) return;
-    _isDismissing = true;
-
-    bool callbackTriggered = false;
-    void triggerDismiss() {
-      if (callbackTriggered) return;
-      callbackTriggered = true;
-      if (_isInternalPreview ||
-          _overlayType == 'preBreakWarning' ||
-          _overlayType == 'quickReminder') {
-        _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
-      } else {
-        _bridge.invokeMethod('completeBreak');
-      }
-    }
-
-    // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
-    Timer(const Duration(milliseconds: 800), triggerDismiss);
-
-    _fadeController.reverse().then((_) {
-      triggerDismiss();
-    });
+    completeBreak(_isInternalPreview, _overlayType, _fadeController);
   }
 
   void _skipBreak() {
-    if (_isDismissing) return;
-    _isDismissing = true;
-
-    bool callbackTriggered = false;
-    void triggerDismiss() {
-      if (callbackTriggered) return;
-      callbackTriggered = true;
-      if (_isInternalPreview ||
-          _overlayType == 'preBreakWarning' ||
-          _overlayType == 'quickReminder') {
-        _bridge.invokeMethod('hideOverlay', {'restoreMainWindow': true});
-      } else {
-        NativeBridge.skipBreak();
-      }
-    }
-
-    // Safety fallback: if ticker is throttled/paused by macOS window level, trigger dismissal after 800ms
-    Timer(const Duration(milliseconds: 800), triggerDismiss);
-
-    _fadeController.reverse().then((_) {
-      triggerDismiss();
-    });
+    skipBreak(_isInternalPreview, _overlayType, _fadeController);
   }
 
   bool _handleKeyEvent(KeyEvent event) {
@@ -510,8 +419,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void dispose() {
     StandaloneBreakOverlay.onErrorCallbacks.remove(_handleTemplateError);
     HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
-    _localTimer?.cancel();
-    _remainingSecondsNotifier.dispose();
     _kenBurnsController.dispose();
     _fadeController.dispose();
     super.dispose();
@@ -559,7 +466,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         overlayType: _overlayType,
         fadeAnimation: _fadeController,
         title: _title,
-        durationSeconds: _durationSeconds,
+        durationSeconds: durationSeconds,
       );
     }
 
@@ -579,7 +486,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     final breakInfo = BreakModel(
       type: type,
-      durationSeconds: _durationSeconds,
+      durationSeconds: durationSeconds,
       title: _title,
       tip: _tip,
     );
@@ -595,136 +502,32 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       customImagePath: _customImagePath,
     );
 
-    final total = _durationSeconds;
+    final total = durationSeconds;
     // Always pass the callback; templates use their own !settings.strictMode guard
     // to decide whether to render it. The global overlay button below is the
     // authoritative skip affordance and is controlled by _canDismiss independently.
     final VoidCallback onSkip = _skipBreak;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      fit: StackFit.expand,
-      children: [
-        // KEY PERFORMANCE FIX: ValueListenableBuilder wraps ONLY the template.
-        RepaintBoundary(
-          child: ValueListenableBuilder<int>(
-            valueListenable: _remainingSecondsNotifier,
-            builder: (_, remaining, _) => _buildTemplateWidget(
-              breakInfo: breakInfo,
-              settings: settings,
-              remaining: remaining,
-              total: total,
-              onSkip: onSkip,
-            ),
+    return OverlayChrome(
+      templateOwnsChrome: _templateOwnsChrome,
+      isInternalPreview: _isInternalPreview,
+      canDismiss: _canDismiss,
+      breakInfo: breakInfo,
+      exerciseTitle: _showWellnessNotes ? _exerciseTitle : null,
+      intensityLevel: _intensityLevel,
+      onSkip: onSkip,
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<int>(
+          valueListenable: remainingSecondsNotifier,
+          builder: (_, remaining, _) => _buildTemplateWidget(
+            breakInfo: breakInfo,
+            settings: settings,
+            remaining: remaining,
+            total: total,
+            onSkip: onSkip,
           ),
         ),
-        if (!_templateOwnsChrome)
-          Positioned(
-            top: 28,
-            left: 28,
-            child: SafeArea(
-              child: BreakContextPill(
-                breakInfo: breakInfo,
-                exerciseTitle: _showWellnessNotes ? _exerciseTitle : null,
-              ),
-            ),
-          ),
-        if (_isInternalPreview)
-          Positioned(
-            top: 32,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: SafeArea(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentColor.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(100),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        CupertinoIcons.eye_fill,
-                        color: Colors.white,
-                        size: 14,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'PREVIEW MODE',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        // Global skip button: shown whenever the overlay is dismissible.
-        // Previously gated on !_templateOwnsChrome, but all templates are in
-        // _kTemplatesWithChrome so that condition was always false — the button
-        // never appeared. Now it shows unconditionally when _canDismiss is true,
-        // floating above the template chrome at the top-right corner.
-        if (_canDismiss)
-          Positioned(
-            top: 28,
-            right: 28,
-            child: SafeArea(
-              child: IconButton(
-                tooltip: 'Skip break',
-                onPressed: _skipBreak,
-                icon: const Icon(CupertinoIcons.xmark),
-                color: Colors.white.withValues(alpha: 0.78),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.24),
-                  fixedSize: const Size.square(42),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.12),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (_canDismiss)
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: const IgnorePointer(child: SwipeToDismissHint()),
-          ),
-        // Strict mode note: shown at bottom whenever the overlay is NOT dismissible.
-        // Previously gated on !_templateOwnsChrome (which was always false). Fixed
-        // to show unconditionally when the break cannot be skipped so the user
-        // knows why there is no skip affordance visible.
-        if (!_canDismiss)
-          Positioned(
-            bottom: 24,
-            left: 24,
-            right: 24,
-            child: IgnorePointer(
-              child: StrictModeNote(intensityLevel: _intensityLevel),
-            ),
-          ),
-      ],
+      ),
     );
   }
 

@@ -101,7 +101,7 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
     if (_isRequesting) return;
 
     final currentStatus = await sl<CalendarPermissionService>().getStatus();
-    if (currentStatus == CalendarPermissionStatus.denied) {
+    if (currentStatus == CalendarPermissionStatus.permanentlyDenied) {
       await sl<CalendarPermissionService>().openSettings();
       return;
     }
@@ -236,8 +236,29 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
           color: AppTheme.warning,
           icon: Icons.lock_outline_rounded,
           title: 'Calendar access denied',
-          subtitle:
-              'Please grant calendar access in System Settings. If already enabled, toggle it OFF and ON again to refresh the system cache.',
+          subtitle: 'Calendar access was denied. Tap "Grant Access" to request again or "Open Settings" to authorize.',
+          actions: [
+            _BannerButton(
+              label: _isRequesting ? 'Requesting…' : 'Grant Access',
+              color: const Color(0xFF6366F1),
+              isLoading: _isRequesting,
+              onTap: _isRequesting ? null : _requestCalendarAccess,
+            ),
+            const SizedBox(width: 8),
+            _BannerButton(
+              label: 'Open Settings',
+              color: AppTheme.textSecondary,
+              onTap: () => sl<CalendarPermissionService>().openSettings(),
+            ),
+          ],
+        );
+
+      case CalendarPermissionStatus.permanentlyDenied:
+        return _banner(
+          color: AppTheme.warning,
+          icon: Icons.lock_outline_rounded,
+          title: 'Calendar access blocked',
+          subtitle: 'Calendar access is permanently blocked by the system. Please enable it in system settings.',
           actions: [
             _BannerButton(
               label: 'Open Settings',

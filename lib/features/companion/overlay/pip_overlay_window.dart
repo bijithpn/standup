@@ -22,6 +22,8 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 
+import 'package:breakmate/core/ipc/overlay_config.dart';
+
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
 
@@ -149,7 +151,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     switch (call.method) {
       case 'syncPiPSettings':
         final args = call.arguments as Map<dynamic, dynamic>?;
-        if (args != null) _applySettings(Map<String, dynamic>.from(args));
+        if (args != null) _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(args)));
         break;
       case 'toggleButtons':
         _toggleBar();
@@ -163,7 +165,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(Map<String, dynamic>.from(result));
+        _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(result)));
         await _windowManager.initialize();
         return;
       }
@@ -208,28 +210,28 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     });
   }
 
-  void _applySettings(Map<String, dynamic> args) {
+  void _applySettings(OverlayConfig config) {
     if (!mounted) return;
 
     try {
       CustomEnvironmentRepository().loadSync();
     } catch (_) {}
 
-    final newThemeId = (args['themeId'] as String?) ?? _themeId;
-    final newScale = (args['scale'] as num?)?.toDouble() ?? _scale;
-    final newPetName = (args['petName'] as String?) ?? _petName;
-    final newClickThrough = (args['clickThrough'] as bool?) ?? _clickThrough;
+    final newThemeId = config.themeId ?? _themeId;
+    final newScale = config.scale ?? _scale;
+    final newPetName = config.petName ?? _petName;
+    final newClickThrough = config.clickThrough ?? _clickThrough;
     final newPipBackgroundStyle =
-        (args['pipBackgroundStyle'] as String?) ?? _pipBackgroundStyle;
+        config.pipBackgroundStyle ?? _pipBackgroundStyle;
     final newPipOpacity =
-        (args['pipOpacity'] as num?)?.toDouble() ?? _pipOpacity;
+        config.pipOpacity ?? _pipOpacity;
     final newPipDraggableClickable =
-        (args['pipDraggableClickable'] as bool?) ?? _pipDraggableClickable;
-    final newToyType = (args['companionToyType'] as String?) ?? 'tennis_ball';
-    final newTreatType = (args['companionTreatType'] as String?) ?? 'sushi';
+        config.pipDraggableClickable ?? _pipDraggableClickable;
+    final newToyType = config.companionToyType ?? 'tennis_ball';
+    final newTreatType = config.companionTreatType ?? 'sushi';
     final newPreviewBackground =
-        (args['previewBackground'] as String?) ?? _previewBackground;
-    final newWanderingEnabled = (args['wanderingEnabled'] as bool?) ?? true;
+        config.previewBackground ?? _previewBackground;
+    final newWanderingEnabled = config.wanderingEnabled ?? true;
 
     if (!_gameInitialized) {
       setState(() {

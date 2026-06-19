@@ -33,9 +33,9 @@ class ErrorHandler {
     }
   }
 
-  void handleError(Object error, StackTrace? stack, {AppErrorType? type}) {
+  void handleError(Object error, StackTrace? stack, {AppErrorType? type, String? message}) {
     final exception = AppException(
-      message: error.toString(),
+      message: message ?? error.toString(),
       type: type ?? AppErrorType.general,
       originalError: error,
       stackTrace: stack,

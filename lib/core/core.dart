@@ -14,6 +14,7 @@ export 'events/event_bus.dart';
 export 'events/events.dart';
 export 'ipc/ipc_bridge.dart';
 export 'ipc/ipc_events.dart';
+export 'ipc/overlay_window_config.dart';
 export 'native/app_tracking_service.dart';
 export 'native/focus_mode_service.dart';
 export 'native/macos_bridge.dart';
