@@ -19,7 +19,8 @@ std::string Utf16ToUtf8(const std::wstring& wstr) {
 
 std::string GetBrowserUrl(HWND hwnd, const std::string& exe_name) {
   std::string lowercase_exe = exe_name;
-  std::transform(lowercase_exe.begin(), lowercase_exe.end(), lowercase_exe.begin(), ::tolower);
+  std::transform(lowercase_exe.begin(), lowercase_exe.end(), lowercase_exe.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
   if (lowercase_exe != "chrome.exe" && lowercase_exe != "msedge.exe" && lowercase_exe != "firefox.exe") {
     return "";
   }
@@ -59,7 +60,7 @@ std::string GetBrowserUrl(HWND hwnd, const std::string& exe_name) {
       hr = pEditElement->GetCurrentPattern(UIA_ValuePatternId, (IUnknown**)&pValuePattern);
       if (SUCCEEDED(hr) && pValuePattern) {
         BSTR bstrVal;
-        if (SUCCEEDED(pValuePattern->get_Value(&bstrVal)) && bstrVal) {
+        if (SUCCEEDED(pValuePattern->get_CurrentValue(&bstrVal)) && bstrVal) {
           std::wstring wstr(bstrVal, SysStringLen(bstrVal));
           url = Utf16ToUtf8(wstr);
           SysFreeString(bstrVal);
