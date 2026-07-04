@@ -8,6 +8,8 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
+import 'package:breakmate/core/ipc/overlay_config.dart';
+
 class CompanionOverlayWindow extends StatefulWidget {
   const CompanionOverlayWindow({super.key});
 
@@ -41,7 +43,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
           final Map<dynamic, dynamic>? args =
               call.arguments as Map<dynamic, dynamic>?;
           if (args != null) {
-            _applySettings(Map<String, dynamic>.from(args));
+            _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(args)));
           }
           break;
       }
@@ -54,7 +56,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(Map<String, dynamic>.from(result));
+        _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(result)));
         EventBus.instance.emit(
           CompanionInteractionEvent(
             interactionType: 'init',
@@ -84,13 +86,13 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     }
   }
 
-  void _applySettings(Map<String, dynamic> args) {
+  void _applySettings(OverlayConfig config) {
     if (!mounted) return;
 
-    final newThemeId = (args['themeId'] as String?) ?? _themeId;
-    final newScale = (args['scale'] as num?)?.toDouble() ?? _scale;
-    final newToyType = (args['companionToyType'] as String?) ?? 'tennis_ball';
-    final newTreatType = (args['companionTreatType'] as String?) ?? 'sushi';
+    final newThemeId = config.themeId ?? _themeId;
+    final newScale = config.scale ?? _scale;
+    final newToyType = config.companionToyType ?? 'tennis_ball';
+    final newTreatType = config.companionTreatType ?? 'sushi';
 
     if (!_gameInitialized) {
       setState(() {
@@ -104,85 +106,77 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         );
         _gameInitialized = true;
       });
-      _applySettingsToGame(args);
+      _applySettingsToGame(config);
       return;
     }
 
-    _applySettingsToGame(args);
+    _applySettingsToGame(config);
   }
 
-  void _applySettingsToGame(Map<String, dynamic> args) {
+  void _applySettingsToGame(OverlayConfig config) {
     if (!_gameInitialized || _game == null || !mounted) return;
 
     setState(() {
-      if (args.containsKey('themeId')) {
-        final String newThemeId = args['themeId'] as String;
+      if (config.themeId != null) {
+        final String newThemeId = config.themeId!;
         if (_themeId != newThemeId) {
           _themeId = newThemeId;
           _game!.updateTheme(PetTheme.getTheme(newThemeId));
         }
       }
 
-      if (args.containsKey('scale')) {
-        final double? newScale = (args['scale'] as num?)?.toDouble();
-        if (newScale != null && newScale != _scale && newScale > 0) {
+      if (config.scale != null) {
+        final double newScale = config.scale!;
+        if (newScale != _scale && newScale > 0) {
           _scale = newScale;
           _game!.updateScale(newScale);
         }
       }
 
-      if (args.containsKey('companionToyType')) {
-        final String newToyType = args['companionToyType'] as String;
+      if (config.companionToyType != null) {
+        final String newToyType = config.companionToyType!;
         _game!.updateToyType(newToyType);
       }
 
-      if (args.containsKey('companionTreatType')) {
-        final String newTreatType = args['companionTreatType'] as String;
+      if (config.companionTreatType != null) {
+        final String newTreatType = config.companionTreatType!;
         _game!.updateTreatType(newTreatType);
       }
 
-      if (args.containsKey('petName')) {
-        final String? newPetName = args['petName'] as String?;
-        if (newPetName != null && newPetName.trim().isNotEmpty) {
+      if (config.petName != null) {
+        final String newPetName = config.petName!;
+        if (newPetName.trim().isNotEmpty) {
           _petName = newPetName.trim();
         }
       }
 
-      if (args.containsKey('followMouse')) {
-        final bool? followMouse = args['followMouse'] as bool?;
-        if (followMouse != null) {
-          _game!.updateMouseFollow({'enabled': followMouse});
-        }
+      if (config.followMouse != null) {
+        final bool followMouse = config.followMouse!;
+        _game!.updateMouseFollow({'enabled': followMouse});
       }
 
-      if (args.containsKey('wanderingEnabled')) {
-        final bool? enabled = args['wanderingEnabled'] as bool?;
-        if (enabled != null) {
-          _game!.setWanderingEnabled(enabled);
-        }
+      if (config.wanderingEnabled != null) {
+        final bool enabled = config.wanderingEnabled!;
+        _game!.setWanderingEnabled(enabled);
       }
 
-      if (args.containsKey('state')) {
-        final String? stateStr = args['state'] as String?;
-        if (stateStr != null) {
-          final PetAnimationState? s = _parseAnimationState(stateStr);
-          if (s != null) _game!.triggerState(s);
-        }
+      if (config.state != null) {
+        final String stateStr = config.state!;
+        final PetAnimationState? s = _parseAnimationState(stateStr);
+        if (s != null) _game!.triggerState(s);
       }
 
-      if (args.containsKey('mouseFollow')) {
-        final Map<dynamic, dynamic>? data =
-            args['mouseFollow'] as Map<dynamic, dynamic>?;
-        if (data != null) _game!.updateMouseFollow(data);
+      if (config.mouseFollow != null) {
+        _game!.updateMouseFollow(config.mouseFollow!);
       }
 
-      if (args.containsKey('isOnBattery') ||
-          args.containsKey('isAppActive') ||
-          args.containsKey('isLowPowerMode')) {
+      if (config.isOnBattery != null ||
+          config.isAppActive != null ||
+          config.isLowPowerMode != null) {
         _game!.updateEnergyStatus(
-          isOnBattery: args['isOnBattery'] as bool?,
-          isAppActive: args['isAppActive'] as bool?,
-          isLowPowerMode: args['isLowPowerMode'] as bool?,
+          isOnBattery: config.isOnBattery,
+          isAppActive: config.isAppActive,
+          isLowPowerMode: config.isLowPowerMode,
         );
       }
     });

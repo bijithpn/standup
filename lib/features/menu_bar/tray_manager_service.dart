@@ -25,12 +25,10 @@ enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
 
 class TrayManagerService with TrayListener, WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
-  bool _isPaused = false;
   bool _isMeetingActive = false;
   TrayIconMode _iconMode = TrayIconMode.companion;
 
   Timer? _animTimer;
-  bool _isBreakActive = false;
   bool _isActionActive = false;
   Timer? _actionAnimTimer;
   int _currentFrameIndex = 0;
@@ -223,9 +221,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   PetAnimationState _determineActiveState() {
-    if (_isBreakActive) {
+    final state = _timerEngine?.state;
+    if (state == TimerState.breakActive) {
       return PetAnimationState.notification;
-    } else if (_isPaused) {
+    } else if (state == TimerState.paused) {
       return PetAnimationState.sleep;
     } else if (_isActionActive) {
       return PetAnimationState.excited;
@@ -384,8 +383,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void setBreakActive(bool active) {
-    if (_isBreakActive == active) return;
-    _isBreakActive = active;
+    // This method is now effectively a trigger for rebuild since _isBreakActive is gone
     _currentFrameIndex = 0;
     _updateTimerSpeed();
     _applyIcon();
@@ -462,14 +460,18 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   Future<void> _buildMenu() async {
     String statusLabel = 'BreakMate';
 
+    final state = _timerEngine?.state;
+    final isBreakActive = state == TimerState.breakActive;
+    final isPaused = state == TimerState.paused;
+
     if (_timerEngine != null) {
       if (_isMeetingActive) {
         statusLabel = 'In a Meeting (Paused)';
-      } else if (_isBreakActive) {
+      } else if (isBreakActive) {
         statusLabel = 'On Break';
-      } else if (_isPaused) {
+      } else if (isPaused) {
         statusLabel = 'Timer Paused';
-      } else if (_timerEngine!.state == TimerState.running) {
+      } else if (state == TimerState.running) {
         statusLabel = 'Timer Running';
       } else {
         statusLabel = 'Timer Idle';
@@ -481,7 +483,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     items.add(MenuItem(label: statusLabel, disabled: true));
     items.add(MenuItem.separator());
 
-    if (_isBreakActive) {
+    if (isBreakActive) {
       final isStrict = sl<SettingsRepository>().currentSettings.strictMode;
       items.addAll([
         MenuItem(key: 'complete_break', label: 'Complete Break'),
@@ -501,7 +503,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       items.addAll([
         MenuItem(
           key: 'toggle_pause',
-          label: _isPaused ? 'Resume Timer' : 'Pause Timer',
+          label: isPaused ? 'Resume Timer' : 'Pause Timer',
         ),
         MenuItem(key: 'take_break', label: 'Instant Break'),
         MenuItem(key: 'skip_next', label: 'Skip Next Break'),
@@ -539,7 +541,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     _breakController = breakController;
     timerEngine.addListener(_onTimerChanged);
     breakController.addListener(_onTimerChanged);
-    _scheduleMenuRebuild();
+
+    // Initial sync
+    _onTimerChanged();
   }
 
   TimerState? _lastState;
@@ -547,11 +551,15 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   void _onTimerChanged() {
     final timerEngine = _timerEngine;
     if (timerEngine != null) {
+      if (timerEngine.systemSleepPaused) {
+        _animTimer?.cancel();
+        _actionAnimTimer?.cancel();
+        _lastState = null; // Reset to force rebuild on wake
+        return;
+      }
       final state = timerEngine.state;
       if (_lastState != state) {
         _lastState = state;
-        _isPaused = state == TimerState.paused;
-        _isBreakActive = state == TimerState.breakActive;
         _currentFrameIndex = 0;
         _updateTimerSpeed();
         _applyIcon();
@@ -561,14 +569,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void updatePauseState(bool isPaused) {
-    if (_isPaused == isPaused) return;
-    _isPaused = isPaused;
-    if (_iconMode == TrayIconMode.companion) {
-      _currentFrameIndex = 0;
-      _updateTimerSpeed();
-      _applyIcon();
-    }
-    _scheduleMenuRebuild();
+    // This is now handled via the TimerEngine listener, but we can trigger a check here for safety
+    _onTimerChanged();
   }
 
   Future<void> setTrayTitle(String title) async {

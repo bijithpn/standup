@@ -88,10 +88,14 @@ final class PiPWindowManager: NSObject {
         isSettingUp = false
 
         window.alphaValue = 0.0
-        window.orderFrontRegardless()
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.2
-            window.animator().alphaValue = 1.0
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.2
+                window.animator().alphaValue = 1.0
+            }
         }
     }
 
@@ -150,6 +154,7 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
         isOpaque              = false
         hasShadow             = true
         level                 = .floating
+        hidesOnDeactivate     = false
         isMovableByWindowBackground = true
         collectionBehavior    = [
             .canJoinAllSpaces,

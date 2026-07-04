@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:flame/game.dart';
 import 'package:flutter/gestures.dart';
@@ -22,6 +21,8 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+
+import 'package:breakmate/core/ipc/overlay_config.dart';
 
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
@@ -150,7 +151,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     switch (call.method) {
       case 'syncPiPSettings':
         final args = call.arguments as Map<dynamic, dynamic>?;
-        if (args != null) _applySettings(Map<String, dynamic>.from(args));
+        if (args != null) _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(args)));
         break;
       case 'toggleButtons':
         _toggleBar();
@@ -164,7 +165,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(Map<String, dynamic>.from(result));
+        _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(result)));
         await _windowManager.initialize();
         return;
       }
@@ -209,27 +210,28 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     });
   }
 
-  void _applySettings(Map<String, dynamic> args) {
+  void _applySettings(OverlayConfig config) {
     if (!mounted) return;
 
     try {
       CustomEnvironmentRepository().loadSync();
     } catch (_) {}
 
-    final newThemeId = (args['themeId'] as String?) ?? _themeId;
-    final newScale = (args['scale'] as num?)?.toDouble() ?? _scale;
-    final newPetName = (args['petName'] as String?) ?? _petName;
-    final newClickThrough = (args['clickThrough'] as bool?) ?? _clickThrough;
+    final newThemeId = config.themeId ?? _themeId;
+    final newScale = config.scale ?? _scale;
+    final newPetName = config.petName ?? _petName;
+    final newClickThrough = config.clickThrough ?? _clickThrough;
     final newPipBackgroundStyle =
-        (args['pipBackgroundStyle'] as String?) ?? _pipBackgroundStyle;
+        config.pipBackgroundStyle ?? _pipBackgroundStyle;
     final newPipOpacity =
-        (args['pipOpacity'] as num?)?.toDouble() ?? _pipOpacity;
+        config.pipOpacity ?? _pipOpacity;
     final newPipDraggableClickable =
-        (args['pipDraggableClickable'] as bool?) ?? _pipDraggableClickable;
-    final newToyType = (args['companionToyType'] as String?) ?? 'tennis_ball';
-    final newTreatType = (args['companionTreatType'] as String?) ?? 'sushi';
+        config.pipDraggableClickable ?? _pipDraggableClickable;
+    final newToyType = config.companionToyType ?? 'tennis_ball';
+    final newTreatType = config.companionTreatType ?? 'sushi';
     final newPreviewBackground =
-        (args['previewBackground'] as String?) ?? _previewBackground;
+        config.previewBackground ?? _previewBackground;
+    final newWanderingEnabled = config.wanderingEnabled ?? true;
 
     if (!_gameInitialized) {
       setState(() {
@@ -262,6 +264,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         );
         _interactionController!.initialize();
       });
+      _game?.setWanderingEnabled(newWanderingEnabled);
     } else {
       setState(() {
         if (newThemeId != _themeId) {
@@ -294,6 +297,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         _pipOpacity = newPipOpacity;
         _pipDraggableClickable = newPipDraggableClickable;
       });
+      _game?.setWanderingEnabled(newWanderingEnabled);
     }
     _windowManager.setOpacity(_pipOpacity);
     _checkClickThrough();
@@ -321,26 +325,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       final size = _windowManager.currentSize;
       final cursorPos = await NativeBridge.getCursorPosition();
 
-      double top = pos.dy;
-
-      if (Platform.isMacOS) {
-        var displays = _windowManager.displayManager?.displays;
-        if (displays == null || displays.isEmpty) {
-          displays = await _windowManager.displayManager?.enumerateDisplays();
-        }
-        double primaryScreenHeight = 1080.0;
-        final nonNullDisplays = displays;
-        if (nonNullDisplays != null && nonNullDisplays.isNotEmpty) {
-          final primary = nonNullDisplays.firstWhere(
-            (d) => d.isPrimary,
-            orElse: () => nonNullDisplays.first,
-          );
-          primaryScreenHeight = primary.rect.height;
-        }
-        top = primaryScreenHeight - pos.dy - size.height;
-      }
-
-      final windowRect = Rect.fromLTWH(pos.dx, top, size.width, size.height);
+      final windowRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
 
       bool accepts = true;
       if (windowRect.contains(cursorPos)) {
@@ -359,10 +344,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               localY >= (size.height - 8.0 - 44.0) &&
               localY <= (size.height - 8.0);
           final inCloseButton =
-              localX >= (size.width - 42.0) &&
-              localX <= (size.width - 6.0) &&
-              localY >= 6.0 &&
-              localY <= 42.0;
+              localX >= (size.width - 60.0) &&
+              localX <= (size.width - 24.0) &&
+              localY >= 24.0 &&
+              localY <= 60.0;
           accepts = inDragHandle || inInteractionBar || inCloseButton;
         } else {
           // If the mouse is in the outer 8px margin (resize border),
@@ -695,8 +680,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                         ),
                       ),
                     Positioned(
-                      top: 10,
-                      right: 10,
+                      top: 16,
+                      right: 16,
                       child: _CloseButton(
                         onTap: _closeWindow,
                         isLightBackground: isLight,

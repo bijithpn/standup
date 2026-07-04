@@ -14,6 +14,7 @@ class OverlayWindowManager: NSObject {
     private var overlayInstances: [NSScreen: OverlayInstance] = [:]
     var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
     private var wasMainWindowVisible: Bool = false
+    private var lastScreensHash: Int = 0
     
     struct OverlayInstance {
         let window: OverlayPanel
@@ -139,6 +140,13 @@ class OverlayWindowManager: NSObject {
     }
     
     @objc private func screenParametersChanged() {
+        let screens = NSScreen.screens
+        let screensHash = screens.map { "\($0.frame)-\($0.visibleFrame)" }.joined().hashValue
+        if screensHash == lastScreensHash {
+            return
+        }
+        lastScreensHash = screensHash
+        
         let savedArgs = self.lastShowArgs
         hideOverlay()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -520,6 +528,7 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
     static let shared = DisplayBridgeManager()
     
     private var eventSink: FlutterEventSink?
+    private var lastDisplaysHash: Int = 0
     
     func register(with binaryMessenger: FlutterBinaryMessenger) {
         let methodChannel = FlutterMethodChannel(name: "com.breakmate/display_bridge", binaryMessenger: binaryMessenger)
@@ -549,8 +558,13 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
     }
     
     @objc private func screenParametersChanged() {
-        if let sink = eventSink {
-            sink(["type": "display_changed"])
+        let currentDisplays = getDisplays()
+        let currentHash = currentDisplays.map { "\($0["id"] ?? "")-\($0["width"] ?? 0)-\($0["height"] ?? 0)" }.joined().hashValue
+        if currentHash != lastDisplaysHash {
+            lastDisplaysHash = currentHash
+            if let sink = eventSink {
+                sink(["type": "display_changed"])
+            }
         }
     }
     

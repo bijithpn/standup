@@ -169,33 +169,45 @@ FlutterWindow::~FlutterWindow() {}
 
 bool FlutterWindow::Show() {
   if (is_overlay_) {
-    UINT flags = ignore_mouse_events_ ? SW_SHOWNOACTIVATE : SW_SHOW;
-    BOOL res = ShowWindow(GetHandle(), flags);
-    
-    UINT swp_flags = SWP_FRAMECHANGED;
-    if (ignore_mouse_events_) {
-      swp_flags |= SWP_NOACTIVATE;
-    }
-    
+    // Determine the final window bounds from the stored overlay rect or
+    // fall back to querying the current monitor. Position must be applied
+    // before ShowWindow so the Flutter compositor initialises at the
+    // correct viewport size on the very first frame.
     int left = 0, top = 0, width = 0, height = 0;
     if (overlay_rect_.right > overlay_rect_.left && overlay_rect_.bottom > overlay_rect_.top) {
-      left = overlay_rect_.left;
-      top = overlay_rect_.top;
-      width = overlay_rect_.right - overlay_rect_.left;
+      left   = overlay_rect_.left;
+      top    = overlay_rect_.top;
+      width  = overlay_rect_.right  - overlay_rect_.left;
       height = overlay_rect_.bottom - overlay_rect_.top;
     } else {
       HMONITOR monitor = MonitorFromWindow(GetHandle(), MONITOR_DEFAULTTONEAREST);
       MONITORINFO monitorInfo = {};
       monitorInfo.cbSize = sizeof(MONITORINFO);
       GetMonitorInfo(monitor, &monitorInfo);
-      left = monitorInfo.rcMonitor.left;
-      top = monitorInfo.rcMonitor.top;
-      width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+      left   = monitorInfo.rcMonitor.left;
+      top    = monitorInfo.rcMonitor.top;
+      width  = monitorInfo.rcMonitor.right  - monitorInfo.rcMonitor.left;
       height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
     }
-    
+
+    printf("[FlutterWindow::Show] HWND: %p, overlay_rect_: {%ld, %ld, %ld, %ld}, left: %d, top: %d, width: %d, height: %d\n",
+           (void*)GetHandle(), overlay_rect_.left, overlay_rect_.top, overlay_rect_.right, overlay_rect_.bottom, left, top, width, height);
+    fflush(stdout);
+
+    // Apply full-screen bounds and force a frame-change so the NC area
+    // (none for WS_POPUP) and z-order are re-evaluated before the window
+    // becomes visible.
+    UINT swp_flags = SWP_FRAMECHANGED;
+    if (ignore_mouse_events_) {
+      swp_flags |= SWP_NOACTIVATE;
+    }
     SetWindowPos(GetHandle(), HWND_TOPMOST, left, top, width, height, swp_flags);
-                 
+
+    // Now make the window visible. SW_SHOWNOACTIVATE avoids stealing focus
+    // from other windows when the overlay is click-through.
+    UINT show_flag = ignore_mouse_events_ ? SW_SHOWNOACTIVATE : SW_SHOW;
+    BOOL res = ShowWindow(GetHandle(), show_flag);
+
     if (!ignore_mouse_events_) {
       SetForegroundWindow(GetHandle());
     }
@@ -908,48 +920,42 @@ void FlutterWindow::ConfigureAsOverlay() {
   HWND hwnd = GetHandle();
   if (!hwnd) return;
 
-  // Store original styles for restoration
-  original_style_ = GetWindowLong(hwnd, GWL_STYLE);
+  // Store original styles for restoration.
+  original_style_    = GetWindowLong(hwnd, GWL_STYLE);
   original_ex_style_ = GetWindowLong(hwnd, GWL_EXSTYLE);
 
-  // Remove all overlapped window styles and make it a borderless WS_POPUP window
+  // Window was created with WS_POPUP (no NC area). Clear overlapped bits
+  // defensively and ensure popup is set.
   LONG style = GetWindowLong(hwnd, GWL_STYLE);
   style &= ~WS_OVERLAPPEDWINDOW;
   style |= WS_POPUP;
   SetWindowLong(hwnd, GWL_STYLE, style);
 
-  // Add layered and topmost extended styles
+  // Enable layered mode for DWM composition and hide from taskbar/Alt-Tab.
   LONG exStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
-  exStyle |= WS_EX_LAYERED;      // Enable transparency
-  exStyle |= WS_EX_TOOLWINDOW;   // Hide from taskbar
+  exStyle |= WS_EX_LAYERED;
+  exStyle |= WS_EX_TOOLWINDOW;
   SetWindowLong(hwnd, GWL_EXSTYLE, exStyle);
 
-  // Initialize layered window opacity to fully opaque so it actually renders
+  // Fully opaque — Flutter renders the surface content; DWM composites it.
   SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
-  // Set window as topmost (above all other windows) and apply style changes
+  // Apply style changes and raise to topmost WITHOUT moving or resizing.
+  // The window was created at the exact physical monitor size (WS_POPUP +
+  // physical_coords=true), so there is no size correction needed here.
+  // Resizing here would send WM_SIZE while Flutter is still initialising
+  // which triggers an abort() in the embedder. Show() does the final
+  // positioning once the engine has rendered its first frame.
   SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE | SWP_FRAMECHANGED);
 
-  // Get screen dimensions for full-screen
-  HMONITOR monitor = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
-  MONITORINFO monitorInfo = {};
-  monitorInfo.cbSize = sizeof(MONITORINFO);
-  GetMonitorInfo(monitor, &monitorInfo);
-
-  // Set to full-screen and apply style changes
-  SetWindowPos(hwnd, HWND_TOPMOST,
-               monitorInfo.rcMonitor.left,
-               monitorInfo.rcMonitor.top,
-               monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left,
-               monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top,
-               SWP_NOACTIVATE | SWP_FRAMECHANGED);
-
   is_overlay_mode_ = true;
 
-  // Set keyboard hook to block swiping spaces
+  // Low-level keyboard hook to block virtual desktop switch gestures (Win+Ctrl
+  // arrows, Win+Tab) while the break overlay is active.
   if (!keyboard_hook_) {
-    keyboard_hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, GetModuleHandle(NULL), 0);
+    keyboard_hook_ = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc,
+                                      GetModuleHandle(NULL), 0);
   }
   if (keyboard_hook_) {
     keyboard_hook_ref_count_++;
@@ -1173,10 +1179,17 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     }
     case WM_DISPLAYCHANGE:
     case WM_DPICHANGED:
-      if (g_display_stream_handler) {
-        g_display_stream_handler->SendUpdate();
+      if (this == main_window_) {
+        if (g_display_stream_handler) {
+          g_display_stream_handler->SendUpdate();
+        }
+        OverlayWindowManager::GetInstance()->OnDisplayChange();
+      } else if (is_overlay_) {
+        // Prevent default Win32Window handler from resizing/moving the overlay
+        // window based on the OS suggested rect. It must remain full-screen
+        // covering its target monitor.
+        return 0;
       }
-      OverlayWindowManager::GetInstance()->OnDisplayChange();
       break;
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();

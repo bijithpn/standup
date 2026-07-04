@@ -32,9 +32,14 @@ class Win32Window {
   // |origin| and |size|. New windows are created on the default monitor. Window
   // sizes are specified to the OS in physical pixels, hence to ensure a
   // consistent size this function will scale the inputted width and height as
-  // as appropriate for the default monitor. The window is invisible until
-  // |Show| is called. Returns true if the window was created successfully.
-  bool Create(const std::wstring& title, const Point& origin, const Size& size, HMONITOR monitor = nullptr);
+  // as appropriate for the default monitor. Pass |window_style| to override the
+  // default WS_OVERLAPPEDWINDOW style (e.g. use WS_POPUP for borderless
+  // overlay windows so the Flutter view is sized to the full client area).
+  // The window is invisible until |Show| is called. Returns true if the window
+  // was created successfully.
+  bool Create(const std::wstring& title, const Point& origin, const Size& size,
+              HMONITOR monitor = nullptr,
+              DWORD window_style = WS_OVERLAPPEDWINDOW);
 
   // Show the current window. Returns true if the window was successfully shown.
   virtual bool Show();

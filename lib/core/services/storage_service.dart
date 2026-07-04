@@ -9,6 +9,7 @@ import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/objectbox.g.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
@@ -33,11 +34,16 @@ class StorageService {
       debugPrint(
         '[Storage] Rejected ObjectBox access from secondary isolate "$isolateName" to prevent store corruption.',
       );
-      throw StateError('Storage access rejected in secondary isolates.');
+      throw AppException(
+        type: AppErrorType.storage,
+        message: 'Storage access rejected in secondary isolates.',
+      );
     }
     if (_store == null) {
-      throw StateError(
-        'StorageService not initialized. Call init() first and wait for completion.',
+      throw AppException(
+        type: AppErrorType.storage,
+        message:
+            'StorageService not initialized. Call init() first and wait for completion.',
       );
     }
     return _store!;
@@ -108,9 +114,12 @@ class StorageService {
           debugPrint(
             '[Storage] Migration successful in ${migrationDurationMs}ms.',
           );
-        } catch (e) {
-          debugPrint(
-            '[Storage] Migration failed: $e. Staying with existing paths.',
+        } catch (e, st) {
+          ErrorHandler().handleError(
+            e,
+            st,
+            type: AppErrorType.storage,
+            message: 'Failed to migrate database from legacy location',
           );
         }
       }
@@ -151,9 +160,12 @@ class StorageService {
           debugPrint(
             '[Storage] Detected macOS bundle ID: $packageName -> mapped App Group: $macosAppGroup',
           );
-        } catch (e) {
-          debugPrint(
-            '[Storage] Failed to fetch PackageInfo for macOS app group: $e',
+        } catch (e, st) {
+          ErrorHandler().handleError(
+            e,
+            st,
+            type: AppErrorType.storage,
+            message: 'Failed to fetch PackageInfo for macOS app group',
           );
         }
       }
@@ -226,9 +238,12 @@ class StorageService {
                   debugPrint(
                     '[Storage] Terminated stale PID $stalePid (success=$success).',
                   );
-                } catch (killErr) {
-                  debugPrint(
-                    '[Storage] Failed to kill PID $stalePid: $killErr',
+                } catch (killErr, st) {
+                  ErrorHandler().handleError(
+                    killErr,
+                    st,
+                    type: AppErrorType.storage,
+                    message: 'Failed to kill stale process $stalePid',
                   );
                 }
               }
@@ -243,8 +258,13 @@ class StorageService {
                 debugPrint(
                   '[Storage] Deleted stale lock.mdb after process cleanup.',
                 );
-              } catch (delErr) {
-                debugPrint('[Storage] Failed to delete lock.mdb: $delErr');
+              } catch (delErr, st) {
+                ErrorHandler().handleError(
+                  delErr,
+                  st,
+                  type: AppErrorType.storage,
+                  message: 'Failed to delete lock.mdb',
+                );
               }
             }
             openStopwatch.reset();

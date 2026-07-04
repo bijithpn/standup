@@ -13,86 +13,100 @@ class AppBootstrapper {
     final timerEngine = sl<TimerEngine>();
 
     ipc.setTypedEventHandler((event) {
-      if (event is TimerStateChangedIpcEvent) {
-        final targetEndTime = event.targetEndTime != null
-            ? DateTime.fromMillisecondsSinceEpoch(event.targetEndTime!)
-            : null;
+      event.when(
+        timerStateChanged: (stateName, countdownSeconds, workElapsedSeconds, targetEndTime, totalWorkTodaySeconds) {
+          final endTime = targetEndTime != null
+              ? DateTime.fromMillisecondsSinceEpoch(targetEndTime)
+              : null;
 
-        TimerStateEvent? timerState;
-        switch (event.stateName) {
-          case 'running':
-            timerState = TimerStateEvent.running;
-            break;
-          case 'breakActive':
-            timerState = TimerStateEvent.breakActive;
-            break;
-          case 'paused':
-            timerState = TimerStateEvent.paused;
-            break;
-          case 'idle':
-            timerState = TimerStateEvent.idle;
-            break;
-        }
+          TimerStateEvent? timerState;
+          switch (stateName) {
+            case 'running':
+              timerState = TimerStateEvent.running;
+              break;
+            case 'breakActive':
+              timerState = TimerStateEvent.breakActive;
+              break;
+            case 'paused':
+              timerState = TimerStateEvent.paused;
+              break;
+            case 'idle':
+              timerState = TimerStateEvent.idle;
+              break;
+          }
 
-        if (timerState != null) {
+          if (timerState != null) {
+            eventBus.emit(
+              TimerStateChangedEvent(
+                state: timerState,
+                countdownSeconds: countdownSeconds,
+                workElapsedSeconds: workElapsedSeconds,
+                targetEndTime: endTime,
+                totalWorkTodaySeconds: totalWorkTodaySeconds,
+              ),
+            );
+          }
+        },
+        breakStarted: (isLongBreak, durationSeconds, title) {
           eventBus.emit(
-            TimerStateChangedEvent(
-              state: timerState,
-              countdownSeconds: event.countdownSeconds,
-              workElapsedSeconds: event.workElapsedSeconds,
-              targetEndTime: targetEndTime,
-              totalWorkTodaySeconds: event.totalWorkTodaySeconds,
+            BreakStartedEvent(
+              isLongBreak: isLongBreak,
+              durationSeconds: durationSeconds,
+              title: title,
             ),
           );
-        }
-      } else if (event is BreakStartedIpcEvent) {
-        eventBus.emit(
-          BreakStartedEvent(
-            isLongBreak: event.isLongBreak,
-            durationSeconds: event.durationSeconds,
-            title: event.title,
-          ),
-        );
-      } else if (event is BreakEndedIpcEvent) {
-        eventBus.emit(BreakEndedEvent(skipped: event.skipped));
-      } else if (event is MeetingDetectedIpcEvent) {
-        eventBus.emit(
-          MeetingDetectedEvent(
-            isActive: event.isActive,
-            bundleId: event.bundleId,
-          ),
-        );
-      } else if (event is FocusModeIpcEvent) {
-        eventBus.emit(FocusModeEvent(isActive: event.isActive));
-      } else if (event is TrayActionIpcEvent) {
-        if (event.action == 'start') {
-          timerEngine.startTimers();
-        } else if (event.action == 'pause') {
-          timerEngine.pauseTimers(isManual: true);
-        } else if (event.action == 'reset') {
-          timerEngine.resetTimers();
-        }
-      } else if (event is CompanionCloseIpcEvent) {
-        sl<CompanionOverlayController>().toggleCompanion(false);
-      } else if (event is CompanionPositionChangedIpcEvent) {
-        eventBus.emit(CompanionPositionChangedEvent(x: event.x, y: event.y));
-      } else if (event is CompanionStateChangedIpcEvent) {
-        eventBus.emit(
-          CompanionStateChangedEvent(
-            state: CompanionState.values.firstWhere(
-              (s) => s.name == event.state,
-              orElse: () => CompanionState.idle,
+        },
+        breakEnded: (skipped) {
+          eventBus.emit(BreakEndedEvent(skipped: skipped));
+        },
+        meetingDetected: (isActive, bundleId) {
+          eventBus.emit(
+            MeetingDetectedEvent(
+              isActive: isActive,
+              bundleId: bundleId,
             ),
-          ),
-        );
-      } else if (event is CompanionInteractionIpcEvent) {
-        eventBus.emit(
-          CompanionInteractionEvent(
-            interactionType: event.interactionType,
-            metadata: event.metadata,
-          ),
-        );
-      }
+          );
+        },
+        focusMode: (isActive) {
+          eventBus.emit(FocusModeEvent(isActive: isActive));
+        },
+        trayAction: (action) {
+          if (action == 'start') {
+            timerEngine.startTimers();
+          } else if (action == 'pause') {
+            timerEngine.pauseTimers(isManual: true);
+          } else if (action == 'reset') {
+            timerEngine.resetTimers();
+          }
+        },
+        companionClose: () {
+          sl<CompanionOverlayController>().toggleCompanion(false);
+        },
+        companionPositionChanged: (x, y) {
+          eventBus.emit(CompanionPositionChangedEvent(x: x, y: y));
+        },
+        companionStateChanged: (state) {
+          eventBus.emit(
+            CompanionStateChangedEvent(
+              state: CompanionState.values.firstWhere(
+                (s) => s.name == state,
+                orElse: () => CompanionState.idle,
+              ),
+            ),
+          );
+        },
+        companionInteraction: (interactionType, metadata) {
+          eventBus.emit(
+            CompanionInteractionEvent(
+              interactionType: interactionType,
+              metadata: metadata,
+            ),
+          );
+        },
+        unknown: (eventName, payload) {
+          // Do nothing for unknown events
+        },
+      );
     });
   }
 }

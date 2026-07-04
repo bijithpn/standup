@@ -5,6 +5,9 @@ import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:flutter/foundation.dart';
 
+import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/errors/app_exception.dart';
+
 class SettingsPersistence {
   SettingsPersistence({AppLogger? logger, String? configPathOverride})
     : _logger = logger ?? AppLogger(),
@@ -99,10 +102,12 @@ class SettingsPersistence {
       await tmpFile.rename(path);
 
       _logger.info('SettingsPersistence: config written to $path');
-    } catch (e) {
-      _logger.error(
-        'SettingsPersistence: failed to write config to "$path": $e. '
-        'Continuing with in-memory state.',
+    } catch (e, st) {
+      ErrorHandler().handleError(
+        e,
+        st,
+        type: AppErrorType.storage,
+        message: 'Failed to write config to "$path"',
       );
       try {
         final tmpFile = File(tmpPath);

@@ -10,16 +10,20 @@ class FocusModeBridge: NSObject, FlutterStreamHandler {
         channel.setStreamHandler(self)
         
         // Best-effort DND detection via DistributedNotificationCenter
+#if !APP_STORE
         DistributedNotificationCenter.default().addObserver(
             self,
             selector: #selector(checkFocusMode),
             name: NSNotification.Name("com.apple.notificationcenterui.dndprefs_changed"),
             object: nil
         )
+#endif
     }
 
     deinit {
+#if !APP_STORE
         DistributedNotificationCenter.default().removeObserver(self)
+#endif
     }
 
     @objc private func checkFocusMode() {

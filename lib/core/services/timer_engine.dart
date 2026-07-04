@@ -1,7 +1,9 @@
+import 'package:clock/clock.dart';
+
 import 'dart:async';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -90,6 +92,7 @@ class TimerEngine extends ChangeNotifier {
 
   TimerStateData get stateData => _stateData;
   TimerContextManager get contextManager => _contextManager;
+  bool get systemSleepPaused => _stateData.systemSleepPaused;
 
   void syncNotifiersFromState() {
     if (state == TimerState.running ||
@@ -202,15 +205,16 @@ class TimerEngine extends ChangeNotifier {
       );
     }
 
-    _stateData.lastTickTime = DateTime.now();
+    _stateData.lastTickTime = clock.now();
 
+    // Recalculate target end times based on the current system clock to prevent drift after suspension.
     if (state == TimerState.breakActive) {
-      _stateData.breakEndTime = DateTime.now().add(
+      _stateData.breakEndTime = clock.now().add(
         Duration(seconds: countdownSeconds),
       );
       _stateData.workEndTime = null;
     } else if (state == TimerState.running) {
-      _stateData.workEndTime = DateTime.now().add(timeUntilNextShortBreak);
+      _stateData.workEndTime = clock.now().add(timeUntilNextShortBreak);
       _stateData.breakEndTime = null;
     } else {
       _stateData.breakEndTime = null;
@@ -237,10 +241,10 @@ class TimerEngine extends ChangeNotifier {
   void _startTicking() {
     _tickTimer?.cancel();
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      final now = DateTime.now();
+      final now = clock.now();
 
+      // Skip processing while the system is asleep to avoid state corruption from stale deltas.
       if (_stateData.systemSleepPaused) {
-        _stateData.lastTickTime = now;
         return;
       }
 
@@ -255,6 +259,8 @@ class TimerEngine extends ChangeNotifier {
 
       if (state == TimerState.running) {
         if (_checkClockOut(now)) return;
+
+        // Context-aware pausing (e.g., active meeting detection).
         if (_contextManager.shouldRunWorkTimer()) {
           _stateData.manualOverride = false;
         } else {
@@ -293,12 +299,12 @@ class TimerEngine extends ChangeNotifier {
       final prevBreakEndTime = _stateData.breakEndTime;
 
       if (state == TimerState.breakActive) {
-        _stateData.breakEndTime ??= DateTime.now().add(
+        _stateData.breakEndTime ??= clock.now().add(
           Duration(seconds: countdownSeconds),
         );
         _stateData.workEndTime = null;
       } else if (state == TimerState.running) {
-        _stateData.workEndTime ??= DateTime.now().add(timeUntilNextShortBreak);
+        _stateData.workEndTime ??= clock.now().add(timeUntilNextShortBreak);
         _stateData.breakEndTime = null;
       }
 
@@ -427,7 +433,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.state = TimerState.windDown;
     _stateData.workElapsed = Duration.zero;
     _stateData.countdownSeconds = 60;
-    _stateData.breakEndTime = DateTime.now().add(
+    _stateData.breakEndTime = clock.now().add(
       Duration(seconds: countdownSeconds),
     );
     _stateData.workEndTime = null;
@@ -474,7 +480,7 @@ class TimerEngine extends ChangeNotifier {
             'Time to stand, stretch, and mentally reset. Step away from your desk.',
         triggerReason: 'Long focus session completed',
       );
-      _stateData.longBreakWindowStartedAt = DateTime.now();
+      _stateData.longBreakWindowStartedAt = clock.now();
     } else {
       _stateData.countdownSeconds = _shortBreakDurationSeconds;
       _stateData.activeBreak = BreakModel(
@@ -486,7 +492,7 @@ class TimerEngine extends ChangeNotifier {
       );
     }
 
-    _stateData.breakEndTime = DateTime.now().add(
+    _stateData.breakEndTime = clock.now().add(
       Duration(seconds: countdownSeconds),
     );
     _stateData.workEndTime = null;
@@ -527,10 +533,10 @@ class TimerEngine extends ChangeNotifier {
     _stateData.isCompletionState = false;
     _stateData.state = TimerState.running;
     _stateData.isPreBreak = false;
-    _stateData.lastTickTime = DateTime.now();
+    _stateData.lastTickTime = clock.now();
     _stateData.workElapsed = Duration.zero;
     _stateData.breakEndTime = null;
-    _stateData.workEndTime = DateTime.now().add(timeUntilNextShortBreak);
+    _stateData.workEndTime = clock.now().add(timeUntilNextShortBreak);
 
     _emit(
       TimerStateChangedEvent(
@@ -555,7 +561,7 @@ class TimerEngine extends ChangeNotifier {
   }
 
   bool isLongBreakDue() {
-    final now = DateTime.now();
+    final now = clock.now();
     _stateData.longBreakWindowStartedAt ??= now;
     final elapsedSinceLong = now.difference(
       _stateData.longBreakWindowStartedAt!,
@@ -624,9 +630,9 @@ class TimerEngine extends ChangeNotifier {
     _stateData.isManuallyPaused = false;
     _stateData.manualOverride = true;
     _stateData.isPreBreak = false;
-    _stateData.lastTickTime = DateTime.now();
+    _stateData.lastTickTime = clock.now();
     _stateData.breakEndTime = null;
-    _stateData.workEndTime = DateTime.now().add(timeUntilNextShortBreak);
+    _stateData.workEndTime = clock.now().add(timeUntilNextShortBreak);
     _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
     _emit(
       TimerStateChangedEvent(
@@ -664,7 +670,7 @@ class TimerEngine extends ChangeNotifier {
 
   void triggerBreakNow({bool isLong = false}) {
     if (isLong) {
-      _stateData.longBreakWindowStartedAt = DateTime.now().subtract(
+      _stateData.longBreakWindowStartedAt = clock.now().subtract(
         Duration(minutes: _longBreakIntervalMinutes),
       );
     }
@@ -681,7 +687,7 @@ class TimerEngine extends ChangeNotifier {
     _stateData.countdownSeconds += 120;
     _stateData.breakEndTime =
         _stateData.breakEndTime?.add(const Duration(seconds: 120)) ??
-        DateTime.now().add(Duration(seconds: countdownSeconds));
+        clock.now().add(Duration(seconds: countdownSeconds));
     _emit(BreakPostponedEvent(additionalSeconds: 120));
     _emit(
       TimerStateChangedEvent(
@@ -701,7 +707,7 @@ class TimerEngine extends ChangeNotifier {
       'System sleep or screen lock detected: pausing break/work timers',
     );
     _stateData.systemSleepPaused = true;
-    final now = DateTime.now();
+    final now = clock.now();
     _stateData.lastTickTime = now;
     try {
       sl<StorageService>().setInt(
@@ -739,8 +745,8 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
-    final lastTick = _stateData.lastTickTime ?? DateTime.now();
-    final durationAway = DateTime.now().difference(lastTick);
+    final lastTick = _stateData.lastTickTime ?? clock.now();
+    final durationAway = clock.now().difference(lastTick);
 
     if (durationAway.inMinutes >= _shortBreakIntervalMinutes) {
       _logger.info(
@@ -748,7 +754,7 @@ class TimerEngine extends ChangeNotifier {
       );
       resetTimers();
     } else {
-      _stateData.lastTickTime = DateTime.now();
+      _stateData.lastTickTime = clock.now();
       resumeTimers();
     }
 

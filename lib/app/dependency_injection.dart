@@ -55,8 +55,10 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<DisplayController>(DisplayController(sl(), sl()));
 
+  sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
+
   sl.registerSingleton<WellnessEngine>(
-    WellnessEngine(appTracking: AppTrackingService()),
+    WellnessEngine(appTracking: sl<AppTrackingService>()),
   );
   sl.registerSingleton<AdaptiveBreakService>(
     AdaptiveBreakService(storage: sl(), wellnessEngine: sl()),
@@ -82,17 +84,19 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<PetRegistryService>(PetRegistryService());
   sl.registerSingleton<CustomEnvironmentRepository>(
-    CustomEnvironmentRepository()..loadSync(),
+    CustomEnvironmentRepository(),
   );
   sl.registerSingleton<CompanionOverlayController>(
     CompanionOverlayController(settingsRepo: sl()),
   );
   sl.registerSingleton<TrayManagerService>(TrayManagerService());
 
+  sl.registerSingleton<TimerRepository>(TimerRepository(sl()));
+
   sl.registerSingleton<TimerOrchestrator>(
     TimerOrchestrator(
       timerEngine: sl(),
-      timerRepository: TimerRepository(sl()),
+      timerRepository: sl(),
       sessionStateRepository: sl(),
       activityMonitor: sl(),
       notificationService: sl(),
@@ -105,7 +109,7 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<MeetingDetectionService>(MeetingDetectionService());
-  sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
+
   sl.registerLazySingleton<WellnessLibraryRepository>(
     () => WellnessLibraryRepository(settingsRepo: sl()),
   );

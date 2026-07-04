@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_system/presentation/standalone_overlay/wellness_notes_panel.dart';
 
 class ClassicSlideshowTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -133,6 +134,11 @@ class ClassicSlideshowTemplate extends StatelessWidget {
                         height: 1.55,
                       ),
                     ),
+                    if (exerciseTitle != null && exerciseInstructions != null)
+                      WellnessNotesPanel(
+                        title: exerciseTitle!,
+                        instructions: exerciseInstructions!,
+                      ),
                   ],
                 ),
               ),

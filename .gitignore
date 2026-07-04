@@ -47,4 +47,20 @@ app.*.map.json
 sentry.properties
 
 .env.release
-.env
+.env 
+build_tmp/
+
+# AI & Agent related files
+.agents/
+AGENTS.md
+.gemini/
+GEMINI.md
+.claude/
+CLAUDE.MD
+.kiro/
+KIRO.md
+.opencode/
+OPENCODE.md
+CODEX.md
+RULEBOOK_REPORT.md
+graphify-out/

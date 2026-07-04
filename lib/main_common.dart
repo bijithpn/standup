@@ -3,29 +3,30 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
+
+import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:sentry_flutter/sentry_flutter.dart'
-    show SentryFlutter, SentryWidget;
-import 'package:window_manager/window_manager.dart';
-import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:tray_manager/tray_manager.dart';
+import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
-import 'app/bootstrapping/service_bootstrapper.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
+import 'app/bootstrapping/service_bootstrapper.dart';
 import 'core/core.dart';
 import 'features/features.dart';
 import 'shared/shared.dart';
-import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 
 void _setupGlobalErrors() {
   void handleFatalError(Object error, StackTrace? stack) {
     ErrorHandler().handleError(error, stack, type: AppErrorType.general);
-    // If it's a major error, we gracefully shutdown and kill the process.
+    // Gracefully terminate the background server and release ports before exiting.
     Future.delayed(const Duration(seconds: 2), () async {
       await _gracefulShutdown(_globalSingleInstanceServer);
       exit(1);
@@ -46,9 +47,8 @@ void _setupGlobalErrors() {
       ErrorHandler().handleError(details.exception, details.stack);
       ErrorToastService.showError('Oops! An internal error occurred.');
 
-      // If flutter considers it a fatal error, initiate shutdown
-      // (Or we can define our own criteria. For now, unhandled build errors aren't strictly fatal,
-      // but if the UI is completely broken, we might want to kill it).
+      // Unhandled layout exceptions do not immediately terminate the process; 
+      // however, UI instability may require recovery triggers.
     }
     FlutterError.presentError(details);
   };
@@ -58,7 +58,7 @@ void _setupGlobalErrors() {
     debugPrint(error.toString());
     debugPrint(stack.toString());
 
-    // Treat unhandled async errors as major errors
+    // Unhandled asynchronous exceptions are escalated to fatal process termination.
     handleFatalError(error, stack);
 
     ErrorToastService.showError(
@@ -81,11 +81,11 @@ void _setupGlobalErrors() {
       return const Material(color: Color(0xFF0A0A0F), child: SizedBox.shrink());
     }
 
-    // Nice UI for unexpected build errors instead of the red screen
+    // Override the default Flutter red screen of death with a styled recovery widget.
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Material(
-        color: const Color(0xFF1E1E2E), // A nice dark slate
+        color: const Color(0xFF1E1E2E),
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(32.0),
@@ -191,8 +191,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       await settingsRepo.save(settingsRepo.currentSettings);
       debugPrint('[Shutdown] Settings saved & flushed.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error saving settings: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.storage);
   }
 
   try {
@@ -200,29 +200,29 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       await sl<OverlayWindowService>().reset();
       debugPrint('[Shutdown] OverlayWindowService reset complete.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error resetting OverlayWindowService: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.ui);
   }
 
   try {
     await NativeBridge.hideCompanion();
     debugPrint('[Shutdown] Companion hidden.');
-  } catch (e) {
-    debugPrint('[Shutdown] Error hiding companion: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.native);
   }
 
   try {
     await NativeBridge.hidePipWindow();
     debugPrint('[Shutdown] PiP Window hidden.');
-  } catch (e) {
-    debugPrint('[Shutdown] Error hiding PiP Window: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.native);
   }
 
   try {
     await NativeBridge.hideOverlay();
     debugPrint('[Shutdown] Overlay hidden.');
-  } catch (e) {
-    debugPrint('[Shutdown] Error hiding overlay: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.native);
   }
 
   try {
@@ -230,8 +230,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       sl<TimerEngine>().dispose();
       debugPrint('[Shutdown] TimerEngine disposed.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error disposing TimerEngine: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.timer);
   }
 
   try {
@@ -239,8 +239,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       sl<TimerOrchestrator>().shutdown();
       debugPrint('[Shutdown] TimerOrchestrator shutdown complete.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error shutting down TimerOrchestrator: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.timer);
   }
 
   try {
@@ -248,8 +248,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       sl<SmartDetectionService>().dispose();
       debugPrint('[Shutdown] SmartDetectionService disposed.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error disposing SmartDetectionService: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.activityMonitor);
   }
 
   try {
@@ -257,8 +257,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       await serverSocket.close();
       debugPrint('[Shutdown] Single-instance server socket closed.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error closing server socket: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st);
   }
 
   try {
@@ -268,8 +268,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
     }
     await trayManager.destroy();
     debugPrint('[Shutdown] Tray icon destroyed.');
-  } catch (e) {
-    debugPrint('[Shutdown] Error cleaning up tray: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.ui);
   }
 
   try {
@@ -277,8 +277,8 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
       sl<StorageService>().close();
       debugPrint('[Shutdown] StorageService closed cleanly.');
     }
-  } catch (e) {
-    debugPrint('[Shutdown] Error closing StorageService: $e');
+  } catch (e, st) {
+    ErrorHandler().handleError(e, st, type: AppErrorType.storage);
   }
 
   debugPrint('[Shutdown] Graceful shutdown complete. Exiting.');
@@ -531,13 +531,21 @@ void mainCommon(FlavorConfig config) async {
           });
         }
 
-        await SimplePrefs.instance.init();
-        logStartup('SimplePrefs.init');
+        try {
+          await SimplePrefs.instance.init();
+          logStartup('SimplePrefs.init');
 
-        await initDependencies();
-        await ServiceBootstrapper.bootstrap();
-        IpcCoordinator.coordinate();
-        logStartup('bootstrapping complete');
+          await initDependencies();
+          await ServiceBootstrapper.bootstrap();
+          IpcCoordinator.coordinate();
+          logStartup('bootstrapping complete');
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st, type: AppErrorType.general);
+          ErrorToastService.showError('Startup failed. The app will close.');
+          await Future.delayed(const Duration(seconds: 3));
+          await _gracefulShutdown(_globalSingleInstanceServer);
+          return;
+        }
 
         await windowManager.ensureInitialized();
         logStartup('windowManager.ensureInitialized');

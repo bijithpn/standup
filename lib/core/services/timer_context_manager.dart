@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -19,7 +21,7 @@ class TimerContextManager {
     final settings = _settingsRepository.currentSettings;
     if (!settings.workingHoursEnabled) return true;
 
-    final now = DateTime.now();
+    final now = clock.now();
     final weekday = now.weekday;
 
     final workingDays = settings.workingDays;
