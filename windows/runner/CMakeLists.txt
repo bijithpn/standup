@@ -45,6 +45,7 @@ target_link_libraries(${BINARY_NAME} PRIVATE flutter flutter_wrapper_app flutter
 target_link_libraries(${BINARY_NAME} PRIVATE "dwmapi.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "psapi.lib")
 target_link_libraries(${BINARY_NAME} PRIVATE "runtimeobject.lib")
+target_link_libraries(${BINARY_NAME} PRIVATE "dxva2.lib")
 target_include_directories(${BINARY_NAME} PRIVATE "${CMAKE_SOURCE_DIR}")
 
 # Run the Flutter tool portions of the build. This must not be removed.

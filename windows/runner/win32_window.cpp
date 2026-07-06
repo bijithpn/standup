@@ -140,6 +140,13 @@ bool Win32Window::Create(const std::wstring& title,
   UINT dpi = FlutterDesktopGetDpiForMonitor(monitor);
   double scale_factor = dpi / 96.0;
 
+  // For full-screen overlay windows (WS_POPUP), the coordinates are already
+  // supplied in physical pixels. Do not scale them to prevent double-scaling
+  // or clipping issues on secondary displays.
+  if ((window_style & WS_POPUP) != 0) {
+    scale_factor = 1.0;
+  }
+
   HWND window = CreateWindow(
       window_class, title.c_str(), window_style,
       Scale(origin.x, scale_factor), Scale(origin.y, scale_factor),
@@ -168,6 +175,8 @@ void Win32Window::ConfigureAsOverlay() {
   style &= ~WS_THICKFRAME;
   style &= ~WS_MINIMIZEBOX;
   style &= ~WS_MAXIMIZEBOX;
+  style &= ~WS_BORDER;
+  style &= ~WS_DLGFRAME;
   SetWindowLong(window_handle_, GWL_STYLE, style);
 
   // Enable layered window for transparency

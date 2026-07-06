@@ -27,6 +27,8 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
     with SingleTickerProviderStateMixin {
   double? _x;
   double? _y;
+  double? _lastWidth;
+  double? _lastHeight;
   bool _drag = false;
   bool _hover = false;
 
@@ -133,8 +135,21 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
       color: Colors.transparent,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          _x ??= constraints.maxWidth - _openW - 16;
-          _y ??= constraints.maxHeight - _h - 80;
+          if (_lastWidth != constraints.maxWidth ||
+              _lastHeight != constraints.maxHeight) {
+            if (_x != null && _lastWidth != null && _lastWidth! > 0) {
+              _x = (_x! / _lastWidth!) * constraints.maxWidth;
+            } else {
+              _x = constraints.maxWidth - _openW - 16;
+            }
+            if (_y != null && _lastHeight != null && _lastHeight! > 0) {
+              _y = (_y! / _lastHeight!) * constraints.maxHeight;
+            } else {
+              _y = constraints.maxHeight - _h - 80;
+            }
+            _lastWidth = constraints.maxWidth;
+            _lastHeight = constraints.maxHeight;
+          }
 
           return Stack(
             fit: StackFit.expand,

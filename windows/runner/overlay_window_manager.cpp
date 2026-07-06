@@ -53,35 +53,29 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     auto window = std::make_unique<FlutterWindow>(project);
     window->SetIsOverlay(true);
 
-    // EnumDisplayMonitors supplies physical pixel coordinates. Win32Window::Create()
-    // expects logical coordinates and scales them internally using the monitor's
-    // DPI. We must first convert physical to logical to prevent double-scaling.
-    UINT dpiX = 96, dpiY = 96;
-    HMODULE hUser32 = LoadLibrary(L"user32.dll");
-    if (hUser32) {
-      typedef UINT(STDAPICALLTYPE * GetDpiForMonitorFn)(HMONITOR, int, UINT*, UINT*);
-      auto getDpiForMonitor =
-          reinterpret_cast<GetDpiForMonitorFn>(GetProcAddress(hUser32, "GetDpiForMonitor"));
-      if (getDpiForMonitor) {
-        getDpiForMonitor(hMonitor, 0 /* MDT_EFFECTIVE_DPI */, &dpiX, &dpiY);
-      }
-      FreeLibrary(hUser32);
+    MONITORINFO monitorInfo = {};
+    monitorInfo.cbSize = sizeof(MONITORINFO);
+    RECT monitorRect = *lprcMonitor;
+    if (GetMonitorInfo(hMonitor, &monitorInfo)) {
+      monitorRect = monitorInfo.rcMonitor;
     }
-    double scale = static_cast<double>(dpiX) / 96.0;
 
-    int logicalLeft   = static_cast<int>(lprcMonitor->left   / scale);
-    int logicalTop    = static_cast<int>(lprcMonitor->top    / scale);
-    int logicalWidth  = static_cast<int>((lprcMonitor->right  - lprcMonitor->left) / scale);
-    int logicalHeight = static_cast<int>((lprcMonitor->bottom - lprcMonitor->top)  / scale);
+    // Since Win32Window::Create() has been updated to bypass scale factor multiplication
+    // for WS_POPUP style windows, we can pass physical coordinate values directly.
+    int physicalLeft   = monitorRect.left;
+    int physicalTop    = monitorRect.top;
+    int physicalWidth  = monitorRect.right  - monitorRect.left;
+    int physicalHeight = monitorRect.bottom - monitorRect.top;
+
+    UINT dpi = FlutterDesktopGetDpiForMonitor(hMonitor);
+    double scale = static_cast<double>(dpi) / 96.0;
 
     printf("[OverlayWindowManager] Monitor: %p, Physical Rect: {%ld, %ld, %ld, %ld}, DPI: %u, Scale: %f\n",
-           (void*)hMonitor, lprcMonitor->left, lprcMonitor->top, lprcMonitor->right, lprcMonitor->bottom, dpiX, scale);
-    printf("[OverlayWindowManager] Computed Logical Rect: {%d, %d, %d, %d}\n",
-           logicalLeft, logicalTop, logicalWidth, logicalHeight);
+           (void*)hMonitor, monitorRect.left, monitorRect.top, monitorRect.right, monitorRect.bottom, dpi, scale);
     fflush(stdout);
 
-    Win32Window::Point origin(logicalLeft, logicalTop);
-    Win32Window::Size  size(logicalWidth, logicalHeight);
+    Win32Window::Point origin(physicalLeft, physicalTop);
+    Win32Window::Size  size(physicalWidth, physicalHeight);
 
     // Using WS_POPUP ensures no non-client area (titlebar/borders) is present,
     // so GetClientArea() in OnCreate() returns the full monitor dimensions, and
@@ -98,7 +92,7 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
         window->SetIgnoreMouseEvents(true);
       }
 
-      window->SetOverlayRect(*lprcMonitor);
+      window->SetOverlayRect(monitorRect);
 
       printf("[OverlayWindowManager] Calling Show() for monitor: %p\n", (void*)hMonitor);
       fflush(stdout);

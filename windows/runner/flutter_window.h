@@ -10,6 +10,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <set>
 
 #include "win32_window.h"
 #include "calendar_bridge.h"
@@ -128,6 +129,7 @@ class FlutterWindow : public Win32Window {
   static int keyboard_hook_ref_count_;
   static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
   static FlutterWindow* main_window_;
+  static std::set<FlutterWindow*> active_windows_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

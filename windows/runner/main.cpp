@@ -7,6 +7,20 @@
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  // Set DPI awareness context programmatically to ensure PerMonitorV2 is active
+  // even if manifest fails to load.
+  HMODULE hUser32 = LoadLibrary(L"user32.dll");
+  if (hUser32) {
+    typedef BOOL(WINAPI* SetProcessDpiAwarenessContextFn)(DPI_AWARENESS_CONTEXT);
+    auto setProcessDpiAwarenessContext =
+        reinterpret_cast<SetProcessDpiAwarenessContextFn>(
+            GetProcAddress(hUser32, "SetProcessDpiAwarenessContext"));
+    if (setProcessDpiAwarenessContext) {
+      setProcessDpiAwarenessContext(reinterpret_cast<DPI_AWARENESS_CONTEXT>(-4)); // DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+    }
+    FreeLibrary(hUser32);
+  }
+
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {

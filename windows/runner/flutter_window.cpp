@@ -8,6 +8,7 @@
 #include <flutter/event_stream_handler.h>
 
 #include "flutter/generated_plugin_registrant.h"
+#include <flutter_acrylic/flutter_acrylic_plugin.h>
 #include "calendar_bridge.h"
 #include "bridge_utils.h"
 #include "overlay_window_manager.h"
@@ -53,6 +54,7 @@ BOOL CALLBACK EnumWindowsProc(HWND hwnd, LPARAM lParam) {
 HHOOK FlutterWindow::keyboard_hook_ = nullptr;
 int FlutterWindow::keyboard_hook_ref_count_ = 0;
 FlutterWindow* FlutterWindow::main_window_ = nullptr;
+std::set<FlutterWindow*> FlutterWindow::active_windows_;
 
 LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam) {
   if (nCode == HC_ACTION) {
@@ -163,11 +165,16 @@ class MeetingDetectionStreamHandler : public flutter::StreamHandler<flutter::Enc
 static DisplayStreamHandler* g_display_stream_handler = nullptr;
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
-    : project_(project), ignore_mouse_events_(false) {}
+    : project_(project), ignore_mouse_events_(false) {
+  active_windows_.insert(this);
+}
 
-FlutterWindow::~FlutterWindow() {}
+FlutterWindow::~FlutterWindow() {
+  active_windows_.erase(this);
+}
 
 bool FlutterWindow::Show() {
+  BOOL res = FALSE;
   if (is_overlay_) {
     // Determine the final window bounds from the stored overlay rect or
     // fall back to querying the current monitor. Position must be applied
@@ -206,14 +213,27 @@ bool FlutterWindow::Show() {
     // Now make the window visible. SW_SHOWNOACTIVATE avoids stealing focus
     // from other windows when the overlay is click-through.
     UINT show_flag = ignore_mouse_events_ ? SW_SHOWNOACTIVATE : SW_SHOW;
-    BOOL res = ShowWindow(GetHandle(), show_flag);
+    res = ShowWindow(GetHandle(), show_flag);
 
     if (!ignore_mouse_events_) {
       SetForegroundWindow(GetHandle());
     }
-    return res;
+  } else {
+    res = Win32Window::Show();
   }
-  return Win32Window::Show();
+
+  // Force the child Flutter view to update its layout size and DPR when the window is shown.
+  // This prevents layout squishing/stretching on secondary displays with different DPI scales.
+  if (flutter_controller_ && flutter_controller_->view()) {
+    HWND child_hwnd = flutter_controller_->view()->GetNativeWindow();
+    if (child_hwnd) {
+      RECT rect = GetClientArea();
+      ::MoveWindow(child_hwnd, rect.left, rect.top, rect.right - rect.left - 1, rect.bottom - rect.top, TRUE);
+      ::MoveWindow(child_hwnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
+    }
+  }
+
+  return res;
 }
 
 bool FlutterWindow::OnCreate() {
@@ -232,10 +252,16 @@ bool FlutterWindow::OnCreate() {
   if (!flutter_controller_->engine() || !flutter_controller_->view()) {
     return false;
   }
-  RegisterPlugins(flutter_controller_->engine());
-  
-  // Register the custom overlay window plugin (needed by both main and companion)
-  RegisterOverlayWindowPlugin(flutter_controller_->engine());
+  if (is_companion_ || is_overlay_ || is_pip_) {
+    // Only register plugins needed by secondary windows (avoid window_manager/objectbox/sentry crashes)
+    FlutterAcrylicPluginRegisterWithRegistrar(
+        flutter_controller_->engine()->GetRegistrarForPlugin("FlutterAcrylicPlugin"));
+    RegisterOverlayWindowPlugin(flutter_controller_->engine());
+  } else {
+    // Main window: register all plugins
+    RegisterPlugins(flutter_controller_->engine());
+    RegisterOverlayWindowPlugin(flutter_controller_->engine());
+  }
 
   // Register this engine with the IPC bridge so com.breakmate/ipc works
   IpcBridgeManager::GetInstance()->RegisterEngine(flutter_controller_->engine());
@@ -269,8 +295,10 @@ bool FlutterWindow::OnCreate() {
   
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
-  flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    this->Show();
+  flutter_controller_->engine()->SetNextFrameCallback([this]() {
+    if (active_windows_.find(this) != active_windows_.end()) {
+      this->Show();
+    }
   });
 
   // Flutter can complete the first frame before the "show window" callback is
@@ -1158,6 +1186,16 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     }
   }
 
+  if (message == WM_SIZE && is_overlay_) {
+    HWND child_hwnd = GetChildContent();
+    if (child_hwnd) {
+      RECT rect;
+      ::GetClientRect(hwnd, &rect);
+      ::MoveWindow(child_hwnd, rect.left, rect.top, rect.right - rect.left,
+                   rect.bottom - rect.top, TRUE);
+    }
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =
@@ -1188,11 +1226,20 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
         // Prevent default Win32Window handler from resizing/moving the overlay
         // window based on the OS suggested rect. It must remain full-screen
         // covering its target monitor.
+        HWND child_hwnd = GetChildContent();
+        if (child_hwnd) {
+          RECT rect;
+          ::GetClientRect(hwnd, &rect);
+          ::MoveWindow(child_hwnd, rect.left, rect.top, rect.right - rect.left - 1, rect.bottom - rect.top, TRUE);
+          ::MoveWindow(child_hwnd, rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top, TRUE);
+        }
         return 0;
       }
       break;
     case WM_FONTCHANGE:
-      flutter_controller_->engine()->ReloadSystemFonts();
+      if (flutter_controller_ && flutter_controller_->engine()) {
+        flutter_controller_->engine()->ReloadSystemFonts();
+      }
       break;
     case WM_TIMER:
       if (wparam == 1) {

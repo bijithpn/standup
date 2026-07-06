@@ -29,6 +29,8 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
   static const _sessionSeconds = 20;
   final _rand = math.Random();
 
+  Timer? _orbDelayTimer;
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +44,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
 
   @override
   void dispose() {
+    _orbDelayTimer?.cancel();
     _orbController.dispose();
     _elapsed.dispose();
     _sessionTimer?.cancel();
@@ -66,11 +69,14 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
     _orbController
       ..reset()
       ..forward().then((_) {
+        if (!mounted) return;
         _orbX = _targetX;
         _orbY = _targetY;
-        Future.delayed(const Duration(milliseconds: 600), () {
+        _orbDelayTimer = Timer(const Duration(milliseconds: 600), () {
           if (mounted && !_done) _moveOrbToTarget();
         });
+      }).catchError((_) {
+        // Ticker was canceled, safe to ignore
       });
   }
 

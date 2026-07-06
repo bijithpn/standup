@@ -63,6 +63,9 @@ class Win32Window {
   // window properties. Returns nullptr if the window has been destroyed.
   HWND GetHandle();
 
+  // Returns the hosted child content window handle.
+  HWND GetChildContent() const { return child_content_; }
+
   // If true, closing this window will quit the application.
   void SetQuitOnClose(bool quit_on_close);
 

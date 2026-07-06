@@ -61,24 +61,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       desc: 'Spacious timer with a single progress bar.',
     ),
     (
-      id: 'floating',
-      name: 'Floating Dock',
-      desc: 'Snappable compact overlay, desktop stays visible.',
-    ),
-    (
       id: 'activities',
       name: 'Activity Studio',
       desc: 'Guided breathing & eye sync exercises.',
-    ),
-    (
-      id: 'soft_arc',
-      name: 'Soft Arc',
-      desc: 'Icon, large countdown, and a 1.5px arc. Nothing else.',
-    ),
-    (
-      id: 'breathe_line',
-      name: 'Breathe Line',
-      desc: 'Animated line expands and contracts with your breath.',
     ),
     (
       id: 'clock_face',
@@ -91,84 +76,14 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       desc: '"Rest" or "Pause" — giant, quiet, minimal.',
     ),
     (
-      id: 'open_field',
-      name: 'Open Field',
-      desc: 'Full photo backdrop with bottom text overlay.',
-    ),
-    (
-      id: 'haiku_card',
-      name: 'Haiku',
-      desc: 'A rotating haiku poem with your countdown below.',
-    ),
-    (
-      id: 'ring_only',
-      name: 'Ring Only',
-      desc: 'Single arc ring, icon, and time. Nothing outside.',
-    ),
-    (
-      id: 'step_guide',
-      name: 'Step Guide',
-      desc: 'Numbered steps from your break tip.',
-    ),
-    (
-      id: 'time_slice',
-      name: 'Time Slice',
-      desc: 'Full-width progress bar, big word, optional tip.',
-    ),
-    (
-      id: 'day_stack',
-      name: 'Day Stack',
-      desc: 'Today\'s break count + countdown stacked cleanly.',
-    ),
-    (
       id: 'pulse_dot',
       name: 'Pulse Dot',
       desc: 'Pulsing circle border with countdown center.',
     ),
     (
-      id: 'mono_time',
-      name: 'Mono Time',
-      desc: 'Monospace terminal-style countdown with accent bar.',
-    ),
-    (
-      id: 'split_view',
-      name: 'Split View',
-      desc: 'Tip text left, arc + timer right.',
-    ),
-    (
-      id: 'warm_amber',
-      name: 'Warm Amber',
-      desc: 'Sunset-toned wind-down with daily break count.',
-    ),
-    (
-      id: 'focus_orb',
-      name: 'Focus Orb',
-      desc: 'Static radial glow behind a clean countdown.',
-    ),
-    (
       id: 'wave_calm',
       name: 'Wave Calm',
       desc: 'Animated sine waves behind a centered timer.',
-    ),
-    (
-      id: 'iris_rest',
-      name: 'Iris Rest',
-      desc: 'Giant eye icon, a rule, countdown, one-line instruction.',
-    ),
-    (
-      id: 'quiet_pill',
-      name: 'Quiet Pill',
-      desc: 'Draggable floating pill — desktop stays fully visible.',
-    ),
-    (
-      id: 'paper_light',
-      name: 'Paper Light',
-      desc: 'Light mode template on warm paper background.',
-    ),
-    (
-      id: 'dusk_glow',
-      name: 'Dusk Glow',
-      desc: 'Deep purple gradient with moon icon and progress bar.',
     ),
   ];
 

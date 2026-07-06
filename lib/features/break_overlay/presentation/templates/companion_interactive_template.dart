@@ -31,6 +31,8 @@ class _CompanionInteractiveTemplateState
     extends State<CompanionInteractiveTemplate> {
   double? _x;
   double? _y;
+  double? _lastWidth;
+  double? _lastHeight;
   bool _isDragging = false;
 
   static const double _widgetSize = 130.0;
@@ -78,8 +80,21 @@ class _CompanionInteractiveTemplateState
       color: const Color(0xFF0A0A0F),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          _x ??= constraints.maxWidth / 2 - _widgetSize / 2;
-          _y ??= constraints.maxHeight - _widgetSize - 130;
+          if (_lastWidth != constraints.maxWidth ||
+              _lastHeight != constraints.maxHeight) {
+            if (_x != null && _lastWidth != null && _lastWidth! > 0) {
+              _x = (_x! / _lastWidth!) * constraints.maxWidth;
+            } else {
+              _x = constraints.maxWidth / 2 - _widgetSize / 2;
+            }
+            if (_y != null && _lastHeight != null && _lastHeight! > 0) {
+              _y = (_y! / _lastHeight!) * constraints.maxHeight;
+            } else {
+              _y = constraints.maxHeight - _widgetSize - 130;
+            }
+            _lastWidth = constraints.maxWidth;
+            _lastHeight = constraints.maxHeight;
+          }
 
           return Stack(
             fit: StackFit.expand,

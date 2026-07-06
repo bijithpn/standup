@@ -2,6 +2,9 @@
 
 #include <string>
 #include <vector>
+#include <PhysicalMonitorEnumerationAPI.h>
+
+#pragma comment(lib, "dxva2.lib")
 
 struct DisplayData {
   std::string id;
@@ -23,7 +26,32 @@ BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMoni
   DisplayData data;
   char szDevice[32];
   WideCharToMultiByte(CP_UTF8, 0, info.szDevice, -1, szDevice, 32, NULL, NULL);
-  data.id = std::string(szDevice);
+
+  // Try to get a friendly description/name of the monitor.
+  std::wstring friendlyName = L"";
+  DWORD dwCount = 0;
+  if (GetNumberOfPhysicalMonitorsFromHMONITOR(hMonitor, &dwCount)) {
+    std::vector<PHYSICAL_MONITOR> monitors(dwCount);
+    if (GetPhysicalMonitorsFromHMONITOR(hMonitor, dwCount, monitors.data())) {
+      friendlyName = monitors[0].szPhysicalMonitorDescription;
+      DestroyPhysicalMonitors(dwCount, monitors.data());
+    }
+  }
+
+  std::string deviceId = szDevice;
+  size_t pos = deviceId.find_last_of("\\");
+  if (pos != std::string::npos) {
+    deviceId = deviceId.substr(pos + 1);
+  }
+
+  if (!friendlyName.empty()) {
+    char szFriendly[128];
+    WideCharToMultiByte(CP_UTF8, 0, friendlyName.c_str(), -1, szFriendly, 128, NULL, NULL);
+    data.id = std::string(szFriendly) + " (" + deviceId + ")";
+  } else {
+    data.id = deviceId;
+  }
+
   data.isPrimary = (info.dwFlags & MONITORINFOF_PRIMARY) != 0;
   data.width = static_cast<double>(info.rcMonitor.right - info.rcMonitor.left);
   data.height = static_cast<double>(info.rcMonitor.bottom - info.rcMonitor.top);
