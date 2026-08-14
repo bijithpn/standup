@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class BreatheLineTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -68,10 +69,10 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
     final breakName = isShort ? 'Eye rest' : 'Long break';
     final accent = widget.settings.clockFaceTextColorHex != 0xFFFFFFFF
         ? Color(widget.settings.clockFaceTextColorHex)
-        : const Color(0xFF7EC8E3);
+        : BreakOverlayTheme.accentShort;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -85,7 +86,7 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                     color: Colors.white.withValues(alpha: 0.65),
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -106,7 +107,7 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                     color: Color(widget.settings.clockFaceTextColorHex),
                     fontSize: 48,
                     fontWeight: FontWeight.w200,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                     fontFeatures: const [FontFeature.tabularFigures()],
                     letterSpacing: -1.5,
                   ),
@@ -115,10 +116,10 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                 Text(
                   breakName,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.35),
+                    color: BreakOverlayTheme.textDim,
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
               ],
@@ -126,8 +127,8 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
           ),
           if (!widget.settings.strictMode && widget.onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: widget.onSkip,
                 child: MouseRegion(
@@ -135,10 +136,10 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

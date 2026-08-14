@@ -44,6 +44,26 @@ final class PiPWindowManager: NSObject {
         RegisterSecondaryPlugins(registry: engine)
         IpcBridgeManager.shared.register(engine: engine)
 
+        // Attach the data channel before any UI work: the Flutter isolate calls
+        // getInitialSettings immediately on startup, and a handler registered
+        // after the view setup can lose that race and hand back
+        // FlutterMethodNotImplemented, silently dropping the user's settings.
+        let capturedArgs = args ?? [:]
+        let dataChannel = FlutterMethodChannel(
+            name: "com.breakmate.desktop/pip_data",
+            binaryMessenger: engine.binaryMessenger
+        )
+        dataChannel.setMethodCallHandler { (call, result) in
+            switch call.method {
+            case "getInitialSettings":
+                result(capturedArgs)
+            case "syncPiPSettings":
+                result(nil)
+            default:
+                result(FlutterMethodNotImplemented)
+            }
+        }
+
         let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
         controller.backgroundColor = .clear
         controller.view.wantsLayer = true
@@ -55,22 +75,6 @@ final class PiPWindowManager: NSObject {
         window.contentView = controller.view
 
         pipInstance = PiPInstance(window: window, engine: engine, controller: controller)
-
-        let pendingArgs = args ?? [:]
-        let dataChannel = FlutterMethodChannel(
-            name: "com.breakmate.desktop/pip_data",
-            binaryMessenger: engine.binaryMessenger
-        )
-        dataChannel.setMethodCallHandler { (call, result) in
-            switch call.method {
-            case "getInitialSettings":
-                result(pendingArgs)
-            case "syncPiPSettings":
-                result(nil)
-            default:
-                result(FlutterMethodNotImplemented)
-            }
-        }
 
         let bridgeChannel = FlutterMethodChannel(
             name: "com.breakmate.desktop/bridge",

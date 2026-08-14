@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class PaperLightTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -56,7 +57,7 @@ class PaperLightTemplate extends StatelessWidget {
                       color: secondary,
                       fontSize: 16,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -66,7 +67,7 @@ class PaperLightTemplate extends StatelessWidget {
                       color: primary,
                       fontSize: 72,
                       fontWeight: FontWeight.w200,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                       fontFeatures: [FontFeature.tabularFigures()],
                       letterSpacing: -2,
                       height: 1.0,
@@ -89,7 +90,7 @@ class PaperLightTemplate extends StatelessWidget {
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
                         fontStyle: FontStyle.italic,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         height: 1.6,
                       ),
                     ),
@@ -100,8 +101,8 @@ class PaperLightTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -112,7 +113,7 @@ class PaperLightTemplate extends StatelessWidget {
                       color: secondary,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

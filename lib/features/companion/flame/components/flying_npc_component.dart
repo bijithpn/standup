@@ -18,6 +18,10 @@ class FlyingNpcComponent extends SpriteAnimationComponent
   double _waveTimer = 0.0;
   double _baseY = 0.0;
 
+  /// Resolved once in [onLoad]; the environment never changes afterwards, so
+  /// there is no reason to walk the component tree every frame.
+  EnvironmentComponent? _env;
+
   FlyingNpcComponent() : super(anchor: Anchor.center, priority: -4);
 
   @override
@@ -60,10 +64,25 @@ class FlyingNpcComponent extends SpriteAnimationComponent
 
       size = Vector2(birdAsset.spriteWidth, birdAsset.spriteHeight);
       _resetBird();
+      _env = _findEnvironment();
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
       removeFromParent();
     }
+  }
+
+  EnvironmentComponent? _findEnvironment() {
+    final direct = game.world.children.whereType<EnvironmentComponent>();
+    if (direct.isNotEmpty) return direct.first;
+
+    for (final child in game.children) {
+      if (child is EnvironmentComponent) return child;
+      if (child is PositionComponent) {
+        final nested = child.children.whereType<EnvironmentComponent>();
+        if (nested.isNotEmpty) return nested.first;
+      }
+    }
+    return null;
   }
 
   void _resetBird() {
@@ -131,21 +150,11 @@ class FlyingNpcComponent extends SpriteAnimationComponent
     }
 
     // Apply lighting modulation matching EnvironmentComponent
-    EnvironmentComponent? env;
-    if (game.world.children.whereType<EnvironmentComponent>().isNotEmpty) {
-      env = game.world.children.whereType<EnvironmentComponent>().first;
-    } else {
-      for (final child in game.children) {
-        if (child is PositionComponent &&
-            child.children.whereType<EnvironmentComponent>().isNotEmpty) {
-          env = child.children.whereType<EnvironmentComponent>().first;
-          break;
-        }
-      }
-    }
-
-    if (env != null) {
-      paint.colorFilter = ColorFilter.mode(env.ambientTint, BlendMode.modulate);
+    if (_env != null) {
+      paint.colorFilter = ColorFilter.mode(
+        _env!.ambientTint,
+        BlendMode.modulate,
+      );
     }
   }
 }

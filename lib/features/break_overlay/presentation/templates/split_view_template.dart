@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class SplitViewTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -32,10 +33,10 @@ class SplitViewTemplate extends StatelessWidget {
     final progress = totalSeconds > 0
         ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;
-    const accent = Color(0xFF86EFAC);
+    const accent = BreakOverlayTheme.accentLong;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -55,7 +56,7 @@ class SplitViewTemplate extends StatelessWidget {
                           color: Colors.white,
                           fontSize: 26,
                           fontWeight: FontWeight.w300,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -67,7 +68,7 @@ class SplitViewTemplate extends StatelessWidget {
                             color: Colors.white.withValues(alpha: 0.43),
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
-                            fontFamily: 'Inter',
+                            fontFamily: BreakOverlayTheme.fontFamily,
                             height: 1.75,
                           ),
                         ),
@@ -79,9 +80,9 @@ class SplitViewTemplate extends StatelessWidget {
                           breakInfo.triggerReason!,
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.52),
-                            fontSize: 13,
+                            fontSize: BreakOverlayTheme.labelFontSize,
                             fontWeight: FontWeight.w400,
-                            fontFamily: 'Inter',
+                            fontFamily: BreakOverlayTheme.fontFamily,
                           ),
                         ),
                       ],
@@ -112,7 +113,7 @@ class SplitViewTemplate extends StatelessWidget {
                               color: Colors.white,
                               fontSize: 80,
                               fontWeight: FontWeight.w200,
-                              fontFamily: 'Inter',
+                              fontFamily: BreakOverlayTheme.fontFamily,
                               fontFeatures: [FontFeature.tabularFigures()],
                               letterSpacing: -3,
                               height: 1.0,
@@ -125,7 +126,7 @@ class SplitViewTemplate extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.3),
                               fontSize: 12,
                               fontWeight: FontWeight.w400,
-                              fontFamily: 'Inter',
+                              fontFamily: BreakOverlayTheme.fontFamily,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -151,8 +152,8 @@ class SplitViewTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -160,10 +161,10 @@ class SplitViewTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

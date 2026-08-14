@@ -37,6 +37,7 @@ class TimerEngine extends ChangeNotifier {
   late final TimerContextManager _contextManager;
 
   Timer? _tickTimer;
+  bool _isDisposed = false;
 
   int _shortBreakIntervalMinutes =
       AppConstants.defaultShortBreakIntervalMinutes;
@@ -774,7 +775,14 @@ class TimerEngine extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _tickTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
   }
 }

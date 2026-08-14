@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class ZenModeTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -28,7 +29,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   late Animation<double> _scaleAnim;
   String _phaseText = 'Breathe in';
 
-  static const _accent = Color(0xFF7EC8E3);
+  static const _accent = BreakOverlayTheme.accentShort;
 
   @override
   void initState() {
@@ -89,7 +90,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -103,7 +104,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                     color: Colors.white.withValues(alpha: 0.7),
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -137,7 +138,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                     color: Colors.white.withValues(alpha: 0.45),
                     fontSize: 20,
                     fontWeight: FontWeight.w300,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -146,8 +147,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
           ),
           if (!widget.settings.strictMode && widget.onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: widget.onSkip,
                 child: MouseRegion(
@@ -155,10 +156,10 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

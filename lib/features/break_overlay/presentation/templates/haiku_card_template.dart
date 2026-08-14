@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class HaikuCardTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -50,7 +51,7 @@ class HaikuCardTemplate extends StatelessWidget {
     final breakName = isShort ? 'Eye rest' : 'Long break';
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -68,7 +69,7 @@ class HaikuCardTemplate extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 15,
                         fontWeight: FontWeight.w300,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         fontStyle: FontStyle.italic,
                         height: 2.0,
                       ),
@@ -86,7 +87,7 @@ class HaikuCardTemplate extends StatelessWidget {
                       color: Color(settings.clockFaceTextColorHex),
                       fontSize: 42,
                       fontWeight: FontWeight.w200,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                       fontFeatures: const [FontFeature.tabularFigures()],
                     ),
                   ),
@@ -97,7 +98,7 @@ class HaikuCardTemplate extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.28),
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ],
@@ -106,8 +107,8 @@ class HaikuCardTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -115,10 +116,10 @@ class HaikuCardTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

@@ -6,16 +6,73 @@ class BreakStartWarningOverlay extends StatelessWidget {
   final Animation<double> fadeAnimation;
   final String title;
   final int durationSeconds;
+  final bool isPreBreak;
 
   const BreakStartWarningOverlay({
     super.key,
     required this.fadeAnimation,
     required this.title,
     required this.durationSeconds,
+    this.isPreBreak = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (isPreBreak) {
+      return Center(
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.9, end: 1.0).animate(
+            CurvedAnimation(
+              parent: fadeAnimation,
+              curve: Curves.easeOutBack,
+              reverseCurve: Curves.easeIn,
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceCard.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(
+                color: AppTheme.accent.withValues(alpha: 0.2),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accent),
+                  ),
+                ),
+                SizedBox(width: 14),
+                Text(
+                  'Break starting soon...',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final isPosture = title.toUpperCase().contains('POSTURE');
     final isEye = title.toUpperCase().contains('EYE');
 

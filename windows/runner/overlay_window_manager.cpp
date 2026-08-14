@@ -21,6 +21,7 @@ struct OverlayEnumData {
   std::vector<std::unique_ptr<FlutterWindow>>* windows;
   bool ignore_mouse;
   bool is_strict_mode;
+  bool show_on_all_displays;
 };
 
 void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::string, flutter::EncodableValue>& args) {
@@ -41,24 +42,34 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     ignore_mouse = std::get<bool>(it->second);
   }
 
-  OverlayEnumData enum_data = {&overlay_windows_, ignore_mouse, is_strict_mode};
+  bool show_on_all_displays = true;
+  auto it_all = args.find("showOnAllDisplays");
+  if (it_all != args.end() && std::holds_alternative<bool>(it_all->second)) {
+    show_on_all_displays = std::get<bool>(it_all->second);
+  }
+
+  OverlayEnumData enum_data = {&overlay_windows_, ignore_mouse, is_strict_mode, show_on_all_displays};
 
   auto monitor_enum_proc = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
     auto data = reinterpret_cast<OverlayEnumData*>(dwData);
     auto windows = data->windows;
-
-    flutter::DartProject project(L"data");
-    project.set_dart_entrypoint("overlayMain");
-
-    auto window = std::make_unique<FlutterWindow>(project);
-    window->SetIsOverlay(true);
 
     MONITORINFO monitorInfo = {};
     monitorInfo.cbSize = sizeof(MONITORINFO);
     RECT monitorRect = *lprcMonitor;
     if (GetMonitorInfo(hMonitor, &monitorInfo)) {
       monitorRect = monitorInfo.rcMonitor;
+      // If we only show on the primary monitor, skip if this is not primary
+      if (!data->show_on_all_displays && !(monitorInfo.dwFlags & MONITORINFOF_PRIMARY)) {
+        return TRUE;
+      }
     }
+
+    flutter::DartProject project(L"data");
+    project.set_dart_entrypoint("overlayMain");
+
+    auto window = std::make_unique<FlutterWindow>(project);
+    window->SetIsOverlay(true);
 
     // Since Win32Window::Create() has been updated to bypass scale factor multiplication
     // for WS_POPUP style windows, we can pass physical coordinate values directly.

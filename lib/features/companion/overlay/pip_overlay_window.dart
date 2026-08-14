@@ -16,7 +16,6 @@ import 'package:breakmate/features/companion/interaction/interaction_controller.
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
-import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
@@ -92,6 +91,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   Offset? _dragStartPosition;
   Offset? _lastDragPosition;
   Offset? _lastLocalDragPosition;
+
+  DateTime? _lastHoverTime;
+  bool _isCheckingClickThrough = false;
 
   String? _feedbackText;
 
@@ -304,23 +306,28 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   }
 
   Future<void> _checkClickThrough() async {
-    if (!_pipDraggableClickable) {
-      if (_acceptsMouse) {
-        _acceptsMouse = false;
-        await _windowManager.setAcceptsMouse(false);
-      }
-      return;
-    }
-
-    if (!_clickThrough) {
-      if (!_acceptsMouse) {
-        _acceptsMouse = true;
-        await _windowManager.setAcceptsMouse(true);
-      }
-      return;
-    }
+    // The 100ms poll timer must not stack overlapping async chains; each one
+    // holds a platform channel slot and starves the Flame frame loop.
+    if (_isCheckingClickThrough) return;
+    _isCheckingClickThrough = true;
 
     try {
+      if (!_pipDraggableClickable) {
+        if (_acceptsMouse) {
+          _acceptsMouse = false;
+          await _windowManager.setAcceptsMouse(false);
+        }
+        return;
+      }
+
+      if (!_clickThrough) {
+        if (!_acceptsMouse) {
+          _acceptsMouse = true;
+          await _windowManager.setAcceptsMouse(true);
+        }
+        return;
+      }
+
       final pos = await _windowManager.getPosition();
       final size = _windowManager.currentSize;
       final cursorPos = await NativeBridge.getCursorPosition();
@@ -363,12 +370,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         await _windowManager.setAcceptsMouse(accepts);
       }
     } catch (e, st) {
-      throw AppException(
-        type: AppErrorType.ui,
-        message: 'PiP click-through check failed: ${e.toString()}',
-        originalError: e,
-        stackTrace: st,
-      );
+      // Log only, never rethrow — this runs inside a Timer.periodic.
+      ErrorHandler().handleError(e, st);
+    } finally {
+      _isCheckingClickThrough = false;
     }
   }
 
@@ -537,6 +542,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   }
 
   void _onHover(PointerHoverEvent event) {
+    // Pointer-move fires 60+ times/sec; throttle so the FSM and EventBus
+    // are not saturated with userHover events.
+    final now = DateTime.now();
+    if (_lastHoverTime != null &&
+        now.difference(_lastHoverTime!) < const Duration(milliseconds: 200)) {
+      return;
+    }
+    _lastHoverTime = now;
     _interactionController?.onPetPetted();
   }
 

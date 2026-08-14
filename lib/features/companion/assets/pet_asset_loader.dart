@@ -991,6 +991,9 @@ class PetAssetLoader {
     _rgbaCache.clear();
     _failedAssets.clear();
     _boundingBoxCache.clear();
+    // Sprite identity hash codes are invalidated when the image cache is
+    // dropped, so stale padding entries would never be hit again.
+    _spriteBottomPaddingCache.clear();
     CompanionSpriteWidget.clearCache();
   }
 }

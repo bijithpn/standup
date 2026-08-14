@@ -4,6 +4,7 @@ import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/wellness_notes_panel.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class ClassicSlideshowTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -77,7 +78,7 @@ class ClassicSlideshowTemplate extends StatelessWidget {
     }
 
     return Material(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -106,7 +107,7 @@ class ClassicSlideshowTemplate extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -116,7 +117,7 @@ class ClassicSlideshowTemplate extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 72,
                         fontWeight: FontWeight.w200,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         fontFeatures: [FontFeature.tabularFigures()],
                         letterSpacing: -3.0,
                         height: 1.0,
@@ -130,7 +131,7 @@ class ClassicSlideshowTemplate extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.65),
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         height: 1.55,
                       ),
                     ),
@@ -146,8 +147,8 @@ class ClassicSlideshowTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -155,10 +156,10 @@ class ClassicSlideshowTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

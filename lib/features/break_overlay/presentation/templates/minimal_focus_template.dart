@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class MinimalFocusTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -20,12 +21,6 @@ class MinimalFocusTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  String _formatTime(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
   String _durationLabel() {
     final isShort = breakInfo.type == BreakType.short;
     final mins = totalSeconds ~/ 60;
@@ -40,17 +35,14 @@ class MinimalFocusTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
     final defaultAccent = isShort
-        ? const Color(0xFF7EC8E3)
-        : const Color(0xFF86EFAC);
+        ? BreakOverlayTheme.accentShort
+        : BreakOverlayTheme.accentLong;
     final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
         ? Color(settings.clockFaceTextColorHex)
         : defaultAccent;
-    final progress = totalSeconds > 0
-        ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
-        : 0.0;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -64,36 +56,20 @@ class MinimalFocusTemplate extends StatelessWidget {
                   color: accent.withValues(alpha: 0.55),
                 ),
                 const SizedBox(height: 20),
-                RepaintBoundary(
-                  child: SizedBox(
-                    width: 220,
-                    height: 220,
-                    child: CustomPaint(
-                      painter: _ArcPainter(accent: accent, progress: progress),
-                      child: Center(
-                        child: Text(
-                          _formatTime(remainingSeconds),
-                          style: TextStyle(
-                            color: Color(settings.clockFaceTextColorHex),
-                            fontSize: 54,
-                            fontWeight: FontWeight.w200,
-                            fontFamily: 'Inter',
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                            letterSpacing: -1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+                _FocusTimerDisplay(
+                  remainingSeconds: remainingSeconds,
+                  totalSeconds: totalSeconds,
+                  accent: accent,
+                  clockColorHex: settings.clockFaceTextColorHex,
                 ),
                 const SizedBox(height: 20),
                 Text(
                   _durationLabel(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 13,
+                    fontSize: BreakOverlayTheme.labelFontSize,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
                 if (settings.showExercisesInBreak &&
@@ -105,10 +81,10 @@ class MinimalFocusTemplate extends StatelessWidget {
                       breakInfo.tip,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.38),
-                        fontSize: 13,
+                        color: BreakOverlayTheme.textMuted,
+                        fontSize: BreakOverlayTheme.labelFontSize,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         height: 1.6,
                       ),
                     ),
@@ -119,8 +95,8 @@ class MinimalFocusTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -128,10 +104,10 @@ class MinimalFocusTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),
@@ -180,4 +156,55 @@ class _ArcPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ArcPainter old) =>
       old.progress != progress || old.accent != accent;
+}
+
+/// Isolates the per-second countdown repaint from the static parts of the
+/// template (icon, duration label, tip), which never change during a break.
+class _FocusTimerDisplay extends StatelessWidget {
+  final int remainingSeconds;
+  final int totalSeconds;
+  final Color accent;
+  final int clockColorHex;
+
+  const _FocusTimerDisplay({
+    required this.remainingSeconds,
+    required this.totalSeconds,
+    required this.accent,
+    required this.clockColorHex,
+  });
+
+  String _formatTime(int s) {
+    final m = s ~/ 60;
+    final sec = s % 60;
+    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalSeconds > 0
+        ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
+        : 0.0;
+    return RepaintBoundary(
+      child: SizedBox(
+        width: 220,
+        height: 220,
+        child: CustomPaint(
+          painter: _ArcPainter(accent: accent, progress: progress),
+          child: Center(
+            child: Text(
+              _formatTime(remainingSeconds),
+              style: TextStyle(
+                color: Color(clockColorHex),
+                fontSize: BreakOverlayTheme.timerFontSizeMd,
+                fontWeight: FontWeight.w200,
+                fontFamily: BreakOverlayTheme.fontFamily,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                letterSpacing: -1.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

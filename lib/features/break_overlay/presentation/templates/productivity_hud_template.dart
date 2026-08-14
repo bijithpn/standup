@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class ProductivityHudTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -27,14 +28,14 @@ class ProductivityHudTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
-    final accent = isShort ? const Color(0xFF7EC8E3) : const Color(0xFF86EFAC);
+    final accent = isShort ? BreakOverlayTheme.accentShort : BreakOverlayTheme.accentLong;
     final progress = totalSeconds > 0
         ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;
     final breakName = isShort ? 'Eye rest' : 'Long break';
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -53,7 +54,7 @@ class ProductivityHudTemplate extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 88,
                         fontWeight: FontWeight.w200,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         fontFeatures: [FontFeature.tabularFigures()],
                         letterSpacing: -3.0,
                         height: 0.95,
@@ -72,10 +73,10 @@ class ProductivityHudTemplate extends StatelessWidget {
                     Text(
                       breakName,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.38),
+                        color: BreakOverlayTheme.textMuted,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     if (settings.showExercisesInBreak &&
@@ -84,10 +85,10 @@ class ProductivityHudTemplate extends StatelessWidget {
                       Text(
                         breakInfo.tip,
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          fontSize: 13,
+                          color: BreakOverlayTheme.textDim,
+                          fontSize: BreakOverlayTheme.labelFontSize,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                           height: 1.6,
                         ),
                       ),
@@ -99,8 +100,8 @@ class ProductivityHudTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -108,10 +109,10 @@ class ProductivityHudTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

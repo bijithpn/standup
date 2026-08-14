@@ -30,6 +30,7 @@ class QuickReminderOverlay extends StatelessWidget {
         fadeAnimation: fadeAnimation,
         title: title,
         durationSeconds: durationSeconds,
+        isPreBreak: overlayType == 'preBreakWarning',
       );
     }
 

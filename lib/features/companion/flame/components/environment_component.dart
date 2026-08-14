@@ -24,6 +24,10 @@ class EnvironmentComponent extends PositionComponent
 
   Color ambientTint = Colors.white;
 
+  /// The ambient tint only changes on the scale of minutes, so the cycle is
+  /// recomputed every 30s instead of on every frame.
+  double _dayNightAccumulator = 0.0;
+
   EnvironmentThemeConfig get config =>
       EnvironmentThemeConfig.getByPath(backgroundImagePath);
 
@@ -61,12 +65,21 @@ class EnvironmentComponent extends PositionComponent
         );
       }
     }
+
+    // Seed the ambient tint so the first frame is correct instead of waiting
+    // for the first 30s throttle window to elapse.
+    _updateDayNightCycle();
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    _updateDayNightCycle();
+
+    _dayNightAccumulator += dt;
+    if (_dayNightAccumulator >= 30.0) {
+      _dayNightAccumulator = 0.0;
+      _updateDayNightCycle();
+    }
 
     final double worldWidth = game.isPiP ? game.size.x * 1.3 : game.size.x;
     for (final cloud in _clouds) {

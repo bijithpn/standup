@@ -3,6 +3,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class DayStackTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -37,7 +38,7 @@ class DayStackTemplate extends StatelessWidget {
       builder: (context, _) {
         final stats = sl<StatsService>().stats;
         return ColoredBox(
-          color: const Color(0xFF0A0A0F),
+          color: BreakOverlayTheme.background,
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -53,7 +54,7 @@ class DayStackTemplate extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.28),
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -63,7 +64,7 @@ class DayStackTemplate extends StatelessWidget {
                           color: Colors.white,
                           fontSize: 48,
                           fontWeight: FontWeight.w200,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -85,7 +86,7 @@ class DayStackTemplate extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.75),
                           fontSize: 36,
                           fontWeight: FontWeight.w300,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
@@ -96,7 +97,7 @@ class DayStackTemplate extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.33),
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                     ],
@@ -105,8 +106,8 @@ class DayStackTemplate extends StatelessWidget {
               ),
               if (!settings.strictMode && onSkip != null)
                 Positioned(
-                  bottom: 36,
-                  right: 40,
+                  bottom: BreakOverlayTheme.skipBottom,
+                  right: BreakOverlayTheme.skipRight,
                   child: GestureDetector(
                     onTap: onSkip,
                     child: MouseRegion(
@@ -114,10 +115,10 @@ class DayStackTemplate extends StatelessWidget {
                       child: Text(
                         'Skip',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          fontSize: 13,
+                          color: BreakOverlayTheme.textDim,
+                          fontSize: BreakOverlayTheme.labelFontSize,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                     ),

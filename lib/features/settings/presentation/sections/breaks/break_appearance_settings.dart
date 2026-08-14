@@ -33,57 +33,75 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  String _selectedCategory = 'All';
+
+  static const _categories = [
+    'All',
+    'Interactive',
+    'Minimal & Zen',
+    'Classic & Focus'
+  ];
 
   static const _templates = [
     (
       id: 'classic',
       name: 'Gallery Focus',
       desc: 'Image-backed rest view with a compact progress panel.',
+      category: 'Classic & Focus',
     ),
     (
       id: 'minimal',
       name: 'Quiet Grid',
       desc: 'Fast-loading custom dial with low-stimulus geometry.',
+      category: 'Minimal & Zen',
     ),
     (
       id: 'companion',
       name: 'Companion Dock',
       desc: 'Draggable companion layer with a clean command rail.',
+      category: 'Interactive',
     ),
     (
       id: 'zen',
       name: 'Breath Lines',
       desc: 'Minimal breathing guide on a quiet lined surface.',
+      category: 'Minimal & Zen',
     ),
     (
       id: 'hud',
       name: 'Focus Card',
       desc: 'Spacious timer with a single progress bar.',
+      category: 'Classic & Focus',
     ),
     (
       id: 'activities',
       name: 'Activity Studio',
       desc: 'Guided breathing & eye sync exercises.',
+      category: 'Interactive',
     ),
     (
       id: 'clock_face',
       name: 'Clock Face',
       desc: 'Analog-style clock ring with a progress arc.',
+      category: 'Classic & Focus',
     ),
     (
       id: 'one_word',
       name: 'One Word',
       desc: '"Rest" or "Pause" — giant, quiet, minimal.',
+      category: 'Minimal & Zen',
     ),
     (
       id: 'pulse_dot',
       name: 'Pulse Dot',
       desc: 'Pulsing circle border with countdown center.',
+      category: 'Minimal & Zen',
     ),
     (
       id: 'wave_calm',
       name: 'Wave Calm',
       desc: 'Animated sine waves behind a centered timer.',
+      category: 'Minimal & Zen',
     ),
   ];
 
@@ -279,6 +297,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             });
           },
         ),
+        const SizedBox(height: 12),
+        _buildCategoryFilterRow(),
         const SizedBox(height: 16),
         _buildBreakTemplateGrid(),
         const SizedBox(height: 32),
@@ -618,8 +638,57 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     );
   }
 
+  Widget _buildCategoryFilterRow() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _categories.map((category) {
+          final isSelected = _selectedCategory == category;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedCategory = category;
+                });
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? AppTheme.accentColor
+                      : AppTheme.contentBackground.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected
+                        ? AppTheme.accentColor
+                        : AppTheme.borderColor.withValues(alpha: 0.4),
+                    width: 1.0,
+                  ),
+                ),
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                    fontSize: 12,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   Widget _buildBreakTemplateGrid() {
     final filteredTemplates = _templates.where((t) {
+      if (_selectedCategory != 'All' && t.category != _selectedCategory) {
+        return false;
+      }
       if (_searchQuery.isEmpty) return true;
       final q = _searchQuery.toLowerCase();
       return t.name.toLowerCase().contains(q) ||
@@ -679,6 +748,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                       t.name,
                       t.id,
                       t.desc,
+                      t.category,
                       _selectedTemplateId == t.id,
                       () => setState(() => _selectedTemplateId = t.id),
                     );
@@ -693,6 +763,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     String name,
     String id,
     String description,
+    String category,
     bool isSelected,
     VoidCallback onTap,
   ) {
@@ -755,6 +826,31 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     clipBehavior: Clip.none,
                     children: [
                       _BreakTemplateIconPreview(id: id),
+                      Positioned(
+                        top: 8,
+                        left: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            category.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ),
+                      ),
                       if (isSelected)
                         Positioned(
                           top: 6,

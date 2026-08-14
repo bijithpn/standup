@@ -77,6 +77,12 @@ class NotificationsSection extends StatelessWidget {
         reminderType: reminderType,
         builder: (context) => const SizedBox(),
       );
+      Future.delayed(const Duration(seconds: 2), () {
+        if (sl<OverlayWindowService>().currentOverlayType ==
+            OverlayType.quickReminder) {
+          sl<OverlayWindowService>().hideOverlay();
+        }
+      });
     }
   }
 

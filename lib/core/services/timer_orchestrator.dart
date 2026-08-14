@@ -238,7 +238,7 @@ class TimerOrchestrator {
         reminderType: event.reminderType,
       );
 
-      Future.delayed(const Duration(seconds: 5), () {
+      Future.delayed(const Duration(seconds: 2), () {
         if (sl<OverlayWindowService>().currentOverlayType ==
             OverlayType.quickReminder) {
           sl<OverlayWindowService>().hideOverlay();

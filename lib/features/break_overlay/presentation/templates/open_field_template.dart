@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class OpenFieldTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -80,11 +81,11 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
         filterQuality: FilterQuality.low,
       );
     } else {
-      background = const ColoredBox(color: Color(0xFF0A0A0F));
+      background = const ColoredBox(color: BreakOverlayTheme.background);
     }
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -114,7 +115,7 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
                         color: Colors.white,
                         fontSize: 20,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -122,9 +123,9 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
                       _formatTime(widget.remainingSeconds),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 64,
+                        fontSize: BreakOverlayTheme.timerFontSizeLg,
                         fontWeight: FontWeight.w200,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         fontFeatures: [FontFeature.tabularFigures()],
                         letterSpacing: -2,
                         height: 1.0,
@@ -139,7 +140,7 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
                           color: Colors.white.withValues(alpha: 0.55),
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                           height: 1.5,
                         ),
                       ),
@@ -161,10 +162,10 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
                           child: Text(
                             'Skip',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              fontSize: 13,
+                              color: BreakOverlayTheme.textDim,
+                              fontSize: BreakOverlayTheme.labelFontSize,
                               fontWeight: FontWeight.w400,
-                              fontFamily: 'Inter',
+                              fontFamily: BreakOverlayTheme.fontFamily,
                             ),
                           ),
                         ),

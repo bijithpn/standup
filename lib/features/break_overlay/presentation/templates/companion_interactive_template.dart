@@ -5,6 +5,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class CompanionInteractiveTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -77,7 +78,7 @@ class _CompanionInteractiveTemplateState
     final compact = MediaQuery.of(context).size.width < 760;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (_lastWidth != constraints.maxWidth ||
@@ -123,7 +124,7 @@ class _CompanionInteractiveTemplateState
                           width: 6,
                           height: 6,
                           decoration: const BoxDecoration(
-                            color: Color(0xFF7EC8E3),
+                            color: BreakOverlayTheme.accentShort,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -134,7 +135,7 @@ class _CompanionInteractiveTemplateState
                             color: Colors.white,
                             fontSize: 18,
                             fontWeight: FontWeight.w300,
-                            fontFamily: 'Inter',
+                            fontFamily: BreakOverlayTheme.fontFamily,
                             fontFeatures: [FontFeature.tabularFigures()],
                           ),
                         ),
@@ -151,7 +152,7 @@ class _CompanionInteractiveTemplateState
                             color: Colors.white.withValues(alpha: 0.55),
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
-                            fontFamily: 'Inter',
+                            fontFamily: BreakOverlayTheme.fontFamily,
                           ),
                         ),
                       ],
@@ -175,7 +176,7 @@ class _CompanionInteractiveTemplateState
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F1115).withValues(alpha: 0.85),
+                      color: BreakOverlayTheme.surfaceSubtle.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.08),
@@ -188,7 +189,7 @@ class _CompanionInteractiveTemplateState
                         color: Colors.white.withValues(alpha: 0.75),
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         height: 1.45,
                       ),
                     ),
@@ -245,7 +246,7 @@ class _CompanionInteractiveTemplateState
                         color: Colors.white.withValues(alpha: 0.3),
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     const Spacer(),
@@ -255,7 +256,7 @@ class _CompanionInteractiveTemplateState
                         color: Colors.white.withValues(alpha: 0.22),
                         fontSize: 11,
                         fontStyle: FontStyle.italic,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     const Spacer(),
@@ -267,10 +268,10 @@ class _CompanionInteractiveTemplateState
                           child: Text(
                             'Skip',
                             style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.35),
-                              fontSize: 13,
+                              color: BreakOverlayTheme.textDim,
+                              fontSize: BreakOverlayTheme.labelFontSize,
                               fontWeight: FontWeight.w400,
-                              fontFamily: 'Inter',
+                              fontFamily: BreakOverlayTheme.fontFamily,
                             ),
                           ),
                         ),

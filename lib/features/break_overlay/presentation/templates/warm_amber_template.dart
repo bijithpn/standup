@@ -4,6 +4,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class WarmAmberTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -29,10 +30,10 @@ class WarmAmberTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFFC49A4A);
+    const accent = BreakOverlayTheme.accentAmber;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: ListenableBuilder(
         listenable: sl<StatsService>(),
         builder: (context, _) {
@@ -59,7 +60,7 @@ class WarmAmberTemplate extends StatelessWidget {
                           color: Colors.white.withValues(alpha: 0.58),
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -67,9 +68,9 @@ class WarmAmberTemplate extends StatelessWidget {
                         _formatTime(remainingSeconds),
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 64,
+                          fontSize: BreakOverlayTheme.timerFontSizeLg,
                           fontWeight: FontWeight.w200,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                           fontFeatures: [FontFeature.tabularFigures()],
                           letterSpacing: -2,
                           height: 1.0,
@@ -80,9 +81,9 @@ class WarmAmberTemplate extends StatelessWidget {
                         '${stats.breaksCompleted} breaks today',
                         style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.33),
-                          fontSize: 13,
+                          fontSize: BreakOverlayTheme.labelFontSize,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -103,9 +104,9 @@ class WarmAmberTemplate extends StatelessWidget {
                             ),
                             backgroundColor: Colors.transparent,
                             textStyle: const TextStyle(
-                              fontSize: 13,
+                              fontSize: BreakOverlayTheme.labelFontSize,
                               fontWeight: FontWeight.w400,
-                              fontFamily: 'Inter',
+                              fontFamily: BreakOverlayTheme.fontFamily,
                             ),
                           ),
                           onPressed: onSkip,

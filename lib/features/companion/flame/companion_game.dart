@@ -711,8 +711,6 @@ class CompanionGame extends FlameGame {
       scale = (target / spriteSize).clamp(3.0, 10.0);
     }
 
-    scale = scale * (32.0 / spriteSize);
-
     if (isPiP) {
       scale *= 1.0;
     }
@@ -990,6 +988,7 @@ class CompanionGame extends FlameGame {
 
   double _tickAccumulator = 0.0;
   double _timeSinceLastFrame = 0.0;
+  bool _subsystemTickRunning = false;
 
   @override
   void update(double dt) {
@@ -1000,7 +999,12 @@ class CompanionGame extends FlameGame {
         return;
       }
 
-      unawaited(_runSubsystemTick(_timeSinceLastFrame));
+      if (!_subsystemTickRunning) {
+        _subsystemTickRunning = true;
+        _runSubsystemTick(
+          _timeSinceLastFrame,
+        ).whenComplete(() => _subsystemTickRunning = false);
+      }
       super.update(_timeSinceLastFrame);
 
       _tickAccumulator += _timeSinceLastFrame;
@@ -1013,7 +1017,10 @@ class CompanionGame extends FlameGame {
 
       _timeSinceLastFrame = 0.0;
     } else {
-      unawaited(_runSubsystemTick(dt));
+      if (!_subsystemTickRunning) {
+        _subsystemTickRunning = true;
+        _runSubsystemTick(dt).whenComplete(() => _subsystemTickRunning = false);
+      }
       super.update(dt);
 
       _tickAccumulator += dt;

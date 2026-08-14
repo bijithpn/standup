@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class SoftArcTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -40,8 +41,8 @@ class SoftArcTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
     final defaultAccent = isShort
-        ? const Color(0xFF7EC8E3)
-        : const Color(0xFF86EFAC);
+        ? BreakOverlayTheme.accentShort
+        : BreakOverlayTheme.accentLong;
     final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
         ? Color(settings.clockFaceTextColorHex)
         : defaultAccent;
@@ -50,7 +51,7 @@ class SoftArcTemplate extends StatelessWidget {
         : 0.0;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -80,7 +81,7 @@ class SoftArcTemplate extends StatelessWidget {
                             color: Color(settings.clockFaceTextColorHex),
                             fontSize: 48,
                             fontWeight: FontWeight.w200,
-                            fontFamily: 'Inter',
+                            fontFamily: BreakOverlayTheme.fontFamily,
                             fontFeatures: const [FontFeature.tabularFigures()],
                             letterSpacing: -1.5,
                           ),
@@ -94,9 +95,9 @@ class SoftArcTemplate extends StatelessWidget {
                   _label(),
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: 13,
+                    fontSize: BreakOverlayTheme.labelFontSize,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
               ],
@@ -104,8 +105,8 @@ class SoftArcTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -113,10 +114,10 @@ class SoftArcTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

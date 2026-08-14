@@ -3,6 +3,7 @@ import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/guided_breathing_widget.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/eye_sync_game_widget.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 enum _Activity { breathing, eyeSync }
 
@@ -35,7 +36,7 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
   late AnimationController _underlineController;
   late Animation<double> _underlineWidth;
 
-  static const _accent = Color(0xFF7EC8E3);
+  static const _accent = BreakOverlayTheme.accentShort;
 
   @override
   void initState() {
@@ -83,7 +84,7 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
     final isShort = widget.breakInfo.type == BreakType.short;
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -97,10 +98,10 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                       Text(
                         isShort ? 'Quick break' : 'Long break',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.38),
-                          fontSize: 13,
+                          color: BreakOverlayTheme.textMuted,
+                          fontSize: BreakOverlayTheme.labelFontSize,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                       const Spacer(),
@@ -110,7 +111,7 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                           color: Colors.white.withValues(alpha: 0.55),
                           fontSize: 14,
                           fontWeight: FontWeight.w300,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
@@ -118,11 +119,13 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   ),
                   const SizedBox(height: 28),
 
-                  _TabSwitcher(
-                    selected: _selected,
-                    onSelect: _switch,
-                    accent: _accent,
-                    underlineWidth: _underlineWidth,
+                  RepaintBoundary(
+                    child: _TabSwitcher(
+                      selected: _selected,
+                      onSelect: _switch,
+                      accent: _accent,
+                      underlineWidth: _underlineWidth,
+                    ),
                   ),
                   const SizedBox(height: 36),
 
@@ -155,8 +158,8 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
           ),
           if (!widget.settings.strictMode && widget.onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: widget.onSkip,
                 child: MouseRegion(
@@ -164,10 +167,10 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),
@@ -246,10 +249,10 @@ class _Tab extends StatelessWidget {
               style: TextStyle(
                 color: isSelected
                     ? Colors.white
-                    : Colors.white.withValues(alpha: 0.35),
+                    : BreakOverlayTheme.textDim,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                fontFamily: 'Inter',
+                fontFamily: BreakOverlayTheme.fontFamily,
               ),
             ),
             const SizedBox(height: 6),

@@ -269,6 +269,23 @@ void CompanionWindowManager::ShowPiP(
   it = args.find("scale");          if (it != args.end()) scale     = ToDouble(it->second, 3.0);
   it = args.find("clickThrough");   if (it != args.end()) click_through = ExtractBool(it->second, false);
 
+  // Forward the rest of the companion settings too: the Flutter PiP isolate
+  // reads them from getInitialSettings, and when they are absent it falls back
+  // to SimplePrefs defaults that have not been synced to that isolate yet.
+  std::string toy_type    = "tennis_ball";
+  std::string treat_type  = "sushi";
+  std::string bg_path     = "assets/background/forest/background.png";
+  std::string bg_style    = "dark";
+  double      pip_opacity = 1.0;
+  bool        wandering   = true;
+
+  it = args.find("companionToyType");   if (it != args.end()) toy_type    = ExtractString(it->second, "tennis_ball");
+  it = args.find("companionTreatType"); if (it != args.end()) treat_type  = ExtractString(it->second, "sushi");
+  it = args.find("previewBackground");  if (it != args.end()) bg_path     = ExtractString(it->second, bg_path);
+  it = args.find("pipBackgroundStyle"); if (it != args.end()) bg_style    = ExtractString(it->second, "dark");
+  it = args.find("pipOpacity");         if (it != args.end()) pip_opacity = ToDouble(it->second, 1.0);
+  it = args.find("wanderingEnabled");   if (it != args.end()) wandering   = ExtractBool(it->second, true);
+
   const int iX = static_cast<int>(x);
   const int iY = static_cast<int>(y);
   const int iW = static_cast<int>(pip_w);
@@ -294,6 +311,12 @@ void CompanionWindowManager::ShowPiP(
   settings[flutter::EncodableValue("petName")]      = flutter::EncodableValue(pet_name);
   settings[flutter::EncodableValue("scale")]        = flutter::EncodableValue(scale);
   settings[flutter::EncodableValue("clickThrough")] = flutter::EncodableValue(click_through);
+  settings[flutter::EncodableValue("companionToyType")]   = flutter::EncodableValue(toy_type);
+  settings[flutter::EncodableValue("companionTreatType")] = flutter::EncodableValue(treat_type);
+  settings[flutter::EncodableValue("previewBackground")]  = flutter::EncodableValue(bg_path);
+  settings[flutter::EncodableValue("pipBackgroundStyle")] = flutter::EncodableValue(bg_style);
+  settings[flutter::EncodableValue("pipOpacity")]         = flutter::EncodableValue(pip_opacity);
+  settings[flutter::EncodableValue("wanderingEnabled")]   = flutter::EncodableValue(wandering);
   pip_window_->SetInitialSettings(settings);
   pip_window_->SetIsPiP(true);
 

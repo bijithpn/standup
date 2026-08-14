@@ -113,6 +113,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _clockFaceBlurEnabled = true;
   String? _customImagePath;
 
+  // Cached so _buildBreakScreen() (called on every build, including builds
+  // triggered by unrelated setState() calls) doesn't reconstruct these value
+  // objects every time OverlayChrome rebuilds its Stack.
+  BreakModel? _cachedBreakModel;
+  SettingsModel? _cachedSettingsModel;
+
   // True once SimplePrefs settings are loaded; the overlay renders immediately.
   // The async bridge call still runs to refine timer data, but does not gate rendering.
   bool _initialized = false;
@@ -230,6 +236,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _applyOverlayData(Map args) {
     if (!mounted) return;
 
+    _cachedBreakModel = null;
+    _cachedSettingsModel = null;
+
     final config = OverlayWindowConfig.fromJson(Map<String, dynamic>.from(args));
 
     if (config.breaksCompleted != null) {
@@ -314,8 +323,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (_overlayType == 'quickReminder' ||
           _overlayType == 'preBreakWarning') {
         _fadeController.duration = const Duration(milliseconds: 400);
-        final dismissDelay = _overlayType == 'preBreakWarning'
-            ? const Duration(seconds: 3)
+        final dismissDelay = _overlayType == 'preBreakWarning' ||
+                _overlayType == 'quickReminder'
+            ? const Duration(seconds: 2)
             : const Duration(seconds: 5);
         Future.delayed(dismissDelay, () {
           if (mounted &&
@@ -438,10 +448,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       child: FadeTransition(
         opacity: _fadeController,
         child: Material(
-          color:
-              _overlayType == 'quickReminder' ||
-                  _overlayType == 'preBreakWarning'
-              ? Colors.black.withValues(alpha: 0.4)
+          color: _overlayType == 'preBreakWarning' ||
+                  _overlayType == 'quickReminder'
+              ? Colors.black.withValues(alpha: 0.2)
               : Colors.black,
           child: GestureDetector(
             onVerticalDragUpdate: (details) {
@@ -459,17 +468,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     );
   }
 
-  Widget _buildBreakScreen() {
-    if (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning') {
-      return QuickReminderOverlay(
-        reminderType: _reminderType,
-        overlayType: _overlayType,
-        fadeAnimation: _fadeController,
-        title: _title,
-        durationSeconds: durationSeconds,
-      );
-    }
-
+  BreakModel _buildBreakModel() {
     BreakType type;
     if (_breakTypeStr != null) {
       type = BreakType.values.firstWhere(
@@ -483,24 +482,40 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           ? BreakType.short
           : BreakType.long;
     }
-
-    final breakInfo = BreakModel(
+    return BreakModel(
       type: type,
       durationSeconds: durationSeconds,
       title: _title,
       tip: _tip,
     );
+  }
 
-    final settings = SettingsModel(
-      strictMode: _strictMode,
-      enableAnimations: _enableAnimations,
-      companionPetTheme: _companionPetTheme,
-      breakTemplate: _breakTemplate,
-      showExercisesInBreak: _showWellnessNotes,
-      clockFaceTextColorHex: _clockFaceTextColorHex,
-      clockFaceBlurEnabled: _clockFaceBlurEnabled,
-      customImagePath: _customImagePath,
-    );
+  SettingsModel _buildSettingsModel() => SettingsModel(
+    strictMode: _strictMode,
+    enableAnimations: _enableAnimations,
+    companionPetTheme: _companionPetTheme,
+    breakTemplate: _breakTemplate,
+    showExercisesInBreak: _showWellnessNotes,
+    clockFaceTextColorHex: _clockFaceTextColorHex,
+    clockFaceBlurEnabled: _clockFaceBlurEnabled,
+    customImagePath: _customImagePath,
+  );
+
+  Widget _buildBreakScreen() {
+    if (_overlayType == 'quickReminder' || _overlayType == 'preBreakWarning') {
+      return QuickReminderOverlay(
+        reminderType: _reminderType,
+        overlayType: _overlayType,
+        fadeAnimation: _fadeController,
+        title: _title,
+        durationSeconds: durationSeconds,
+      );
+    }
+
+    _cachedBreakModel ??= _buildBreakModel();
+    _cachedSettingsModel ??= _buildSettingsModel();
+    final breakInfo = _cachedBreakModel!;
+    final settings = _cachedSettingsModel!;
 
     final total = durationSeconds;
     // Always pass the callback; templates use their own !settings.strictMode guard

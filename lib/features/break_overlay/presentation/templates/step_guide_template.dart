@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class StepGuideTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -37,7 +38,7 @@ class StepGuideTemplate extends StatelessWidget {
         .toList();
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -56,7 +57,7 @@ class StepGuideTemplate extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.78),
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -66,7 +67,7 @@ class StepGuideTemplate extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.28),
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -84,7 +85,7 @@ class StepGuideTemplate extends StatelessWidget {
                                 color: accent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                fontFamily: 'Inter',
+                                fontFamily: BreakOverlayTheme.fontFamily,
                               ),
                             ),
                             const SizedBox(width: 12),
@@ -95,7 +96,7 @@ class StepGuideTemplate extends StatelessWidget {
                                   color: Colors.white.withValues(alpha: 0.58),
                                   fontSize: 14,
                                   fontWeight: FontWeight.w400,
-                                  fontFamily: 'Inter',
+                                  fontFamily: BreakOverlayTheme.fontFamily,
                                   height: 1.65,
                                 ),
                               ),
@@ -111,7 +112,7 @@ class StepGuideTemplate extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.68),
                         fontSize: 40,
                         fontWeight: FontWeight.w200,
-                        fontFamily: 'Inter',
+                        fontFamily: BreakOverlayTheme.fontFamily,
                         fontFeatures: const [FontFeature.tabularFigures()],
                       ),
                     ),
@@ -122,8 +123,8 @@ class StepGuideTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -131,10 +132,10 @@ class StepGuideTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),

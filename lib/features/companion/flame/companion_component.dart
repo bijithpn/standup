@@ -146,14 +146,6 @@ class CompanionComponent
 
     if (current != target && !isSameAnimation) {
       animationTickers?[target]?.reset();
-    } else if (isSameAnimation) {
-      // Sync frame progress if we are switching between states that share
-      // the same sprite sheet row (e.g. walkSide and idle in some packs).
-      final oldTicker = animationTickers?[current];
-      final newTicker = animationTickers?[target];
-      if (oldTicker != null && newTicker != null) {
-        newTicker.elapsed = oldTicker.elapsed;
-      }
     }
 
     final PetAnimationState? fromState = current;
@@ -243,7 +235,7 @@ class CompanionComponent
       _crossFadeState!.elapsed += dt;
       // Manually update the 'from' ticker since SpriteAnimationGroupComponent
       // only updates the 'current' ticker.
-      animationTickers?[_crossFadeState!.from]?.update(scaledDt);
+      animationTickers?[_crossFadeState!.from]?.update(dt);
 
       if (_crossFadeState!.elapsed >= _CrossFadeState.duration) {
         _crossFadeState = null;

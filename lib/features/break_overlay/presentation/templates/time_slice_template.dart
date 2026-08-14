@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class TimeSliceTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -36,7 +37,7 @@ class TimeSliceTemplate extends StatelessWidget {
     const accent = Color(0xFF5BB898);
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 48),
         child: Column(
@@ -46,10 +47,10 @@ class TimeSliceTemplate extends StatelessWidget {
                 Text(
                   breakName,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.38),
+                    color: BreakOverlayTheme.textMuted,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
                 const Spacer(),
@@ -59,7 +60,7 @@ class TimeSliceTemplate extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.33),
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                     fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
@@ -80,7 +81,7 @@ class TimeSliceTemplate extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 72,
                 fontWeight: FontWeight.w200,
-                fontFamily: 'Inter',
+                fontFamily: BreakOverlayTheme.fontFamily,
                 letterSpacing: -2,
                 height: 1.0,
               ),
@@ -93,10 +94,10 @@ class TimeSliceTemplate extends StatelessWidget {
                   breakInfo.tip,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.38),
+                    color: BreakOverlayTheme.textMuted,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                     height: 1.6,
                   ),
                 ),
@@ -111,7 +112,7 @@ class TimeSliceTemplate extends StatelessWidget {
                     color: Colors.white.withValues(alpha: 0.22),
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
                 const Spacer(),
@@ -123,10 +124,10 @@ class TimeSliceTemplate extends StatelessWidget {
                       child: Text(
                         'Skip',
                         style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          fontSize: 13,
+                          color: BreakOverlayTheme.textDim,
+                          fontSize: BreakOverlayTheme.labelFontSize,
                           fontWeight: FontWeight.w400,
-                          fontFamily: 'Inter',
+                          fontFamily: BreakOverlayTheme.fontFamily,
                         ),
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class FocusOrbTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -31,7 +32,7 @@ class FocusOrbTemplate extends StatelessWidget {
     const accent = Color(0xFF8BC9D4);
 
     return ColoredBox(
-      color: const Color(0xFF0A0A0F),
+      color: BreakOverlayTheme.background,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -48,7 +49,7 @@ class FocusOrbTemplate extends StatelessWidget {
                     color: Colors.white,
                     fontSize: 72,
                     fontWeight: FontWeight.w200,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                     fontFeatures: [FontFeature.tabularFigures()],
                     letterSpacing: -2,
                     height: 1.0,
@@ -59,9 +60,9 @@ class FocusOrbTemplate extends StatelessWidget {
                   breakName,
                   style: TextStyle(
                     color: Colors.white.withValues(alpha: 0.33),
-                    fontSize: 13,
+                    fontSize: BreakOverlayTheme.labelFontSize,
                     fontWeight: FontWeight.w400,
-                    fontFamily: 'Inter',
+                    fontFamily: BreakOverlayTheme.fontFamily,
                   ),
                 ),
               ],
@@ -69,8 +70,8 @@ class FocusOrbTemplate extends StatelessWidget {
           ),
           if (!settings.strictMode && onSkip != null)
             Positioned(
-              bottom: 36,
-              right: 40,
+              bottom: BreakOverlayTheme.skipBottom,
+              right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: onSkip,
                 child: MouseRegion(
@@ -78,10 +79,10 @@ class FocusOrbTemplate extends StatelessWidget {
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.35),
-                      fontSize: 13,
+                      color: BreakOverlayTheme.textDim,
+                      fontSize: BreakOverlayTheme.labelFontSize,
                       fontWeight: FontWeight.w400,
-                      fontFamily: 'Inter',
+                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),
@@ -103,7 +104,7 @@ class _OrbPainter extends CustomPainter {
     if (size.width <= 0 || size.height <= 0) return;
     canvas.drawRect(
       Offset.zero & size,
-      Paint()..color = const Color(0xFF0A0A0F),
+      Paint()..color = BreakOverlayTheme.background,
     );
     canvas.drawRect(
       Offset.zero & size,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class BreakContextPill extends StatelessWidget {
   final BreakModel breakInfo;
@@ -30,16 +31,16 @@ class BreakContextPill extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F1115).withValues(alpha: 0.5),
+        color: BreakOverlayTheme.surfaceSubtle.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+        border: Border.all(color: BreakOverlayTheme.borderSubtle),
       ),
       child: DefaultTextStyle(
         style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.6),
+          color: BreakOverlayTheme.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          fontFamily: 'Inter',
+          fontFamily: BreakOverlayTheme.fontFamily,
           height: 1.35,
         ),
         child: Column(
@@ -65,9 +66,9 @@ class StrictModeNote extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 560),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F1115).withValues(alpha: 0.5),
+          color: BreakOverlayTheme.surfaceSubtle.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          border: Border.all(color: BreakOverlayTheme.borderSubtle),
         ),
         child: Text(
           isLocked
@@ -78,7 +79,7 @@ class StrictModeNote extends StatelessWidget {
             color: Colors.white.withValues(alpha: 0.5),
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            fontFamily: 'Inter',
+            fontFamily: BreakOverlayTheme.fontFamily,
             height: 1.35,
           ),
         ),
@@ -107,7 +108,7 @@ class SwipeToDismissHint extends StatelessWidget {
             fontSize: 12,
             fontWeight: FontWeight.w500,
             letterSpacing: 1.0,
-            fontFamily: 'Inter',
+            fontFamily: BreakOverlayTheme.fontFamily,
           ),
         ),
       ],
@@ -135,9 +136,9 @@ class SkipBreakButton extends StatelessWidget {
               'Skip',
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: BreakOverlayTheme.labelFontSize,
                 fontWeight: FontWeight.w400,
-                fontFamily: 'Inter',
+                fontFamily: BreakOverlayTheme.fontFamily,
               ),
             ),
           ),

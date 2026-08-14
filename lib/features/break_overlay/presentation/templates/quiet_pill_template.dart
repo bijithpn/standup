@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class QuietPillTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -34,7 +35,7 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
 
   late AnimationController _pulse;
 
-  static const _accent = Color(0xFF7EC8E3);
+  static const _accent = BreakOverlayTheme.accentShort;
   static const double _closedW = 176;
   static const double _openW = 310;
   static const double _h = 56;
@@ -100,7 +101,7 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.5),
               fontSize: 10,
-              fontFamily: 'Inter',
+              fontFamily: BreakOverlayTheme.fontFamily,
               height: 1.35,
             ),
           ),
@@ -114,9 +115,9 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
               child: Text(
                 'Skip',
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.35),
+                  color: BreakOverlayTheme.textDim,
                   fontSize: 11,
-                  fontFamily: 'Inter',
+                  fontFamily: BreakOverlayTheme.fontFamily,
                 ),
               ),
             ),
@@ -216,7 +217,7 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                                 color: Colors.white,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w600,
-                                fontFamily: 'Inter',
+                                fontFamily: BreakOverlayTheme.fontFamily,
                                 fontFeatures: [FontFeature.tabularFigures()],
                               ),
                             ),
@@ -224,9 +225,9 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                             Text(
                               label,
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.38),
+                                color: BreakOverlayTheme.textMuted,
                                 fontSize: 11,
-                                fontFamily: 'Inter',
+                                fontFamily: BreakOverlayTheme.fontFamily,
                               ),
                             ),
                             Expanded(

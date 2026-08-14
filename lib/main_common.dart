@@ -226,18 +226,18 @@ Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
   }
 
   try {
-    if (sl.isRegistered<TimerEngine>()) {
-      sl<TimerEngine>().dispose();
-      debugPrint('[Shutdown] TimerEngine disposed.');
+    if (sl.isRegistered<TimerOrchestrator>()) {
+      sl<TimerOrchestrator>().shutdown();
+      debugPrint('[Shutdown] TimerOrchestrator shutdown complete.');
     }
   } catch (e, st) {
     ErrorHandler().handleError(e, st, type: AppErrorType.timer);
   }
 
   try {
-    if (sl.isRegistered<TimerOrchestrator>()) {
-      sl<TimerOrchestrator>().shutdown();
-      debugPrint('[Shutdown] TimerOrchestrator shutdown complete.');
+    if (sl.isRegistered<TimerEngine>()) {
+      sl<TimerEngine>().dispose();
+      debugPrint('[Shutdown] TimerEngine disposed.');
     }
   } catch (e, st) {
     ErrorHandler().handleError(e, st, type: AppErrorType.timer);

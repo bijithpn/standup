@@ -25,6 +25,10 @@ class GroundNpcComponent extends SpriteAnimationComponent
   bool _isMoving = false;
   double _hopTime = 0.0;
 
+  /// Resolved once in [onLoad]; the environment never changes afterwards, so
+  /// there is no reason to walk the component tree every frame.
+  EnvironmentComponent? _env;
+
   GroundNpcComponent() : super(anchor: Anchor.bottomCenter, priority: 2);
 
   @override
@@ -120,10 +124,25 @@ class GroundNpcComponent extends SpriteAnimationComponent
       _targetX = startX;
 
       _waitTimer = 1.0 + _rng.nextDouble() * 4.0;
+      _env = _findEnvironment();
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
       removeFromParent();
     }
+  }
+
+  EnvironmentComponent? _findEnvironment() {
+    final direct = game.world.children.whereType<EnvironmentComponent>();
+    if (direct.isNotEmpty) return direct.first;
+
+    for (final child in game.children) {
+      if (child is EnvironmentComponent) return child;
+      if (child is PositionComponent) {
+        final nested = child.children.whereType<EnvironmentComponent>();
+        if (nested.isNotEmpty) return nested.first;
+      }
+    }
+    return null;
   }
 
   void _changeState(RabbitAnimState newState) {
@@ -192,22 +211,11 @@ class GroundNpcComponent extends SpriteAnimationComponent
     super.update(activeDt);
 
     // Apply lighting modulation matching EnvironmentComponent
-    EnvironmentComponent? env;
-    if (game.world.children.whereType<EnvironmentComponent>().isNotEmpty) {
-      env = game.world.children.whereType<EnvironmentComponent>().first;
-    } else {
-      for (final child in game.children) {
-        if (child is PositionComponent &&
-            child.children.whereType<EnvironmentComponent>().isNotEmpty) {
-          env = child.children.whereType<EnvironmentComponent>().first;
-          break;
-        }
-      }
-    }
-
-    if (env != null) {
-      final groundBaseTint = env.ambientTint;
-      paint.colorFilter = ColorFilter.mode(groundBaseTint, BlendMode.modulate);
+    if (_env != null) {
+      paint.colorFilter = ColorFilter.mode(
+        _env!.ambientTint,
+        BlendMode.modulate,
+      );
     }
   }
 }
