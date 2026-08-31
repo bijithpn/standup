@@ -65,6 +65,7 @@ The desktop pet (cat/dog) isn't just a static animation; it's driven by `PetBeha
 - **Wellness Library**: A curated collection of articles and exercises designed by ergonomic experts.
 
 ---
+
 ## 🖥️ Platform Bridges
 
 ### macOS (Swift)
@@ -188,7 +189,7 @@ Adjust the variables inside:
 All four release-tooling files live in `scripts/`. They're macOS-only (Sparkle + DMG distribution is a macOS-specific update mechanism) — Windows builds are distributed separately and don't use this pipeline.
 
 | Script | Purpose | Run it when... |
-|---|---|---|
+| --- | --- | --- |
 | [`generate_sparkle_keys.sh`](#-sparkle-key-management-generate_sparkle_keyssh) | One-time Ed25519 keypair setup | Setting up Sparkle auto-updates for the first time |
 | [`create_dmg.sh`](#-build--release-create_dmgsh) | Full release pipeline (build → DMG → sign → GitHub release → appcast) | Cutting a new release from a clean local build |
 | [`publish_release.sh`](#-standalone-signing-publish_releasesh) | Signs an **already-built** DMG and patches `appcast.xml` | You already have a DMG (e.g. from CI) and just need to sign + publish it |
@@ -236,7 +237,7 @@ The main entry point for creating a new release. One command runs the entire pip
 #### Useful Flags
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `--skip-build` | Skip the `flutter build` step and reuse the existing build output — useful for retrying a failed publish step without rebuilding. |
 | `--skip-github` | Sign the DMG and update `appcast.xml`, but don't create a GitHub release — useful for a dry run of the signing/appcast steps. |
 | `--dry-run` | Preview the entire pipeline without touching any local or remote assets. |
