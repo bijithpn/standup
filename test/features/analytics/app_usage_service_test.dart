@@ -127,7 +127,8 @@ void main() {
     });
 
     test('prunes dates older than 30 days on write', () {
-      final service = AppUsageService(storage: StorageService());
+      final storage = StorageService();
+      final service = AppUsageService(storage: storage);
       final now = DateTime(2026, 8, 31);
       final staleDate = now.subtract(const Duration(days: 40));
       final staleDateStr =
@@ -143,9 +144,12 @@ void main() {
         category: AppCategory.general, seconds: 60,
       );
 
-      final monthApps = service.topApps(UsagePeriod.month, limit: 10, now: now);
-      expect(monthApps.any((e) => e.appKey == 'stale'), isFalse);
-      expect(monthApps.any((e) => e.appKey == 'fresh'), isTrue);
+      // Verify directly against the persisted blob, not via a period filter
+      // that would already exclude the stale date on its own — this must
+      // fail if _pruneOldDates is ever removed from the implementation.
+      final raw = storage.getString(AppConstants.keyAppUsageData);
+      expect(raw.contains(staleDateStr), isFalse);
+      expect(raw.contains('2026-08-31'), isTrue);
     });
   });
 }
