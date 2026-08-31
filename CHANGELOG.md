@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
 | `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
 | `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
 | `v1.2.1` | 1.2.1 | 31 | 2026-06-01 | Native macOS Calendar and Permission Recovery |
@@ -21,6 +22,25 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.5.0] - 2026-08-31
+
+Tags: `v1.5.0`  
+Build: `34`  
+Release title: Global Hotkey, Presentation Pause & Companion Streaks
+
+### Added
+
+- **Global Hotkey:** A system-wide shortcut (`⌘⌥B` on macOS, `Ctrl+Alt+B` on Windows/Linux) that starts a break immediately, or skips the current one if a break is already active. Toggleable in Settings → General.
+- **Presentation Pause:** Detects when a fullscreen slideshow, presentation, or video-call window covers the display and automatically defers the next break instead of interrupting it. Toggleable in Settings → Smart Detection. (macOS only in this release — Windows support is tracked as a follow-up.)
+- **Companion Streak Recognition:** The desktop companion now reacts to break-completion streak milestones (3/7/14/30/60/100 days) with a persisted highest-tier marker and a visible celebration. Surfaced in Settings → Companion.
+- **Smarter Calendar-Aware Scheduling:** When a break would land during a meeting, BreakMate now scans ahead across the calendar to find the actual next free gap long enough for the break, instead of a fixed 5-minute retry against back-to-back meetings.
+
+### Changed
+
+- **Smaller Install Size:** Break-screen slideshow images were needlessly bundled at camera-original resolution; resized and re-encoded as WebP for a ~13 MB → ~2.3 MB reduction with no visible quality loss.
+- **Settings Internals:** Added a lightweight, tested grouping layer over the settings model (companion / break-timing / appearance) for internal code clarity — no user-facing behavior change.
+- **Documentation:** Consolidated a widget-bloat architecture finding that had drifted across three separate docs into one canonical write-up, and corrected several previously-documented findings that didn't hold up against direct code inspection.
 
 ## [1.4.0] - 2026-06-16
 

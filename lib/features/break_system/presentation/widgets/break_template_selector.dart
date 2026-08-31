@@ -30,6 +30,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/warm_amb
 import 'package:breakmate/features/break_overlay/presentation/templates/wave_calm_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/break_template_error_view.dart';
 
 class BreakTemplateSelector extends StatelessWidget {
   final SettingsModel settings;
@@ -277,8 +278,16 @@ class BreakTemplateSelector extends StatelessWidget {
       case 'wind_down':
         return const WindDownTemplate();
       case 'minimal':
-      default:
         return MinimalFocusTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remainingSeconds,
+          totalSeconds: totalSeconds,
+          onSkip: onSkip,
+        );
+      default:
+        return BreakTemplateErrorView(
+          templateName: settings.breakTemplate,
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remainingSeconds,

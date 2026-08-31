@@ -11,6 +11,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/ipc/overlay_window_config.dart';
 
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
@@ -415,10 +416,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     if (!_templateFailed) {
       debugPrint('Template $_breakTemplate failed: ${details.exception}');
       _templateFailed = true;
+      ErrorToastService.showError(
+        'Template "$_breakTemplate" could not be loaded.',
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
-            _breakTemplate = 'minimal';
+            _breakTemplate = 'error_template';
           });
         }
       });

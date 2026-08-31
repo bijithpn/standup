@@ -6,6 +6,7 @@ import 'package:get_it/get_it.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/break_template_error_view.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/services/storage_service.dart';
@@ -203,5 +204,47 @@ void main() {
     );
 
     expect(find.byType(BreakTemplateSwitcher), findsOneWidget);
+  });
+
+  testWidgets('BreakTemplateSwitcher renders BreakTemplateErrorView on unknown template', (
+    tester,
+  ) async {
+    late AnimationController kenBurnsController;
+
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: TestAssetBundle(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                kenBurnsController = AnimationController(
+                  vsync: tester,
+                  duration: const Duration(seconds: 10),
+                );
+                return BreakTemplateSwitcher(
+                  breakTemplate: 'unknown_nonexistent_template',
+                  breakInfo: testBreakInfo,
+                  settings: testSettings,
+                  remaining: 15,
+                  total: 20,
+                  onSkip: () {},
+                  currentTemplate: 'assets/slideshow/slide_1.jpg',
+                  kenBurnsController: kenBurnsController,
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.byType(BreakTemplateErrorView), findsOneWidget);
+    expect(
+      find.text('Template "unknown_nonexistent_template" could not be loaded.'),
+      findsOneWidget,
+    );
   });
 }

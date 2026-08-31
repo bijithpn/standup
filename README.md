@@ -6,9 +6,11 @@
 
 BreakMate is a sophisticated wellness platform that integrates deeply with your desktop environment. By utilizing multiple Flutter engines, a custom behavior AI for ambient feedback, and native platform hooks, BreakMate ensures that your work-life balance is actively managed without disrupting your creative flow.
 
-![Version](https://img.shields.io/badge/version-1.4.0-blue)
+![Version](https://img.shields.io/badge/version-1.5.0-blue)
 ![Platform](https://img.shields.io/badge/platform-macos%20|%20windows-lightgrey)
 ![Flutter](https://img.shields.io/badge/Flutter-3.10.4-blue)
+
+> Looking for the project roadmap or an architecture deep-dive instead of a product README? See [`BREAKMATE_ROADMAP.md`](BREAKMATE_ROADMAP.md) and [`Architecture_Audit.md`](Architecture_Audit.md).
 
 ## 🖥️ Application Showcase
 
@@ -63,95 +65,6 @@ The desktop pet (cat/dog) isn't just a static animation; it's driven by `PetBeha
 - **Wellness Library**: A curated collection of articles and exercises designed by ergonomic experts.
 
 ---
-
-## 🎨 UI & UX Design Philosophy
-
-BreakMate uses a **Glassmorphic / Neo-Native** design language.
-
-- **Vibrancy & Blur**: Leveraging `macos_ui` and `flutter_acrylic` to create translucent sidebars and windows that blend perfectly with the host OS.
-- **Staggered Animations**: Every page transition and widget entry uses `StaggeredFadeIn` for a premium, fluid feel.
-- **Satoshi Typography**: A custom geometric sans-serif font family used app-wide.
-- **Interactive Feedback**: Custom `PressableButton` and `ProgressRing` widgets provide tactile visual feedback.
-
----
-
-## 🏗️ Technical Architecture
-
-### Multi-Engine Strategy
-
-The app is split into three distinct Flutter instances to maximize performance:
-
-1. **Main App**: Handles tray management, settings, and the dashboard.
-2. **Overlay Engine**: A dedicated high-priority engine for full-screen break screens.
-3. **Companion Engine**: A low-overhead Flame-based engine for the desktop pet.
-
-### 🧬 State Management & Communication
-
-- **Provider**: Used for local UI state and reactive updates in the dashboard.
-- **EventBus**: A centralized hub for app-wide events (`MeetingDetected`, `TimerTick`, `PetInteracted`).
-- **CompanionStateManager**: Listens to the EventBus and maintains the Finite State Machine (FSM) for the pet, transitioning between `idle`, `sleeping`, `alert`, and `happy` states based on system events.
-- **IPC Bridge**: A custom `MethodChannel` layer (`com.breakmate/ipc`) that synchronizes state across the three separate isolates. It ensures the Companion knows the Timer's state and the Overlay knows when a meeting starts.
-
-### 💾 Storage & Persistence Architecture
-
-To ensure maximum reliability, BreakMate employs a multi-layered storage strategy:
-
-1. **ObjectBox (Primary)**: A high-performance NoSQL database used for complex objects like `SettingsSnapshot`, `DailyStats`, and `CompanionPreferences`.
-2. **Key-Value Mirror (Resilience)**: Critical flags (like onboarding completion) are mirrored to a stable primitive `KeyValueRecord` table. This acts as a "source of truth" if complex snapshots fail to decode.
-3. **Automatic Migration**: On macOS, the database was moved from `~/Documents` to `~/Library/Application Support` for better stability. The app automatically detects legacy data and migrates it to the new location on first launch.
-4. **Isolate Safety**: Storage initialization is restricted to the main isolate to prevent database locking issues across multiple engines.
-
----
-
-## 🔌 Plugin & Dependency Directory
-
-| Plugin | Usage in BreakMate |
-|--------|-------------------|
-| `macos_ui` | Provides the native look-and-feel for the macOS dashboard. |
-| `flutter_acrylic` | Enables the translucent (vibrancy/acrylic) window effects. |
-| `tray_manager` | Powers the animated tray icon and the dynamic context menu. |
-| `window_manager` | Handles complex window operations like "always on top" and custom resizing. |
-| `flame` | The 2D game engine powering the desktop pet animations. |
-| `audioplayers` | Manages lofi background music and notification sound effects. |
-| `fl_chart` | Renders the complex productivity heatmaps and trend lines. |
-| `shared_preferences` | Persists over 40+ user settings and break history. |
-| `get_it` | The service locator used for clean dependency injection. |
-| `launch_at_startup` | Registers the app with the OS to start automatically on login. |
-| `screen_retriever` | Detects multi-monitor setups to ensure overlays span all screens. |
-| `flutter_local_notifications` | Sends system-level reminders for posture and hydration. |
-| `intl` | Handles complex date/time formatting for analytics and history. |
-| `url_launcher` | Handles external links for wellness articles and documentation. |
-| `path_provider` | Locates platform-specific directories for caching and data storage. |
-
----
-
-## 📂 Deep Dive: Project Structure
-
-### `lib/app/`
-
-- `dependency_injection.dart`: The "Wiring Diagram" of the app where all services are instantiated.
-- `main_layout.dart`: The sidebar navigation logic and master layout.
-
-### `lib/core/`
-
-- `native/macos_bridge.dart`: The "Control Center" for 20+ native calls (Overlay, Companion, Idle Time).
-- `services/timer_engine.dart`: The core logic that runs the work/break cycles.
-- `ipc/ipc_bridge.dart`: The underlying mechanism for inter-isolate communication.
-- `events/app_events.dart`: Definitions for every possible system message.
-
-### `lib/features/companion/`
-
-- `ai/pet_behavior_brain.dart`: The intelligence engine described above.
-- `flame/companion_game.dart`: The rendering loop for pet animations.
-- `services/companion_state_manager.dart`: Reactively maps app events to pet behaviors.
-
-### `lib/features/settings/`
-
-- `settings_page.dart`: A unified control panel for every app parameter.
-- `settings_model.dart`: The data schema for app configuration.
-
----
-
 ## 🖥️ Platform Bridges
 
 ### macOS (Swift)
@@ -166,17 +79,16 @@ To ensure maximum reliability, BreakMate employs a multi-layered storage strateg
 
 ---
 
----
-
 ## 🛠️ Local Development Setup
 
-To run BreakMate locally for development, follow these steps:
+To run BreakMate locally for development, follow these steps. BreakMate targets **macOS** and **Windows** — most of Local Development is shared, with platform-specific notes called out below.
 
 ### 📋 Prerequisites
 
-- **Flutter SDK**: Ensure you have Flutter installed (version `3.10.4` or later).
-- **CocoaPods** (macOS only): Run `pod install` in the `macos/` directory to fetch native dependencies.
-- **Node.js**: Required if you plan to build DMGs locally (`npm install -g appdmg`).
+- **Flutter SDK**: `^3.10.4` (see the `environment.sdk` constraint in `pubspec.yaml`).
+- **macOS**: Xcode (for the toolchain and Simulator/device signing) and CocoaPods — run `pod install` inside `macos/` to fetch native dependencies.
+- **Windows**: Visual Studio 2022 with the "Desktop development with C++" workload (required for `flutter build windows`).
+- **Node.js**: Only needed if you plan to build DMGs locally (`npm install -g appdmg`) — see [Scripts Reference](#-scripts-reference).
 
 ### ⚙️ Quick Start
 
@@ -184,6 +96,8 @@ To run BreakMate locally for development, follow these steps:
 
    ```bash
    flutter pub get
+
+   # macOS only — fetch native CocoaPods dependencies
    cd macos && pod install && cd ..
    ```
 
@@ -203,6 +117,24 @@ To run BreakMate locally for development, follow these steps:
 
    # Run with Production configuration
    flutter run -t lib/main_prod.dart --flavor prod
+   ```
+
+   On Windows, flavors are handled the same way — Flutter selects the desktop target automatically based on the host OS, so no extra `-d` flag is needed unless you have multiple devices attached.
+
+4. **Run the Test Suite**:
+
+   ```bash
+   flutter analyze   # static analysis — should report no issues
+   flutter test      # full unit + widget + property test suite
+   ```
+
+5. **Verify a Native Change Compiles** (only if you touched `macos/` or `windows/` code):
+
+   `flutter analyze` does **not** compile Swift or C++ — it only checks Dart. Native-side changes need a real build to catch registration/linker errors:
+
+   ```bash
+   flutter build macos --debug --flavor dev     # macOS
+   flutter build windows --debug --flavor dev   # Windows
    ```
 
 ---
@@ -239,7 +171,7 @@ For a detailed step-by-step walkthrough on generating keys, config setups, and t
 The pipeline reads its options from `.env` at the project root. Copy `.env.example` to get started:
 
 ```bash
-cp .env.example
+cp .env.example .env
 ```
 
 Adjust the variables inside:
@@ -248,6 +180,19 @@ Adjust the variables inside:
 - **`RELEASE_GITHUB_REPO`**: GitHub repository where DMG releases are created and hosted.
 - **`APPCAST_GITHUB_REPO`**: GitHub repository hosting the Sparkle update XML (`appcast.xml`).
 - **`GIT_BRANCH`**: Branch to commit and push changes of `appcast.xml` to (default: `main`).
+
+---
+
+## 🔧 Scripts Reference
+
+All four release-tooling files live in `scripts/`. They're macOS-only (Sparkle + DMG distribution is a macOS-specific update mechanism) — Windows builds are distributed separately and don't use this pipeline.
+
+| Script | Purpose | Run it when... |
+|---|---|---|
+| [`generate_sparkle_keys.sh`](#-sparkle-key-management-generate_sparkle_keyssh) | One-time Ed25519 keypair setup | Setting up Sparkle auto-updates for the first time |
+| [`create_dmg.sh`](#-build--release-create_dmgsh) | Full release pipeline (build → DMG → sign → GitHub release → appcast) | Cutting a new release from a clean local build |
+| [`publish_release.sh`](#-standalone-signing-publish_releasesh) | Signs an **already-built** DMG and patches `appcast.xml` | You already have a DMG (e.g. from CI) and just need to sign + publish it |
+| `appdmg.json` | Config consumed by `create_dmg.sh` (background image, icon layout, window size for the installer window) | Not run directly — edit it to change how the installer window looks |
 
 ---
 
@@ -272,7 +217,12 @@ The main entry point for creating a new release. One command runs the entire pip
 
 ```bash
 ./scripts/create_dmg.sh --version 1.2.0 --build 26 --notes "Optimized companion animations and updated window layout."
+
+# Or point to a release-notes file instead of an inline string:
+./scripts/create_dmg.sh --version 1.2.0 --build 26 --notes-file release_notes.md
 ```
+
+**Requirements:** `flutter` in `PATH`, `create-dmg` and `gh` CLI from Homebrew (`brew install create-dmg gh` — then `gh auth login`), and a Sparkle private key (from `generate_sparkle_keys.sh`) either at `~/secrets/breakmate_sparkle_private.pem` or via `export SPARKLE_PRIVATE_KEY=/path/to/key.pem`.
 
 #### Pipeline Steps
 
@@ -283,25 +233,32 @@ The main entry point for creating a new release. One command runs the entire pip
 5. **Appcast Updates**: Surgically inserts or updates the version item inside `appcast.xml` using an inline Python processor.
 6. **Git Commit & Push**: Commits `appcast.xml` changes and pushes to your configured `GIT_BRANCH`.
 
-*Add `--dry-run` to preview the entire pipeline process without modifying any local or remote assets.*
+#### Useful Flags
+
+| Flag | Effect |
+|---|---|
+| `--skip-build` | Skip the `flutter build` step and reuse the existing build output — useful for retrying a failed publish step without rebuilding. |
+| `--skip-github` | Sign the DMG and update `appcast.xml`, but don't create a GitHub release — useful for a dry run of the signing/appcast steps. |
+| `--dry-run` | Preview the entire pipeline without touching any local or remote assets. |
 
 ---
 
-## 🗺️ Roadmap
+### 🔏 Standalone Signing (`publish_release.sh`)
 
-### ✨ Completed
+For when you already have a built DMG (e.g. produced by CI, or built by hand) and just need to sign it and publish the update metadata — without re-running a full Flutter build:
 
-- [x] **Desktop Companion Engine**: Draggable pet with advanced behavior state machines.
-- [x] **Interactive Environment Builder**: 2D side-scrolling habitat with live previews, themes, parallax skies, and decorations.
-- [x] **Flash Notifications**: Subtle screen-edge pulse cues for ambient awareness via overlay.
-- [x] **Contextual Intelligence**: Calendar-aware break planning, meeting detection, and wind-down support.
+```bash
+./scripts/publish_release.sh \
+    --dmg /path/to/BreakMate-Installer.dmg \
+    --version 1.2.0 \
+    --build 26 \
+    --notes "What changed in this release" \
+    --push
+```
 
-### 🚀 Future Goals
-
-- [ ] **Adaptive Break Planner**: Recommend schedule changes based on focus quality and meeting density without silently mutating settings.
-- [ ] **Guided Recovery**: Smart handling of breaks and focus sessions after system sleep or long idle periods.
-- [ ] **Local Asset Packs**: Optional downloadable companion themes, decorations, and audio to keep the core installer lightweight.
-- [ ] **Predictive Fatigue AI**: Companion learns your work habits and displays fatigue behaviors *before* you get tired to encourage proactive breaks.
+- **What it does**: locates the Sparkle `sign_update` tool automatically, signs the DMG with your Ed25519 key (from macOS Keychain or a key file via `--private-key`), computes the real file size, and patches `appcast.xml` — updating the matching version's `sparkle:edSignature`/length, or inserting a new `<item>` if that version isn't in the appcast yet.
+- **Config**: reads from `.env.release` at the project root (same shape as `.env` — copy `.env.example` to `.env.release` if you haven't already).
+- **Flags**: `--private-key <path>` to use a specific key file instead of Keychain, `--account <name>` for a named Keychain account, `--push` to commit and push `appcast.xml` afterward, `--dry-run` to preview without writing anything.
 
 ---
 
