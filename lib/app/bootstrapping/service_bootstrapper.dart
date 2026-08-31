@@ -13,6 +13,7 @@ import 'package:breakmate/features/companion/services/pet_registry_service.dart'
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/analytics/app_usage_tracker.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
@@ -48,6 +49,8 @@ class ServiceBootstrapper {
     notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
 
     await sl<StatsService>().initialize();
+
+    sl<AppUsageTracker>().start();
 
     final petRegistry = sl<PetRegistryService>();
     unawaited(petRegistry.discoverFromLegacyAssets());

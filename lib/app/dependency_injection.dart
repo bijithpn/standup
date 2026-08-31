@@ -24,6 +24,9 @@ import 'package:breakmate/features/wellness/data/wellness_library_repository.dar
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
+import 'package:breakmate/features/analytics/app_usage_tracker.dart';
+import 'package:breakmate/features/analytics/app_icon_cache.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
@@ -77,6 +80,18 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
+  sl.registerSingleton<AppUsageService>(AppUsageService(storage: sl()));
+  sl.registerLazySingleton<AppIconCache>(
+    () => AppIconCache(appTracking: sl()),
+  );
+  sl.registerSingleton<AppUsageTracker>(
+    AppUsageTracker(
+      appTracking: sl(),
+      usageService: sl(),
+      settingsRepo: sl(),
+      activityMonitor: sl(),
+    ),
+  );
   sl.registerSingleton<CompanionStreakService>(
     CompanionStreakService(statsService: sl(), storage: sl(), eventBus: sl()),
   );
