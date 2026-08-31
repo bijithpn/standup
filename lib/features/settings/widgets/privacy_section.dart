@@ -1,9 +1,13 @@
+import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 class PrivacySection extends StatelessWidget {
-  const PrivacySection({super.key});
+  final SettingsModel settings;
+  final ValueChanged<SettingsModel> onSave;
+
+  const PrivacySection({super.key, required this.settings, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +54,17 @@ class PrivacySection extends StatelessWidget {
             subtitle:
                 'If enabled, we only read event start/end times to avoid interrupting your work. Event titles and details are never processed or saved.',
             icon: LucideIcons.calendar,
+          ),
+        ]),
+
+        const SizedBox(height: 24),
+        buildCard([
+          toggleRow(
+            'Track App Usage',
+            'See which apps you use most, right on the Statistics screen. '
+                'Only app names and time spent are stored, locally — never window titles or URLs.',
+            settings.appUsageTrackingEnabled,
+            (value) => onSave(settings.copyWith(appUsageTrackingEnabled: value)),
           ),
         ]),
 

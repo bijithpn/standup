@@ -180,7 +180,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Goals':
         return const GoalsSection();
       case 'Privacy':
-        return const PrivacySection();
+        return PrivacySection(settings: _settings, onSave: _save);
       case 'Themes':
       case 'Themes & Styling':
         return const ThemeSettingsSection();
