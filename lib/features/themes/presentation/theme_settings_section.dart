@@ -68,11 +68,8 @@ class _ThemeSettingsSectionState extends State<ThemeSettingsSection> {
             return ThemePresetCard(
               preset: p,
               isSelected: isSelected,
-              onTap: () async {
-                await _controller.setPreset(p.id);
-                if (context.mounted) {
-                  Toast.showSuccess(context, 'Theme changed to ${p.name}');
-                }
+              onTap: () {
+                _controller.setPreset(p.id);
               },
             );
           },

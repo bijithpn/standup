@@ -12,6 +12,8 @@ import 'package:breakmate/features/settings/settings_page.dart';
 import 'package:breakmate/features/wellness/presentation/wellness_library_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:provider/provider.dart';
+import 'package:breakmate/features/themes/application/theme_controller.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 
@@ -141,6 +143,11 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _navigationService = sl<AppNavigationService>();
+    final currentSection = _navigationService.selectedSection.value;
+    final initialIndex = _allItems.indexWhere((item) => item.section == currentSection);
+    if (initialIndex != -1) {
+      _pageIndex = initialIndex;
+    }
     _navigationService.selectedSection.addListener(_handleExternalNavigation);
   }
 
@@ -162,6 +169,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeController>();
     return Shortcuts(
       shortcuts: <LogicalKeySet, Intent>{
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyP):

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -45,14 +46,14 @@ class ThemeController extends ChangeNotifier {
     _currentPreset = preset;
     AppTheme.applyPreset(_currentPreset, customAccent: _customAccent);
     notifyListeners();
-    await _storage.setString(_kPresetStorageKey, preset.id);
+    unawaited(_storage.setString(_kPresetStorageKey, preset.id));
   }
 
   Future<void> setCustomAccent(Color? color) async {
     _customAccent = color;
     AppTheme.applyCustomAccent(_customAccent);
     notifyListeners();
-    await _storage.setInt(_kCustomAccentStorageKey, color?.toARGB32() ?? 0);
+    unawaited(_storage.setInt(_kCustomAccentStorageKey, color?.toARGB32() ?? 0));
   }
 
   Future<void> resetToDefault() async {
@@ -60,7 +61,7 @@ class ThemeController extends ChangeNotifier {
     _customAccent = null;
     AppTheme.applyPreset(_currentPreset, customAccent: _customAccent);
     notifyListeners();
-    await _storage.setString(_kPresetStorageKey, AppThemePreset.nordicSlate.id);
-    await _storage.setInt(_kCustomAccentStorageKey, 0);
+    unawaited(_storage.setString(_kPresetStorageKey, AppThemePreset.nordicSlate.id));
+    unawaited(_storage.setInt(_kCustomAccentStorageKey, 0));
   }
 }

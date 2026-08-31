@@ -77,35 +77,33 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
       child: Consumer<ThemeController>(
-        builder: (context, themeController, _) {
-          return ScaffoldMessenger(
-            child: MacosApp(
-              navigatorKey: ErrorToastService.navigatorKey,
-              title: 'BreakMate',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.macosTheme,
-              routes: {'/main': (context) => const MainLayout()},
-              home: Builder(
-                builder: (context) {
-                  return Consumer<SettingsRepository>(
-                    builder: (context, settingsRepo, _) {
-                      final settings = settingsRepo.currentSettings;
-
-                      if (!settings.hasCompletedOnboarding) {
-                        return const OnboardingPage();
-                      }
-
-                      return const Material(
-                        type: MaterialType.transparency,
-                        child: MainLayout(),
-                      );
-                    },
-                  );
-                },
-              ),
+        builder: (context, themeController, child) {
+          return MacosApp(
+            navigatorKey: ErrorToastService.navigatorKey,
+            title: 'BreakMate',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.macosTheme,
+            routes: {'/main': (context) => const MainLayout()},
+            builder: (context, widget) => ScaffoldMessenger(
+              child: widget ?? const SizedBox.shrink(),
             ),
+            home: child,
           );
         },
+        child: Consumer<SettingsRepository>(
+          builder: (context, settingsRepo, _) {
+            final settings = settingsRepo.currentSettings;
+
+            if (!settings.hasCompletedOnboarding) {
+              return const OnboardingPage();
+            }
+
+            return const Material(
+              type: MaterialType.transparency,
+              child: MainLayout(),
+            );
+          },
+        ),
       ),
     );
   }
