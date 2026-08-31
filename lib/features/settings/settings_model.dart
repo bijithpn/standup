@@ -103,6 +103,8 @@ class SettingsModel {
 
   final bool enableSessionResume;
 
+  final bool appUsageTrackingEnabled;
+
   const SettingsModel({
     this.autoStart = true,
     this.clockFaceStyle = 'breakloop',
@@ -189,6 +191,7 @@ class SettingsModel {
     this.weeklyConsistencyTargetDays = 5,
     this.calendarEnabled = false,
     this.enableSessionResume = true,
+    this.appUsageTrackingEnabled = false,
   });
 
   SettingsModel copyWith({
@@ -271,6 +274,7 @@ class SettingsModel {
     int? weeklyConsistencyTargetDays,
     bool? calendarEnabled,
     bool? enableSessionResume,
+    bool? appUsageTrackingEnabled,
     String? pipBackgroundStyle,
     double? pipOpacity,
     bool? pipDraggableClickable,
@@ -382,6 +386,8 @@ class SettingsModel {
           weeklyConsistencyTargetDays ?? this.weeklyConsistencyTargetDays,
       calendarEnabled: calendarEnabled ?? this.calendarEnabled,
       enableSessionResume: enableSessionResume ?? this.enableSessionResume,
+      appUsageTrackingEnabled:
+          appUsageTrackingEnabled ?? this.appUsageTrackingEnabled,
       pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
@@ -467,6 +473,7 @@ class SettingsModel {
     'weeklyConsistencyTargetDays': weeklyConsistencyTargetDays,
     'calendarEnabled': calendarEnabled,
     'enableSessionResume': enableSessionResume,
+    'appUsageTrackingEnabled': appUsageTrackingEnabled,
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
     'pipDraggableClickable': pipDraggableClickable,
@@ -583,6 +590,7 @@ class SettingsModel {
           map['weeklyConsistencyTargetDays'] as int? ?? 5,
       calendarEnabled: map['calendarEnabled'] as bool? ?? false,
       enableSessionResume: map['enableSessionResume'] as bool? ?? true,
+      appUsageTrackingEnabled: map['appUsageTrackingEnabled'] as bool? ?? false,
       pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'dark',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,

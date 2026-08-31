@@ -44,6 +44,7 @@ class AppConstants {
   static const String keyCurrentStreak = 'current_streak';
   static const String keyLongestStreak = 'longest_streak';
   static const String keyWeeklyStats = 'weekly_stats';
+  static const String keyAppUsageData = 'app_usage_data';
   static const String keyTotalWorkSessions = 'total_work_sessions';
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
