@@ -51,7 +51,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 AppStrings.analytics,
                 style: TextStyle(
                   fontSize: 22,
@@ -61,7 +61,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 AppStrings.analyticsSubtitle,
                 style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
               ),
@@ -115,7 +115,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                 children: [
                   Text(
                     chartTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimary,
@@ -124,7 +124,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   const SizedBox(height: 2),
                   Text(
                     chartSubtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
                     ),
@@ -320,7 +320,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           const Spacer(),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w500,
               color: AppTheme.textSecondary,
@@ -333,7 +333,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -343,7 +343,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               const SizedBox(width: 4),
               Text(
                 unit,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textMuted,

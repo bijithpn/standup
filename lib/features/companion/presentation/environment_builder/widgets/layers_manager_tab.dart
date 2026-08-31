@@ -42,7 +42,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Scenery Layers',
                 style: TextStyle(
@@ -83,7 +83,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
               borderRadius: BorderRadius.circular(AppTheme.radiusMd),
               border: Border.all(color: AppTheme.border, width: 0.5),
             ),
-            child: const Column(
+            child: Column(
               children: [
                 Icon(
                   CupertinoIcons.layers,
@@ -181,7 +181,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
                                     fit: BoxFit.contain,
                                     errorBuilder:
                                         (context, error, stackTrace) =>
-                                            const Icon(
+                                            Icon(
                                       CupertinoIcons.photo,
                                       size: 14,
                                       color: AppTheme.textMuted,
@@ -195,7 +195,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
                       ),
                       title: Text(
                         displayName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppTheme.textPrimary,
@@ -206,7 +206,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
                       ),
                       subtitle: Text(
                         'Layer ${idx + 1} (Priority: ${-8 + idx})',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 10,
                           color: AppTheme.textMuted,
                           fontFamily: 'Inter',
@@ -256,7 +256,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
                       secondChild: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Divider(height: 1, color: AppTheme.border),
+                          Divider(height: 1, color: AppTheme.border),
                           Padding(
                             padding: const EdgeInsets.all(12),
                             child: Column(
@@ -320,7 +320,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
                                   children: [
                                     Row(
                                       children: [
-                                        const Text(
+                                        Text(
                                           'Flip Horizontally',
                                           style: TextStyle(
                                             fontSize: 12,
@@ -426,7 +426,7 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
           flex: 4,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppTheme.textSecondary,
@@ -580,7 +580,7 @@ class _AddLayerDialogState extends State<AddLayerDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'Add Scenery Layer',
                   style: TextStyle(
                     fontSize: 16,
@@ -701,7 +701,7 @@ class _AddLayerDialogState extends State<AddLayerDialog> {
                                           fit: BoxFit.contain,
                                           errorBuilder:
                                               (context, error, stackTrace) =>
-                                                  const Icon(
+                                                  Icon(
                                                     CupertinoIcons.photo,
                                                     size: 16,
                                                     color: AppTheme.textMuted,
@@ -720,7 +720,7 @@ class _AddLayerDialogState extends State<AddLayerDialog> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w600,
                               color: AppTheme.textSecondary,

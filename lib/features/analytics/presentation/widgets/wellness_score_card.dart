@@ -67,7 +67,7 @@ class WellnessScoreCard extends StatelessWidget {
             children: [
               Text(
                 '$score',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: AppTheme.textPrimary,
@@ -127,7 +127,7 @@ class WellnessScoreCard extends StatelessWidget {
             _getScoreInsight(label, score),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               color: AppTheme.textSecondary,
               fontFamily: 'Inter',

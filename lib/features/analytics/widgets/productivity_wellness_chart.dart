@@ -61,7 +61,7 @@ class ProductivityWellnessChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Productivity vs Wellness',
                 style: TextStyle(
                   fontSize: 15,
@@ -221,7 +221,7 @@ class ProductivityWellnessChart extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 10,
             color: AppTheme.textSecondary,
             fontWeight: FontWeight.w600,

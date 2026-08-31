@@ -218,13 +218,13 @@ class _PreviewHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Icons.landscape_rounded,
             size: 14,
             color: AppTheme.textSecondary,
           ),
           const SizedBox(width: 8),
-          const Text(
+          Text(
             'Live Preview',
             style: TextStyle(
               fontSize: 12,

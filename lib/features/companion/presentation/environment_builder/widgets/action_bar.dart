@@ -53,7 +53,7 @@ class _ActionBarState extends State<ActionBar> {
           CupertinoTextField(
             controller: _nameController,
             placeholder: 'Theme Name',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.textPrimary,
               fontSize: 13,
               fontFamily: 'Inter',
@@ -63,7 +63,7 @@ class _ActionBarState extends State<ActionBar> {
               borderRadius: BorderRadius.circular(8),
               border: Border.all(color: AppTheme.border),
             ),
-            prefix: const Padding(
+            prefix: Padding(
               padding: EdgeInsets.only(left: 12),
               child: Icon(
                 Icons.label_outline_rounded,
@@ -72,7 +72,7 @@ class _ActionBarState extends State<ActionBar> {
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            placeholderStyle: const TextStyle(
+            placeholderStyle: TextStyle(
               color: AppTheme.textMuted,
               fontSize: 13,
               fontFamily: 'Inter',

@@ -174,7 +174,7 @@ class _AssetPickerTileState extends State<AssetPickerTile> {
       );
     }
     if (_loading) {
-      return const Center(
+      return Center(
         child: SizedBox(
           width: 16,
           height: 16,
@@ -186,7 +186,7 @@ class _AssetPickerTileState extends State<AssetPickerTile> {
       );
     }
     // Placeholder for assets that failed to load.
-    return const Center(
+    return Center(
       child: Icon(
         Icons.broken_image_outlined,
         size: 20,

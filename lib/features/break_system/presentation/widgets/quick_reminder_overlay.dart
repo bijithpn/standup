@@ -88,7 +88,7 @@ class QuickReminderOverlay extends StatelessWidget {
                 ),
                 child: Text(
                   isPosture ? 'POSTURE CHECK' : 'EYE REFRESH',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.accent,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -125,7 +125,7 @@ class QuickReminderOverlay extends StatelessWidget {
               const SizedBox(height: 24),
               Text(
                 isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textPrimary,
                   fontSize: 22,
                   fontWeight: FontWeight.w600,
@@ -139,7 +139,7 @@ class QuickReminderOverlay extends StatelessWidget {
                     ? 'Sit up straight, relax your neck, and drop your shoulders.'
                     : 'Blink a few times and focus on something far away.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14,
                   fontFamily: 'Inter',

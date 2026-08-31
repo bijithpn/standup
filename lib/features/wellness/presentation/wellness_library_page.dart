@@ -37,7 +37,7 @@ class WellnessLibraryPage extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (isSmall) ...[
-                      const Text(
+                      Text(
                         'Wellness Library',
                         style: TextStyle(
                           fontSize: 28,
@@ -46,8 +46,8 @@ class WellnessLibraryPage extends StatelessWidget {
                           letterSpacing: -0.5,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
+                      SizedBox(height: 8),
+                      Text(
                         'Manage your break activities. Favorite what you love, hide what you don\'t.',
                         style: TextStyle(
                           fontSize: 14,
@@ -91,7 +91,7 @@ class WellnessLibraryPage extends StatelessWidget {
 
             return MacosScaffold(
               backgroundColor: AppTheme.surface,
-              toolBar: const ToolBar(
+              toolBar: ToolBar(
                 title: Text(
                   'Wellness Library',
                   style: TextStyle(

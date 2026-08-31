@@ -40,7 +40,7 @@ class DailySummarySection extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     AppStrings.todayActivity,
                     style: TextStyle(
                       fontSize: 16,
@@ -53,7 +53,7 @@ class DailySummarySection extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               if (!hasData)
-                const Center(
+                Center(
                   child: Padding(
                     padding: EdgeInsets.symmetric(vertical: 20),
                     child: Text(
@@ -135,7 +135,7 @@ class _RecommendationChip extends StatelessWidget {
       ),
       child: Text(
         recommendation,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: AppTheme.accent,
@@ -172,7 +172,7 @@ class _StatItem extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             color: AppTheme.textSecondary,
             fontWeight: FontWeight.w500,

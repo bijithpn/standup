@@ -38,7 +38,7 @@ class BreakIntensitySettings extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Strictness Level',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
@@ -47,7 +47,7 @@ class BreakIntensitySettings extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
+                      Text(
                         'Gentle allows easy skips; Locked requires full focus.',
                         style: TextStyle(
                           color: AppTheme.textSecondary,
@@ -152,7 +152,7 @@ class BreakIntensitySettings extends StatelessWidget {
             final displays = sl<DisplayController>().displays;
             if (displays.isEmpty) {
               return buildCard([
-                const Padding(
+                Padding(
                   padding: EdgeInsets.all(20.0),
                   child: Text(
                     'No external displays detected or plugin not fully initialized.',

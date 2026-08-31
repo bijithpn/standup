@@ -19,7 +19,7 @@ class SavedThemesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Saved Themes',
           style: TextStyle(
             fontSize: 14,
@@ -90,7 +90,7 @@ class SavedThemeTile extends StatelessWidget {
               children: [
                 Text(
                   theme.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppTheme.textPrimary,
@@ -99,7 +99,7 @@ class SavedThemeTile extends StatelessWidget {
                 ),
                 Text(
                   theme.id,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     color: AppTheme.textMuted,
                     fontFamily: 'Inter',
@@ -140,7 +140,7 @@ class SavedThemeTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           side: BorderSide(color: AppTheme.border),
         ),
-        title: const Text(
+        title: Text(
           'Delete Theme',
           style: TextStyle(
             color: AppTheme.textPrimary,
@@ -150,7 +150,7 @@ class SavedThemeTile extends StatelessWidget {
         ),
         content: Text(
           'Delete "${theme.name}"? This cannot be undone.',
-          style: const TextStyle(
+          style: TextStyle(
             color: AppTheme.textSecondary,
             fontFamily: 'Inter',
             fontSize: 13,
@@ -159,7 +159,7 @@ class SavedThemeTile extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text(
+            child: Text(
               'Cancel',
               style: TextStyle(color: AppTheme.textSecondary),
             ),

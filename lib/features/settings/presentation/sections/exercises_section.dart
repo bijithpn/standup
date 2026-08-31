@@ -35,7 +35,7 @@ class _ExercisesSectionState extends State<ExercisesSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader('Custom Exercises'),
-        const Text(
+        Text(
           'Create unlimited custom break routines targeting your specific needs.',
           style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
         ),
@@ -45,7 +45,7 @@ class _ExercisesSectionState extends State<ExercisesSection> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Exercise Library',
                     style: TextStyle(
@@ -255,7 +255,7 @@ class _ExercisesSectionState extends State<ExercisesSection> {
               Expanded(
                 child: Text(
                   exercise.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 15,
                     color: AppTheme.textPrimary,
@@ -283,11 +283,11 @@ class _ExercisesSectionState extends State<ExercisesSection> {
                 ),
               ),
               const SizedBox(width: 8),
-              const Text('•', style: TextStyle(color: AppTheme.textMuted)),
+              Text('•', style: TextStyle(color: AppTheme.textMuted)),
               const SizedBox(width: 8),
               Text(
                 exercise.category.name.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -316,7 +316,7 @@ class _ExercisesSectionState extends State<ExercisesSection> {
                 ),
                 backgroundColor: AppTheme.surfaceElevated,
                 onPressed: () => _showExerciseEditor(existing: exercise),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(
                       CupertinoIcons.pencil,
@@ -437,7 +437,7 @@ class _ExercisesSectionState extends State<ExercisesSection> {
                             child: Center(
                               child: Text(
                                 '$opt$suffix',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: AppTheme.textPrimary,
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,

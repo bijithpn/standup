@@ -194,7 +194,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                                             : (_checked
                                                   ? 'BreakMate is Up to Date'
                                                   : 'Software Update'))),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: AppTheme.textPrimary,
@@ -213,7 +213,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                                             : (_checked
                                                   ? 'Everything is running smoothly.'
                                                   : 'Keep your app modern and stable.'))),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               color: AppTheme.textSecondary,
                               fontFamily: 'Inter',
@@ -277,7 +277,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                 ],
 
                 if (_hasUpdate) ...[
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 32, bottom: 12),
                     child: Text(
                       'RELEASE NOTES',
@@ -305,7 +305,7 @@ class _UpdateSectionState extends State<UpdateSection> {
                       physics: const BouncingScrollPhysics(),
                       child: HtmlWidget(
                         _formatReleaseNotes(_updateNotes),
-                        textStyle: const TextStyle(
+                        textStyle: TextStyle(
                           fontSize: 14,
                           color: AppTheme.textPrimary,
                           fontFamily: 'Inter',

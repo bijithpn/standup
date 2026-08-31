@@ -23,7 +23,7 @@ class DailyStatsChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Weekly Progress', style: AppTheme.sectionTitle),
+          Text('Weekly Progress', style: AppTheme.sectionTitle),
           const SizedBox(height: 24),
           Expanded(
             child: BarChart(
@@ -74,7 +74,7 @@ class DailyStatsChart extends StatelessWidget {
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
                               stats.weeklyData[value.toInt()].dayName,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppTheme.textMuted,
                                 fontSize: 10,
                               ),
@@ -155,7 +155,7 @@ class DailyStatsChart extends StatelessWidget {
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontSize: 10, color: AppTheme.textSecondary),
+          style: TextStyle(fontSize: 10, color: AppTheme.textSecondary),
         ),
       ],
     );

@@ -561,7 +561,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                               color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Export Backup',
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
@@ -588,7 +588,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                               color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Export CSV',
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
@@ -619,7 +619,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                               color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Restore JSON',
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
@@ -646,7 +646,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
                               color: AppTheme.textSecondary,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Import CSV',
                               style: TextStyle(
                                 color: AppTheme.textSecondary,
@@ -688,7 +688,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -697,7 +697,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppTheme.textSecondary,
               fontSize: 14,
               fontWeight: FontWeight.w600,

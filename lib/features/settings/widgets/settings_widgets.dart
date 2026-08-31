@@ -12,7 +12,7 @@ Widget sectionHeader(String title, {String? subtitle}) {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
@@ -24,7 +24,7 @@ Widget sectionHeader(String title, {String? subtitle}) {
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               color: AppTheme.textSecondary,
               fontFamily: 'Inter',
@@ -71,7 +71,7 @@ Widget toggleRow(
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
                   color: AppTheme.textPrimary,
@@ -81,7 +81,7 @@ Widget toggleRow(
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 12,
                   letterSpacing: 0,
@@ -119,7 +119,7 @@ Widget inputRow(
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 14,
               color: AppTheme.textPrimary,
@@ -148,7 +148,7 @@ Widget inputRow(
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(
+                Icon(
                   CupertinoIcons.chevron_up_chevron_down,
                   size: 12,
                   color: AppTheme.textSecondary,
@@ -282,7 +282,7 @@ Widget textFieldRow(
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w500,
             fontSize: 14,
             color: AppTheme.textPrimary,
@@ -296,7 +296,7 @@ Widget textFieldRow(
               color: Colors.white.withValues(alpha: 0.3),
               fontSize: 13,
             ),
-            style: const TextStyle(color: AppTheme.textPrimary, fontSize: 13),
+            style: TextStyle(color: AppTheme.textPrimary, fontSize: 13),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
@@ -340,7 +340,7 @@ Widget buildListRow(
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
                   color: AppTheme.textPrimary,
@@ -350,7 +350,7 @@ Widget buildListRow(
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 12,
                 ),
@@ -487,7 +487,7 @@ void showPicker({
                           child: Center(
                             child: Text(
                               '$opt$suffix',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppTheme.textPrimary,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -614,7 +614,7 @@ Widget actionRow({
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 12,
                   fontFamily: 'Inter',
@@ -652,7 +652,7 @@ Widget colorRow(String label, Color color) {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
             color: AppTheme.textPrimary,

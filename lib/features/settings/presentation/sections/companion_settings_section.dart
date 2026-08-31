@@ -63,7 +63,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           CupertinoIcons.info_circle,
                           size: 18,
                           color: AppTheme.textSecondary,
@@ -72,7 +72,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                         Expanded(
                           child: Text(
                             widget.controller.companionStateExplanation,
-                            style: const TextStyle(
+                            style: TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 13,
                               height: 1.35,
@@ -276,7 +276,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           fullscreenDialog: true,
                         ),
                       ),
-                      trailing: const Icon(
+                      trailing: Icon(
                         CupertinoIcons.chevron_right,
                         size: 14,
                         color: AppTheme.textMuted,
@@ -360,7 +360,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                         widget.controller.companionEnabled
                             ? widget.controller.companionPetName
                             : 'Companion',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textPrimary,
@@ -393,7 +393,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  const Text(
+                  Text(
                     'Customize and preview your companion settings.',
                     style: TextStyle(
                       fontSize: 13,
@@ -497,7 +497,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
@@ -713,7 +713,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   const SizedBox(height: 6),
                   Text(
                     inter['label'] as String,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimary,

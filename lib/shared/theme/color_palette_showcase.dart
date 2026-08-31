@@ -9,11 +9,11 @@ class ColorPaletteShowcase extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppTheme.surface,
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'BreakMate Color Palette',
               style: TextStyle(
                 color: AppTheme.textPrimary,
@@ -21,8 +21,8 @@ class ColorPaletteShowcase extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text(
+            SizedBox(height: 8),
+            Text(
               'Minimal Modern Design System',
               style: TextStyle(color: AppTheme.textSecondary, fontSize: 16),
             ),
@@ -92,7 +92,7 @@ class ColorPaletteShowcase extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -131,22 +131,22 @@ class ColorPaletteShowcase extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   item.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   item.hex,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.textMuted,
                     fontSize: 11,
                     fontFamily: 'monospace',

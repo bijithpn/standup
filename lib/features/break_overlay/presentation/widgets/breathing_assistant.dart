@@ -107,7 +107,7 @@ class _BreathingAssistantState extends State<BreathingAssistant>
             const SizedBox(height: 8),
             Text(
               isInhaling ? 'Fill your lungs slowly' : 'Release all tension',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textMuted,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,

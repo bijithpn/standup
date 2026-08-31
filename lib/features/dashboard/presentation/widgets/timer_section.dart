@@ -79,7 +79,7 @@ class TimerSection extends StatelessWidget {
                             .padLeft(2, '0');
                         return Text(
                           '$mins:$secs',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 56,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.textPrimary,
@@ -92,7 +92,7 @@ class TimerSection extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       nextReason,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         height: 1.35,
                         color: AppTheme.textSecondary,
@@ -101,7 +101,7 @@ class TimerSection extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       controller.pauseReason,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         height: 1.35,
                         color: AppTheme.textMuted,
@@ -302,7 +302,7 @@ class _SnoozeButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
         ),
       ),
     );

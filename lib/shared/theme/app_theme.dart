@@ -1,14 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:macos_ui/macos_ui.dart';
+import 'package:breakmate/features/themes/domain/app_theme_preset.dart';
 
 class AppTheme {
   AppTheme._();
 
-  static const Color primary = Color(0xFF18181B); // Zinc 900
-  static const Color primaryLight = Color(0xFF3F3F46); // Zinc 700
-  static const Color primaryDark = Color(0xFF09090B); // Zinc 950
+  static AppThemePreset _activePreset = AppThemePreset.nordicSlate;
+  static Color? _customAccent;
 
-  static const Color accent = Color(0xFF5f68e9);
+  static AppThemePreset get activePreset => _activePreset;
+  static Color? get customAccent => _customAccent;
+
+  static void applyPreset(AppThemePreset preset, {Color? customAccent}) {
+    _activePreset = preset;
+    _customAccent = customAccent;
+  }
+
+  static void applyCustomAccent(Color? customAccent) {
+    _customAccent = customAccent;
+  }
+
+  // Core Theme Palette
+  static Color get primary => _activePreset.primary;
+  static Color get primaryLight => _activePreset.primaryLight;
+  static Color get primaryDark => _activePreset.primaryDark;
+
+  static Color get accent => _customAccent ?? _activePreset.accent;
+  static Color get accentColor => accent;
 
   static const Color gray50 = Color(0xFFFAFAFA);
   static const Color gray100 = Color(0xFFF4F4F5);
@@ -22,23 +40,23 @@ class AppTheme {
   static const Color gray900 = Color(0xFF18181B);
   static const Color gray950 = Color(0xFF09090B);
 
-  static const Color surface = Color(0xFF09090B); // Pure dark
-  static const Color surfaceElevated = Color(0xFF18181B); // Slight elevation
-  static const Color surfaceCard = Color(0xFF121214); // Distinct card back
-  static const Color border = Color(0xFF27272A);
-  static const Color borderSubtle = Color(0xFF18181B);
+  static Color get surface => _activePreset.surface;
+  static Color get surfaceElevated => _activePreset.surfaceElevated;
+  static Color get surfaceCard => _activePreset.surfaceCard;
+  static Color get border => _activePreset.border;
+  static Color get borderSubtle => _activePreset.borderSubtle;
 
-  static const Color textPrimary = Color(0xFFF4F4F5); // Zinc 100
-  static const Color textSecondary = Color(0xFFA1A1AA); // Zinc 400
-  static const Color textMuted = Color(0xFF71717A); // Zinc 500
+  static Color get textPrimary => _activePreset.textPrimary;
+  static Color get textSecondary => _activePreset.textSecondary;
+  static Color get textMuted => _activePreset.textMuted;
 
   static const Color success = Color(0xFF10B981);
   static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
   static const Color info = Color(0xFF3B82F6);
 
-  static const Color shortBreak = Color(0xFF0EA5E9); // Restrained Cyan
-  static const Color longBreak = Color(0xFF8B5CF6); // Soft Purple
+  static Color get shortBreak => _activePreset.shortBreak;
+  static Color get longBreak => _activePreset.longBreak;
 
   static const double radiusXs = 4.0;
   static const double radiusSm = 8.0;
@@ -47,10 +65,12 @@ class AppTheme {
   static const double radiusXl = 24.0;
 
   static MacosThemeData get macosTheme {
-    final base = MacosThemeData.dark();
+    final base = _activePreset.isDark
+        ? MacosThemeData.dark()
+        : MacosThemeData.light();
     return base.copyWith(
       primaryColor: accent,
-      brightness: Brightness.dark,
+      brightness: _activePreset.isDark ? Brightness.dark : Brightness.light,
       canvasColor: surface,
       typography: MacosTypography(
         color: textPrimary,
@@ -110,20 +130,24 @@ class AppTheme {
   static ThemeData get materialTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: _activePreset.isDark ? Brightness.dark : Brightness.light,
       fontFamily: 'Inter',
       primaryColor: primary,
       scaffoldBackgroundColor: surface,
       cardColor: surfaceCard,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: ColorScheme(
+        brightness: _activePreset.isDark ? Brightness.dark : Brightness.light,
         primary: accent,
-        surface: surfaceCard,
-        error: error,
         onPrimary: Colors.white,
+        secondary: accent,
+        onSecondary: Colors.white,
+        error: error,
+        onError: Colors.white,
+        surface: surfaceCard,
         onSurface: textPrimary,
         onSurfaceVariant: textSecondary,
       ),
-      textTheme: const TextTheme(
+      textTheme: TextTheme(
         displayLarge: TextStyle(
           color: textPrimary,
           fontSize: 32,
@@ -176,7 +200,7 @@ class AppTheme {
           fontFamily: 'Inter',
         ),
       ),
-      dividerTheme: const DividerThemeData(color: borderSubtle, thickness: 1),
+      dividerTheme: DividerThemeData(color: borderSubtle, thickness: 1),
     );
   }
 
@@ -201,7 +225,6 @@ class AppTheme {
       cardDecoration(elevated: true);
   static Color get overlayBackground => Colors.black.withValues(alpha: 0.85);
 
-  static Color get accentColor => accent;
   static Color get sidebarBackground => surface;
   static Color get contentBackground => surface;
   static Color get cardBackground => surfaceCard;
@@ -213,70 +236,70 @@ class AppTheme {
   static Color get upcomingBreakColor => warning;
   static Color get destructiveColor => error;
 
-  static const TextStyle sidebarItemStyle = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    color: textPrimary,
-    letterSpacing: -0.1,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get sidebarItemStyle => TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        color: textPrimary,
+        letterSpacing: -0.1,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle sectionTitle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    color: textPrimary,
-    letterSpacing: -0.2,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get sectionTitle => TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+        letterSpacing: -0.2,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle sectionSubtitle = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w400,
-    color: textSecondary,
-    letterSpacing: 0,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get sectionSubtitle => TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+        letterSpacing: 0,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle headerStyle = TextStyle(
-    fontSize: 22,
-    fontWeight: FontWeight.w600,
-    color: textPrimary,
-    letterSpacing: -0.5,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get headerStyle => TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: textPrimary,
+        letterSpacing: -0.5,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle subHeaderStyle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: textSecondary,
-    letterSpacing: -0.1,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get subHeaderStyle => TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+        letterSpacing: -0.1,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle breakTitleStyle = TextStyle(
-    fontSize: 32,
-    fontWeight: FontWeight.w700,
-    color: textPrimary,
-    letterSpacing: -0.8,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get breakTitleStyle => TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        color: textPrimary,
+        letterSpacing: -0.8,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle tipStyle = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: textSecondary,
-    height: 1.5,
-    letterSpacing: 0.1,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get tipStyle => TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: textSecondary,
+        height: 1.5,
+        letterSpacing: 0.1,
+        fontFamily: 'Inter',
+      );
 
-  static const TextStyle skipButtonStyle = TextStyle(
-    fontSize: 13,
-    fontWeight: FontWeight.w500,
-    color: textSecondary,
-    letterSpacing: 0.2,
-    fontFamily: 'Inter',
-  );
+  static TextStyle get skipButtonStyle => TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        color: textSecondary,
+        letterSpacing: 0.2,
+        fontFamily: 'Inter',
+      );
 
   static Widget glassContainer({
     required Widget child,

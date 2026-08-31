@@ -31,7 +31,7 @@ class CodeOutputSheet extends StatelessWidget {
       maxChildSize: 0.92,
       builder: (ctx, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Color(0xFF111113),
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             border: Border(
@@ -109,9 +109,9 @@ class _SheetHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 0, 16, 12),
       child: Row(
         children: [
-          const Icon(Icons.code_rounded, size: 18, color: AppTheme.accent),
+          Icon(Icons.code_rounded, size: 18, color: AppTheme.accent),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Text(
               'Generated Config Code',
               style: TextStyle(

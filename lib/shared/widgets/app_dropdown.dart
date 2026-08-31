@@ -144,7 +144,7 @@ class AppDropdown<T> extends StatelessWidget {
     }
     return Text(
       item.label,
-      style: const TextStyle(
+      style: TextStyle(
         color: AppTheme.textPrimary,
         fontSize: 13,
         fontWeight: FontWeight.w600,

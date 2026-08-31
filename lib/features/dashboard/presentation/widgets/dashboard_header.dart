@@ -12,7 +12,7 @@ class DashboardHeader extends StatelessWidget {
       children: [
         Text(
           _getGreeting(),
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
@@ -20,7 +20,7 @@ class DashboardHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           AppStrings.dashboardSubtitle,
           style: TextStyle(
             fontSize: 15,

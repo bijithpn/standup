@@ -340,7 +340,7 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
                       const SizedBox(height: 3),
                       Text(
                         subtitle,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           color: AppTheme.textSecondary,
                           height: 1.4,

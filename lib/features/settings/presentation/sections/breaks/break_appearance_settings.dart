@@ -278,7 +278,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   );
                   return Text(
                     selectedTemplate.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -345,7 +345,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         CupertinoTextField(
           controller: _searchController,
           focusNode: _searchFocusNode,
-          style: const TextStyle(
+          style: TextStyle(
             color: AppTheme.textPrimary,
             fontSize: 13,
             fontFamily: 'Inter',
@@ -417,7 +417,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
                       CupertinoIcons.color_filter,
@@ -603,7 +603,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Wallpaper Path',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
@@ -621,7 +621,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                                 : path;
                             return Text(
                               actualPath ?? '',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: AppTheme.textMuted,
                                 fontSize: 11,
                                 fontFamily: 'Inter',

@@ -134,7 +134,7 @@ class _AboutSectionState extends State<AboutSection> {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
+              Text(
                 'A premium desktop companion for your well-being.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
@@ -217,7 +217,7 @@ class _AboutSectionState extends State<AboutSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Text(
+              Text(
                 'Enjoying BreakMate?',
                 style: TextStyle(
                   fontSize: 16,
@@ -228,7 +228,7 @@ class _AboutSectionState extends State<AboutSection> {
                 ),
               ),
               const SizedBox(height: 6),
-              const Text(
+              Text(
                 'Support development and keep BreakMate ad-free by fueling my coffee mug.',
                 textAlign: TextAlign.center,
                 style: TextStyle(

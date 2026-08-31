@@ -99,7 +99,7 @@ class _FigmaValueInputState extends State<FigmaValueInput> {
             controller: _controller,
             focusNode: _focusNode,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
               color: AppTheme.textPrimary,

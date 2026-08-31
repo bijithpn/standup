@@ -34,7 +34,7 @@ class WellnessArticlesPage extends StatelessWidget {
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Text(
                       'Tips and guides for healthy work habits',
                       style: TextStyle(

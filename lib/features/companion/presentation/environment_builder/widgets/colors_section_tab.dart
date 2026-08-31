@@ -199,7 +199,7 @@ class _ColorsSectionTabState extends State<ColorsSectionTab> {
                 children: [
                   Text(
                     _getPropertyName(_activeProperty),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: AppTheme.textPrimary,
@@ -220,7 +220,7 @@ class _ColorsSectionTabState extends State<ColorsSectionTab> {
                       controller: _hexController,
                       focusNode: _focusNode,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
@@ -248,7 +248,7 @@ class _ColorsSectionTabState extends State<ColorsSectionTab> {
               ),
               const SizedBox(height: 16),
 
-              const Text(
+              Text(
                 'Presets',
                 style: TextStyle(
                   fontSize: 10,
@@ -292,12 +292,12 @@ class _ColorsSectionTabState extends State<ColorsSectionTab> {
           ),
         ),
 
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
         ),
 
-        const Padding(
+        Padding(
           padding: EdgeInsets.only(bottom: 12),
           child: Text(
             'Layer Opacities',
@@ -377,7 +377,7 @@ class _ColorsSectionTabState extends State<ColorsSectionTab> {
             ),
             Text(
               _colorToHex(color),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 color: AppTheme.textMuted,
                 fontFamily: 'SFMono-Regular, Consolas, Courier, monospace',

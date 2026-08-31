@@ -69,7 +69,7 @@ class _SectionLabel extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: AppTheme.textPrimary,
@@ -81,7 +81,7 @@ class _SectionLabel extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '· $subtitle',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               color: AppTheme.textMuted,
               fontFamily: 'Inter',

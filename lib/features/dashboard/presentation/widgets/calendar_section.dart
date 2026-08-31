@@ -51,7 +51,7 @@ class CalendarSection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
+                  Text(
                     'Upcoming Events',
                     style: TextStyle(
                       fontSize: 16,
@@ -62,7 +62,7 @@ class CalendarSection extends StatelessWidget {
                 ],
               ),
               if (loading)
-                const SizedBox(
+                SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
@@ -73,7 +73,7 @@ class CalendarSection extends StatelessWidget {
               else
                 GestureDetector(
                   onTap: onLoadEvents,
-                  child: const Icon(
+                  child: Icon(
                     Icons.refresh_rounded,
                     size: 18,
                     color: AppTheme.textMuted,
@@ -100,7 +100,7 @@ class CalendarSection extends StatelessWidget {
     final events = calendarEvents;
 
     if (events == null || events.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 12),
         child: Row(
           children: [
@@ -144,7 +144,7 @@ class CalendarSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 12, top: 4),
             child: Text(
               _formatDate(date),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
                 color: AppTheme.textSecondary,
@@ -157,7 +157,7 @@ class CalendarSection extends StatelessWidget {
               children: [
                 CalendarEventRow(event: event),
                 if (event != groupedEvents[date]!.last)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(left: 54),
                     child: Divider(height: 1, color: AppTheme.border),
                   ),
@@ -254,7 +254,7 @@ class CalendarSection extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         color: AppTheme.textSecondary,
                         height: 1.4,
@@ -330,7 +330,7 @@ class CalendarSection extends StatelessWidget {
                         color: AppTheme.textSecondary.withValues(alpha: 0.25),
                       ),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Open Settings',
                       style: TextStyle(
                         fontSize: 12,

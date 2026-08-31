@@ -83,7 +83,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               ),
-              child: const Text(
+              child: Text(
                 'Back',
                 style: TextStyle(color: AppTheme.textSecondary),
               ),
@@ -132,7 +132,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimary,
@@ -143,7 +143,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 color: AppTheme.textSecondary,
                 height: 1.5,
@@ -170,7 +170,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
           borderRadius: BorderRadius.circular(32),
           border: Border.all(color: AppTheme.border),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.auto_awesome_rounded,
           size: 64,
           color: AppTheme.accent,
@@ -338,7 +338,7 @@ class _ProfileOption extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       color: AppTheme.textSecondary,
                     ),
@@ -347,7 +347,7 @@ class _ProfileOption extends StatelessWidget {
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppTheme.accent),
+              Icon(Icons.check_circle_rounded, color: AppTheme.accent),
           ],
         ),
       ),

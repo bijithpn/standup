@@ -112,7 +112,7 @@ class _SettingsPageState extends State<SettingsPage> {
           toolBar: ToolBar(
             title: Text(
               _sectionDisplayName(widget.section),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimary,
@@ -245,7 +245,7 @@ class _SettingsPageState extends State<SettingsPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(
                 Icons.warning_amber_rounded,
@@ -269,7 +269,7 @@ class _SettingsPageState extends State<SettingsPage> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 warning,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 12,
                   height: 1.35,

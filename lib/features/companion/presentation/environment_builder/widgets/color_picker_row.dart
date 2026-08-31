@@ -111,7 +111,7 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
         children: [
           Text(
             widget.label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppTheme.textPrimary,
@@ -163,7 +163,7 @@ class _ColorPickerRowState extends State<ColorPickerRow> {
                   controller: _hexController,
                   focusNode: _focusNode,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textPrimary,
@@ -294,7 +294,7 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Pick Colour',
                 style: TextStyle(
                   color: AppTheme.textPrimary,
@@ -329,7 +329,7 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
+                    child: Text(
                       'Cancel',
                       style: TextStyle(color: AppTheme.textSecondary),
                     ),
@@ -377,7 +377,7 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
         const SizedBox(width: 12),
         Text(
           '#${color.toARGB32().toRadixString(16).toUpperCase().padLeft(8, '0')}',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontFamily: 'Inter',
             color: AppTheme.textMuted,
@@ -400,7 +400,7 @@ class _HsvPickerDialogState extends State<_HsvPickerDialog> {
           width: 72,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               color: AppTheme.textSecondary,
               fontFamily: 'Inter',

@@ -90,7 +90,7 @@ class DashboardPage extends StatelessWidget {
 
           return MacosScaffold(
             backgroundColor: AppTheme.surface,
-            toolBar: const ToolBar(
+            toolBar: ToolBar(
               title: Text(
                 AppStrings.today,
                 style: TextStyle(

@@ -296,7 +296,7 @@ class _MainLayoutState extends State<MainLayout> {
                             color: Colors.white.withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Icon(
+                          child: Icon(
                             CupertinoIcons.bars,
                             color: AppTheme.textPrimary,
                             size: 18,

@@ -65,14 +65,14 @@ class MenuBarPopover extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             border: Border.all(color: AppTheme.border),
           ),
-          child: const Icon(
+          child: Icon(
             LucideIcons.coffee,
             color: AppTheme.textPrimary,
             size: 14,
           ),
         ),
         const SizedBox(width: 10),
-        const Text(
+        Text(
           'BreakMate',
           style: TextStyle(
             color: AppTheme.textPrimary,
@@ -118,7 +118,7 @@ class MenuBarPopover extends StatelessWidget {
           children: [
             Text(
               isBreak ? 'BREAK IN PROGRESS' : 'NEXT BREAK IN',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textMuted,
@@ -163,14 +163,14 @@ class MenuBarPopover extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.info, size: 14, color: AppTheme.textMuted),
+          Icon(LucideIcons.info, size: 14, color: AppTheme.textMuted),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               controller.pauseReason,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppTheme.textSecondary,
                 fontSize: 12,
                 height: 1.25,
@@ -190,7 +190,7 @@ class MenuBarPopover extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Actions',
           style: TextStyle(
             color: AppTheme.textMuted,
@@ -351,7 +351,7 @@ class MenuBarPopover extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                   border: Border.all(color: AppTheme.border),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
@@ -389,7 +389,7 @@ class MenuBarPopover extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 border: Border.all(color: AppTheme.border),
               ),
-              child: const Icon(
+              child: Icon(
                 LucideIcons.power,
                 color: AppTheme.textMuted,
                 size: 16,

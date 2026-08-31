@@ -75,7 +75,7 @@ class _PickerPanelState extends State<PickerPanel> {
         Container(width: 0.5, color: AppTheme.border),
         Expanded(
           child: ctrl.isLoadingAssets
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(
                     strokeWidth: 2.5,
                     color: AppTheme.accent,
@@ -96,7 +96,7 @@ class _PickerPanelState extends State<PickerPanel> {
   Widget _buildVerticalTabs() {
     return Container(
       width: 76,
-      decoration: const BoxDecoration(color: AppTheme.surfaceCard),
+      decoration: BoxDecoration(color: AppTheme.surfaceCard),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: List.generate(_tabs.length, (idx) {
@@ -180,7 +180,7 @@ class _PickerPanelState extends State<PickerPanel> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -333,7 +333,7 @@ class _PickerPanelState extends State<PickerPanel> {
       padding: const EdgeInsets.only(bottom: 16, top: 4),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w700,
           color: AppTheme.textPrimary,
@@ -345,7 +345,7 @@ class _PickerPanelState extends State<PickerPanel> {
   }
 
   Widget _sectionDivider() {
-    return const Padding(
+    return Padding(
       padding: EdgeInsets.symmetric(vertical: 16),
       child: Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
     );

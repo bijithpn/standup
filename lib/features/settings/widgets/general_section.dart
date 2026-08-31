@@ -247,7 +247,7 @@ class GeneralSection extends StatelessWidget {
                 children: [
                   Text(
                     e.value,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 10,
                       color: AppTheme.textMuted,
                     ),

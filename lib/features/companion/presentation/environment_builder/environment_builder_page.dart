@@ -65,7 +65,7 @@ class _EnvironmentBuilderBody extends StatelessWidget {
             tooltip: 'Back',
           ),
           titleSpacing: 0,
-          title: const Text(
+          title: Text(
             'Environment Builder',
             style: TextStyle(
               fontSize: 15,
@@ -205,7 +205,7 @@ class _NarrowLayout extends StatelessWidget {
             ),
           ),
         ),
-        const Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
+        Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
         const Expanded(child: PickerPanel()),
       ],
     );
@@ -229,7 +229,7 @@ class _PreviewPanel extends StatelessWidget {
             child: EnvPreviewPanel(theme: ctrl.draft),
           ),
         ),
-        const Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
+        Divider(height: 0.5, thickness: 0.5, color: AppTheme.border),
         ActionBar(ctrl: ctrl),
       ],
     );

@@ -45,7 +45,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Row(
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
@@ -152,7 +152,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
                 ),
                 child: Text(
                   labelText,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppTheme.accent,
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
@@ -181,7 +181,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
                 child: Icon(mainIcon, color: AppTheme.accent, size: 36),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Break Starts Soon',
                 style: TextStyle(
                   color: AppTheme.textPrimary,
@@ -195,7 +195,7 @@ class BreakStartWarningOverlay extends StatelessWidget {
               Text(
                 dynamicMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: AppTheme.textSecondary,
                   fontSize: 14,
                   fontFamily: 'Inter',
