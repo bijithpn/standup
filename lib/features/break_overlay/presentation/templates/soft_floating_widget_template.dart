@@ -36,7 +36,7 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
 
   late AnimationController _pulseController;
 
-  static const double _closedWidth = 176.0;
+  static const double _closedWidth = 224.0;
   static const double _openWidth = 310.0;
   static const double _height = 56.0;
   static const _accent = BreakOverlayTheme.accentShort;
@@ -242,22 +242,16 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                                 fontFamily: BreakOverlayTheme.fontFamily,
                               ),
                             ),
-                            Expanded(
-                              child: ClipRect(
-                                child: AnimatedOpacity(
-                                  opacity: _isHovered ? 1.0 : 0.0,
-                                  duration: const Duration(milliseconds: 150),
-                                  child: _isHovered
-                                      ? _buildHoverContent()
-                                      : OverflowBox(
-                                          alignment: Alignment.centerLeft,
-                                          minWidth: 0,
-                                          maxWidth: _openWidth,
-                                          child: _buildHoverContent(),
-                                        ),
+                            if (_isHovered)
+                              Expanded(
+                                child: ClipRect(
+                                  child: AnimatedOpacity(
+                                    opacity: _isHovered ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 150),
+                                    child: _buildHoverContent(),
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),

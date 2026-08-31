@@ -36,6 +36,7 @@ import 'package:breakmate/features/break_system/application/strict_mode_controll
 import 'package:breakmate/features/companion/services/companion_state_manager.dart';
 import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
+import 'package:breakmate/features/themes/application/theme_controller.dart';
 
 final sl = GetIt.instance;
 
@@ -126,4 +127,5 @@ Future<void> initDependencies() async {
     CompanionStateManager(eventBus: sl()),
   );
   sl.registerSingleton<CompanionWindowController>(CompanionWindowController());
+  sl.registerSingleton<ThemeController>(ThemeController(storage: sl()));
 }

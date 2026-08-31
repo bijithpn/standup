@@ -36,7 +36,7 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
   late AnimationController _pulse;
 
   static const _accent = BreakOverlayTheme.accentShort;
-  static const double _closedW = 176;
+  static const double _closedW = 224;
   static const double _openW = 310;
   static const double _h = 56;
 
@@ -230,22 +230,16 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                                 fontFamily: BreakOverlayTheme.fontFamily,
                               ),
                             ),
-                            Expanded(
-                              child: ClipRect(
-                                child: AnimatedOpacity(
-                                  opacity: _hover ? 1.0 : 0.0,
-                                  duration: const Duration(milliseconds: 150),
-                                  child: _hover
-                                      ? _buildHoverContent()
-                                      : OverflowBox(
-                                          alignment: Alignment.centerLeft,
-                                          minWidth: 0,
-                                          maxWidth: _openW,
-                                          child: _buildHoverContent(),
-                                        ),
+                            if (_hover)
+                              Expanded(
+                                child: ClipRect(
+                                  child: AnimatedOpacity(
+                                    opacity: _hover ? 1.0 : 0.0,
+                                    duration: const Duration(milliseconds: 150),
+                                    child: _buildHoverContent(),
+                                  ),
                                 ),
                               ),
-                            ),
                           ],
                         ),
                       ),

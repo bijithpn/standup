@@ -38,6 +38,13 @@ import 'package:breakmate/features/companion/flame/components/decoration_compone
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 import 'package:breakmate/features/companion/flame/components/custom_layer_component.dart';
 
+enum CompanionPowerTier {
+  highPerformance, // 60 FPS: AC Power / Active
+  batteryBalanced,  // 30 FPS: On Battery (> 20%)
+  lowPower,         // 20 FPS: Low Battery (<= 20%) or Low Power Mode
+  backgroundEco,    // 10 FPS: App Inactive / Minimized
+}
+
 class CompanionGame extends FlameGame {
   CompanionGame({
     required PetTheme initialTheme,
@@ -357,6 +364,17 @@ class CompanionGame extends FlameGame {
       _updateQuietModeBit(0x04, event.isLowPower);
       updateEnergyStatus(isLowPowerMode: event.isLowPower);
       return;
+    } else if (event is BatteryStateChangedEvent) {
+      updateEnergyStatus(
+        isOnBattery: event.isOnBattery,
+        batteryLevel: event.batteryLevel,
+        isLowPowerMode: event.isLowPowerMode,
+      );
+      _updateQuietModeBit(
+        0x04,
+        event.isLowPowerMode || (event.isOnBattery && event.batteryLevel <= 0.20),
+      );
+      return;
     } else if (event is IdleDetectedEvent) {
       _petService.syncContextFlags(isIdle: event.isIdle);
       petEvent = event.isIdle
@@ -526,9 +544,12 @@ class CompanionGame extends FlameGame {
   void _onQuietModeDeactivated() {}
 
   void _spawnParticle(ParticleSystemComponent? component) {
-    if (component != null) {
-      add(component);
+    if (component == null) return;
+    if (currentPowerTier == CompanionPowerTier.lowPower ||
+        currentPowerTier == CompanionPowerTier.backgroundEco) {
+      return;
     }
+    add(component);
   }
 
   void _spawnBounceParticle() {
@@ -973,17 +994,49 @@ class CompanionGame extends FlameGame {
   bool _isOnBattery = false;
   bool _isAppActive = true;
   bool _isLowPowerMode = false;
+  double _batteryLevel = 1.0;
+  bool batteryThrottlingEnabled = true;
 
-  bool get isThrottled => _isOnBattery || !_isAppActive || _isLowPowerMode;
+  CompanionPowerTier get currentPowerTier {
+    if (!_isAppActive) return CompanionPowerTier.backgroundEco;
+    if (_isLowPowerMode || (_isOnBattery && _batteryLevel <= 0.20)) {
+      return CompanionPowerTier.lowPower;
+    }
+    if (_isOnBattery) return CompanionPowerTier.batteryBalanced;
+    return CompanionPowerTier.highPerformance;
+  }
+
+  double get targetFps {
+    if (!batteryThrottlingEnabled) return 60.0;
+    switch (currentPowerTier) {
+      case CompanionPowerTier.highPerformance:
+        return 60.0;
+      case CompanionPowerTier.batteryBalanced:
+        return 30.0;
+      case CompanionPowerTier.lowPower:
+        return 20.0;
+      case CompanionPowerTier.backgroundEco:
+        return 10.0;
+    }
+  }
+
+  double get minFrameDelta => 1.0 / targetFps;
+
+  bool get isThrottled => currentPowerTier != CompanionPowerTier.highPerformance;
 
   void updateEnergyStatus({
     bool? isOnBattery,
     bool? isAppActive,
     bool? isLowPowerMode,
+    double? batteryLevel,
+    bool? batteryThrottlingEnabled,
   }) {
     _isOnBattery = isOnBattery ?? _isOnBattery;
     _isAppActive = isAppActive ?? _isAppActive;
     _isLowPowerMode = isLowPowerMode ?? _isLowPowerMode;
+    _batteryLevel = batteryLevel ?? _batteryLevel;
+    this.batteryThrottlingEnabled =
+        batteryThrottlingEnabled ?? this.batteryThrottlingEnabled;
   }
 
   double _tickAccumulator = 0.0;
@@ -992,48 +1045,43 @@ class CompanionGame extends FlameGame {
 
   @override
   void update(double dt) {
-    if (isThrottled) {
+    if (dt <= 0) {
+      super.update(0.0);
+      return;
+    }
+
+    if (batteryThrottlingEnabled && targetFps < 60) {
       _timeSinceLastFrame += dt;
-      const throttledFrameTime = 1.0 / 15.0;
-      if (_timeSinceLastFrame < throttledFrameTime) {
+      if (_timeSinceLastFrame < minFrameDelta) {
         return;
       }
-
-      if (!_subsystemTickRunning) {
-        _subsystemTickRunning = true;
-        _runSubsystemTick(
-          _timeSinceLastFrame,
-        ).whenComplete(() => _subsystemTickRunning = false);
-      }
-      super.update(_timeSinceLastFrame);
-
-      _tickAccumulator += _timeSinceLastFrame;
-      if (_tickAccumulator >= 1.0) {
-        _petService.handleEvent(PetEvent.tick);
-        _tickAccumulator = 0.0;
-      }
-
-      _petService.update(_timeSinceLastFrame);
-
+      final effectiveDelta = _timeSinceLastFrame;
       _timeSinceLastFrame = 0.0;
+      _stepSubsystemsAndPet(effectiveDelta);
+      super.update(effectiveDelta);
     } else {
-      if (!_subsystemTickRunning) {
-        _subsystemTickRunning = true;
-        _runSubsystemTick(dt).whenComplete(() => _subsystemTickRunning = false);
-      }
+      _stepSubsystemsAndPet(dt);
       super.update(dt);
-
-      _tickAccumulator += dt;
-      if (_tickAccumulator >= 1.0) {
-        _petService.handleEvent(PetEvent.tick);
-        _tickAccumulator = 0.0;
-      }
-
-      _petService.update(dt);
     }
   }
 
+  void _stepSubsystemsAndPet(double dt) {
+    if (!_subsystemTickRunning) {
+      _subsystemTickRunning = true;
+      _runSubsystemTick(dt).whenComplete(() => _subsystemTickRunning = false);
+    }
+
+    _tickAccumulator += dt;
+    if (_tickAccumulator >= 1.0) {
+      _petService.handleEvent(PetEvent.tick);
+      _tickAccumulator = 0.0;
+    }
+
+    _petService.update(dt);
+  }
+
   Future<void> _runSubsystemTick(double dt) async {
+    if (!isLoaded) return;
     unawaited(_settingsPersistence.flushPendingWrite());
 
     _displayManager.poll();

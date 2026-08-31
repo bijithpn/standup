@@ -24,6 +24,7 @@ import 'package:breakmate/features/settings/widgets/privacy_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/analytics_settings_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/companion_settings_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/data_management_section.dart';
+import 'package:breakmate/features/themes/presentation/theme_settings_section.dart';
 
 class SettingsPage extends StatefulWidget {
   final String section;
@@ -180,6 +181,9 @@ class _SettingsPageState extends State<SettingsPage> {
         return const GoalsSection();
       case 'Privacy':
         return const PrivacySection();
+      case 'Themes':
+      case 'Themes & Styling':
+        return const ThemeSettingsSection();
       case 'Data & Backup':
         return const DataManagementSection();
       default:

@@ -100,6 +100,11 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Wellness Library',
     ),
     _NavItem(
+      label: 'Themes & Styling',
+      icon: CupertinoIcons.paintbrush,
+      section: 'Themes',
+    ),
+    _NavItem(
       label: AppStrings.navGeneralSettings,
       icon: CupertinoIcons.settings,
       section: 'General',
@@ -399,6 +404,9 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Goals');
       case 'Wellness Library':
         return const WellnessLibraryPage();
+      case 'Themes':
+      case 'Themes & Styling':
+        return const SettingsPage(section: 'Themes');
       case 'General':
         return const SettingsPage(section: 'General');
       case 'Data & Backup':

@@ -17,6 +17,7 @@ import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
 import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
+import 'package:breakmate/features/themes/application/theme_controller.dart';
 
 class BreakMateApp extends StatefulWidget {
   const BreakMateApp({super.key});
@@ -69,37 +70,42 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider.value(value: sl<ThemeController>()),
         ChangeNotifierProvider.value(value: sl<BreakController>()),
         ChangeNotifierProvider.value(value: sl<SettingsRepository>()),
         ChangeNotifierProvider.value(value: sl<StatsService>()),
         ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
-      child: ScaffoldMessenger(
-        child: MacosApp(
-          navigatorKey: ErrorToastService.navigatorKey,
-          title: 'BreakMate',
-          debugShowCheckedModeBanner: false,
-          theme: AppTheme.macosTheme,
-          routes: {'/main': (context) => const MainLayout()},
-          home: Builder(
-            builder: (context) {
-              return Consumer<SettingsRepository>(
-                builder: (context, settingsRepo, _) {
-                  final settings = settingsRepo.currentSettings;
+      child: Consumer<ThemeController>(
+        builder: (context, themeController, _) {
+          return ScaffoldMessenger(
+            child: MacosApp(
+              navigatorKey: ErrorToastService.navigatorKey,
+              title: 'BreakMate',
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.macosTheme,
+              routes: {'/main': (context) => const MainLayout()},
+              home: Builder(
+                builder: (context) {
+                  return Consumer<SettingsRepository>(
+                    builder: (context, settingsRepo, _) {
+                      final settings = settingsRepo.currentSettings;
 
-                  if (!settings.hasCompletedOnboarding) {
-                    return const OnboardingPage();
-                  }
+                      if (!settings.hasCompletedOnboarding) {
+                        return const OnboardingPage();
+                      }
 
-                  return const Material(
-                    type: MaterialType.transparency,
-                    child: MainLayout(),
+                      return const Material(
+                        type: MaterialType.transparency,
+                        child: MainLayout(),
+                      );
+                    },
                   );
                 },
-              );
-            },
-          ),
-        ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

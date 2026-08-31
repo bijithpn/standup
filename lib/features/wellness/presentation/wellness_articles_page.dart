@@ -25,7 +25,7 @@ class WellnessArticlesPage extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Wellness Articles',
                       style: TextStyle(
                         fontSize: 28,
@@ -35,7 +35,7 @@ class WellnessArticlesPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Tips and guides for healthy work habits',
                       style: TextStyle(
                         fontSize: 14,

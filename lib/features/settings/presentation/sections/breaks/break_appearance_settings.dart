@@ -39,7 +39,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     'All',
     'Interactive',
     'Minimal & Zen',
-    'Classic & Focus'
+    'Classic & Focus',
+    'Art & Nature',
   ];
 
   static const _templates = [
@@ -63,20 +64,32 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     ),
     (
       id: 'zen',
-      name: 'Breath Lines',
+      name: 'Zen Mode',
       desc: 'Minimal breathing guide on a quiet lined surface.',
       category: 'Minimal & Zen',
     ),
     (
+      id: 'breathe_line',
+      name: 'Breathe Line',
+      desc: 'Animated expanding horizontal breath rhythm guidance.',
+      category: 'Minimal & Zen',
+    ),
+    (
       id: 'hud',
-      name: 'Focus Card',
-      desc: 'Spacious timer with a single progress bar.',
+      name: 'Productivity HUD',
+      desc: 'Spacious telemetry timer with a single progress bar.',
       category: 'Classic & Focus',
     ),
     (
       id: 'activities',
       name: 'Activity Studio',
       desc: 'Guided breathing & eye sync exercises.',
+      category: 'Interactive',
+    ),
+    (
+      id: 'floating',
+      name: 'Soft Floating',
+      desc: 'Glassmorphic floating timer card with dynamic spring physics.',
       category: 'Interactive',
     ),
     (
@@ -88,7 +101,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     (
       id: 'one_word',
       name: 'One Word',
-      desc: '"Rest" or "Pause" — giant, quiet, minimal.',
+      desc: '"Rest" or "Pause" — giant, quiet, minimal typography.',
       category: 'Minimal & Zen',
     ),
     (
@@ -98,10 +111,100 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       category: 'Minimal & Zen',
     ),
     (
+      id: 'focus_orb',
+      name: 'Focus Orb',
+      desc: 'Concentric radial orb glow with rhythmic focus pacing.',
+      category: 'Minimal & Zen',
+    ),
+    (
       id: 'wave_calm',
       name: 'Wave Calm',
       desc: 'Animated sine waves behind a centered timer.',
       category: 'Minimal & Zen',
+    ),
+    (
+      id: 'ring_only',
+      name: 'Ring Only',
+      desc: 'Ultra-minimalist circular stroke countdown.',
+      category: 'Minimal & Zen',
+    ),
+    (
+      id: 'soft_arc',
+      name: 'Soft Arc',
+      desc: 'Sweeping radial velocity arc with micro-progress ticks.',
+      category: 'Minimal & Zen',
+    ),
+    (
+      id: 'iris_rest',
+      name: 'Iris Rest',
+      desc: 'Dynamic geometric aperture rest guide for eye relaxation.',
+      category: 'Minimal & Zen',
+    ),
+    (
+      id: 'quiet_pill',
+      name: 'Quiet Pill',
+      desc: 'Compact floating capsule progress indicator.',
+      category: 'Minimal & Zen',
+    ),
+    (
+      id: 'mono_time',
+      name: 'Mono Time',
+      desc: 'Monospaced high-contrast retro terminal timer.',
+      category: 'Classic & Focus',
+    ),
+    (
+      id: 'time_slice',
+      name: 'Time Slice',
+      desc: 'Segmented circular arc interval timer.',
+      category: 'Classic & Focus',
+    ),
+    (
+      id: 'day_stack',
+      name: 'Day Stack',
+      desc: 'Timeline stack reflecting daily completed focus sessions.',
+      category: 'Classic & Focus',
+    ),
+    (
+      id: 'split_view',
+      name: 'Split View',
+      desc: 'Dual-pane layout with timer and ergonomic posture tips.',
+      category: 'Classic & Focus',
+    ),
+    (
+      id: 'step_guide',
+      name: 'Step Guide',
+      desc: 'Staged sequential stretching and physical wellness steps.',
+      category: 'Classic & Focus',
+    ),
+    (
+      id: 'haiku_card',
+      name: 'Haiku Card',
+      desc: 'Rotating mindfulness poetry cards with serene typography.',
+      category: 'Art & Nature',
+    ),
+    (
+      id: 'warm_amber',
+      name: 'Warm Amber',
+      desc: 'Warm circadian amber gradient reducing blue-light exposure.',
+      category: 'Art & Nature',
+    ),
+    (
+      id: 'open_field',
+      name: 'Open Field',
+      desc: 'Expansive outdoor horizon landscape calm.',
+      category: 'Art & Nature',
+    ),
+    (
+      id: 'dusk_glow',
+      name: 'Dusk Glow',
+      desc: 'Atmospheric evening twilight gradient transition.',
+      category: 'Art & Nature',
+    ),
+    (
+      id: 'paper_light',
+      name: 'Paper Light',
+      desc: 'Clean editorial warm cream and charcoal aesthetics.',
+      category: 'Art & Nature',
     ),
   ];
 

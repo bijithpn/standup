@@ -252,3 +252,16 @@ class LowPowerModeChangedEvent extends AppEvent {
   final bool isLowPower;
   LowPowerModeChangedEvent({required this.isLowPower, super.timestamp});
 }
+
+class BatteryStateChangedEvent extends AppEvent {
+  final bool isOnBattery;
+  final double batteryLevel;
+  final bool isLowPowerMode;
+  BatteryStateChangedEvent({
+    required this.isOnBattery,
+    this.batteryLevel = 1.0,
+    this.isLowPowerMode = false,
+    super.timestamp,
+  });
+}
+
