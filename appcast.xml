@@ -4,7 +4,40 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                <item>
+                        <item>
+            <title>Version 1.5.0</title>
+            <pubDate>Mon, 31 Aug 2026 08:54:55 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.5.0</h3>
+                <p># BreakMate 1.5.0
+
+**New:**
+
+- **Global Hotkey** — press ⌘⌥B (Ctrl+Alt+B on Windows) anywhere to start a break instantly, or skip the one you're in. Toggle it in Settings → General.
+- **Presentation Pause** — BreakMate now notices when you're in a fullscreen presentation or video call and holds off on breaks until you're done. Toggle it in Settings → Smart Detection. (macOS only for now — Windows support is on the way.)
+- **Companion Streaks** — your desktop companion now celebrates real milestones (3, 7, 14, 30, 60, 100 days) as you build a consistent break habit. Check your progress in Settings → Companion.
+- **Smarter Meeting-Aware Scheduling** — when a break would land during a meeting, BreakMate now looks ahead across your calendar to find the next real gap, instead of just waiting 5 minutes and trying again.
+
+**Improved:**
+
+- Smaller install size — break-screen slideshow images were re-optimized (~13 MB → ~2.3 MB) with no visible quality loss.
+
+**Under the hood:**
+
+- Internal settings-code cleanup and documentation fixes — no visible changes, just a healthier codebase going forward.</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.5.0/BreakMate-Installer.dmg"
+                       sparkle:version="34"
+                       sparkle:shortVersionString="1.5.0"
+                       sparkle:edSignature="einGGZqstgvsDhPPpt/H40gVf9ZMpeyf5FKthXJKLd56iNJwtAGcsRJThFMjkrh7vE3oyDeR8DmTyvfuXIYdAg=="
+                       length="43307458"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.4.0</title>
             <pubDate>Tue, 16 Jun 2026 10:45:38 +0000</pubDate>
             <description><![CDATA[
