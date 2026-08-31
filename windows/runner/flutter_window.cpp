@@ -16,6 +16,7 @@
 #include "ipc_bridge_manager.h"
 #include "overlay_window_plugin.h"
 #include "display_bridge.h"
+#include "app_tracking_bridge.h"
 
 // ... rest of stream handlers ...
 
@@ -289,6 +290,7 @@ bool FlutterWindow::OnCreate() {
     SetupWindowBridge();
     SetupOverlayBridge();
     RegisterDisplayBridge(flutter_controller_->engine(), &g_display_stream_handler);
+    RegisterAppTrackingBridge(flutter_controller_->engine());
     // Set up a timer to poll for focus/meeting updates (every 2 seconds)
     SetTimer(GetHandle(), 1, 2000, NULL);
   }

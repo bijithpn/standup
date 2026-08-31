@@ -3,9 +3,14 @@
 #include <windows.h>
 #include <psapi.h>
 #include <uiautomation.h>
+#include <gdiplus.h>
+#include <objbase.h>
 #include <string>
+#include <vector>
 #include <iostream>
 #include <algorithm>
+
+#pragma comment(lib, "gdiplus.lib")
 
 namespace {
 
@@ -76,6 +81,79 @@ std::string GetBrowserUrl(HWND hwnd, const std::string& exe_name) {
   pAutomation->Release();
   if (co_initialized && hr != RPC_E_CHANGED_MODE) CoUninitialize();
   return url;
+}
+
+ULONG_PTR g_gdiplus_token = 0;
+bool g_gdiplus_started = false;
+
+void EnsureGdiplusStarted() {
+  if (g_gdiplus_started) return;
+  Gdiplus::GdiplusStartupInput input;
+  Gdiplus::GdiplusStartup(&g_gdiplus_token, &input, NULL);
+  g_gdiplus_started = true;
+}
+
+int GetPngEncoderClsid(CLSID* clsid) {
+  UINT num = 0;
+  UINT size = 0;
+  Gdiplus::GetImageEncodersSize(&num, &size);
+  if (size == 0) return -1;
+
+  std::vector<BYTE> buffer(size);
+  auto* codec_info = reinterpret_cast<Gdiplus::ImageCodecInfo*>(buffer.data());
+  Gdiplus::GetImageEncoders(num, size, codec_info);
+
+  for (UINT i = 0; i < num; i++) {
+    if (wcscmp(codec_info[i].MimeType, L"image/png") == 0) {
+      *clsid = codec_info[i].Clsid;
+      return 0;
+    }
+  }
+  return -1;
+}
+
+// Extracts the icon embedded in an executable and encodes it as PNG bytes.
+// Returns an empty vector on any failure (missing file, no icon, encode error).
+std::vector<uint8_t> ExtractIconAsPng(const std::wstring& exe_path) {
+  std::vector<uint8_t> png_bytes;
+  if (exe_path.empty()) return png_bytes;
+
+  EnsureGdiplusStarted();
+
+  HICON hicon = nullptr;
+  UINT extracted = ExtractIconExW(exe_path.c_str(), 0, nullptr, &hicon, 1);
+  if (extracted == 0 || hicon == nullptr) return png_bytes;
+
+  Gdiplus::Bitmap bitmap(hicon);
+  CLSID png_clsid;
+  if (GetPngEncoderClsid(&png_clsid) != 0) {
+    DestroyIcon(hicon);
+    return png_bytes;
+  }
+
+  IStream* stream = nullptr;
+  if (FAILED(CreateStreamOnHGlobal(NULL, TRUE, &stream)) || stream == nullptr) {
+    DestroyIcon(hicon);
+    return png_bytes;
+  }
+
+  if (bitmap.Save(stream, &png_clsid, nullptr) == Gdiplus::Ok) {
+    STATSTG stat;
+    stream->Stat(&stat, STATFLAG_NONAME);
+    ULONG size = static_cast<ULONG>(stat.cbSize.QuadPart);
+
+    LARGE_INTEGER zero = {};
+    stream->Seek(zero, STREAM_SEEK_SET, nullptr);
+
+    png_bytes.resize(size);
+    ULONG read = 0;
+    stream->Read(png_bytes.data(), size, &read);
+    png_bytes.resize(read);
+  }
+
+  stream->Release();
+  DestroyIcon(hicon);
+  return png_bytes;
 }
 
 } // namespace
@@ -149,6 +227,28 @@ void RegisterAppTrackingBridge(flutter::FlutterEngine* engine) {
           }
 
           result->Success(flutter::EncodableValue(map));
+        } else if (call.method_name() == "getAppIcon") {
+          std::wstring exe_path;
+          const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+          if (args) {
+            auto it = args->find(flutter::EncodableValue("bundleId"));
+            if (it != args->end()) {
+              const auto* path_utf8 = std::get_if<std::string>(&it->second);
+              if (path_utf8 && !path_utf8->empty()) {
+                int wlen = MultiByteToWideChar(CP_UTF8, 0, path_utf8->c_str(), -1, NULL, 0);
+                std::vector<wchar_t> wbuf(wlen);
+                MultiByteToWideChar(CP_UTF8, 0, path_utf8->c_str(), -1, wbuf.data(), wlen);
+                exe_path = wbuf.data();
+              }
+            }
+          }
+
+          std::vector<uint8_t> png = ExtractIconAsPng(exe_path);
+          if (png.empty()) {
+            result->Success();
+          } else {
+            result->Success(flutter::EncodableValue(png));
+          }
         } else {
           result->NotImplemented();
         }
