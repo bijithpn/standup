@@ -184,6 +184,13 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
             _settings.respectFocusMode,
             (v) => _save(_settings.copyWith(respectFocusMode: v)),
           ),
+          divider(),
+          toggleRow(
+            'Presentation Pause',
+            'Pause breaks while a fullscreen slideshow or presentation is showing',
+            _settings.presentationPauseEnabled,
+            (v) => _save(_settings.copyWith(presentationPauseEnabled: v)),
+          ),
         ]),
       ],
     );

@@ -49,6 +49,8 @@ class SettingsModel {
   final bool detectVideoCalls;
   final bool detectMeetings;
   final bool respectFocusMode;
+  final bool globalHotkeyEnabled;
+  final bool presentationPauseEnabled;
 
   final bool enableClockOut;
   final String clockOutTime; // "HH:mm"
@@ -139,6 +141,8 @@ class SettingsModel {
     this.detectVideoCalls = true,
     this.detectMeetings = true,
     this.respectFocusMode = true,
+    this.globalHotkeyEnabled = true,
+    this.presentationPauseEnabled = true,
     this.enableClockOut = false,
     this.clockOutTime = '17:00',
     this.showExercisesInBreak = true,
@@ -230,6 +234,8 @@ class SettingsModel {
     bool? detectVideoCalls,
     bool? detectMeetings,
     bool? respectFocusMode,
+    bool? globalHotkeyEnabled,
+    bool? presentationPauseEnabled,
     bool? enableClockOut,
     String? clockOutTime,
     List<ExerciseModel>? exercises,
@@ -330,6 +336,9 @@ class SettingsModel {
       detectVideoCalls: detectVideoCalls ?? this.detectVideoCalls,
       detectMeetings: detectMeetings ?? this.detectMeetings,
       respectFocusMode: respectFocusMode ?? this.respectFocusMode,
+      globalHotkeyEnabled: globalHotkeyEnabled ?? this.globalHotkeyEnabled,
+      presentationPauseEnabled:
+          presentationPauseEnabled ?? this.presentationPauseEnabled,
       enableClockOut: enableClockOut ?? this.enableClockOut,
       clockOutTime: clockOutTime ?? this.clockOutTime,
       exercises: exercises ?? this.exercises,
@@ -425,6 +434,8 @@ class SettingsModel {
     'detectVideoCalls': detectVideoCalls,
     'detectMeetings': detectMeetings,
     'respectFocusMode': respectFocusMode,
+    'globalHotkeyEnabled': globalHotkeyEnabled,
+    'presentationPauseEnabled': presentationPauseEnabled,
     'enableClockOut': enableClockOut,
     'clockOutTime': clockOutTime,
     'exercises': exercises.map((e) => e.toMap()).toList(),
@@ -526,6 +537,9 @@ class SettingsModel {
       detectVideoCalls: map['detectVideoCalls'] as bool? ?? true,
       detectMeetings: map['detectMeetings'] as bool? ?? true,
       respectFocusMode: map['respectFocusMode'] as bool? ?? true,
+      globalHotkeyEnabled: map['globalHotkeyEnabled'] as bool? ?? true,
+      presentationPauseEnabled:
+          map['presentationPauseEnabled'] as bool? ?? true,
       enableClockOut: map['enableClockOut'] as bool? ?? false,
       clockOutTime: map['clockOutTime'] as String? ?? '17:00',
       exercises: exercises,

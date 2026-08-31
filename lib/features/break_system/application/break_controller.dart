@@ -18,6 +18,8 @@ import 'package:breakmate/features/break_system/application/strict_mode_controll
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/global_hotkey_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
@@ -232,6 +234,28 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       meetingDetection.start();
     } else {
       meetingDetection.stop();
+    }
+
+    final presentationDetection = sl<PresentationDetectionService>();
+    if (settings.presentationPauseEnabled) {
+      presentationDetection.start();
+    } else {
+      presentationDetection.stop();
+    }
+
+    final hotkeyService = sl<GlobalHotkeyService>();
+    if (settings.globalHotkeyEnabled) {
+      hotkeyService.start(
+        onPressed: () {
+          if (isBreakActive) {
+            skipCurrentBreak();
+          } else {
+            takeBreakNow();
+          }
+        },
+      );
+    } else {
+      hotkeyService.stop();
     }
   }
 

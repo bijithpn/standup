@@ -5,6 +5,7 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   flutter_acrylic
+  hotkey_manager_windows
   objectbox_flutter_libs
   screen_retriever_windows
   sentry_flutter

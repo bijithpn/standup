@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -38,6 +39,8 @@ class GeneralSection extends StatelessWidget {
           _buildQuietModePresets(),
           divider(),
           _buildAutoPauseMedia(),
+          divider(),
+          _buildGlobalHotkey(),
         ]),
         const SizedBox(height: 48),
         sectionHeader('Idle & Inactivity'),
@@ -177,6 +180,17 @@ class GeneralSection extends StatelessWidget {
         onSave(settings.copyWith(autoPauseMedia: v));
         sl<TrayManagerService>().triggerActionAnimation();
       },
+    );
+  }
+
+  Widget _buildGlobalHotkey() {
+    final shortcutLabel = Platform.isMacOS ? '⌘⌥B' : 'Ctrl+Alt+B';
+    return buildListRow(
+      'Global Hotkey',
+      'Press $shortcutLabel anywhere to take a break, or skip one already running',
+      settings.globalHotkeyEnabled,
+      CupertinoIcons.keyboard,
+      (v) => onSave(settings.copyWith(globalHotkeyEnabled: v)),
     );
   }
 

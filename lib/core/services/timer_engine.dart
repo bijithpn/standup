@@ -9,6 +9,7 @@ import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -60,6 +61,7 @@ class TimerEngine extends ChangeNotifier {
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
     CalendarService? calendarService,
+    PresentationDetectionService? presentationDetectionService,
     EventBus? eventBus,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
@@ -68,6 +70,7 @@ class TimerEngine extends ChangeNotifier {
       settingsRepository: _settingsRepository,
       smartDetectionService: _smartDetectionService,
       calendarService: calendarService,
+      presentationDetectionService: presentationDetectionService,
     );
     _syncSettingsFromRepo();
 
@@ -380,9 +383,21 @@ class TimerEngine extends ChangeNotifier {
           return;
         }
         if (isMeeting) {
-          _logger.info('Delaying break due to imminent meeting');
-          _stateData.workElapsed = interval - const Duration(minutes: 5);
-          notifyListeners();
+          _contextManager.minutesUntilNextFreeGap().then((gapMinutes) {
+            if (state != TimerState.running) return;
+            final rawDelay = (gapMinutes != null && gapMinutes > 0)
+                ? Duration(minutes: gapMinutes)
+                : const Duration(minutes: 5);
+            // Cap the delay to one interval — if the calendar is packed
+            // further out than that, defer by a full cycle and re-check
+            // rather than pushing workElapsed deeply negative.
+            final delay = rawDelay > interval ? interval : rawDelay;
+            _logger.info(
+              'Delaying break by ${delay.inMinutes}min to land in the next calendar gap',
+            );
+            _stateData.workElapsed = interval - delay;
+            notifyListeners();
+          });
         } else {
           _triggerBreak();
         }

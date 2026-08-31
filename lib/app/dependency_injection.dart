@@ -31,10 +31,13 @@ import 'package:breakmate/core/display/services/overlay_fit_service.dart';
 import 'package:breakmate/core/display/controllers/display_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/global_hotkey_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/native/focus_mode_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
 import 'package:breakmate/features/companion/services/companion_state_manager.dart';
 import 'package:breakmate/features/companion/services/companion_window_controller.dart';
+import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
 
@@ -74,11 +77,18 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
+  sl.registerSingleton<CompanionStreakService>(
+    CompanionStreakService(statsService: sl(), storage: sl(), eventBus: sl()),
+  );
+  sl.registerSingleton<PresentationDetectionService>(
+    PresentationDetectionService(),
+  );
   sl.registerSingleton<TimerEngine>(
     TimerEngine(
       settingsRepository: sl(),
       smartDetectionService: sl(),
       calendarService: sl(),
+      presentationDetectionService: sl(),
       eventBus: sl(),
     ),
   );
@@ -110,6 +120,7 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<MeetingDetectionService>(MeetingDetectionService());
+  sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
 
   sl.registerLazySingleton<WellnessLibraryRepository>(
     () => WellnessLibraryRepository(settingsRepo: sl()),

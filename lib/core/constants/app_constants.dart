@@ -5,11 +5,11 @@ class AppConstants {
   static const String appVersion = '1.0.0';
 
   static const List<String> wellnessSlideshow = [
-    'assets/slideshow/slide_1.jpeg',
-    'assets/slideshow/slide_2.jpeg',
-    'assets/slideshow/slide_3.jpeg',
-    'assets/slideshow/slide_4.jpeg',
-    'assets/slideshow/slide_5.jpeg',
+    'assets/slideshow/slide_1.webp',
+    'assets/slideshow/slide_2.webp',
+    'assets/slideshow/slide_3.webp',
+    'assets/slideshow/slide_4.webp',
+    'assets/slideshow/slide_5.webp',
   ];
 
   static const int defaultShortBreakIntervalMinutes = 20;

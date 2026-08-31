@@ -2,20 +2,24 @@ import 'package:clock/clock.dart';
 
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 class TimerContextManager {
   final SettingsRepository _settingsRepository;
   final SmartDetectionService? _smartDetectionService;
   final CalendarService? _calendarService;
+  final PresentationDetectionService? _presentationDetectionService;
 
   TimerContextManager({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
     CalendarService? calendarService,
+    PresentationDetectionService? presentationDetectionService,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
-       _calendarService = calendarService;
+       _calendarService = calendarService,
+       _presentationDetectionService = presentationDetectionService;
 
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;
@@ -52,7 +56,10 @@ class TimerContextManager {
         settings.detectVideoCalls && smartDetection.isVideoCallActive;
     final pauseForFocus =
         settings.respectFocusMode && smartDetection.isFocusModeActive;
-    return pauseForVideoCall || pauseForFocus;
+    final pauseForPresentation =
+        settings.presentationPauseEnabled &&
+        (_presentationDetectionService?.isPresenting ?? false);
+    return pauseForVideoCall || pauseForFocus || pauseForPresentation;
   }
 
   bool shouldRunWorkTimer() {
@@ -83,5 +90,47 @@ class TimerContextManager {
       window: const Duration(minutes: 10),
     );
     return events.any((e) => !e.isAllDay);
+  }
+
+  /// Scans the calendar over [lookahead] and returns how many minutes from
+  /// now the next gap of at least the configured break duration begins, or
+  /// `null` if now is already clear (no calendar, or no imminent conflict).
+  ///
+  /// This lets a delayed break jump straight to an actual free slot between
+  /// back-to-back meetings, instead of retrying on a fixed timer.
+  Future<int?> minutesUntilNextFreeGap({
+    Duration lookahead = const Duration(hours: 2),
+  }) async {
+    final settings = _settingsRepository.currentSettings;
+    if (!settings.calendarEnabled || _calendarService == null) return null;
+
+    final requiredGapMinutes = (settings.shortBreakDurationSeconds / 60)
+        .ceil()
+        .clamp(1, 30);
+
+    final now = clock.now();
+    List<CalendarEvent> events;
+    try {
+      events = await _calendarService.getEvents(now, now.add(lookahead));
+    } catch (_) {
+      return null;
+    }
+
+    final busy =
+        events.where((e) => !e.isAllDay && e.end.isAfter(now)).toList()
+          ..sort((a, b) => a.start.compareTo(b.start));
+
+    var cursor = now;
+    for (final event in busy) {
+      if (event.start.isAfter(cursor)) {
+        final gapMinutes = event.start.difference(cursor).inMinutes;
+        if (gapMinutes >= requiredGapMinutes) {
+          return cursor == now ? null : cursor.difference(now).inMinutes;
+        }
+      }
+      if (event.end.isAfter(cursor)) cursor = event.end;
+    }
+
+    return cursor == now ? null : cursor.difference(now).inMinutes;
   }
 }

@@ -11,6 +11,7 @@ import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_page.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
+import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
 class CompanionSettingsSection extends StatefulWidget {
@@ -102,6 +103,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
                 if (widget.controller.companionEnabled) ...[
                   _buildPetGallery(),
+                  const SizedBox(height: 32),
+
+                  sectionHeader('Streak Recognition'),
+                  _buildStreakCard(),
                   const SizedBox(height: 32),
 
                   sectionHeader('Personalization'),
@@ -561,6 +566,64 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildStreakCard() {
+    return AnimatedBuilder(
+      animation: sl<CompanionStreakService>(),
+      builder: (context, _) {
+        final streakService = sl<CompanionStreakService>();
+        final current = streakService.currentStreakDays;
+        final highest = streakService.highestMilestone;
+        final next = streakService.nextMilestone;
+        final daysToNext = next != null ? next.days - current : null;
+
+        return buildCard([
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.flame_fill,
+                  size: 18,
+                  color: current > 0 ? AppTheme.accent : AppTheme.textMuted,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        current > 0
+                            ? '$current-day streak'
+                                '${highest != null ? ' · ${highest.label}' : ''}'
+                            : 'No active streak yet',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (next != null && daysToNext != null && daysToNext > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '$daysToNext day${daysToNext == 1 ? '' : 's'} to '
+                          '"${next.label}"',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]);
+      },
     );
   }
 

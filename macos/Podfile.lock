@@ -11,6 +11,10 @@ PODS:
   - flutter_local_notifications (0.0.1):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
+  - HotKey (0.2.1)
+  - hotkey_manager_macos (0.0.1):
+    - FlutterMacOS
+    - HotKey
   - just_audio (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -57,6 +61,7 @@ DEPENDENCIES:
   - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
+  - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/darwin`)
   - macos_ui (from `Flutter/ephemeral/.symlinks/plugins/macos_ui/macos`)
   - macos_window_utils (from `Flutter/ephemeral/.symlinks/plugins/macos_window_utils/macos`)
@@ -75,6 +80,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - HotKey
     - ObjectBox
     - Sentry
     - Sparkle
@@ -92,6 +98,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
+  hotkey_manager_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
   just_audio:
     :path: Flutter/ephemeral/.symlinks/plugins/just_audio/darwin
   macos_ui:
@@ -128,6 +136,8 @@ SPEC CHECKSUMS:
   file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
   flutter_local_notifications: 1fc7ffb10a83d6a2eeeeddb152d43f1944b0aad0
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
+  HotKey: 400beb7caa29054ea8d864c96f5ba7e5b4852277
+  hotkey_manager_macos: a4317849af96d2430fa89944d3c58977ca089fbe
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   macos_ui: ff29104a215c2e1b76f37aacdcbba648abb25faa
   macos_window_utils: 23f54331a0fd51eea9e0ed347253bf48fd379d1d

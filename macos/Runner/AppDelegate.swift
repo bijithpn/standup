@@ -30,6 +30,7 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 @main
 class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   var meetingBridge: MeetingDetectionBridge?
+  var presentationBridge: PresentationDetectionBridge?
   var focusBridge: FocusModeBridge?
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
@@ -118,6 +119,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     NSLog("Sparkle: Configured with Public Key: \(publicKey)")
 
     meetingBridge = MeetingDetectionBridge(registrar: registrar)
+    presentationBridge = PresentationDetectionBridge(registrar: registrar)
 
       focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)
