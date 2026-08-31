@@ -5,6 +5,7 @@
 #include <uiautomation.h>
 #include <gdiplus.h>
 #include <objbase.h>
+#include <shellapi.h>
 #include <string>
 #include <vector>
 #include <iostream>
