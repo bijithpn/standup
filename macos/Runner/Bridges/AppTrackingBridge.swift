@@ -15,6 +15,8 @@ class AppTrackingBridge: NSObject {
             switch call.method {
             case "getActiveApp":
                 self?.handleGetActiveApp(result: result)
+            case "getAppIcon":
+                self?.handleGetAppIcon(call: call, result: result)
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -49,7 +51,28 @@ class AppTrackingBridge: NSObject {
         
         result(appInfo)
     }
-    
+
+    private func handleGetAppIcon(call: FlutterMethodCall, result: FlutterResult) {
+        guard let args = call.arguments as? [String: Any],
+              let bundleId = args["bundleId"] as? String,
+              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
+            result(nil)
+            return
+        }
+
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon.size = NSSize(width: 64, height: 64)
+
+        guard let tiff = icon.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else {
+            result(nil)
+            return
+        }
+
+        result(FlutterStandardTypedData(bytes: png))
+    }
+
     private func getActiveWindowTitle(pid: pid_t) -> String? {
         guard AXIsProcessTrusted() else { return nil }
         
