@@ -54,16 +54,30 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        sectionHeader(
+          'Overview',
+          subtitle: 'Your productivity and wellness balance for $_periodLabel.',
+        ),
+        const SizedBox(height: 12),
         WellnessScoreCard(
           productivityScore: viewMetrics.productivityScore,
           wellnessScore: viewMetrics.wellnessScore,
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        sectionHeader('Activity Trend'),
+        const SizedBox(height: 12),
         _buildTrendSection(),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        sectionHeader('At a Glance'),
+        const SizedBox(height: 12),
         _buildDetailGrid(viewMetrics),
-        const SizedBox(height: 24),
+        const SizedBox(height: 28),
+        sectionHeader(
+          'App Usage',
+          subtitle: 'Where your screen time is going, like Digital Wellbeing.',
+        ),
+        const SizedBox(height: 12),
         Consumer<AppUsageService>(
           builder: (context, usageService, _) {
             final period = _usagePeriod;
@@ -83,36 +97,85 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
+  String get _periodLabel {
+    switch (_selectedFilter) {
+      case 1:
+        return 'this week';
+      case 2:
+        return 'this month';
+      default:
+        return 'today';
+    }
+  }
+
   Widget _buildHeader() {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                AppStrings.analytics,
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.5,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 560;
+        final title = Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppTheme.accentColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
               ),
-              const SizedBox(height: 4),
-              Text(
-                AppStrings.analyticsSubtitle,
-                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              child: Icon(
+                CupertinoIcons.chart_bar_alt_fill,
+                size: 18,
+                color: AppTheme.accentColor,
               ),
-            ],
-          ),
-        ),
-        segmentedControl(
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    AppStrings.analytics,
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppStrings.analyticsSubtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        );
+
+        final filter = segmentedControl(
           ['Today', 'This Week', 'Month'],
           _selectedFilter,
           (i) => setState(() => _selectedFilter = i),
-        ),
-      ],
+        );
+
+        if (isNarrow) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [title, const SizedBox(height: 16), filter],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: title),
+            const SizedBox(width: 16),
+            filter,
+          ],
+        );
+      },
     );
   }
 

@@ -64,7 +64,15 @@ class AppUsageService extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<AppUsageEntry> topApps(UsagePeriod period, {int limit = 8, DateTime? now}) {
+  /// Returns usage entries for [period], sorted by time spent descending.
+  /// Pass `limit: null` to return every tracked app instead of a cut-off
+  /// top N — used by the Privacy dashboard, which promises to show
+  /// everything that's been recorded, not just the highlights.
+  List<AppUsageEntry> topApps(
+    UsagePeriod period, {
+    int? limit = 8,
+    DateTime? now,
+  }) {
     final today = now ?? DateTime.now();
     final totals = <String, int>{};
     final names = <String, String>{};
@@ -92,7 +100,7 @@ class AppUsageService extends ChangeNotifier {
         .toList()
       ..sort((a, b) => b.seconds.compareTo(a.seconds));
 
-    return entries.take(limit).toList();
+    return limit == null ? entries : entries.take(limit).toList();
   }
 
   Map<AppCategory, int> categoryTotals(UsagePeriod period, {DateTime? now}) {

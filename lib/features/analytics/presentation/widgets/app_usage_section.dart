@@ -6,6 +6,7 @@ import 'package:breakmate/features/analytics/app_usage_insights.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 
 class AppUsageSection extends StatelessWidget {
   final bool enabled;
@@ -14,6 +15,11 @@ class AppUsageSection extends StatelessWidget {
   final AppIconCache iconCache;
   final VoidCallback onEnable;
 
+  /// Heading for the app list. Defaults to 'Top Apps' (a highlights view);
+  /// pass e.g. 'All Tracked Apps' when [topApps] holds the complete,
+  /// unfiltered list rather than a cut-off top N.
+  final String listTitle;
+
   const AppUsageSection({
     super.key,
     required this.enabled,
@@ -21,6 +27,7 @@ class AppUsageSection extends StatelessWidget {
     required this.categoryTotals,
     required this.iconCache,
     required this.onEnable,
+    this.listTitle = 'Top Apps',
   });
 
   @override
@@ -59,12 +66,20 @@ class AppUsageSection extends StatelessWidget {
             style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
           ),
           const SizedBox(height: 12),
-          CupertinoButton(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: AppTheme.accentColor,
+          MinimalButton(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+            backgroundColor: AppTheme.accentColor,
             borderRadius: BorderRadius.circular(8),
             onPressed: onEnable,
-            child: const Text('Enable', style: TextStyle(fontSize: 13)),
+            child: const Text(
+              'Enable',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+                fontFamily: 'Inter',
+              ),
+            ),
           ),
         ],
       ),
@@ -96,13 +111,22 @@ class AppUsageSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Top Apps',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                listTitle,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              Text(
+                '${topApps.length} app${topApps.length == 1 ? '' : 's'}',
+                style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           ...topApps.map((entry) => _buildAppRow(entry, maxSeconds)),

@@ -127,7 +127,10 @@ class SettingsRepository extends ChangeNotifier {
         try {
           final decoded = jsonDecode(snapshot.exercisesJson);
           if (decoded is List) {
-            return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
+            final saved = decoded
+                .map((e) => ExerciseModel.fromMap(e))
+                .toList();
+            return _withNewDefaults(saved);
           }
         } catch (e, st) {
           ErrorHandler().handleError(e, st);
@@ -135,6 +138,17 @@ class SettingsRepository extends ChangeNotifier {
       }
     }
     return _loadExercises();
+  }
+
+  /// Appends any built-in exercise that isn't already in [saved] by id, so
+  /// new default activities show up for existing users too, not just fresh
+  /// installs. Existing entries (and any favorite/hidden state) are untouched.
+  List<ExerciseModel> _withNewDefaults(List<ExerciseModel> saved) {
+    final savedIds = saved.map((e) => e.id).toSet();
+    final missing = ExerciseModel.defaults.where(
+      (e) => !savedIds.contains(e.id),
+    );
+    return [...saved, ...missing];
   }
 
   SettingsModel _fromSnapshot(SettingsSnapshot s, CompanionPreferences? cp) {
@@ -719,7 +733,9 @@ class SettingsRepository extends ChangeNotifier {
           .whereType<Map<String, dynamic>>()
           .map(ExerciseModel.fromMap)
           .toList();
-      return exercises.isEmpty ? ExerciseModel.defaults : exercises;
+      return exercises.isEmpty
+          ? ExerciseModel.defaults
+          : _withNewDefaults(exercises);
     } catch (_) {
       return ExerciseModel.defaults;
     }

@@ -107,6 +107,11 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Themes',
     ),
     _NavItem(
+      label: 'Privacy',
+      icon: CupertinoIcons.lock_shield,
+      section: 'Privacy',
+    ),
+    _NavItem(
       label: AppStrings.navGeneralSettings,
       icon: CupertinoIcons.settings,
       section: 'General',
@@ -415,6 +420,8 @@ class _MainLayoutState extends State<MainLayout> {
       case 'Themes':
       case 'Themes & Styling':
         return const SettingsPage(section: 'Themes');
+      case 'Privacy':
+        return const SettingsPage(section: 'Privacy');
       case 'General':
         return const SettingsPage(section: 'General');
       case 'Data & Backup':
