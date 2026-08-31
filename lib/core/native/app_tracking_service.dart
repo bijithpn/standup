@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
@@ -41,5 +42,17 @@ class AppTrackingService {
       _logger.error('Failed to get active app: ${e.message}');
     }
     return null;
+  }
+
+  Future<Uint8List?> getAppIcon({String? bundleId, String? executableName}) async {
+    try {
+      return await _channel.invokeMethod<Uint8List>('getAppIcon', {
+        'bundleId': bundleId,
+        'executableName': executableName,
+      });
+    } on PlatformException catch (e) {
+      _logger.error('Failed to get app icon: ${e.message}');
+      return null;
+    }
   }
 }
