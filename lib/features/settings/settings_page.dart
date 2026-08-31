@@ -170,7 +170,11 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Statistics':
         return Consumer<StatsService>(
           builder: (context, statsService, _) {
-            return AnalyticsSettingsSection(stats: statsService.load());
+            return AnalyticsSettingsSection(
+              stats: statsService.load(),
+              settings: _settings,
+              onSave: _save,
+            );
           },
         );
       case 'Companion':

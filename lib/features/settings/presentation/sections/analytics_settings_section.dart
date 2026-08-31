@@ -6,11 +6,24 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/wellness_score_card.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/productivity_trend_chart.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
+import 'package:provider/provider.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
+import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
 
 class AnalyticsSettingsSection extends StatefulWidget {
   final StatsModel stats;
+  final SettingsModel settings;
+  final ValueChanged<SettingsModel> onSave;
 
-  const AnalyticsSettingsSection({super.key, required this.stats});
+  const AnalyticsSettingsSection({
+    super.key,
+    required this.stats,
+    required this.settings,
+    required this.onSave,
+  });
 
   @override
   State<AnalyticsSettingsSection> createState() =>
@@ -21,6 +34,17 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
 
   StatsModel get _stats => widget.stats;
+
+  UsagePeriod get _usagePeriod {
+    switch (_selectedFilter) {
+      case 1:
+        return UsagePeriod.week;
+      case 2:
+        return UsagePeriod.month;
+      default:
+        return UsagePeriod.today;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,6 +63,21 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         _buildTrendSection(),
         const SizedBox(height: 24),
         _buildDetailGrid(viewMetrics),
+        const SizedBox(height: 24),
+        Consumer<AppUsageService>(
+          builder: (context, usageService, _) {
+            final period = _usagePeriod;
+            return AppUsageSection(
+              enabled: widget.settings.appUsageTrackingEnabled,
+              topApps: usageService.topApps(period),
+              categoryTotals: usageService.categoryTotals(period),
+              iconCache: sl(),
+              onEnable: () => widget.onSave(
+                widget.settings.copyWith(appUsageTrackingEnabled: true),
+              ),
+            );
+          },
+        ),
         const SizedBox(height: 48),
       ],
     );
