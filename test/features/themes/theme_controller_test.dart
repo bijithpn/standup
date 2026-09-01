@@ -40,8 +40,8 @@ class FakeStorageService implements StorageService {
 
 void main() {
   group('AppThemePreset Tests', () {
-    test('contains all 12 curated presets', () {
-      expect(AppThemePreset.allPresets.length, equals(12));
+    test('contains all 15 curated presets', () {
+      expect(AppThemePreset.allPresets.length, equals(15));
       final ids = AppThemePreset.allPresets.map((p) => p.id).toSet();
       expect(
         ids,
@@ -58,6 +58,9 @@ void main() {
           'desert_dusk',
           'lavender_mist',
           'monokai_pro',
+          'soft_light',
+          'native_vibrancy',
+          'auto',
         ]),
       );
     });

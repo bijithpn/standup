@@ -7,6 +7,9 @@ class MeetingDetectionService {
   final _channel = const EventChannel('com.breakmate/meeting_detection');
   StreamSubscription? _subscription;
   bool _isRunning = false;
+  bool _isMeetingActive = false;
+
+  bool get isMeetingActive => _isMeetingActive;
 
   void start() {
     if (_isRunning) return;
@@ -25,6 +28,7 @@ class MeetingDetectionService {
         })
         .listen(
           (isActive) {
+            _isMeetingActive = isActive;
             IpcBridge.instance.notifyMeetingDetected(isActive);
           },
           onError: (error) {
@@ -40,6 +44,7 @@ class MeetingDetectionService {
     _isRunning = false;
     _subscription?.cancel();
     _subscription = null;
+    _isMeetingActive = false;
     debugPrint('MeetingDetectionService stopped');
   }
 

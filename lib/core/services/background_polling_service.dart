@@ -5,6 +5,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/meeting_url_matcher.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
@@ -29,7 +30,13 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
   final Map<int, Completer<dynamic>> pendingRequests = {};
 
   // Proxy platform requests to the main isolate and pair responses by id.
-  Future<dynamic> invokeMethodProxy(String method, [dynamic args]) {
+  // [channel] defaults to the desktop bridge; pass another registered
+  // channel name (e.g. 'com.breakmate/app_tracking') to reach it instead.
+  Future<dynamic> invokeMethodProxy(
+    String method, [
+    dynamic args,
+    String channel = 'com.breakmate.desktop/bridge',
+  ]) {
     final completer = Completer<dynamic>();
     final requestId = nextRequestId++;
     pendingRequests[requestId] = completer;
@@ -37,6 +44,7 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
     sendPort.send({
       'type': 'invokeMethod',
       'id': requestId,
+      'channel': channel,
       'method': method,
       'args': args,
     });
@@ -121,6 +129,27 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
         );
       }
 
+      // A browser open to a meeting URL (Google Meet, Zoom web client,
+      // Teams web, etc.) also counts, even if the browser itself isn't in
+      // the desktop-app list above. `getActiveApp` already resolves the
+      // active tab's address-bar URL on both platforms for the app-usage
+      // analytics feature — reused here rather than adding new native code.
+      if (!newVideoCallActive) {
+        try {
+          final activeApp =
+              (await invokeMethodProxy(
+                    'getActiveApp',
+                    null,
+                    'com.breakmate/app_tracking',
+                  ))
+                  as Map?;
+          final url = activeApp?['url'] as String?;
+          newVideoCallActive = MeetingUrlMatcher.isMeetingUrl(url);
+        } catch (_) {
+          // Best-effort — a browser tab call is a bonus signal, not required.
+        }
+      }
+
       // Check Focus Mode
       final bool? activeFocus =
           (await invokeMethodProxy('isFocusModeActive')) as bool?;
@@ -200,7 +229,9 @@ class BackgroundPollingService {
             final id = message['id'] as int;
             final method = message['method'] as String;
             final args = message['args'];
-            _handleInvokeMethodProxy(id, method, args);
+            final channel =
+                message['channel'] as String? ?? 'com.breakmate.desktop/bridge';
+            _handleInvokeMethodProxy(id, method, args, channel);
           }
         }
       });
@@ -210,10 +241,15 @@ class BackgroundPollingService {
     }
   }
 
-  void _handleInvokeMethodProxy(int id, String method, dynamic args) async {
+  void _handleInvokeMethodProxy(
+    int id,
+    String method,
+    dynamic args,
+    String channel,
+  ) async {
     // All native bridge calls stay on the main isolate; the worker receives
     // only serializable responses.
-    const bridgeChannel = MethodChannel('com.breakmate.desktop/bridge');
+    final bridgeChannel = MethodChannel(channel);
     try {
       final result = await bridgeChannel.invokeMethod(method, args);
       _sendPort?.send({

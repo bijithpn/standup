@@ -3,6 +3,7 @@ import 'package:clock/clock.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 class TimerContextManager {
@@ -10,16 +11,19 @@ class TimerContextManager {
   final SmartDetectionService? _smartDetectionService;
   final CalendarService? _calendarService;
   final PresentationDetectionService? _presentationDetectionService;
+  final MeetingDetectionService? _meetingDetectionService;
 
   TimerContextManager({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
     CalendarService? calendarService,
     PresentationDetectionService? presentationDetectionService,
+    MeetingDetectionService? meetingDetectionService,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
        _calendarService = calendarService,
-       _presentationDetectionService = presentationDetectionService;
+       _presentationDetectionService = presentationDetectionService,
+       _meetingDetectionService = meetingDetectionService;
 
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;
@@ -59,7 +63,13 @@ class TimerContextManager {
     final pauseForPresentation =
         settings.presentationPauseEnabled &&
         (_presentationDetectionService?.isPresenting ?? false);
-    return pauseForVideoCall || pauseForFocus || pauseForPresentation;
+    final pauseForMeeting =
+        settings.detectMeetings &&
+        (_meetingDetectionService?.isMeetingActive ?? false);
+    return pauseForVideoCall ||
+        pauseForFocus ||
+        pauseForPresentation ||
+        pauseForMeeting;
   }
 
   bool shouldRunWorkTimer() {

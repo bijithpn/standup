@@ -18,6 +18,19 @@ class SettingsRepository extends ChangeNotifier {
 
   SettingsRepository({required StorageService storage}) : _storage = storage;
 
+  static Map<String, int> _decodeTemplateAccentOverrides(String raw) {
+    if (raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k as String, v as int));
+      }
+    } catch (_) {
+      // Corrupt/legacy value — fall back to no overrides.
+    }
+    return const {};
+  }
+
   SettingsModel get currentSettings => _current;
 
   Future<void> load() async {
@@ -244,6 +257,9 @@ class SettingsRepository extends ChangeNotifier {
         'companion_treat_type',
         defaultValue: 'sushi',
       ),
+      templateAccentOverrides: _decodeTemplateAccentOverrides(
+        _storage.getString('template_accent_overrides', defaultValue: ''),
+      ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
         defaultValue: 'assets/background/forest/background.png',
@@ -453,6 +469,9 @@ class SettingsRepository extends ChangeNotifier {
       companionTreatType: _storage.getString(
         'companion_treat_type',
         defaultValue: 'sushi',
+      ),
+      templateAccentOverrides: _decodeTemplateAccentOverrides(
+        _storage.getString('template_accent_overrides', defaultValue: ''),
       ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
@@ -675,6 +694,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'companion_treat_type',
       settings.companionTreatType,
+    );
+    await _storage.setString(
+      'template_accent_overrides',
+      jsonEncode(settings.templateAccentOverrides),
     );
     await _storage.setString(
       'companion_preview_background',

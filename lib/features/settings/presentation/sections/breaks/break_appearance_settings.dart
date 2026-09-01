@@ -29,6 +29,24 @@ class BreakAppearanceSettings extends StatefulWidget {
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   String? _hoveredId;
   String? _selectedTemplateId;
+
+  /// Templates whose accent color can be pinned independently of the app
+  /// theme (see `BreakOverlayTheme.resolveAccent`).
+  static const _overridableTemplates = [
+    (id: 'warm_amber', name: 'Warm Amber'),
+    (id: 'iris_rest', name: 'Iris Rest'),
+    (id: 'split_view', name: 'Split View'),
+    (id: 'breathe_line', name: 'Breathe Line'),
+    (id: 'activities', name: 'Activities'),
+    (id: 'companion', name: 'Companion'),
+    (id: 'minimal', name: 'Minimal Focus'),
+    (id: 'hud', name: 'Productivity HUD'),
+    (id: 'floating', name: 'Soft Floating'),
+    (id: 'quiet_pill', name: 'Quiet Pill'),
+    (id: 'soft_arc', name: 'Soft Arc'),
+    (id: 'zen', name: 'Zen Mode'),
+  ];
+  String _accentOverrideTemplateId = 'warm_amber';
   final ScrollController _gridScrollController = ScrollController();
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -736,6 +754,135 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
               ),
             ),
           ],
+        ]),
+        const SizedBox(height: 32),
+        sectionHeader(
+          'Per-Template Accent Pin',
+          subtitle:
+              'Pin a specific template to always use one accent color, regardless of the app theme.',
+        ),
+        const SizedBox(height: 16),
+        buildCard([
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _accentOverrideTemplateId,
+                    dropdownColor: AppTheme.surfaceElevated,
+                    isExpanded: true,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                    ),
+                    items: _overridableTemplates
+                        .map(
+                          (t) => DropdownMenuItem(
+                            value: t.id,
+                            child: Text(t.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      setState(() => _accentOverrideTemplateId = id);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ...colorPresets.map((preset) {
+                      final overrideInt =
+                          widget
+                              .settings
+                              .templateAccentOverrides[_accentOverrideTemplateId];
+                      final isSelected =
+                          overrideInt == preset.color.toARGB32();
+                      return GestureDetector(
+                        onTap: () {
+                          final updated = Map<String, int>.from(
+                            widget.settings.templateAccentOverrides,
+                          )..[_accentOverrideTemplateId] = preset.color
+                              .toARGB32();
+                          widget.onSave(
+                            widget.settings.copyWith(
+                              templateAccentOverrides: updated,
+                            ),
+                          );
+                        },
+                        child: Tooltip(
+                          message: preset.name,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: preset.color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.15),
+                                width: isSelected ? 2.2 : 1.5,
+                              ),
+                            ),
+                            child: isSelected
+                                ? Center(
+                                    child: Icon(
+                                      CupertinoIcons.checkmark,
+                                      size: 12,
+                                      color:
+                                          preset.color.computeLuminance() >
+                                              0.5
+                                          ? Colors.black87
+                                          : Colors.white,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      );
+                    }),
+                    if (widget.settings.templateAccentOverrides.containsKey(
+                      _accentOverrideTemplateId,
+                    ))
+                      GestureDetector(
+                        onTap: () {
+                          final updated = Map<String, int>.from(
+                            widget.settings.templateAccentOverrides,
+                          )..remove(_accentOverrideTemplateId);
+                          widget.onSave(
+                            widget.settings.copyWith(
+                              templateAccentOverrides: updated,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Icon(
+                            CupertinoIcons.xmark,
+                            size: 14,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ]),
       ],
     );

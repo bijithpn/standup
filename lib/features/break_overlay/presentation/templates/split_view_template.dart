@@ -33,7 +33,11 @@ class SplitViewTemplate extends StatelessWidget {
     final progress = totalSeconds > 0
         ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;
-    const accent = BreakOverlayTheme.accentLong;
+    final accent = BreakOverlayTheme.resolveAccent(
+      settings.templateAccentOverrides,
+      'split_view',
+      BreakOverlayTheme.accentLong,
+    );
 
     return ColoredBox(
       color: BreakOverlayTheme.background,

@@ -10,6 +10,7 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -62,6 +63,7 @@ class TimerEngine extends ChangeNotifier {
     SmartDetectionService? smartDetectionService,
     CalendarService? calendarService,
     PresentationDetectionService? presentationDetectionService,
+    MeetingDetectionService? meetingDetectionService,
     EventBus? eventBus,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
@@ -71,6 +73,7 @@ class TimerEngine extends ChangeNotifier {
       smartDetectionService: _smartDetectionService,
       calendarService: calendarService,
       presentationDetectionService: presentationDetectionService,
+      meetingDetectionService: meetingDetectionService,
     );
     _syncSettingsFromRepo();
 

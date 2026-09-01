@@ -29,7 +29,6 @@
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0022044BFA00003C045 /* FocusModeBridge.swift */; };
 		33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */; };
-		F576A1CBDC823CDD48A22A9F /* PresentationDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19E047E2CF3599CA5FFB80A /* PresentationDetectionBridge.swift */; };
 		33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */; };
 		33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */; };
 		33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */; };
@@ -90,7 +89,6 @@
 		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
 		33CCB0022044BFA00003C045 /* FocusModeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeBridge.swift; sourceTree = "<group>"; };
 		33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetectionBridge.swift; sourceTree = "<group>"; };
-		B19E047E2CF3599CA5FFB80A /* PresentationDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationDetectionBridge.swift; sourceTree = "<group>"; };
 		33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowBridge.swift; sourceTree = "<group>"; };
 		33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWindowManager.swift; sourceTree = "<group>"; };
 		33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IpcBridgeManager.swift; sourceTree = "<group>"; };
@@ -224,7 +222,6 @@
 			children = (
 				33CCB0022044BFA00003C045 /* FocusModeBridge.swift */,
 				33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */,
-				B19E047E2CF3599CA5FFB80A /* PresentationDetectionBridge.swift */,
 				33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */,
 				33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */,
 				33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */,
@@ -505,7 +502,6 @@
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 				33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */,
 				33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */,
-				F576A1CBDC823CDD48A22A9F /* PresentationDetectionBridge.swift in Sources */,
 				33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */,
 				33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */,
 				33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */,

@@ -28,7 +28,11 @@ class IrisRestTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = BreakOverlayTheme.accentShort;
+    final accent = BreakOverlayTheme.resolveAccent(
+      settings.templateAccentOverrides,
+      'iris_rest',
+      BreakOverlayTheme.accentShort,
+    );
 
     return ColoredBox(
       color: BreakOverlayTheme.background,

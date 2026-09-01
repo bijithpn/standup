@@ -7,10 +7,17 @@ class ActiveAppInfo {
   final String bundleId;
   final String executableName;
 
+  /// The frontmost browser tab's address-bar URL, when the frontmost app is
+  /// a known browser (Safari/Chrome/Edge/Brave/Opera/Vivaldi on macOS;
+  /// Chrome/Edge/Firefox on Windows) and the OS-level lookup succeeded.
+  /// `null` for non-browser apps or when the lookup isn't available.
+  final String? url;
+
   ActiveAppInfo({
     required this.name,
     required this.bundleId,
     required this.executableName,
+    this.url,
   });
 
   factory ActiveAppInfo.fromMap(Map<String, dynamic> map) {
@@ -18,6 +25,7 @@ class ActiveAppInfo {
       name: map['name'] ?? 'Unknown',
       bundleId: map['bundleId'] ?? 'Unknown',
       executableName: map['executableName'] ?? 'Unknown',
+      url: map['url'] as String?,
     );
   }
 

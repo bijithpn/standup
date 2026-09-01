@@ -83,6 +83,11 @@ class SettingsModel {
   final String companionToyType;
   final String companionTreatType;
 
+  /// Per-break-template accent color overrides, keyed by template id (e.g.
+  /// 'warm_amber') with values as 0xAARRGGBB ints. A template not present
+  /// here falls back to its built-in [BreakOverlayTheme] accent.
+  final Map<String, int> templateAccentOverrides;
+
   final bool pettingEnabled;
   final bool ballThrowEnabled;
   final bool treatEnabled;
@@ -175,6 +180,7 @@ class SettingsModel {
     this.pipDraggableClickable = true,
     this.companionToyType = 'tennis_ball',
     this.companionTreatType = 'sushi',
+    this.templateAccentOverrides = const {},
     this.pettingEnabled = true,
     this.ballThrowEnabled = true,
     this.treatEnabled = true,
@@ -280,6 +286,7 @@ class SettingsModel {
     bool? pipDraggableClickable,
     String? companionToyType,
     String? companionTreatType,
+    Map<String, int>? templateAccentOverrides,
   }) {
     return SettingsModel(
       autoStart: autoStart ?? this.autoStart,
@@ -394,6 +401,8 @@ class SettingsModel {
           pipDraggableClickable ?? this.pipDraggableClickable,
       companionToyType: companionToyType ?? this.companionToyType,
       companionTreatType: companionTreatType ?? this.companionTreatType,
+      templateAccentOverrides:
+          templateAccentOverrides ?? this.templateAccentOverrides,
     );
   }
 
@@ -479,6 +488,7 @@ class SettingsModel {
     'pipDraggableClickable': pipDraggableClickable,
     'companionToyType': companionToyType,
     'companionTreatType': companionTreatType,
+    'templateAccentOverrides': templateAccentOverrides,
   };
 
   factory SettingsModel.fromMap(Map<String, dynamic> map) {
@@ -596,6 +606,11 @@ class SettingsModel {
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
       companionToyType: map['companionToyType'] as String? ?? 'tennis_ball',
       companionTreatType: map['companionTreatType'] as String? ?? 'sushi',
+      templateAccentOverrides:
+          (map['templateAccentOverrides'] as Map?)?.map(
+            (k, v) => MapEntry(k as String, v as int),
+          ) ??
+          const {},
     );
   }
 }

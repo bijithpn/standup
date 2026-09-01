@@ -30,6 +30,18 @@ abstract final class BreakOverlayTheme {
   static const double skipRight = 40.0;
 
   // Typography
+  /// Resolves the accent color for [templateId], honoring a user-pinned
+  /// override from `SettingsModel.templateAccentOverrides` when present and
+  /// falling back to the template's built-in [fallback] accent otherwise.
+  static Color resolveAccent(
+    Map<String, int> overrides,
+    String templateId,
+    Color fallback,
+  ) {
+    final override = overrides[templateId];
+    return override != null ? Color(override) : fallback;
+  }
+
   static const String fontFamily = 'Inter';
   static const double timerFontSizeLg = 64.0;
   static const double timerFontSizeMd = 54.0;

@@ -294,6 +294,81 @@ class AppThemePreset {
     isDark: true,
   );
 
+  /// A soft, everyday light theme — warm-gray surface, muted slate accent —
+  /// for people who want "not dark mode" without E-Ink's high-contrast
+  /// newsprint look.
+  static const softLight = AppThemePreset(
+    id: 'soft_light',
+    name: 'Soft Light',
+    description: 'Warm-gray daylight surface with a muted slate accent.',
+    primary: Color(0xFFF4F4F5),
+    primaryDark: Color(0xFFE4E4E7),
+    primaryLight: Color(0xFFFFFFFF),
+    surface: Color(0xFFFAFAF9),
+    surfaceCard: Color(0xFFFFFFFF),
+    surfaceElevated: Color(0xFFF4F4F5),
+    border: Color(0xFFE4E4E7),
+    borderSubtle: Color(0xFFEDEDEF),
+    accent: Color(0xFF64748B),
+    textPrimary: Color(0xFF27272A),
+    textSecondary: Color(0xFF52525B),
+    textMuted: Color(0xFF9294A0),
+    shortBreak: Color(0xFF0EA5E9),
+    longBreak: Color(0xFF8B5CF6),
+    isDark: false,
+  );
+
+  /// Translucent preset that pairs with the OS's native window vibrancy
+  /// (`WindowEffect.sidebar` on macOS, `WindowEffect.acrylic` on Windows 11 —
+  /// see `ThemeController._applyWindowEffect`). Surface colors here carry
+  /// low alpha so the blurred desktop shows through beneath the app chrome.
+  static const nativeVibrancy = AppThemePreset(
+    id: 'native_vibrancy',
+    name: 'Native Vibrancy',
+    description: 'Translucent frosted-glass chrome using native OS blur.',
+    primary: Color(0x1A18181B),
+    primaryDark: Color(0x2609090B),
+    primaryLight: Color(0x143F3F46),
+    surface: Color(0x0009090B),
+    surfaceCard: Color(0x33121214),
+    surfaceElevated: Color(0x4718181B),
+    border: Color(0x3327272A),
+    borderSubtle: Color(0x1A18181B),
+    accent: Color(0xFF38BDF8),
+    textPrimary: Color(0xFFF4F4F5),
+    textSecondary: Color(0xFFA1A1AA),
+    textMuted: Color(0xFF71717A),
+    shortBreak: Color(0xFF0EA5E9),
+    longBreak: Color(0xFF8B5CF6),
+    isDark: true,
+  );
+
+  /// Meta-preset: not a static palette. [ThemeController] resolves this to
+  /// a concrete preset at runtime — following the OS's dark/light setting
+  /// where available, and otherwise a Nordic Slate (day) / Solarized Amber
+  /// (evening) circadian split by time of day. Its own colors are unused for
+  /// rendering; they only back the preset-picker card's default preview.
+  static const auto = AppThemePreset(
+    id: 'auto',
+    name: 'Auto',
+    description: 'Follows your system appearance, or day/evening rhythm.',
+    primary: Color(0xFF18181B),
+    primaryDark: Color(0xFF09090B),
+    primaryLight: Color(0xFF3F3F46),
+    surface: Color(0xFF09090B),
+    surfaceCard: Color(0xFF121214),
+    surfaceElevated: Color(0xFF18181B),
+    border: Color(0xFF27272A),
+    borderSubtle: Color(0xFF18181B),
+    accent: Color(0xFF38BDF8),
+    textPrimary: Color(0xFFF4F4F5),
+    textSecondary: Color(0xFFA1A1AA),
+    textMuted: Color(0xFF71717A),
+    shortBreak: Color(0xFF0EA5E9),
+    longBreak: Color(0xFF8B5CF6),
+    isDark: true,
+  );
+
   static const List<AppThemePreset> allPresets = [
     nordicSlate,
     solarizedAmber,
@@ -307,6 +382,9 @@ class AppThemePreset {
     desertDusk,
     lavenderMist,
     monokaiPro,
+    softLight,
+    nativeVibrancy,
+    auto,
   ];
 
   static AppThemePreset findById(String? id) {
@@ -325,23 +403,32 @@ class AppThemePreset {
       primaryColor: primary,
       scaffoldBackgroundColor: surface,
       cardColor: surfaceCard,
-      colorScheme: ColorScheme.dark(
-        primary: accent,
-        surface: surfaceCard,
-        error: const Color(0xFFEF4444),
-        onPrimary: Colors.white,
-        onSurface: textPrimary,
-        onSurfaceVariant: textSecondary,
-      ),
+      colorScheme: isDark
+          ? ColorScheme.dark(
+              primary: accent,
+              surface: surfaceCard,
+              error: const Color(0xFFEF4444),
+              onPrimary: Colors.white,
+              onSurface: textPrimary,
+              onSurfaceVariant: textSecondary,
+            )
+          : ColorScheme.light(
+              primary: accent,
+              surface: surfaceCard,
+              error: const Color(0xFFEF4444),
+              onPrimary: Colors.white,
+              onSurface: textPrimary,
+              onSurfaceVariant: textSecondary,
+            ),
       dividerTheme: DividerThemeData(color: borderSubtle, thickness: 1),
     );
   }
 
   MacosThemeData toMacosTheme() {
-    final base = MacosThemeData.dark();
+    final base = isDark ? MacosThemeData.dark() : MacosThemeData.light();
     return base.copyWith(
       primaryColor: accent,
-      brightness: Brightness.dark,
+      brightness: isDark ? Brightness.dark : Brightness.light,
       canvasColor: surface,
     );
   }

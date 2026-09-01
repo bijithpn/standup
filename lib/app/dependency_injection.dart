@@ -98,12 +98,14 @@ Future<void> initDependencies() async {
   sl.registerSingleton<PresentationDetectionService>(
     PresentationDetectionService(),
   );
+  sl.registerSingleton<MeetingDetectionService>(MeetingDetectionService());
   sl.registerSingleton<TimerEngine>(
     TimerEngine(
       settingsRepository: sl(),
       smartDetectionService: sl(),
       calendarService: sl(),
       presentationDetectionService: sl(),
+      meetingDetectionService: sl(),
       eventBus: sl(),
     ),
   );
@@ -134,7 +136,6 @@ Future<void> initDependencies() async {
     ),
   );
 
-  sl.registerSingleton<MeetingDetectionService>(MeetingDetectionService());
   sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
 
   sl.registerLazySingleton<WellnessLibraryRepository>(
