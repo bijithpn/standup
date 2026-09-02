@@ -100,4 +100,36 @@ void main() {
 
     expect(result.afterCompletedScore, closeTo(0.5, 0.001));
   });
+
+  group('describe', () {
+    test('reports a positive gap in favor of completed breaks', () {
+      const correlation = BreakFocusCorrelation(
+        afterCompletedScore: 0.8,
+        afterSkippedScore: 0.3,
+        completedSampleCount: 3,
+        skippedSampleCount: 2,
+      );
+      expect(correlation.describe(), contains('50 points more'));
+    });
+
+    test('reports a negative gap honestly, not just positive spin', () {
+      const correlation = BreakFocusCorrelation(
+        afterCompletedScore: 0.2,
+        afterSkippedScore: 0.6,
+        completedSampleCount: 3,
+        skippedSampleCount: 2,
+      );
+      expect(correlation.describe(), contains('40 points less'));
+    });
+
+    test('reports "about the same" for a negligible gap', () {
+      const correlation = BreakFocusCorrelation(
+        afterCompletedScore: 0.5,
+        afterSkippedScore: 0.505,
+        completedSampleCount: 3,
+        skippedSampleCount: 2,
+      );
+      expect(correlation.describe(), contains('about the same'));
+    });
+  });
 }

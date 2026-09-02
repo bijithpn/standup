@@ -15,7 +15,10 @@ import 'package:breakmate/features/analytics/presentation/widgets/app_usage_sect
 import 'package:breakmate/features/analytics/break_focus_correlation.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/analytics/focus_streak_service.dart';
+import 'package:breakmate/features/analytics/focus_trend.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_score_card.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/focus_trend_chart.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
@@ -41,6 +44,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
+  int _selectedTab = 0; // 0: Overview, 1: Focus, 2: App Usage
 
   StatsModel get _stats => widget.stats;
 
@@ -57,13 +61,60 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
-    final viewMetrics = _calculateViewMetrics();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
-        const SizedBox(height: 28),
+        const SizedBox(height: 20),
+        _buildControlsRow(),
+        const SizedBox(height: 24),
+        switch (_selectedTab) {
+          0 => _buildOverviewTab(),
+          1 => _buildFocusTab(),
+          _ => _buildAppUsageTab(),
+        },
+        const SizedBox(height: 48),
+      ],
+    );
+  }
+
+  /// The tab selector (what to look at) and the period filter (what range),
+  /// as two independent controls — every tab still respects the selected
+  /// period, so this stays visible everywhere rather than being nested per
+  /// tab.
+  Widget _buildControlsRow() {
+    final tabs = segmentedControl(
+      ['Overview', 'Focus', 'App Usage'],
+      _selectedTab,
+      (i) => setState(() => _selectedTab = i),
+    );
+    final period = segmentedControl(
+      ['Today', 'This Week', 'Month'],
+      _selectedFilter,
+      (i) => setState(() => _selectedFilter = i),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 640) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [tabs, const SizedBox(height: 12), period],
+          );
+        }
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [tabs, period],
+        );
+      },
+    );
+  }
+
+  Widget _buildOverviewTab() {
+    final viewMetrics = _calculateViewMetrics();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         sectionHeader(
           'Overview',
           subtitle: 'Your productivity and wellness balance for $_periodLabel.',
@@ -81,31 +132,14 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         sectionHeader('At a Glance'),
         const SizedBox(height: 12),
         _buildDetailGrid(viewMetrics),
-        const SizedBox(height: 28),
-        sectionHeader(
-          'App Usage',
-          subtitle: 'Where your screen time is going, like Digital Wellbeing.',
-        ),
-        const SizedBox(height: 12),
-        Consumer<AppUsageService>(
-          builder: (context, usageService, _) {
-            final period = _usagePeriod;
-            return AppUsageSection(
-              enabled: widget.settings.appUsageTrackingEnabled,
-              topApps: usageService.topApps(period),
-              categoryTotals: usageService.categoryTotals(period),
-              iconCache: sl(),
-              onEnable: () => widget.onSave(
-                widget.settings.copyWith(appUsageTrackingEnabled: true),
-              ),
-              // Daily budgets only mean something against today's totals.
-              budgetMinutes: period == UsagePeriod.today
-                  ? widget.settings.categoryDailyBudgetMinutes
-                  : const {},
-            );
-          },
-        ),
-        const SizedBox(height: 28),
+      ],
+    );
+  }
+
+  Widget _buildFocusTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         sectionHeader(
           'Focus Score',
           subtitle:
@@ -142,7 +176,16 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           },
         ),
         if (widget.settings.appUsageTrackingEnabled) ...[
+          const SizedBox(height: 28),
+          sectionHeader(
+            'Focus Trend',
+            subtitle: 'Daily focus score over the last 7 days.',
+          ),
           const SizedBox(height: 12),
+          _buildFocusTrendSection(),
+          const SizedBox(height: 20),
+          _buildFocusStreakCard(),
+          const SizedBox(height: 20),
           Align(
             alignment: Alignment.centerLeft,
             child: MinimalButton(
@@ -161,8 +204,116 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
             ),
           ),
         ],
-        const SizedBox(height: 48),
       ],
+    );
+  }
+
+  Widget _buildAppUsageTab() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sectionHeader(
+          'App Usage',
+          subtitle: 'Where your screen time is going, like Digital Wellbeing.',
+        ),
+        const SizedBox(height: 12),
+        Consumer<AppUsageService>(
+          builder: (context, usageService, _) {
+            final period = _usagePeriod;
+            return AppUsageSection(
+              enabled: widget.settings.appUsageTrackingEnabled,
+              topApps: usageService.topApps(period),
+              categoryTotals: usageService.categoryTotals(period),
+              iconCache: sl(),
+              onEnable: () => widget.onSave(
+                widget.settings.copyWith(appUsageTrackingEnabled: true),
+              ),
+              // Daily budgets only mean something against today's totals.
+              budgetMinutes: period == UsagePeriod.today
+                  ? widget.settings.categoryDailyBudgetMinutes
+                  : const {},
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFocusTrendSection() {
+    return Consumer2<AppUsageService, FocusSessionService>(
+      builder: (context, usageService, focusService, _) {
+        final points = computeFocusTrend(
+          focusSessionService: focusService,
+          usageService: usageService,
+        );
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: AppTheme.cardDecoration(),
+          child: SizedBox(height: 160, child: FocusTrendChart(points: points)),
+        );
+      },
+    );
+  }
+
+  /// Mirrors the companion streak card's exact layout
+  /// (`companion_settings_section.dart`'s `_buildStreakCard`) — a second,
+  /// non-competing progression axis alongside break-taking consistency.
+  Widget _buildFocusStreakCard() {
+    return AnimatedBuilder(
+      animation: sl<FocusStreakService>(),
+      builder: (context, _) {
+        final streakService = sl<FocusStreakService>();
+        final current = streakService.currentStreakDays();
+        final highest = streakService.highestMilestone;
+        final next = streakService.nextMilestone;
+        final daysToNext = next != null ? next.days - current : null;
+
+        return buildCard([
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  CupertinoIcons.bolt_fill,
+                  size: 18,
+                  color: current > 0 ? AppTheme.accent : AppTheme.textMuted,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        current > 0
+                            ? '$current-day focus streak'
+                                '${highest != null ? ' · ${highest.label}' : ''}'
+                            : 'No focus streak yet',
+                        style: TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (next != null && daysToNext != null && daysToNext > 0) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          '$daysToNext day${daysToNext == 1 ? '' : 's'} to '
+                          '"${next.label}"',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]);
+      },
     );
   }
 
@@ -205,73 +356,44 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   }
 
   Widget _buildHeader() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 560;
-        final title = Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-              ),
-              child: Icon(
-                CupertinoIcons.chart_bar_alt_fill,
-                size: 18,
-                color: AppTheme.accentColor,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    AppStrings.analytics,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    AppStrings.analyticsSubtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-
-        final filter = segmentedControl(
-          ['Today', 'This Week', 'Month'],
-          _selectedFilter,
-          (i) => setState(() => _selectedFilter = i),
-        );
-
-        if (isNarrow) {
-          return Column(
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppTheme.accentColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+          ),
+          child: Icon(
+            CupertinoIcons.chart_bar_alt_fill,
+            size: 18,
+            color: AppTheme.accentColor,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [title, const SizedBox(height: 16), filter],
-          );
-        }
-
-        return Row(
-          children: [
-            Expanded(child: title),
-            const SizedBox(width: 16),
-            filter,
-          ],
-        );
-      },
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                AppStrings.analytics,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                AppStrings.analyticsSubtitle,
+                style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

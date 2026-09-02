@@ -15,6 +15,8 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
+import 'package:breakmate/features/analytics/focus_insight_service.dart';
+import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
@@ -53,6 +55,8 @@ class ServiceBootstrapper {
 
     sl<AppUsageTracker>().start();
     sl<WeeklyDigestService>().start();
+    sl<FocusInsightService>().start();
+    sl<FocusStreakService>().start();
 
     final petRegistry = sl<PetRegistryService>();
     unawaited(petRegistry.discoverFromLegacyAssets());

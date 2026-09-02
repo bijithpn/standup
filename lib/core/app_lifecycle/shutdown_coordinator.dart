@@ -3,6 +3,8 @@ import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
+import 'package:breakmate/features/analytics/focus_insight_service.dart';
+import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/core/services/background_polling_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -52,6 +54,24 @@ class ShutdownCoordinator {
       }
     } catch (e) {
       _logger.error('Failed to stop WeeklyDigestService: $e');
+    }
+
+    try {
+      if (sl.isRegistered<FocusInsightService>()) {
+        sl<FocusInsightService>().stop();
+        _logger.info('FocusInsightService stopped.');
+      }
+    } catch (e) {
+      _logger.error('Failed to stop FocusInsightService: $e');
+    }
+
+    try {
+      if (sl.isRegistered<FocusStreakService>()) {
+        sl<FocusStreakService>().stop();
+        _logger.info('FocusStreakService stopped.');
+      }
+    } catch (e) {
+      _logger.error('Failed to stop FocusStreakService: $e');
     }
 
     try {

@@ -7,6 +7,7 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/features/analytics/break_focus_correlation.dart';
 import 'package:breakmate/features/analytics/weekly_digest.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -131,6 +132,14 @@ class NotificationService {
 
   Future<void> showWeeklyDigest(WeeklyDigest digest) async {
     await _show(id: 30, title: 'Your Week in Review', body: digest.toMessage());
+  }
+
+  Future<void> showFocusCorrelationInsight(BreakFocusCorrelation correlation) async {
+    await _show(
+      id: 31,
+      title: 'A pattern in your data',
+      body: correlation.describe(),
+    );
   }
 
   Future<void> showReminder({required String message}) async {

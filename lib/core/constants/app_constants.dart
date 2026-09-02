@@ -48,6 +48,7 @@ class AppConstants {
   static const String keyFocusSessionData = 'focus_session_data';
   static const String keyBreakHistoryData = 'break_history_data';
   static const String keyLastWeeklyDigestWeekKey = 'last_weekly_digest_week_key';
+  static const String keyFocusInsightShown = 'focus_insight_shown';
   static const String keyTotalWorkSessions = 'total_work_sessions';
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';

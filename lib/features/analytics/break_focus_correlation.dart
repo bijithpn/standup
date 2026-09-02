@@ -34,6 +34,20 @@ class BreakFocusCorrelation {
   double get differencePoints =>
       (afterCompletedScore - afterSkippedScore) * 100;
 
+  /// A one-sentence, human-readable summary — shared by the Focus Score
+  /// card and the one-time proactive insight notification, so the wording
+  /// stays consistent wherever this comparison is surfaced.
+  String describe() {
+    final diff = differencePoints;
+    final direction = diff >= 0 ? 'more' : 'less';
+    if (diff.abs() < 1) {
+      return "Focus in the hour after a break looks about the same whether "
+          "you took it or skipped it.";
+    }
+    return 'You focus ${diff.abs().round()} points $direction in the hour '
+        'after a break you take vs. one you skip.';
+  }
+
   static BreakFocusCorrelation compute({
     required List<BreakEvent> events,
     required List<FocusSession> allSessions,

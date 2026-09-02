@@ -3,10 +3,14 @@ import 'package:clock/clock.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/features/analytics/app_usage_insights.dart';
+import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/weekly_digest.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
 /// Composes and — once a week, at most — shows a local "how was your week"
@@ -28,6 +32,8 @@ class WeeklyDigestService {
   final FocusSessionService _focusSessionService;
   final CompanionStreakService _streakService;
   final NotificationService _notificationService;
+  final AppUsageService _usageService;
+  final SettingsRepository _settingsRepository;
 
   Timer? _checkTimer;
 
@@ -37,11 +43,15 @@ class WeeklyDigestService {
     required FocusSessionService focusSessionService,
     required CompanionStreakService streakService,
     required NotificationService notificationService,
+    required AppUsageService usageService,
+    required SettingsRepository settingsRepository,
   })  : _storage = storage,
         _statsService = statsService,
         _focusSessionService = focusSessionService,
         _streakService = streakService,
-        _notificationService = notificationService;
+        _notificationService = notificationService,
+        _usageService = usageService,
+        _settingsRepository = settingsRepository;
 
   void start() {
     _checkTimer ??= Timer.periodic(_checkInterval, (_) => checkAndMaybeShow());
@@ -116,7 +126,30 @@ class WeeklyDigestService {
       topFocusCategory: topCategory,
       longestDeepWorkSessionSeconds: longestSessionSeconds,
       companionMilestoneLabel: _streakService.highestMilestone?.label,
+      daysOverBudgetByCategory: _daysOverBudget(today),
     );
+  }
+
+  /// How many of the last 7 days each budgeted category went over its
+  /// `SettingsModel.categoryDailyBudgetMinutes` cap — reuses
+  /// [categoriesOverBudget], the same check [AppUsageSection] runs for
+  /// today alone, once per day of the week.
+  Map<AppCategory, int> _daysOverBudget(DateTime today) {
+    final budgetMinutes = _settingsRepository.currentSettings.categoryDailyBudgetMinutes;
+    if (budgetMinutes.isEmpty) return const {};
+
+    final counts = <AppCategory, int>{};
+    for (var i = 0; i < 7; i++) {
+      final date = today.subtract(Duration(days: i));
+      final totals = _usageService.categoryTotals(UsagePeriod.today, now: date);
+      for (final category in categoriesOverBudget(
+        todayCategorySeconds: totals,
+        budgetMinutes: budgetMinutes,
+      )) {
+        counts[category] = (counts[category] ?? 0) + 1;
+      }
+    }
+    return counts;
   }
 
   /// A "once per calendar week" key. Doesn't need to be true ISO-8601 week

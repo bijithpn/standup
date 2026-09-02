@@ -13,6 +13,12 @@ class WeeklyDigest {
   final int longestDeepWorkSessionSeconds;
   final String? companionMilestoneLabel;
 
+  /// How many of the last 7 tracked days each category (by its
+  /// [SettingsModel.categoryDailyBudgetMinutes] key) met or exceeded its
+  /// daily budget. A category never over budget, or never budgeted, is
+  /// absent from this map — never present with a 0.
+  final Map<AppCategory, int> daysOverBudgetByCategory;
+
   const WeeklyDigest({
     required this.breakAdherenceRate,
     required this.breaksCompleted,
@@ -20,6 +26,7 @@ class WeeklyDigest {
     required this.topFocusCategory,
     required this.longestDeepWorkSessionSeconds,
     required this.companionMilestoneLabel,
+    this.daysOverBudgetByCategory = const {},
   });
 
   String toMessage() {
@@ -40,9 +47,21 @@ class WeeklyDigest {
     if (companionMilestoneLabel != null) {
       parts.add('Companion milestone: $companionMilestoneLabel.');
     }
+    final budgetNote = _budgetSummary();
+    if (budgetNote != null) parts.add(budgetNote);
     return parts.isEmpty
         ? 'Not much tracked data this week yet — keep going!'
         : parts.join(' ');
+  }
+
+  /// A short "over budget N/7 days" note for whichever budgeted category
+  /// went over most often this week, or null if nothing did.
+  String? _budgetSummary() {
+    if (daysOverBudgetByCategory.isEmpty) return null;
+    final worst = daysOverBudgetByCategory.entries.reduce(
+      (a, b) => b.value > a.value ? b : a,
+    );
+    return '${worst.key.label} was over its daily budget ${worst.value}/7 days.';
   }
 
   /// Renders the digest as a small Markdown document — for the Statistics
@@ -78,9 +97,15 @@ class WeeklyDigest {
     if (companionMilestoneLabel != null) {
       buffer.writeln('- **Companion milestone:** $companionMilestoneLabel');
     }
+    for (final entry in daysOverBudgetByCategory.entries) {
+      buffer.writeln(
+        '- **${entry.key.label} over budget:** ${entry.value}/7 days',
+      );
+    }
     if (totalBreaks == 0 &&
         topFocusCategory == null &&
-        companionMilestoneLabel == null) {
+        companionMilestoneLabel == null &&
+        daysOverBudgetByCategory.isEmpty) {
       buffer.writeln('_Not much tracked data this week yet._');
     }
 

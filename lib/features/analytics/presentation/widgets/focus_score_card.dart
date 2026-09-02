@@ -161,12 +161,7 @@ class FocusScoreCard extends StatelessWidget {
   }
 
   Widget _buildCorrelationInsight(BreakFocusCorrelation correlation) {
-    final diff = correlation.differencePoints;
-    final direction = diff >= 0 ? 'more' : 'less';
-    final message = diff.abs() < 1
-        ? "Focus in the hour after a break looks about the same whether you took it or skipped it."
-        : 'You focus ${diff.abs().round()} points $direction in the hour '
-              'after a break you take vs. one you skip.';
+    final message = correlation.describe();
 
     return Container(
       padding: const EdgeInsets.all(12),

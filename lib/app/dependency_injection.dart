@@ -31,6 +31,8 @@ import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
+import 'package:breakmate/features/analytics/focus_insight_service.dart';
+import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
@@ -111,6 +113,24 @@ Future<void> initDependencies() async {
       focusSessionService: sl(),
       streakService: sl(),
       notificationService: sl(),
+      usageService: sl(),
+      settingsRepository: sl(),
+    ),
+  );
+  sl.registerSingleton<FocusInsightService>(
+    FocusInsightService(
+      storage: sl(),
+      breakHistoryService: sl(),
+      focusSessionService: sl(),
+      notificationService: sl(),
+    ),
+  );
+  sl.registerSingleton<FocusStreakService>(
+    FocusStreakService(
+      focusSessionService: sl(),
+      usageService: sl(),
+      storage: sl(),
+      eventBus: sl(),
     ),
   );
   sl.registerSingleton<PresentationDetectionService>(

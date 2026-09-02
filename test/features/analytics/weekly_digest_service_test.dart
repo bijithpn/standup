@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
@@ -10,7 +11,20 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/weekly_digest.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
+
+class FakeSettingsRepository extends SettingsRepository {
+  final SettingsModel _fakeSettings;
+
+  FakeSettingsRepository(StorageService storage, [SettingsModel? settings])
+      : _fakeSettings = settings ?? const SettingsModel(),
+        super(storage: storage);
+
+  @override
+  SettingsModel get currentSettings => _fakeSettings;
+}
 
 class InMemoryStorageService extends FakeStorageService {
   final Map<String, String> _strings = {};
@@ -76,6 +90,8 @@ void main() {
   late FocusSessionService focusSessionService;
   late CompanionStreakService streakService;
   late FakeNotificationService notificationService;
+  late AppUsageService usageService;
+  late SettingsRepository settingsRepository;
   late WeeklyDigestService digestService;
 
   setUp(() {
@@ -88,12 +104,16 @@ void main() {
       eventBus: EventBus.instance,
     );
     notificationService = FakeNotificationService();
+    usageService = AppUsageService(storage: storage);
+    settingsRepository = SettingsRepository(storage: storage);
     digestService = WeeklyDigestService(
       storage: storage,
       statsService: statsService,
       focusSessionService: focusSessionService,
       streakService: streakService,
       notificationService: notificationService,
+      usageService: usageService,
+      settingsRepository: settingsRepository,
     );
   });
 
@@ -143,6 +163,41 @@ void main() {
     expect(digest.topFocusCategory, AppCategory.coding);
     expect(digest.longestDeepWorkSessionSeconds, 3600);
     expect(digest.companionMilestoneLabel, isNull);
+  });
+
+  test('buildDigest includes days-over-budget when a category exceeds its budget', () {
+    final now = DateTime(2026, 9, 6, 18, 0);
+    final budgetedSettings = FakeSettingsRepository(
+      storage,
+      const SettingsModel(categoryDailyBudgetMinutes: {'browsing': 60}),
+    );
+    final digestWithBudget = WeeklyDigestService(
+      storage: storage,
+      statsService: statsService,
+      focusSessionService: focusSessionService,
+      streakService: streakService,
+      notificationService: notificationService,
+      usageService: usageService,
+      settingsRepository: budgetedSettings,
+    );
+    final dateKey =
+        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+    usageService.addUsageSeconds(
+      date: dateKey,
+      appKey: 'com.apple.safari',
+      name: 'Safari',
+      category: AppCategory.browsing,
+      seconds: 90 * 60, // 90 min, over the 60-min budget
+    );
+
+    final digest = digestWithBudget.buildDigest(now: now);
+
+    expect(digest.daysOverBudgetByCategory[AppCategory.browsing], 1);
+  });
+
+  test('buildDigest has no budget data when nothing is configured', () {
+    final digest = digestService.buildDigest(now: DateTime(2026, 9, 6, 18, 0));
+    expect(digest.daysOverBudgetByCategory, isEmpty);
   });
 
   test('start() fires the digest once its periodic check crosses into the window', () {
