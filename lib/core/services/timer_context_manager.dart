@@ -4,6 +4,7 @@ import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 class TimerContextManager {
@@ -12,6 +13,7 @@ class TimerContextManager {
   final CalendarService? _calendarService;
   final PresentationDetectionService? _presentationDetectionService;
   final MeetingDetectionService? _meetingDetectionService;
+  final ContextSwitchTracker? _contextSwitchTracker;
 
   TimerContextManager({
     required SettingsRepository settingsRepository,
@@ -19,11 +21,31 @@ class TimerContextManager {
     CalendarService? calendarService,
     PresentationDetectionService? presentationDetectionService,
     MeetingDetectionService? meetingDetectionService,
+    ContextSwitchTracker? contextSwitchTracker,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
        _calendarService = calendarService,
        _presentationDetectionService = presentationDetectionService,
-       _meetingDetectionService = meetingDetectionService;
+       _meetingDetectionService = meetingDetectionService,
+       _contextSwitchTracker = contextSwitchTracker;
+
+  /// Number of app switches observed in the last hour — a soft fragmented-
+  /// attention signal, purely informational (see [isHighContextSwitchRate]).
+  int recentContextSwitchCount({DateTime? now}) {
+    final tracker = _contextSwitchTracker;
+    if (tracker == null) return 0;
+    return tracker.switchesInWindow(now ?? clock.now());
+  }
+
+  /// Whether app-switching has been frequent enough recently to suggest
+  /// fragmented focus. Deliberately never consulted by [shouldRunWorkTimer]
+  /// or any break-timing decision — it's surfaced to the user (dashboard
+  /// nudge), never used to silently change scheduling.
+  bool isHighContextSwitchRate({DateTime? now}) {
+    final tracker = _contextSwitchTracker;
+    if (tracker == null) return false;
+    return tracker.isHighSwitchRate(now ?? clock.now());
+  }
 
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;

@@ -14,6 +14,7 @@ import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     hide DailyStats;
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -366,6 +367,9 @@ void main() {
     sl.registerSingleton<AppTrackingService>(AppTrackingService());
     sl.registerSingleton<WellnessEngine>(
       WellnessEngine(appTracking: sl<AppTrackingService>()),
+    );
+    sl.registerSingleton<BreakHistoryService>(
+      BreakHistoryService(storage: fakeStorageService),
     );
 
     fakeAdaptiveBreakService = FakeAdaptiveBreakService();

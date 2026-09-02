@@ -13,6 +13,7 @@ import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 
+import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -161,6 +162,11 @@ class TimerOrchestrator {
     IpcBridge.instance.dispatch(BreakEndedIpcEvent(skipped: event.skipped));
 
     trayManagerService.setBreakActive(false);
+
+    sl<BreakHistoryService>().recordBreak(
+      time: DateTime.now(),
+      completed: !event.skipped,
+    );
 
     if (event.skipped) {
       statsService.recordSkippedBreak();

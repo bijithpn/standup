@@ -110,6 +110,12 @@ class SettingsModel {
 
   final bool appUsageTrackingEnabled;
 
+  /// Opt-in, local-only daily time budgets per [AppCategory] name (e.g.
+  /// `{'browsing': 120}` for a 2h/day soft cap). A category absent from the
+  /// map has no budget. Purely a UI nudge threshold — never enforced by
+  /// blocking anything, consistent with the app's non-punitive tone.
+  final Map<String, int> categoryDailyBudgetMinutes;
+
   const SettingsModel({
     this.autoStart = true,
     this.clockFaceStyle = 'breakloop',
@@ -198,6 +204,7 @@ class SettingsModel {
     this.calendarEnabled = false,
     this.enableSessionResume = true,
     this.appUsageTrackingEnabled = false,
+    this.categoryDailyBudgetMinutes = const {},
   });
 
   SettingsModel copyWith({
@@ -281,6 +288,7 @@ class SettingsModel {
     bool? calendarEnabled,
     bool? enableSessionResume,
     bool? appUsageTrackingEnabled,
+    Map<String, int>? categoryDailyBudgetMinutes,
     String? pipBackgroundStyle,
     double? pipOpacity,
     bool? pipDraggableClickable,
@@ -395,6 +403,8 @@ class SettingsModel {
       enableSessionResume: enableSessionResume ?? this.enableSessionResume,
       appUsageTrackingEnabled:
           appUsageTrackingEnabled ?? this.appUsageTrackingEnabled,
+      categoryDailyBudgetMinutes:
+          categoryDailyBudgetMinutes ?? this.categoryDailyBudgetMinutes,
       pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
@@ -483,6 +493,7 @@ class SettingsModel {
     'calendarEnabled': calendarEnabled,
     'enableSessionResume': enableSessionResume,
     'appUsageTrackingEnabled': appUsageTrackingEnabled,
+    'categoryDailyBudgetMinutes': categoryDailyBudgetMinutes,
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
     'pipDraggableClickable': pipDraggableClickable,
@@ -601,6 +612,11 @@ class SettingsModel {
       calendarEnabled: map['calendarEnabled'] as bool? ?? false,
       enableSessionResume: map['enableSessionResume'] as bool? ?? true,
       appUsageTrackingEnabled: map['appUsageTrackingEnabled'] as bool? ?? false,
+      categoryDailyBudgetMinutes:
+          (map['categoryDailyBudgetMinutes'] as Map?)?.map(
+            (k, v) => MapEntry(k as String, v as int),
+          ) ??
+          const {},
       pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'dark',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,

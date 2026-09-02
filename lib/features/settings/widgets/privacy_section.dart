@@ -2,6 +2,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/category_budgets_card.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -120,6 +121,16 @@ class _PrivacySectionState extends State<PrivacySection> {
           ),
         ]),
 
+        if (settings.appUsageTrackingEnabled) ...[
+          const SizedBox(height: 16),
+          CategoryBudgetsCard(
+            budgetMinutes: settings.categoryDailyBudgetMinutes,
+            onChanged: (updated) => widget.onSave(
+              settings.copyWith(categoryDailyBudgetMinutes: updated),
+            ),
+          ),
+        ],
+
         Consumer<AppUsageService>(
           builder: (context, usageService, _) {
             final period = _usagePeriod;
@@ -134,6 +145,10 @@ class _PrivacySectionState extends State<PrivacySection> {
                 settings.copyWith(appUsageTrackingEnabled: true),
               ),
               listTitle: 'All Tracked Apps',
+              // Daily budgets only mean something against today's totals.
+              budgetMinutes: period == UsagePeriod.today
+                  ? settings.categoryDailyBudgetMinutes
+                  : const {},
             );
           },
         ),

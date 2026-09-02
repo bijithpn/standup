@@ -31,6 +31,19 @@ class SettingsRepository extends ChangeNotifier {
     return const {};
   }
 
+  static Map<String, int> _decodeCategoryDailyBudgetMinutes(String raw) {
+    if (raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k as String, v as int));
+      }
+    } catch (_) {
+      // Corrupt/legacy value — fall back to no budgets set.
+    }
+    return const {};
+  }
+
   SettingsModel get currentSettings => _current;
 
   Future<void> load() async {
@@ -260,6 +273,9 @@ class SettingsRepository extends ChangeNotifier {
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
       ),
+      categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
+        _storage.getString('category_daily_budget_minutes', defaultValue: ''),
+      ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
         defaultValue: 'assets/background/forest/background.png',
@@ -472,6 +488,9 @@ class SettingsRepository extends ChangeNotifier {
       ),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
+      ),
+      categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
+        _storage.getString('category_daily_budget_minutes', defaultValue: ''),
       ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
@@ -698,6 +717,10 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'template_accent_overrides',
       jsonEncode(settings.templateAccentOverrides),
+    );
+    await _storage.setString(
+      'category_daily_budget_minutes',
+      jsonEncode(settings.categoryDailyBudgetMinutes),
     );
     await _storage.setString(
       'companion_preview_background',

@@ -20,6 +20,11 @@ class AppUsageSection extends StatelessWidget {
   /// unfiltered list rather than a cut-off top N.
   final String listTitle;
 
+  /// The user's opt-in daily budgets (`SettingsModel.categoryDailyBudgetMinutes`).
+  /// Only meaningful when [categoryTotals] is for today — pass `const {}`
+  /// (the default) for week/month views, where "over budget" doesn't apply.
+  final Map<String, int> budgetMinutes;
+
   const AppUsageSection({
     super.key,
     required this.enabled,
@@ -28,6 +33,7 @@ class AppUsageSection extends StatelessWidget {
     required this.iconCache,
     required this.onEnable,
     this.listTitle = 'Top Apps',
+    this.budgetMinutes = const {},
   });
 
   @override
@@ -170,9 +176,44 @@ class AppUsageSection extends StatelessWidget {
               ],
             ),
           ),
+          ..._buildBudgetNudge(),
         ],
       ),
     );
+  }
+
+  List<Widget> _buildBudgetNudge() {
+    if (budgetMinutes.isEmpty) return const [];
+    final overBudget = categoriesOverBudget(
+      todayCategorySeconds: categoryTotals,
+      budgetMinutes: budgetMinutes,
+    );
+    if (overBudget.isEmpty) return const [];
+
+    final names = overBudget.map((c) => c.label).join(', ');
+    return [
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppTheme.warning.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(CupertinoIcons.timer, size: 16, color: AppTheme.warning),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                "You've reached today's budget for $names. Just a note — nothing is blocked.",
+                style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ];
   }
 
   AppCategory _dominantCategory() {

@@ -27,6 +27,10 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
 import 'package:breakmate/features/analytics/app_icon_cache.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
+import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
@@ -81,6 +85,9 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
   sl.registerSingleton<AppUsageService>(AppUsageService(storage: sl()));
+  sl.registerSingleton<FocusSessionService>(FocusSessionService(storage: sl()));
+  sl.registerSingleton<BreakHistoryService>(BreakHistoryService(storage: sl()));
+  sl.registerSingleton<ContextSwitchTracker>(ContextSwitchTracker());
   sl.registerLazySingleton<AppIconCache>(
     () => AppIconCache(appTracking: sl()),
   );
@@ -90,10 +97,21 @@ Future<void> initDependencies() async {
       usageService: sl(),
       settingsRepo: sl(),
       activityMonitor: sl(),
+      focusSessionService: sl(),
+      contextSwitchTracker: sl(),
     ),
   );
   sl.registerSingleton<CompanionStreakService>(
     CompanionStreakService(statsService: sl(), storage: sl(), eventBus: sl()),
+  );
+  sl.registerSingleton<WeeklyDigestService>(
+    WeeklyDigestService(
+      storage: sl(),
+      statsService: sl(),
+      focusSessionService: sl(),
+      streakService: sl(),
+      notificationService: sl(),
+    ),
   );
   sl.registerSingleton<PresentationDetectionService>(
     PresentationDetectionService(),
@@ -106,6 +124,7 @@ Future<void> initDependencies() async {
       calendarService: sl(),
       presentationDetectionService: sl(),
       meetingDetectionService: sl(),
+      contextSwitchTracker: sl(),
       eventBus: sl(),
     ),
   );

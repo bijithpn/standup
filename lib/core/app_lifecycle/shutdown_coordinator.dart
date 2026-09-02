@@ -2,6 +2,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
+import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/core/services/background_polling_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -42,6 +43,15 @@ class ShutdownCoordinator {
       }
     } catch (e) {
       _logger.error('Failed to stop AppUsageTracker: $e');
+    }
+
+    try {
+      if (sl.isRegistered<WeeklyDigestService>()) {
+        sl<WeeklyDigestService>().stop();
+        _logger.info('WeeklyDigestService stopped.');
+      }
+    } catch (e) {
+      _logger.error('Failed to stop WeeklyDigestService: $e');
     }
 
     try {

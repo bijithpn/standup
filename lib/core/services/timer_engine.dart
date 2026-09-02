@@ -11,6 +11,7 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -64,6 +65,7 @@ class TimerEngine extends ChangeNotifier {
     CalendarService? calendarService,
     PresentationDetectionService? presentationDetectionService,
     MeetingDetectionService? meetingDetectionService,
+    ContextSwitchTracker? contextSwitchTracker,
     EventBus? eventBus,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
@@ -74,6 +76,7 @@ class TimerEngine extends ChangeNotifier {
       calendarService: calendarService,
       presentationDetectionService: presentationDetectionService,
       meetingDetectionService: meetingDetectionService,
+      contextSwitchTracker: contextSwitchTracker,
     );
     _syncSettingsFromRepo();
 

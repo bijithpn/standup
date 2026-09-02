@@ -12,6 +12,15 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
+import 'package:breakmate/features/analytics/break_focus_correlation.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/focus_score_card.dart';
+import 'package:breakmate/features/analytics/weekly_digest_service.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
+import 'package:breakmate/core/services/error_toast_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
 
 class AnalyticsSettingsSection extends StatefulWidget {
   final StatsModel stats;
@@ -89,12 +98,99 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               onEnable: () => widget.onSave(
                 widget.settings.copyWith(appUsageTrackingEnabled: true),
               ),
+              // Daily budgets only mean something against today's totals.
+              budgetMinutes: period == UsagePeriod.today
+                  ? widget.settings.categoryDailyBudgetMinutes
+                  : const {},
             );
           },
         ),
+        const SizedBox(height: 28),
+        sectionHeader(
+          'Focus Score',
+          subtitle:
+              'Share of $_periodLabel spent in an uninterrupted deep-work session.',
+        ),
+        const SizedBox(height: 12),
+        Consumer3<AppUsageService, FocusSessionService, BreakHistoryService>(
+          builder: (context, usageService, focusService, breakHistory, _) {
+            final period = _usagePeriod;
+            final totalActiveSeconds = usageService
+                .categoryTotals(period)
+                .values
+                .fold<int>(0, (sum, s) => sum + s);
+            final sessions = focusService.sessionsForPeriod(period);
+            final focusSeconds = sessions.fold<int>(
+              0,
+              (sum, s) => sum + s.durationSeconds,
+            );
+            final focusScore = totalActiveSeconds > 0
+                ? (focusSeconds / totalActiveSeconds).clamp(0.0, 1.0)
+                : 0.0;
+
+            final correlation = BreakFocusCorrelation.compute(
+              events: breakHistory.events,
+              allSessions: focusService.sessionsForPeriod(UsagePeriod.month),
+            );
+
+            return FocusScoreCard(
+              enabled: widget.settings.appUsageTrackingEnabled,
+              focusScore: focusScore,
+              sessions: sessions,
+              correlation: correlation,
+            );
+          },
+        ),
+        if (widget.settings.appUsageTrackingEnabled) ...[
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: MinimalButton(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              backgroundColor: AppTheme.accentColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              onPressed: _exportWeeklyDigest,
+              child: Text(
+                'Export This Week',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.accentColor,
+                ),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 48),
       ],
     );
+  }
+
+  /// Saves this week's [WeeklyDigest] as a local Markdown file — fully
+  /// local, no cloud call, reusing the same composition the scheduled
+  /// notification uses.
+  Future<void> _exportWeeklyDigest() async {
+    final digest = sl<WeeklyDigestService>().buildDigest();
+    final markdown = digest.toMarkdown();
+
+    final now = DateTime.now();
+    final fileName =
+        'breakmate-week-in-review-${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}.md';
+
+    try {
+      final path = await FilePicker.saveFile(
+        dialogTitle: 'Export This Week',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['md'],
+      );
+      if (path == null) return; // user cancelled
+
+      await File(path).writeAsString(markdown);
+      ErrorToastService.showInfo('Saved to $path');
+    } catch (e) {
+      ErrorToastService.showError('Could not save the export: $e');
+    }
   }
 
   String get _periodLabel {

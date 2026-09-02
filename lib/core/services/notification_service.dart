@@ -7,6 +7,7 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/features/analytics/weekly_digest.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -126,6 +127,10 @@ class NotificationService {
       title: '🌙 Time to Clock Out',
       body: 'Your workday is over. Step away and recharge.',
     );
+  }
+
+  Future<void> showWeeklyDigest(WeeklyDigest digest) async {
+    await _show(id: 30, title: 'Your Week in Review', body: digest.toMessage());
   }
 
   Future<void> showReminder({required String message}) async {

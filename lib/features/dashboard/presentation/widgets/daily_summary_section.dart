@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -120,13 +121,32 @@ class _RecommendationChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String recommendation = 'Keep it up!';
-    if (stats.completionRate < 0.5 && stats.breaksCompleted > 2) {
-      recommendation = 'High skips. Try a longer interval?';
-    } else if (stats.dailyUsageMinutes > 120 && stats.wellnessScore < 40) {
-      recommendation = 'Intense day. Take a long break?';
-    }
+    return Consumer<ContextSwitchTracker>(
+      builder: (context, switchTracker, _) {
+        final switchCount = switchTracker.switchesInWindow(DateTime.now());
+        return _buildChip(_recommendationFor(switchCount));
+      },
+    );
+  }
 
+  /// Context-switch fragmentation takes priority when it's high — it's a
+  /// live, actionable signal (see [ContextSwitchTracker]) — otherwise falls
+  /// back to the existing skip-rate / intense-day heuristics. Purely
+  /// informational: it never changes break timing on its own.
+  String _recommendationFor(int switchCount) {
+    if (switchCount >= 12) {
+      return "$switchCount app switches in the last hour — a short break might help you refocus.";
+    }
+    if (stats.completionRate < 0.5 && stats.breaksCompleted > 2) {
+      return 'High skips. Try a longer interval?';
+    }
+    if (stats.dailyUsageMinutes > 120 && stats.wellnessScore < 40) {
+      return 'Intense day. Take a long break?';
+    }
+    return 'Keep it up!';
+  }
+
+  Widget _buildChip(String recommendation) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(

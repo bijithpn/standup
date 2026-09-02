@@ -1,9 +1,14 @@
 import 'dart:async';
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
+import 'package:breakmate/features/analytics/focus_session_detector.dart';
+import 'package:breakmate/features/analytics/focus_session_models.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
@@ -17,6 +22,9 @@ class AppUsageTracker {
   final AppUsageService _usageService;
   final SettingsRepository _settingsRepo;
   final ActivityMonitor _activityMonitor;
+  final FocusSessionService? _focusSessionService;
+  final ContextSwitchTracker? _contextSwitchTracker;
+  final FocusSessionDetector _focusDetector = FocusSessionDetector();
   final AppLogger _logger = AppLogger();
 
   static const _pollInterval = Duration(seconds: 10);
@@ -28,16 +36,21 @@ class AppUsageTracker {
   final Map<String, Map<String, int>> _pendingSeconds = {};
   final Map<String, String> _pendingNames = {};
   final Map<String, AppCategory> _pendingCategories = {};
+  String? _lastAppKey;
 
   AppUsageTracker({
     required AppTrackingService appTracking,
     required AppUsageService usageService,
     required SettingsRepository settingsRepo,
     required ActivityMonitor activityMonitor,
+    FocusSessionService? focusSessionService,
+    ContextSwitchTracker? contextSwitchTracker,
   })  : _appTracking = appTracking,
         _usageService = usageService,
         _settingsRepo = settingsRepo,
-        _activityMonitor = activityMonitor;
+        _activityMonitor = activityMonitor,
+        _focusSessionService = focusSessionService,
+        _contextSwitchTracker = contextSwitchTracker;
 
   void start() {
     _pollTimer ??= Timer.periodic(_pollInterval, (_) => tickOnce());
@@ -50,6 +63,7 @@ class AppUsageTracker {
     _flushTimer?.cancel();
     _flushTimer = null;
     flushNow();
+    _recordFocusSession(_focusDetector.closeOpenSession());
   }
 
   @visibleForTesting
@@ -64,6 +78,11 @@ class AppUsageTracker {
       final appKey = _resolveAppKey(app);
       if (appKey == null) return;
 
+      if (_lastAppKey != null && _lastAppKey != appKey) {
+        _contextSwitchTracker?.recordSwitch(clock.now());
+      }
+      _lastAppKey = appKey;
+
       final displayName = _resolveDisplayName(app);
       final category = AppCategorizer.categorize(
         name: displayName,
@@ -75,9 +94,15 @@ class AppUsageTracker {
       dayMap[appKey] = (dayMap[appKey] ?? 0) + _pollInterval.inSeconds;
       _pendingNames[appKey] = displayName;
       _pendingCategories[appKey] = category;
+
+      _recordFocusSession(_focusDetector.onTick(category, clock.now()));
     } catch (e) {
       _logger.error('AppUsageTracker tick failed: $e');
     }
+  }
+
+  void _recordFocusSession(FocusSession? session) {
+    if (session != null) _focusSessionService?.recordSession(session);
   }
 
   @visibleForTesting
