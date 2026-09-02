@@ -104,6 +104,18 @@ class TimerContextManager {
     return inCalendarMeeting || inVideoCall;
   }
 
+  /// Whether a fullscreen presentation/screen-share appears to be up right
+  /// now (see [PresentationDetectionService]). Independent of
+  /// [isSmartPauseActive]/[shouldRunWorkTimer] and of
+  /// `settings.presentationPauseEnabled` — that setting only controls
+  /// whether presentations *pause the work timer*. This is consulted purely
+  /// to decide how a break is presented: a full break overlay would cover
+  /// (or show up in) whatever is being presented, so break UI should stay
+  /// out of the way, the same as [isMeetingActive].
+  bool isPresentationActive() {
+    return _presentationDetectionService?.isPresenting ?? false;
+  }
+
   bool shouldRunWorkTimer() {
     return isWithinWorkingHours() && !isSmartPauseActive();
   }

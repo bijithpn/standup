@@ -155,7 +155,7 @@ class SettingsModel {
     this.detectMeetings = true,
     this.respectFocusMode = true,
     this.globalHotkeyEnabled = true,
-    this.presentationPauseEnabled = true,
+    this.presentationPauseEnabled = false,
     this.enableClockOut = false,
     this.clockOutTime = '17:00',
     this.showExercisesInBreak = true,
@@ -567,7 +567,7 @@ class SettingsModel {
       respectFocusMode: map['respectFocusMode'] as bool? ?? true,
       globalHotkeyEnabled: map['globalHotkeyEnabled'] as bool? ?? true,
       presentationPauseEnabled:
-          map['presentationPauseEnabled'] as bool? ?? true,
+          map['presentationPauseEnabled'] as bool? ?? false,
       enableClockOut: map['enableClockOut'] as bool? ?? false,
       clockOutTime: map['clockOutTime'] as String? ?? '17:00',
       exercises: exercises,

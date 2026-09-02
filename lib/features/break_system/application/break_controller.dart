@@ -109,6 +109,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
     bool shouldShowWarning = _timerEngine.isPreBreak;
     final isMeetingActive = _timerEngine.contextManager.isMeetingActive();
+    final isPresenting = _timerEngine.contextManager.isPresentationActive();
 
     if (!shouldShowWarning) {
       _hasShownPreBreakWarning = false;
@@ -120,10 +121,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
       _currentTemplate = settings.breakTemplate;
 
-      if (isMeetingActive) {
+      // Meeting or presentation: a fullscreen break would cover (or show up
+      // in) whatever's on screen, so swap it for the quiet, low-opacity,
+      // auto-dismissing reminder instead.
+      if (isMeetingActive || isPresenting) {
         if (!_hasShownMeetingBreakNotice) {
           _hasShownMeetingBreakNotice = true;
-          sl<NotificationService>().showMeetingBreakReminder();
+          sl<NotificationService>().showMeetingBreakReminder(
+            isPresenting: isPresenting && !isMeetingActive,
+          );
         }
 
         overlayService.showOverlay(
@@ -132,7 +138,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           reminderType: 'meetingBreak',
           overlayData: {
             'title': 'Break ready',
-            'tip': 'You are in a meeting',
+            'tip': isMeetingActive ? 'You are in a meeting' : 'You are presenting',
             'durationSeconds': 2,
             'remainingSeconds': 2,
           },
@@ -259,12 +265,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       meetingDetection.stop();
     }
 
-    final presentationDetection = sl<PresentationDetectionService>();
-    if (settings.presentationPauseEnabled) {
-      presentationDetection.start();
-    } else {
-      presentationDetection.stop();
-    }
+    // Kept running regardless of presentationPauseEnabled: that setting only
+    // controls whether a presentation pauses the work timer, while the
+    // detector itself is also used to keep the full break overlay off a
+    // screen that's being presented/shared (see _handleGlobalOverlays).
+    sl<PresentationDetectionService>().start();
 
     final hotkeyService = sl<GlobalHotkeyService>();
     if (settings.globalHotkeyEnabled) {

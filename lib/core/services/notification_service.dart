@@ -158,11 +158,13 @@ class NotificationService {
     );
   }
 
-  Future<void> showMeetingBreakReminder() async {
+  Future<void> showMeetingBreakReminder({bool isPresenting = false}) async {
     await _show(
       id: 12,
       title: 'Break ready',
-      body: 'You are in a meeting. BreakMate will keep this reminder quiet.',
+      body: isPresenting
+          ? 'You are presenting. BreakMate will keep this reminder quiet.'
+          : 'You are in a meeting. BreakMate will keep this reminder quiet.',
     );
   }
 

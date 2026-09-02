@@ -227,7 +227,7 @@ class SettingsRepository extends ChangeNotifier {
       ),
       presentationPauseEnabled: _storage.getBool(
         'presentation_pause_enabled',
-        defaultValue: true,
+        defaultValue: false,
       ),
       enableClockOut: s.enableClockOut,
       clockOutTime: s.clockOutTime,
@@ -418,7 +418,7 @@ class SettingsRepository extends ChangeNotifier {
       ),
       presentationPauseEnabled: _storage.getBool(
         'presentation_pause_enabled',
-        defaultValue: true,
+        defaultValue: false,
       ),
       enableClockOut: _storage.getBool('enable_clock_out', defaultValue: false),
       clockOutTime: _storage.getString('clock_out_time', defaultValue: '17:00'),
