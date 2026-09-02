@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 
 class QuickReminderOverlay extends StatelessWidget {
   final String? reminderType;
@@ -9,6 +10,13 @@ class QuickReminderOverlay extends StatelessWidget {
   final String title;
   final int durationSeconds;
 
+  /// Whether it's safe to show the full-screen [PosterReminderOverlay]
+  /// instead of the small translucent pill. Defaults to `false` so every
+  /// existing caller keeps today's pill-only behavior unless it explicitly
+  /// opts in after checking meeting/presentation state (see
+  /// `poster_reminder_gate.dart`).
+  final bool allowFullPoster;
+
   const QuickReminderOverlay({
     super.key,
     required this.reminderType,
@@ -16,6 +24,7 @@ class QuickReminderOverlay extends StatelessWidget {
     required this.fadeAnimation,
     required this.title,
     required this.durationSeconds,
+    this.allowFullPoster = false,
   });
 
   @override
@@ -34,6 +43,46 @@ class QuickReminderOverlay extends StatelessWidget {
       );
     }
 
+    final icon = isMeetingBreak
+        ? CupertinoIcons.videocam_fill
+        : isPosture
+        ? CupertinoIcons.person_crop_circle
+        : CupertinoIcons.eye_fill;
+    final text = isMeetingBreak
+        ? 'Break ready after your meeting'
+        : isPosture
+        ? 'Posture check'
+        : 'Rest your eyes';
+
+    if (allowFullPoster) {
+      final palette = isMeetingBreak
+          ? const _PosterPalette(
+              top: Color(0xFF2E1065),
+              bottom: Color(0xFF130B2E),
+              blobs: [Color(0xFFA855F7), Color(0xFF6366F1), Color(0xFFEC4899)],
+            )
+          : isPosture
+          ? const _PosterPalette(
+              top: Color(0xFF1E3A8A),
+              bottom: Color(0xFF1E1B4B),
+              blobs: [Color(0xFFF97316), Color(0xFF3B82F6), Color(0xFFFACC15)],
+            )
+          : const _PosterPalette(
+              top: Color(0xFF064E3B),
+              bottom: Color(0xFF022C22),
+              blobs: [Color(0xFF34D399), Color(0xFF10B981), Color(0xFF6EE7B7)],
+            );
+
+      return PosterReminderOverlay(
+        icon: icon,
+        text: text,
+        fadeAnimation: fadeAnimation,
+        baseColorTop: palette.top,
+        baseColorBottom: palette.bottom,
+        blobColors: palette.blobs,
+      );
+    }
+
     return Center(
       child: FadeTransition(
         opacity: CurvedAnimation(
@@ -49,22 +98,22 @@ class QuickReminderOverlay extends StatelessWidget {
               reverseCurve: Curves.easeIn,
             ),
           ),
-          child: _MinimalReminderPill(
-            icon: isMeetingBreak
-                ? CupertinoIcons.videocam_fill
-                : isPosture
-                ? CupertinoIcons.person_crop_circle
-                : CupertinoIcons.eye_fill,
-            text: isMeetingBreak
-                ? 'Break ready after your meeting'
-                : isPosture
-                ? 'Posture check'
-                : 'Rest your eyes',
-          ),
+          child: _MinimalReminderPill(icon: icon, text: text),
         ),
       ),
     );
   }
+}
+
+class _PosterPalette {
+  final Color top;
+  final Color bottom;
+  final List<Color> blobs;
+  const _PosterPalette({
+    required this.top,
+    required this.bottom,
+    required this.blobs,
+  });
 }
 
 class _MinimalReminderPill extends StatelessWidget {

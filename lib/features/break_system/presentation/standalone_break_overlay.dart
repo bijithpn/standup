@@ -12,6 +12,11 @@ import 'package:breakmate/features/break_system/presentation/widgets/quick_remin
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/ipc/overlay_window_config.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/overlay_chrome.dart';
@@ -515,6 +520,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         fadeAnimation: _fadeController,
         title: _title,
         durationSeconds: durationSeconds,
+        allowFullPoster:
+            _overlayType == 'quickReminder' && _allowFullPosterReminder,
       );
     }
 
@@ -570,6 +577,17 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       kenBurnsController: _kenBurnsController,
       exerciseTitle: _exerciseTitle,
       exerciseInstructions: _exerciseInstructions,
+    );
+  }
+
+  bool get _allowFullPosterReminder {
+    final settings = sl<SettingsRepository>().currentSettings;
+    return allowFullPosterReminder(
+      detectMeetings: settings.detectMeetings,
+      calendarMeetingActive: sl<MeetingDetectionService>().isMeetingActive,
+      detectVideoCalls: settings.detectVideoCalls,
+      videoCallActive: sl<SmartDetectionService>().isVideoCallActive,
+      presenting: sl<PresentationDetectionService>().isPresenting,
     );
   }
 
