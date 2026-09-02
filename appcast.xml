@@ -4,7 +4,46 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                        <item>
+                                <item>
+            <title>Version 1.6.0</title>
+            <pubDate>Wed, 02 Sep 2026 06:28:53 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.6.0</h3>
+                <p># BreakMate 1.6.0
+
+**New:**
+
+- **App Usage Analytics** — Local, privacy-first tracking of active foreground apps, giving you clear visibility into where your desktop time goes. View it on the Statistics screen and in Settings → Privacy.
+- **Category Daily Budgets** — Set daily time goals for specific application categories (e.g. Browsing, Social, Entertainment) and track your limits throughout the day.
+- **Focus Score &amp; Trend Charts** — Measure your daily focus score, track multi-day focus trends, and celebrate sustained focus streaks as you build healthier working habits.
+- **Weekly Digest &amp; Export** — Receive an automated weekly breakdown of your productivity habits, break compliance, and top apps with one-click export support.
+- **6 New Curated Themes** — Expand your visual experience with Crimson Ember, Ocean Abyss, Aurora Borealis, Desert Dusk, Lavender Mist, and Monokai Pro (12 curated themes in total).
+- **Template Accent Customization** — Personalize and pin custom accent colors directly to individual break overlay templates in Settings → Break Appearance.
+- **Revamped Wellness Library** — Browse and filter wellness exercises by category with interactive preview cards and updated daily goals.
+- **Smarter Meeting Detection** — Improved native detection and video conference URL recognition to seamlessly defer scheduled breaks during active meetings.
+
+**Improved:**
+
+- Updated core dependencies for enhanced performance, smoother animations, and platform stability.
+- Native app icon caching on macOS and Windows for fast, crisp icon rendering.
+
+**Under the hood:**
+
+- Added Windows app tracking native bridge support.
+- Strengthened automated test coverage for analytics, timer orchestration, and privacy features.</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.6.0/BreakMate-Installer.dmg"
+                       sparkle:version="35"
+                       sparkle:shortVersionString="1.6.0"
+                       sparkle:edSignature="SAgutfG62MOC1OkE5baXtm8C0z66vHLgljs8gyMI3mAP4zvwulctAS3uUAAOwJGLfXo1YdSussGBz7QUE3OMCA=="
+                       length="43694686"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.5.0</title>
             <pubDate>Mon, 31 Aug 2026 08:54:55 +0000</pubDate>
             <description><![CDATA[

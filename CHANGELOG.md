@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
 | `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
 | `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
 | `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
@@ -22,6 +23,35 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.6.0] - 2026-09-02
+
+Tags: `v1.6.0`  
+Build: `35`  
+Release title: App Usage Analytics, Category Budgets, Focus Streaks & New Themes
+
+### Added
+
+- **App Usage Tracking & Analytics:** Local-first, opt-in tracking of foreground applications and active time. Visualized in both the Statistics screen and Privacy settings with today, week, and month filters.
+- **Native App Icon Extraction:** Native macOS and Windows bridge methods to extract and cache high-resolution application icons for tracked apps.
+- **Category Daily Budgets:** Set custom daily time limits for application categories (e.g. Browsing, Social, Entertainment) with real-time budget tracking and over-budget warnings.
+- **Focus Score & Trend Visualization:** Real-time calculation of daily focus scores based on active vs. distracting application usage, complete with interactive multi-day trend charts and focus streak tracking.
+- **Focus Insights & Break Correlation:** Intelligent correlation between regular break adherence and sustained focus sessions, providing tailored productivity insights and tips.
+- **Weekly Digest & Export:** Automated weekly summary of work habits, break compliance, top apps, and focus milestones with one-click export capability.
+- **6 New Curated Theme Presets:** Expanded theme selection with Crimson Ember, Ocean Abyss, Aurora Borealis, Desert Dusk, Lavender Mist, and Monokai Pro (12 total curated presets).
+- **Template Accent Color Customization:** Ability to customize and pin specific accent colors for individual break overlay templates in Break Appearance settings.
+- **Revamped Wellness Library & Goals UI:** Modernized wellness library featuring category filtering, detailed exercise cards with hover animations, and streamlined daily goal cards.
+- **Integrated Meeting Detection Service:** Refined native meeting detection and browser URL recognition (`MeetingUrlMatcher`) wired directly into timer orchestration.
+
+### Changed
+
+- **Package Dependencies:** Updated Flutter dependencies including `flutter_local_notifications` (22.3.0), `audioplayers` (6.7.1), `file_picker` (11.0.3), and `build_runner` (2.15.1).
+- **Settings Architecture:** Enhanced settings serialization and persistence for category budgets, app usage toggles, and template theme overrides.
+
+### Fixed
+
+- **Windows Native Build:** Added missing `shellapi.h` header for `ExtractIconExW` in the Windows app tracking bridge.
+- **Privacy Section State:** Fixed provider registration and visibility constraints in settings UI components.
 
 ## [1.5.0] - 2026-08-31
 

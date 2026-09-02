@@ -6,7 +6,7 @@
 
 BreakMate is a sophisticated wellness platform that integrates deeply with your desktop environment. By utilizing multiple Flutter engines, a custom behavior AI for ambient feedback, and native platform hooks, BreakMate ensures that your work-life balance is actively managed without disrupting your creative flow.
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue)
+![Version](https://img.shields.io/badge/version-1.6.0-blue)
 ![Platform](https://img.shields.io/badge/platform-macos%20|%20windows-lightgrey)
 ![Flutter](https://img.shields.io/badge/Flutter-3.10.4-blue)
 
