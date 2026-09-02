@@ -11,6 +11,7 @@ void main() {
     WidgetTester tester, {
     required String? reminderType,
     String overlayType = 'quickReminder',
+    bool allowFullPoster = false,
   }) async {
     final controller = AnimationController(
       vsync: const TestVSync(),
@@ -27,6 +28,7 @@ void main() {
             fadeAnimation: controller,
             title: 'Break ready',
             durationSeconds: 2,
+            allowFullPoster: allowFullPoster,
           ),
         ),
       ),
@@ -92,6 +94,47 @@ void main() {
       expect(color.a, closeTo(0.36, 0.01));
       // Fully opaque black (the old full-screen break card look) would be a=1.0.
       expect(color.a, lessThan(0.5));
+    },
+  );
+
+  testWidgets('shows the full poster when allowFullPoster is true', (
+    tester,
+  ) async {
+    await pumpReminder(tester, reminderType: 'posture', allowFullPoster: true);
+
+    expect(find.text('Posture check'), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.person_crop_circle), findsOneWidget);
+    // The poster has no 0.36-alpha pill container — it's full-bleed.
+    final pillContainers = find.byWidgetPredicate((widget) {
+      if (widget is! Container) return false;
+      final decoration = widget.decoration;
+      if (decoration is! BoxDecoration) return false;
+      final color = decoration.color;
+      return color != null && (color.a - 0.36).abs() < 0.01;
+    });
+    expect(pillContainers, findsNothing);
+  });
+
+  testWidgets(
+    'falls back to the minimal pill when allowFullPoster is false, even for meetingBreak',
+    (tester) async {
+      await pumpReminder(
+        tester,
+        reminderType: 'meetingBreak',
+        allowFullPoster: false,
+      );
+
+      expect(find.text('Break ready after your meeting'), findsOneWidget);
+      final container = tester.widget<Container>(
+        find
+            .ancestor(
+              of: find.text('Break ready after your meeting'),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.color!.a, closeTo(0.36, 0.01));
     },
   );
 }
