@@ -41,6 +41,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   TimerState? _lastOverlayState;
   bool _hasShownPreBreakWarning = false;
+  bool _hasShownMeetingBreakNotice = false;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -107,6 +108,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
     bool shouldShowWarning = _timerEngine.isPreBreak;
+    final isMeetingActive = _timerEngine.contextManager.isMeetingActive();
 
     if (!shouldShowWarning) {
       _hasShownPreBreakWarning = false;
@@ -117,6 +119,26 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
       _currentTemplate = settings.breakTemplate;
+
+      if (isMeetingActive) {
+        if (!_hasShownMeetingBreakNotice) {
+          _hasShownMeetingBreakNotice = true;
+          sl<NotificationService>().showMeetingBreakReminder();
+        }
+
+        overlayService.showOverlay(
+          type: OverlayType.quickReminder,
+          builder: (_) => const SizedBox.shrink(),
+          reminderType: 'meetingBreak',
+          overlayData: {
+            'title': 'Break ready',
+            'tip': 'You are in a meeting',
+            'durationSeconds': 2,
+            'remainingSeconds': 2,
+          },
+        );
+        return;
+      }
 
       if (_currentTemplate == 'activities') {
         _pickRandomExercise();
@@ -185,6 +207,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         !shouldShowWarning &&
         _lastOverlayState != null) {
       _lastOverlayState = null;
+      _hasShownMeetingBreakNotice = false;
       overlayService.hideOverlay();
       strictModeController.disableStrictMode();
       _stopMusic();

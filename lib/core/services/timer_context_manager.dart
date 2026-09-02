@@ -73,25 +73,35 @@ class TimerContextManager {
     return nowMinutes >= startMinutes && nowMinutes < endMinutes;
   }
 
+  /// Whether the work timer should be auto-paused right now. Deliberately
+  /// limited to reasons the user can see and control directly — being in a
+  /// meeting or video call is never one of them; see [isMeetingActive],
+  /// which only affects how break reminders are displayed.
   bool isSmartPauseActive() {
     final settings = _settingsRepository.currentSettings;
-    final smartDetection = _smartDetectionService;
-    if (smartDetection == null) return false;
-
-    final pauseForVideoCall =
-        settings.detectVideoCalls && smartDetection.isVideoCallActive;
     final pauseForFocus =
-        settings.respectFocusMode && smartDetection.isFocusModeActive;
+        settings.respectFocusMode &&
+        (_smartDetectionService?.isFocusModeActive ?? false);
     final pauseForPresentation =
         settings.presentationPauseEnabled &&
         (_presentationDetectionService?.isPresenting ?? false);
-    final pauseForMeeting =
+    return pauseForFocus || pauseForPresentation;
+  }
+
+  /// Whether the user currently appears to be in a meeting or video call —
+  /// covers both calendar-synced meeting detection and frontmost-app video
+  /// call detection (Zoom/Meet/Teams/etc). Never consulted by
+  /// [isSmartPauseActive]/[shouldRunWorkTimer]: it only steers how break
+  /// reminders are shown (a quiet notification instead of the full overlay).
+  bool isMeetingActive() {
+    final settings = _settingsRepository.currentSettings;
+    final inCalendarMeeting =
         settings.detectMeetings &&
         (_meetingDetectionService?.isMeetingActive ?? false);
-    return pauseForVideoCall ||
-        pauseForFocus ||
-        pauseForPresentation ||
-        pauseForMeeting;
+    final inVideoCall =
+        settings.detectVideoCalls &&
+        (_smartDetectionService?.isVideoCallActive ?? false);
+    return inCalendarMeeting || inVideoCall;
   }
 
   bool shouldRunWorkTimer() {
@@ -148,9 +158,8 @@ class TimerContextManager {
       return null;
     }
 
-    final busy =
-        events.where((e) => !e.isAllDay && e.end.isAfter(now)).toList()
-          ..sort((a, b) => a.start.compareTo(b.start));
+    final busy = events.where((e) => !e.isAllDay && e.end.isAfter(now)).toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
 
     var cursor = now;
     for (final event in busy) {

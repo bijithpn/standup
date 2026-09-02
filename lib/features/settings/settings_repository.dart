@@ -153,9 +153,7 @@ class SettingsRepository extends ChangeNotifier {
         try {
           final decoded = jsonDecode(snapshot.exercisesJson);
           if (decoded is List) {
-            final saved = decoded
-                .map((e) => ExerciseModel.fromMap(e))
-                .toList();
+            final saved = decoded.map((e) => ExerciseModel.fromMap(e)).toList();
             return _withNewDefaults(saved);
           }
         } catch (e, st) {
@@ -223,6 +221,14 @@ class SettingsRepository extends ChangeNotifier {
       detectVideoCalls: s.detectVideoCalls,
       detectMeetings: s.detectMeetings,
       respectFocusMode: s.respectFocusMode,
+      globalHotkeyEnabled: _storage.getBool(
+        'global_hotkey_enabled',
+        defaultValue: true,
+      ),
+      presentationPauseEnabled: _storage.getBool(
+        'presentation_pause_enabled',
+        defaultValue: true,
+      ),
       enableClockOut: s.enableClockOut,
       clockOutTime: s.clockOutTime,
       exercises: _decodeExercises(s.exercisesJson),
@@ -404,6 +410,14 @@ class SettingsRepository extends ChangeNotifier {
       detectMeetings: _storage.getBool('detect_meetings', defaultValue: true),
       respectFocusMode: _storage.getBool(
         'respect_focus_mode',
+        defaultValue: true,
+      ),
+      globalHotkeyEnabled: _storage.getBool(
+        'global_hotkey_enabled',
+        defaultValue: true,
+      ),
+      presentationPauseEnabled: _storage.getBool(
+        'presentation_pause_enabled',
         defaultValue: true,
       ),
       enableClockOut: _storage.getBool('enable_clock_out', defaultValue: false),
@@ -682,6 +696,14 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
     await _storage.setBool('detect_meetings', settings.detectMeetings);
     await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
+    await _storage.setBool(
+      'global_hotkey_enabled',
+      settings.globalHotkeyEnabled,
+    );
+    await _storage.setBool(
+      'presentation_pause_enabled',
+      settings.presentationPauseEnabled,
+    );
     await _storage.setBool('calendar_enabled', settings.calendarEnabled);
     await _storage.setBool(
       'enable_session_resume',

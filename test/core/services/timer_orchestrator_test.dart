@@ -462,5 +462,26 @@ void main() {
       fakeActivityMonitor.callback?.call(true);
       expect(timerEngine.state, equals(TimerState.running));
     });
+
+    test(
+      'a stuck systemSleepPaused flag self-heals on the next detected activity',
+      () {
+        timerEngine.startTimers();
+        expect(timerEngine.state, equals(TimerState.running));
+
+        // A sleep notification arrived but its matching wake notification
+        // was missed (e.g. dropped by the OS) — the tick loop would
+        // otherwise stay silently frozen forever with no visible state
+        // change.
+        timerEngine.handleSystemSleep();
+        expect(timerEngine.systemSleepPaused, isTrue);
+
+        // Real activity is unambiguous proof the system is awake.
+        fakeActivityMonitor.callback?.call(true);
+
+        expect(timerEngine.systemSleepPaused, isFalse);
+        expect(timerEngine.state, equals(TimerState.running));
+      },
+    );
   });
 }

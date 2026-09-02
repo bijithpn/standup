@@ -1,6 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
 
 class QuickReminderOverlay extends StatelessWidget {
@@ -22,6 +21,7 @@ class QuickReminderOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPosture = reminderType == 'posture';
+    final isMeetingBreak = reminderType == 'meetingBreak';
     final isBreakStart =
         reminderType == 'breakStart' || overlayType == 'preBreakWarning';
 
@@ -35,120 +35,73 @@ class QuickReminderOverlay extends StatelessWidget {
     }
 
     return Center(
-      child: ScaleTransition(
-        scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-          CurvedAnimation(
-            parent: fadeAnimation,
-            curve: Curves.easeOutBack,
-            reverseCurve: Curves.easeIn,
-          ),
+      child: FadeTransition(
+        opacity: CurvedAnimation(
+          parent: fadeAnimation,
+          curve: Curves.easeOut,
+          reverseCurve: Curves.easeIn,
         ),
-        child: Container(
-          width: 380,
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 36),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceCard.withValues(alpha: 0.92),
-            borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-            border: Border.all(
-              color: AppTheme.accent.withValues(alpha: 0.15),
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.4),
-                blurRadius: 32,
-                offset: const Offset(0, 8),
-              ),
-              BoxShadow(
-                color: AppTheme.accent.withValues(alpha: 0.05),
-                blurRadius: 24,
-                spreadRadius: 2,
-              ),
-            ],
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.surfaceCard,
-                AppTheme.surfaceCard.withValues(alpha: 0.8),
-              ],
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.96, end: 1.0).animate(
+            CurvedAnimation(
+              parent: fadeAnimation,
+              curve: Curves.easeOutCubic,
+              reverseCurve: Curves.easeIn,
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: AppTheme.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-                child: Text(
-                  isPosture ? 'POSTURE CHECK' : 'EYE REFRESH',
-                  style: TextStyle(
-                    color: AppTheme.accent,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    fontFamily: 'Inter',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    colors: [
-                      AppTheme.accent.withValues(alpha: 0.2),
-                      Colors.transparent,
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.accent.withValues(alpha: 0.25),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  isPosture
-                      ? CupertinoIcons.person_crop_circle_badge_checkmark
-                      : CupertinoIcons.eye_fill,
-                  color: AppTheme.accent,
-                  size: 36,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                isPosture ? 'Check Your Posture' : 'Rest Your Eyes',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Inter',
-                  letterSpacing: -0.4,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                isPosture
-                    ? 'Sit up straight, relax your neck, and drop your shoulders.'
-                    : 'Blink a few times and focus on something far away.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 14,
-                  fontFamily: 'Inter',
-                  height: 1.45,
-                ),
-              ),
-            ],
+          child: _MinimalReminderPill(
+            icon: isMeetingBreak
+                ? CupertinoIcons.videocam_fill
+                : isPosture
+                ? CupertinoIcons.person_crop_circle
+                : CupertinoIcons.eye_fill,
+            text: isMeetingBreak
+                ? 'Break ready after your meeting'
+                : isPosture
+                ? 'Posture check'
+                : 'Rest your eyes',
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _MinimalReminderPill extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MinimalReminderPill({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 320),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white.withValues(alpha: 0.86), size: 20),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.88),
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Inter',
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

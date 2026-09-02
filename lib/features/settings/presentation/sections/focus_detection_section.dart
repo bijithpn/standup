@@ -70,12 +70,6 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
           _permState = status;
           _isLoading = false;
         });
-        if (status == CalendarPermissionStatus.granted &&
-            !_settings.calendarEnabled) {
-          _save(
-            _settings.copyWith(calendarEnabled: true, detectMeetings: true),
-          );
-        }
       }
     } catch (_) {
       if (mounted) {
@@ -156,7 +150,7 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 24),
           child: Text(
-            'Automatically pauses your breaks when you are busy.',
+            'Adapts your breaks when you are busy, without interrupting your focus timer.',
             style: TextStyle(color: AppTheme.textSecondary, fontSize: 13),
           ),
         ),
@@ -164,14 +158,14 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
         buildCard([
           toggleRow(
             'Video Calls Detection',
-            'Pause breaks during Zoom, Meet, Teams, etc.',
+            'Show a quiet reminder instead of the full break during Zoom, Meet, Teams, etc.',
             _settings.detectVideoCalls,
             (v) => _save(_settings.copyWith(detectVideoCalls: v)),
           ),
           divider(),
           toggleRow(
             'Meeting Detection',
-            'Sync with calendar to pause during meetings',
+            'Sync with calendar to keep break reminders quiet during meetings',
             _settings.detectMeetings,
             _handleMeetingDetectionToggle,
           ),
@@ -243,7 +237,8 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
           color: AppTheme.warning,
           icon: Icons.lock_outline_rounded,
           title: 'Calendar access denied',
-          subtitle: 'Calendar access was denied. Tap "Grant Access" to request again or "Open Settings" to authorize.',
+          subtitle:
+              'Calendar access was denied. Tap "Grant Access" to request again or "Open Settings" to authorize.',
           actions: [
             _BannerButton(
               label: _isRequesting ? 'Requesting…' : 'Grant Access',
@@ -265,7 +260,8 @@ class _FocusDetectionSectionState extends State<FocusDetectionSection>
           color: AppTheme.warning,
           icon: Icons.lock_outline_rounded,
           title: 'Calendar access blocked',
-          subtitle: 'Calendar access is permanently blocked by the system. Please enable it in system settings.',
+          subtitle:
+              'Calendar access is permanently blocked by the system. Please enable it in system settings.',
           actions: [
             _BannerButton(
               label: 'Open Settings',

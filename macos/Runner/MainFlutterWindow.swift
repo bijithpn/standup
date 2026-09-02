@@ -425,6 +425,19 @@ class MainFlutterWindow: NSWindow {
            "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
         BehaviorEngineBridge.shared.handle(call, result: result)
 
+      case "getFrontmostApp":
+        // Cheap AppKit read — safe and fast on the main thread. Polled every
+        // ~10s by the smart-detection background isolate.
+        result(NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+
+      case "isFocusModeActive":
+        // No public, stable API exists for reading macOS Focus/DND status
+        // across OS versions — reporting "not active" here is honest about
+        // that gap and (unlike leaving this unimplemented) avoids throwing
+        // a MissingPluginException on every ~10s poll for every user, since
+        // `respectFocusMode` defaults on.
+        result(false)
+
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
            let level = args["level"] as? String {

@@ -1,4 +1,3 @@
-
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -240,7 +239,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
 
-    final config = OverlayWindowConfig.fromJson(Map<String, dynamic>.from(args));
+    final config = OverlayWindowConfig.fromJson(
+      Map<String, dynamic>.from(args),
+    );
 
     if (config.breaksCompleted != null) {
       final count = config.breaksCompleted!;
@@ -324,8 +325,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (_overlayType == 'quickReminder' ||
           _overlayType == 'preBreakWarning') {
         _fadeController.duration = const Duration(milliseconds: 400);
-        final dismissDelay = _overlayType == 'preBreakWarning' ||
-                _overlayType == 'quickReminder'
+        final dismissDelay =
+            _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder'
             ? const Duration(seconds: 2)
             : const Duration(seconds: 5);
         Future.delayed(dismissDelay, () {
@@ -452,9 +453,10 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       child: FadeTransition(
         opacity: _fadeController,
         child: Material(
-          color: _overlayType == 'preBreakWarning' ||
+          color:
+              _overlayType == 'preBreakWarning' ||
                   _overlayType == 'quickReminder'
-              ? Colors.black.withValues(alpha: 0.2)
+              ? Colors.black.withValues(alpha: 0.34)
               : Colors.black,
           child: GestureDetector(
             onVerticalDragUpdate: (details) {

@@ -134,7 +134,9 @@ class NotificationService {
     await _show(id: 30, title: 'Your Week in Review', body: digest.toMessage());
   }
 
-  Future<void> showFocusCorrelationInsight(BreakFocusCorrelation correlation) async {
+  Future<void> showFocusCorrelationInsight(
+    BreakFocusCorrelation correlation,
+  ) async {
     await _show(
       id: 31,
       title: 'A pattern in your data',
@@ -153,6 +155,14 @@ class NotificationService {
       body: isLong
           ? 'Long break starts in 1 minute'
           : 'Short break starts in 30 seconds',
+    );
+  }
+
+  Future<void> showMeetingBreakReminder() async {
+    await _show(
+      id: 12,
+      title: 'Break ready',
+      body: 'You are in a meeting. BreakMate will keep this reminder quiet.',
     );
   }
 

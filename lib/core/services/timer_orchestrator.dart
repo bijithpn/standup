@@ -287,7 +287,7 @@ class TimerOrchestrator {
     final status = state == TimerState.breakActive
         ? 'Break active'
         : timerEngine.contextManager.isSmartPauseActive()
-        ? 'Paused for meeting or Focus'
+        ? 'Paused for Focus or presentation'
         : !timerEngine.contextManager.isWithinWorkingHours()
         ? 'Paused outside working hours'
         : state == TimerState.paused
@@ -309,6 +309,23 @@ class TimerOrchestrator {
     activityMonitor.setIdleThreshold(timerEngine.pauseTimerAfterMinutes);
     activityMonitor.setActivityCallback((isActive) {
       final state = timerEngine.state;
+
+      // Safety net for a stuck sleep flag: handleSystemSleep()/
+      // handleSystemWake() are driven purely by native OS notifications
+      // (NSWorkspace willSleep/didWake). If a wake notification is ever
+      // missed — a false-positive sleep event, a race during a fast
+      // sleep/wake cycle, etc. — the tick loop's `systemSleepPaused` guard
+      // stays true forever and the timer silently freezes with no state
+      // change visible to the user. Real, unambiguous user activity is
+      // proof the system is awake, so use it to self-heal.
+      if (isActive && timerEngine.systemSleepPaused) {
+        _logger.warning(
+          'Activity detected while systemSleepPaused was stuck true — '
+          'forcing timer wake recovery.',
+        );
+        timerEngine.handleSystemWake();
+      }
+
       if (isActive &&
           state == TimerState.paused &&
           !timerEngine.stateData.isManuallyPaused) {
