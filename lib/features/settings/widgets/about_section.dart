@@ -7,6 +7,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
 class AboutSection extends StatefulWidget {
   final SettingsModel settings;
@@ -62,31 +63,9 @@ class _AboutSectionState extends State<AboutSection> {
           child: Column(
             children: [
               const SizedBox(height: 12),
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppTheme.accentColor.withValues(alpha: 0.35),
-                      blurRadius: 22,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(2.5), // Premium gradient border
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(17.5),
-                  child: Image.asset(
-                    FlavorConfig.isDevelopment
-                        ? 'assets/icons/app_icon_dev.png'
-                        : 'assets/icons/app_icon.jpeg',
-                    width: 67,
-                    height: 67,
-                    fit: BoxFit.cover,
-                  ),
-                ),
+              const ThemedAppIcon.badge(
+                size: 72,
+                showDevBadge: true,
               ),
               const SizedBox(height: 16),
               ShaderMask(

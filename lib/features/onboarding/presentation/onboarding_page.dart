@@ -4,6 +4,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
+import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -162,19 +163,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
     return _buildStepContainer(
       title: AppStrings.welcomeTitle,
       subtitle: AppStrings.welcomeSubtitle,
-      child: Container(
-        width: 120,
-        height: 120,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceElevated,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Icon(
-          Icons.auto_awesome_rounded,
-          size: 64,
-          color: AppTheme.accent,
-        ),
+      child: const ThemedAppIcon.badge(
+        size: 120,
+        iconSize: 72,
+        showDevBadge: false,
       ),
     );
   }

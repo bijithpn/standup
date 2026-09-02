@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
+import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
 class _NavItem {
   final String label;
@@ -513,31 +514,7 @@ class _SidebarContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentColor.withValues(alpha: 0.25),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(2.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                FlavorConfig.instance.isDev
-                    ? 'assets/icons/app_icon_dev.png'
-                    : 'assets/icons/app_icon.jpeg',
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-              ),
-            ),
+          const ThemedAppIcon.badge(size: 72, showDevBadge: true,
           ),
           const SizedBox(height: 14),
           RichText(
