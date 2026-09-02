@@ -1,5 +1,6 @@
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/break_statistics_section.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -44,7 +45,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
-  int _selectedTab = 0; // 0: Overview, 1: Focus, 2: App Usage
+  int _selectedTab = 0; // 0: Overview, 1: Focus, 2: App Usage, 3: Breaks
 
   StatsModel get _stats => widget.stats;
 
@@ -71,7 +72,11 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         switch (_selectedTab) {
           0 => _buildOverviewTab(),
           1 => _buildFocusTab(),
-          _ => _buildAppUsageTab(),
+          2 => _buildAppUsageTab(),
+          _ => BreakStatisticsSection(
+            stats: _stats,
+            selectedFilter: _selectedFilter,
+          ),
         },
         const SizedBox(height: 48),
       ],
@@ -84,7 +89,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   /// tab.
   Widget _buildControlsRow() {
     final tabs = segmentedControl(
-      ['Overview', 'Focus', 'App Usage'],
+      ['Overview', 'Focus', 'App Usage', 'Breaks'],
       _selectedTab,
       (i) => setState(() => _selectedTab = i),
     );
@@ -96,7 +101,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 640) {
+        if (constraints.maxWidth < 850) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [tabs, const SizedBox(height: 12), period],
