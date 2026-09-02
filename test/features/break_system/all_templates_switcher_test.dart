@@ -122,6 +122,7 @@ void main() {
     'open_field',
     'dusk_glow',
     'paper_light',
+    'night_sky',
   ];
 
   for (final templateId in allTemplateIds) {

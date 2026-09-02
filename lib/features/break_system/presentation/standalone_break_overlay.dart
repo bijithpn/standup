@@ -61,6 +61,7 @@ const _kTemplatesWithChrome = {
   'quiet_pill',
   'paper_light',
   'dusk_glow',
+  'night_sky',
 };
 
 class StandaloneBreakOverlay extends StatefulWidget {

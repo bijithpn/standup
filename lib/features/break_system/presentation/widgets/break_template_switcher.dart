@@ -14,6 +14,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/haiku_ca
 import 'package:breakmate/features/break_overlay/presentation/templates/iris_rest_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/mono_time_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/night_sky_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/one_word_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/open_field_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/paper_light_template.dart';
@@ -273,6 +274,14 @@ class BreakTemplateSwitcher extends StatelessWidget {
         );
       case 'paper_light':
         return PaperLightTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'night_sky':
+        return NightSkyTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
