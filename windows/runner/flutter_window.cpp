@@ -939,7 +939,7 @@ void FlutterWindow::OnDestroy() {
   if (!is_companion_ && !is_overlay_ && !is_pip_) {
     CompanionWindowManager::GetInstance()->HideCompanion();
     CompanionWindowManager::GetInstance()->HidePiP();
-    OverlayWindowManager::GetInstance()->HideOverlay();
+    OverlayWindowManager::GetInstance()->DestroyAll();
   }
 
   Win32Window::OnDestroy();

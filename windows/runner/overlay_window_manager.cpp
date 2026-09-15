@@ -14,11 +14,13 @@ OverlayWindowManager* OverlayWindowManager::GetInstance() {
 OverlayWindowManager::OverlayWindowManager() {}
 
 OverlayWindowManager::~OverlayWindowManager() {
-  HideOverlay();
+  DestroyAll();
 }
 
 struct OverlayEnumData {
-  std::vector<std::unique_ptr<FlutterWindow>>* windows;
+  std::vector<OverlayWindowManager::OverlayEntry>* windows;
+  std::vector<OverlayWindowManager::OverlayEntry>* warm_pool;
+  const std::map<std::string, flutter::EncodableValue>* args;
   bool ignore_mouse;
   bool is_strict_mode;
   bool show_on_all_displays;
@@ -48,11 +50,12 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
     show_on_all_displays = std::get<bool>(it_all->second);
   }
 
-  OverlayEnumData enum_data = {&overlay_windows_, ignore_mouse, is_strict_mode, show_on_all_displays};
+  OverlayEnumData enum_data = {&overlay_windows_, &warm_pool_, &args, ignore_mouse, is_strict_mode, show_on_all_displays};
 
   auto monitor_enum_proc = [](HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData) -> BOOL {
     auto data = reinterpret_cast<OverlayEnumData*>(dwData);
     auto windows = data->windows;
+    auto warm_pool = data->warm_pool;
 
     MONITORINFO monitorInfo = {};
     monitorInfo.cbSize = sizeof(MONITORINFO);
@@ -63,6 +66,43 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
       if (!data->show_on_all_displays && !(monitorInfo.dwFlags & MONITORINFOF_PRIMARY)) {
         return TRUE;
       }
+    }
+
+    // Reuse an already-warm window for this monitor if we have one —
+    // avoids a cold FlutterEngine start (the dominant cost of "why does
+    // Preview take seconds to appear") entirely.
+    for (auto pool_it = warm_pool->begin(); pool_it != warm_pool->end(); ++pool_it) {
+      if (pool_it->monitor != hMonitor) continue;
+
+      OverlayWindowManager::OverlayEntry entry = std::move(*pool_it);
+      warm_pool->erase(pool_it);
+
+      entry.window->SetIgnoreMouseEvents(data->ignore_mouse);
+      // Re-applies position/size/topmost and does the right SW_SHOW* pick
+      // based on ignore_mouse_events_ — the same overlay-specific setup a
+      // freshly created window gets from its own Show() call below, which
+      // a plain ShowWindow(SW_SHOW) here would skip.
+      entry.window->Show();
+      if (data->is_strict_mode) {
+        SetForegroundWindow(entry.window->GetHandle());
+      }
+
+      // The engine is already running — push fresh data immediately
+      // rather than waiting on the cold-start fallback broadcast that
+      // showOverlay() schedules for newly created windows.
+      if (entry.window->GetEngine()) {
+        flutter::EncodableMap data_map;
+        for (const auto& [key, value] : *data->args) {
+          data_map[flutter::EncodableValue(key)] = value;
+        }
+        auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+            entry.window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
+            &flutter::StandardMethodCodec::GetInstance());
+        channel->InvokeMethod("updateOverlayData", std::make_unique<flutter::EncodableValue>(data_map));
+      }
+
+      windows->push_back(std::move(entry));
+      return TRUE;
     }
 
     flutter::DartProject project(L"data");
@@ -116,7 +156,7 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
       }
 
       IpcBridgeManager::GetInstance()->RegisterEngine(window->GetEngine());
-      windows->push_back(std::move(window));
+      windows->push_back(OverlayWindowManager::OverlayEntry{hMonitor, std::move(window)});
     }
     return TRUE;
   };
@@ -125,26 +165,49 @@ void OverlayWindowManager::ShowOverlay(bool is_strict_mode, const std::map<std::
 }
 
 void OverlayWindowManager::HideOverlay() {
-  for (auto& window : overlay_windows_) {
-    if (window && window->GetEngine()) {
-      IpcBridgeManager::GetInstance()->UnregisterEngine(window->GetEngine());
+  if (overlay_windows_.empty()) return;
+
+  // Keep the engines alive, hidden, for instant reuse next time — see
+  // `warm_pool_`. They're only ever actually torn down when the display
+  // configuration changes (their window frames/DPI would be stale) or the
+  // app is quitting (see DestroyAll).
+  for (auto& entry : overlay_windows_) {
+    if (entry.window) {
+      ShowWindow(entry.window->GetHandle(), SW_HIDE);
     }
-    if (window) {
-      window->Destroy();
-    }
+  }
+  for (auto& entry : overlay_windows_) {
+    warm_pool_.push_back(std::move(entry));
   }
   overlay_windows_.clear();
 }
 
+void OverlayWindowManager::DestroyEntries(std::vector<OverlayEntry>& entries) {
+  for (auto& entry : entries) {
+    if (entry.window && entry.window->GetEngine()) {
+      IpcBridgeManager::GetInstance()->UnregisterEngine(entry.window->GetEngine());
+    }
+    if (entry.window) {
+      entry.window->Destroy();
+    }
+  }
+  entries.clear();
+}
+
+void OverlayWindowManager::DestroyAll() {
+  DestroyEntries(overlay_windows_);
+  DestroyEntries(warm_pool_);
+}
+
 void OverlayWindowManager::UpdateOverlayData(const flutter::EncodableMap& data) {
-  for (auto& window : overlay_windows_) {
-    if (window && window->GetEngine()) {
+  for (auto& entry : overlay_windows_) {
+    if (entry.window && entry.window->GetEngine()) {
       // Push live timer/template data into every overlay engine so each
       // monitor stays visually synchronized.
       auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
+          entry.window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
           &flutter::StandardMethodCodec::GetInstance());
-      
+
       channel->InvokeMethod("updateOverlayData", std::make_unique<flutter::EncodableValue>(data));
     }
   }
@@ -163,10 +226,10 @@ void OverlayWindowManager::HandleEscapeKey() {
 
   // Send skipBreak to each overlay engine. The Dart bridge handler in
   // SetupOverlayBridge forwards this to the main engine and calls HideOverlay.
-  for (auto& window : overlay_windows_) {
-    if (window && window->GetEngine()) {
+  for (auto& entry : overlay_windows_) {
+    if (entry.window && entry.window->GetEngine()) {
       auto channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
+          entry.window->GetEngine()->messenger(), "com.breakmate.desktop/bridge",
           &flutter::StandardMethodCodec::GetInstance());
       channel->InvokeMethod(
           "skipBreak",
@@ -176,9 +239,12 @@ void OverlayWindowManager::HandleEscapeKey() {
 }
 
 void OverlayWindowManager::OnDisplayChange() {
-  if (overlay_windows_.empty()) return;
+  bool was_active = !overlay_windows_.empty();
+  if (!was_active && warm_pool_.empty()) return;
 
-  // Re-create overlay windows to align with the new display configuration or DPI.
+  // A real display/DPI change means every window frame (active or pooled)
+  // is stale — unlike a normal hide, these can't be kept warm for reuse,
+  // they have to be rebuilt against the new monitor layout.
   bool strict = false;
   auto it = last_show_args_.find(flutter::EncodableValue("strictMode"));
   if (it != last_show_args_.end() && std::holds_alternative<bool>(it->second)) {
@@ -192,6 +258,8 @@ void OverlayWindowManager::OnDisplayChange() {
     }
   }
 
-  HideOverlay();
-  ShowOverlay(strict, args);
+  DestroyAll();
+  if (was_active) {
+    ShowOverlay(strict, args);
+  }
 }
