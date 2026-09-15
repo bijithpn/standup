@@ -12,6 +12,11 @@ class OverlayWindowManager: NSObject {
     static let shared = OverlayWindowManager()
     
     private var overlayInstances: [NSScreen: OverlayInstance] = [:]
+    // Hidden-but-alive instances kept ready for instant reuse. Spinning up a
+    // fresh FlutterEngine per show (cold engine start) is the dominant cost
+    // of "why does Preview take ~3s" — after the first show, later shows
+    // reuse an already-warm engine instead of paying that cost again.
+    private var warmPool: [NSScreen: OverlayInstance] = [:]
     var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
     private var wasMainWindowVisible: Bool = false
     private var lastScreensHash: Int = 0
@@ -52,10 +57,16 @@ class OverlayWindowManager: NSObject {
         let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
         
         for screen in screens {
-            let instance = createOverlayInstance(for: screen, args: args)
+            let instance: OverlayInstance
+            if let warm = warmPool.removeValue(forKey: screen) {
+                prepareReusedInstance(warm, for: screen, args: args)
+                instance = warm
+            } else {
+                instance = createOverlayInstance(for: screen, args: args)
+            }
             instance.window.isReminder = isReminder
             overlayInstances[screen] = instance
-            
+
             instance.window.alphaValue = 0.0
             
             // For reminders, use orderFront to avoid stealing focus from other apps
@@ -100,9 +111,10 @@ class OverlayWindowManager: NSObject {
         showGeneration += 1
         if overlayInstances.isEmpty { return }
 
-        let instances = Array(overlayInstances.values)
+        let entries = overlayInstances
         overlayInstances.removeAll()
-        
+        let instances = Array(entries.values)
+
         let shouldRestore = restoreMainWindow && wasMainWindowVisible
         
         NSAnimationContext.runAnimationGroup({ context in
@@ -117,21 +129,45 @@ class OverlayWindowManager: NSObject {
                let mainWindow = appDelegate.mainFlutterWindow {
                 mainWindow.makeKeyAndOrderFront(nil)
             }
-            
+
             for instance in instances {
                 instance.window.orderOut(nil)
-                instance.window.contentViewController = nil
-                instance.window.contentView = nil
-                
-                let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
-                channel.setMethodCallHandler(nil)
-                
-                IpcBridgeManager.shared.unregister(engine: instance.engine)
-                instance.engine.shutDownEngine()
+                instance.window.ignoresMouseEvents = false
             }
         })
-        
+
+        // Keep the engines alive, hidden, for instant reuse next time —
+        // see `warmPool`. They're only ever actually torn down when the
+        // screen configuration changes (their window frames would be
+        // stale) or the app is quitting.
+        for (screen, instance) in entries {
+            warmPool[screen] = instance
+        }
+
         NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+    }
+
+    private func destroyInstance(_ instance: OverlayInstance) {
+        instance.window.orderOut(nil)
+        instance.window.contentViewController = nil
+        instance.window.contentView = nil
+
+        let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
+        channel.setMethodCallHandler(nil)
+
+        IpcBridgeManager.shared.unregister(engine: instance.engine)
+        instance.engine.shutDownEngine()
+    }
+
+    /// Fully tears down every warm/active engine — call only when their
+    /// window frames are stale (screen configuration changed) or the app
+    /// is quitting. Everyday hide/show should never reach this; that's the
+    /// whole point of `warmPool`.
+    func destroyAllInstances() {
+        for instance in overlayInstances.values { destroyInstance(instance) }
+        for instance in warmPool.values { destroyInstance(instance) }
+        overlayInstances.removeAll()
+        warmPool.removeAll()
     }
     
     func setClickThrough(_ enabled: Bool) {
@@ -170,8 +206,11 @@ class OverlayWindowManager: NSObject {
         }
         lastScreensHash = screensHash
         
+        // A real display change means every window frame (active or
+        // pooled) is stale — unlike a normal hide, these can't be kept
+        // warm for reuse, they have to be rebuilt against the new screens.
         let savedArgs = self.lastShowArgs
-        hideOverlay()
+        destroyAllInstances()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.showOverlay(args: savedArgs)
         }
@@ -275,6 +314,35 @@ class OverlayWindowManager: NSObject {
         }
         
         return OverlayInstance(window: window, engine: engine, controller: controller)
+    }
+
+    /// Reuses an already-warm instance pulled from `warmPool` for a new
+    /// show — same idea as `createOverlayInstance`'s setup, minus creating
+    /// a new window/engine (that's the whole point: no cold engine start,
+    /// no waiting on a fresh Dart isolate to boot). Its method channel
+    /// handler is already registered from when it was first created, so a
+    /// single `updateOverlayData` call is enough — no need for the
+    /// redundant delayed broadcast `createOverlayInstance` sends to catch
+    /// a still-warming-up engine.
+    private func prepareReusedInstance(_ instance: OverlayInstance, for screen: NSScreen, args: [String: Any]?) {
+        let isTransparent = args?["isTransparent"] as? Bool ?? false
+        instance.window.backgroundColor = isTransparent ? NSColor.clear : NSColor.black
+        instance.window.isOpaque = !isTransparent
+        instance.window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
+        instance.controller.backgroundColor = isTransparent ? NSColor.clear : NSColor.black
+        instance.window.setFrame(screen.frame, display: true)
+
+        var initialArgs = args ?? [:]
+        var displayId = "Display_unknown"
+        if #available(macOS 10.15, *) {
+            displayId = screen.localizedName
+        }
+        initialArgs["displayId"] = displayId
+        initialArgs["boundsWidth"] = screen.frame.width
+        initialArgs["boundsHeight"] = screen.frame.height
+
+        let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
+        channel.invokeMethod("updateOverlayData", arguments: initialArgs)
     }
 }
 

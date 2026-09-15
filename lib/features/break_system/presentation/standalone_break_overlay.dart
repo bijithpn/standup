@@ -142,6 +142,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   // flips true, render nothing instead of guessing wrong.
   bool _hasReceivedOverlayData = false;
 
+  // Bumped on every `_applyOverlayData` call so each one's auto-dismiss
+  // timer can tell whether it's still the *latest* payload by the time it
+  // fires — see the dismissDelay `Future.delayed` below. Without this, an
+  // earlier session's 2s dismiss timer could fire after a newer payload
+  // has already landed (e.g. two reminders shown back-to-back on a reused,
+  // warm engine) and force-hide a session it knows nothing about.
+  int _overlayDataGeneration = 0;
+
   void _loadInitialSettings() {
     try {
       if (SimplePrefs.instance.isReady) {
@@ -257,8 +265,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   void _applyOverlayData(Map args) {
     if (!mounted) return;
 
-    final isFirstOverlayData = !_hasReceivedOverlayData;
     _hasReceivedOverlayData = true;
+    _overlayDataGeneration++;
+    final myGeneration = _overlayDataGeneration;
 
     // A fresh overlay payload (e.g. swapping templates while previewing)
     // always means a fresh dismissible session — don't let a dismiss
@@ -361,6 +370,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             : const Duration(seconds: 5);
         Future.delayed(dismissDelay, () {
           if (mounted &&
+              _overlayDataGeneration == myGeneration &&
               (_overlayType == 'quickReminder' ||
                   _overlayType == 'preBreakWarning')) {
             _skipBreak();
@@ -371,12 +381,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       }
     });
 
-    // Now that we know what to render, start the fade-in. Doing this any
-    // earlier (e.g. unconditionally in initState) fades in whatever
-    // placeholder content was showing and then snaps to the real overlay
-    // once data arrives — worse than just waiting the extra tens of
-    // milliseconds for real data first.
-    if (isFirstOverlayData) {
+    // Now that we know what to render, start the fade-in — unless it's
+    // already fully visible or mid-fade-in. The native side now keeps this
+    // engine warm and reuses it for later shows instead of recreating it
+    // each time (see `warmPool` in MainFlutterWindow.swift, the fix for
+    // Preview's ~3s cold-start delay), so a later `updateOverlayData` can
+    // land on a widget that already faded out from a previous session and
+    // needs to fade back in — not just on a first-ever payload.
+    if (_fadeController.status != AnimationStatus.forward &&
+        _fadeController.value < 1) {
       _fadeController.forward();
     }
   }

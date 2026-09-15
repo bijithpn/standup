@@ -5,7 +5,6 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
-import 'package:breakmate/shared/widgets/app_dropdown.dart';
 
 class NotificationsSection extends StatelessWidget {
   final SettingsModel settings;
@@ -112,12 +111,7 @@ class NotificationsSection extends StatelessWidget {
         ),
         if (settings.postureReminderEnabled) ...[
           divider(),
-          _buildReminderOptions(
-            interval: settings.postureReminderIntervalMinutes,
-            onIntervalChanged: (v) =>
-                onSave(settings.copyWith(postureReminderIntervalMinutes: v)),
-            onPreview: () => _showPreview('posture'),
-          ),
+          _buildReminderPreviewRow(onPreview: () => _showPreview('posture')),
         ],
       ],
     );
@@ -134,44 +128,26 @@ class NotificationsSection extends StatelessWidget {
         ),
         if (settings.eyeBlinkReminderEnabled) ...[
           divider(),
-          _buildReminderOptions(
-            interval: settings.eyeBlinkReminderIntervalMinutes,
-            onIntervalChanged: (v) =>
-                onSave(settings.copyWith(eyeBlinkReminderIntervalMinutes: v)),
-            onPreview: () => _showPreview('eye'),
-          ),
+          _buildReminderPreviewRow(onPreview: () => _showPreview('eye')),
         ],
       ],
     );
   }
 
-  Widget _buildReminderOptions({
-    required int interval,
-    required ValueChanged<int> onIntervalChanged,
-    required VoidCallback onPreview,
-  }) {
+  // No manual interval anymore — timing is automatic, tied to the actual
+  // break cycle (see `TimerEngine._checkHealthReminders`) rather than a
+  // separately configured countdown. Enable/disable above is the only
+  // control; this row is just the explanation + a way to preview the look.
+  Widget _buildReminderPreviewRow({required VoidCallback onPreview}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
           const Expanded(
             child: Text(
-              'Interval',
+              'Timed automatically alongside your break timer',
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
-          ),
-          AppDropdown<int>(
-            value: [10, 20, 30, 45, 60].contains(interval) ? interval : 30,
-            items: [
-              10,
-              20,
-              30,
-              45,
-              60,
-            ].map((v) => AppDropdownItem(value: v, label: '$v min')).toList(),
-            onChanged: (v) {
-              if (v != null) onIntervalChanged(v);
-            },
           ),
           const SizedBox(width: 12),
           GestureDetector(

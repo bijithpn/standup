@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 
 import 'dart:async';
+import 'dart:math';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:flutter/foundation.dart';
@@ -51,6 +52,20 @@ class TimerEngine extends ChangeNotifier {
   int _longBreakDurationMinutes = AppConstants.defaultLongBreakDurationMinutes;
   int _pauseTimerAfterMinutes = 5;
   int _resetTimerAfterMinutes = 15;
+
+  // Health reminders (posture/eye rest) no longer run on a fixed,
+  // user-set countdown — each fires once at a randomized point within the
+  // current work cycle (see `_checkHealthReminders`). These hold that
+  // cycle's chosen target in seconds; null means "not yet picked for this
+  // cycle". Not part of TimerStateData because they're never persisted —
+  // a fresh random target is fine after every app restart.
+  final Random _healthReminderRandom = Random();
+  int? _postureTargetSeconds;
+  int? _eyeBlinkTargetSeconds;
+
+  // Evidence-based baseline cadences — see `_checkHealthReminders`.
+  static const int _eyeRestBaselineMinutes = 20; // the 20-20-20 rule
+  static const int _postureBaselineMinutes = 30; // common ergonomic guidance
 
   final ValueNotifier<int> countdownNotifier = ValueNotifier<int>(0);
   final ValueNotifier<Duration> workElapsedNotifier = ValueNotifier<Duration>(
@@ -420,28 +435,69 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
-    int postureInterval = settings.postureReminderIntervalMinutes;
-    int eyeblinkInterval = settings.eyeBlinkReminderIntervalMinutes;
+    // Health reminders are enable/disable only now — no manual interval —
+    // and are timed off evidence-based cadences, not an arbitrary fraction
+    // of whatever the (adaptive, sometimes very long) break interval
+    // happens to be:
+    //  - Eye rest follows the well-known 20-20-20 rule: roughly every 20
+    //    minutes, look at something 20 feet away for 20 seconds.
+    //  - Posture checks follow common ergonomic guidance: change position
+    //    and sit up straight roughly every 30 minutes.
+    // Tying these directly to `shortBreakIntervalMinutes` (which
+    // AdaptiveBreakService can stretch up to 90 minutes on a
+    // light-activity day) would let eye strain build for over an hour —
+    // the opposite of "helpful for a healthy body". Instead, that same
+    // adaptive signal only nudges the baseline by up to ±20% (busier/more
+    // active right now → nudged more frequent, matching the same
+    // usage-driven signal the break timer itself responds to), and a
+    // little jitter keeps the cadence from feeling mechanically fixed
+    // while staying inside a sensible range. This piggybacks on the tick
+    // this method is already called from every second — no extra timers,
+    // no added CPU cost.
+    final activityRatio = (_shortBreakIntervalMinutes /
+            AppConstants.defaultShortBreakIntervalMinutes)
+        .clamp(0.8, 1.2);
+    final slowdown =
+        settings.quietModeEnabled && settings.quietModePreset == 'low_battery'
+        ? 2
+        : 1;
 
-    if (settings.quietModeEnabled &&
-        settings.quietModePreset == 'low_battery') {
-      postureInterval *= 2;
-      eyeblinkInterval *= 2;
-    }
-
-    if (settings.postureReminderEnabled && postureInterval > 0) {
-      if (_stateData.postureElapsedSeconds >= postureInterval * 60) {
+    if (settings.postureReminderEnabled) {
+      _postureTargetSeconds ??= _healthReminderTargetSeconds(
+        baselineMinutes: _postureBaselineMinutes,
+        activityRatio: activityRatio,
+        slowdown: slowdown,
+      );
+      if (_stateData.postureElapsedSeconds >= _postureTargetSeconds!) {
         _stateData.postureElapsedSeconds = 0;
-        _triggerHealthReminder('posture', settings.postureReminderType);
+        _postureTargetSeconds = null;
+        _triggerHealthReminder('posture', 'overlay');
       }
     }
 
-    if (settings.eyeBlinkReminderEnabled && eyeblinkInterval > 0) {
-      if (_stateData.eyeBlinkElapsedSeconds >= eyeblinkInterval * 60) {
+    if (settings.eyeBlinkReminderEnabled) {
+      _eyeBlinkTargetSeconds ??= _healthReminderTargetSeconds(
+        baselineMinutes: _eyeRestBaselineMinutes,
+        activityRatio: activityRatio,
+        slowdown: slowdown,
+      );
+      if (_stateData.eyeBlinkElapsedSeconds >= _eyeBlinkTargetSeconds!) {
         _stateData.eyeBlinkElapsedSeconds = 0;
-        _triggerHealthReminder('eyeblink', settings.eyeBlinkReminderType);
+        _eyeBlinkTargetSeconds = null;
+        _triggerHealthReminder('eyeblink', 'overlay');
       }
     }
+  }
+
+  int _healthReminderTargetSeconds({
+    required int baselineMinutes,
+    required double activityRatio,
+    required int slowdown,
+  }) {
+    // ±15% jitter around the (activity-adjusted) baseline.
+    final jitter = 0.85 + _healthReminderRandom.nextDouble() * 0.3;
+    final minutes = baselineMinutes * activityRatio * jitter * slowdown;
+    return (minutes * 60).round().clamp(60, 24 * 60 * 60);
   }
 
   void _triggerHealthReminder(String reminderType, String displayType) {
@@ -673,6 +729,8 @@ class TimerEngine extends ChangeNotifier {
     _stateData.workElapsed = Duration.zero;
     _stateData.postureElapsedSeconds = 0;
     _stateData.eyeBlinkElapsedSeconds = 0;
+    _postureTargetSeconds = null;
+    _eyeBlinkTargetSeconds = null;
     _stateData.state = TimerState.idle;
     _stateData.isManuallyPaused = false;
     _stateData.manualOverride = false;
