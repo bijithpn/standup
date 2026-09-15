@@ -127,7 +127,40 @@ class WeeklyDigestService {
       longestDeepWorkSessionSeconds: longestSessionSeconds,
       companionMilestoneLabel: _streakService.highestMilestone?.label,
       daysOverBudgetByCategory: _daysOverBudget(today),
+      trailingAverageAdherenceRate: _trailingAverageAdherence(
+        weeklyData,
+        today,
+      ),
     );
+  }
+
+  /// Break-adherence rate over the 4 weeks *before* this digest's 7-day
+  /// window (days 8-35 back) — the comparison baseline for
+  /// [WeeklyDigest.adherenceDeltaPoints]. Null when there isn't at least a
+  /// week of prior data to trust, so a brand-new install never gets a
+  /// misleading "worse than usual" note.
+  double? _trailingAverageAdherence(
+    List<DailyStats> weeklyData,
+    DateTime today,
+  ) {
+    final trailingKeys = <String>{
+      for (var i = 7; i < 35; i++) _dateKey(today.subtract(Duration(days: i))),
+    };
+    final trailingDays = weeklyData
+        .where((d) => trailingKeys.contains(d.date))
+        .toList();
+    if (trailingDays.length < 7) return null;
+
+    final completed = trailingDays.fold<int>(
+      0,
+      (sum, d) => sum + d.breaksCompleted,
+    );
+    final skipped = trailingDays.fold<int>(
+      0,
+      (sum, d) => sum + d.breaksSkipped,
+    );
+    final total = completed + skipped;
+    return total > 0 ? completed / total : null;
   }
 
   /// How many of the last 7 days each budgeted category went over its

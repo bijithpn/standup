@@ -84,6 +84,9 @@ class FakeNotificationService extends NotificationService {
   }
 }
 
+String _dateKey(DateTime dt) =>
+    '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
 void main() {
   late InMemoryStorageService storage;
   late FakeStatsService statsService;
@@ -193,6 +196,37 @@ void main() {
     final digest = digestWithBudget.buildDigest(now: now);
 
     expect(digest.daysOverBudgetByCategory[AppCategory.browsing], 1);
+  });
+
+  group('trailingAverageAdherenceRate (§7.3)', () {
+    test('is null with fewer than 7 days of prior history', () {
+      final now = DateTime(2026, 9, 6, 18, 0);
+      statsService.setWeeklyData([
+        DailyStats(date: '2026-08-25', breaksCompleted: 3, breaksSkipped: 1, usageMinutes: 0),
+      ]);
+      final digest = digestService.buildDigest(now: now);
+      expect(digest.trailingAverageAdherenceRate, isNull);
+    });
+
+    test('averages breaks from days 8-35 back, excluding this week', () {
+      final now = DateTime(2026, 9, 6, 18, 0);
+      statsService.setWeeklyData([
+        // This week (days 0-6 back) — must not be included in the average.
+        DailyStats(date: '2026-09-06', breaksCompleted: 10, breaksSkipped: 0, usageMinutes: 0),
+        // Trailing window (days 7-34 back): 7 days, 70% adherence.
+        for (var i = 8; i < 15; i++)
+          DailyStats(
+            date: _dateKey(now.subtract(Duration(days: i))),
+            breaksCompleted: 7,
+            breaksSkipped: 3,
+            usageMinutes: 0,
+          ),
+      ]);
+
+      final digest = digestService.buildDigest(now: now);
+
+      expect(digest.trailingAverageAdherenceRate, closeTo(0.7, 0.001));
+    });
   });
 
   test('buildDigest has no budget data when nothing is configured', () {

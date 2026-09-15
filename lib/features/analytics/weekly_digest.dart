@@ -19,6 +19,12 @@ class WeeklyDigest {
   /// absent from this map — never present with a 0.
   final Map<AppCategory, int> daysOverBudgetByCategory;
 
+  /// Break-adherence rate averaged over the 4 weeks *before* this one —
+  /// the trend-regression check from the workflow-analysis plan doc §7.3
+  /// ("what changed," not just a snapshot). Null when there isn't at least
+  /// a week of prior history to trust a comparison against.
+  final double? trailingAverageAdherenceRate;
+
   const WeeklyDigest({
     required this.breakAdherenceRate,
     required this.breaksCompleted,
@@ -27,7 +33,28 @@ class WeeklyDigest {
     required this.longestDeepWorkSessionSeconds,
     required this.companionMilestoneLabel,
     this.daysOverBudgetByCategory = const {},
+    this.trailingAverageAdherenceRate,
   });
+
+  /// Percentage-point gap between this week's break adherence and
+  /// [trailingAverageAdherenceRate]. Positive means this week is better.
+  /// Null when there's no trailing average to compare against.
+  double? get adherenceDeltaPoints {
+    final trailing = trailingAverageAdherenceRate;
+    if (trailing == null) return null;
+    return (breakAdherenceRate - trailing) * 100;
+  }
+
+  /// A one-sentence trend note, only when the swing is large enough to be
+  /// worth mentioning (avoids noise on an ordinary week) — shared by
+  /// [toMessage] and [toMarkdown] so the wording stays consistent.
+  String? _trendNote() {
+    final delta = adherenceDeltaPoints;
+    if (delta == null || delta.abs() < 10) return null;
+    final direction = delta > 0 ? 'better' : 'worse';
+    return 'Break adherence is ${delta.abs().round()} points $direction '
+        'than your last 4 weeks.';
+  }
 
   String toMessage() {
     final parts = <String>[];
@@ -49,6 +76,8 @@ class WeeklyDigest {
     }
     final budgetNote = _budgetSummary();
     if (budgetNote != null) parts.add(budgetNote);
+    final trendNote = _trendNote();
+    if (trendNote != null) parts.add(trendNote);
     return parts.isEmpty
         ? 'Not much tracked data this week yet — keep going!'
         : parts.join(' ');
@@ -102,6 +131,8 @@ class WeeklyDigest {
         '- **${entry.key.label} over budget:** ${entry.value}/7 days',
       );
     }
+    final trendNote = _trendNote();
+    if (trendNote != null) buffer.writeln('- **Trend:** $trendNote');
     if (totalBreaks == 0 &&
         topFocusCategory == null &&
         companionMilestoneLabel == null &&

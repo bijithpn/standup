@@ -74,6 +74,7 @@ class AppUsageTracker {
     try {
       final app = await _appTracking.getActiveApp();
       if (app == null) return;
+      if (isBreakMateItself(app)) return;
 
       final appKey = _resolveAppKey(app);
       if (appKey == null) return;
@@ -121,6 +122,24 @@ class AppUsageTracker {
       }
     }
     _pendingSeconds.clear();
+  }
+
+  /// True when the "active app" is BreakMate itself — its Settings window,
+  /// the Desktop Companion overlay, or the break overlay briefly grabbing
+  /// focus. BreakMate runs continuously in the background, so without this
+  /// check its own windows taking focus (e.g. opening Settings to check
+  /// stats) got counted as ordinary app usage, inflating its own tracked
+  /// time far past any real foreground app.
+  ///
+  /// [ActiveAppInfo.bundleId] is the real bundle identifier on macOS
+  /// (`com.bijith.breakmate`) and the full executable path on Windows —
+  /// either way it reliably contains BreakMate's own identifier when
+  /// BreakMate is frontmost (see AppTrackingBridge/app_tracking_bridge.cpp).
+  @visibleForTesting
+  static bool isBreakMateItself(ActiveAppInfo app) {
+    final bundleId = app.bundleId.toLowerCase();
+    return bundleId == 'com.bijith.breakmate' ||
+        bundleId.contains('breakmateapp.exe');
   }
 
   /// bundleId is a real bundle identifier on macOS and the full exe path on

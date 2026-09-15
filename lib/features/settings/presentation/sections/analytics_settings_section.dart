@@ -13,12 +13,16 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
+import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/analytics/break_focus_correlation.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/analytics/calendar_focus_insight.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/features/analytics/focus_trend.dart';
+import 'package:breakmate/features/analytics/insights_overview.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_score_card.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/insights_overview_card.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_trend_chart.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/shared/widgets/minimal_controls.dart';
@@ -47,7 +51,19 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
   int _selectedTab = 0; // 0: Overview, 1: Focus, 2: App Usage, 3: Breaks
 
+  /// How many days back the calendar-vs-focus comparison (§7.4) looks —
+  /// computed once per widget lifetime via [_loadCalendarComparison], not
+  /// on every rebuild, since it's a native calendar round-trip.
+  static const int _calendarComparisonLookbackDays = 14;
+  Future<CalendarFocusComparison?>? _calendarComparisonFuture;
+
   StatsModel get _stats => widget.stats;
+
+  @override
+  void initState() {
+    super.initState();
+    _calendarComparisonFuture = _loadCalendarComparison();
+  }
 
   UsagePeriod get _usagePeriod {
     switch (_selectedFilter) {
@@ -129,6 +145,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           productivityScore: viewMetrics.productivityScore,
           wellnessScore: viewMetrics.wellnessScore,
         ),
+        const SizedBox(height: 20),
+        _buildInsightsCard(),
         const SizedBox(height: 28),
         sectionHeader('Activity Trend'),
         const SizedBox(height: 12),
@@ -138,6 +156,122 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         const SizedBox(height: 12),
         _buildDetailGrid(viewMetrics),
       ],
+    );
+  }
+
+  /// Deliberately period-independent (always today's budgets + this week's
+  /// break/focus history), unlike the rest of the Overview tab — an insight
+  /// card that changes meaning under "This Month" would be confusing. Reads
+  /// the same data the Focus and App Usage tabs already compute
+  /// individually; see [buildOverviewInsights].
+  Widget _buildInsightsCard() {
+    return FutureBuilder<CalendarFocusComparison?>(
+      future: _calendarComparisonFuture,
+      builder: (context, calendarSnapshot) {
+        return AnimatedBuilder(
+          animation: sl<FocusStreakService>(),
+          builder: (context, _) {
+            return Consumer3<AppUsageService, FocusSessionService, BreakHistoryService>(
+              builder: (context, usageService, focusService, breakHistory, _) {
+                final correlation = BreakFocusCorrelation.compute(
+                  events: breakHistory.events,
+                  allSessions: focusService.sessionsForPeriod(
+                    UsagePeriod.month,
+                  ),
+                );
+                final week = _thisWeekBreakTotals();
+
+                return InsightsOverviewCard(
+                  insights: buildOverviewInsights(
+                    todayCategoryTotals: usageService.categoryTotals(
+                      UsagePeriod.today,
+                    ),
+                    budgetMinutes: widget.settings.categoryDailyBudgetMinutes,
+                    correlation: correlation,
+                    focusStreakDays: sl<FocusStreakService>()
+                        .currentStreakDays(),
+                    breaksCompletedThisWeek: week.completed,
+                    breaksSkippedThisWeek: week.skipped,
+                    currentLongBreakIntervalMinutes:
+                        widget.settings.longBreakIntervalMinutes,
+                    breakEvents: breakHistory.events,
+                    focusSessions: focusService.sessionsForPeriod(
+                      UsagePeriod.month,
+                    ),
+                    calendarComparison: calendarSnapshot.data,
+                  ),
+                  onApply: (action) =>
+                      widget.onSave(action.apply(widget.settings)),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Fetches the last [_calendarComparisonLookbackDays] of calendar events
+  /// and pairs each day's meeting count against its focus score — see
+  /// [CalendarFocusComparison]. `null` (no comparison shown) whenever
+  /// calendar access isn't enabled or the native call fails; never throws.
+  Future<CalendarFocusComparison?> _loadCalendarComparison() async {
+    if (!widget.settings.calendarEnabled) return null;
+
+    final now = DateTime.now();
+    final start = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(const Duration(days: _calendarComparisonLookbackDays));
+
+    List<CalendarEvent> events;
+    try {
+      events = await sl<CalendarService>().getEvents(start, now);
+    } catch (_) {
+      return null;
+    }
+
+    final meetingCountByDate = <String, int>{};
+    for (final event in events) {
+      if (event.isAllDay) continue;
+      final key = _dateKeyFor(event.start);
+      meetingCountByDate[key] = (meetingCountByDate[key] ?? 0) + 1;
+    }
+
+    final usageService = sl<AppUsageService>();
+    final focusService = sl<FocusSessionService>();
+    final focusScoreByDate = <String, double>{};
+    for (var i = 0; i < _calendarComparisonLookbackDays; i++) {
+      final date = now.subtract(Duration(days: i));
+      final key = _dateKeyFor(date);
+      final totalActiveSeconds = usageService
+          .categoryTotals(UsagePeriod.today, now: date)
+          .values
+          .fold<int>(0, (sum, s) => sum + s);
+      if (totalActiveSeconds <= 0) continue;
+      focusScoreByDate[key] = focusService.focusScore(
+        key,
+        totalActiveSeconds: totalActiveSeconds,
+      );
+    }
+
+    return CalendarFocusComparison.compute(
+      meetingCountByDate: meetingCountByDate,
+      focusScoreByDate: focusScoreByDate,
+    );
+  }
+
+  String _dateKeyFor(DateTime dt) =>
+      '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+
+  ({int completed, int skipped}) _thisWeekBreakTotals() {
+    final rangeData = _stats.weeklyData.length > 7
+        ? _stats.weeklyData.sublist(_stats.weeklyData.length - 7)
+        : _stats.weeklyData;
+    return (
+      completed: rangeData.fold(0, (sum, d) => sum + d.breaksCompleted),
+      skipped: rangeData.fold(0, (sum, d) => sum + d.breaksSkipped),
     );
   }
 

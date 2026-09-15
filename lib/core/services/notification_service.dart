@@ -144,6 +144,13 @@ class NotificationService {
     );
   }
 
+  /// The daily proactive insight (plan doc §7.5) — the single
+  /// highest-priority [OverviewInsight] of the day, delivered once so it
+  /// reaches the user without a Statistics-screen visit.
+  Future<void> showDailyInsight(String text) async {
+    await _show(id: 32, title: 'Something worth noticing', body: text);
+  }
+
   Future<void> showReminder({required String message}) async {
     await _show(id: 0, title: 'BreakMate', body: message);
   }

@@ -33,6 +33,7 @@ import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
 import 'package:breakmate/features/analytics/focus_insight_service.dart';
 import 'package:breakmate/features/analytics/focus_streak_service.dart';
+import 'package:breakmate/features/analytics/daily_insight_notifier_service.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/core/display/services/display_manager.dart';
@@ -41,6 +42,7 @@ import 'package:breakmate/core/display/controllers/display_controller.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/native/global_hotkey_service.dart';
+import 'package:breakmate/core/native/explain_hotkey_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/native/focus_mode_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
@@ -133,6 +135,17 @@ Future<void> initDependencies() async {
       eventBus: sl(),
     ),
   );
+  sl.registerSingleton<DailyInsightNotifierService>(
+    DailyInsightNotifierService(
+      storage: sl(),
+      usageService: sl(),
+      focusSessionService: sl(),
+      breakHistoryService: sl(),
+      streakService: sl(),
+      settingsRepository: sl(),
+      notificationService: sl(),
+    ),
+  );
   sl.registerSingleton<PresentationDetectionService>(
     PresentationDetectionService(),
   );
@@ -176,6 +189,7 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
+  sl.registerSingleton<ExplainHotkeyService>(ExplainHotkeyService());
 
   sl.registerLazySingleton<WellnessLibraryRepository>(
     () => WellnessLibraryRepository(settingsRepo: sl()),

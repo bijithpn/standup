@@ -98,6 +98,93 @@ void main() {
     expect(apps.first.name, 'Code');
   });
 
+  group('isBreakMateItself', () {
+    test('matches the macOS bundle id', () {
+      expect(
+        AppUsageTracker.isBreakMateItself(
+          ActiveAppInfo(
+            name: 'BreakMate',
+            bundleId: 'com.bijith.breakmate',
+            executableName: 'BreakMate',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('matches the Windows exe path', () {
+      expect(
+        AppUsageTracker.isBreakMateItself(
+          ActiveAppInfo(
+            name: 'BreakMate',
+            bundleId: r'C:\Users\me\AppData\Local\BreakMateApp\BreakMateApp.exe',
+            executableName: 'BreakMateApp.exe',
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('does not match an unrelated app', () {
+      expect(
+        AppUsageTracker.isBreakMateItself(
+          ActiveAppInfo(
+            name: 'Visual Studio Code',
+            bundleId: 'com.microsoft.vscode',
+            executableName: 'Code',
+          ),
+        ),
+        isFalse,
+      );
+    });
+  });
+
+  test(
+    "does not track BreakMate's own windows as app usage or a context switch",
+    () async {
+      when(() => mockSettingsRepo.currentSettings)
+          .thenReturn(const SettingsModel(appUsageTrackingEnabled: true));
+      when(() => mockActivityMonitor.isIdle).thenReturn(false);
+
+      when(() => mockTracking.getActiveApp()).thenAnswer(
+        (_) async => ActiveAppInfo(
+          name: 'index.dart — Visual Studio Code',
+          bundleId: 'com.microsoft.vscode',
+          executableName: 'Code',
+        ),
+      );
+      await tracker.tickOnce();
+
+      // Opening BreakMate's own Settings window briefly steals focus.
+      when(() => mockTracking.getActiveApp()).thenAnswer(
+        (_) async => ActiveAppInfo(
+          name: 'BreakMate',
+          bundleId: 'com.bijith.breakmate',
+          executableName: 'BreakMate',
+        ),
+      );
+      await tracker.tickOnce();
+
+      when(() => mockTracking.getActiveApp()).thenAnswer(
+        (_) async => ActiveAppInfo(
+          name: 'index.dart — Visual Studio Code',
+          bundleId: 'com.microsoft.vscode',
+          executableName: 'Code',
+        ),
+      );
+      await tracker.tickOnce();
+      tracker.flushNow();
+
+      final apps = usageService.topApps(UsagePeriod.today);
+      // Only VS Code was recorded — BreakMate's own tick contributed
+      // nothing, and switching back to VS Code afterward doesn't count as
+      // a second context switch either.
+      expect(apps, hasLength(1));
+      expect(apps.first.appKey, 'com.microsoft.vscode');
+      expect(apps.first.seconds, 20);
+    },
+  );
+
   test('records a focus session once 15 minutes of coding accumulate', () async {
     when(() => mockSettingsRepo.currentSettings)
         .thenReturn(const SettingsModel(appUsageTrackingEnabled: true));

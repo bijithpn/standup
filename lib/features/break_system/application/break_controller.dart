@@ -19,7 +19,10 @@ import 'package:breakmate/features/companion/controllers/companion_overlay_contr
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/native/global_hotkey_service.dart';
+import 'package:breakmate/core/native/explain_hotkey_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/services/timer_explanation.dart';
+import 'package:breakmate/core/services/timer_explanation_overlay_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
@@ -285,6 +288,26 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       hotkeyService.stop();
     }
+
+    final explainHotkeyService = sl<ExplainHotkeyService>();
+    if (settings.globalHotkeyEnabled) {
+      explainHotkeyService.start(onPressed: showTimerExplanation);
+    } else {
+      explainHotkeyService.stop();
+    }
+  }
+
+  /// Phase 2's "why did BreakMate do that?" panel — opened by
+  /// `⌘⌥E`/`Ctrl+Alt+E` ([ExplainHotkeyService]), shown via
+  /// [TimerExplanationOverlayService]. Templated text over state this
+  /// controller and [TimerContextManager] already expose; no AI call.
+  void showTimerExplanation() {
+    final explanation = buildTimerExplanation(
+      timerState: _timerEngine.state,
+      contextManager: _timerEngine.contextManager,
+      settings: _settingsRepo.currentSettings,
+    );
+    TimerExplanationOverlayService.show(explanation);
   }
 
   void snooze({int? minutes}) {
