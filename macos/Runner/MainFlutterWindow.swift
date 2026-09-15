@@ -15,6 +15,7 @@ class OverlayWindowManager: NSObject {
     var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
     private var wasMainWindowVisible: Bool = false
     private var lastScreensHash: Int = 0
+    private var showGeneration: Int = 0
     
     struct OverlayInstance {
         let window: OverlayPanel
@@ -58,11 +59,17 @@ class OverlayWindowManager: NSObject {
             instance.window.alphaValue = 0.0
             
             // For reminders, use orderFront to avoid stealing focus from other apps
-            // For full screens, use orderFrontRegardless to ensure visibility over fullscreen apps
+            // For full screens, make the (non-activating) panel key so it actually
+            // receives keyboard events (Escape / any-key dismiss) — a panel that is
+            // merely ordered front never becomes key and silently swallows no input,
+            // it just never gets any. `.nonactivatingPanel` means this does not
+            // steal focus from the owning app or other apps, so it's still safe to
+            // do over fullscreen apps.
             if isReminder {
                 instance.window.orderFront(nil)
             } else {
                 instance.window.orderFrontRegardless()
+                instance.window.makeKey()
             }
             
             NSAnimationContext.runAnimationGroup { context in
@@ -70,13 +77,29 @@ class OverlayWindowManager: NSObject {
                 instance.window.animator().alphaValue = 1.0
             }
         }
-        
+
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+
+        // Reminders can't become key windows (by design, so they don't steal
+        // focus), so they can only be dismissed by the Dart side's own timer.
+        // If that Flutter engine ever hangs or drops a message, the overlay
+        // would otherwise sit there forever with no way for the user to
+        // close it. This is a hard backstop, independent of Dart, so a
+        // reminder always goes away on its own.
+        if isReminder {
+            showGeneration += 1
+            let generation = showGeneration
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+                guard let self = self, self.showGeneration == generation else { return }
+                self.hideOverlay()
+            }
+        }
     }
-    
+
     func hideOverlay(restoreMainWindow: Bool = true) {
+        showGeneration += 1
         if overlayInstances.isEmpty { return }
-        
+
         let instances = Array(overlayInstances.values)
         overlayInstances.removeAll()
         

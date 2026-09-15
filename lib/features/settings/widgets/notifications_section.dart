@@ -5,7 +5,6 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
-import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
 
 class NotificationsSection extends StatelessWidget {
@@ -64,26 +63,42 @@ class NotificationsSection extends StatelessWidget {
     );
   }
 
-  void _showPreview(String displayType, String reminderType) {
-    if (displayType == 'native') {
-      if (reminderType == 'posture') {
-        sl<NotificationService>().showPostureReminder();
-      } else {
-        sl<NotificationService>().showEyeRestReminder();
+  // Native system-notification reminders were unreliable in practice, so
+  // reminders always show the (dismissable, low-opacity) overlay now — see
+  // `_handleHealthReminder` in timer_orchestrator.dart for the same choice
+  // on the real, non-preview path.
+  void _showPreview(String reminderType) {
+    // `type` (above) only picks the native window's behavior — the Dart
+    // overlay itself reads `overlayType` from the JSON payload to decide
+    // which widget to render, and defaults to the full break-timer
+    // template ('breakScreen') when that key is missing. Without this,
+    // "Preview" was silently showing the wrong overlay entirely.
+    sl<OverlayWindowService>().showOverlay(
+      type: OverlayType.quickReminder,
+      reminderType: reminderType,
+      isPreview: true,
+      // A brief reminder only needs to appear on the active display —
+      // spinning up a full Flutter engine per connected monitor for a
+      // 2-second poster is wasted CPU, more so on multi-monitor setups.
+      showOnAllDisplays: false,
+      builder: (context) => const SizedBox(),
+      overlayData: {
+        'overlayType': 'quickReminder',
+        'reminderType': reminderType,
+        'durationSeconds': 2,
+        'remainingSeconds': 2,
+        // Previewing is an explicit, in-the-moment action from Settings —
+        // always show the real full-screen poster design, not the
+        // meeting-safe fallback pill.
+        'allowFullPoster': true,
+      },
+    );
+    Future.delayed(const Duration(seconds: 2), () {
+      if (sl<OverlayWindowService>().currentOverlayType ==
+          OverlayType.quickReminder) {
+        sl<OverlayWindowService>().hideOverlay();
       }
-    } else {
-      sl<OverlayWindowService>().showOverlay(
-        type: OverlayType.quickReminder,
-        reminderType: reminderType,
-        builder: (context) => const SizedBox(),
-      );
-      Future.delayed(const Duration(seconds: 2), () {
-        if (sl<OverlayWindowService>().currentOverlayType ==
-            OverlayType.quickReminder) {
-          sl<OverlayWindowService>().hideOverlay();
-        }
-      });
-    }
+    });
   }
 
   Widget _buildPostureReminder() {
@@ -99,13 +114,9 @@ class NotificationsSection extends StatelessWidget {
           divider(),
           _buildReminderOptions(
             interval: settings.postureReminderIntervalMinutes,
-            type: settings.postureReminderType,
             onIntervalChanged: (v) =>
                 onSave(settings.copyWith(postureReminderIntervalMinutes: v)),
-            onTypeChanged: (v) =>
-                onSave(settings.copyWith(postureReminderType: v)),
-            onPreview: () =>
-                _showPreview(settings.postureReminderType, 'posture'),
+            onPreview: () => _showPreview('posture'),
           ),
         ],
       ],
@@ -125,12 +136,9 @@ class NotificationsSection extends StatelessWidget {
           divider(),
           _buildReminderOptions(
             interval: settings.eyeBlinkReminderIntervalMinutes,
-            type: settings.eyeBlinkReminderType,
             onIntervalChanged: (v) =>
                 onSave(settings.copyWith(eyeBlinkReminderIntervalMinutes: v)),
-            onTypeChanged: (v) =>
-                onSave(settings.copyWith(eyeBlinkReminderType: v)),
-            onPreview: () => _showPreview(settings.eyeBlinkReminderType, 'eye'),
+            onPreview: () => _showPreview('eye'),
           ),
         ],
       ],
@@ -139,9 +147,7 @@ class NotificationsSection extends StatelessWidget {
 
   Widget _buildReminderOptions({
     required int interval,
-    required String type,
     required ValueChanged<int> onIntervalChanged,
-    required ValueChanged<String> onTypeChanged,
     required VoidCallback onPreview,
   }) {
     return Padding(
@@ -150,7 +156,7 @@ class NotificationsSection extends StatelessWidget {
         children: [
           const Expanded(
             child: Text(
-              'Interval & Display',
+              'Interval',
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
           ),
@@ -165,17 +171,6 @@ class NotificationsSection extends StatelessWidget {
             ].map((v) => AppDropdownItem(value: v, label: '$v min')).toList(),
             onChanged: (v) {
               if (v != null) onIntervalChanged(v);
-            },
-          ),
-          const SizedBox(width: 8),
-          AppDropdown<String>(
-            value: ['native', 'overlay'].contains(type) ? type : 'overlay',
-            items: const [
-              AppDropdownItem(value: 'native', label: 'Native'),
-              AppDropdownItem(value: 'overlay', label: 'Overlay'),
-            ],
-            onChanged: (v) {
-              if (v != null) onTypeChanged(v);
             },
           ),
           const SizedBox(width: 12),

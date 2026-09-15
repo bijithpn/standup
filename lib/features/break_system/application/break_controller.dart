@@ -139,7 +139,15 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           type: OverlayType.quickReminder,
           builder: (_) => const SizedBox.shrink(),
           reminderType: 'meetingBreak',
+          // A brief reminder only needs the active display — one Flutter
+          // engine per connected monitor for a 2-second poster is wasted CPU.
+          showOnAllDisplays: false,
           overlayData: {
+            // `type` above only picks the native window's behavior — the
+            // Dart overlay reads `overlayType` from this payload to pick
+            // its widget, defaulting to the full break-timer template when
+            // it's missing.
+            'overlayType': 'quickReminder',
             'title': 'Break ready',
             'tip': isMeetingActive ? 'You are in a meeting' : 'You are presenting',
             'durationSeconds': 2,

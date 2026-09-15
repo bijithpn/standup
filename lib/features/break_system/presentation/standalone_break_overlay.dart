@@ -12,11 +12,6 @@ import 'package:breakmate/features/break_system/presentation/widgets/quick_remin
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/core/ipc/overlay_window_config.dart';
-import 'package:breakmate/core/native/meeting_detection_service.dart';
-import 'package:breakmate/core/native/presentation_detection_service.dart';
-import 'package:breakmate/core/services/smart_detection_service.dart';
-import 'package:breakmate/features/settings/settings_repository.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/overlay_chrome.dart';
@@ -105,6 +100,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   bool _showWellnessNotes = true;
   bool _isInternalPreview =
       false; // Flag to disable expensive animations during preview
+  // Whether a quickReminder may take over the whole screen as a full poster.
+  // Computed on the main engine — which has SettingsRepository and the
+  // meeting/presentation detection services registered — and handed to
+  // this overlay's own, separate Flutter isolate via
+  // `OverlayWindowConfig.allowFullPoster`. This isolate only registers a
+  // minimal set of services (see `overlayMain()`), so calling those
+  // services directly from here throws every time (this used to crash the
+  // whole overlay build, leaving a stuck black screen).
+  bool _allowFullPoster = false;
 
   String? _exerciseTitle;
   String? _exerciseInstructions;
@@ -128,6 +132,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   // True once SimplePrefs settings are loaded; the overlay renders immediately.
   // The async bridge call still runs to refine timer data, but does not gate rendering.
   bool _initialized = false;
+
+  // True once the first real `updateOverlayData`/`getOverlayData` payload
+  // has been applied. SimplePrefs alone can't tell this window whether it's
+  // a full break screen or a brief quickReminder poster — that only comes
+  // over the bridge — so guessing 'breakScreen' as a placeholder used to
+  // flash the wrong, heavy full-break template (visible as a black-screen
+  // jump) for every reminder before the real payload landed. Until this
+  // flips true, render nothing instead of guessing wrong.
+  bool _hasReceivedOverlayData = false;
 
   void _loadInitialSettings() {
     try {
@@ -222,7 +235,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _setupBridge();
     _loadInitialData();
 
-    _fadeController.forward();
+    // Deferred until the first real overlay payload lands (see
+    // `_hasReceivedOverlayData`) — fading in blank content and then
+    // snapping to the real one looks worse than just waiting for it.
 
     StandaloneBreakOverlay.onErrorCallbacks.add(_handleTemplateError);
     HardwareKeyboard.instance.addHandler(_handleKeyEvent);
@@ -241,6 +256,14 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   void _applyOverlayData(Map args) {
     if (!mounted) return;
+
+    final isFirstOverlayData = !_hasReceivedOverlayData;
+    _hasReceivedOverlayData = true;
+
+    // A fresh overlay payload (e.g. swapping templates while previewing)
+    // always means a fresh dismissible session — don't let a dismiss
+    // attempt from a previous payload keep this one permanently stuck.
+    isDismissing = false;
 
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
@@ -291,6 +314,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       _intensityLevel = config.intensityLevel;
       _showWellnessNotes = config.showWellnessNotes;
       _isInternalPreview = config.isPreview;
+      _allowFullPoster = config.allowFullPoster;
       if (config.breakType != null) {
         _breakTypeStr = config.breakType;
       }
@@ -346,6 +370,15 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         _fadeController.duration = const Duration(milliseconds: 600);
       }
     });
+
+    // Now that we know what to render, start the fade-in. Doing this any
+    // earlier (e.g. unconditionally in initState) fades in whatever
+    // placeholder content was showing and then snaps to the real overlay
+    // once data arrives — worse than just waiting the extra tens of
+    // milliseconds for real data first.
+    if (isFirstOverlayData) {
+      _fadeController.forward();
+    }
   }
 
   @override
@@ -405,12 +438,35 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       return true;
     }
 
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
+    // Any key dismisses the overlay when it's allowed to be dismissed
+    // (preview, non-strict mode, or a quick reminder/pre-break warning) —
+    // don't force the user to sit through the full timer or hunt for the
+    // one "correct" key. Bare modifier presses are ignored so they don't
+    // eat a real shortcut before its companion key arrives.
+    if (_canDismiss &&
+        event is KeyDownEvent &&
+        !_isModifierKey(event.logicalKey)) {
       _skipBreak();
       return true;
     }
     return false;
+  }
+
+  static bool _isModifierKey(LogicalKeyboardKey key) {
+    return key == LogicalKeyboardKey.shift ||
+        key == LogicalKeyboardKey.shiftLeft ||
+        key == LogicalKeyboardKey.shiftRight ||
+        key == LogicalKeyboardKey.control ||
+        key == LogicalKeyboardKey.controlLeft ||
+        key == LogicalKeyboardKey.controlRight ||
+        key == LogicalKeyboardKey.alt ||
+        key == LogicalKeyboardKey.altLeft ||
+        key == LogicalKeyboardKey.altRight ||
+        key == LogicalKeyboardKey.meta ||
+        key == LogicalKeyboardKey.metaLeft ||
+        key == LogicalKeyboardKey.metaRight ||
+        key == LogicalKeyboardKey.capsLock ||
+        key == LogicalKeyboardKey.fn;
   }
 
   bool get _canDismiss =>
@@ -447,7 +503,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   @override
   Widget build(BuildContext context) {
-    if (!_initialized) {
+    if (!_initialized || !_hasReceivedOverlayData) {
       return const Material(
         color: Colors.transparent,
         child: SizedBox.shrink(),
@@ -459,10 +515,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       child: FadeTransition(
         opacity: _fadeController,
         child: Material(
+          // A brief reminder should read as a light dimming of whatever's
+          // already on screen, not an opaque takeover — low opacity (~0.25)
+          // so the user's actual desktop/app stays visible underneath.
           color:
               _overlayType == 'preBreakWarning' ||
                   _overlayType == 'quickReminder'
-              ? Colors.black.withValues(alpha: 0.34)
+              ? Colors.black.withValues(alpha: 0.25)
               : Colors.black,
           child: GestureDetector(
             onVerticalDragUpdate: (details) {
@@ -521,8 +580,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         fadeAnimation: _fadeController,
         title: _title,
         durationSeconds: durationSeconds,
-        allowFullPoster:
-            _overlayType == 'quickReminder' && _allowFullPosterReminder,
+        allowFullPoster: _overlayType == 'quickReminder' && _allowFullPoster,
       );
     }
 
@@ -578,17 +636,6 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       kenBurnsController: _kenBurnsController,
       exerciseTitle: _exerciseTitle,
       exerciseInstructions: _exerciseInstructions,
-    );
-  }
-
-  bool get _allowFullPosterReminder {
-    final settings = sl<SettingsRepository>().currentSettings;
-    return allowFullPosterReminder(
-      detectMeetings: settings.detectMeetings,
-      calendarMeetingActive: sl<MeetingDetectionService>().isMeetingActive,
-      detectVideoCalls: settings.detectVideoCalls,
-      videoCallActive: sl<SmartDetectionService>().isVideoCallActive,
-      presenting: sl<PresentationDetectionService>().isPresenting,
     );
   }
 

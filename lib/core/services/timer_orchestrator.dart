@@ -19,6 +19,10 @@ import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
 /// Coordinates cross-service actions driven by the state updates of TimerEngine.
 /// It bridges the core timer system with activity tracking, user alerts, stats logging,
@@ -231,26 +235,46 @@ class TimerOrchestrator {
       return;
     }
 
-    if (event.displayType == 'native') {
-      if (event.reminderType == 'posture') {
-        notificationService.showPostureReminder();
-      } else {
-        notificationService.showEyeRestReminder();
-      }
-    } else {
-      sl<OverlayWindowService>().showOverlay(
-        type: OverlayType.quickReminder,
-        builder: (_) => const SizedBox.shrink(),
-        reminderType: event.reminderType,
-      );
+    // Native system-notification reminders were unreliable in practice, so
+    // health reminders always show the (dismissable, low-opacity) overlay
+    // now, regardless of `event.displayType`.
+    //
+    // `type` below only picks the native window's behavior — the Dart
+    // overlay itself reads `overlayType` from the JSON payload, and
+    // defaults to the full break-timer template ('breakScreen') when that
+    // key is missing. Without it, health reminders rendered the wrong
+    // overlay.
+    sl<OverlayWindowService>().showOverlay(
+      type: OverlayType.quickReminder,
+      builder: (_) => const SizedBox.shrink(),
+      reminderType: event.reminderType,
+      // A brief reminder only needs the active display — one Flutter
+      // engine per connected monitor for a 2-second poster is wasted CPU.
+      showOnAllDisplays: false,
+      overlayData: {
+        'overlayType': 'quickReminder',
+        'reminderType': event.reminderType,
+        'durationSeconds': 2,
+        'remainingSeconds': 2,
+        // Computed here (main engine) because the overlay's own Flutter
+        // isolate doesn't have SettingsRepository or the detection
+        // services registered — see `OverlayWindowConfig.allowFullPoster`.
+        'allowFullPoster': allowFullPosterReminder(
+          detectMeetings: settings.detectMeetings,
+          calendarMeetingActive: sl<MeetingDetectionService>().isMeetingActive,
+          detectVideoCalls: settings.detectVideoCalls,
+          videoCallActive: sl<SmartDetectionService>().isVideoCallActive,
+          presenting: sl<PresentationDetectionService>().isPresenting,
+        ),
+      },
+    );
 
-      Future.delayed(const Duration(seconds: 2), () {
-        if (sl<OverlayWindowService>().currentOverlayType ==
-            OverlayType.quickReminder) {
-          sl<OverlayWindowService>().hideOverlay();
-        }
-      });
-    }
+    Future.delayed(const Duration(seconds: 2), () {
+      if (sl<OverlayWindowService>().currentOverlayType ==
+          OverlayType.quickReminder) {
+        sl<OverlayWindowService>().hideOverlay();
+      }
+    });
   }
 
   void _handleBreakPostponed(BreakPostponedEvent event) {

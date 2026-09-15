@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -207,5 +208,94 @@ void main() {
       // Skip action invokes native bridge skipBreak
       expect(skipInvoked, isTrue);
     });
+
+    testWidgets(
+      'a quickReminder with allowFullPoster never touches GetIt for '
+      'services this isolate does not register (SettingsRepository, '
+      'meeting/presentation detection) — regression for the black-screen '
+      'crash where the poster reminder tried to look those up itself',
+      (WidgetTester tester) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(desktopBridgeChannel, (
+              MethodCall methodCall,
+            ) async {
+              if (methodCall.method == 'getOverlayData') {
+                return {
+                  'overlayType': 'quickReminder',
+                  'reminderType': 'posture',
+                  'allowFullPoster': true,
+                  'durationSeconds': 2,
+                  'remainingSeconds': 2,
+                };
+              }
+              return null;
+            });
+
+        // Only StatsService is registered (setUp above) — exactly the
+        // minimal set the real overlay isolate provides via `overlayMain()`.
+        // SettingsRepository and the detection services are deliberately
+        // left unregistered so any code path that reaches for them here
+        // throws immediately, the same way it did in production.
+        await tester.pumpWidget(
+          const MaterialApp(home: StandaloneBreakOverlay()),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(tester.takeException(), isNull);
+        expect(find.text('Watch your posture!'), findsOneWidget);
+
+        // Let the reminder's own 2s auto-dismiss timer run out so it
+        // doesn't leak past the end of the test.
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
+
+    testWidgets(
+      'shows nothing (not the full break-timer template) before the real '
+      'bridge payload arrives — regression for a black/wrong-template '
+      'flash: this window cannot know from local prefs alone whether it '
+      'was opened as a quickReminder or a full break screen, so guessing '
+      "'breakScreen' as a placeholder used to briefly show the wrong, "
+      'heavy template every time',
+      (WidgetTester tester) async {
+        final bridgeResponse = Completer<Map<String, dynamic>>();
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(desktopBridgeChannel, (
+              MethodCall methodCall,
+            ) async {
+              if (methodCall.method == 'getOverlayData') {
+                return bridgeResponse.future;
+              }
+              return null;
+            });
+
+        await tester.pumpWidget(
+          const MaterialApp(home: StandaloneBreakOverlay()),
+        );
+        await tester.pump();
+
+        // No bridge response yet — must not have guessed the full
+        // break-timer template (would render e.g. a countdown ring/time
+        // text) or anything else; the window should be visually empty.
+        expect(find.byType(Text), findsNothing);
+
+        bridgeResponse.complete({
+          'overlayType': 'quickReminder',
+          'reminderType': 'posture',
+          'allowFullPoster': true,
+          'durationSeconds': 2,
+          'remainingSeconds': 2,
+        });
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Watch your posture!'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+
+        await tester.pump(const Duration(seconds: 3));
+      },
+    );
   });
 }
