@@ -1,3 +1,5 @@
+import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
+
 enum SpriteLayout { spriteSheet, individualFrames, mixed }
 
 enum PetAnimationState {
@@ -28,6 +30,56 @@ enum PetAnimationState {
   falling,
   reacting,
   petting,
+}
+
+extension PetAnimationStateAvatarExtension on PetAnimationState {
+  AvatarAnimationClip toAvatarClip() {
+    switch (this) {
+      case PetAnimationState.idle:
+        return AvatarAnimationClip.idle;
+      case PetAnimationState.walkUp:
+      case PetAnimationState.walkDown:
+      case PetAnimationState.walkSide:
+      case PetAnimationState.fly:
+      case PetAnimationState.glide:
+        return AvatarAnimationClip.walk;
+      case PetAnimationState.run:
+      case PetAnimationState.chasing:
+      case PetAnimationState.fetching:
+        return AvatarAnimationClip.run;
+      case PetAnimationState.sleep:
+        return AvatarAnimationClip.sleep;
+      case PetAnimationState.typing:
+      case PetAnimationState.focusMode:
+        return AvatarAnimationClip.idle;
+      case PetAnimationState.excited:
+        return AvatarAnimationClip.celebrate;
+      case PetAnimationState.sad:
+        return AvatarAnimationClip.glance;
+      case PetAnimationState.stretch:
+      case PetAnimationState.breakMode:
+        return AvatarAnimationClip.stretch;
+      case PetAnimationState.blink:
+        return AvatarAnimationClip.blink;
+      case PetAnimationState.angry:
+      case PetAnimationState.breatheFire:
+        return AvatarAnimationClip.anger;
+      case PetAnimationState.notification:
+        return AvatarAnimationClip.nod;
+      case PetAnimationState.celebrate:
+        return AvatarAnimationClip.celebrate;
+      case PetAnimationState.lick1:
+      case PetAnimationState.lick2:
+      case PetAnimationState.petting:
+        return AvatarAnimationClip.bounce;
+      case PetAnimationState.hop:
+        return AvatarAnimationClip.jump;
+      case PetAnimationState.falling:
+        return AvatarAnimationClip.wiggle;
+      case PetAnimationState.reacting:
+        return AvatarAnimationClip.lookAround;
+    }
+  }
 }
 
 class PetAnimationConfig {

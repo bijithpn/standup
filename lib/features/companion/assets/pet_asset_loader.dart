@@ -147,6 +147,10 @@ class PetAssetLoader {
   }
 
   static Future<String> extractPetIconPath(PetTheme theme) async {
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      return '';
+    }
+
     final supportDir = await getApplicationSupportDirectory();
     final file = File(
       p.join(supportDir.path, 'bm_selected_pet_${theme.id}.png'),
@@ -207,6 +211,10 @@ class PetAssetLoader {
   }
 
   static Future<void> preCache(PetProfile profile) async {
+    if (profile.theme?.isAvatar == true ||
+        profile.variant.id.startsWith('avatar_')) {
+      return;
+    }
     await loadAnimations(profile);
     final theme = PetTheme.getTheme(profile.variant.id);
     await extractPetIconPath(theme);
@@ -216,6 +224,13 @@ class PetAssetLoader {
     final issues = <String>[];
 
     try {
+      if (theme.type == PetType.avatar || theme.isAvatar) {
+        if (theme.avatarDefinition == null) {
+          issues.add('${theme.id}: missing avatarDefinition');
+        }
+        return issues;
+      }
+
       if (theme.type == PetType.composite) {
         final image = await loadImage(theme.basePath);
         final size = theme.spriteSize.toDouble();
@@ -425,6 +440,11 @@ class PetAssetLoader {
     PetProfile profile,
   ) async {
     try {
+      if (profile.variant.id.startsWith('avatar_') ||
+          profile.theme?.isAvatar == true) {
+        return {};
+      }
+
       final Map<PetAnimationState, SpriteAnimation> loaded = {};
       final validationIssues = <String>[];
       final basePath = buildAssetPath(profile);
@@ -635,6 +655,10 @@ class PetAssetLoader {
 
   /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
   static Future<void> preCacheTrayIcons(PetTheme theme) async {
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      return;
+    }
+
     final states = [
       PetAnimationState.idle,
       PetAnimationState.sleep,
@@ -790,6 +814,10 @@ class PetAssetLoader {
     required PetAnimationState state,
     required int frameIndex,
   }) async {
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      return '';
+    }
+
     final supportDir = await getApplicationSupportDirectory();
     final file = File(
       p.join(
@@ -965,17 +993,8 @@ class PetAssetLoader {
   }
 
   static Future<void> preCacheBackgrounds() async {
-    const List<String> paths = [
-      'assets/background/forest/background.png',
-      'assets/background/autumn/background.png',
-      'assets/background/winter/background.png',
-      'assets/background/beach/background-light.png',
-      'assets/background/desert/background.png',
-      'assets/environments/sky/sky_back.png',
-      'assets/environments/background/bg_night_town.png',
-      'assets/environments/background/bg_mist_forest.png',
-      'assets/background/urban/background.png',
-    ];
+    // asset-migration: background/environment assets removed — nothing to pre-cache
+    const List<String> paths = [];
     for (final path in paths) {
       try {
         await loadImage(path);

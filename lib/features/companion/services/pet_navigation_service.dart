@@ -46,6 +46,9 @@ class PetNavigationService {
   Offset get velocity => _vel;
   double get speed =>
       _vel.distance; // px/s — used by component to pick walk/run anim
+  double get currentHeading =>
+      _vel.distance > 0.01 ? atan2(_vel.dy, _vel.dx) : 0.0;
+  double get heading => currentHeading;
   bool get isCursorFollowing => _isCursorFollowing;
   bool get isWanderingEnabled => _isWanderingEnabled;
   bool get isAnnoyed => _cursorMoveCount > _annoyanceThreshold;

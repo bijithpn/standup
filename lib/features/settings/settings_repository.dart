@@ -284,7 +284,7 @@ class SettingsRepository extends ChangeNotifier {
       ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
-        defaultValue: 'assets/background/forest/background.png',
+        defaultValue: '',
       ),
       pipBackgroundStyle: _storage.getString(
         'pip_background_style',
@@ -508,7 +508,7 @@ class SettingsRepository extends ChangeNotifier {
       ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
-        defaultValue: 'assets/background/forest/background.png',
+        defaultValue: '',
       ),
       pipBackgroundStyle: _storage.getString(
         'pip_background_style',

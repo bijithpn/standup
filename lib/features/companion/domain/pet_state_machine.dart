@@ -2,9 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'avatar_animation_clip.dart';
 import 'pet_mood.dart';
+import 'pet_needs.dart';
 import 'pet_personality.dart';
 import 'behavior_engine_models.dart';
+import '../engine/avatar_engine_controller.dart';
 import '../../../core/utils/logger.dart';
 
 enum PetState {
@@ -46,6 +49,55 @@ enum PetState {
   fetching,
   falling,
   reacting,
+}
+
+extension PetStateAvatarClip on PetState {
+  AvatarAnimationClip toAnimationClip() {
+    switch (this) {
+      case PetState.idle:
+        return AvatarAnimationClip.idle;
+      case PetState.blink:
+        return AvatarAnimationClip.blink;
+      case PetState.stretch:
+        return AvatarAnimationClip.stretch;
+      case PetState.walk:
+      case PetState.turning:
+      case PetState.exploring:
+        return AvatarAnimationClip.walk;
+      case PetState.run:
+      case PetState.chasing:
+        return AvatarAnimationClip.run;
+      case PetState.sleep:
+      case PetState.resting:
+        return AvatarAnimationClip.sleep;
+      case PetState.alert:
+        return AvatarAnimationClip.lookAround;
+      case PetState.happy:
+      case PetState.affectionate:
+        return AvatarAnimationClip.happiness;
+      case PetState.angry:
+      case PetState.scared:
+        return AvatarAnimationClip.anger;
+      case PetState.celebrating:
+        return AvatarAnimationClip.celebrate;
+      case PetState.dancing:
+        return AvatarAnimationClip.bounce;
+      case PetState.jumping:
+        return AvatarAnimationClip.jump;
+      case PetState.curious:
+      case PetState.interacting:
+      case PetState.following:
+        return AvatarAnimationClip.glance;
+      case PetState.playing:
+        return AvatarAnimationClip.wiggle;
+      case PetState.eating:
+        return AvatarAnimationClip.nod;
+      case PetState.bored:
+        return AvatarAnimationClip.stretch;
+      default:
+        return AvatarAnimationClip.idle;
+    }
+  }
 }
 
 enum PetEvent {
@@ -131,6 +183,7 @@ class PetStateMachine extends ChangeNotifier {
   DateTime? _stateEnteredAt;
   final Map<PetTransition, DateTime> _lastTriggered = {};
   PetMoodState? _currentMood;
+  AvatarEngineController? _avatarController;
 
   static final _rng = Random();
 
@@ -145,13 +198,62 @@ class PetStateMachine extends ChangeNotifier {
       ? DateTime.now().difference(_stateEnteredAt!)
       : Duration.zero;
   PetMoodState? get currentMood => _currentMood;
+  AvatarEngineController? get avatarController => _avatarController;
+  AvatarAnimationClip get currentAnimationClip => _currentState.toAnimationClip();
 
   Stream<PetState> get stateStream => _stateController.stream;
   final StreamController<PetState> _stateController =
       StreamController<PetState>.broadcast();
 
+  void bridgeToAvatar(AvatarEngineController controller) {
+    _avatarController = controller;
+    final clip = _currentState.toAnimationClip();
+    _avatarController?.playAnimation(clip, loop: clip.isLooping);
+  }
+
+  void attachAvatarEngine(AvatarEngineController controller) => bridgeToAvatar(controller);
+
   void setMood(PetMoodState mood) {
     _currentMood = mood;
+  }
+
+  void onBreakStarted() {
+    handleEvent(PetEvent.breakStarted);
+    if (_currentState != PetState.breakReminder) {
+      transitionTo(PetState.breakReminder);
+    }
+  }
+
+  void onBreakCompleted() {
+    handleEvent(PetEvent.breakCompleted);
+    transitionTo(PetState.celebrating);
+  }
+
+  void onPetting() {
+    handleEvent(PetEvent.userClick);
+    transitionTo(PetState.affectionate);
+  }
+
+  void onFedTreat() {
+    handleEvent(PetEvent.throwableEaten);
+    transitionTo(PetState.eating);
+  }
+
+  void onPlayToy() {
+    handleEvent(PetEvent.throwableSpawned);
+    transitionTo(PetState.chasing);
+  }
+
+  void evaluateNeeds(PetNeeds needs) {
+    if (needs.energyLevel <= 20.0 || needs.energy <= 0.20) {
+      transitionTo(PetState.sleep);
+    } else if (needs.boredom > 70.0 || needs.boredomNormalized > 0.70) {
+      transitionTo(PetState.stretch);
+    } else if (needs.happiness > 80.0 || needs.happinessNormalized > 0.80) {
+      transitionTo(PetState.celebrating);
+    } else if (needs.hunger > 75.0 || needs.hungerNormalized > 0.75) {
+      transitionTo(PetState.curious);
+    }
   }
 
   List<PetTransition> _getTransitions() {
@@ -241,6 +343,9 @@ class PetStateMachine extends ChangeNotifier {
     );
     transitionLog.add(entry);
     _logger.info(jsonEncode(entry.toJson()));
+
+    final clip = newState.toAnimationClip();
+    _avatarController?.playAnimation(clip, loop: clip.isLooping);
 
     _onStateChanged?.call(newState);
     _stateController.add(newState);

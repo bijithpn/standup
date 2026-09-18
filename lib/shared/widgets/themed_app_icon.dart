@@ -208,30 +208,30 @@ class ThemedAppIcon extends StatelessWidget {
                 // Themed SVG logo
                 Center(child: iconWidget),
                 // Dev badge if development flavor
-                // if (isDev)
-                //   Positioned(
-                //     bottom: 2,
-                //     right: 4,
-                //     child: Container(
-                //       padding: const EdgeInsets.symmetric(
-                //         horizontal: 4,
-                //         vertical: 1,
-                //       ),
-                //       decoration: BoxDecoration(
-                //         color: const Color(0xFFEF4444),
-                //         borderRadius: BorderRadius.circular(4),
-                //       ),
-                //       child: const Text(
-                //         'DEV',
-                //         style: TextStyle(
-                //           color: Colors.white,
-                //           fontSize: 8,
-                //           fontWeight: FontWeight.bold,
-                //           letterSpacing: 0.5,
-                //         ),
-                //       ),
-                //     ),
-                //   ),
+                if (isDev)
+                  Positioned(
+                    bottom: 2,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text(
+                        'DEV',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

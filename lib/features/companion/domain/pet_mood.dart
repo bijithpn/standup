@@ -1,3 +1,5 @@
+import 'pet_needs.dart';
+
 enum PetMood {
   happy,
   playful,
@@ -13,6 +15,20 @@ enum PetMood {
   mischievous,
 }
 
+extension PetMoodCalculator on PetMood {
+  static PetMood fromNeeds(PetNeeds needs) {
+    if (needs.breakMode) return PetMood.happy;
+    if (needs.energyLevel <= 20.0 || needs.energy <= 0.20) return PetMood.tired;
+    if (needs.hunger > 75.0 || needs.hungerNormalized > 0.75) return PetMood.hungry;
+    if (needs.boredom > 70.0 || needs.boredomNormalized > 0.70) return PetMood.bored;
+    if (needs.happiness > 80.0 || needs.happinessNormalized > 0.80) return PetMood.happy;
+    if (needs.focusMode) return PetMood.relaxed;
+    if (needs.affection > 0.7) return PetMood.affectionate;
+    if (needs.playfulness > 0.7) return PetMood.playful;
+    return PetMood.relaxed;
+  }
+}
+
 class PetMoodState {
   final PetMood mood;
   final double intensity; // 0.0 to 1.0
@@ -25,6 +41,25 @@ class PetMoodState {
     required this.since,
     this.decayDuration = const Duration(minutes: 5),
   });
+
+  factory PetMoodState.fromNeeds(PetNeeds needs, [DateTime? now]) {
+    final mood = PetMoodCalculator.fromNeeds(needs);
+    double intensity = 0.5;
+    if (mood == PetMood.tired) {
+      intensity = ((100.0 - needs.energyLevel) / 100.0).clamp(0.1, 1.0);
+    } else if (mood == PetMood.hungry) {
+      intensity = needs.hungerNormalized;
+    } else if (mood == PetMood.bored) {
+      intensity = needs.boredomNormalized;
+    } else if (mood == PetMood.happy) {
+      intensity = needs.happinessNormalized;
+    }
+    return PetMoodState(
+      mood: mood,
+      intensity: intensity,
+      since: now ?? DateTime.now(),
+    );
+  }
 
   double getCurrentIntensity([DateTime? now]) {
     final currentTime = now ?? DateTime.now();
@@ -70,3 +105,4 @@ class PetMoodState {
     );
   }
 }
+

@@ -60,52 +60,14 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/icons/
-    - assets/slideshow/
-    - assets/animations/throw_particles/
-    # Original 4 cats
-    - assets/animations/cats/grey_cat/sprite_sheet.png
-    - assets/animations/cats/orange_cat/sprite_sheet.png
-    - assets/animations/cats/black_cat/sprite_sheet.png
-    - assets/animations/cats/cat_1/
-    - assets/animations/cats/cat_2/
-    - assets/animations/cats/cat_3/
-    - assets/animations/cats/cat_4/
-    - assets/animations/cats/cat_5/
-    - assets/animations/cats/cat_6/
-    # Dog sprite sheets
-    - assets/animations/dogs/collie.png
-    - assets/animations/dogs/corgi.png
-    - assets/animations/dogs/dalmatian.png
-    - assets/animations/dogs/husky.png
-    - assets/animations/dogs/labrador.png
-    # Flamingo sprite sheet and gifs
-    - assets/animations/flamingo/
-    # Modular pets framework
-    - assets/animations/pets/pets.json
-    - assets/animations/pets/
-    # Backgrounds
-    - assets/background/autumn/
-    - assets/background/beach/
-    - assets/background/forest/
-    - assets/background/winter/
-    - assets/background/desert/
-    - assets/background/urban/
-    # Lofi musics
-    - assets/music/lofi_1.mp3
-
-    # New pet assets folders
-    - assets/animations/
-    - assets/animations/birds/
-    - assets/animations/food/
-    - assets/animations/pet_decoration/
-    - assets/animations/rabbit/
-    - assets/environments/background/
-    - assets/environments/base/
-    - assets/environments/rocks/
-    - assets/environments/sky/
-    - assets/environments/throwable/
-    - assets/environments/trees/
+    # OneWorks Avatar — Species Snapshots (alpaca, bear, cat, dog, etc.)
+    - assets/avatars/species/
+    # OneWorks Avatar — Breed Snapshots (bear--brown-bear, cat--black-cat, etc.)
+    - assets/avatars/breeds/
+    # OneWorks Avatar — Pixel Style Snapshots
+    - assets/avatars/pixel/
+    # OneWorks Avatar — Animation Cover SVGs (idle, happy, celebrate, etc.)
+    - assets/avatars/animation_covers/
 
   fonts:
     - family: Inter

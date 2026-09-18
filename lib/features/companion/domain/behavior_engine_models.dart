@@ -1,5 +1,7 @@
 import 'dart:ui';
+import 'avatar_definition.dart';
 import 'pet_state_machine.dart';
+import 'pet_theme.dart';
 
 enum PetMode { freeRoam, constrained, singleDisplay }
 
@@ -292,6 +294,8 @@ class PetConfigV2 {
 
   final double scale;
 
+  final AvatarDefinition? avatarDefinition;
+
   const PetConfigV2({
     required this.mode,
     required this.pinnedDisplayId,
@@ -300,6 +304,7 @@ class PetConfigV2 {
     required this.themeId,
     required this.petName,
     required this.scale,
+    this.avatarDefinition,
   });
 
   factory PetConfigV2.defaults() => const PetConfigV2(
@@ -310,6 +315,7 @@ class PetConfigV2 {
     themeId: 'grey_cat',
     petName: 'Mochi',
     scale: 6.0,
+    avatarDefinition: null,
   );
 
   Map<String, dynamic> toJson() {
@@ -321,11 +327,23 @@ class PetConfigV2 {
       'themeId': themeId,
       'petName': petName,
       'scale': scale,
+      if (avatarDefinition != null) 'avatarDefinition': avatarDefinition!.toJson(),
     };
   }
 
   factory PetConfigV2.fromJson(Map<String, dynamic> json) {
     final defaults = PetConfigV2.defaults();
+    final themeId = json['themeId'] as String? ?? defaults.themeId;
+
+    AvatarDefinition? parsedDef;
+    if (json['avatarDefinition'] != null && json['avatarDefinition'] is Map) {
+      parsedDef = AvatarDefinition.fromJson(
+        Map<String, dynamic>.from(json['avatarDefinition'] as Map),
+      );
+    } else if (themeId.startsWith('avatar_')) {
+      parsedDef = PetTheme.getTheme(themeId).avatarDefinition;
+    }
+
     return PetConfigV2(
       mode: _parsePetMode(json['mode'] as String?, defaults.mode),
       pinnedDisplayId: json['pinnedDisplayId'] as String?,
@@ -337,9 +355,10 @@ class PetConfigV2 {
         json['lastAnchorPoint'],
         defaults.lastAnchorPoint,
       ),
-      themeId: json['themeId'] as String? ?? defaults.themeId,
+      themeId: themeId,
       petName: json['petName'] as String? ?? defaults.petName,
       scale: (json['scale'] as num?)?.toDouble() ?? defaults.scale,
+      avatarDefinition: parsedDef,
     );
   }
 
@@ -351,6 +370,7 @@ class PetConfigV2 {
     String? themeId,
     String? petName,
     double? scale,
+    AvatarDefinition? avatarDefinition,
   }) {
     return PetConfigV2(
       mode: mode ?? this.mode,
@@ -363,6 +383,7 @@ class PetConfigV2 {
       themeId: themeId ?? this.themeId,
       petName: petName ?? this.petName,
       scale: scale ?? this.scale,
+      avatarDefinition: avatarDefinition ?? this.avatarDefinition,
     );
   }
 
@@ -377,7 +398,8 @@ class PetConfigV2 {
           lastAnchorPoint == other.lastAnchorPoint &&
           themeId == other.themeId &&
           petName == other.petName &&
-          scale == other.scale;
+          scale == other.scale &&
+          avatarDefinition == other.avatarDefinition;
 
   @override
   int get hashCode => Object.hash(
@@ -388,12 +410,13 @@ class PetConfigV2 {
     themeId,
     petName,
     scale,
+    avatarDefinition,
   );
 
   @override
   String toString() =>
       'PetConfigV2(mode: $mode, themeId: $themeId, petName: $petName, '
-      'scale: $scale, lastAnchorPoint: $lastAnchorPoint)';
+      'scale: $scale, lastAnchorPoint: $lastAnchorPoint, avatarDefinition: $avatarDefinition)';
 
   static const Object _sentinel = Object();
 

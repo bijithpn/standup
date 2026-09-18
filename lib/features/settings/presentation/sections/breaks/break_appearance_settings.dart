@@ -1234,7 +1234,7 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
                 remaining: 42,
                 total: 60,
                 onSkip: null,
-                currentTemplate: 'assets/slideshow/slide_1.jpg',
+                currentTemplate: '',
                 kenBurnsController: _kenBurnsController,
               ),
             ),

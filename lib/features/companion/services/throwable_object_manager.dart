@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -32,6 +33,22 @@ class ThrowableObjectManager {
 
   final List<_ThrowableRecord> _throwables = [];
   int _spawnCounter = 0;
+
+  final StreamController<Offset?> _toyPositionController =
+      StreamController<Offset?>.broadcast();
+  Stream<Offset?> get toyPositionStream => _toyPositionController.stream;
+
+  Offset? get activeToyPosition {
+    final targetId = chaseTarget;
+    if (targetId == null) return null;
+    try {
+      final state = _physics.getState(targetId);
+      return Offset(state.x, state.y);
+    } catch (_) {
+      return null;
+    }
+  }
+
 
   PhysicsEntityId? spawnThrowable(
     Offset releasePoint,
@@ -90,6 +107,7 @@ class ThrowableObjectManager {
     );
     _throwables.add(record);
 
+    _toyPositionController.add(releasePoint);
     _eventBus.emit(ThrowableSpawnedEvent(objectId: physicsId));
     _logger.info(
       'ThrowableObjectManager: spawned throwable id=$physicsId '
@@ -177,6 +195,7 @@ class ThrowableObjectManager {
     }
 
     _throwables.removeWhere((r) => r.lifecycle == ThrowableLifecycle.disposed);
+    _toyPositionController.add(activeToyPosition);
   }
 
   PhysicsEntityId? get chaseTarget {
@@ -236,9 +255,14 @@ class ThrowableObjectManager {
     _physics.removeEntity(record.physicsId);
     _throwables[index] = record.withLifecycle(ThrowableLifecycle.disposed);
     _eventBus.emit(ThrowableDisposedEvent(objectId: record.physicsId));
+    _toyPositionController.add(activeToyPosition);
     _logger.info(
       'ThrowableObjectManager: throwable ${record.physicsId} disposed',
     );
+  }
+
+  void dispose() {
+    _toyPositionController.close();
   }
 }
 

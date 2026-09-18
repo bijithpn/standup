@@ -9,9 +9,12 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
+import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/companion/interaction/interaction_controller.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
@@ -49,7 +52,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   bool _gameInitialized = false;
   late String _previewBackground = SimplePrefs.instance.getString(
     'companion_preview_background',
-    defaultValue: 'assets/background/forest/background.png',
+    defaultValue: '', // asset-migration: background assets removed
   );
 
   late final CompanionWindowManager _windowManager = CompanionWindowManager(
@@ -380,18 +383,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   String? _getToyIconPath() {
     switch (_game?.toyType) {
       case 'base_ball':
-        return 'assets/animations/throw_particles/base_ball.png';
+        return ''; // asset-migration: throw_particles removed
       case 'basket_ball':
-        return 'assets/animations/throw_particles/basket_ball.png';
+        return ''; // asset-migration: throw_particles removed
       case 'football':
-        return 'assets/animations/throw_particles/football.png';
+        return ''; // asset-migration: throw_particles removed
       case 'bone':
       case 'sushi':
       case 'carrot':
         return null;
       case 'tennis_ball':
       default:
-        return 'assets/animations/throw_particles/tennis_ball.png';
+        return ''; // asset-migration: throw_particles removed
     }
   }
 
@@ -593,9 +596,20 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     );
   }
 
+  AvatarDefinition get _avatarDefinition {
+    final theme = PetTheme.getTheme(_themeId);
+    if (theme.avatarDefinition != null) {
+      return theme.avatarDefinition!;
+    }
+    final species = AvatarSpecies.tryParse(_themeId) ?? AvatarSpecies.cat;
+    return AvatarDefinition.fromSeed(_themeId, species: species);
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLight = _isLightBackground;
+    final theme = PetTheme.getTheme(_themeId);
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Opacity(
@@ -610,7 +624,20 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 child: Stack(
                   children: [
                     if (_gameInitialized && _game != null)
-                      Positioned.fill(child: GameWidget(game: _game!))
+                      Positioned.fill(
+                        child: theme.isAvatar
+                            ? Center(
+                                child: AvatarView(
+                                  definition: _avatarDefinition,
+                                  controller: _game?.petService.avatarController,
+                                  width: _scale * 36,
+                                  height: _scale * 36,
+                                  autoTrackCursor: true,
+                                  isInteractive: true,
+                                ),
+                              )
+                            : GameWidget(game: _game!),
+                      )
                     else
                       const Positioned.fill(
                         child: Center(

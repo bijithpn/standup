@@ -119,70 +119,72 @@ class EnvironmentBuilderController extends ChangeNotifier {
 
       _skyPaths = allAssets
           .where(
-            (p) =>
-                p.startsWith('assets/background/') ||
-                p.startsWith('assets/environments/sky/sky_back') ||
-                p.startsWith('assets/environments/sky/sky_canyon') ||
-                p.startsWith('assets/environments/sky/sky_blue_stars') ||
-                p.startsWith('assets/environments/sky/origbig_5_2') ||
-                p.startsWith('assets/environments/sky/sky_summer') ||
-                p.startsWith('assets/environments/sky/sky_ocean') ||
-                p.startsWith('assets/environments/sky/sky_nature') ||
-                p.startsWith('assets/environments/background/bg_'),
+            // asset-migration: these assets have been removed
+            (p) => false,
           )
           .toList();
 
       _groundPaths = allAssets
           .where(
-            (p) =>
-                p.startsWith('assets/environments/base/tile_') ||
-                p.startsWith('assets/environments/background/bg_foreground'),
+            // asset-migration: these assets have been removed
+            (p) => false,
           )
           .toList();
 
       _cloudPaths = allAssets
           .where(
-            (p) =>
-                p.startsWith('assets/environments/sky/sky_cloud') ||
-                p.startsWith('assets/environments/sky/sky_clouds'),
+            // asset-migration: these assets have been removed
+            (p) => false,
           )
           .toList();
 
       _mountainPaths = allAssets
-          .where((p) => p.startsWith('assets/environments/trees/'))
+          .where(
+            // asset-migration: these assets have been removed
+            (p) => false,
+          )
           .toList();
 
       _rockPaths = allAssets
-          .where((p) => p.startsWith('assets/environments/rocks/'))
+          .where(
+            // asset-migration: these assets have been removed
+            (p) => false,
+          )
           .toList();
 
       _birdPaths = allAssets
-          .where((p) => p.startsWith('assets/animations/birds/'))
+          .where(
+            // asset-migration: these assets have been removed
+            (p) => false,
+          )
           .toList();
 
       _rabbitIdlePaths = allAssets
           .where(
-            (p) =>
-                p.startsWith('assets/animations/rabbit/') &&
-                !p.contains('_run') &&
-                !p.contains('running'),
+            // asset-migration: these assets have been removed
+            (p) => false,
           )
           .toList();
 
       _rabbitRunPaths = allAssets
           .where(
-            (p) =>
-                p.startsWith('assets/animations/rabbit/') &&
-                (p.contains('_run') || p.contains('running')),
+            // asset-migration: these assets have been removed
+            (p) => false,
           )
           .toList();
 
       _toyPaths = allAssets
-          .where((p) => p.startsWith('assets/animations/throw_particles/'))
+          .where(
+            // asset-migration: these assets have been removed
+            (p) => false,
+          )
           .toList();
 
       _foodPaths = allAssets
-          .where((p) => p.startsWith('assets/environments/throwable/'))
+          .where(
+            // asset-migration: these assets have been removed
+            (p) => false,
+          )
           .toList();
 
       // Remove duplicates

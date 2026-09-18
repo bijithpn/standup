@@ -4,13 +4,9 @@ class AppConstants {
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
-  static const List<String> wellnessSlideshow = [
-    'assets/slideshow/slide_1.webp',
-    'assets/slideshow/slide_2.webp',
-    'assets/slideshow/slide_3.webp',
-    'assets/slideshow/slide_4.webp',
-    'assets/slideshow/slide_5.webp',
-  ];
+  /// Wellness slideshow images — removed in avatar-main asset migration.
+  /// Reserved for future content; currently unused.
+  static const List<String> wellnessSlideshow = [];
 
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
@@ -104,5 +100,8 @@ class AppConstants {
     'Sometimes the most productive thing you can do is relax.',
   ];
 
-  static const String trayIconPath = 'assets/icons/app_icon_bg.png';
+  /// Tray icon — updated to use the avatar bear snapshot.
+  /// Previously pointed to assets/icons/app_icon_bg.png (removed in avatar-main migration).
+  static const String trayIconPath = 'assets/avatars/species/bear.svg';
 }
+

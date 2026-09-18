@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -20,6 +21,8 @@ class CursorTracker {
 
   final NativeBridgePlatform _bridge;
   final EventBus _eventBus;
+  final StreamController<Offset> _positionController =
+      StreamController<Offset>.broadcast();
 
   Offset _lastPosition = Offset.zero;
   Offset _velocity = Offset.zero; // EMA-smoothed px/s
@@ -31,6 +34,7 @@ class CursorTracker {
 
   Offset get lastPosition => _lastPosition;
   Offset get velocity => _velocity;
+  Stream<Offset> get positionStream => _positionController.stream;
 
   Future<void> sample(double dt, Offset petCenter) async {
     if (dt <= 0) return;
@@ -49,6 +53,10 @@ class CursorTracker {
       (1 - _emaAlpha) * _velocity.dy + _emaAlpha * instantaneous.dy,
     );
     _lastPosition = rawPos;
+
+    if (!_positionController.isClosed) {
+      _positionController.add(rawPos);
+    }
 
     final double speed = _velocityMagnitude(_velocity);
     final double distToPet = (rawPos - petCenter).distance;
@@ -84,6 +92,10 @@ class CursorTracker {
       _dwellSeconds = 0;
       _dwellEmitted = false;
     }
+  }
+
+  void dispose() {
+    _positionController.close();
   }
 
   /// Convert a macOS screen-bottom-left coordinate to Flame screen-top-left.

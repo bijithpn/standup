@@ -1,13 +1,48 @@
 import 'dart:math';
+import 'dart:ui';
 import '../domain/pet_behavior_context.dart';
 import '../domain/pet_state_machine.dart';
 import '../domain/pet_mood.dart';
+import '../engine/avatar_engine_controller.dart';
 
 /// Uses weighted scoring across multiple factors to avoid repetitive actions.
 class PetBehaviorBrain {
   final Random _random = Random();
   final Map<PetState, DateTime> _lastStateTimes = {};
   final Map<PetState, int> _stateFrequency = {};
+
+  void coordinateRoaming(
+    AvatarEngineController controller, {
+    required Offset currentPos,
+    required Offset targetPos,
+    required PetState state,
+  }) {
+    if (state == PetState.resting || state == PetState.sleep) {
+      return;
+    }
+
+    final double dx = targetPos.dx - currentPos.dx;
+    final double dy = targetPos.dy - currentPos.dy;
+
+    if (dx.abs() > 0.1 || dy.abs() > 0.1) {
+      final double targetYaw = atan2(dy, dx);
+      controller.setYaw(targetYaw);
+    }
+  }
+
+  void lookAtToy(
+    AvatarEngineController controller, {
+    required Offset petPos,
+    required Offset toyPos,
+    double maxDistance = 600.0,
+  }) {
+    controller.updateGaze(
+      petScreenPosition: petPos,
+      cursorScreenPosition: toyPos,
+      maxDistance: maxDistance,
+    );
+  }
+
 
   PetState decideNextState(PetBehaviorContext context) {
     final candidates = _getCandidateStates(context);

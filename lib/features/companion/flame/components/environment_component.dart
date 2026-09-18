@@ -12,7 +12,7 @@ class EnvironmentComponent extends PositionComponent
   String backgroundImagePath;
 
   EnvironmentComponent({
-    this.backgroundImagePath = 'assets/background/forest/background.png',
+    this.backgroundImagePath = '', // asset-migration: background assets removed
   }) : super(priority: -10);
 
   ui.Image? _skyImage;

@@ -175,7 +175,7 @@ class SettingsModel {
     this.companionScale = 6.0,
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
-    this.companionPreviewBackground = 'assets/background/forest/background.png',
+    this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
     this.companionWindowWidth = 280.0,
     this.companionWindowHeight = 320.0,
@@ -588,7 +588,7 @@ class SettingsModel {
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
       companionPreviewBackground:
           map['companionPreviewBackground'] as String? ??
-          'assets/background/forest/background.png',
+          '',
       unlockedPets:
           (map['unlockedPets'] as List<dynamic>?)
               ?.map((e) => e.toString())

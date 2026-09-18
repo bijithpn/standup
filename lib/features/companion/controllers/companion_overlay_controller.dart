@@ -35,7 +35,7 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _companionFollowMouse = false;
   bool _enableAnimations = true;
   String _companionPreviewBackground =
-      'assets/background/forest/background.png';
+      ''; // asset-migration: background assets removed
   bool _isCompanionShown = false;
   bool _isPreviewMode =
       false; // Hides native companion when viewing settings UI

@@ -6,9 +6,9 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
-import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/shared/widgets/app_dropdown.dart';
+import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
+import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_page.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
@@ -264,6 +264,33 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
                   const SizedBox(height: 32),
                   sectionHeader(
+                    '3D Pet Customizer',
+                    subtitle: 'Choose from 30+ species, custom seeds, and OneWorks palettes',
+                  ),
+                  buildCard([
+                    buildListRow(
+                      'Open 3D Pet Customizer',
+                      'Customize procedural 3D avatar with 30+ species, colors, seeds and animations.',
+                      null,
+                      Icons.pets_rounded,
+                      null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AvatarCustomizerPage(),
+                          fullscreenDialog: true,
+                        ),
+                      ),
+                      trailing: Icon(
+                        CupertinoIcons.chevron_right,
+                        size: 14,
+                        color: AppTheme.textMuted,
+                      ),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 32),
+                  sectionHeader(
                     'Environment Builder',
                     subtitle: 'Design custom world themes with your own assets',
                   ),
@@ -422,47 +449,47 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       {
         'name': 'Forest',
         'id': 'forest',
-        'path': 'assets/background/forest/background.png',
+        'path': '',
       },
       {
         'name': 'Autumn',
         'id': 'autumn',
-        'path': 'assets/background/autumn/background.png',
+        'path': '',
       },
       {
         'name': 'Winter',
         'id': 'winter',
-        'path': 'assets/background/winter/background.png',
+        'path': '',
       },
       {
         'name': 'Beach',
         'id': 'beach',
-        'path': 'assets/background/beach/background-light.png',
+        'path': '',
       },
       {
         'name': 'Desert',
         'id': 'desert',
-        'path': 'assets/background/desert/background.png',
+        'path': '',
       },
       {
         'name': 'Sky',
         'id': 'sky',
-        'path': 'assets/environments/sky/sky_back.png',
+        'path': '',
       },
       {
         'name': 'Night Town',
         'id': 'night_town',
-        'path': 'assets/environments/background/bg_night_town.png',
+        'path': '',
       },
       {
         'name': 'Mist Forest',
         'id': 'mist_forest',
-        'path': 'assets/environments/background/bg_mist_forest.png',
+        'path': '',
       },
       {
         'name': 'Urban',
         'id': 'urban',
-        'path': 'assets/background/urban/background.png',
+        'path': '',
       },
     ];
 
@@ -632,9 +659,29 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 32),
-        sectionHeader(
-          'Pet Gallery',
-          subtitle: 'Select a variant to change your companion instantly',
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            sectionHeader(
+              '3D Pet Gallery',
+              subtitle: 'Select from 30+ OneWorks 3D species',
+            ),
+            TextButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AvatarCustomizerPage(),
+                  fullscreenDialog: true,
+                ),
+              ),
+              icon: const Icon(Icons.palette_outlined, size: 16),
+              label: const Text('Customize 3D'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.accentColor,
+                textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+              ),
+            ),
+          ],
         ),
 
         const SizedBox(height: 12),
@@ -645,44 +692,103 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             crossAxisCount: 4,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 1.0,
+            childAspectRatio: 0.9,
           ),
           itemCount: PetTheme.themes.length,
           itemBuilder: (context, index) {
             final theme = PetTheme.themes[index];
             final isSelected = widget.controller.companionPetTheme == theme.id;
+            final isLocked = theme.requiredConsistencyDays > 0 &&
+                (sl<CompanionStreakService>().currentStreakDays <
+                    theme.requiredConsistencyDays);
 
             return GestureDetector(
-              onTap: () => widget.controller.changeTheme(theme.id),
+              onTap: isLocked
+                  ? () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Requires a ${theme.requiredConsistencyDays}-day streak to unlock!',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  : () => widget.controller.changeTheme(theme.id),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutExpo,
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeInOut,
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.accentColor.withValues(alpha: 0.15)
-                      : AppTheme.surfaceElevated.withValues(alpha: 0.5),
+                      : AppTheme.surfaceElevated.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isSelected ? AppTheme.accentColor : AppTheme.border,
                     width: isSelected ? 2 : 1,
                   ),
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Positioned.fill(
-                      child: CompanionSpriteWidget(
-                        petTheme: theme,
-                        animationState: isSelected
-                            ? PetAnimationState.excited
-                            : PetAnimationState.idle,
-                        scale: 2.5, // Significantly larger to fill space
-                        isStatic: true,
-                        size: Size.infinite,
-                        backgroundImagePath:
-                            widget.controller.companionPreviewBackground,
+                    Expanded(
+                      child: Center(
+                        child: theme.avatarDefinition != null
+                            ? AvatarView(
+                                definition: theme.avatarDefinition!,
+                                isInteractive: false,
+                                autoTrackCursor: false,
+                                width: 56,
+                                height: 56,
+                              )
+                            : Icon(
+                                Icons.pets_rounded,
+                                size: 36,
+                                color: isSelected
+                                    ? AppTheme.accentColor
+                                    : AppTheme.textMuted,
+                              ),
                       ),
                     ),
+                    const SizedBox(height: 6),
+                    Text(
+                      theme.name,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight:
+                            isSelected ? FontWeight.w700 : FontWeight.w500,
+                        color: isSelected
+                            ? AppTheme.accentColor
+                            : AppTheme.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                    if (isLocked)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.lock_fill,
+                              size: 10,
+                              color: AppTheme.textMuted,
+                            ),
+                            const SizedBox(width: 2),
+                            Text(
+                              '${theme.requiredConsistencyDays}d',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: AppTheme.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                   ],
                 ),
               ),

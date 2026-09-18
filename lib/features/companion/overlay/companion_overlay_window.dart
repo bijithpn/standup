@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
+import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 import 'package:breakmate/core/ipc/overlay_config.dart';
@@ -277,11 +280,23 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     );
   }
 
+  AvatarDefinition get _avatarDefinition {
+    final theme = PetTheme.getTheme(_themeId);
+    if (theme.avatarDefinition != null) {
+      return theme.avatarDefinition!;
+    }
+    final species = AvatarSpecies.tryParse(_themeId) ?? AvatarSpecies.cat;
+    return AvatarDefinition.fromSeed(_themeId, species: species);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_gameInitialized || _game == null) {
       return const SizedBox.shrink();
     }
+    final theme = PetTheme.getTheme(_themeId);
+    final isAvatar = theme.isAvatar;
+
     return GestureDetector(
       onPanStart: _onPanStart,
       onPanUpdate: _onPanUpdate,
@@ -292,6 +307,19 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         body: Stack(
           children: [
             GameWidget(game: _game!),
+            if (isAvatar)
+              Positioned(
+                left: (_speechAnchor?.dx ?? 100) - (_scale * 16),
+                top: (_speechAnchor?.dy ?? 100) - (_scale * 24),
+                child: AvatarView(
+                  definition: _avatarDefinition,
+                  controller: _game?.petService.avatarController,
+                  width: _scale * 32,
+                  height: _scale * 32,
+                  autoTrackCursor: true,
+                  isInteractive: true,
+                ),
+              ),
             if (_speechText != null && _speechAnchor != null)
               Positioned(
                 left: _speechAnchor!.dx,

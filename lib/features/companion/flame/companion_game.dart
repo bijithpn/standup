@@ -35,7 +35,10 @@ import 'package:breakmate/features/companion/flame/components/throwable_toy_comp
 import 'package:breakmate/features/companion/flame/components/flying_npc_component.dart';
 import 'package:breakmate/features/companion/flame/components/ground_npc_component.dart';
 import 'package:breakmate/features/companion/flame/components/decoration_component.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
+import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
+import 'package:breakmate/features/companion/engine/avatar_event_channel.dart';
 import 'package:breakmate/features/companion/flame/components/custom_layer_component.dart';
 
 enum CompanionPowerTier {
@@ -52,19 +55,30 @@ class CompanionGame extends FlameGame {
     this.isPiP = false,
     this.toyType = 'tennis_ball',
     this.treatType = 'sushi',
-    this.backgroundImagePath = 'assets/background/forest/background.png',
+    this.backgroundImagePath = '', // asset-migration: background assets removed
+    AvatarEngineController? avatarController,
   }) : _eventBus = EventBus.instance,
+       _avatarController = avatarController ?? AvatarEngineController(),
+       _theme = initialTheme,
+       _physicsSimulator = PhysicsSimulator(),
+       _needsEngine = NeedsEngine(logger: AppLogger()),
        _petService = PetCompanionService(
          stateMachine: PetStateMachine(personality: PetPersonality()),
          brain: PetBehaviorBrain(),
          navigation: PetNavigationService(),
          profile: getProfileFromTheme(initialTheme),
-       ),
-       _theme = initialTheme,
-       _physicsSimulator = PhysicsSimulator(),
-       _needsEngine = NeedsEngine(logger: AppLogger()) {
+         avatarController: avatarController ?? AvatarEngineController(),
+       ) {
+    _petService.attachAvatarEngineController(_avatarController);
     _throwableManager = ThrowableObjectManager(
       physicsSimulator: _physicsSimulator,
+    );
+    _petService.attachThrowableManager(_throwableManager);
+    if (initialTheme.avatarDefinition != null) {
+      _avatarController.setDefinition(initialTheme.avatarDefinition!);
+    }
+    _petStateSubscription = _petService.stateMachine.stateStream.listen(
+      _applyPetStateToComponent,
     );
   }
 
@@ -110,9 +124,12 @@ class CompanionGame extends FlameGame {
       name: theme.name,
       species: species,
       variant: variant,
+      theme: theme,
+      avatarDefinition: theme.avatarDefinition,
     );
   }
 
+  final AvatarEngineController _avatarController;
   final EventBus _eventBus;
   final PetCompanionService _petService;
   late StreamSubscription<AppEvent> _eventSubscription;
@@ -165,6 +182,7 @@ class CompanionGame extends FlameGame {
   ui.Image? footballImage;
 
   CompanionComponent? petComponent;
+  PetAnimationState _currentAnimationState = PetAnimationState.idle;
 
   PetTheme get currentTheme => _theme;
   PetState get companionState => _petService.currentState;
@@ -172,6 +190,17 @@ class CompanionGame extends FlameGame {
   ThrowableObjectManager get throwableManager => _throwableManager;
   NeedsEngine get needsEngine => _needsEngine;
   PhysicsSimulator get physicsSimulator => _physicsSimulator;
+  AvatarEngineController get avatarController => _avatarController;
+  AvatarDefinition? get avatarDefinition => _theme.avatarDefinition;
+  PetAnimationState get currentAnimationState =>
+      petComponent?.current ?? _currentAnimationState;
+
+  void changePetState(PetAnimationState state) {
+    _currentAnimationState = state;
+    petComponent?.changeState(state);
+    final clip = state.toAvatarClip();
+    _avatarController.playAnimation(clip, loop: clip.isLooping);
+  }
 
   /// Screen-space point just above the pet sprite's head, for widgets layered
   /// on top of the game (e.g. a speech bubble) that need to track it. `null`
@@ -288,22 +317,22 @@ class CompanionGame extends FlameGame {
 
     try {
       bunnyFoodsImage = await PetAssetLoader.loadImage(
-        'assets/environments/throwable/throwable_grass_wood_snacks.png',
+        '', // asset-migration: throwable/throw_particles assets removed
       );
       dogItemsImage = await PetAssetLoader.loadImage(
-        'assets/environments/throwable/throwable_dog_items.png',
+        '', // asset-migration: throwable/throw_particles assets removed
       );
       baseballImage = await PetAssetLoader.loadImage(
-        'assets/animations/throw_particles/base_ball.png',
+        '', // asset-migration: throwable/throw_particles assets removed
       );
       basketballImage = await PetAssetLoader.loadImage(
-        'assets/animations/throw_particles/basket_ball.png',
+        '', // asset-migration: throwable/throw_particles assets removed
       );
       footballImage = await PetAssetLoader.loadImage(
-        'assets/animations/throw_particles/football.png',
+        '', // asset-migration: throwable/throw_particles assets removed
       );
       blueBallImage = await PetAssetLoader.loadImage(
-        'assets/animations/throw_particles/tennis_ball.png',
+        '', // asset-migration: throwable/throw_particles assets removed
       );
     } catch (e) {
       debugPrint('Error loading companion toy/treat assets: $e');
@@ -311,11 +340,6 @@ class CompanionGame extends FlameGame {
 
     await super.onLoad();
     _eventSubscription = _eventBus.stream.listen(_handleAppEvent);
-    _petStateSubscription = _petService.stateMachine.stateStream.listen((
-      state,
-    ) {
-      _applyPetStateToComponent(state);
-    });
     _petService.initialize(
       screenSize: Size(size.x, size.y),
       startPosition: _petConfig.lastAnchorPoint != Offset.zero
@@ -655,10 +679,14 @@ class CompanionGame extends FlameGame {
 
   void _applyPetStateToComponent(PetState state) {
     final animState = _mapPetStateToAnimationState(state);
-    final safeState = (petComponent?.animations?.containsKey(animState) == true)
+    _currentAnimationState = animState;
+    final safeState = (petComponent?.animations?.containsKey(animState) == true ||
+            _theme.isAvatar)
         ? animState
         : PetAnimationState.idle;
     petComponent?.changeState(safeState);
+    final clip = state.toAnimationClip();
+    _avatarController.playAnimation(clip, loop: clip.isLooping);
   }
 
   PetAnimationState _mapPetStateToAnimationState(PetState state) {
@@ -742,7 +770,8 @@ class CompanionGame extends FlameGame {
     if (scaleOverride > 0.0) {
       scale = scaleOverride;
     } else {
-      final double baselineHeight = size.y > 400.0 ? 300.0 : size.y;
+      final double currentH = hasLayout ? size.y : 300.0;
+      final double baselineHeight = currentH > 400.0 ? 300.0 : currentH;
       final double target = baselineHeight * 0.45;
       scale = (target / spriteSize).clamp(3.0, 10.0);
     }
@@ -761,7 +790,7 @@ class CompanionGame extends FlameGame {
   void _updateNavigationPaddings() {
     // Do not gate on petComponent: paddings must be set before the first
     // navigation update tick, which happens before petComponent is created.
-    if (size.x <= 0 || size.y <= 0) return;
+    if (!hasLayout || size.x <= 0 || size.y <= 0) return;
     final double spriteSize = _theme.spriteSize.toDouble();
     final double scale = _effectiveScale(spriteSize);
     final double scaledHalfW = (spriteSize * scale) / 2;
@@ -786,8 +815,15 @@ class CompanionGame extends FlameGame {
   }
 
   Future<void> _loadAndAttachPet() async {
-    final animations = await PetAssetLoader.loadAnimations(_petService.profile);
-    if (animations.isEmpty) return;
+    Map<PetAnimationState, SpriteAnimation> animations = const {};
+    if (!_theme.isAvatar) {
+      try {
+        animations = await PetAssetLoader.loadAnimations(_petService.profile);
+      } catch (e) {
+        debugPrint('Error loading pet animations: $e');
+      }
+      if (animations.isEmpty && !_theme.isAvatar) return;
+    }
 
     children.whereType<CompanionComponent>().toList().forEach(
       (c) => c.removeFromParent(),
@@ -802,14 +838,17 @@ class CompanionGame extends FlameGame {
     petComponent = CompanionComponent(
       animations: animations,
       initialState: _mapPetStateToAnimationState(_petService.currentState),
+      avatarController: _avatarController,
     )..priority = 5;
 
     petComponent!.size = Vector2(spriteSize, spriteSize);
     petComponent!.scale = Vector2.all(scale);
 
-    final double initialY = isPiP ? size.y - 20.0 : size.y - 4.0;
+    final double worldW = hasLayout ? size.x : 400.0;
+    final double currentH = hasLayout ? size.y : 300.0;
+    final double initialY = isPiP ? currentH - 20.0 : currentH - 4.0;
 
-    final double worldWidth = isPiP ? size.x * 1.3 : size.x;
+    final double worldWidth = isPiP ? worldW * 1.3 : worldW;
     petComponent!.position = Vector2(worldWidth / 2, initialY);
 
     if (isPiP && _pipWorld != null) {
@@ -845,6 +884,9 @@ class CompanionGame extends FlameGame {
     Flame.images.clear(_theme.id);
 
     _theme = newTheme;
+    if (newTheme.avatarDefinition != null) {
+      await _avatarController.setDefinition(newTheme.avatarDefinition!);
+    }
     _petService.updateProfile(getProfileFromTheme(newTheme));
     await _loadAndAttachPet();
   }
@@ -897,12 +939,19 @@ class CompanionGame extends FlameGame {
     switch (type) {
       case 'tap':
         _petService.handleEvent(PetEvent.userClick);
+        _avatarController.eventChannel.emit(AvatarTapEvent(position: position));
         break;
       case 'doubleTap':
         _petService.handleEvent(PetEvent.userDoubleClick);
+        _avatarController.eventChannel.emit(
+          AvatarDoubleTapEvent(position: position),
+        );
         break;
       case 'hover':
         _petService.handleEvent(PetEvent.userHover);
+        _avatarController.eventChannel.emit(
+          AvatarProximityEvent(distance: 0.0, isInside: true),
+        );
         break;
       case 'dragStart':
         _petService.handleEvent(PetEvent.userDragStart);
@@ -923,8 +972,10 @@ class CompanionGame extends FlameGame {
   void onDragEnd(Offset releasePosition) {
     if (_isDragging && _dragStartPosition != null) {
       final Offset dragVector = releasePosition - _dragStartPosition!;
-      final double worldWidth = size.x * 1.3;
-      final double groundHeight = size.y - 20.0 + _getGroundOffset();
+      final double worldW = hasLayout ? size.x : 400.0;
+      final double currentH = hasLayout ? size.y : 300.0;
+      final double worldWidth = worldW * 1.3;
+      final double groundHeight = currentH - 20.0 + _getGroundOffset();
       final returnTarget = isPiP ? Offset(worldWidth / 2, groundHeight) : null;
       final double toySize = isPiP ? 10.0 : 20.0;
       _throwableManager.spawnThrowable(
@@ -1232,31 +1283,7 @@ class CompanionGame extends FlameGame {
       return;
     }
 
-    final PetEvent? event = _petEventForState(targetState);
-    if (event != null) {
-      _petService.handleEvent(event);
-    }
-  }
-
-  PetEvent? _petEventForState(PetState state) {
-    switch (state) {
-      case PetState.idle:
-        return PetEvent.tick;
-      case PetState.alert:
-        return PetEvent.userClick;
-      case PetState.happy:
-        return PetEvent.userDoubleClick;
-      case PetState.celebrating:
-        return PetEvent.breakCompleted;
-      case PetState.sleep:
-        return PetEvent.idleTimeout;
-      case PetState.resting:
-        return PetEvent.cursorDwell;
-      case PetState.sad:
-        return PetEvent.breakEnded;
-      default:
-        return PetEvent.userClick;
-    }
+    _petService.stateMachine.transitionTo(targetState);
   }
 
   Size? _lastInitializedSize;

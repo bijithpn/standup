@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:breakmate/core/utils/logger.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 import 'package:flutter/foundation.dart';
 
@@ -84,6 +85,17 @@ class SettingsPersistence {
   }
 
   PetConfigV2 get current => _config;
+
+  AvatarDefinition? get avatarDefinition => _config.avatarDefinition;
+
+  void saveAvatarDefinition(AvatarDefinition definition) {
+    scheduleWrite(
+      _config.copyWith(
+        themeId: 'avatar_${definition.species.name}',
+        avatarDefinition: definition,
+      ),
+    );
+  }
 
   Future<void> _atomicWrite(PetConfigV2 config) async {
     final path = _configPath;
