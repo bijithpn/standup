@@ -10,75 +10,10 @@ import 'package:breakmate/shared/theme/app_theme.dart';
 /// Names are lowercased; multi-word names use hyphens (guinea-pig, red-panda etc.).
 /// Species not present in the snapshot set fall back to a pixel variant if available,
 /// then to a plain emoji label.
-String? _speciesSnapshotPath(AvatarSpecies species) {
-  // Direct name overrides for Dart enum names that differ from file names
-  const overrides = <AvatarSpecies, String>{
-    AvatarSpecies.guineaPig: 'assets/avatars/species/guinea-pig.svg',
-    // panda, redPanda, raccoon, wolf have no species snapshot — handled below
-  };
-
-  if (overrides.containsKey(species)) return overrides[species];
-
-  // Species present in assets/avatars/species/
-  const knownSpecies = {
-    AvatarSpecies.alpaca,
-    AvatarSpecies.bear,
-    AvatarSpecies.beaver,
-    AvatarSpecies.capybara,
-    AvatarSpecies.cat,
-    AvatarSpecies.chick,
-    AvatarSpecies.chinchilla,
-    AvatarSpecies.cow,
-    AvatarSpecies.deer,
-    AvatarSpecies.dog,
-    AvatarSpecies.duck,
-    AvatarSpecies.ferret,
-    AvatarSpecies.fox,
-    AvatarSpecies.goose,
-    AvatarSpecies.hamster,
-    AvatarSpecies.hedgehog,
-    AvatarSpecies.lion,
-    AvatarSpecies.monkey,
-    AvatarSpecies.otter,
-    AvatarSpecies.owl,
-    AvatarSpecies.parrot,
-    AvatarSpecies.penguin,
-    AvatarSpecies.pig,
-    AvatarSpecies.rabbit,
-    AvatarSpecies.seal,
-    AvatarSpecies.sheep,
-    AvatarSpecies.squirrel,
-    AvatarSpecies.tiger,
-  };
-
-  if (knownSpecies.contains(species)) {
-    return 'assets/avatars/species/${species.name}.svg';
-  }
-
-  // Try pixel variants for fallback species
-  const pixelSpecies = {
-    AvatarSpecies.bear,
-    AvatarSpecies.capybara,
-    AvatarSpecies.cat,
-    AvatarSpecies.cow,
-    AvatarSpecies.dog,
-    AvatarSpecies.fox,
-    AvatarSpecies.owl,
-    AvatarSpecies.parrot,
-    AvatarSpecies.penguin,
-    AvatarSpecies.rabbit,
-    AvatarSpecies.sheep,
-    AvatarSpecies.tiger,
-  };
-
-  if (pixelSpecies.contains(species)) {
-    return 'assets/avatars/pixel/${species.name}.svg';
-  }
-
-  return null;
+String _speciesSnapshotPath(AvatarSpecies species) {
+  return species.svgAssetPath;
 }
 
-/// Fallback emoji for species without an SVG snapshot.
 const Map<AvatarSpecies, String> _speciesEmojis = {
   AvatarSpecies.panda: '🐼',
   AvatarSpecies.redPanda: '🦝',
@@ -187,13 +122,13 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
               ),
               selected: isSelected,
               selectedColor: AppTheme.accentColor,
-              backgroundColor: AppTheme.surfaceElevated.withValues(alpha: 0.5),
+              backgroundColor: const Color(0xFF1E202C),
               showCheckmark: false,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: isSelected ? AppTheme.accentColor : AppTheme.border,
+                  color: isSelected ? AppTheme.accentColor : const Color(0xFF2C2F42),
                 ),
               ),
               onSelected: (selected) {
@@ -225,11 +160,11 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
           padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.accentColor.withValues(alpha: 0.15)
-                : AppTheme.surfaceElevated.withValues(alpha: 0.5),
+                ? AppTheme.accentColor.withValues(alpha: 0.18)
+                : const Color(0xFF1E202C),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isSelected ? AppTheme.accentColor : AppTheme.border,
+              color: isSelected ? AppTheme.accentColor : const Color(0xFF2C2F42),
               width: isSelected ? 2.0 : 1.0,
             ),
           ),
@@ -240,7 +175,7 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
               SizedBox(
                 width: 54,
                 height: 54,
-                child: svgPath != null
+                child: svgPath.isNotEmpty
                     ? SvgPicture.asset(
                         svgPath,
                         fit: BoxFit.contain,

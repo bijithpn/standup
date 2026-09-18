@@ -1,16 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('avatar runtime html and bundle assets exist in bundle', () async {
-    final html = await rootBundle.loadString('assets/avatar_runtime/index.html');
-    expect(html.contains('oneworks-avatar-container'), isTrue);
-    expect(html.contains('avatar_bundle.js'), isTrue);
-
-    final js = await rootBundle.loadString('assets/avatar_runtime/avatar_bundle.js');
-    expect(js.contains('AvatarBridge'), isTrue);
-    expect(js.contains('setLookAt'), isTrue);
+  test('avatar species SVG assets exist in bundle', () async {
+    for (final species in AvatarSpecies.values) {
+      final svg = await rootBundle.loadString(species.svgAssetPath);
+      expect(svg.contains('<svg'), isTrue, reason: 'Species ${species.name} SVG should be valid');
+    }
   });
 }

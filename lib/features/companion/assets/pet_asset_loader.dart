@@ -80,6 +80,15 @@ class PetAssetLoader {
   }
 
   static Future<ui.Image> loadImage(String path) async {
+    // Skip empty paths — environment asset paths are intentionally empty after
+    // the asset migration. Attempting to load '' causes Flutter to throw.
+    if (path.isEmpty) {
+      throw AppException(
+        type: AppErrorType.assetLoadFailure,
+        message: 'loadImage called with empty path',
+      );
+    }
+
     // Return cached decoded image — avoids codec instantiation overhead every tick.
     final cached = _imageCache[path];
     if (cached != null) return cached;

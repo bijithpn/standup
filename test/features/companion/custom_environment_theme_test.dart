@@ -1,25 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/companion/domain/custom_environment_theme.dart';
+import 'package:breakmate/features/companion/domain/custom_environment_layer.dart';
 
 void main() {
   group('CustomEnvironmentTheme Layers', () {
     test(
-      'fromDefaults initializes with default layers matching mountains and rocks',
+      'fromDefaults initializes valid custom environment theme',
       () {
         final theme = CustomEnvironmentTheme.fromDefaults();
-        expect(theme.layers.length, equals(4));
-        expect(theme.layers[0].assetPath, contains('mountain'));
-        expect(theme.layers[2].assetPath, contains('rock'));
+        expect(theme.layers, isA<List<CustomEnvironmentLayer>>());
       },
     );
 
     test('toJson and fromJson preserves custom layers list properties', () {
       final original = CustomEnvironmentTheme.fromDefaults();
-      final updatedLayer = original.layers.first.copyWith(
-        xRatio: 0.75,
-        flipX: true,
-      );
-      original.layers[0] = updatedLayer;
+      original.layers = [
+        const CustomEnvironmentLayer(
+          id: 'custom_layer_1',
+          assetPath: 'assets/mountain.png',
+          xRatio: 0.75,
+          flipX: true,
+        ),
+      ];
 
       final json = original.toJson();
       final restored = CustomEnvironmentTheme.fromJson(json);

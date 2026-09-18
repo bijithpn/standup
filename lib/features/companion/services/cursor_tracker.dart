@@ -9,6 +9,8 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 
 class CursorTracker {
+  static final CursorTracker instance = CursorTracker();
+
   CursorTracker({NativeBridgePlatform? bridge, EventBus? eventBus})
     : _bridge = bridge ?? NativeBridge.instance,
       _eventBus = eventBus ?? EventBus.instance;

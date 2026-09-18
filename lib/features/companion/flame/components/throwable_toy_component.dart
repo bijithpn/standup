@@ -39,7 +39,7 @@ class ThrowableToyComponent extends PositionComponent
       _assetConfig = config.toyAssets[type] ?? config.foodAssets[type];
     }
 
-    if (_assetConfig != null) {
+    if (_assetConfig != null && _assetConfig!.path.isNotEmpty) {
       try {
         _image = await PetAssetLoader.loadImage(_assetConfig!.path);
       } catch (e, st) {

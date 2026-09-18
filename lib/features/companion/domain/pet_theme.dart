@@ -43,7 +43,7 @@ class PetTheme {
     return PetTheme(
       id: id ?? 'avatar_${def.species.name}',
       name: name ?? '${def.species.displayName} (3D)',
-      basePath: 'assets/avatar_runtime/index.html',
+      basePath: def.species.svgAssetPath,
       type: PetType.avatar,
       spriteSize: 128,
       animations: const {},

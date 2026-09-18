@@ -9,7 +9,6 @@ import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_customizer_sheet.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
-import 'package:breakmate/shared/theme/app_theme.dart';
 
 /// Fullscreen 3D Avatar Customizer page providing interactive styling,
 /// palette selection, procedural seed variation, and live animation testing.
@@ -99,21 +98,21 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.contentBackground,
+      backgroundColor: const Color(0xFF0F1017),
       appBar: AppBar(
-        title: Text(
+        title: const Text(
           '3D Pet Customizer',
           style: TextStyle(
-            color: AppTheme.textPrimary,
+            color: Colors.white,
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
         ),
-        backgroundColor: AppTheme.surfaceElevated,
+        backgroundColor: const Color(0xFF151620),
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(CupertinoIcons.chevron_left, color: AppTheme.textPrimary),
+          icon: const Icon(CupertinoIcons.chevron_left, color: Colors.white),
           onPressed: _handleCancel,
         ),
       ),

@@ -57,7 +57,7 @@ class ClassicSlideshowTemplate extends StatelessWidget {
         fit: BoxFit.cover,
         filterQuality: FilterQuality.low,
       );
-    } else if (pageController != null) {
+    } else if (pageController != null && AppConstants.wellnessSlideshow.isNotEmpty) {
       background = PageView.builder(
         controller: pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -69,12 +69,21 @@ class ClassicSlideshowTemplate extends StatelessWidget {
         ),
       );
     } else {
-      final img = singleImage ?? AppConstants.wellnessSlideshow.first;
-      background = Image.asset(
-        img,
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.low,
-      );
+      final sImage = singleImage;
+      final img = (sImage != null && sImage.isNotEmpty)
+          ? sImage
+          : (AppConstants.wellnessSlideshow.isNotEmpty
+              ? AppConstants.wellnessSlideshow.first
+              : null);
+      if (img != null && img.isNotEmpty) {
+        background = Image.asset(
+          img,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.low,
+        );
+      } else {
+        background = Container(color: BreakOverlayTheme.background);
+      }
     }
 
     return Material(

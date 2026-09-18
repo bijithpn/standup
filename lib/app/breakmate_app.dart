@@ -128,7 +128,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     // `preventClose` is true by default (menu-bar app – closing hides it).
     final prevent = await windowManager.isPreventClose();
     if (!prevent) {
-      await gracefulShutdown();
+      await gracefulShutdown('onWindowClose (prevent=false)');
       return;
     }
 

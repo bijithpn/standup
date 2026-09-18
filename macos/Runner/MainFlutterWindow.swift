@@ -465,6 +465,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionTheme":
         if let args = call.arguments as? [String: Any], let themeId = args["themeId"] as? String {
           CompanionWindowManager.shared.updateTheme(themeId)
+          PiPWindowManager.shared.syncSettings(["themeId": themeId])
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing themeId", details: nil))
@@ -473,6 +474,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionName":
         if let args = call.arguments as? [String: Any], let petName = args["petName"] as? String {
           CompanionWindowManager.shared.updatePetName(petName)
+          PiPWindowManager.shared.syncSettings(["petName": petName])
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing petName", details: nil))

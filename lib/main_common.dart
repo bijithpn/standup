@@ -24,15 +24,6 @@ import 'features/features.dart';
 import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
-  void handleFatalError(Object error, StackTrace? stack) {
-    ErrorHandler().handleError(error, stack, type: AppErrorType.general);
-    // Gracefully terminate the background server and release ports before exiting.
-    Future.delayed(const Duration(seconds: 2), () async {
-      await _gracefulShutdown(_globalSingleInstanceServer);
-      exit(1);
-    });
-  }
-
   FlutterError.onError = (FlutterErrorDetails details) {
     debugPrint('=== FLUTTER ERROR ===');
     debugPrint(details.exceptionAsString());
@@ -54,16 +45,11 @@ void _setupGlobalErrors() {
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('=== ASYNC DART ERROR (FATAL) ===');
+    debugPrint('=== ASYNC DART ERROR ===');
     debugPrint(error.toString());
     debugPrint(stack.toString());
 
-    // Unhandled asynchronous exceptions are escalated to fatal process termination.
-    handleFatalError(error, stack);
-
-    ErrorToastService.showError(
-      'A critical error occurred. App will close shortly.',
-    );
+    ErrorHandler().handleError(error, stack, type: AppErrorType.general);
     return true;
   };
 
@@ -182,8 +168,8 @@ void _setupGlobalErrors() {
 
 ServerSocket? _globalSingleInstanceServer;
 
-Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
-  debugPrint('[Shutdown] Starting graceful shutdown...');
+Future<void> _gracefulShutdown(ServerSocket? serverSocket, [String? reason]) async {
+  debugPrint('[Shutdown] Starting graceful shutdown (reason: $reason) from:\n${StackTrace.current}');
 
   try {
     if (sl.isRegistered<SettingsRepository>()) {
@@ -333,8 +319,8 @@ Future<List<int>> _getPidsListeningOnPort(int port) async {
   return pids;
 }
 
-Future<void> gracefulShutdown() async {
-  await _gracefulShutdown(_globalSingleInstanceServer);
+Future<void> gracefulShutdown([String? reason]) async {
+  await _gracefulShutdown(_globalSingleInstanceServer, reason);
 }
 
 void mainCommon(FlavorConfig config) async {
@@ -481,7 +467,10 @@ void mainCommon(FlavorConfig config) async {
                   );
                   for (final targetPid in pids) {
                     try {
-                      final success = Process.killPid(targetPid);
+                      final success = Process.killPid(
+                        targetPid,
+                        ProcessSignal.sigkill,
+                      );
                       debugPrint(
                         'Startup: Terminated stale PID $targetPid (success=$success)',
                       );
@@ -523,11 +512,11 @@ void mainCommon(FlavorConfig config) async {
         if (!Platform.isWindows) {
           ProcessSignal.sigterm.watch().listen((_) async {
             debugPrint('[Signal] SIGTERM received — shutting down.');
-            await _gracefulShutdown(_globalSingleInstanceServer);
+            await _gracefulShutdown(_globalSingleInstanceServer, 'ProcessSignal.sigterm');
           });
           ProcessSignal.sigint.watch().listen((_) async {
             debugPrint('[Signal] SIGINT received — shutting down.');
-            await _gracefulShutdown(_globalSingleInstanceServer);
+            await _gracefulShutdown(_globalSingleInstanceServer, 'ProcessSignal.sigint');
           });
         }
 
@@ -543,7 +532,7 @@ void mainCommon(FlavorConfig config) async {
           ErrorHandler().handleError(e, st, type: AppErrorType.general);
           ErrorToastService.showError('Startup failed. The app will close.');
           await Future.delayed(const Duration(seconds: 3));
-          await _gracefulShutdown(_globalSingleInstanceServer);
+          await _gracefulShutdown(_globalSingleInstanceServer, 'startup exception: $e');
           return;
         }
 
@@ -597,7 +586,7 @@ void mainCommon(FlavorConfig config) async {
               final cmd = message.trim();
               if (cmd == 'shutdown') {
                 debugPrint('SingleInstanceServer: Received shutdown command.');
-                await _gracefulShutdown(singleInstanceServer);
+                await _gracefulShutdown(singleInstanceServer, 'singleInstanceServer IPC: shutdown');
               } else if (cmd == 'showDashboard') {
                 await sl<OverlayWindowService>().showDashboard(forceShow: true);
               }
@@ -643,7 +632,7 @@ void mainCommon(FlavorConfig config) async {
     (error, stack) {
       debugPrint('ZONED ERROR: $error');
       debugPrint(stack.toString());
-      gracefulShutdown();
+      ErrorHandler().handleError(error, stack, type: AppErrorType.general);
     },
   );
 }
@@ -756,10 +745,6 @@ Future<void> companionMain() async {
 
   try {
     CustomEnvironmentRepository().loadSync();
-    final defaultTheme = PetTheme.getTheme('grey_cat');
-    await PetAssetLoader.loadAnimations(
-      CompanionGame.getProfileFromTheme(defaultTheme),
-    );
   } catch (e, st) {
     ErrorHandler().handleError(e, st);
   }
@@ -793,10 +778,6 @@ Future<void> pipMain() async {
 
   try {
     CustomEnvironmentRepository().loadSync();
-    final defaultTheme = PetTheme.getTheme('grey_cat');
-    await PetAssetLoader.loadAnimations(
-      CompanionGame.getProfileFromTheme(defaultTheme),
-    );
   } catch (e, st) {
     ErrorHandler().handleError(e, st);
   }

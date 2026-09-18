@@ -338,9 +338,19 @@ class CompanionOverlayController extends ChangeNotifier {
       if (shouldShow) {
         if (themeChanged) {
           NativeBridge.updateCompanionTheme(_companionPetTheme);
+          if (_pipModeEnabled) {
+            NativeBridge.showPipWindow(
+              PipWindowArgs.fromMap(_companionPayload()),
+            );
+          }
         }
         if (nameChanged) {
           NativeBridge.updateCompanionName(_companionPetName);
+          if (_pipModeEnabled) {
+            NativeBridge.showPipWindow(
+              PipWindowArgs.fromMap(_companionPayload()),
+            );
+          }
         }
         if (scaleChanged) {
           NativeBridge.updateCompanionScale(_companionScale);

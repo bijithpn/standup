@@ -315,28 +315,8 @@ class CompanionGame extends FlameGame {
       );
     }
 
-    try {
-      bunnyFoodsImage = await PetAssetLoader.loadImage(
-        '', // asset-migration: throwable/throw_particles assets removed
-      );
-      dogItemsImage = await PetAssetLoader.loadImage(
-        '', // asset-migration: throwable/throw_particles assets removed
-      );
-      baseballImage = await PetAssetLoader.loadImage(
-        '', // asset-migration: throwable/throw_particles assets removed
-      );
-      basketballImage = await PetAssetLoader.loadImage(
-        '', // asset-migration: throwable/throw_particles assets removed
-      );
-      footballImage = await PetAssetLoader.loadImage(
-        '', // asset-migration: throwable/throw_particles assets removed
-      );
-      blueBallImage = await PetAssetLoader.loadImage(
-        '', // asset-migration: throwable/throw_particles assets removed
-      );
-    } catch (e) {
-      debugPrint('Error loading companion toy/treat assets: $e');
-    }
+    // Note: Throwable toy/treat raster assets were removed in favor of vector drawing.
+    // Images remain null and vector rendering fallback is utilized.
 
     await super.onLoad();
     _eventSubscription = _eventBus.stream.listen(_handleAppEvent);
@@ -1412,34 +1392,40 @@ class CompanionGame extends FlameGame {
   Future<void> preCacheThemeAssets(EnvironmentThemeConfig config) async {
     try {
       // Pre-cache background images
-      await PetAssetLoader.loadImage(config.skyPath);
-      await PetAssetLoader.loadImage(config.groundPath);
-      await PetAssetLoader.loadImage(config.cloudPath);
+      if (config.skyPath.isNotEmpty) await PetAssetLoader.loadImage(config.skyPath);
+      if (config.groundPath.isNotEmpty) await PetAssetLoader.loadImage(config.groundPath);
+      if (config.cloudPath.isNotEmpty) await PetAssetLoader.loadImage(config.cloudPath);
 
       // Pre-cache NPCs
-      await PetAssetLoader.loadImage(config.birdAsset.path);
-      await PetAssetLoader.loadImage(config.rabbitIdleAsset.path);
-      await PetAssetLoader.loadImage(config.rabbitRunAsset.path);
+      if (config.birdAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.birdAsset.path);
+      if (config.rabbitIdleAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rabbitIdleAsset.path);
+      if (config.rabbitRunAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rabbitRunAsset.path);
 
       // Pre-cache decorations
-      await PetAssetLoader.loadImage(config.mountainLeftAsset.path);
-      await PetAssetLoader.loadImage(config.mountainRightAsset.path);
-      await PetAssetLoader.loadImage(config.rockLeftAsset.path);
-      await PetAssetLoader.loadImage(config.rockRightAsset.path);
+      if (config.mountainLeftAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.mountainLeftAsset.path);
+      if (config.mountainRightAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.mountainRightAsset.path);
+      if (config.rockLeftAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rockLeftAsset.path);
+      if (config.rockRightAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rockRightAsset.path);
 
       // Pre-cache dynamic layers
       for (final layer in config.layers) {
-        await PetAssetLoader.loadImage(layer.assetPath);
+        if (layer.assetPath.isNotEmpty) {
+          await PetAssetLoader.loadImage(layer.assetPath);
+        }
       }
 
       // Pre-cache toys
       for (final toy in config.toyAssets.values) {
-        await PetAssetLoader.loadImage(toy.path);
+        if (toy.path.isNotEmpty) {
+          await PetAssetLoader.loadImage(toy.path);
+        }
       }
 
       // Pre-cache foods
       for (final food in config.foodAssets.values) {
-        await PetAssetLoader.loadImage(food.path);
+        if (food.path.isNotEmpty) {
+          await PetAssetLoader.loadImage(food.path);
+        }
       }
     } catch (e) {
       debugPrint('Error pre-caching environment theme assets: $e');

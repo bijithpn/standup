@@ -514,7 +514,9 @@ class CompanionComponent
       return;
     }
 
-    super.render(canvas);
+    if (animationTicker != null && animations != null && animations!.isNotEmpty) {
+      super.render(canvas);
+    }
     _renderOverlays(canvas);
     canvas.restore();
   }

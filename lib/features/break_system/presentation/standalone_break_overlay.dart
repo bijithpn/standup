@@ -223,10 +223,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     // per-break fields (exercise, theme, etc.) once the bridge responds.
     _initialized = true;
 
-    _currentTemplate =
-        AppConstants.wellnessSlideshow[Random().nextInt(
-          AppConstants.wellnessSlideshow.length,
-        )];
+    _currentTemplate = AppConstants.wellnessSlideshow.isNotEmpty
+        ? AppConstants.wellnessSlideshow[Random().nextInt(
+            AppConstants.wellnessSlideshow.length,
+          )]
+        : '';
     _currentTheme =
         BreakTheme.values[Random().nextInt(BreakTheme.values.length)];
 
@@ -401,7 +402,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_breakTemplate == 'classic') {
+    if (_breakTemplate == 'classic' && _currentTemplate.isNotEmpty) {
       precacheImage(AssetImage(_currentTemplate), context);
     }
   }

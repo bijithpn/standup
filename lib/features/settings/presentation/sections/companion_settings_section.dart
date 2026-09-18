@@ -6,11 +6,8 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
-import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_page.dart';
-import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
@@ -194,54 +191,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       widget.controller.pettingEnabled,
                       (v) => widget.controller.changePettingEnabled(v),
                     ),
-                    divider(),
-                    toggleRow(
-                      'Play Fetch',
-                      'Allow throwing balls from the action bar for the pet to chase.',
-                      widget.controller.ballThrowEnabled,
-                      (v) => widget.controller.changeBallThrowEnabled(v),
-                    ),
-                    if (widget.controller.ballThrowEnabled) ...[
-                      divider(),
-                      dropdownRow(
-                        'Throwable Toy Type',
-                        widget.controller.companionToyType,
-                        const [
-                          'tennis_ball',
-                          'base_ball',
-                          'basket_ball',
-                          'football',
-                          'bone',
-                          'sushi',
-                          'carrot',
-                        ],
-                        (v) {
-                          if (v != null) {
-                            widget.controller.changeToyType(v);
-                          }
-                        },
-                      ),
-                    ],
-                    divider(),
-                    toggleRow(
-                      'Feed Treats',
-                      'Allow feeding treats to your pet from the action bar.',
-                      widget.controller.treatEnabled,
-                      (v) => widget.controller.changeTreatEnabled(v),
-                    ),
-                    if (widget.controller.treatEnabled) ...[
-                      divider(),
-                      dropdownRow(
-                        'Feed Treat Type',
-                        widget.controller.companionTreatType,
-                        const ['sushi', 'bone', 'carrot'],
-                        (v) {
-                          if (v != null) {
-                            widget.controller.changeTreatType(v);
-                          }
-                        },
-                      ),
-                    ],
+
                     divider(),
                     toggleRow(
                       'Developer Milestones',
@@ -289,32 +239,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                   ]),
 
-                  const SizedBox(height: 32),
-                  sectionHeader(
-                    'Environment Builder',
-                    subtitle: 'Design custom world themes with your own assets',
-                  ),
-                  buildCard([
-                    buildListRow(
-                      'Open Environment Builder',
-                      'Pick sky, ground, rocks, birds, rabbits and colour tints to craft a custom world.',
-                      null,
-                      Icons.landscape_rounded,
-                      null,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const EnvironmentBuilderPage(),
-                          fullscreenDialog: true,
-                        ),
-                      ),
-                      trailing: Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 14,
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ]),
+
                 ],
                 const SizedBox(height: 40),
               ],
@@ -438,161 +363,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             _buildSyncCard(),
           ],
         ),
-        const SizedBox(height: 24),
-        _buildBackgroundPicker(),
       ],
-    );
-  }
-
-  Widget _buildBackgroundPicker() {
-    final backgrounds = [
-      {
-        'name': 'Forest',
-        'id': 'forest',
-        'path': '',
-      },
-      {
-        'name': 'Autumn',
-        'id': 'autumn',
-        'path': '',
-      },
-      {
-        'name': 'Winter',
-        'id': 'winter',
-        'path': '',
-      },
-      {
-        'name': 'Beach',
-        'id': 'beach',
-        'path': '',
-      },
-      {
-        'name': 'Desert',
-        'id': 'desert',
-        'path': '',
-      },
-      {
-        'name': 'Sky',
-        'id': 'sky',
-        'path': '',
-      },
-      {
-        'name': 'Night Town',
-        'id': 'night_town',
-        'path': '',
-      },
-      {
-        'name': 'Mist Forest',
-        'id': 'mist_forest',
-        'path': '',
-      },
-      {
-        'name': 'Urban',
-        'id': 'urban',
-        'path': '',
-      },
-    ];
-
-    try {
-      final repo = sl<CustomEnvironmentRepository>();
-      final customThemes = repo.themes.isEmpty ? repo.loadSync() : repo.themes;
-      for (final theme in customThemes) {
-        if (!backgrounds.any((bg) => bg['id'] == theme.id)) {
-          backgrounds.add({
-            'name': theme.name,
-            'id': theme.id,
-            'path': theme.skyPath,
-          });
-        }
-      }
-    } catch (_) {}
-
-    final currentBg = widget.controller.companionPreviewBackground;
-    final selectedBg = backgrounds.firstWhere(
-      (bg) => bg['id'] == currentBg,
-      orElse: () {
-        // Fallback to match by skyPath (for backward compatibility)
-        return backgrounds.firstWhere(
-          (bg) => bg['path'] == currentBg,
-          orElse: () => backgrounds.first,
-        );
-      },
-    );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Preview Environment',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                ),
-              ),
-              SizedBox(height: 2),
-              Text(
-                'Used to preview sprites below',
-                style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
-              ),
-            ],
-          ),
-          AppDropdown<String>(
-            value: selectedBg['id']!,
-            width: 180,
-            onChanged: (id) {
-              if (id != null) {
-                widget.controller.changePreviewBackground(id);
-              }
-            },
-            items: backgrounds.map((bg) {
-              final isThisSelected = bg['id'] == selectedBg['id'];
-              return AppDropdownItem<String>(
-                value: bg['id']!,
-                label: bg['name']!,
-                customChild: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.asset(
-                        bg['path']!,
-                        width: 28,
-                        height: 18,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      bg['name']!,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12.5,
-                        fontWeight: isThisSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                        color: isThisSelected
-                            ? AppTheme.accentColor
-                            : AppTheme.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
     );
   }
 

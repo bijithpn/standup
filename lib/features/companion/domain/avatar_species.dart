@@ -211,4 +211,21 @@ enum AvatarSpecies {
   bool get isFeline => category == AvatarSpeciesCategory.feline;
   bool get isCanine => category == AvatarSpeciesCategory.canine;
   bool get isRodent => category == AvatarSpeciesCategory.rodent;
+
+  String get svgAssetPath {
+    switch (this) {
+      case AvatarSpecies.guineaPig:
+        return 'assets/avatars/species/guinea-pig.svg';
+      case AvatarSpecies.panda:
+        return 'assets/avatars/breeds/bear--giant-panda.svg';
+      case AvatarSpecies.redPanda:
+        return 'assets/avatars/breeds/bear--red-panda.svg';
+      case AvatarSpecies.raccoon:
+        return 'assets/avatars/breeds/bear--raccoon.svg';
+      case AvatarSpecies.wolf:
+        return 'assets/avatars/breeds/dog--husky.svg';
+      default:
+        return 'assets/avatars/species/$name.svg';
+    }
+  }
 }

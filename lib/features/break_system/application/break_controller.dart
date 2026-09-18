@@ -82,7 +82,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     _audioPlayer = AudioPlayer();
     _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-    _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
 
     _timerEngine.addListener(_handleGlobalOverlays);
     WidgetsBinding.instance.addObserver(this);
@@ -161,10 +160,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         _pickRandomExercise();
       }
 
-      _classicImage =
-          AppConstants.wellnessSlideshow[Random().nextInt(
-            AppConstants.wellnessSlideshow.length,
-          )];
+      _classicImage = AppConstants.wellnessSlideshow.isNotEmpty
+          ? AppConstants.wellnessSlideshow[Random().nextInt(
+              AppConstants.wellnessSlideshow.length,
+            )]
+          : '';
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
@@ -415,10 +415,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     _logger.info('Starting break preview for template: $activeTemplate');
 
-    _classicImage =
-        AppConstants.wellnessSlideshow[Random().nextInt(
-          AppConstants.wellnessSlideshow.length,
-        )];
+    _classicImage = AppConstants.wellnessSlideshow.isNotEmpty
+        ? AppConstants.wellnessSlideshow[Random().nextInt(
+            AppConstants.wellnessSlideshow.length,
+          )]
+        : '';
 
     overlayService.showOverlay(
       type: OverlayType.breakScreen,
@@ -563,7 +564,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       _audioPlayer!.setVolume(0);
       _fadeVolume(1.0);
     } catch (e) {
-      _logger.error('Failed to play music: $e');
+      _isPlayingMusic = false;
+      _logger.warning('Failed to play music: $e');
     }
   }
 

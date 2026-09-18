@@ -45,6 +45,27 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
   bool _ownsController = false;
 
   AvatarAnimationClip _selectedPreviewClip = AvatarAnimationClip.celebrate;
+  Color _previewBgColor = const Color(0xFF141622);
+
+  static const List<Map<String, dynamic>> _bgPresets = [
+    {'name': 'Midnight', 'color': Color(0xFF0F111D)},
+    {'name': 'Slate', 'color': Color(0xFF181A26)},
+    {'name': 'Deep Space', 'color': Color(0xFF141622)},
+    {'name': 'Warm Neutral', 'color': Color(0xFF242129)},
+    {'name': 'Transparent', 'color': Colors.transparent},
+  ];
+
+  @override
+  void didUpdateWidget(AvatarCustomizerSheet oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialDefinition != widget.initialDefinition) {
+      setState(() {
+        _currentDefinition = widget.initialDefinition;
+        _seedController.text = widget.initialDefinition.seed;
+      });
+      _controller.setDefinition(widget.initialDefinition);
+    }
+  }
 
   @override
   void initState() {
@@ -146,9 +167,9 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceElevated,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: const BoxDecoration(
+        color: Color(0xFF151620),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
@@ -199,79 +220,142 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Customize Companion',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textPrimary,
+                color: Colors.white,
                 letterSpacing: -0.3,
               ),
             ),
             const SizedBox(height: 2),
-            Text(
+            const Text(
               'Interactive 3D viewport and styling',
               style: TextStyle(
                 fontSize: 12,
-                color: AppTheme.textSecondary,
+                color: Color(0xFF8E92A8),
               ),
             ),
           ],
         ),
-        if (widget.onCancel != null)
-          IconButton(
-            icon: Icon(CupertinoIcons.xmark_circle_fill, color: AppTheme.textMuted),
-            onPressed: widget.onCancel,
-          ),
       ],
     );
   }
 
   Widget _buildLivePreview() {
-    return Center(
-      child: Container(
-        width: double.infinity,
-        height: 200,
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.border),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            AvatarView(
-              definition: _currentDefinition,
-              controller: _controller,
-              width: 180,
-              height: 180,
-              transparent: true,
-              autoTrackCursor: true,
-              isStatic: widget.isStatic,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+          child: Container(
+            width: double.infinity,
+            height: 200,
+            decoration: BoxDecoration(
+              color: _previewBgColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF2A2C3E)),
             ),
-            Positioned(
-              bottom: 10,
-              right: 12,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.surfaceElevated.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.border),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                AvatarView(
+                  definition: _currentDefinition,
+                  controller: _controller,
+                  width: 170,
+                  height: 170,
+                  transparent: true,
+                  autoTrackCursor: true,
+                  isStatic: widget.isStatic,
                 ),
-                child: Text(
-                  '${_currentDefinition.species.displayName} · ${_currentDefinition.palette.name}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textSecondary,
+                Positioned(
+                  top: 12,
+                  left: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.55),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF4ADE80),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${_currentDefinition.species.displayName} · ${_currentDefinition.palette.name}',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 10),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              const Text(
+                'Background:',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF8E92A8),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ..._bgPresets.map((preset) {
+                final color = preset['color'] as Color;
+                final name = preset['name'] as String;
+                final isSelected = _previewBgColor == color;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: InkWell(
+                    onTap: () => setState(() => _previewBgColor = color),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppTheme.accentColor.withValues(alpha: 0.2)
+                            : const Color(0xFF1E202C),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected ? AppTheme.accentColor : const Color(0xFF2C2F42),
+                        ),
+                      ),
+                      child: Text(
+                        name,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected ? AppTheme.accentColor : const Color(0xFFA2A6BC),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

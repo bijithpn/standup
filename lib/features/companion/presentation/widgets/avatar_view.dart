@@ -7,60 +7,36 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
-import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/engine/avatar_event_channel.dart';
 import 'package:breakmate/features/companion/services/cursor_tracker.dart';
 
-/// Returns the SVG snapshot asset path for a given [AvatarSpecies],
-/// sourced from the OneWorks Avatar (avatar-main) repository.
-/// Returns null for species without a snapshot (panda, raccoon, redPanda, wolf).
-String? _avatarSnapshotPath(AvatarSpecies species) {
-  const overrides = <AvatarSpecies, String>{
-    AvatarSpecies.guineaPig: 'assets/avatars/species/guinea-pig.svg',
-  };
-  if (overrides.containsKey(species)) return overrides[species];
+/// Floating particle data structure for interactive tap reactions
+class _AvatarParticle {
+  Offset position;
+  Offset velocity;
+  double opacity;
+  double scale;
+  final Color color;
+  final bool isHeart;
 
-  const knownSpecies = {
-    AvatarSpecies.alpaca,
-    AvatarSpecies.bear,
-    AvatarSpecies.beaver,
-    AvatarSpecies.capybara,
-    AvatarSpecies.cat,
-    AvatarSpecies.chick,
-    AvatarSpecies.chinchilla,
-    AvatarSpecies.cow,
-    AvatarSpecies.deer,
-    AvatarSpecies.dog,
-    AvatarSpecies.duck,
-    AvatarSpecies.ferret,
-    AvatarSpecies.fox,
-    AvatarSpecies.goose,
-    AvatarSpecies.hamster,
-    AvatarSpecies.hedgehog,
-    AvatarSpecies.lion,
-    AvatarSpecies.monkey,
-    AvatarSpecies.otter,
-    AvatarSpecies.owl,
-    AvatarSpecies.parrot,
-    AvatarSpecies.penguin,
-    AvatarSpecies.pig,
-    AvatarSpecies.rabbit,
-    AvatarSpecies.seal,
-    AvatarSpecies.sheep,
-    AvatarSpecies.squirrel,
-    AvatarSpecies.tiger,
-  };
-  if (knownSpecies.contains(species)) {
-    return 'assets/avatars/species/${species.name}.svg';
-  }
-  return null;
+  _AvatarParticle({
+    required this.position,
+    required this.velocity,
+    required this.opacity,
+    required this.scale,
+    required this.color,
+    required this.isHeart,
+  });
 }
 
-/// A transparent 3D avatar viewport widget for the OneWorks Avatar Pet Companion.
-///
-/// Embeds the 3D avatar, handles cursor gaze tracking, gesture interactions,
-/// and provides a clean animated vector/canvas fallback across platforms.
+/// A companion viewport widget showcasing the authentic species SVG vector artwork
+/// with lively physics-based 3D animations:
+/// - Smooth idle breathing and floating bob
+/// - Real-time mouse cursor head tilt and gaze sway
+/// - Interactive squash-and-stretch bounce on tap
+/// - Floating hearts and sparkle burst particles
+/// - Dynamic ground drop shadow scaling with height
 class AvatarView extends StatefulWidget {
   final AvatarDefinition definition;
   final AvatarEngineController? controller;
@@ -97,29 +73,41 @@ class AvatarView extends StatefulWidget {
   State<AvatarView> createState() => _AvatarViewState();
 }
 
-class _AvatarViewState extends State<AvatarView>
-    with SingleTickerProviderStateMixin {
+class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   late AvatarEngineController _controller;
   bool _ownsController = false;
 
   late AnimationController _animController;
+  late AnimationController _bounceController;
+
   StreamSubscription<AvatarEvent>? _eventSub;
   StreamSubscription<ui.Offset>? _cursorSub;
 
   Offset _gazeOffset = Offset.zero;
+  double _currentYaw = 0.0;
+  final List<_AvatarParticle> _particles = [];
+  final math.Random _rng = math.Random();
 
   @override
   void initState() {
     super.initState();
     _initController();
 
+    // Idle breathing and floating animation
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 2600),
     );
+
     if (!widget.isStatic) {
       _animController.repeat(reverse: true);
     }
+
+    // Tap reaction squash-and-stretch bounce controller
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
 
     _bindControllerEvents();
     _setupCursorTracking();
@@ -144,6 +132,7 @@ class _AvatarViewState extends State<AvatarView>
       if (event is AvatarGazeEvent) {
         setState(() {
           _gazeOffset = Offset(event.lookAtX, event.lookAtY);
+          _currentYaw = event.yaw;
         });
       } else if (event is AvatarAnimationStartedEvent ||
           event is AvatarAnimationFinishedEvent) {
@@ -153,30 +142,40 @@ class _AvatarViewState extends State<AvatarView>
   }
 
   void _setupCursorTracking() {
+    if (!widget.autoTrackCursor) return;
+
+    final tracker = widget.cursorTracker ?? CursorTracker.instance;
     _cursorSub?.cancel();
-    if (widget.autoTrackCursor && widget.cursorTracker != null) {
-      _cursorSub = widget.cursorTracker!.positionStream.listen((cursorPos) {
-        if (!mounted) return;
-        final renderBox = context.findRenderObject() as RenderBox?;
-        if (renderBox != null && renderBox.hasSize) {
-          final petCenter = renderBox.localToGlobal(
-            Offset(renderBox.size.width / 2, renderBox.size.height / 2),
-          );
-          _controller.updateGaze(
-            petScreenPosition: petCenter,
-            cursorScreenPosition: cursorPos,
-            maxDistance: 500.0,
-          );
-        }
+    _cursorSub = tracker.positionStream.listen((globalCursorPos) {
+      if (!mounted) return;
+
+      final renderBox = context.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.hasSize) return;
+
+      final localPos = renderBox.globalToLocal(globalCursorPos);
+      final size = renderBox.size;
+      final centerX = size.width / 2.0;
+      final centerY = size.height / 2.0;
+
+      final normalizedX = ((localPos.dx - centerX) / (size.width * 1.5))
+          .clamp(-1.0, 1.0);
+      final normalizedY = ((localPos.dy - centerY) / (size.height * 1.5))
+          .clamp(-1.0, 1.0);
+
+      _controller.setLookAt(normalizedX, normalizedY);
+      setState(() {
+        _gazeOffset = Offset(normalizedX, normalizedY);
+        _currentYaw = normalizedX * 0.35;
       });
-    }
+    });
   }
 
   @override
-  void didUpdateWidget(covariant AvatarView oldWidget) {
+  void didUpdateWidget(AvatarView oldWidget) {
     super.didUpdateWidget(oldWidget);
-
     if (oldWidget.controller != widget.controller) {
+      _cursorSub?.cancel();
+      _eventSub?.cancel();
       if (_ownsController) {
         _controller.dispose();
       }
@@ -201,6 +200,7 @@ class _AvatarViewState extends State<AvatarView>
     _cursorSub?.cancel();
     _eventSub?.cancel();
     _animController.dispose();
+    _bounceController.dispose();
     if (_ownsController) {
       _controller.dispose();
     }
@@ -212,68 +212,191 @@ class _AvatarViewState extends State<AvatarView>
     final w = widget.width > 0 ? widget.width : 160.0;
     final h = widget.height > 0 ? widget.height : 160.0;
 
-    final normalizedX = ((event.localPosition.dx / (w / 2.0)) - 1.0).clamp(-1.0, 1.0);
-    final normalizedY = ((event.localPosition.dy / (h / 2.0)) - 1.0).clamp(-1.0, 1.0);
+    final normalizedX =
+        ((event.localPosition.dx / (w / 2.0)) - 1.0).clamp(-1.0, 1.0);
+    final normalizedY =
+        ((event.localPosition.dy / (h / 2.0)) - 1.0).clamp(-1.0, 1.0);
 
     _controller.setLookAt(normalizedX, normalizedY);
     _controller.eventChannel.emit(
       AvatarGazeEvent(
         lookAtX: normalizedX,
         lookAtY: normalizedY,
-        yaw: _controller.currentYaw,
+        yaw: normalizedX * 0.35,
       ),
     );
+    setState(() {
+      _gazeOffset = Offset(normalizedX, normalizedY);
+      _currentYaw = normalizedX * 0.35;
+    });
+  }
+
+  void _spawnParticles(Offset origin) {
+    final colors = [
+      const Color(0xFFFF5252),
+      const Color(0xFFFF4081),
+      const Color(0xFFFFB74D),
+      const Color(0xFF64B5F6),
+      const Color(0xFFE040FB),
+    ];
+    for (int i = 0; i < 6; i++) {
+      final angle = (_rng.nextDouble() * math.pi) - math.pi;
+      final speed = 30.0 + _rng.nextDouble() * 50.0;
+      _particles.add(
+        _AvatarParticle(
+          position: origin,
+          velocity: Offset(
+            math.cos(angle) * speed,
+            math.sin(angle) * speed - 25.0,
+          ),
+          opacity: 1.0,
+          scale: 0.8 + _rng.nextDouble() * 0.6,
+          color: colors[_rng.nextInt(colors.length)],
+          isHeart: i % 2 == 0,
+        ),
+      );
+    }
+  }
+
+  void _updateParticles(double dt) {
+    for (int i = _particles.length - 1; i >= 0; i--) {
+      final p = _particles[i];
+      p.position += p.velocity * dt;
+      p.opacity -= dt * 1.5;
+      p.scale += dt * 0.3;
+      if (p.opacity <= 0) {
+        _particles.removeAt(i);
+      }
+    }
   }
 
   void _handleTap() {
     if (!widget.isInteractive) return;
+    _bounceController.forward(from: 0.0);
+    final center = Offset(widget.width / 2, widget.height / 2);
+    _spawnParticles(center);
     widget.onTap?.call();
     _controller.eventChannel.emit(AvatarTapEvent());
   }
 
   void _handleDoubleTap() {
     if (!widget.isInteractive) return;
+    _bounceController.forward(from: 0.0);
+    final center = Offset(widget.width / 2, widget.height / 2);
+    _spawnParticles(center);
+    _spawnParticles(center);
     widget.onDoubleTap?.call();
     _controller.eventChannel.emit(AvatarDoubleTapEvent());
   }
 
   @override
   Widget build(BuildContext context) {
-    // ExternalFallback/fallbackBuilder take highest priority (caller overrides).
-    Widget content;
     if (widget.fallbackBuilder != null) {
-      content = widget.fallbackBuilder!(context);
-    } else if (widget.fallback != null) {
-      content = widget.fallback!;
-    } else {
-      // Try to render the real OneWorks Avatar SVG snapshot for this species.
-      final svgPath = _avatarSnapshotPath(widget.definition.species);
-      if (svgPath != null) {
-        // Animate a gentle float effect using the existing AnimationController.
-        content = AnimatedBuilder(
-          animation: _animController,
-          builder: (context, child) {
-            final bounceY = widget.isStatic
-                ? 0.0
-                : math.sin(_animController.value * math.pi) * 4.0;
-            return Transform.translate(
-              offset: Offset(0, bounceY),
-              child: child,
-            );
-          },
-          child: SvgPicture.asset(
-            svgPath,
-            width: widget.width,
-            height: widget.height,
-            fit: BoxFit.contain,
-            placeholderBuilder: (context) => _buildCanvasFallback(),
-          ),
-        );
-      } else {
-        // Canvas painter fallback for species without a snapshot (panda, wolf, etc.)
-        content = _buildCanvasFallback();
-      }
+      return widget.fallbackBuilder!(context);
     }
+    if (widget.fallback != null) {
+      return widget.fallback!;
+    }
+
+    final svgPath = widget.definition.species.svgAssetPath;
+    final double avatarSize =
+        math.min(widget.width, widget.height) * 0.85 * widget.definition.scale;
+
+    Widget avatarContent = AnimatedBuilder(
+      animation: Listenable.merge([_animController, _bounceController]),
+      builder: (context, _) {
+        _updateParticles(0.016);
+
+        // Dynamic motion calculations
+        double bounceY = 0.0;
+        double scaleX = 1.0;
+        double scaleY = 1.0;
+
+        final bounceVal = _bounceController.value;
+        if (bounceVal > 0) {
+          bounceY = -math.sin(bounceVal * math.pi) * 16.0;
+          scaleX = 1.0 + math.sin(bounceVal * math.pi) * 0.12;
+          scaleY = 1.0 - math.sin(bounceVal * math.pi) * 0.10;
+        } else {
+          final clip = _controller.currentClip;
+          if (clip == AvatarAnimationClip.celebrate ||
+              clip == AvatarAnimationClip.bounce) {
+            bounceY =
+                -math.sin(_animController.value * math.pi * 2).abs() * 14.0;
+            scaleX = 1.0 + math.sin(_animController.value * math.pi * 2) * 0.08;
+            scaleY = 1.0 - math.sin(_animController.value * math.pi * 2) * 0.06;
+          } else if (clip == AvatarAnimationClip.sleep) {
+            bounceY = math.sin(_animController.value * math.pi) * 2.5;
+            scaleX = 1.0 + math.sin(_animController.value * math.pi) * 0.02;
+          } else {
+            // Idle breathing float
+            bounceY = math.sin(_animController.value * math.pi) * 6.0;
+            scaleX = 1.0 + math.sin(_animController.value * math.pi) * 0.02;
+            scaleY = 1.0 - math.sin(_animController.value * math.pi) * 0.015;
+          }
+        }
+
+        final shadowScale = math.max(0.4, 1.0 - (-bounceY / 35.0));
+
+        // 3D perspective matrix based on cursor gaze and yaw
+        final lookX = _gazeOffset.dx.clamp(-1.0, 1.0);
+        final lookY = _gazeOffset.dy.clamp(-1.0, 1.0);
+        final matrix = Matrix4.identity()
+          ..setEntry(3, 2, 0.001) // perspective
+          ..translateByDouble(lookX * 6.0, bounceY + lookY * 4.0, 0.0, 1.0)
+          ..rotateY(_currentYaw * 0.22)
+          ..rotateX(-lookY * 0.12)
+          ..scaleByDouble(scaleX, scaleY, 1.0, 1.0);
+
+        return Stack(
+          alignment: Alignment.center,
+          clipBehavior: Clip.none,
+          children: [
+            // Soft ground drop shadow
+            Positioned(
+              bottom: (widget.height - avatarSize) / 2 - 8.0,
+              child: CustomPaint(
+                size: Size(avatarSize * 0.65 * shadowScale, 14 * shadowScale),
+                painter: _AvatarShadowPainter(shadowScale),
+              ),
+            ),
+
+            // Authentic Animated SVG Artwork
+            Transform(
+              transform: matrix,
+              alignment: Alignment.center,
+              child: SizedBox(
+                width: avatarSize,
+                height: avatarSize,
+                child: SvgPicture.asset(
+                  svgPath,
+                  fit: BoxFit.contain,
+                  placeholderBuilder: (_) => const Center(
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Floating Interactive Tap Particles
+            if (_particles.isNotEmpty)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: _AvatarParticlesPainter(
+                      particles: List.unmodifiable(_particles),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+    );
 
     Widget interactiveContent = MouseRegion(
       onHover: _handlePointerHover,
@@ -284,7 +407,7 @@ class _AvatarViewState extends State<AvatarView>
         child: SizedBox(
           width: widget.width,
           height: widget.height,
-          child: content,
+          child: avatarContent,
         ),
       ),
     );
@@ -298,336 +421,75 @@ class _AvatarViewState extends State<AvatarView>
 
     return interactiveContent;
   }
-
-  /// Builds the canvas-drawn vector avatar painter (used as fallback when no SVG
-  /// snapshot is available for the species, e.g. panda, raccoon, redPanda, wolf).
-  Widget _buildCanvasFallback() {
-    return AnimatedBuilder(
-      animation: _animController,
-      builder: (context, _) {
-        return CustomPaint(
-          size: Size(widget.width, widget.height),
-          painter: _AvatarVectorPainter(
-            definition: widget.definition,
-            lookAt: _gazeOffset.dx != 0 || _gazeOffset.dy != 0
-                ? _gazeOffset
-                : _controller.currentLookAt,
-            yaw: _controller.currentYaw,
-            clip: _controller.currentClip,
-            animValue: _animController.value,
-          ),
-        );
-      },
-    );
-  }
 }
 
+/// Soft drop shadow painter below the avatar
+class _AvatarShadowPainter extends CustomPainter {
+  final double scale;
 
-/// High fidelity vector canvas renderer for transparent 3D avatar viewport fallback.
-class _AvatarVectorPainter extends CustomPainter {
-  final AvatarDefinition definition;
-  final Offset lookAt;
-  final double yaw;
-  final AvatarAnimationClip? clip;
-  final double animValue;
-
-  _AvatarVectorPainter({
-    required this.definition,
-    required this.lookAt,
-    required this.yaw,
-    required this.clip,
-    required this.animValue,
-  });
+  _AvatarShadowPainter(this.scale);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final baseRadius = math.min(size.width, size.height) * 0.38 * definition.scale;
-
-    final palette = definition.palette;
-    final primaryColor = _parseColor(palette.primary);
-    final secondaryColor = _parseColor(palette.secondary);
-    final accentColor = _parseColor(palette.accent);
-    final eyeColor = _parseColor(palette.eyes);
-
-    // Subtle breathing or clip animation offsets
-    double bounceY = 0.0;
-    double scaleAnim = 1.0;
-    double rotationAnim = 0.0;
-
-    if (clip == AvatarAnimationClip.celebrate || clip == AvatarAnimationClip.bounce) {
-      bounceY = -math.sin(animValue * math.pi * 2).abs() * 12.0;
-      scaleAnim = 1.0 + math.sin(animValue * math.pi * 2) * 0.06;
-    } else if (clip == AvatarAnimationClip.sleep) {
-      bounceY = math.sin(animValue * math.pi) * 2.0;
-    } else {
-      // Idle gentle float
-      bounceY = math.sin(animValue * math.pi) * 4.0;
-    }
-
-    final avatarCenter = center + Offset(0, bounceY);
-
-    canvas.save();
-    canvas.translate(avatarCenter.dx, avatarCenter.dy);
-    canvas.rotate(rotationAnim + yaw * 0.2);
-    canvas.scale(scaleAnim, scaleAnim);
-
-    // 1. Shadow underneath
-    final shadowPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.12)
+    final paint = Paint()
+      ..color = Colors.black.withValues(alpha: 0.22 * scale)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
     canvas.drawOval(
       Rect.fromCenter(
-        center: Offset(0, baseRadius * 1.0 - bounceY * 0.5),
-        width: baseRadius * 1.4,
-        height: baseRadius * 0.4,
+        center: Offset(size.width / 2, size.height / 2),
+        width: size.width,
+        height: size.height,
       ),
-      shadowPaint,
+      paint,
     );
-
-    // 2. Ears / Horns / Features
-    _drawEars(canvas, baseRadius, primaryColor, accentColor);
-
-    // 3. Main Head & Body
-    final bodyPaint = Paint()
-      ..shader = ui.Gradient.radial(
-        Offset(-baseRadius * 0.2, -baseRadius * 0.2),
-        baseRadius * 1.2,
-        [
-          primaryColor,
-          secondaryColor,
-        ],
-      );
-
-    canvas.drawCircle(Offset.zero, baseRadius, bodyPaint);
-
-    // 4. Pattern Markings
-    _drawPattern(canvas, baseRadius, accentColor);
-
-    // 5. Eyes & Gaze Tracking
-    _drawEyes(canvas, baseRadius, eyeColor);
-
-    // 6. Snout / Nose / Mouth
-    _drawFaceDetails(canvas, baseRadius, accentColor);
-
-    // 7. Cheeks / Blush
-    final blushPaint = Paint()..color = const Color(0xFFFF8595).withValues(alpha: 0.35);
-    canvas.drawCircle(Offset(-baseRadius * 0.55, baseRadius * 0.15), baseRadius * 0.14, blushPaint);
-    canvas.drawCircle(Offset(baseRadius * 0.55, baseRadius * 0.15), baseRadius * 0.14, blushPaint);
-
-    canvas.restore();
-  }
-
-  void _drawEars(Canvas canvas, double radius, Color primary, Color accent) {
-    final earPaint = Paint()..color = primary;
-    final innerEarPaint = Paint()..color = accent.withValues(alpha: 0.8);
-
-    if (definition.species.isFeline || definition.species == AvatarSpecies.fox || definition.species == AvatarSpecies.wolf) {
-      // Pointy ears
-      final leftEar = Path()
-        ..moveTo(-radius * 0.7, -radius * 0.4)
-        ..lineTo(-radius * 0.85, -radius * 1.1)
-        ..lineTo(-radius * 0.25, -radius * 0.75)
-        ..close();
-      final rightEar = Path()
-        ..moveTo(radius * 0.7, -radius * 0.4)
-        ..lineTo(radius * 0.85, -radius * 1.1)
-        ..lineTo(radius * 0.25, -radius * 0.75)
-        ..close();
-      canvas.drawPath(leftEar, earPaint);
-      canvas.drawPath(rightEar, earPaint);
-
-      // Inner ear accents
-      final innerLeft = Path()
-        ..moveTo(-radius * 0.65, -radius * 0.45)
-        ..lineTo(-radius * 0.78, -radius * 0.95)
-        ..lineTo(-radius * 0.32, -radius * 0.7)
-        ..close();
-      final innerRight = Path()
-        ..moveTo(radius * 0.65, -radius * 0.45)
-        ..lineTo(radius * 0.78, -radius * 0.95)
-        ..lineTo(radius * 0.32, -radius * 0.7)
-        ..close();
-      canvas.drawPath(innerLeft, innerEarPaint);
-      canvas.drawPath(innerRight, innerEarPaint);
-    } else if (definition.species == AvatarSpecies.rabbit) {
-      // Long tall ears
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(-radius * 0.55, -radius * 1.5, radius * 0.35, radius * 1.1),
-          Radius.circular(radius * 0.18),
-        ),
-        earPaint,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(radius * 0.2, -radius * 1.5, radius * 0.35, radius * 1.1),
-          Radius.circular(radius * 0.18),
-        ),
-        earPaint,
-      );
-    } else if (definition.species.isAvian) {
-      // Crest / Tufts
-      final crest = Path()
-        ..moveTo(0, -radius * 0.8)
-        ..lineTo(-radius * 0.2, -radius * 1.25)
-        ..lineTo(0, -radius * 1.0)
-        ..lineTo(radius * 0.2, -radius * 1.25)
-        ..close();
-      canvas.drawPath(crest, earPaint);
-    } else {
-      // Round / floppy ears (dog, panda, bear, alpaca, rodents, etc.)
-      canvas.drawCircle(Offset(-radius * 0.7, -radius * 0.7), radius * 0.32, earPaint);
-      canvas.drawCircle(Offset(radius * 0.7, -radius * 0.7), radius * 0.32, earPaint);
-      canvas.drawCircle(Offset(-radius * 0.7, -radius * 0.7), radius * 0.18, innerEarPaint);
-      canvas.drawCircle(Offset(radius * 0.7, -radius * 0.7), radius * 0.18, innerEarPaint);
-    }
-  }
-
-  void _drawPattern(Canvas canvas, double radius, Color accent) {
-    final pattern = definition.pattern;
-    final patternPaint = Paint()..color = accent.withValues(alpha: 0.45);
-
-    if (pattern == 'stripes') {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(0, -radius * 0.55), width: radius * 0.3, height: radius * 0.08),
-          const Radius.circular(4),
-        ),
-        patternPaint,
-      );
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromCenter(center: Offset(0, -radius * 0.7), width: radius * 0.4, height: radius * 0.08),
-          const Radius.circular(4),
-        ),
-        patternPaint,
-      );
-    } else if (pattern == 'spots' || pattern == 'patches') {
-      canvas.drawCircle(Offset(radius * 0.4, -radius * 0.3), radius * 0.22, patternPaint);
-      canvas.drawCircle(Offset(-radius * 0.45, radius * 0.35), radius * 0.18, patternPaint);
-    }
-  }
-
-  void _drawEyes(Canvas canvas, double radius, Color eyeColor) {
-    final eyeSpacing = radius * 0.38;
-    final eyeY = -radius * 0.05;
-    final eyeRadius = radius * 0.15;
-
-    final isSleeping = clip == AvatarAnimationClip.sleep;
-
-    if (isSleeping) {
-      // Closed curved eyes
-      final closedEyePaint = Paint()
-        ..color = eyeColor
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = radius * 0.06
-        ..strokeCap = StrokeCap.round;
-
-      final leftEyePath = Path()
-        ..moveTo(-eyeSpacing - eyeRadius, eyeY)
-        ..quadraticBezierTo(-eyeSpacing, eyeY + eyeRadius * 0.8, -eyeSpacing + eyeRadius, eyeY);
-      final rightEyePath = Path()
-        ..moveTo(eyeSpacing - eyeRadius, eyeY)
-        ..quadraticBezierTo(eyeSpacing, eyeY + eyeRadius * 0.8, eyeSpacing + eyeRadius, eyeY);
-
-      canvas.drawPath(leftEyePath, closedEyePaint);
-      canvas.drawPath(rightEyePath, closedEyePaint);
-      return;
-    }
-
-    // Gaze offset max translation
-    final maxPupilOffset = eyeRadius * 0.55;
-    final pupilShift = Offset(
-      lookAt.dx.clamp(-1.0, 1.0) * maxPupilOffset,
-      lookAt.dy.clamp(-1.0, 1.0) * maxPupilOffset,
-    );
-
-    // Left Eye Socket (White)
-    final whitePaint = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset(-eyeSpacing, eyeY), eyeRadius, whitePaint);
-    // Right Eye Socket (White)
-    canvas.drawCircle(Offset(eyeSpacing, eyeY), eyeRadius, whitePaint);
-
-    // Iris / Pupils (Gaze tracking)
-    final pupilPaint = Paint()..color = eyeColor;
-    canvas.drawCircle(Offset(-eyeSpacing, eyeY) + pupilShift, eyeRadius * 0.72, pupilPaint);
-    canvas.drawCircle(Offset(eyeSpacing, eyeY) + pupilShift, eyeRadius * 0.72, pupilPaint);
-
-    // Highlights
-    final highlightPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(
-      Offset(-eyeSpacing - eyeRadius * 0.25, eyeY - eyeRadius * 0.25) + pupilShift * 0.5,
-      eyeRadius * 0.28,
-      highlightPaint,
-    );
-    canvas.drawCircle(
-      Offset(eyeSpacing - eyeRadius * 0.25, eyeY - eyeRadius * 0.25) + pupilShift * 0.5,
-      eyeRadius * 0.28,
-      highlightPaint,
-    );
-  }
-
-  void _drawFaceDetails(Canvas canvas, double radius, Color accent) {
-    final noseY = radius * 0.12;
-
-    if (definition.species.isAvian) {
-      // Beak
-      final beakPaint = Paint()..color = const Color(0xFFF39C12);
-      final beakPath = Path()
-        ..moveTo(-radius * 0.1, noseY - radius * 0.02)
-        ..lineTo(0, noseY + radius * 0.12)
-        ..lineTo(radius * 0.1, noseY - radius * 0.02)
-        ..close();
-      canvas.drawPath(beakPath, beakPaint);
-      return;
-    }
-
-    final nosePaint = Paint()..color = const Color(0xFF222233);
-
-    // Small nose
-    final nosePath = Path()
-      ..moveTo(0, noseY - radius * 0.04)
-      ..lineTo(-radius * 0.06, noseY + radius * 0.03)
-      ..lineTo(radius * 0.06, noseY + radius * 0.03)
-      ..close();
-    canvas.drawPath(nosePath, nosePaint);
-
-    // Mouth lines
-    final mouthPaint = Paint()
-      ..color = const Color(0xFF333344)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = radius * 0.04
-      ..strokeCap = StrokeCap.round;
-
-    final mouthPath = Path()
-      ..moveTo(-radius * 0.08, noseY + radius * 0.09)
-      ..quadraticBezierTo(-radius * 0.04, noseY + radius * 0.14, 0, noseY + radius * 0.08)
-      ..quadraticBezierTo(radius * 0.04, noseY + radius * 0.14, radius * 0.08, noseY + radius * 0.08);
-
-    canvas.drawPath(mouthPath, mouthPaint);
-  }
-
-  Color _parseColor(String hex) {
-    try {
-      final cleanHex = hex.replaceAll('#', '');
-      if (cleanHex.length == 6) {
-        return Color(int.parse('FF$cleanHex', radix: 16));
-      } else if (cleanHex.length == 8) {
-        return Color(int.parse(cleanHex, radix: 16));
-      }
-    } catch (_) {}
-    return const Color(0xFF7E57C2);
   }
 
   @override
-  bool shouldRepaint(covariant _AvatarVectorPainter oldDelegate) {
-    return oldDelegate.definition != definition ||
-        oldDelegate.lookAt != lookAt ||
-        oldDelegate.yaw != yaw ||
-        oldDelegate.clip != clip ||
-        oldDelegate.animValue != animValue;
+  bool shouldRepaint(covariant _AvatarShadowPainter oldDelegate) =>
+      oldDelegate.scale != scale;
+}
+
+/// Painter for interactive floating hearts and sparkle particles
+class _AvatarParticlesPainter extends CustomPainter {
+  final List<_AvatarParticle> particles;
+
+  _AvatarParticlesPainter({required this.particles});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    for (final p in particles) {
+      final paint = Paint()
+        ..color = p.color.withValues(alpha: p.opacity.clamp(0.0, 1.0))
+        ..style = PaintingStyle.fill;
+
+      if (p.isHeart) {
+        final s = 7.0 * p.scale;
+        final path = Path()
+          ..moveTo(p.position.dx, p.position.dy)
+          ..cubicTo(
+            p.position.dx - s,
+            p.position.dy - s * 1.2,
+            p.position.dx - s * 1.5,
+            p.position.dy + s * 0.2,
+            p.position.dx,
+            p.position.dy + s * 1.3,
+          )
+          ..cubicTo(
+            p.position.dx + s * 1.5,
+            p.position.dy + s * 0.2,
+            p.position.dx + s,
+            p.position.dy - s * 1.2,
+            p.position.dx,
+            p.position.dy,
+          );
+        canvas.drawPath(path, paint);
+      } else {
+        canvas.drawCircle(p.position, 3.5 * p.scale, paint);
+      }
+    }
   }
+
+  @override
+  bool shouldRepaint(covariant _AvatarParticlesPainter oldDelegate) => true;
 }
