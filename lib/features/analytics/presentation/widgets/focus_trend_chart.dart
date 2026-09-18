@@ -21,7 +21,20 @@ class FocusTrendChart extends StatelessWidget {
       return FlSpot(e.key.toDouble(), (e.value.focusScore * 100).clamp(0, 100));
     }).toList();
 
-    const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // Weekday names above ~10 points crowd the axis, so a longer trend (the
+    // 30-day "Month" view) falls back to a sparse day-of-month label.
+    final useWeekdayLabels = points.length <= 10;
+    // Roughly 6 labels across the axis regardless of how many points there
+    // are, always including the last (most recent) point.
+    final labelInterval = (points.length / 6).ceil().clamp(1, points.length);
+    String labelFor(int i) => useWeekdayLabels
+        ? weekdayLabels[points[i].date.weekday % 7]
+        : '${points[i].date.day}';
+    bool shouldShowLabel(int i) =>
+        useWeekdayLabels ||
+        i == points.length - 1 ||
+        i % labelInterval == 0;
 
     return LineChart(
       LineChartData(
@@ -35,9 +48,9 @@ class FocusTrendChart extends StatelessWidget {
             tooltipBorderRadius: BorderRadius.circular(8),
             getTooltipItems: (touchedSpots) {
               return touchedSpots.map((spot) {
-                final point = points[spot.x.toInt()];
+                final label = labelFor(spot.x.toInt());
                 return LineTooltipItem(
-                  '${labels[point.date.weekday % 7]}\n${spot.y.round()}% focus',
+                  '$label\n${spot.y.round()}% focus',
                   const TextStyle(color: Colors.white, fontSize: 12),
                 );
               }).toList();
@@ -56,12 +69,13 @@ class FocusTrendChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 final i = value.toInt();
                 if (i < 0 || i >= points.length) return const SizedBox.shrink();
+                if (!shouldShowLabel(i)) return const SizedBox.shrink();
                 final isToday = i == points.length - 1;
                 return SideTitleWidget(
                   meta: meta,
                   space: 6,
                   child: Text(
-                    labels[points[i].date.weekday % 7],
+                    labelFor(i),
                     style: AppTheme.sectionTitle.copyWith(
                       fontSize: 11,
                       fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,

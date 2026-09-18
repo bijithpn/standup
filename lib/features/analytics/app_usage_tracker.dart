@@ -138,7 +138,11 @@ class AppUsageTracker {
   @visibleForTesting
   static bool isBreakMateItself(ActiveAppInfo app) {
     final bundleId = app.bundleId.toLowerCase();
-    return bundleId == 'com.bijith.breakmate' ||
+    // startsWith, not ==: flavored builds (e.g. the `dev` flavor's
+    // `com.bijith.breakmate.dev`) append a suffix to the base bundle id, so
+    // an exact match let BreakMate's own dev builds slip through and get
+    // tracked as if they were another app.
+    return bundleId.startsWith('com.bijith.breakmate') ||
         bundleId.contains('breakmateapp.exe');
   }
 

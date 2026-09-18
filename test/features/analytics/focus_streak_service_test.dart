@@ -118,6 +118,16 @@ void main() {
     expect(streakService.currentStreakDays(now: today), 2);
   });
 
+  test('a day off in the middle (zero activity) does not break the streak', () {
+    final today = DateTime(2026, 9, 6);
+    seedDay(today, 0.5);
+    // No seed for yesterday at all — a genuine day away from the computer.
+    seedDay(today.subtract(const Duration(days: 2)), 0.5);
+    seedDay(today.subtract(const Duration(days: 3)), 0.5);
+
+    expect(streakService.currentStreakDays(now: today), 3);
+  });
+
   test('celebrates the first milestone and emits a companion event', () async {
     final today = DateTime(2026, 9, 6);
     for (var i = 0; i < 3; i++) {

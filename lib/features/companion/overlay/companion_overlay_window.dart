@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,11 +31,54 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   bool _isDragging = false;
   bool _gameInitialized = false;
 
+  String? _speechText;
+  Offset? _speechAnchor;
+  Timer? _speechDismissTimer;
+  Timer? _speechFollowTimer;
+  StreamSubscription<CompanionInteractionEvent>? _speechSubscription;
+
+  static const _speechDisplayDuration = Duration(seconds: 8);
+  static const _speechFollowInterval = Duration(milliseconds: 150);
+
   @override
   void initState() {
     super.initState();
     _setupMethodChannel();
     _fetchAndApplyInitialSettings();
+    _speechSubscription = EventBus.instance
+        .on<CompanionInteractionEvent>()
+        .listen((event) {
+          if (event.interactionType != 'speech') return;
+          final text = event.metadata?['text'] as String?;
+          if (text == null || text.isEmpty) return;
+          _showSpeech(text);
+        });
+  }
+
+  void _showSpeech(String text) {
+    if (!mounted) return;
+    _speechDismissTimer?.cancel();
+    _speechFollowTimer?.cancel();
+    setState(() {
+      _speechText = text;
+      _speechAnchor = _game?.petAnchorPoint;
+    });
+    _speechFollowTimer = Timer.periodic(_speechFollowInterval, (_) {
+      final anchor = _game?.petAnchorPoint;
+      if (mounted && anchor != null) setState(() => _speechAnchor = anchor);
+    });
+    _speechDismissTimer = Timer(_speechDisplayDuration, _dismissSpeech);
+  }
+
+  void _dismissSpeech() {
+    _speechFollowTimer?.cancel();
+    _speechFollowTimer = null;
+    if (mounted) {
+      setState(() {
+        _speechText = null;
+        _speechAnchor = null;
+      });
+    }
   }
 
   void _setupMethodChannel() {
@@ -192,6 +237,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   @override
   void dispose() {
     _channel.setMethodCallHandler(null);
+    _speechSubscription?.cancel();
+    _speechDismissTimer?.cancel();
+    _speechFollowTimer?.cancel();
     super.dispose();
   }
 
@@ -241,7 +289,69 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
       behavior: HitTestBehavior.translucent,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: GameWidget(game: _game!),
+        body: Stack(
+          children: [
+            GameWidget(game: _game!),
+            if (_speechText != null && _speechAnchor != null)
+              Positioned(
+                left: _speechAnchor!.dx,
+                top: _speechAnchor!.dy - 8,
+                child: FractionalTranslation(
+                  translation: const Offset(-0.5, -1.0),
+                  child: _SpeechBubble(
+                    text: _speechText!,
+                    onDismiss: _dismissSpeech,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeechBubble extends StatelessWidget {
+  const _SpeechBubble({required this.text, required this.onDismiss});
+
+  final String text;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: 'Companion tip: $text. Double-tap to dismiss.',
+      child: GestureDetector(
+        onTap: onDismiss,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 220),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

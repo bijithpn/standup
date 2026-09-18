@@ -4,6 +4,7 @@ import 'package:breakmate/features/analytics/break_focus_correlation.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/calendar_focus_insight.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
+import 'package:breakmate/features/analytics/meeting_break_insight.dart';
 import 'package:breakmate/features/analytics/time_pattern_insights.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
@@ -52,6 +53,10 @@ const int _minSuggestedIntervalMinutes = 20;
 /// How much a single "Apply" tap shortens the break interval by.
 const int _intervalShortenStepMinutes = 15;
 
+/// Meaningful gap, in percentage points, before the break-before-meeting
+/// skip pattern is worth surfacing.
+const double _meaningfulMeetingSkipDeltaPoints = 15;
+
 /// Builds up to [limit] findings, most actionable first.
 List<OverviewInsight> buildOverviewInsights({
   required Map<AppCategory, int> todayCategoryTotals,
@@ -64,6 +69,7 @@ List<OverviewInsight> buildOverviewInsights({
   List<BreakEvent> breakEvents = const [],
   List<FocusSession> focusSessions = const [],
   CalendarFocusComparison? calendarComparison,
+  MeetingBreakCorrelation? meetingBreakCorrelation,
   int limit = 4,
 }) {
   final insights = <OverviewInsight>[];
@@ -173,6 +179,19 @@ List<OverviewInsight> buildOverviewInsights({
         icon: CupertinoIcons.calendar,
         color: AppTheme.warning,
         text: calendarComparison.describe(),
+      ),
+    );
+  }
+
+  if (meetingBreakCorrelation != null &&
+      meetingBreakCorrelation.hasEnoughData &&
+      meetingBreakCorrelation.skipRateDeltaPoints >=
+          _meaningfulMeetingSkipDeltaPoints) {
+    insights.add(
+      OverviewInsight(
+        icon: CupertinoIcons.calendar_badge_plus,
+        color: AppTheme.warning,
+        text: meetingBreakCorrelation.describe(),
       ),
     );
   }

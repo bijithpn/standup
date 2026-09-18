@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
@@ -13,20 +15,18 @@ import 'package:breakmate/features/analytics/insights_overview.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 /// Delivers the single highest-priority [OverviewInsight] once per day via
-/// a local notification, so the most useful finding reaches the user
-/// without a Statistics-screen visit — workflow-analysis plan doc §7.5.
+/// a local notification and the Desktop Companion's speech bubble, so the
+/// most useful finding reaches the user without a Statistics-screen visit —
+/// workflow-analysis plan doc §7.5/§7.6.
 ///
-/// Originally scoped to route through the Desktop Companion's reaction
-/// channel (`CompanionInteractionEvent`), but that channel only drives an
-/// animation state — it carries no text payload the companion UI can
-/// display, so there's no way to actually show a finding's sentence
-/// through it without new companion UI (a speech bubble) that doesn't
-/// exist yet. This uses the same local-notification mechanism
-/// [FocusInsightService] already established instead, generalized from
-/// "the correlation insight" to "whatever ranks first today" across every
-/// finding type [buildOverviewInsights] knows about. A true
-/// companion-delivered version remains future work, gated on that UI
-/// capability existing.
+/// The companion delivery goes through the same cross-window IPC channel
+/// `TimerOrchestrator` already uses for its own state (`IpcBridge` →
+/// native broadcast → the companion window's isolate-local `EventBus`),
+/// piggybacking the insight text on `CompanionInteractionEvent.metadata`
+/// under a `'speech'` interaction type. This uses the same one-shot gating
+/// [FocusInsightService] already established, generalized from "the
+/// correlation insight" to "whatever ranks first today" across every
+/// finding type [buildOverviewInsights] knows about.
 ///
 /// Deliberately excludes the calendar-focus comparison (§7.4) — that needs
 /// a native calendar round-trip better suited to the Statistics screen's
@@ -86,6 +86,12 @@ class DailyInsightNotifierService {
     if (insight == null) return;
 
     _notificationService.showDailyInsight(insight.text);
+    IpcBridge.instance.dispatch(
+      IpcEvent.companionInteraction(
+        interactionType: 'speech',
+        metadata: {'text': insight.text},
+      ),
+    );
     _storage.setString(AppConstants.keyLastDailyInsightDateKey, todayKey);
   }
 

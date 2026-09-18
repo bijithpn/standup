@@ -8,6 +8,7 @@ import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/calendar_focus_insight.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/analytics/insights_overview.dart';
+import 'package:breakmate/features/analytics/meeting_break_insight.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
@@ -291,6 +292,42 @@ void main() {
         breaksCompletedThisWeek: 0,
         breaksSkippedThisWeek: 0,
         calendarComparison: comparison,
+      );
+      expect(insights, isEmpty);
+    });
+
+    test('surfaces a meaningful break-before-meeting skip pattern', () {
+      const correlation = MeetingBreakCorrelation(
+        nearMeetingCount: 5,
+        nearMeetingSkipped: 4,
+        otherCount: 5,
+        otherSkipped: 1,
+      );
+      final insights = buildOverviewInsights(
+        todayCategoryTotals: const {},
+        budgetMinutes: const {},
+        focusStreakDays: 0,
+        breaksCompletedThisWeek: 0,
+        breaksSkippedThisWeek: 0,
+        meetingBreakCorrelation: correlation,
+      );
+      expect(insights.single.text, correlation.describe());
+    });
+
+    test('ignores a meeting-break correlation without enough data', () {
+      const correlation = MeetingBreakCorrelation(
+        nearMeetingCount: 1,
+        nearMeetingSkipped: 1,
+        otherCount: 5,
+        otherSkipped: 1,
+      );
+      final insights = buildOverviewInsights(
+        todayCategoryTotals: const {},
+        budgetMinutes: const {},
+        focusStreakDays: 0,
+        breaksCompletedThisWeek: 0,
+        breaksSkippedThisWeek: 0,
+        meetingBreakCorrelation: correlation,
       );
       expect(insights, isEmpty);
     });

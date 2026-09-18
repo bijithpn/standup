@@ -173,6 +173,21 @@ class CompanionGame extends FlameGame {
   NeedsEngine get needsEngine => _needsEngine;
   PhysicsSimulator get physicsSimulator => _physicsSimulator;
 
+  /// Screen-space point just above the pet sprite's head, for widgets layered
+  /// on top of the game (e.g. a speech bubble) that need to track it. `null`
+  /// before the pet component has loaded. Only meaningful in the main
+  /// (non-PiP) overlay window, where the game has no camera transform, so
+  /// world coordinates equal screen coordinates 1:1.
+  Offset? get petAnchorPoint {
+    if (petComponent == null) return null;
+    final halfHeight =
+        (petComponent!.size.y * petComponent!.scale.y.abs()) / 2;
+    return Offset(
+      petComponent!.position.x,
+      petComponent!.position.y - halfHeight,
+    );
+  }
+
   Color get environmentTint =>
       _environmentComponent?.ambientTint ?? Colors.white;
   EnvironmentComponent? _environmentComponent;

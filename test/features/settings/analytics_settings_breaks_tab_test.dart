@@ -8,6 +8,8 @@ import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/focus_streak_service.dart';
+import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/features/settings/presentation/sections/analytics_settings_section.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -15,9 +17,10 @@ import 'package:breakmate/features/settings/settings_model.dart';
 void main() {
   // The Overview tab (the default) now renders an Insights card that reads
   // AppUsageService/FocusSessionService/BreakHistoryService via Provider and
-  // FocusStreakService via GetIt — register real, un-initialized instances
-  // (their storage calls go through SimplePrefs, no ObjectBox init needed)
-  // so the widget can build before the test taps over to the Breaks tab.
+  // FocusStreakService/CompanionStreakService (the Habits summary card) via
+  // GetIt — register real, un-initialized instances (their storage calls go
+  // through SimplePrefs, no ObjectBox init needed) so the widget can build
+  // before the test taps over to the Breaks tab.
   late StorageService storage;
 
   setUp(() {
@@ -37,9 +40,19 @@ void main() {
         eventBus: EventBus.instance,
       ),
     );
+    sl.registerSingleton<StatsService>(StatsService(storage: storage));
+    sl.registerSingleton<CompanionStreakService>(
+      CompanionStreakService(
+        statsService: sl(),
+        storage: storage,
+        eventBus: EventBus.instance,
+      ),
+    );
   });
 
   tearDown(() {
+    sl.unregister<CompanionStreakService>();
+    sl.unregister<StatsService>();
     sl.unregister<FocusStreakService>();
     sl.unregister<BreakHistoryService>();
     sl.unregister<FocusSessionService>();

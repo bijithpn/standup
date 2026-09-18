@@ -246,9 +246,10 @@ void main() {
         expect(tester.takeException(), isNull);
         expect(find.text('Watch your posture!'), findsOneWidget);
 
-        // Let the reminder's own 2s auto-dismiss timer run out so it
+        // Let the reminder's own auto-dismiss timer
+        // (AppConstants.healthReminderDismissDuration) run out so it
         // doesn't leak past the end of the test.
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
       },
     );
 
@@ -339,7 +340,7 @@ void main() {
         expect(find.text('Rest your eyes!'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
       },
     );
 
@@ -385,7 +386,69 @@ void main() {
         expect(find.text('Watch your posture!'), findsOneWidget);
         expect(tester.takeException(), isNull);
 
-        await tester.pump(const Duration(seconds: 3));
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
+
+    testWidgets(
+      'hides the skip affordance in strict mode for a real break screen',
+      (WidgetTester tester) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(desktopBridgeChannel, (
+              MethodCall methodCall,
+            ) async {
+              if (methodCall.method == 'getOverlayData') {
+                return {
+                  'overlayType': 'breakScreen',
+                  'title': 'Strict Break',
+                  'tip': 'No skipping.',
+                  'durationSeconds': 120,
+                  'remainingSeconds': 120,
+                  'strictMode': true,
+                  'enableAnimations': false,
+                  'breakTemplate': 'minimal',
+                  'breaksCompleted': 5,
+                };
+              }
+              return null;
+            });
+
+        await tester.pumpWidget(
+          const MaterialApp(home: StandaloneBreakOverlay()),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byTooltip('Skip break'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'tearing down the overlay mid-break (dispose) does not throw',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: StandaloneBreakOverlay(
+              title: 'Initial Title',
+              message: 'Initial Message',
+              initialDurationSeconds: 120,
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        // Let the countdown/animation controllers actually tick before the
+        // widget (and its TickerProviderStateMixin controllers) get torn
+        // down mid-flight — the regression this guards is a controller
+        // disposed while still animating throwing on removal.
+        await tester.pump(const Duration(seconds: 1));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
       },
     );
   });

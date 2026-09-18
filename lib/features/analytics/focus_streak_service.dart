@@ -84,9 +84,10 @@ class FocusStreakService extends ChangeNotifier {
   }
 
   /// Consecutive days (ending today) whose Focus Score met [minFocusScore].
-  /// A day with no tracked activity yet (today, before any usage lands)
-  /// doesn't break the streak — a day that *had* activity but fell short
-  /// does.
+  /// A day with *zero* tracked activity — today before usage lands, or any
+  /// day genuinely away from the computer (sick day, vacation, weekend) —
+  /// doesn't break the streak, since there's no work to have missed. A day
+  /// that *had* activity but fell short of [minFocusScore] does.
   int currentStreakDays({DateTime? now}) {
     final today = now ?? clock.now();
     var streak = 0;
@@ -98,10 +99,7 @@ class FocusStreakService extends ChangeNotifier {
           .values
           .fold<int>(0, (sum, s) => sum + s);
 
-      if (totalActiveSeconds == 0) {
-        if (i == 0) continue; // today just hasn't started yet
-        break;
-      }
+      if (totalActiveSeconds == 0) continue; // no activity: a day off, not a break
 
       final dateKey = _dateKey(date);
       final score = _focusSessionService.focusScore(

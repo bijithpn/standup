@@ -20,7 +20,11 @@ import 'package:breakmate/features/analytics/calendar_focus_insight.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/features/analytics/focus_trend.dart';
+import 'package:breakmate/features/analytics/habits_summary.dart';
 import 'package:breakmate/features/analytics/insights_overview.dart';
+import 'package:breakmate/features/analytics/meeting_break_insight.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/habits_summary_card.dart';
+import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_score_card.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/insights_overview_card.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/focus_trend_chart.dart';
@@ -55,7 +59,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   /// computed once per widget lifetime via [_loadCalendarComparison], not
   /// on every rebuild, since it's a native calendar round-trip.
   static const int _calendarComparisonLookbackDays = 14;
-  Future<CalendarFocusComparison?>? _calendarComparisonFuture;
+  Future<_CalendarInsightData>? _calendarComparisonFuture;
 
   StatsModel get _stats => widget.stats;
 
@@ -147,6 +151,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         ),
         const SizedBox(height: 20),
         _buildInsightsCard(),
+        const SizedBox(height: 20),
+        _buildHabitsSummaryCard(),
         const SizedBox(height: 28),
         sectionHeader('Activity Trend'),
         const SizedBox(height: 12),
@@ -165,7 +171,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   /// the same data the Focus and App Usage tabs already compute
   /// individually; see [buildOverviewInsights].
   Widget _buildInsightsCard() {
-    return FutureBuilder<CalendarFocusComparison?>(
+    return FutureBuilder<_CalendarInsightData>(
       future: _calendarComparisonFuture,
       builder: (context, calendarSnapshot) {
         return AnimatedBuilder(
@@ -180,6 +186,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   ),
                 );
                 final week = _thisWeekBreakTotals();
+                final meetingStartTimes =
+                    calendarSnapshot.data?.meetingStartTimes ?? const [];
 
                 return InsightsOverviewCard(
                   insights: buildOverviewInsights(
@@ -198,7 +206,13 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                     focusSessions: focusService.sessionsForPeriod(
                       UsagePeriod.month,
                     ),
-                    calendarComparison: calendarSnapshot.data,
+                    calendarComparison: calendarSnapshot.data?.comparison,
+                    meetingBreakCorrelation: meetingStartTimes.isEmpty
+                        ? null
+                        : MeetingBreakCorrelation.compute(
+                            breakEvents: breakHistory.events,
+                            meetingStartTimes: meetingStartTimes,
+                          ),
                   ),
                   onApply: (action) =>
                       widget.onSave(action.apply(widget.settings)),
@@ -213,10 +227,34 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
   /// Fetches the last [_calendarComparisonLookbackDays] of calendar events
   /// and pairs each day's meeting count against its focus score — see
-  /// [CalendarFocusComparison]. `null` (no comparison shown) whenever
-  /// calendar access isn't enabled or the native call fails; never throws.
-  Future<CalendarFocusComparison?> _loadCalendarComparison() async {
-    if (!widget.settings.calendarEnabled) return null;
+  /// Break-taking consistency ([CompanionStreakService]) and focus-day
+  /// consistency ([FocusStreakService]) live on two different settings
+  /// screens today — this puts both numbers, plus whether they're in sync,
+  /// in the one place a user already checks their overall stats. See
+  /// [HabitsSummary].
+  Widget _buildHabitsSummaryCard() {
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        sl<CompanionStreakService>(),
+        sl<FocusStreakService>(),
+      ]),
+      builder: (context, _) {
+        return HabitsSummaryCard(
+          summary: HabitsSummary(
+            breakStreakDays: sl<CompanionStreakService>().currentStreakDays,
+            focusStreakDays: sl<FocusStreakService>().currentStreakDays(),
+          ),
+        );
+      },
+    );
+  }
+
+  /// [CalendarFocusComparison] — plus the raw meeting start times, reused by
+  /// [MeetingBreakCorrelation] (§7.6) so there's only one calendar
+  /// round-trip. Empty/`null` fields whenever calendar access isn't enabled
+  /// or the native call fails; never throws.
+  Future<_CalendarInsightData> _loadCalendarComparison() async {
+    if (!widget.settings.calendarEnabled) return const _CalendarInsightData();
 
     final now = DateTime.now();
     final start = DateTime(
@@ -229,14 +267,16 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     try {
       events = await sl<CalendarService>().getEvents(start, now);
     } catch (_) {
-      return null;
+      return const _CalendarInsightData();
     }
 
     final meetingCountByDate = <String, int>{};
+    final meetingStartTimes = <DateTime>[];
     for (final event in events) {
       if (event.isAllDay) continue;
       final key = _dateKeyFor(event.start);
       meetingCountByDate[key] = (meetingCountByDate[key] ?? 0) + 1;
+      meetingStartTimes.add(event.start);
     }
 
     final usageService = sl<AppUsageService>();
@@ -256,9 +296,12 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       );
     }
 
-    return CalendarFocusComparison.compute(
-      meetingCountByDate: meetingCountByDate,
-      focusScoreByDate: focusScoreByDate,
+    return _CalendarInsightData(
+      comparison: CalendarFocusComparison.compute(
+        meetingCountByDate: meetingCountByDate,
+        focusScoreByDate: focusScoreByDate,
+      ),
+      meetingStartTimes: meetingStartTimes,
     );
   }
 
@@ -318,7 +361,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           const SizedBox(height: 28),
           sectionHeader(
             'Focus Trend',
-            subtitle: 'Daily focus score over the last 7 days.',
+            subtitle:
+                'Daily focus score over the last $_focusTrendDays days.',
           ),
           const SizedBox(height: 12),
           _buildFocusTrendSection(),
@@ -378,12 +422,18 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     );
   }
 
+  /// 30 days on "Month" (matching how [ProductivityTrendChart] reshapes
+  /// itself per period), 7 otherwise — see the workflow-analysis plan doc
+  /// §3.2/PROJECT_ANALYSIS_AND_IMPROVEMENTS.md §3.2.
+  int get _focusTrendDays => _selectedFilter == 2 ? 30 : 7;
+
   Widget _buildFocusTrendSection() {
     return Consumer2<AppUsageService, FocusSessionService>(
       builder: (context, usageService, focusService, _) {
         final points = computeFocusTrend(
           focusSessionService: focusService,
           usageService: usageService,
+          days: _focusTrendDays,
         );
         return Container(
           width: double.infinity,
@@ -814,6 +864,19 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
       ),
     );
   }
+}
+
+/// Result of one calendar round-trip, shared by [CalendarFocusComparison]
+/// and [MeetingBreakCorrelation] so there's only one native call per widget
+/// lifetime.
+class _CalendarInsightData {
+  final CalendarFocusComparison? comparison;
+  final List<DateTime> meetingStartTimes;
+
+  const _CalendarInsightData({
+    this.comparison,
+    this.meetingStartTimes = const [],
+  });
 }
 
 class _ViewMetrics {

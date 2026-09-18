@@ -2,6 +2,7 @@
 // highest-priority OverviewInsight, delivered once/day via a local
 // notification, gated the same way FocusInsightService gates its one-shot
 // correlation notification.
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -67,6 +68,8 @@ class FakeNotificationService extends NotificationService {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late InMemoryStorageService storage;
   late AppUsageService usageService;
   late FocusSessionService focusSessionService;
@@ -75,8 +78,16 @@ void main() {
   late SettingsRepository settingsRepository;
   late FakeNotificationService notificationService;
   late DailyInsightNotifierService service;
+  final ipcChannel = const MethodChannel('com.breakmate/ipc');
+  final List<MethodCall> ipcCalls = [];
 
   setUp(() {
+    ipcCalls.clear();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(ipcChannel, (call) async {
+          ipcCalls.add(call);
+          return null;
+        });
     storage = InMemoryStorageService();
     usageService = AppUsageService(storage: storage);
     focusSessionService = FocusSessionService(storage: storage);
@@ -98,6 +109,11 @@ void main() {
       settingsRepository: settingsRepository,
       notificationService: notificationService,
     );
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(ipcChannel, null);
   });
 
   test('shows nothing when there is no insight to surface', () {
@@ -126,6 +142,36 @@ void main() {
     expect(notificationService.shown, hasLength(1));
     expect(notificationService.shown.single, contains('skipped'));
   });
+
+  test(
+    'also relays the top insight to the companion window over IPC',
+    () async {
+      final now = DateTime(2026, 9, 6);
+      for (var i = 0; i < 4; i++) {
+        breakHistoryService.recordBreak(
+          time: now.subtract(Duration(days: i)),
+          completed: false,
+        );
+      }
+      for (var i = 4; i < 6; i++) {
+        breakHistoryService.recordBreak(
+          time: now.subtract(Duration(days: i)),
+          completed: true,
+        );
+      }
+
+      service.checkAndMaybeShow(now: now);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(ipcCalls, hasLength(1));
+      expect(ipcCalls.single.method, 'sendEvent');
+      final args = ipcCalls.single.arguments as Map;
+      expect(args['event'], 'companion.interaction');
+      final data = args['data'] as Map;
+      expect(data['interactionType'], 'speech');
+      expect((data['metadata'] as Map)['text'], contains('skipped'));
+    },
+  );
 
   test('does not show twice on the same day', () {
     final now = DateTime(2026, 9, 6);

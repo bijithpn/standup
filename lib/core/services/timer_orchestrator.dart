@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -254,8 +255,8 @@ class TimerOrchestrator {
       overlayData: {
         'overlayType': 'quickReminder',
         'reminderType': event.reminderType,
-        'durationSeconds': 2,
-        'remainingSeconds': 2,
+        'durationSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
+        'remainingSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
         // Computed here (main engine) because the overlay's own Flutter
         // isolate doesn't have SettingsRepository or the detection
         // services registered — see `OverlayWindowConfig.allowFullPoster`.
@@ -269,7 +270,10 @@ class TimerOrchestrator {
       },
     );
 
-    Future.delayed(const Duration(seconds: 2), () {
+    // Fallback safety-net hide, independent of the overlay's own dismiss
+    // timer — must use the same duration so it never clips the reminder
+    // early or lingers past it.
+    Future.delayed(AppConstants.healthReminderDismissDuration, () {
       if (sl<OverlayWindowService>().currentOverlayType ==
           OverlayType.quickReminder) {
         sl<OverlayWindowService>().hideOverlay();

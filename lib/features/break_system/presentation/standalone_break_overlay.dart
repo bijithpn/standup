@@ -364,15 +364,19 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (_overlayType == 'quickReminder' ||
           _overlayType == 'preBreakWarning') {
         _fadeController.duration = const Duration(milliseconds: 400);
-        final dismissDelay =
-            _overlayType == 'preBreakWarning' || _overlayType == 'quickReminder'
-            ? const Duration(seconds: 2)
-            : const Duration(seconds: 5);
+        // Health reminders (quickReminder) and the pre-break warning are
+        // two separate purposes and must not share one dismiss clock —
+        // each gets its own fixed delay here, fully independent of
+        // BreakTimerManager's targetEndTime/localTimer countdown used by
+        // real breaks below.
+        final capturedOverlayType = _overlayType;
+        final dismissDelay = capturedOverlayType == 'quickReminder'
+            ? AppConstants.healthReminderDismissDuration
+            : const Duration(seconds: 2);
         Future.delayed(dismissDelay, () {
           if (mounted &&
               _overlayDataGeneration == myGeneration &&
-              (_overlayType == 'quickReminder' ||
-                  _overlayType == 'preBreakWarning')) {
+              _overlayType == capturedOverlayType) {
             _skipBreak();
           }
         });

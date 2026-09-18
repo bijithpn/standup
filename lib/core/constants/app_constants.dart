@@ -21,6 +21,14 @@ class AppConstants {
 
   static const int idleThresholdMinutes = 3;
 
+  /// How long a quick health-reminder overlay (posture/eye-rest nudge) stays
+  /// on screen before auto-dismissing. Deliberately its own constant,
+  /// separate from break-timer durations — a health reminder is a brief
+  /// nudge, not a countdown, and must never share a clock with the real
+  /// break overlay's `BreakTimerManager` countdown or with the pre-break
+  /// warning's own dismiss delay.
+  static const Duration healthReminderDismissDuration = Duration(seconds: 4);
+
   static const int maxRetries = 3;
   static const int initialRetryDelayMs = 500;
 
