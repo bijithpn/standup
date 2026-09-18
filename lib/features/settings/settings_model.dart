@@ -169,7 +169,7 @@ class SettingsModel {
     this.enableAnimations = true,
     this.trayIconStyle = 'companion',
     this.companionEnabled = false,
-    this.pipModeEnabled = false,
+    this.pipModeEnabled = true,
     this.companionPetTheme = 'grey_cat',
     this.companionPetName = 'Mochi',
     this.companionScale = 6.0,
@@ -181,7 +181,7 @@ class SettingsModel {
     this.companionWindowHeight = 320.0,
     this.companionWindowX,
     this.companionWindowY,
-    this.pipBackgroundStyle = 'dark',
+    this.pipBackgroundStyle = 'transparent',
     this.pipOpacity = 1.0,
     this.pipDraggableClickable = true,
     this.companionToyType = 'tennis_ball',
@@ -578,7 +578,7 @@ class SettingsModel {
           ? 'companion'
           : (map['trayIconStyle'] as String? ?? 'companion'),
       companionEnabled: map['companionEnabled'] as bool? ?? false,
-      pipModeEnabled: map['pipModeEnabled'] as bool? ?? false,
+      pipModeEnabled: map['pipModeEnabled'] as bool? ?? true,
       companionPetTheme:
           (map['companionPetTheme'] ?? map['companionCatTheme']) as String? ??
           'grey_cat',
@@ -617,7 +617,7 @@ class SettingsModel {
             (k, v) => MapEntry(k as String, v as int),
           ) ??
           const {},
-      pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'dark',
+      pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'transparent',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
       companionToyType: map['companionToyType'] as String? ?? 'tennis_ball',

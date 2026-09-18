@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
@@ -44,7 +45,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
 
   late String _pipBackgroundStyle = SimplePrefs.instance.getString(
     'pip_background_style',
-    defaultValue: 'dark',
+    defaultValue: 'transparent',
   );
   late double _pipOpacity = SimplePrefs.instance.getDouble(
     'pip_opacity',
@@ -55,6 +56,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     defaultValue: true,
   );
 
+  Offset _screenLookAt = Offset.zero;
+  bool _isHovered = false;
   DateTime? _lastHoverTime;
   bool _isCheckingClickThrough = false;
   String? _feedbackText;
@@ -67,7 +70,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     _channel.setMethodCallHandler(_handleMethodCall);
     _fetchInitialSettings();
 
-    _clickThroughTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
+    _clickThroughTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
       _checkClickThrough();
     });
   }
@@ -169,16 +172,32 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
 
       final windowRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
 
+      // Track screen-wide cursor position relative to window center for 3D gaze
+      final windowCenter = Offset(pos.dx + size.width / 2.0, pos.dy + size.height / 2.0);
+      final dx = cursorPos.dx - windowCenter.dx;
+      final dy = cursorPos.dy - windowCenter.dy;
+      final lookX = (dx / 380.0).clamp(-1.0, 1.0);
+      final lookY = (dy / 380.0).clamp(-1.0, 1.0);
+
+      if (mounted) {
+        final newLook = Offset(lookX, lookY);
+        if ((_screenLookAt - newLook).distance > 0.008) {
+          setState(() {
+            _screenLookAt = newLook;
+          });
+        }
+      }
+
       bool accepts = true;
       if (windowRect.contains(cursorPos)) {
         final localX = cursorPos.dx - windowRect.left;
         final localY = cursorPos.dy - windowRect.top;
 
         final inCard =
-            localX >= 8.0 &&
-            localX <= (size.width - 8.0) &&
-            localY >= 8.0 &&
-            localY <= (size.height - 8.0);
+            localX >= 4.0 &&
+            localX <= (size.width - 4.0) &&
+            localY >= 4.0 &&
+            localY <= (size.height - 4.0);
 
         accepts = inCard;
       } else {
@@ -294,108 +313,127 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
   @override
   Widget build(BuildContext context) {
     final isLight = _isLightBackground;
-    final isTransparent = _pipBackgroundStyle == 'transparent';
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Opacity(
         opacity: _pipOpacity,
-        child: Container(
-          margin: const EdgeInsets.all(10.0),
-          decoration: _buildContainerDecoration(),
-          clipBehavior: isTransparent ? Clip.none : Clip.antiAlias,
-          child: Stack(
-            children: [
-              // 1. Centered Authentic Animated SVG Vector Companion
-              Positioned.fill(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 24.0, bottom: 8.0),
-                    child: AvatarView(
-                      definition: _avatarDefinition,
-                      width: _scale * 38,
-                      height: _scale * 38,
-                      autoTrackCursor: true,
-                      isInteractive: true,
-                      onTap: () => _showFeedback('❤️'),
-                      onDoubleTap: () => _showFeedback('⭐'),
-                    ),
+        child: MouseRegion(
+          onEnter: (_) => setState(() => _isHovered = true),
+          onExit: (_) => setState(() => _isHovered = false),
+          child: Container(
+            margin: EdgeInsets.zero,
+            decoration: _buildContainerDecoration(),
+            clipBehavior: Clip.none,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 1. Centered Authentic Animated SVG Vector Companion filling viewport
+                Positioned.fill(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final petSize = math.min(constraints.maxWidth, constraints.maxHeight);
+                      return Center(
+                        child: AvatarView(
+                          definition: _avatarDefinition,
+                          width: petSize,
+                          height: petSize,
+                          externalLookAt: _screenLookAt,
+                          autoTrackCursor: true,
+                          isInteractive: true,
+                          onTap: () => _showFeedback('❤️'),
+                          onDoubleTap: () => _showFeedback('⭐'),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
 
-              // 2. Drag Handle Bar across top
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 28,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanStart: (_) => _windowManager.startDrag(),
-                  child: Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isLight
-                            ? const Color(0xFF161622).withValues(alpha: 0.2)
-                            : Colors.white.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // 3. Cute Pet Name Badge
-              Positioned(
-                top: 12,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: _PetNameBadge(
-                    name: _petName,
-                    isLightBackground: isLight,
-                  ),
-                ),
-              ),
-
-              // 4. Hover Listener for Interaction
-              Positioned.fill(
-                child: Listener(
-                  behavior: HitTestBehavior.translucent,
-                  onPointerHover: _onHover,
-                ),
-              ),
-
-              // 5. Feedback Reaction Toast
-              if (_feedbackText != null)
+                // 2. Drag Handle Bar across top (appears smoothly on hover)
                 Positioned(
-                  top: 50,
+                  top: 6,
                   left: 0,
                   right: 0,
-                  child: Center(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 150),
-                      child: _FeedbackToast(
-                        key: ValueKey(_feedbackText),
-                        text: _feedbackText!,
+                  height: 24,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onPanStart: (_) => _windowManager.startDrag(),
+                    child: AnimatedOpacity(
+                      opacity: _isHovered ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Center(
+                        child: Container(
+                          width: 38,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: isLight
+                                ? const Color(0xFF161622).withValues(alpha: 0.3)
+                                : Colors.white.withValues(alpha: 0.4),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
                     ),
                   ),
                 ),
 
-              // 6. Close Button
-              Positioned(
-                top: 12,
-                right: 12,
-                child: _CloseButton(
-                  onTap: _closeWindow,
-                  isLightBackground: isLight,
+                // 3. Cute Pet Name Badge (fades in on hover)
+                Positioned(
+                  top: 14,
+                  left: 0,
+                  right: 0,
+                  child: AnimatedOpacity(
+                    opacity: _isHovered ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Center(
+                      child: _PetNameBadge(
+                        name: _petName,
+                        isLightBackground: isLight,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+
+                // 4. Hover Listener for Interaction
+                Positioned.fill(
+                  child: Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerHover: _onHover,
+                  ),
+                ),
+
+                // 5. Feedback Reaction Toast
+                if (_feedbackText != null)
+                  Positioned(
+                    top: 24,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 150),
+                        child: _FeedbackToast(
+                          key: ValueKey(_feedbackText),
+                          text: _feedbackText!,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // 6. Close Button (fades in on hover)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: AnimatedOpacity(
+                    opacity: _isHovered ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: _CloseButton(
+                      onTap: _closeWindow,
+                      isLightBackground: isLight,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

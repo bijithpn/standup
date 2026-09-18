@@ -64,7 +64,7 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
         const SizedBox(height: 12),
         if (widget.isHorizontal)
           SizedBox(
-            height: 104,
+            height: 100,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -153,20 +153,29 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
       child: InkWell(
         key: Key('species_card_${species.name}'),
         onTap: () => widget.onSpeciesSelected(species),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           width: 78,
           padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
           decoration: BoxDecoration(
             color: isSelected
-                ? AppTheme.accentColor.withValues(alpha: 0.18)
-                : const Color(0xFF1E202C),
-            borderRadius: BorderRadius.circular(12),
+                ? AppTheme.accentColor.withValues(alpha: 0.16)
+                : const Color(0xFF131520),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected ? AppTheme.accentColor : const Color(0xFF2C2F42),
+              color: isSelected ? AppTheme.accentColor : const Color(0xFF26293A),
               width: isSelected ? 2.0 : 1.0,
             ),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppTheme.accentColor.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -193,16 +202,16 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
                         ),
                       ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Text(
                 species.displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 10.5,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppTheme.accentColor : AppTheme.textPrimary,
+                  color: isSelected ? Colors.white : const Color(0xFFB0B4C8),
                 ),
               ),
             ],

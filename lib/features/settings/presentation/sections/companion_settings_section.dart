@@ -1,4 +1,3 @@
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
@@ -83,19 +82,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   divider(),
                   toggleRow(
                     'Show Companion',
-                    'Enable your desktop pet to see it wandering around your screen.',
+                    'Enable your 3D companion to float seamlessly on your screen in Picture-in-Picture mode.',
                     widget.controller.companionEnabled,
                     (v) => widget.controller.toggleCompanion(v),
                   ),
-                  if (Platform.isMacOS || Platform.isWindows) ...[
-                    divider(),
-                    toggleRow(
-                      'Draggable PiP Panel',
-                      'Run the companion in a compact, floating always-on-top window rather than a full-screen transparent overlay.',
-                      widget.controller.pipModeEnabled,
-                      (v) => widget.controller.changePipModeEnabled(v),
-                    ),
-                  ],
                 ]),
 
                 if (widget.controller.companionEnabled) ...[
@@ -126,19 +116,18 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                   ]),
 
-                  if (widget.controller.pipModeEnabled) ...[
-                    sectionHeader('Draggable PiP Panel Settings'),
-                    buildCard([
-                      dropdownRow(
-                        'Background Style',
-                        widget.controller.pipBackgroundStyle,
-                        const ['dark', 'light'],
-                        (v) {
-                          if (v != null) {
-                            widget.controller.changePipBackgroundStyle(v);
-                          }
-                        },
-                      ),
+                  sectionHeader('Floating PiP Settings'),
+                  buildCard([
+                    dropdownRow(
+                      'Background Style',
+                      widget.controller.pipBackgroundStyle,
+                      const ['transparent', 'midnight', 'dark', 'light'],
+                      (v) {
+                        if (v != null) {
+                          widget.controller.changePipBackgroundStyle(v);
+                        }
+                      },
+                    ),
                       divider(),
                       sliderRow(
                         'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
@@ -155,8 +144,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                         (v) => widget.controller.changePipDraggableClickable(v),
                       ),
                     ]),
-                  ],
 
+                  const SizedBox(height: 32),
                   sectionHeader('Behavior'),
                   buildCard([
                     toggleRow(

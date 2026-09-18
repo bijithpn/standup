@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:window_manager/window_manager.dart';
 
+import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
@@ -51,6 +54,7 @@ class AvatarView extends StatefulWidget {
   final bool transparent;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
+  final Offset? externalLookAt;
 
   const AvatarView({
     super.key,
@@ -67,6 +71,7 @@ class AvatarView extends StatefulWidget {
     this.transparent = true,
     this.onTap,
     this.onDoubleTap,
+    this.externalLookAt,
   });
 
   @override
@@ -82,8 +87,10 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
 
   StreamSubscription<AvatarEvent>? _eventSub;
   StreamSubscription<ui.Offset>? _cursorSub;
+  Timer? _screenCursorTimer;
 
   Offset _gazeOffset = Offset.zero;
+  Offset _targetGaze = Offset.zero;
   double _currentYaw = 0.0;
   final List<_AvatarParticle> _particles = [];
   final math.Random _rng = math.Random();
@@ -92,6 +99,12 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _initController();
+
+    if (widget.externalLookAt != null) {
+      _targetGaze = widget.externalLookAt!;
+      _gazeOffset = widget.externalLookAt!;
+      _currentYaw = widget.externalLookAt!.dx * 0.48;
+    }
 
     // Idle breathing and floating animation
     _animController = AnimationController(
@@ -131,7 +144,11 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
       if (!mounted) return;
       if (event is AvatarGazeEvent) {
         setState(() {
-          _gazeOffset = Offset(event.lookAtX, event.lookAtY);
+          _targetGaze = Offset(event.lookAtX, event.lookAtY);
+          _gazeOffset = Offset(
+            ui.lerpDouble(_gazeOffset.dx, _targetGaze.dx, 0.35) ?? _targetGaze.dx,
+            ui.lerpDouble(_gazeOffset.dy, _targetGaze.dy, 0.35) ?? _targetGaze.dy,
+          );
           _currentYaw = event.yaw;
         });
       } else if (event is AvatarAnimationStartedEvent ||
@@ -141,40 +158,88 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
     });
   }
 
+  Offset _cachedWindowOrigin = Offset.zero;
+
+  void _updateWindowOrigin() async {
+    if (Platform.isMacOS || Platform.isWindows) {
+      try {
+        _cachedWindowOrigin = await windowManager.getPosition();
+      } catch (_) {}
+    }
+  }
+
   void _setupCursorTracking() {
     if (!widget.autoTrackCursor) return;
 
+    _updateWindowOrigin();
     final tracker = widget.cursorTracker ?? CursorTracker.instance;
     _cursorSub?.cancel();
     _cursorSub = tracker.positionStream.listen((globalCursorPos) {
       if (!mounted) return;
+      _handleScreenCursor(globalCursorPos);
+    });
 
+    if (Platform.isMacOS || Platform.isWindows) {
+      _screenCursorTimer?.cancel();
+      _screenCursorTimer = Timer.periodic(const Duration(milliseconds: 33), (_) async {
+        if (!mounted || widget.isStatic || !widget.autoTrackCursor) return;
+        if (widget.externalLookAt != null) return;
+        try {
+          final globalCursor = await NativeBridge.getCursorPosition();
+          if (!mounted) return;
+          _handleScreenCursor(globalCursor);
+        } catch (_) {}
+      });
+    }
+  }
+
+  void _handleScreenCursor(Offset globalCursor) {
+    if (!mounted || widget.externalLookAt != null) return;
+    try {
       final renderBox = context.findRenderObject() as RenderBox?;
       if (renderBox == null || !renderBox.hasSize) return;
 
-      final localPos = renderBox.globalToLocal(globalCursorPos);
-      final size = renderBox.size;
-      final centerX = size.width / 2.0;
-      final centerY = size.height / 2.0;
+      final localCenter = renderBox.localToGlobal(
+        Offset(renderBox.size.width / 2.0, renderBox.size.height / 2.0),
+      );
+      final widgetScreenCenter = Offset(
+        _cachedWindowOrigin.dx + localCenter.dx,
+        _cachedWindowOrigin.dy + localCenter.dy,
+      );
 
-      final normalizedX = ((localPos.dx - centerX) / (size.width * 1.5))
-          .clamp(-1.0, 1.0);
-      final normalizedY = ((localPos.dy - centerY) / (size.height * 1.5))
-          .clamp(-1.0, 1.0);
+      final dx = globalCursor.dx - widgetScreenCenter.dx;
+      final dy = globalCursor.dy - widgetScreenCenter.dy;
 
-      _controller.setLookAt(normalizedX, normalizedY);
-      setState(() {
-        _gazeOffset = Offset(normalizedX, normalizedY);
-        _currentYaw = normalizedX * 0.35;
-      });
+      final normX = (dx / 380.0).clamp(-1.0, 1.0);
+      final normY = (dy / 380.0).clamp(-1.0, 1.0);
+
+      _applyTargetLookAt(normX, normY);
+    } catch (_) {}
+  }
+
+  void _applyTargetLookAt(double normX, double normY) {
+    _targetGaze = Offset(normX, normY);
+    _controller.setLookAt(normX, normY);
+    if (!mounted) return;
+    setState(() {
+      _gazeOffset = Offset(
+        ui.lerpDouble(_gazeOffset.dx, _targetGaze.dx, 0.28) ?? _targetGaze.dx,
+        ui.lerpDouble(_gazeOffset.dy, _targetGaze.dy, 0.28) ?? _targetGaze.dy,
+      );
+      _currentYaw = _gazeOffset.dx * 0.48;
     });
   }
 
   @override
   void didUpdateWidget(AvatarView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.externalLookAt != null && widget.externalLookAt != oldWidget.externalLookAt) {
+      _applyTargetLookAt(widget.externalLookAt!.dx, widget.externalLookAt!.dy);
+    }
+
     if (oldWidget.controller != widget.controller) {
       _cursorSub?.cancel();
+      _screenCursorTimer?.cancel();
       _eventSub?.cancel();
       if (_ownsController) {
         _controller.dispose();
@@ -198,6 +263,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _cursorSub?.cancel();
+    _screenCursorTimer?.cancel();
     _eventSub?.cancel();
     _animController.dispose();
     _bounceController.dispose();
@@ -208,7 +274,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   }
 
   void _handlePointerHover(PointerHoverEvent event) {
-    if (!widget.autoTrackCursor) return;
+    if (!widget.autoTrackCursor || widget.externalLookAt != null) return;
     final w = widget.width > 0 ? widget.width : 160.0;
     final h = widget.height > 0 ? widget.height : 160.0;
 
@@ -217,18 +283,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
     final normalizedY =
         ((event.localPosition.dy / (h / 2.0)) - 1.0).clamp(-1.0, 1.0);
 
-    _controller.setLookAt(normalizedX, normalizedY);
-    _controller.eventChannel.emit(
-      AvatarGazeEvent(
-        lookAtX: normalizedX,
-        lookAtY: normalizedY,
-        yaw: normalizedX * 0.35,
-      ),
-    );
-    setState(() {
-      _gazeOffset = Offset(normalizedX, normalizedY);
-      _currentYaw = normalizedX * 0.35;
-    });
+    _applyTargetLookAt(normalizedX, normalizedY);
   }
 
   void _spawnParticles(Offset origin) {
@@ -341,43 +396,81 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
         // 3D perspective matrix based on cursor gaze and yaw
         final lookX = _gazeOffset.dx.clamp(-1.0, 1.0);
         final lookY = _gazeOffset.dy.clamp(-1.0, 1.0);
+
+        // 3D Rotations:
+        // Yaw: Left-right turning up to ~28 degrees in 3D
+        final yaw = _currentYaw + math.sin(_animController.value * math.pi) * 0.04;
+        // Pitch: Looking up/down up to ~22 degrees in 3D
+        final pitch = -lookY * 0.38;
+        // Roll: Natural head tilt banking into the turn
+        final roll = lookX * 0.10 + math.sin(_animController.value * math.pi) * 0.02;
+
+        // 3D Perspective Matrix with realistic depth convergence
         final matrix = Matrix4.identity()
-          ..setEntry(3, 2, 0.001) // perspective
-          ..translateByDouble(lookX * 6.0, bounceY + lookY * 4.0, 0.0, 1.0)
-          ..rotateY(_currentYaw * 0.22)
-          ..rotateX(-lookY * 0.12)
+          ..setEntry(3, 2, 0.0022) // perspective depth
+          ..translateByDouble(lookX * 16.0, bounceY + lookY * 10.0, -lookY.abs() * 6.0, 1.0)
+          ..rotateY(yaw)
+          ..rotateX(pitch)
+          ..rotateZ(roll)
           ..scaleByDouble(scaleX, scaleY, 1.0, 1.0);
 
         return Stack(
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
-            // Soft ground drop shadow
+            // Dynamic 3D ground drop shadow reacting to 3D perspective tilt
             Positioned(
-              bottom: (widget.height - avatarSize) / 2 - 8.0,
+              bottom: (widget.height - avatarSize) / 2 - 10.0 + (lookY * 4.0),
+              left: (widget.width - (avatarSize * 0.65 * shadowScale)) / 2 - (lookX * 12.0),
               child: CustomPaint(
                 size: Size(avatarSize * 0.65 * shadowScale, 14 * shadowScale),
-                painter: _AvatarShadowPainter(shadowScale),
+                painter: _AvatarShadowPainter(shadowScale, skewX: lookX * 0.2),
               ),
             ),
 
-            // Authentic Animated SVG Artwork
+            // Authentic Animated SVG Vector Companion with 3D Specular Lighting
             Transform(
               transform: matrix,
               alignment: Alignment.center,
               child: SizedBox(
                 width: avatarSize,
                 height: avatarSize,
-                child: SvgPicture.asset(
-                  svgPath,
-                  fit: BoxFit.contain,
-                  placeholderBuilder: (_) => const Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Authentic SVG Artwork
+                    SvgPicture.asset(
+                      svgPath,
+                      fit: BoxFit.contain,
+                      placeholderBuilder: (_) => const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
                     ),
-                  ),
+
+                    // Dynamic 3D Spherical Specular Light & Volumetric Depth Shading
+                    IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            center: Alignment(-lookX * 0.65 - 0.12, -lookY * 0.65 - 0.12),
+                            radius: 0.92,
+                            colors: [
+                              Colors.white.withValues(alpha: 0.32),
+                              Colors.white.withValues(alpha: 0.08),
+                              Colors.transparent,
+                              Colors.black.withValues(alpha: 0.26),
+                            ],
+                            stops: const [0.0, 0.38, 0.72, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -426,13 +519,18 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
 /// Soft drop shadow painter below the avatar
 class _AvatarShadowPainter extends CustomPainter {
   final double scale;
+  final double skewX;
 
-  _AvatarShadowPainter(this.scale);
+  _AvatarShadowPainter(this.scale, {this.skewX = 0.0});
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    if (skewX != 0.0) {
+      canvas.skew(skewX, 0.0);
+    }
     final paint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.22 * scale)
+      ..color = Colors.black.withValues(alpha: (0.24 * scale).clamp(0.0, 1.0))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     canvas.drawOval(
@@ -443,11 +541,12 @@ class _AvatarShadowPainter extends CustomPainter {
       ),
       paint,
     );
+    canvas.restore();
   }
 
   @override
   bool shouldRepaint(covariant _AvatarShadowPainter oldDelegate) =>
-      oldDelegate.scale != scale;
+      oldDelegate.scale != scale || oldDelegate.skewX != skewX;
 }
 
 /// Painter for interactive floating hearts and sparkle particles

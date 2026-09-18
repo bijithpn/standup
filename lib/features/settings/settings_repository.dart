@@ -247,7 +247,7 @@ class SettingsRepository extends ChangeNotifier {
       calendarEnabled: s.calendarEnabled,
       enableSessionResume: s.enableSessionResume,
       companionEnabled: cp?.companionEnabled ?? false,
-      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: true),
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
       companionScale: cp?.companionScale ?? 1.5,
@@ -288,7 +288,7 @@ class SettingsRepository extends ChangeNotifier {
       ),
       pipBackgroundStyle: _storage.getString(
         'pip_background_style',
-        defaultValue: 'dark',
+        defaultValue: 'transparent',
       ),
       pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
       pipDraggableClickable: _storage.getBool(
@@ -449,7 +449,7 @@ class SettingsRepository extends ChangeNotifier {
         'companion_enabled',
         defaultValue: true,
       ),
-      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: true),
       companionPetTheme: _storage.getString(
         AppConstants.keyCompanionPetTheme,
         defaultValue: _storage.getString(
@@ -512,7 +512,7 @@ class SettingsRepository extends ChangeNotifier {
       ),
       pipBackgroundStyle: _storage.getString(
         'pip_background_style',
-        defaultValue: 'dark',
+        defaultValue: 'transparent',
       ),
       pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
       pipDraggableClickable: _storage.getBool(

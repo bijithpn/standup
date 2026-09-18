@@ -27,7 +27,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   bool _isTransitioning = false;
   bool _companionEnabled = false;
-  bool _pipModeEnabled = false;
+  bool _pipModeEnabled = true;
   String _companionPetTheme = 'grey_cat';
   String _companionPetName = 'Mochi';
   double _companionScale = 6.0;
@@ -40,7 +40,7 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _isPreviewMode =
       false; // Hides native companion when viewing settings UI
 
-  String _pipBackgroundStyle = 'dark';
+  String _pipBackgroundStyle = 'transparent';
   double _pipOpacity = 1.0;
   bool _pipDraggableClickable = true;
   String _companionToyType = 'tennis_ball';
@@ -384,16 +384,11 @@ class CompanionOverlayController extends ChangeNotifier {
 
   Future<void> _showNativeCompanion() async {
     if (_isCompanionShown) return;
-    if (_isPreviewMode && !_pipModeEnabled) return;
 
     _isCompanionShown = true;
-    if (_pipModeEnabled) {
-      await NativeBridge.showPipWindow(
-        PipWindowArgs.fromMap(_companionPayload()),
-      );
-    } else {
-      await NativeBridge.showCompanion(CompanionArgs(_companionPayload()));
-    }
+    await NativeBridge.showPipWindow(
+      PipWindowArgs.fromMap(_companionPayload()),
+    );
   }
 
   Map<String, dynamic> _companionPayload() {
