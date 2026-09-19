@@ -402,11 +402,127 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     );
   }
 
+  Widget _buildActiveCompanionShowcase() {
+    final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
+    final def = theme.avatarDefinition;
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16, bottom: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceElevated,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppTheme.accentColor.withValues(alpha: 0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentColor.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Left: Clean full SVG showcase
+          Container(
+            width: 140,
+            height: 140,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceElevated.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.border),
+            ),
+            child: def != null
+                ? AvatarView(
+                    definition: def,
+                    isInteractive: false,
+                    autoTrackCursor: false,
+                    width: 120,
+                    height: 120,
+                  )
+                : Icon(
+                    Icons.pets_rounded,
+                    size: 64,
+                    color: AppTheme.accentColor,
+                  ),
+          ),
+          const SizedBox(width: 20),
+          // Right: Pet Details & Actions
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4CAF50),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'ACTIVE COMPANION',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: AppTheme.accentColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  widget.controller.companionPetName,
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${theme.name} · ${theme.species.name.toUpperCase()}',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () => widget.controller.openAvatarEditor(),
+                  icon: const Icon(Icons.tune_rounded, size: 16),
+                  label: const Text('Open 3D Customizer'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.accentColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPetGallery() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 32),
+        _buildActiveCompanionShowcase(),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

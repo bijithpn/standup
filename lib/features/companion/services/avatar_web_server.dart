@@ -12,6 +12,7 @@ import 'package:breakmate/core/errors/error_handler.dart';
 class AvatarWebServer {
   HttpServer? _server;
   int _port = 0;
+  Completer<void>? _startCompleter;
   String? _resolvedWebPath;
   String? _resolvedAvatarsPath;
   Map<String, String>? _svgMap;
@@ -42,7 +43,9 @@ class AvatarWebServer {
   /// Starts the localhost HTTP server on an available port.
   Future<void> start() async {
     if (_server != null) return;
+    if (_startCompleter != null) return _startCompleter!.future;
 
+    _startCompleter = Completer<void>();
     _resolveAssetDirectory();
     await _loadSvgMap();
 
@@ -59,7 +62,10 @@ class AvatarWebServer {
           ErrorHandler().handleError(e, st);
         },
       );
+      _startCompleter!.complete();
     } catch (e, st) {
+      _startCompleter!.completeError(e, st);
+      _startCompleter = null;
       ErrorHandler().handleError(e, st);
       rethrow;
     }
@@ -71,6 +77,7 @@ class AvatarWebServer {
       await _server!.close(force: true);
       _server = null;
       _port = 0;
+      _startCompleter = null;
     }
   }
 
@@ -84,6 +91,8 @@ class AvatarWebServer {
       final candidates = [
         // macOS: BreakMate Dev.app/Contents/Frameworks/App.framework/Resources/flutter_assets
         p.join(exeDir.parent.path, 'Frameworks', 'App.framework', 'Resources', 'flutter_assets'),
+        p.join(exeDir.parent.path, 'Frameworks', 'App.framework', 'Versions', 'A', 'Resources', 'flutter_assets'),
+        p.join(exeDir.parent.path, 'Frameworks', 'App.framework', 'Versions', 'Current', 'Resources', 'flutter_assets'),
         p.join(exeDir.parent.path, 'Resources', 'flutter_assets'),
         // Windows: flutter_assets alongside .exe
         p.join(exeDir.path, 'data', 'flutter_assets'),

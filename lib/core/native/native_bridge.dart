@@ -76,6 +76,8 @@ class PipWindowArgs {
   final String? companionToyType;
   final String? companionTreatType;
   final String? previewBackground;
+  final String? avatarUrl;
+  final String? urlParams;
 
   const PipWindowArgs({
     this.x,
@@ -95,6 +97,8 @@ class PipWindowArgs {
     this.companionToyType,
     this.companionTreatType,
     this.previewBackground,
+    this.avatarUrl,
+    this.urlParams,
   });
 
   Map<String, dynamic> toMap() {
@@ -127,6 +131,8 @@ class PipWindowArgs {
       map['companionTreatType'] = companionTreatType;
     }
     if (previewBackground != null) map['previewBackground'] = previewBackground;
+    if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
+    if (urlParams != null) map['urlParams'] = urlParams;
     return map;
   }
 
@@ -149,6 +155,8 @@ class PipWindowArgs {
       companionToyType: map['companionToyType'] as String?,
       companionTreatType: map['companionTreatType'] as String?,
       previewBackground: map['previewBackground'] as String?,
+      avatarUrl: map['avatarUrl'] as String?,
+      urlParams: map['urlParams'] as String?,
     );
   }
 }

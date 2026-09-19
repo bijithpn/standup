@@ -281,9 +281,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionTreatType = settings.companionTreatType;
 
     final shouldShow =
-        _companionEnabled &&
-        settings.hasCompletedOnboarding &&
-        (!_isPreviewMode || _pipModeEnabled);
+        _companionEnabled && settings.hasCompletedOnboarding;
 
     final needsShowOrToggle =
         shouldShow && (!_isCompanionShown || pipModeChanged);
@@ -395,12 +393,12 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> _showNativeCompanion() async {
-    if (_isCompanionShown) return;
-
     await _ensureServerStarted();
     _isCompanionShown = true;
+    final payload = _companionPayload();
+    debugPrint('[CompanionOverlayController] _showNativeCompanion URL: ${payload['avatarUrl']}');
     await NativeBridge.showPipWindow(
-      PipWindowArgs.fromMap(_companionPayload()),
+      PipWindowArgs.fromMap(payload),
     );
   }
 
@@ -493,9 +491,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
-      pipModeEnabled: enabled
-          ? _settingsRepo.currentSettings.pipModeEnabled
-          : false,
+      pipModeEnabled: true,
     );
     await _settingsRepo.save(updated);
   }

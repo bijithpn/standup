@@ -3,7 +3,7 @@ import Cocoa
 import FlutterMacOS
 import WebKit
 
-final class PiPWindowManager: NSObject, WKNavigationDelegate {
+final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     static let shared = PiPWindowManager()
 
     private var pipWindow: PiPPanel?
@@ -14,11 +14,14 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate {
 
     func showPipWindow(args: [String: Any]?) {
         let avatarUrlStr = (args?["avatarUrl"] as? String) ?? "http://127.0.0.1:5173/?companion=1#/companion"
+        NSLog("[PiPWindowManager] showPipWindow called with avatarUrl: %@", avatarUrlStr)
 
         // If window already exists, sync settings or reload if needed
         if let window = pipWindow, webView != nil {
             syncSettings(args ?? [:])
-            window.makeKeyAndOrderFront(nil)
+            window.alphaValue = 1.0
+            window.setIsVisible(true)
+            window.orderFrontRegardless()
             return
         }
 
@@ -31,19 +34,55 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate {
         let y = (args?["y"] as? Double) ?? (screenFrame.minY + 20)
 
         let frame = NSRect(x: x, y: y, width: w, height: h)
+        NSLog("[PiPWindowManager] Creating PiPPanel at frame: (%f, %f, %f, %f)", x, y, w, h)
         let window = PiPPanel(frame: frame)
 
         let webConfiguration = WKWebViewConfiguration()
+        let userContentController = WKUserContentController()
+
+        let logScript = WKUserScript(
+            source: """
+            window.addEventListener('error', function(e) {
+                window.webkit.messageHandlers.logging.postMessage('JS_ERROR: ' + e.message + ' at ' + (e.filename || '') + ':' + (e.lineno || ''));
+            });
+            const origError = console.error;
+            console.error = function() {
+                origError.apply(console, arguments);
+                const args = Array.from(arguments).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+                window.webkit.messageHandlers.logging.postMessage('CONSOLE_ERROR: ' + args);
+            };
+            const origLog = console.log;
+            console.log = function() {
+                origLog.apply(console, arguments);
+                const args = Array.from(arguments).map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ');
+                window.webkit.messageHandlers.logging.postMessage('CONSOLE_LOG: ' + args);
+            };
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        )
+        userContentController.addUserScript(logScript)
+        userContentController.add(self, name: "logging")
+        webConfiguration.userContentController = userContentController
+        webConfiguration.preferences.setValue(true, forKey: "developerExtrasEnabled")
+
         let wv = WKWebView(frame: NSRect(origin: .zero, size: frame.size), configuration: webConfiguration)
         wv.autoresizingMask = [.width, .height]
         wv.setValue(false, forKey: "drawsBackground")
         if #available(macOS 12.0, *) {
             wv.underPageBackgroundColor = .clear
         }
+        if #available(macOS 13.3, *) {
+            wv.isInspectable = true
+        }
+        wv.wantsLayer = true
+        wv.layer?.cornerRadius = 16
+        wv.layer?.masksToBounds = true
         wv.navigationDelegate = self
 
         currentUrlStr = avatarUrlStr
         if let url = URL(string: avatarUrlStr) {
+            NSLog("[PiPWindowManager] Loading URL: %@", url.absoluteString)
             wv.load(URLRequest(url: url))
         }
 
@@ -51,43 +90,69 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate {
         self.pipWindow = window
         self.webView = wv
 
-        window.alphaValue = 0.0
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.15
-            window.animator().alphaValue = 1.0
-        }
+        window.alphaValue = 1.0
+        window.setIsVisible(true)
+        window.orderFrontRegardless()
     }
 
     func hidePipWindow() {
         guard let window = pipWindow, let wv = webView else { return }
-
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.15
-            window.animator().alphaValue = 0.0
-        }, completionHandler: { [weak self] in
-            wv.stopLoading()
-            window.orderOut(nil)
-            window.contentView = nil
-            self?.pipWindow = nil
-            self?.webView = nil
-            self?.currentUrlStr = nil
-        })
+        wv.stopLoading()
+        window.orderOut(nil)
+        window.contentView = nil
+        self.pipWindow = nil
+        self.webView = nil
+        self.currentUrlStr = nil
     }
 
     func syncSettings(_ args: [String: Any]) {
         guard let wv = webView else { return }
 
-        if let urlParams = args["urlParams"] as? String {
-            let script = "window.postMessage({ type: 'SET_PARAMS', params: '\(urlParams)' }, '*');"
-            wv.evaluateJavaScript(script, completionHandler: nil)
-        } else if let avatarUrlStr = args["avatarUrl"] as? String, avatarUrlStr != currentUrlStr {
+        if let avatarUrlStr = args["avatarUrl"] as? String,
+           !avatarUrlStr.isEmpty,
+           avatarUrlStr != currentUrlStr {
+            NSLog("[PiPWindowManager] syncSettings: URL changed to %@, reloading WKWebView", avatarUrlStr)
             currentUrlStr = avatarUrlStr
             if let url = URL(string: avatarUrlStr) {
                 wv.load(URLRequest(url: url))
             }
+            return
+        }
+
+        if let urlParams = args["urlParams"] as? String {
+            let script = "window.postMessage({ type: 'SET_PARAMS', params: '\(urlParams)' }, '*');"
+            wv.evaluateJavaScript(script, completionHandler: nil)
+        }
+    }
+
+    // MARK: - WKNavigationDelegate
+
+    func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        NSLog("[PiPWindowManager] WKWebView didStartProvisionalNavigation: %@", webView.url?.absoluteString ?? "")
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        NSLog("[PiPWindowManager] WKWebView didFinish navigation: %@", webView.url?.absoluteString ?? "")
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        NSLog("[PiPWindowManager] WKWebView didFail navigation: %@", error.localizedDescription)
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        NSLog("[PiPWindowManager] WKWebView didFailProvisionalNavigation: %@", error.localizedDescription)
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        NSLog("[PiPWindowManager] WKWebView webContentProcessDidTerminate! Reloading...")
+        webView.reload()
+    }
+
+    // MARK: - WKScriptMessageHandler
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "logging", let body = message.body as? String {
+            NSLog("[PiPWeb] %@", body)
         }
     }
 }
@@ -100,19 +165,27 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
         super.init(
             contentRect: frame,
             styleMask: [
-                .borderless,
-                .resizable,
+                .titled,
+                .fullSizeContentView,
                 .nonactivatingPanel,
-                .utilityWindow
+                .resizable
             ],
             backing: .buffered,
             defer: false
         )
 
+        titleVisibility = .hidden
+        titlebarAppearsTransparent = true
+        standardWindowButton(.closeButton)?.isHidden = true
+        standardWindowButton(.miniaturizeButton)?.isHidden = true
+        standardWindowButton(.zoomButton)?.isHidden = true
+
+        isReleasedWhenClosed  = false
         backgroundColor       = NSColor.clear
         isOpaque              = false
         hasShadow             = true
         level                 = .floating
+        isFloatingPanel       = true
         hidesOnDeactivate     = false
         isMovableByWindowBackground = true
         collectionBehavior    = [
@@ -121,20 +194,23 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
             .ignoresCycle
         ]
 
-        minSize = NSSize(width: 200, height: 200)
-        maxSize = NSSize(width: 600, height: 600)
-
-        contentView?.wantsLayer = true
-        contentView?.layer?.cornerRadius   = 14
-        contentView?.layer?.masksToBounds  = true
+        minSize = NSSize(width: 160, height: 160)
+        maxSize = NSSize(width: 800, height: 800)
 
         delegate = self
     }
 
     func windowWillResize(_ sender: NSWindow, to frameSize: NSSize) -> NSSize {
-        let clampedW = max(200, min(600, frameSize.width))
-        let clampedH = max(200, min(600, frameSize.height))
+        let clampedW = max(160, min(800, frameSize.width))
+        let clampedH = max(160, min(800, frameSize.height))
         return NSSize(width: clampedW, height: clampedH)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        var origin = self.frame.origin
+        origin.x += event.deltaX
+        origin.y -= event.deltaY
+        self.setFrameOrigin(origin)
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

@@ -57,7 +57,7 @@ void main() {
       final client = HttpClient();
       try {
         final request = await client.getUrl(
-          Uri.parse('${server.baseUrl}/assets/index-Cgvbzb0D.js'),
+          Uri.parse('${server.baseUrl}/assets/index-DtC4GL6p.js'),
         );
         final response = await request.close();
         expect(response.statusCode, equals(HttpStatus.ok));
