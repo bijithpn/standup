@@ -7,7 +7,9 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
+import 'package:breakmate/features/companion/services/avatar_web_server.dart';
 import 'package:flame/flame.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -119,6 +121,9 @@ class CompanionOverlayController extends ChangeNotifier {
     : _settingsRepo = settingsRepo {
     _settingsRepo.addListener(_handleSettingsChanged);
     _listenToEvents();
+    try {
+      sl<AvatarWebServer>().start();
+    } catch (_) {}
   }
 
   bool _isBreakActive = false;
@@ -180,7 +185,17 @@ class CompanionOverlayController extends ChangeNotifier {
 
   String get companionPreviewBackground => _companionPreviewBackground;
 
+  Future<void> _ensureServerStarted() async {
+    try {
+      await sl<AvatarWebServer>().start();
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
+  }
+
   Future<void> init() async {
+    await _ensureServerStarted();
+
     final settings = _settingsRepo.currentSettings;
 
     _companionEnabled = settings.companionEnabled;
@@ -295,8 +310,6 @@ class CompanionOverlayController extends ChangeNotifier {
       });
 
       Future.microtask(() async {
-        // Yield control to let Flutter render the loading overlay frame
-        await Future.delayed(const Duration(milliseconds: 80));
         try {
           if (needsShowOrToggle) {
             if (_isCompanionShown && pipModeChanged) {
@@ -306,7 +319,6 @@ class CompanionOverlayController extends ChangeNotifier {
               );
               await NativeBridge.hideCompanion();
               await NativeBridge.hidePipWindow();
-              await Future.delayed(const Duration(milliseconds: 300));
             }
             debugPrint(
               '[CompanionOverlayController] Spawning new companion/PiP window...',
@@ -385,13 +397,55 @@ class CompanionOverlayController extends ChangeNotifier {
   Future<void> _showNativeCompanion() async {
     if (_isCompanionShown) return;
 
+    await _ensureServerStarted();
     _isCompanionShown = true;
     await NativeBridge.showPipWindow(
       PipWindowArgs.fromMap(_companionPayload()),
     );
   }
 
+  String _getAvatarQueryParams() {
+    final customParams = _settingsRepo.currentSettings.companionAvatarUrlParams;
+    if (customParams != null && customParams.isNotEmpty) {
+      return customParams;
+    }
+
+    final theme = PetTheme.getTheme(_companionPetTheme);
+    final species = theme.avatarDefinition?.species ??
+        AvatarSpecies.tryParse(_companionPetTheme) ??
+        AvatarSpecies.cat;
+
+    String entityName = species.name;
+    if (species == AvatarSpecies.guineaPig) entityName = 'guinea-pig';
+    if (species == AvatarSpecies.redPanda) entityName = 'bear';
+
+    return 'entity=$entityName&bg=transparent';
+  }
+
+  Future<void> saveAvatarUrlParams(String params) async {
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionAvatarUrlParams: params,
+    );
+    await _settingsRepo.save(updated);
+    if (_pipModeEnabled) {
+      NativeBridge.showPipWindow(
+        PipWindowArgs.fromMap(_companionPayload()),
+      );
+    }
+    notifyListeners();
+  }
+
+  Future<void> openAvatarEditor() async {
+    await _ensureServerStarted();
+    final webServer = sl<AvatarWebServer>();
+    final query = _getAvatarQueryParams();
+    final editorUrl = webServer.buildEditorUrl(queryParams: query).toString();
+    await NativeBridge.openAvatarEditor(editorUrl);
+  }
+
   Map<String, dynamic> _companionPayload() {
+    final webServer = sl<AvatarWebServer>();
+    final query = _getAvatarQueryParams();
     return {
       'themeId': _companionPetTheme,
       'petName': _companionPetName,
@@ -406,6 +460,9 @@ class CompanionOverlayController extends ChangeNotifier {
       'companionToyType': _companionToyType,
       'companionTreatType': _companionTreatType,
       'previewBackground': _companionPreviewBackground,
+      'avatarUrl': webServer.buildCompanionUrl(queryParams: query).toString(),
+      'avatarEditorUrl': webServer.buildEditorUrl(queryParams: query).toString(),
+      'urlParams': query,
     };
   }
 

@@ -67,6 +67,8 @@ flutter:
     # OneWorks Avatar — Pixel Style Snapshots
     - assets/avatars/pixel/
     # OneWorks Avatar — Animation Cover SVGs (idle, happy, celebrate, etc.)
+    - assets/avatars/web/
+    - assets/avatars/web/assets/
     - assets/avatars/animation_covers/
 
   fonts:

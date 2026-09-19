@@ -512,6 +512,16 @@ class MainFlutterWindow: NSWindow {
         PiPWindowManager.shared.hidePipWindow()
         result(nil)
 
+      case "openAvatarEditor":
+        if let args = call.arguments as? [String: Any], let editorUrl = args["editorUrl"] as? String {
+          AvatarEditorWindowManager.shared.openEditor(editorUrl: editorUrl, parentWindow: self) { [weak self] query in
+            self?.bridgeChannel?.invokeMethod("onAvatarSaved", arguments: ["urlParams": query])
+          }
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing editorUrl", details: nil))
+        }
+
       // ── Behavior Engine PAL methods ───────────────────────────────────────
 
       case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",

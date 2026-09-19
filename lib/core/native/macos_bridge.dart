@@ -294,6 +294,11 @@ class MacOSBridge implements NativeBridgePlatform {
     await _invokeSafely('hidePipWindow');
   }
 
+  @override
+  Future<void> openAvatarEditor(String editorUrl) async {
+    await _invokeSafely('openAvatarEditor', {'editorUrl': editorUrl});
+  }
+
   Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

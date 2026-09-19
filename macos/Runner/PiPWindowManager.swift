@@ -1,27 +1,26 @@
 
 import Cocoa
 import FlutterMacOS
+import WebKit
 
-final class PiPWindowManager: NSObject {
+final class PiPWindowManager: NSObject, WKNavigationDelegate {
     static let shared = PiPWindowManager()
 
-    private var pipInstance: PiPInstance?
-    private var isSettingUp = false
-
-    struct PiPInstance {
-        let window: PiPPanel
-        let engine: FlutterEngine
-        let controller: FlutterViewController
-    }
+    private var pipWindow: PiPPanel?
+    private var webView: WKWebView?
+    private var currentUrlStr: String?
 
     private override init() { super.init() }
 
     func showPipWindow(args: [String: Any]?) {
-        guard pipInstance == nil && !isSettingUp else {
-            if let args = args { syncSettings(args) }
+        let avatarUrlStr = (args?["avatarUrl"] as? String) ?? "http://127.0.0.1:5173/?companion=1#/companion"
+
+        // If window already exists, sync settings or reload if needed
+        if let window = pipWindow, webView != nil {
+            syncSettings(args ?? [:])
+            window.makeKeyAndOrderFront(nil)
             return
         }
-        isSettingUp = true
 
         let screen = NSScreen.main ?? NSScreen.screens.first
         let screenFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
@@ -32,108 +31,64 @@ final class PiPWindowManager: NSObject {
         let y = (args?["y"] as? Double) ?? (screenFrame.minY + 20)
 
         let frame = NSRect(x: x, y: y, width: w, height: h)
-
         let window = PiPPanel(frame: frame)
 
-        let engine = FlutterEngine(
-            name: "PiPEngine-\(UUID().uuidString)",
-            project: nil,
-            allowHeadlessExecution: true
-        )
-        engine.run(withEntrypoint: "pipMain")
-        RegisterSecondaryPlugins(registry: engine)
-        IpcBridgeManager.shared.register(engine: engine)
+        let webConfiguration = WKWebViewConfiguration()
+        let wv = WKWebView(frame: NSRect(origin: .zero, size: frame.size), configuration: webConfiguration)
+        wv.autoresizingMask = [.width, .height]
+        wv.setValue(false, forKey: "drawsBackground")
+        if #available(macOS 12.0, *) {
+            wv.underPageBackgroundColor = .clear
+        }
+        wv.navigationDelegate = self
 
-        // Attach the data channel before any UI work: the Flutter isolate calls
-        // getInitialSettings immediately on startup, and a handler registered
-        // after the view setup can lose that race and hand back
-        // FlutterMethodNotImplemented, silently dropping the user's settings.
-        let capturedArgs = args ?? [:]
-        let dataChannel = FlutterMethodChannel(
-            name: "com.breakmate.desktop/pip_data",
-            binaryMessenger: engine.binaryMessenger
-        )
-        dataChannel.setMethodCallHandler { (call, result) in
-            switch call.method {
-            case "getInitialSettings":
-                result(capturedArgs)
-            case "syncPiPSettings":
-                result(nil)
-            default:
-                result(FlutterMethodNotImplemented)
-            }
+        currentUrlStr = avatarUrlStr
+        if let url = URL(string: avatarUrlStr) {
+            wv.load(URLRequest(url: url))
         }
 
-        let controller = FlutterViewController(engine: engine, nibName: nil, bundle: nil)
-        controller.backgroundColor = .clear
-        controller.view.wantsLayer = true
-        controller.view.layer?.backgroundColor = NSColor.clear.cgColor
-        controller.view.autoresizingMask = [.width, .height]
-        controller.view.frame = NSRect(origin: .zero, size: frame.size)
-
-        window.contentViewController = controller
-        window.contentView = controller.view
-
-        pipInstance = PiPInstance(window: window, engine: engine, controller: controller)
-
-        let bridgeChannel = FlutterMethodChannel(
-            name: "com.breakmate.desktop/bridge",
-            binaryMessenger: engine.binaryMessenger
-        )
-        bridgeChannel.setMethodCallHandler { call, result in
-            if call.method == "hidePipWindow" {
-                PiPWindowManager.shared.hidePipWindow()
-                result(nil)
-            } else {
-                BehaviorEngineBridge.shared.handle(call, result: result)
-            }
-        }
-
-        isSettingUp = false
+        window.contentView = wv
+        self.pipWindow = window
+        self.webView = wv
 
         window.alphaValue = 0.0
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            NSAnimationContext.runAnimationGroup { ctx in
-                ctx.duration = 0.2
-                window.animator().alphaValue = 1.0
-            }
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.15
+            window.animator().alphaValue = 1.0
         }
     }
 
     func hidePipWindow() {
-        isSettingUp = false
-        guard let inst = pipInstance else { return }
+        guard let window = pipWindow, let wv = webView else { return }
 
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = 0.15
-            inst.window.animator().alphaValue = 0.0
+            window.animator().alphaValue = 0.0
         }, completionHandler: { [weak self] in
-            inst.window.orderOut(nil)
-            inst.window.contentViewController = nil
-            inst.window.contentView = nil
-
-            let dataChannel = FlutterMethodChannel(
-                name: "com.breakmate.desktop/pip_data",
-                binaryMessenger: inst.engine.binaryMessenger
-            )
-            dataChannel.setMethodCallHandler(nil)
-
-            IpcBridgeManager.shared.unregister(engine: inst.engine)
-            inst.engine.shutDownEngine()
-            self?.pipInstance = nil
+            wv.stopLoading()
+            window.orderOut(nil)
+            window.contentView = nil
+            self?.pipWindow = nil
+            self?.webView = nil
+            self?.currentUrlStr = nil
         })
     }
 
     func syncSettings(_ args: [String: Any]) {
-        guard let inst = pipInstance else { return }
-        let dataChannel = FlutterMethodChannel(
-            name: "com.breakmate.desktop/pip_data",
-            binaryMessenger: inst.engine.binaryMessenger
-        )
-        dataChannel.invokeMethod("syncPiPSettings", arguments: args)
+        guard let wv = webView else { return }
+
+        if let urlParams = args["urlParams"] as? String {
+            let script = "window.postMessage({ type: 'SET_PARAMS', params: '\(urlParams)' }, '*');"
+            wv.evaluateJavaScript(script, completionHandler: nil)
+        } else if let avatarUrlStr = args["avatarUrl"] as? String, avatarUrlStr != currentUrlStr {
+            currentUrlStr = avatarUrlStr
+            if let url = URL(string: avatarUrlStr) {
+                wv.load(URLRequest(url: url))
+            }
+        }
     }
 }
 
@@ -185,5 +140,74 @@ final class PiPPanel: NSPanel, NSWindowDelegate {
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         PiPWindowManager.shared.hidePipWindow()
         return false
+    }
+}
+
+final class AvatarEditorWindowManager: NSObject, WKScriptMessageHandler, NSWindowDelegate {
+    static let shared = AvatarEditorWindowManager()
+
+    private var editorWindow: NSWindow?
+    private var webView: WKWebView?
+    private var onSaveCallback: ((String) -> Void)?
+
+    func openEditor(editorUrl: String, parentWindow: NSWindow?, onSave: @escaping (String) -> Void) {
+        self.onSaveCallback = onSave
+
+        if let existing = editorWindow {
+            if let url = URL(string: editorUrl) {
+                webView?.load(URLRequest(url: url))
+            }
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let width: CGFloat = 1120
+        let height: CGFloat = 780
+        let screenFrame = parentWindow?.screen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+        let x = screenFrame.midX - width / 2
+        let y = screenFrame.midY - height / 2
+        let frame = NSRect(x: x, y: y, width: width, height: height)
+
+        let window = NSWindow(
+            contentRect: frame,
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "OneWorks 3D Avatar Editor"
+        window.titlebarAppearsTransparent = true
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+
+        let config = WKWebViewConfiguration()
+        let userContentController = WKUserContentController()
+        userContentController.add(self, name: "onAvatarSaved")
+        config.userContentController = userContentController
+
+        let wv = WKWebView(frame: NSRect(origin: .zero, size: frame.size), configuration: config)
+        wv.autoresizingMask = [.width, .height]
+        self.webView = wv
+
+        if let url = URL(string: editorUrl) {
+            wv.load(URLRequest(url: url))
+        }
+
+        window.contentView = wv
+        self.editorWindow = window
+
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "onAvatarSaved", let query = message.body as? String {
+            onSaveCallback?(query)
+        }
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        editorWindow = nil
+        webView = nil
     }
 }

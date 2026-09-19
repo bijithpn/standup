@@ -70,6 +70,7 @@ class SettingsModel {
   final bool companionFollowMouse;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
+  final String? companionAvatarUrlParams;
 
   final double companionWindowWidth;
   final double companionWindowHeight;
@@ -177,6 +178,7 @@ class SettingsModel {
     this.companionFollowMouse = false,
     this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
+    this.companionAvatarUrlParams,
     this.companionWindowWidth = 280.0,
     this.companionWindowHeight = 320.0,
     this.companionWindowX,
@@ -268,6 +270,7 @@ class SettingsModel {
     bool? companionFollowMouse,
     String? companionPreviewBackground,
     List<String>? unlockedPets,
+    String? companionAvatarUrlParams,
     double? companionWindowWidth,
     double? companionWindowHeight,
     double? companionWindowX,
@@ -376,6 +379,8 @@ class SettingsModel {
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
       unlockedPets: unlockedPets ?? this.unlockedPets,
+      companionAvatarUrlParams:
+          companionAvatarUrlParams ?? this.companionAvatarUrlParams,
       companionWindowWidth: companionWindowWidth ?? this.companionWindowWidth,
       companionWindowHeight:
           companionWindowHeight ?? this.companionWindowHeight,
@@ -477,6 +482,7 @@ class SettingsModel {
     'companionFollowMouse': companionFollowMouse,
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
+    'companionAvatarUrlParams': companionAvatarUrlParams,
     'pettingEnabled': pettingEnabled,
     'ballThrowEnabled': ballThrowEnabled,
     'treatEnabled': treatEnabled,
@@ -594,6 +600,7 @@ class SettingsModel {
               ?.map((e) => e.toString())
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
+      companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
       ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
       treatEnabled: map['treatEnabled'] as bool? ?? true,

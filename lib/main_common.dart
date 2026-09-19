@@ -577,6 +577,11 @@ void mainCommon(FlavorConfig config) async {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
             sl<TimerEngine>().handleSystemWake();
+          } else if (call.method == 'onAvatarSaved') {
+            final urlParams = call.arguments?['urlParams'] as String?;
+            if (urlParams != null && sl.isRegistered<CompanionOverlayController>()) {
+              await sl<CompanionOverlayController>().saveAvatarUrlParams(urlParams);
+            }
           }
         });
 

@@ -302,6 +302,8 @@ abstract class NativeBridgePlatform {
   Future<void> showPipWindow(PipWindowArgs args);
 
   Future<void> hidePipWindow();
+
+  Future<void> openAvatarEditor(String editorUrl);
 }
 
 class FallbackBridge implements NativeBridgePlatform {
@@ -427,6 +429,9 @@ class FallbackBridge implements NativeBridgePlatform {
 
   @override
   Future<void> hidePipWindow() async {}
+
+  @override
+  Future<void> openAvatarEditor(String editorUrl) async {}
 }
 
 class NativeBridge {
@@ -582,4 +587,7 @@ class NativeBridge {
       _platform.showPipWindow(args);
 
   static Future<void> hidePipWindow() => _platform.hidePipWindow();
+
+  static Future<void> openAvatarEditor(String editorUrl) =>
+      _platform.openAvatarEditor(editorUrl);
 }

@@ -58,6 +58,7 @@ class AppConstants {
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
   static const String keyCompanionPetTheme = 'companion_pet_theme';
+  static const String keyCompanionAvatarUrlParams = 'companion_avatar_url_params';
   static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
   static const int breaksPerDayForStreak = 5;

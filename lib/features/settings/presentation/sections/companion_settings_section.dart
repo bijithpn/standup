@@ -4,7 +4,6 @@ import 'package:breakmate/features/companion/controllers/companion_overlay_contr
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -208,13 +207,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       null,
                       Icons.pets_rounded,
                       null,
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AvatarCustomizerPage(),
-                          fullscreenDialog: true,
-                        ),
-                      ),
+                      onTap: () => widget.controller.openAvatarEditor(),
                       trailing: Icon(
                         CupertinoIcons.chevron_right,
                         size: 14,
@@ -422,13 +415,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
               subtitle: 'Select from 30+ OneWorks 3D species',
             ),
             TextButton.icon(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const AvatarCustomizerPage(),
-                  fullscreenDialog: true,
-                ),
-              ),
+              onPressed: () => widget.controller.openAvatarEditor(),
               icon: const Icon(Icons.palette_outlined, size: 16),
               label: const Text('Customize 3D'),
               style: TextButton.styleFrom(
