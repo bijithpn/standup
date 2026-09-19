@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
-import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
@@ -49,7 +48,6 @@ void main() {
         definition: avatarDef,
       );
 
-      final avatarController = AvatarEngineController();
       final stateMachine = PetStateMachine(personality: PetPersonality.friendly);
       final brain = PetBehaviorBrain();
       final navigation = PetNavigationService();
@@ -70,21 +68,17 @@ void main() {
         navigation: navigation,
         profile: profile,
         needsEngine: needsEngine,
-        avatarController: avatarController,
         throwableManager: throwableManager,
       );
 
       expect(service.profile.id, equals('avatar_fox'));
       expect(service.currentState, equals(PetState.idle));
       expect(service.mood.mood, equals(PetMood.relaxed));
-      expect(service.avatarController, isNotNull);
-      expect(avatarController.currentClip, equals(AvatarAnimationClip.idle));
     });
 
     test('simulates needs decay, mood transitions, and state machine reactions', () {
       final avatarDef = AvatarDefinition.fromSpecies(AvatarSpecies.cat);
       final theme = PetTheme.avatar(definition: avatarDef);
-      final avatarController = AvatarEngineController();
       final stateMachine = PetStateMachine();
       final brain = PetBehaviorBrain();
       final navigation = PetNavigationService();
@@ -96,18 +90,15 @@ void main() {
         navigation: navigation,
         profile: CompanionGame.getProfileFromTheme(theme),
         needsEngine: needsEngine,
-        avatarController: avatarController,
       );
 
       // Verify petting triggers affectionate reaction and raises affection / happiness
       service.onPetting();
       expect(service.currentState, equals(PetState.affectionate));
-      expect(avatarController.currentClip, equals(AvatarAnimationClip.happiness));
 
       // Simulate hunger and feeding treat
       service.onFedTreat();
       expect(service.currentState, equals(PetState.eating));
-      expect(avatarController.currentClip, equals(AvatarAnimationClip.nod));
 
       // Test needs decay towards sleep
       final lowEnergyNeeds = const PetNeeds(

@@ -7,7 +7,6 @@ import 'package:breakmate/features/companion/domain/pet_mood.dart';
 import 'package:breakmate/features/companion/domain/pet_needs.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
-import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
 import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
 
@@ -16,7 +15,6 @@ class PetCompanionService extends ChangeNotifier {
   final PetBehaviorBrain _brain;
   final PetNavigationService _navigation;
   final NeedsEngine _needsEngine;
-  AvatarEngineController? _avatarController;
   ThrowableObjectManager? _throwableManager;
   StreamSubscription<Offset?>? _toyPositionSubscription;
   PetProfile _profile;
@@ -47,14 +45,12 @@ class PetCompanionService extends ChangeNotifier {
     required PetNavigationService navigation,
     required PetProfile profile,
     NeedsEngine? needsEngine,
-    AvatarEngineController? avatarController,
     ThrowableObjectManager? throwableManager,
   }) : _stateMachine = stateMachine,
        _brain = brain,
        _navigation = navigation,
        _profile = profile,
        _needsEngine = needsEngine ?? NeedsEngine(),
-       _avatarController = avatarController,
        _throwableManager = throwableManager,
        _mood = PetMoodState(
          mood: profile.initialMood ?? PetMood.relaxed,
@@ -73,9 +69,6 @@ class PetCompanionService extends ChangeNotifier {
          boredom: 0.0,
        ) {
     _navigation.setSpecies(profile.species);
-    if (avatarController != null) {
-      _stateMachine.bridgeToAvatar(avatarController);
-    }
     if (throwableManager != null) {
       attachThrowableManager(throwableManager);
     }
@@ -84,18 +77,12 @@ class PetCompanionService extends ChangeNotifier {
   PetStateMachine get stateMachine => _stateMachine;
   PetNavigationService get navigation => _navigation;
   NeedsEngine get needsEngine => _needsEngine;
-  AvatarEngineController? get avatarController => _avatarController;
   ThrowableObjectManager? get throwableManager => _throwableManager;
   PetState get currentState => _stateMachine.currentState;
   PetMoodState get mood => _mood;
   PetBehaviorContext get context => _context;
   PetProfile get profile => _profile;
   Offset get position => _navigation.currentPosition;
-
-  void attachAvatarEngineController(AvatarEngineController controller) {
-    _avatarController = controller;
-    _stateMachine.bridgeToAvatar(controller);
-  }
 
   void attachThrowableManager(ThrowableObjectManager manager) {
     _throwableManager = manager;
@@ -108,13 +95,7 @@ class PetCompanionService extends ChangeNotifier {
   }
 
   void trackToy(Offset toyPos) {
-    if (_avatarController != null) {
-      _brain.lookAtToy(
-        _avatarController!,
-        petPos: _navigation.currentPosition,
-        toyPos: toyPos,
-      );
-    }
+    // Tracking is handled by overlay viewport gaze tracking
   }
 
   void onPetting() {
@@ -257,15 +238,6 @@ class PetCompanionService extends ChangeNotifier {
       dt,
       currentState: _stateMachine.currentState,
     );
-
-    if (_avatarController != null) {
-      _brain.coordinateRoaming(
-        _avatarController!,
-        currentPos: newPos,
-        targetPos: newPos + Offset(cos(_navigation.currentHeading), sin(_navigation.currentHeading)) * 10,
-        state: _stateMachine.currentState,
-      );
-    }
 
     // Throttle context.copyWith to avoid per-frame object allocation
     if (now.difference(_lastContextUpdate) >= _contextUpdateInterval) {

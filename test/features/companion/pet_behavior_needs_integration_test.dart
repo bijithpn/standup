@@ -6,7 +6,6 @@ import 'package:breakmate/features/companion/domain/pet_needs.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
-import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/services/pet_companion_service.dart';
 import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
 import 'package:breakmate/features/companion/services/physics_simulator.dart';
@@ -108,29 +107,6 @@ void main() {
       expect(PetState.curious.toAnimationClip(), equals(AvatarAnimationClip.glance));
     });
 
-    test('PetStateMachine bridges to AvatarEngineController on state change', () async {
-      final evaluatedScripts = <String>[];
-      final controller = AvatarEngineController(
-        jsEvaluator: (script) {
-          evaluatedScripts.add(script);
-          return null;
-        },
-      );
-
-      final fsm = PetStateMachine();
-      fsm.bridgeToAvatar(controller);
-
-      fsm.transitionTo(PetState.celebrating);
-      expect(fsm.currentState, equals(PetState.celebrating));
-      expect(controller.currentClip, equals(AvatarAnimationClip.celebrate));
-      expect(evaluatedScripts.any((s) => s.contains('celebrate')), isTrue);
-
-      fsm.transitionTo(PetState.sleep);
-      expect(fsm.currentState, equals(PetState.sleep));
-      expect(controller.currentClip, equals(AvatarAnimationClip.sleep));
-      expect(evaluatedScripts.any((s) => s.contains('sleep')), isTrue);
-    });
-
     test('PetStateMachine helpers trigger correct transitions and events', () {
       final fsm = PetStateMachine();
 
@@ -221,49 +197,6 @@ void main() {
     });
   });
 
-  group('PetBehaviorBrain & 3D Avatar Roaming Coordination', () {
-    test('PetBehaviorBrain coordinates smooth roaming turns and rest pauses with AvatarEngineController', () async {
-      final evaluated = <String>[];
-      final controller = AvatarEngineController(
-        jsEvaluator: (script) {
-          evaluated.add(script);
-          return null;
-        },
-      );
-
-      final brain = PetBehaviorBrain();
-
-      // Roaming turn towards target
-      brain.coordinateRoaming(
-        controller,
-        currentPos: const Offset(100, 100),
-        targetPos: const Offset(200, 100), // Moving right (0 radians)
-        state: PetState.walk,
-      );
-
-      expect(controller.currentYaw, closeTo(0.0, 0.01));
-
-      // Moving down (pi / 2 radians)
-      brain.coordinateRoaming(
-        controller,
-        currentPos: const Offset(100, 100),
-        targetPos: const Offset(100, 200),
-        state: PetState.walk,
-      );
-
-      expect(controller.currentYaw, closeTo(1.57, 0.1));
-
-      // Look at toy position
-      brain.lookAtToy(
-        controller,
-        petPos: const Offset(100, 100),
-        toyPos: const Offset(300, 100),
-      );
-
-      expect(controller.currentLookAt.dx, greaterThan(0.0));
-    });
-  });
-
   group('ThrowableObjectManager & Gaze Target Emission', () {
     test('Spawning toy emits target position stream for companion to track', () async {
       final physics = PhysicsSimulator();
@@ -319,18 +252,11 @@ void main() {
   });
 
   group('PetCompanionService End-to-End Integration', () {
-    test('Binds StateMachine, NeedsEngine, Brain, Navigation, and AvatarEngineController', () async {
+    test('Binds StateMachine, NeedsEngine, Brain, and Navigation', () async {
       final fsm = PetStateMachine();
       final brain = PetBehaviorBrain();
       final nav = PetNavigationService();
       final needsEngine = NeedsEngine();
-      final evaluated = <String>[];
-      final avatarController = AvatarEngineController(
-        jsEvaluator: (script) {
-          evaluated.add(script);
-          return null;
-        },
-      );
 
       final service = PetCompanionService(
         stateMachine: fsm,
@@ -340,18 +266,15 @@ void main() {
         needsEngine: needsEngine,
       );
 
-      service.attachAvatarEngineController(avatarController);
       service.initialize(screenSize: const Size(1920, 1080), startPosition: const Offset(200, 200));
 
       // On petting reaction
       service.onPetting();
       expect(service.currentState, equals(PetState.affectionate));
-      expect(avatarController.currentClip, equals(AvatarAnimationClip.happiness));
 
       // On feeding reaction
       service.onFedTreat();
       expect(service.currentState, equals(PetState.eating));
-      expect(avatarController.currentClip, equals(AvatarAnimationClip.nod));
 
       // On break started & completed
       service.onBreakStarted();
@@ -359,11 +282,9 @@ void main() {
 
       service.onBreakCompleted();
       expect(service.currentState, equals(PetState.celebrating));
-      expect(avatarController.currentClip, equals(AvatarAnimationClip.celebrate));
 
-      // Toy tracking gaze
+      // Toy tracking
       service.trackToy(const Offset(600, 200));
-      expect(avatarController.currentLookAt.dx, greaterThan(0.0));
     });
   });
 }

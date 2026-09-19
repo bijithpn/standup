@@ -13,6 +13,7 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/engine/avatar_event_channel.dart';
 import 'package:breakmate/features/companion/services/cursor_tracker.dart';
+import 'package:breakmate/features/companion/presentation/widgets/pet_3d_view.dart';
 
 /// Floating particle data structure for interactive tap reactions
 class _AvatarParticle {
@@ -52,6 +53,7 @@ class AvatarView extends StatefulWidget {
   final Widget? fallback;
   final WidgetBuilder? fallbackBuilder;
   final bool transparent;
+  final bool prefer3D;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
   final Offset? externalLookAt;
@@ -69,6 +71,7 @@ class AvatarView extends StatefulWidget {
     this.fallback,
     this.fallbackBuilder,
     this.transparent = true,
+    this.prefer3D = true,
     this.onTap,
     this.onDoubleTap,
     this.externalLookAt,
@@ -353,6 +356,24 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
       return widget.fallback!;
     }
 
+    if (widget.prefer3D) {
+      return MouseRegion(
+        onHover: _handlePointerHover,
+        child: Pet3DView(
+          definition: widget.definition,
+          width: widget.width,
+          height: widget.height,
+          enableRotation: widget.isInteractive,
+          enableZoom: widget.isInteractive,
+          transparentBackground: widget.transparent,
+          isStatic: widget.isStatic,
+          externalLookAt: widget.externalLookAt ?? _gazeOffset,
+          onTap: _handleTap,
+          onDoubleTap: _handleDoubleTap,
+        ),
+      );
+    }
+
     final svgPath = widget.definition.species.svgAssetPath;
     final double avatarSize =
         math.min(widget.width, widget.height) * 0.85 * widget.definition.scale;
@@ -460,12 +481,11 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
                             center: Alignment(-lookX * 0.65 - 0.12, -lookY * 0.65 - 0.12),
                             radius: 0.92,
                             colors: [
-                              Colors.white.withValues(alpha: 0.32),
-                              Colors.white.withValues(alpha: 0.08),
+                              Colors.white.withValues(alpha: 0.20),
+                              Colors.white.withValues(alpha: 0.05),
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.26),
                             ],
-                            stops: const [0.0, 0.38, 0.72, 1.0],
+                            stops: const [0.0, 0.45, 1.0],
                           ),
                         ),
                       ),

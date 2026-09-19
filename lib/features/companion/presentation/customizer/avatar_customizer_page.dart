@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
+import 'package:breakmate/features/companion/presentation/controllers/pet_3d_controller.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
@@ -45,9 +47,12 @@ class AvatarCustomizerPage extends StatefulWidget {
   State<AvatarCustomizerPage> createState() => _AvatarCustomizerPageState();
 }
 
+enum _SidebarSection { species, palette, camera, seed }
+
 class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
   late AvatarDefinition _definition;
   late AvatarEngineController _controller;
+  late Pet3DController _pet3DController;
   bool _ownsController = false;
 
   // Selected section in the sidebar
@@ -69,11 +74,13 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
       _controller = AvatarEngineController();
       _ownsController = true;
     }
+    _pet3DController = Pet3DController();
     _controller.setDefinition(_definition);
   }
 
   @override
   void dispose() {
+    _pet3DController.dispose();
     if (_ownsController) _controller.dispose();
     super.dispose();
   }
@@ -134,6 +141,7 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
                   onSectionTap: (s) => setState(() => _selectedSection = s),
                   onUpdate: _update,
                   onRandomize: _randomizeSeed,
+                  pet3DController: _pet3DController,
                 ),
 
                 // ── Main 3D viewport ───────────────────────────────────────
@@ -141,6 +149,7 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
                   child: _Viewport(
                     definition: _definition,
                     controller: _controller,
+                    pet3DController: _pet3DController,
                     bgColor: _bgColor,
                     isStatic: widget.isStatic,
                   ),
@@ -164,11 +173,6 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
 }
 
 // ---------------------------------------------------------------------------
-// Sidebar section enum
-// ---------------------------------------------------------------------------
-enum _SidebarSection { species, palette, seed }
-
-// ---------------------------------------------------------------------------
 // Top bar — minimal, dark, matching reference
 // ---------------------------------------------------------------------------
 class _TopBar extends StatelessWidget {
@@ -177,76 +181,45 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 48,
-      decoration: const BoxDecoration(
-        color: _kSidebar,
-        border: Border(bottom: BorderSide(color: _kBorder)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          // App icon / back
-          InkWell(
-            onTap: onClose,
-            borderRadius: BorderRadius.circular(6),
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: _kAccent.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: _kAccent.withValues(alpha: 0.4)),
-              ),
-              child: const Icon(CupertinoIcons.chevron_left,
-                  size: 14, color: _kAccent),
-            ),
-          ),
-          const SizedBox(width: 12),
-          const Text(
-            '3D Pet Editor',
-            style: TextStyle(
-              color: _kText,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-          const Spacer(),
-          // Right icons (cosmetic, matching reference)
-          for (final icon in [
-            CupertinoIcons.chevron_left_slash_chevron_right,
-            CupertinoIcons.sun_max,
-            CupertinoIcons.globe,
-            CupertinoIcons.square_split_2x1,
-          ]) ...[
-            const SizedBox(width: 4),
-            _IconBtn(icon: icon, onTap: () {}),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _IconBtn extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _IconBtn({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+    final double leftInset = Platform.isMacOS ? 84.0 : 16.0;
+    return SafeArea(
+      bottom: false,
       child: Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: const Color(0xFF252525),
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: _kBorder),
+        height: 48,
+        decoration: const BoxDecoration(
+          color: _kSidebar,
+          border: Border(bottom: BorderSide(color: _kBorder)),
         ),
-        child: Icon(icon, size: 14, color: _kTextMuted),
+        padding: EdgeInsets.only(left: leftInset, right: 16),
+        child: Row(
+          children: [
+            // App icon / back
+            InkWell(
+              onTap: onClose,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: _kAccent.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: _kAccent.withValues(alpha: 0.4)),
+                ),
+                child: const Icon(CupertinoIcons.chevron_left,
+                    size: 14, color: _kAccent),
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              '3D Pet Editor',
+              style: TextStyle(
+                color: _kText,
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -261,6 +234,7 @@ class _Sidebar extends StatelessWidget {
   final ValueChanged<_SidebarSection> onSectionTap;
   final ValueChanged<AvatarDefinition> onUpdate;
   final VoidCallback onRandomize;
+  final Pet3DController pet3DController;
 
   const _Sidebar({
     required this.definition,
@@ -268,6 +242,7 @@ class _Sidebar extends StatelessWidget {
     required this.onSectionTap,
     required this.onUpdate,
     required this.onRandomize,
+    required this.pet3DController,
   });
 
   @override
@@ -317,12 +292,14 @@ class _Sidebar extends StatelessWidget {
   String _sectionLabel(_SidebarSection s) => switch (s) {
         _SidebarSection.species => 'Species',
         _SidebarSection.palette => 'Colors',
+        _SidebarSection.camera => 'Camera',
         _SidebarSection.seed => 'Seed',
       };
 
   IconData _sectionIcon(_SidebarSection s) => switch (s) {
         _SidebarSection.species => CupertinoIcons.paw,
         _SidebarSection.palette => CupertinoIcons.paintbrush_fill,
+        _SidebarSection.camera => CupertinoIcons.camera_viewfinder,
         _SidebarSection.seed => CupertinoIcons.sparkles,
       };
 
@@ -335,6 +312,9 @@ class _Sidebar extends StatelessWidget {
       _SidebarSection.palette => _PalettePanel(
           definition: definition,
           onUpdate: onUpdate,
+        ),
+      _SidebarSection.camera => _Camera3DPanel(
+          controller: pet3DController,
         ),
       _SidebarSection.seed => _SeedPanel(
           definition: definition,
@@ -738,6 +718,111 @@ class _SeedPanelState extends State<_SeedPanel> {
 
 
 // ---------------------------------------------------------------------------
+// Camera 3D panel
+// ---------------------------------------------------------------------------
+class _Camera3DPanel extends StatelessWidget {
+  final Pet3DController controller;
+  const _Camera3DPanel({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, _) {
+        final cam = controller.cameraState;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SidebarSectionHeader(
+              icon: CupertinoIcons.camera_viewfinder,
+              label: '3D ORBIT CAMERA',
+            ),
+            const SizedBox(height: 12),
+            _buildSliderRow(
+              context,
+              label: 'Azimuth (Yaw)',
+              value: cam.azimuth,
+              min: 0,
+              max: 360,
+              onChanged: (v) => controller.rotateTo(azimuth: v, elevation: cam.elevation),
+            ),
+            const SizedBox(height: 12),
+            _buildSliderRow(
+              context,
+              label: 'Elevation (Pitch)',
+              value: cam.elevation,
+              min: -45,
+              max: 45,
+              onChanged: (v) => controller.rotateTo(azimuth: cam.azimuth, elevation: v),
+            ),
+            const SizedBox(height: 12),
+            _buildSliderRow(
+              context,
+              label: 'Distance (Zoom)',
+              value: cam.distance,
+              min: 0.5,
+              max: 2.5,
+              onChanged: (v) => controller.zoom(v / cam.distance),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: controller.resetCamera,
+                icon: const Icon(CupertinoIcons.arrow_counterclockwise, size: 14),
+                label: const Text('Reset 3D Camera', style: TextStyle(fontSize: 12)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _kText,
+                  side: const BorderSide(color: _kBorder),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSliderRow(
+    BuildContext context, {
+    required String label,
+    required double value,
+    required double min,
+    required double max,
+    required ValueChanged<double> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(color: _kText, fontSize: 11, fontWeight: FontWeight.w600)),
+            Text(value.toStringAsFixed(1), style: const TextStyle(color: _kAccent, fontSize: 11, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        SliderTheme(
+          data: SliderTheme.of(context).copyWith(
+            activeTrackColor: _kAccent,
+            inactiveTrackColor: _kBorder,
+            thumbColor: Colors.white,
+            trackHeight: 3,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+          ),
+          child: Slider(
+            value: value.clamp(min, max),
+            min: min,
+            max: max,
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Shared sidebar section header
 // ---------------------------------------------------------------------------
 class _SidebarSectionHeader extends StatelessWidget {
@@ -771,12 +856,14 @@ class _SidebarSectionHeader extends StatelessWidget {
 class _Viewport extends StatefulWidget {
   final AvatarDefinition definition;
   final AvatarEngineController controller;
+  final Pet3DController pet3DController;
   final Color bgColor;
   final bool isStatic;
 
   const _Viewport({
     required this.definition,
     required this.controller,
+    required this.pet3DController,
     required this.bgColor,
     required this.isStatic,
   });

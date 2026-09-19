@@ -7,7 +7,6 @@ import 'pet_mood.dart';
 import 'pet_needs.dart';
 import 'pet_personality.dart';
 import 'behavior_engine_models.dart';
-import '../engine/avatar_engine_controller.dart';
 import '../../../core/utils/logger.dart';
 
 enum PetState {
@@ -183,7 +182,6 @@ class PetStateMachine extends ChangeNotifier {
   DateTime? _stateEnteredAt;
   final Map<PetTransition, DateTime> _lastTriggered = {};
   PetMoodState? _currentMood;
-  AvatarEngineController? _avatarController;
 
   static final _rng = Random();
 
@@ -198,20 +196,11 @@ class PetStateMachine extends ChangeNotifier {
       ? DateTime.now().difference(_stateEnteredAt!)
       : Duration.zero;
   PetMoodState? get currentMood => _currentMood;
-  AvatarEngineController? get avatarController => _avatarController;
   AvatarAnimationClip get currentAnimationClip => _currentState.toAnimationClip();
 
   Stream<PetState> get stateStream => _stateController.stream;
   final StreamController<PetState> _stateController =
       StreamController<PetState>.broadcast();
-
-  void bridgeToAvatar(AvatarEngineController controller) {
-    _avatarController = controller;
-    final clip = _currentState.toAnimationClip();
-    _avatarController?.playAnimation(clip, loop: clip.isLooping);
-  }
-
-  void attachAvatarEngine(AvatarEngineController controller) => bridgeToAvatar(controller);
 
   void setMood(PetMoodState mood) {
     _currentMood = mood;
@@ -343,9 +332,6 @@ class PetStateMachine extends ChangeNotifier {
     );
     transitionLog.add(entry);
     _logger.info(jsonEncode(entry.toJson()));
-
-    final clip = newState.toAnimationClip();
-    _avatarController?.playAnimation(clip, loop: clip.isLooping);
 
     _onStateChanged?.call(newState);
     _stateController.add(newState);

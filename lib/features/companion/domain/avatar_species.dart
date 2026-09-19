@@ -197,9 +197,13 @@ enum AvatarSpecies {
 
   static AvatarSpecies? tryParse(String? name) {
     if (name == null || name.isEmpty) return null;
+    final normalized = name.toLowerCase().replaceAll('_', '').replaceAll('-', '');
     try {
       return AvatarSpecies.values.firstWhere(
-        (s) => s.name == name || s.name.toLowerCase() == name.toLowerCase(),
+        (s) =>
+            s.name == name ||
+            s.name.toLowerCase() == name.toLowerCase() ||
+            s.name.toLowerCase().replaceAll('_', '').replaceAll('-', '') == normalized,
       );
     } catch (_) {
       return null;

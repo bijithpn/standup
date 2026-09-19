@@ -37,8 +37,6 @@ import 'package:breakmate/features/companion/flame/components/ground_npc_compone
 import 'package:breakmate/features/companion/flame/components/decoration_component.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
-import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
-import 'package:breakmate/features/companion/engine/avatar_event_channel.dart';
 import 'package:breakmate/features/companion/flame/components/custom_layer_component.dart';
 
 enum CompanionPowerTier {
@@ -56,9 +54,7 @@ class CompanionGame extends FlameGame {
     this.toyType = 'tennis_ball',
     this.treatType = 'sushi',
     this.backgroundImagePath = '', // asset-migration: background assets removed
-    AvatarEngineController? avatarController,
   }) : _eventBus = EventBus.instance,
-       _avatarController = avatarController ?? AvatarEngineController(),
        _theme = initialTheme,
        _physicsSimulator = PhysicsSimulator(),
        _needsEngine = NeedsEngine(logger: AppLogger()),
@@ -67,16 +63,11 @@ class CompanionGame extends FlameGame {
          brain: PetBehaviorBrain(),
          navigation: PetNavigationService(),
          profile: getProfileFromTheme(initialTheme),
-         avatarController: avatarController ?? AvatarEngineController(),
        ) {
-    _petService.attachAvatarEngineController(_avatarController);
     _throwableManager = ThrowableObjectManager(
       physicsSimulator: _physicsSimulator,
     );
     _petService.attachThrowableManager(_throwableManager);
-    if (initialTheme.avatarDefinition != null) {
-      _avatarController.setDefinition(initialTheme.avatarDefinition!);
-    }
     _petStateSubscription = _petService.stateMachine.stateStream.listen(
       _applyPetStateToComponent,
     );
@@ -129,7 +120,6 @@ class CompanionGame extends FlameGame {
     );
   }
 
-  final AvatarEngineController _avatarController;
   final EventBus _eventBus;
   final PetCompanionService _petService;
   late StreamSubscription<AppEvent> _eventSubscription;
@@ -190,7 +180,6 @@ class CompanionGame extends FlameGame {
   ThrowableObjectManager get throwableManager => _throwableManager;
   NeedsEngine get needsEngine => _needsEngine;
   PhysicsSimulator get physicsSimulator => _physicsSimulator;
-  AvatarEngineController get avatarController => _avatarController;
   AvatarDefinition? get avatarDefinition => _theme.avatarDefinition;
   PetAnimationState get currentAnimationState =>
       petComponent?.current ?? _currentAnimationState;
@@ -198,8 +187,6 @@ class CompanionGame extends FlameGame {
   void changePetState(PetAnimationState state) {
     _currentAnimationState = state;
     petComponent?.changeState(state);
-    final clip = state.toAvatarClip();
-    _avatarController.playAnimation(clip, loop: clip.isLooping);
   }
 
   /// Screen-space point just above the pet sprite's head, for widgets layered
@@ -665,8 +652,6 @@ class CompanionGame extends FlameGame {
         ? animState
         : PetAnimationState.idle;
     petComponent?.changeState(safeState);
-    final clip = state.toAnimationClip();
-    _avatarController.playAnimation(clip, loop: clip.isLooping);
   }
 
   PetAnimationState _mapPetStateToAnimationState(PetState state) {
@@ -818,7 +803,6 @@ class CompanionGame extends FlameGame {
     petComponent = CompanionComponent(
       animations: animations,
       initialState: _mapPetStateToAnimationState(_petService.currentState),
-      avatarController: _avatarController,
     )..priority = 5;
 
     petComponent!.size = Vector2(spriteSize, spriteSize);
@@ -864,9 +848,6 @@ class CompanionGame extends FlameGame {
     Flame.images.clear(_theme.id);
 
     _theme = newTheme;
-    if (newTheme.avatarDefinition != null) {
-      await _avatarController.setDefinition(newTheme.avatarDefinition!);
-    }
     _petService.updateProfile(getProfileFromTheme(newTheme));
     await _loadAndAttachPet();
   }
@@ -919,19 +900,12 @@ class CompanionGame extends FlameGame {
     switch (type) {
       case 'tap':
         _petService.handleEvent(PetEvent.userClick);
-        _avatarController.eventChannel.emit(AvatarTapEvent(position: position));
         break;
       case 'doubleTap':
         _petService.handleEvent(PetEvent.userDoubleClick);
-        _avatarController.eventChannel.emit(
-          AvatarDoubleTapEvent(position: position),
-        );
         break;
       case 'hover':
         _petService.handleEvent(PetEvent.userHover);
-        _avatarController.eventChannel.emit(
-          AvatarProximityEvent(distance: 0.0, isInside: true),
-        );
         break;
       case 'dragStart':
         _petService.handleEvent(PetEvent.userDragStart);

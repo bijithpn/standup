@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/toast.dart';
+import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
@@ -502,6 +503,37 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                   ),
                 );
               }),
+              const SizedBox(width: 10),
+              InkWell(
+                key: const Key('preview_animation_button'),
+                onTap: () {
+                  _controller.playAnimation(AvatarAnimationClip.happiness);
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentColor.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.accentColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(CupertinoIcons.play_circle_fill, size: 12, color: AppTheme.accentColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Preview Anim',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),

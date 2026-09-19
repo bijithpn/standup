@@ -254,14 +254,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     }
   }
 
-  void _showFeedback(String text) {
-    _feedbackTimer?.cancel();
-    setState(() => _feedbackText = text);
-    _feedbackTimer = Timer(const Duration(milliseconds: 1400), () {
-      if (mounted) setState(() => _feedbackText = null);
-    });
-  }
-
   void _closeWindow() {
     NativeBridge.hidePipWindow();
   }
@@ -273,7 +265,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
       return;
     }
     _lastHoverTime = now;
-    _showFeedback('✨');
   }
 
   bool get _isLightBackground => _pipBackgroundStyle == 'light';
@@ -340,12 +331,15 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
   }
 
   AvatarDefinition get _avatarDefinition {
+    final theme = PetTheme.getTheme(_themeId);
+    if (theme.avatarDefinition != null) {
+      return theme.avatarDefinition!;
+    }
     final cleanId = _themeId.startsWith('avatar_')
         ? _themeId.substring('avatar_'.length)
         : _themeId;
     final species = AvatarSpecies.tryParse(cleanId) ??
         AvatarSpecies.tryParse(_themeId) ??
-        PetTheme.getTheme(_themeId).avatarDefinition?.species ??
         AvatarSpecies.cat;
     return AvatarDefinition.fromSpecies(species);
   }
@@ -381,8 +375,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
                           externalLookAt: _screenLookAt,
                           autoTrackCursor: true,
                           isInteractive: true,
-                          onTap: () => _showFeedback('❤️'),
-                          onDoubleTap: () => _showFeedback('⭐'),
                         ),
                       );
                     },

@@ -7,7 +7,6 @@ import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
-import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 
 class _FireParticle {
@@ -45,13 +44,6 @@ class CompanionComponent
   PetAnimationState? _previousState;
   final Random _rng = Random();
 
-  AvatarEngineController? _avatarController;
-  AvatarEngineController? get avatarController =>
-      _avatarController ?? (isMounted ? game.avatarController : null);
-  set avatarController(AvatarEngineController? controller) {
-    _avatarController = controller;
-  }
-
   double _currentYaw = 0.0;
   double get currentYaw => _currentYaw;
   double get direction => _direction;
@@ -83,9 +75,7 @@ class CompanionComponent
   CompanionComponent({
     Map<PetAnimationState, SpriteAnimation>? animations,
     PetAnimationState initialState = PetAnimationState.idle,
-    AvatarEngineController? avatarController,
-  }) : _avatarController = avatarController,
-       super(
+  }) : super(
          animations: animations ?? const {},
          current: initialState,
          anchor: Anchor.bottomCenter,
@@ -113,7 +103,6 @@ class CompanionComponent
       final double targetYaw = atan2(vel.dx, vel.dy);
       final double diff = (targetYaw - _currentYaw + pi) % (2 * pi) - pi;
       _currentYaw += diff * (12.0 * dt).clamp(0.0, 1.0);
-      avatarController?.setYaw(_currentYaw);
     }
   }
 
@@ -159,10 +148,6 @@ class CompanionComponent
         final ticker = animationTickers?[target];
         if (ticker != null && !ticker.done()) return;
       } else {
-        final clip = target.toAvatarClip();
-        if (avatarController?.currentClip != clip) {
-          avatarController?.playAnimation(clip, loop: clip.isLooping);
-        }
         return;
       }
     }
@@ -195,10 +180,6 @@ class CompanionComponent
     // Recompute the ground padding for the new state so the Y-offset
     // is stable for the entire duration of the state.
     _currentStatePadding = _computeStatePadding(target);
-
-    // Synchronize 3D avatar animation
-    final clip = target.toAvatarClip();
-    avatarController?.playAnimation(clip, loop: clip.isLooping);
   }
 
   void setWanderingEnabled(bool enabled) {

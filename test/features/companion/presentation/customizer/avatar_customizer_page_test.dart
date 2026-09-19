@@ -4,7 +4,6 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
-import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_customizer_sheet.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_species_picker.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
@@ -42,28 +41,30 @@ void main() {
       VoidCallback? onCancel,
     }) {
       return MaterialApp(
-        home: AvatarCustomizerPage(
-          initialDefinition: definition ?? initialDefinition,
-          engineController: engineController,
-          onSaved: onSaved,
-          onCancel: onCancel,
-          isStatic: true,
+        home: Scaffold(
+          body: AvatarCustomizerSheet(
+            initialDefinition: definition ?? initialDefinition,
+            engineController: engineController,
+            onSaved: onSaved,
+            onCancel: onCancel,
+            isStatic: true,
+          ),
         ),
       );
     }
 
-    testWidgets('renders AvatarCustomizerPage with live 3D preview, species, seed, and palette options', (tester) async {
+    testWidgets('renders AvatarCustomizerSheet with live 3D preview, species, seed, and palette options', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byType(AvatarCustomizerPage), findsOneWidget);
+      expect(find.byType(AvatarCustomizerSheet), findsOneWidget);
       expect(find.byType(AvatarView), findsOneWidget);
       expect(find.byType(AvatarSpeciesPicker), findsOneWidget);
       expect(find.byKey(const Key('seed_text_field')), findsOneWidget);
       expect(find.byKey(const Key('randomize_seed_button')), findsOneWidget);
       expect(find.byKey(const Key('save_pet_button')), findsOneWidget);
       expect(find.byKey(const Key('reset_default_button')), findsOneWidget);
-      expect(find.text('3D Pet Customizer'), findsOneWidget);
+      expect(find.text('Customize Companion'), findsOneWidget);
     });
 
     testWidgets('species picker displays species and updates preview on selection', (tester) async {
