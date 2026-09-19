@@ -17,7 +17,10 @@ import window_manager
 func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
     // Register only the critical plugins required for secondary isolates (overlays and companion)
     // to keep memory and CPU footprint low on lower-end macOS devices.
-    WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
+    //
+    // NOTE: WindowManagerPlugin is intentionally excluded here. Secondary engines are headless
+    // (no NSWindow/view), so WindowManagerPlugin.mainWindow force-unwraps a nil view and
+    // crashes the process the moment any window_manager Dart call reaches the secondary isolate.
     ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
     AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
     FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))

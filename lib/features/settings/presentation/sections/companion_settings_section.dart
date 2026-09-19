@@ -462,94 +462,91 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 (sl<CompanionStreakService>().currentStreakDays <
                     theme.requiredConsistencyDays);
 
-            return GestureDetector(
-              onTap: isLocked
-                  ? () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Requires a ${theme.requiredConsistencyDays}-day streak to unlock!',
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  : () => widget.controller.changeTheme(theme.id),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                curve: Curves.easeInOut,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppTheme.accentColor.withValues(alpha: 0.15)
-                      : AppTheme.surfaceElevated.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isSelected ? AppTheme.accentColor : AppTheme.border,
-                    width: isSelected ? 2 : 1,
+            return Tooltip(
+              message: isLocked
+                  ? 'Requires a ${theme.requiredConsistencyDays}-day streak to unlock!'
+                  : '',
+              waitDuration: const Duration(milliseconds: 400),
+              child: GestureDetector(
+                onTap: isLocked
+                    ? null
+                    : () => widget.controller.changeTheme(theme.id),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? AppTheme.accentColor.withValues(alpha: 0.15)
+                        : AppTheme.surfaceElevated.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isSelected ? AppTheme.accentColor : AppTheme.border,
+                      width: isSelected ? 2 : 1,
+                    ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: theme.avatarDefinition != null
-                            ? AvatarView(
-                                definition: theme.avatarDefinition!,
-                                isInteractive: false,
-                                autoTrackCursor: false,
-                                width: 56,
-                                height: 56,
-                              )
-                            : Icon(
-                                Icons.pets_rounded,
-                                size: 36,
-                                color: isSelected
-                                    ? AppTheme.accentColor
-                                    : AppTheme.textMuted,
-                              ),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      theme.name,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight:
-                            isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected
-                            ? AppTheme.accentColor
-                            : AppTheme.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                    if (isLocked)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              CupertinoIcons.lock_fill,
-                              size: 10,
-                              color: AppTheme.textMuted,
-                            ),
-                            const SizedBox(width: 2),
-                            Text(
-                              '${theme.requiredConsistencyDays}d',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: AppTheme.textMuted,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: theme.avatarDefinition != null
+                              ? AvatarView(
+                                  definition: theme.avatarDefinition!,
+                                  isInteractive: false,
+                                  autoTrackCursor: false,
+                                  width: 56,
+                                  height: 56,
+                                )
+                              : Icon(
+                                  Icons.pets_rounded,
+                                  size: 36,
+                                  color: isSelected
+                                      ? AppTheme.accentColor
+                                      : AppTheme.textMuted,
+                                ),
                         ),
                       ),
-                  ],
+                      const SizedBox(height: 6),
+                      Text(
+                        theme.name,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight:
+                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                          color: isSelected
+                              ? AppTheme.accentColor
+                              : AppTheme.textPrimary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      if (isLocked)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                CupertinoIcons.lock_fill,
+                                size: 10,
+                                color: AppTheme.textMuted,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                '${theme.requiredConsistencyDays}d',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: AppTheme.textMuted,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             );
