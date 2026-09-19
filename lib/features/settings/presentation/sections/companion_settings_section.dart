@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
@@ -196,10 +195,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       (v) => widget.controller.changeQuietModeAutoActivate(v),
                     ),
                   ]),
-
-                  const SizedBox(height: 32),
-                  sectionHeader('Animation Lab'),
-                  _buildInteractionGrid(),
 
                   const SizedBox(height: 32),
                   sectionHeader(
@@ -581,76 +576,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildInteractionGrid() {
-    final List<Map<String, dynamic>> interactions;
-
-    interactions = [
-      {'label': 'Walk', 'icon': CupertinoIcons.paw, 'state': 'walk'},
-      {'label': 'Nap', 'icon': CupertinoIcons.moon_zzz_fill, 'state': 'sleep'},
-      {
-        'label': 'Stretch',
-        'icon': CupertinoIcons.sparkles,
-        'state': 'celebrate',
-      },
-      {'label': 'Angry', 'icon': CupertinoIcons.flame_fill, 'state': 'angry'},
-      {
-        'label': 'Alert',
-        'icon': CupertinoIcons.bell_fill,
-        'state': 'notification',
-      },
-      {'label': 'Lick', 'icon': CupertinoIcons.heart_fill, 'state': 'lick1'},
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 6,
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 8,
-        childAspectRatio: 1.0,
-      ),
-      itemCount: interactions.length,
-      itemBuilder: (context, index) {
-        final inter = interactions[index];
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () =>
-                NativeBridge.triggerCompanionState(inter['state'] as String),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.04),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.border),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    inter['icon'] as IconData,
-                    size: 16,
-                    color: AppTheme.accentColor,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    inter['label'] as String,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

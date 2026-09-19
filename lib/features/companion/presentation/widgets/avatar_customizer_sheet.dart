@@ -3,7 +3,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/toast.dart';
-import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
@@ -44,7 +43,6 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
   late AvatarEngineController _controller;
   bool _ownsController = false;
 
-  AvatarAnimationClip _selectedPreviewClip = AvatarAnimationClip.celebrate;
   Color _previewBgColor = const Color(0xFF141622);
 
   static const List<Map<String, dynamic>> _bgPresets = [
@@ -148,10 +146,6 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
     _updateDefinition(def);
   }
 
-  Future<void> _playPreviewAnimation() async {
-    await _controller.playAnimation(_selectedPreviewClip);
-  }
-
   Color _parseHex(String hex) {
     try {
       final clean = hex.replaceAll('#', '');
@@ -209,13 +203,6 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                 title: 'Pet Seed & Genetics',
                 subtitle: 'Procedural seed determining markings and variations',
                 child: _buildSeedSection(),
-              ),
-              const SizedBox(height: 14),
-              _buildSectionCard(
-                icon: CupertinoIcons.play_circle_fill,
-                title: 'Animation Lab',
-                subtitle: 'Preview poses & behavioral animations',
-                child: _buildAnimationSection(),
               ),
               const SizedBox(height: 20),
               _buildActionButtons(),
@@ -684,76 +671,6 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
           onPressed: _randomizeSeed,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAnimationSection() {
-    const clips = [
-      AvatarAnimationClip.idle,
-      AvatarAnimationClip.celebrate,
-      AvatarAnimationClip.bounce,
-      AvatarAnimationClip.sleep,
-      AvatarAnimationClip.walk,
-    ];
-
-    return Row(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: clips.map((clip) {
-                final isSelected = _selectedPreviewClip == clip;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: ChoiceChip(
-                    label: Text(
-                      clip.name,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? Colors.white : const Color(0xFFA0A4B8),
-                      ),
-                    ),
-                    selected: isSelected,
-                    selectedColor: AppTheme.accentColor,
-                    backgroundColor: const Color(0xFF131520),
-                    showCheckmark: false,
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(
-                        color: isSelected ? AppTheme.accentColor : const Color(0xFF26293A),
-                      ),
-                    ),
-                    onSelected: (selected) {
-                      if (selected) {
-                        setState(() => _selectedPreviewClip = clip);
-                        _controller.playAnimation(clip);
-                      }
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton.icon(
-          key: const Key('preview_animation_button'),
-          icon: const Icon(CupertinoIcons.play_arrow_solid, size: 14),
-          label: const Text('Preview', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accentColor.withValues(alpha: 0.18),
-            foregroundColor: AppTheme.accentColor,
-            elevation: 0,
-            side: BorderSide(color: AppTheme.accentColor.withValues(alpha: 0.5)),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-          onPressed: _playPreviewAnimation,
         ),
       ],
     );

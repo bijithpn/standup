@@ -63,6 +63,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
   String? _feedbackText;
   Timer? _feedbackTimer;
 
+  // Dedicated 3D gaze tracking — always fires, independent of click-through
+  Timer? _gazeTrackingTimer;
+  bool _isTrackingGaze = false;
+  // Smoothed gaze — lerped toward the raw cursor position each frame
+  Offset _smoothedLookAt = Offset.zero;
+
   @override
   void initState() {
     super.initState();
@@ -70,8 +76,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     _channel.setMethodCallHandler(_handleMethodCall);
     _fetchInitialSettings();
 
+    // Click-through check: 33 ms cadence
     _clickThroughTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
       _checkClickThrough();
+    });
+
+    // 3D gaze tracking: 16 ms (~60 fps) cadence — always active
+    _gazeTrackingTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      _updateGaze();
     });
   }
 
@@ -80,6 +92,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     _channel.setMethodCallHandler(null);
     _feedbackTimer?.cancel();
     _clickThroughTimer?.cancel();
+    _gazeTrackingTimer?.cancel();
     super.dispose();
   }
 
@@ -145,6 +158,49 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     _checkClickThrough();
   }
 
+  /// Runs at ~60 fps. Gets the native cursor position, computes a normalised
+  /// [-1, 1] look-at offset relative to the PiP window center, and lerps
+  /// _smoothedLookAt toward it so the avatar head movement is silky smooth.
+  Future<void> _updateGaze() async {
+    if (_isTrackingGaze || !mounted) return;
+    _isTrackingGaze = true;
+    try {
+      final pos = await _windowManager.getPosition();
+      final size = _windowManager.currentSize;
+      final cursorPos = await NativeBridge.getCursorPosition();
+
+      final windowCenter =
+          Offset(pos.dx + size.width / 2.0, pos.dy + size.height / 2.0);
+      final dx = cursorPos.dx - windowCenter.dx;
+      final dy = cursorPos.dy - windowCenter.dy;
+
+      // Sensitivity: divide by a fraction of screen width so nearby motion
+      // gives strong reaction, far-away gives subtle look.
+      final range = math.max(size.width, size.height) * 1.4;
+      final rawX = (dx / range).clamp(-1.0, 1.0);
+      final rawY = (dy / range).clamp(-1.0, 1.0);
+      final rawLook = Offset(rawX, rawY);
+
+      // Lerp at ~0.12 per frame → smooth ~8-frame settling time at 60fps
+      const lerpT = 0.12;
+      final smoothed = Offset(
+        _smoothedLookAt.dx + (rawLook.dx - _smoothedLookAt.dx) * lerpT,
+        _smoothedLookAt.dy + (rawLook.dy - _smoothedLookAt.dy) * lerpT,
+      );
+
+      if (!mounted) return;
+      if ((_smoothedLookAt - smoothed).distance > 0.003) {
+        setState(() {
+          _smoothedLookAt = smoothed;
+          _screenLookAt = smoothed;
+        });
+      }
+    } catch (_) {
+    } finally {
+      _isTrackingGaze = false;
+    }
+  }
+
   Future<void> _checkClickThrough() async {
     if (_isCheckingClickThrough) return;
     _isCheckingClickThrough = true;
@@ -171,22 +227,6 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
       final cursorPos = await NativeBridge.getCursorPosition();
 
       final windowRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
-
-      // Track screen-wide cursor position relative to window center for 3D gaze
-      final windowCenter = Offset(pos.dx + size.width / 2.0, pos.dy + size.height / 2.0);
-      final dx = cursorPos.dx - windowCenter.dx;
-      final dy = cursorPos.dy - windowCenter.dy;
-      final lookX = (dx / 380.0).clamp(-1.0, 1.0);
-      final lookY = (dy / 380.0).clamp(-1.0, 1.0);
-
-      if (mounted) {
-        final newLook = Offset(lookX, lookY);
-        if ((_screenLookAt - newLook).distance > 0.008) {
-          setState(() {
-            _screenLookAt = newLook;
-          });
-        }
-      }
 
       bool accepts = true;
       if (windowRect.contains(cursorPos)) {

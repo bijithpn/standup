@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,13 +6,25 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
-import 'package:breakmate/features/companion/presentation/widgets/avatar_customizer_sheet.dart';
+import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
-/// Fullscreen 3D Avatar Customizer page providing interactive styling,
-/// palette selection, procedural seed variation, and live animation testing.
+// ---------------------------------------------------------------------------
+// Color constants matching the reference dark editor theme
+// ---------------------------------------------------------------------------
+const _kBg = Color(0xFF141414);
+const _kSidebar = Color(0xFF1C1C1C);
+const _kCard = Color(0xFF232323);
+const _kBorder = Color(0xFF2E2E2E);
+const _kAccent = Color(0xFFE03030);
+const _kText = Color(0xFFEEEEEE);
+const _kTextMuted = Color(0xFF888888);
+
+/// Fullscreen 3D Avatar Customizer — reference-matched dark editor with
+/// left-sidebar controls and a large mouse-tracking 3D viewport.
 class AvatarCustomizerPage extends StatefulWidget {
   final AvatarDefinition? initialDefinition;
   final AvatarEngineController? engineController;
@@ -37,6 +50,12 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
   late AvatarEngineController _controller;
   bool _ownsController = false;
 
+  // Selected section in the sidebar
+  _SidebarSection _selectedSection = _SidebarSection.species;
+
+  // Preview background
+  Color _bgColor = const Color(0xFF9B8EC4); // lavender like the reference
+
   @override
   void initState() {
     super.initState();
@@ -55,82 +74,1032 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
 
   @override
   void dispose() {
-    if (_ownsController) {
-      _controller.dispose();
-    }
+    if (_ownsController) _controller.dispose();
     super.dispose();
   }
 
-  void _handleSave(AvatarDefinition savedDef) async {
+  void _update(AvatarDefinition def) {
+    setState(() => _definition = def);
+    _controller.setDefinition(def);
+  }
+
+  void _randomizeSeed() {
+    final rand = (math.Random().nextInt(900000) + 100000).toString();
+    final seed = '${_definition.species.name}-$rand';
+    _update(AvatarDefinition.fromSeed(seed, species: _definition.species));
+  }
+
+  Future<void> _handleSave() async {
     try {
       if (sl.isRegistered<CompanionOverlayController>()) {
-        final companionController = sl<CompanionOverlayController>();
-        final themeId = 'avatar_${savedDef.species.name}';
-        companionController.changeTheme(themeId);
+        sl<CompanionOverlayController>()
+            .changeTheme('avatar_${_definition.species.name}');
       } else {
         try {
-          final settingsRepo = Provider.of<SettingsRepository>(context, listen: false);
-          final updated = settingsRepo.currentSettings.copyWith(
-            companionPetTheme: 'avatar_${savedDef.species.name}',
-          );
-          await settingsRepo.save(updated);
+          final repo = Provider.of<SettingsRepository>(context, listen: false);
+          await repo.save(repo.currentSettings.copyWith(
+            companionPetTheme: 'avatar_${_definition.species.name}',
+          ));
         } catch (_) {}
       }
     } catch (_) {}
 
-    widget.onSaved?.call(savedDef);
-
+    widget.onSaved?.call(_definition);
     if (mounted) {
-      Toast.showSuccess(context, 'Companion customizer saved successfully!');
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context, savedDef);
-      }
+      Toast.showSuccess(context, 'Companion saved!');
+      if (Navigator.canPop(context)) Navigator.pop(context, _definition);
     }
   }
 
   void _handleCancel() {
     widget.onCancel?.call();
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
+    if (Navigator.canPop(context)) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F1017),
-      appBar: AppBar(
-        title: const Text(
-          '3D Pet Customizer',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
+      backgroundColor: _kBg,
+      body: Column(
+        children: [
+          _TopBar(onClose: _handleCancel),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Left sidebar ───────────────────────────────────────────
+                _Sidebar(
+                  definition: _definition,
+                  selected: _selectedSection,
+                  onSectionTap: (s) => setState(() => _selectedSection = s),
+                  onUpdate: _update,
+                  onRandomize: _randomizeSeed,
+                ),
+
+                // ── Main 3D viewport ───────────────────────────────────────
+                Expanded(
+                  child: _Viewport(
+                    definition: _definition,
+                    controller: _controller,
+                    bgColor: _bgColor,
+                    isStatic: widget.isStatic,
+                  ),
+                ),
+              ],
+            ),
           ),
+
+          // ── Bottom toolbar ─────────────────────────────────────────────
+          _BottomBar(
+            bgColor: _bgColor,
+            onBgColorChanged: (c) => setState(() => _bgColor = c),
+            onReset: () => _update(AvatarDefinition.fromSpecies(AvatarSpecies.cat)),
+            onRandomize: _randomizeSeed,
+            onSave: _handleSave,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar section enum
+// ---------------------------------------------------------------------------
+enum _SidebarSection { species, palette, seed }
+
+// ---------------------------------------------------------------------------
+// Top bar — minimal, dark, matching reference
+// ---------------------------------------------------------------------------
+class _TopBar extends StatelessWidget {
+  final VoidCallback onClose;
+  const _TopBar({required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 48,
+      decoration: const BoxDecoration(
+        color: _kSidebar,
+        border: Border(bottom: BorderSide(color: _kBorder)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // App icon / back
+          InkWell(
+            onTap: onClose,
+            borderRadius: BorderRadius.circular(6),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: _kAccent.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: _kAccent.withValues(alpha: 0.4)),
+              ),
+              child: const Icon(CupertinoIcons.chevron_left,
+                  size: 14, color: _kAccent),
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            '3D Pet Editor',
+            style: TextStyle(
+              color: _kText,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const Spacer(),
+          // Right icons (cosmetic, matching reference)
+          for (final icon in [
+            CupertinoIcons.chevron_left_slash_chevron_right,
+            CupertinoIcons.sun_max,
+            CupertinoIcons.globe,
+            CupertinoIcons.square_split_2x1,
+          ]) ...[
+            const SizedBox(width: 4),
+            _IconBtn(icon: icon, onTap: () {}),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _IconBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _IconBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        width: 30,
+        height: 30,
+        decoration: BoxDecoration(
+          color: const Color(0xFF252525),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: _kBorder),
         ),
-        backgroundColor: const Color(0xFF151620),
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(CupertinoIcons.chevron_left, color: Colors.white),
-          onPressed: _handleCancel,
+        child: Icon(icon, size: 14, color: _kTextMuted),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Left sidebar
+// ---------------------------------------------------------------------------
+class _Sidebar extends StatelessWidget {
+  final AvatarDefinition definition;
+  final _SidebarSection selected;
+  final ValueChanged<_SidebarSection> onSectionTap;
+  final ValueChanged<AvatarDefinition> onUpdate;
+  final VoidCallback onRandomize;
+
+  const _Sidebar({
+    required this.definition,
+    required this.selected,
+    required this.onSectionTap,
+    required this.onUpdate,
+    required this.onRandomize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 260,
+      decoration: const BoxDecoration(
+        color: _kSidebar,
+        border: Border(right: BorderSide(color: _kBorder)),
+      ),
+      child: Column(
+        children: [
+          // Tab row
+          Container(
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: _kBorder)),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                for (final section in _SidebarSection.values) ...[
+                  _SidebarTab(
+                    label: _sectionLabel(section),
+                    icon: _sectionIcon(section),
+                    isSelected: selected == section,
+                    onTap: () => onSectionTap(section),
+                  ),
+                  if (section != _SidebarSection.values.last)
+                    const SizedBox(width: 4),
+                ],
+              ],
+            ),
+          ),
+
+          // Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(12),
+              child: _buildContent(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _sectionLabel(_SidebarSection s) => switch (s) {
+        _SidebarSection.species => 'Species',
+        _SidebarSection.palette => 'Colors',
+        _SidebarSection.seed => 'Seed',
+      };
+
+  IconData _sectionIcon(_SidebarSection s) => switch (s) {
+        _SidebarSection.species => CupertinoIcons.paw,
+        _SidebarSection.palette => CupertinoIcons.paintbrush_fill,
+        _SidebarSection.seed => CupertinoIcons.sparkles,
+      };
+
+  Widget _buildContent() {
+    return switch (selected) {
+      _SidebarSection.species => _SpeciesPanel(
+          definition: definition,
+          onUpdate: onUpdate,
+        ),
+      _SidebarSection.palette => _PalettePanel(
+          definition: definition,
+          onUpdate: onUpdate,
+        ),
+      _SidebarSection.seed => _SeedPanel(
+          definition: definition,
+          onUpdate: onUpdate,
+          onRandomize: onRandomize,
+        ),
+    };
+  }
+}
+
+class _SidebarTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _SidebarTab({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(7),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 7),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? _kAccent.withValues(alpha: 0.16)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+            border: Border.all(
+              color:
+                  isSelected ? _kAccent.withValues(alpha: 0.5) : Colors.transparent,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon,
+                  size: 14,
+                  color: isSelected ? _kAccent : _kTextMuted),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  fontWeight:
+                      isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? _kAccent : _kTextMuted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 860),
-          child: AvatarCustomizerSheet(
-            initialDefinition: _definition,
-            engineController: _controller,
-            showPreview: true,
-            isStatic: widget.isStatic,
-            onSaved: _handleSave,
-            onChanged: (newDef) {
-              setState(() => _definition = newDef);
-            },
-            onCancel: _handleCancel,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Species panel
+// ---------------------------------------------------------------------------
+class _SpeciesPanel extends StatelessWidget {
+  final AvatarDefinition definition;
+  final ValueChanged<AvatarDefinition> onUpdate;
+
+  const _SpeciesPanel({required this.definition, required this.onUpdate});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SidebarSectionHeader(
+          icon: CupertinoIcons.paw,
+          label: 'AVATAR TYPE',
+        ),
+        const SizedBox(height: 8),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            mainAxisSpacing: 6,
+            crossAxisSpacing: 6,
+            childAspectRatio: 1.0,
+          ),
+          itemCount: AvatarSpecies.values.length,
+          itemBuilder: (context, i) {
+            final species = AvatarSpecies.values[i];
+            final isSel = definition.species == species;
+            return Tooltip(
+              message: species.displayName,
+              child: InkWell(
+                onTap: () {
+                  final updated = definition.copyWith(
+                    species: species,
+                    parts: Map<String, dynamic>.from(
+                        species.defaultPartConfigurations),
+                  );
+                  onUpdate(updated);
+                },
+                borderRadius: BorderRadius.circular(10),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  decoration: BoxDecoration(
+                    color: isSel
+                        ? _kAccent.withValues(alpha: 0.2)
+                        : _kCard,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: isSel ? _kAccent : _kBorder,
+                      width: isSel ? 2 : 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.paw,
+                          size: 22,
+                          color: isSel ? _kAccent : _kTextMuted,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          species.displayName,
+                          style: TextStyle(
+                            fontSize: 8,
+                            color: isSel ? _kAccent : _kTextMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Palette panel
+// ---------------------------------------------------------------------------
+class _PalettePanel extends StatelessWidget {
+  final AvatarDefinition definition;
+  final ValueChanged<AvatarDefinition> onUpdate;
+
+  const _PalettePanel({required this.definition, required this.onUpdate});
+
+  Color _hex(String hex) {
+    try {
+      final clean = hex.replaceAll('#', '');
+      if (clean.length == 6) return Color(int.parse('FF$clean', radix: 16));
+      if (clean.length == 8) return Color(int.parse(clean, radix: 16));
+    } catch (_) {}
+    return Colors.grey;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palettes = AvatarPalette.presets.values.toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SidebarSectionHeader(
+          icon: CupertinoIcons.paintbrush_fill,
+          label: 'COLOR PALETTE',
+        ),
+        const SizedBox(height: 8),
+        ...palettes.map((pal) {
+          final isSel = definition.palette.name.toLowerCase() ==
+              pal.name.toLowerCase();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: InkWell(
+              onTap: () => onUpdate(definition.copyWith(palette: pal)),
+              borderRadius: BorderRadius.circular(10),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: isSel
+                      ? _kAccent.withValues(alpha: 0.12)
+                      : _kCard,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSel ? _kAccent : _kBorder,
+                    width: isSel ? 1.5 : 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Color swatches
+                    Row(
+                      children: [
+                        _ColorSwatch(_hex(pal.primary)),
+                        const SizedBox(width: 3),
+                        _ColorSwatch(_hex(pal.secondary)),
+                        const SizedBox(width: 3),
+                        _ColorSwatch(_hex(pal.accent)),
+                      ],
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        pal.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSel
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSel ? _kText : _kTextMuted,
+                        ),
+                      ),
+                    ),
+                    if (isSel)
+                      const Icon(CupertinoIcons.checkmark_circle_fill,
+                          size: 14, color: _kAccent),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+}
+
+class _ColorSwatch extends StatelessWidget {
+  final Color color;
+  const _ColorSwatch(this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Seed panel
+// ---------------------------------------------------------------------------
+class _SeedPanel extends StatefulWidget {
+  final AvatarDefinition definition;
+  final ValueChanged<AvatarDefinition> onUpdate;
+  final VoidCallback onRandomize;
+
+  const _SeedPanel({
+    required this.definition,
+    required this.onUpdate,
+    required this.onRandomize,
+  });
+
+  @override
+  State<_SeedPanel> createState() => _SeedPanelState();
+}
+
+class _SeedPanelState extends State<_SeedPanel> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.definition.seed);
+  }
+
+  @override
+  void didUpdateWidget(_SeedPanel old) {
+    super.didUpdateWidget(old);
+    if (old.definition.seed != widget.definition.seed) {
+      _ctrl.text = widget.definition.seed;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SidebarSectionHeader(
+          icon: CupertinoIcons.sparkles,
+          label: 'PET SEED',
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _ctrl,
+          style: const TextStyle(
+            color: _kText,
+            fontSize: 12,
+            fontFamily: 'monospace',
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            hintText: 'e.g. fluffy-cat-42',
+            hintStyle:
+                const TextStyle(color: _kTextMuted, fontSize: 12),
+            filled: true,
+            fillColor: _kCard,
+            prefixIcon: const Icon(CupertinoIcons.number,
+                size: 14, color: _kTextMuted),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _kBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _kBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: _kAccent),
+            ),
+          ),
+          onSubmitted: (v) {
+            final t = v.trim();
+            if (t.isNotEmpty) {
+              widget.onUpdate(widget.definition.copyWith(seed: t));
+            }
+          },
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: widget.onRandomize,
+            icon: const Icon(CupertinoIcons.shuffle, size: 14),
+            label: const Text('Randomize Seed',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _kText,
+              side: const BorderSide(color: _kBorder),
+              backgroundColor: _kCard,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
           ),
         ),
+        const SizedBox(height: 16),
+        _SidebarSectionHeader(
+          icon: CupertinoIcons.info_circle,
+          label: 'SEED INFO',
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: _kCard,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: _kBorder),
+          ),
+          child: Text(
+            'The seed determines your pet\'s markings, '
+            'patterns, and unique characteristics. '
+            'Each seed produces a distinct look.',
+            style: const TextStyle(
+              color: _kTextMuted,
+              fontSize: 11,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// Shared sidebar section header
+// ---------------------------------------------------------------------------
+class _SidebarSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _SidebarSectionHeader({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 11, color: _kTextMuted),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            color: _kTextMuted,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3D Viewport — big, centered avatar that reacts to mouse
+// ---------------------------------------------------------------------------
+class _Viewport extends StatefulWidget {
+  final AvatarDefinition definition;
+  final AvatarEngineController controller;
+  final Color bgColor;
+  final bool isStatic;
+
+  const _Viewport({
+    required this.definition,
+    required this.controller,
+    required this.bgColor,
+    required this.isStatic,
+  });
+
+  @override
+  State<_Viewport> createState() => _ViewportState();
+}
+
+class _ViewportState extends State<_Viewport> {
+  Offset _mouseLocal = Offset.zero;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onHover: (event) {
+        setState(() => _mouseLocal = event.localPosition);
+      },
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = constraints.maxWidth;
+          final h = constraints.maxHeight;
+          final center = Offset(w / 2, h / 2);
+
+          // Normalized mouse [-1, 1] relative to viewport center
+          final normX = (((_mouseLocal.dx - center.dx) / (w * 0.5))
+              .clamp(-1.0, 1.0));
+          final normY = (((_mouseLocal.dy - center.dy) / (h * 0.5))
+              .clamp(-1.0, 1.0));
+
+          // Avatar size: fill nicely — 55% of the shorter viewport dimension
+          final avatarSize =
+              math.min(w, h) * 0.55;
+
+          return Stack(
+            children: [
+              // Background fill — solid color
+              Positioned.fill(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: widget.bgColor),
+                ),
+              ),
+
+              // Subtle radial highlight on the background
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment(normX * 0.3, normY * 0.3),
+                        radius: 0.7,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.08),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Ground shadow ellipse
+              Positioned(
+                left: w / 2 - avatarSize * 0.28 - normX * 20,
+                bottom: h * 0.12 - normY * 8,
+                child: IgnorePointer(
+                  child: Container(
+                    width: avatarSize * 0.56,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(100),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.35),
+                          blurRadius: 20,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // The 3D Avatar — mouse-tracking
+              Center(
+                child: SizedBox(
+                  width: avatarSize,
+                  height: avatarSize,
+                  child: AvatarView(
+                    definition: widget.definition,
+                    controller: widget.controller,
+                    width: avatarSize,
+                    height: avatarSize,
+                    transparent: true,
+                    // We pass the normalized mouse position as externalLookAt
+                    // so the head tracks across the full viewport
+                    externalLookAt: Offset(normX, normY),
+                    isInteractive: true,
+                    autoTrackCursor: false,
+                    isStatic: widget.isStatic,
+                  ),
+                ),
+              ),
+
+              // Top-left info badge
+              Positioned(
+                top: 16,
+                left: 16,
+                child: _ViewportBadge(
+                  label:
+                      '${widget.definition.species.displayName} · ${widget.definition.palette.name}',
+                  color: _kAccent,
+                ),
+              ),
+
+              // Top-right 3D tracker badge
+              Positioned(
+                top: 16,
+                right: 16,
+                child: _ViewportBadge(
+                  icon: CupertinoIcons.viewfinder,
+                  label: '3D Mouse Tracking',
+                  color: _kAccent,
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ViewportBadge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final IconData? icon;
+
+  const _ViewportBadge({
+    required this.label,
+    required this.color,
+    this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111111).withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(10),
+        border:
+            Border.all(color: Colors.white.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 11, color: color),
+            const SizedBox(width: 5),
+          ] else ...[
+            Container(
+              width: 7,
+              height: 7,
+              decoration: BoxDecoration(
+                  color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom toolbar
+// ---------------------------------------------------------------------------
+class _BottomBar extends StatelessWidget {
+  final Color bgColor;
+  final ValueChanged<Color> onBgColorChanged;
+  final VoidCallback onReset;
+  final VoidCallback onRandomize;
+  final Future<void> Function() onSave;
+
+  static const _bgPresets = [
+    (name: 'Lavender', color: Color(0xFF9B8EC4)),
+    (name: 'Midnight', color: Color(0xFF0F111D)),
+    (name: 'Slate', color: Color(0xFF181A26)),
+    (name: 'Deep', color: Color(0xFF141622)),
+    (name: 'Warm', color: Color(0xFF242129)),
+    (name: 'Clear', color: Colors.transparent),
+  ];
+
+  const _BottomBar({
+    required this.bgColor,
+    required this.onBgColorChanged,
+    required this.onReset,
+    required this.onRandomize,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 52,
+      decoration: const BoxDecoration(
+        color: _kSidebar,
+        border: Border(top: BorderSide(color: _kBorder)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        children: [
+          // Background color presets
+          const Icon(CupertinoIcons.paintbrush,
+              size: 13, color: _kTextMuted),
+          const SizedBox(width: 8),
+          const Text(
+            'Stage:',
+            style: TextStyle(
+                color: _kTextMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(width: 8),
+          ...(_bgPresets.map((p) {
+            final isSel = bgColor == p.color;
+            return Padding(
+              padding: const EdgeInsets.only(right: 5),
+              child: Tooltip(
+                message: p.name,
+                child: InkWell(
+                  onTap: () => onBgColorChanged(p.color),
+                  borderRadius: BorderRadius.circular(6),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    width: p.color == Colors.transparent ? null : 22,
+                    height: 22,
+                    padding: p.color == Colors.transparent
+                        ? const EdgeInsets.symmetric(horizontal: 6)
+                        : null,
+                    decoration: BoxDecoration(
+                      color: p.color == Colors.transparent
+                          ? _kCard
+                          : p.color,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: isSel ? _kAccent : _kBorder,
+                        width: isSel ? 2 : 1,
+                      ),
+                    ),
+                    child: p.color == Colors.transparent
+                        ? Text(p.name,
+                            style: const TextStyle(
+                                color: _kTextMuted,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600))
+                        : null,
+                  ),
+                ),
+              ),
+            );
+          })),
+
+          const Spacer(),
+
+          // Reset
+          TextButton.icon(
+            onPressed: onReset,
+            icon: const Icon(CupertinoIcons.arrow_counterclockwise,
+                size: 13),
+            label: const Text('Reset',
+                style:
+                    TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            style: TextButton.styleFrom(foregroundColor: _kTextMuted),
+          ),
+          const SizedBox(width: 8),
+
+          // Randomize
+          OutlinedButton.icon(
+            onPressed: onRandomize,
+            icon: const Icon(CupertinoIcons.shuffle, size: 13),
+            label: const Text('Randomize',
+                style:
+                    TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _kText,
+              side: const BorderSide(color: _kBorder),
+              backgroundColor: _kCard,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+          const SizedBox(width: 8),
+
+          // Save
+          ElevatedButton.icon(
+            onPressed: onSave,
+            icon: const Icon(CupertinoIcons.check_mark_circled_solid,
+                size: 14),
+            label: const Text('Save Pet',
+                style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w700)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _kAccent,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 10),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
       ),
     );
   }
