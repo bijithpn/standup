@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'dart:math' as math;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
@@ -129,7 +130,10 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
       backgroundColor: _kBg,
       body: Column(
         children: [
-          _TopBar(onClose: _handleCancel),
+          _TopBar(
+            onClose: _handleCancel,
+            onSave: _handleSave,
+          ),
           Expanded(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -177,7 +181,8 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage> {
 // ---------------------------------------------------------------------------
 class _TopBar extends StatelessWidget {
   final VoidCallback onClose;
-  const _TopBar({required this.onClose});
+  final VoidCallback onSave;
+  const _TopBar({required this.onClose, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
@@ -210,12 +215,63 @@ class _TopBar extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Text(
-              '3D Pet Editor',
+              '3D Pet Customizer',
               style: TextStyle(
                 color: _kText,
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
                 letterSpacing: -0.2,
+              ),
+            ),
+            const Spacer(),
+            if (Platform.isMacOS) ...[
+              Tooltip(
+                message: 'Launch OneWorks 3D Web Studio',
+                child: InkWell(
+                  onTap: () {
+                    if (sl.isRegistered<CompanionOverlayController>()) {
+                      sl<CompanionOverlayController>().openAvatarEditor();
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: _kCard,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: _kBorder),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(CupertinoIcons.compass, size: 14, color: _kText),
+                        SizedBox(width: 6),
+                        Text(
+                          'Web 3D',
+                          style: TextStyle(
+                            color: _kText,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            FilledButton.icon(
+              onPressed: onSave,
+              icon: const Icon(CupertinoIcons.checkmark_alt, size: 14),
+              label: const Text('Save',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              style: FilledButton.styleFrom(
+                backgroundColor: _kAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
@@ -407,7 +463,7 @@ class _SpeciesPanel extends StatelessWidget {
             crossAxisCount: 4,
             mainAxisSpacing: 6,
             crossAxisSpacing: 6,
-            childAspectRatio: 1.0,
+            childAspectRatio: 0.82,
           ),
           itemCount: AvatarSpecies.values.length,
           itemBuilder: (context, i) {
@@ -427,6 +483,7 @@ class _SpeciesPanel extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
                   decoration: BoxDecoration(
                     color: isSel
                         ? _kAccent.withValues(alpha: 0.2)
@@ -441,18 +498,21 @@ class _SpeciesPanel extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          CupertinoIcons.paw,
-                          size: 22,
-                          color: isSel ? _kAccent : _kTextMuted,
+                        SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: SvgPicture.asset(
+                            species.svgAssetPath,
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           species.displayName,
                           style: TextStyle(
                             fontSize: 8,
                             color: isSel ? _kAccent : _kTextMuted,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -874,6 +934,7 @@ class _Viewport extends StatefulWidget {
 
 class _ViewportState extends State<_Viewport> {
   Offset _mouseLocal = Offset.zero;
+  bool _mouseTracking = true;
 
   @override
   Widget build(BuildContext context) {
@@ -893,102 +954,177 @@ class _ViewportState extends State<_Viewport> {
           final normY = (((_mouseLocal.dy - center.dy) / (h * 0.5))
               .clamp(-1.0, 1.0));
 
-          // Avatar size: fill nicely — 55% of the shorter viewport dimension
+          // Avatar size: fill nicely — 60% of the shorter viewport dimension
           final avatarSize =
-              math.min(w, h) * 0.55;
+              math.min(w, h) * 0.60;
 
-          return Stack(
-            children: [
-              // Background fill — solid color
-              Positioned.fill(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: widget.bgColor),
-                ),
-              ),
-
-              // Subtle radial highlight on the background
-              Positioned.fill(
-                child: IgnorePointer(
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onScaleUpdate: (details) {
+              if (details.pointerCount > 1) {
+                widget.pet3DController.zoom(details.scale);
+              } else {
+                widget.pet3DController.rotate(
+                  deltaAzimuth: details.focalPointDelta.dx * 0.8,
+                  deltaElevation: -details.focalPointDelta.dy * 0.5,
+                );
+              }
+            },
+            onDoubleTap: () => widget.pet3DController.resetCamera(),
+            child: Stack(
+              children: [
+                // Background fill — solid color
+                Positioned.fill(
                   child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: Alignment(normX * 0.3, normY * 0.3),
-                        radius: 0.7,
-                        colors: [
-                          Colors.white.withValues(alpha: 0.08),
-                          Colors.transparent,
+                    decoration: BoxDecoration(color: widget.bgColor),
+                  ),
+                ),
+
+                // Subtle radial highlight on the background
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: RadialGradient(
+                          center: Alignment(normX * 0.3, normY * 0.3),
+                          radius: 0.7,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.08),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Ground shadow ellipse
+                Positioned(
+                  left: w / 2 - avatarSize * 0.28 - normX * 20,
+                  bottom: h * 0.12 - normY * 8,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: avatarSize * 0.56,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(100),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          ),
                         ],
                       ),
                     ),
                   ),
                 ),
-              ),
 
-              // Ground shadow ellipse
-              Positioned(
-                left: w / 2 - avatarSize * 0.28 - normX * 20,
-                bottom: h * 0.12 - normY * 8,
-                child: IgnorePointer(
-                  child: Container(
-                    width: avatarSize * 0.56,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(100),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          blurRadius: 20,
-                          spreadRadius: 4,
-                        ),
-                      ],
+                // The 3D Avatar — mouse-tracking
+                Center(
+                  child: SizedBox(
+                    width: avatarSize,
+                    height: avatarSize,
+                    child: AvatarView(
+                      definition: widget.definition,
+                      controller: widget.controller,
+                      width: avatarSize,
+                      height: avatarSize,
+                      transparent: true,
+                      externalLookAt: _mouseTracking ? Offset(normX, normY) : Offset.zero,
+                      isInteractive: true,
+                      autoTrackCursor: false,
+                      isStatic: widget.isStatic,
                     ),
                   ),
                 ),
-              ),
 
-              // The 3D Avatar — mouse-tracking
-              Center(
-                child: SizedBox(
-                  width: avatarSize,
-                  height: avatarSize,
-                  child: AvatarView(
-                    definition: widget.definition,
-                    controller: widget.controller,
-                    width: avatarSize,
-                    height: avatarSize,
-                    transparent: true,
-                    // We pass the normalized mouse position as externalLookAt
-                    // so the head tracks across the full viewport
-                    externalLookAt: Offset(normX, normY),
-                    isInteractive: true,
-                    autoTrackCursor: false,
-                    isStatic: widget.isStatic,
+                // Top-left info badge
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: _ViewportBadge(
+                    label:
+                        '${widget.definition.species.displayName} · ${widget.definition.palette.name}',
+                    color: _kAccent,
                   ),
                 ),
-              ),
 
-              // Top-left info badge
-              Positioned(
-                top: 16,
-                left: 16,
-                child: _ViewportBadge(
-                  label:
-                      '${widget.definition.species.displayName} · ${widget.definition.palette.name}',
-                  color: _kAccent,
+                // Top-right 3D controls & tracker toggle
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () => setState(() => _mouseTracking = !_mouseTracking),
+                        borderRadius: BorderRadius.circular(20),
+                        child: _ViewportBadge(
+                          icon: _mouseTracking ? CupertinoIcons.viewfinder : CupertinoIcons.eye_slash,
+                          label: _mouseTracking ? 'Eye Tracking (ON)' : 'Tracking (OFF)',
+                          color: _mouseTracking ? _kAccent : _kTextMuted,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => widget.pet3DController.zoom(1.15),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const _ViewportBadge(
+                          icon: CupertinoIcons.plus_circle,
+                          label: 'Zoom In',
+                          color: _kText,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      InkWell(
+                        onTap: () => widget.pet3DController.zoom(0.85),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const _ViewportBadge(
+                          icon: CupertinoIcons.minus_circle,
+                          label: 'Zoom Out',
+                          color: _kText,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      InkWell(
+                        onTap: () => widget.pet3DController.resetCamera(),
+                        borderRadius: BorderRadius.circular(20),
+                        child: const _ViewportBadge(
+                          icon: CupertinoIcons.arrow_counterclockwise,
+                          label: 'Reset 3D',
+                          color: _kText,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              // Top-right 3D tracker badge
-              Positioned(
-                top: 16,
-                right: 16,
-                child: _ViewportBadge(
-                  icon: CupertinoIcons.viewfinder,
-                  label: '3D Mouse Tracking',
-                  color: _kAccent,
+                // Bottom hint helper
+                Positioned(
+                  bottom: 16,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Drag anywhere to rotate 3D · Move cursor to look · Double tap to reset',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           );
         },
       ),

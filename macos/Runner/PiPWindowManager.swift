@@ -751,6 +751,7 @@ final class AvatarEditorWindowManager: NSObject, WKScriptMessageHandler, NSWindo
             if let url = URL(string: editorUrl) {
                 webView?.load(URLRequest(url: url))
             }
+            existing.center()
             existing.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
@@ -769,14 +770,91 @@ final class AvatarEditorWindowManager: NSObject, WKScriptMessageHandler, NSWindo
             backing: .buffered,
             defer: false
         )
-        window.title = "OneWorks 3D Avatar Editor"
+        window.title = "OneWorks 3D Avatar Customizer"
         window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
+        window.level = .floating
         window.delegate = self
 
         let config = WKWebViewConfiguration()
         let userContentController = WKUserContentController()
         userContentController.add(self, name: "onAvatarSaved")
+
+        let userScriptSource = """
+        (function() {
+            var style = document.createElement('style');
+            style.innerHTML = `
+                .avatar-app__animation-toggle,
+                .avatar-animation-panel,
+                #avatar-controls-left-tab-animation,
+                #avatar-controls-right-tab-animation,
+                [id*="-tab-animation"],
+                [aria-controls*="-panel-animation"] {
+                    display: none !important;
+                }
+                .oneworks-save-floating-btn {
+                    position: fixed;
+                    top: 14px;
+                    right: 18px;
+                    z-index: 999999;
+                    background: #6366f1;
+                    color: #ffffff;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 8px 16px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    transition: all 0.2s ease;
+                }
+                .oneworks-save-floating-btn:hover {
+                    background: #4f46e5;
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+                }
+                .oneworks-save-floating-btn:active {
+                    transform: translateY(0);
+                }
+            `;
+            document.head.appendChild(style);
+
+            function attachSaveButton() {
+                if (document.getElementById('oneworks-save-button')) return;
+                var btn = document.createElement('button');
+                btn.id = 'oneworks-save-button';
+                btn.className = 'oneworks-save-floating-btn';
+                btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>Save & Apply';
+                btn.onclick = function() {
+                    var search = window.location.search;
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.onAvatarSaved) {
+                        window.webkit.messageHandlers.onAvatarSaved.postMessage(search);
+                        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>Saved!';
+                        btn.style.background = '#10b981';
+                        setTimeout(function() {
+                            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>Save & Apply';
+                            btn.style.background = '#6366f1';
+                        }, 1800);
+                    }
+                };
+                document.body.appendChild(btn);
+            }
+
+            if (document.body) {
+                attachSaveButton();
+            } else {
+                window.addEventListener('DOMContentLoaded', attachSaveButton);
+            }
+            setInterval(attachSaveButton, 1000);
+        })();
+        """
+        let userScript = WKUserScript(source: userScriptSource, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        userContentController.addUserScript(userScript)
+
         config.userContentController = userContentController
 
         let wv = WKWebView(frame: NSRect(origin: .zero, size: frame.size), configuration: config)
@@ -790,6 +868,7 @@ final class AvatarEditorWindowManager: NSObject, WKScriptMessageHandler, NSWindo
         window.contentView = wv
         self.editorWindow = window
 
+        window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }

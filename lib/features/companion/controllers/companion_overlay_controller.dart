@@ -544,7 +544,8 @@ class CompanionOverlayController extends ChangeNotifier {
     await _ensureServerStarted();
     final webServer = sl<AvatarWebServer>();
     final query = _getAvatarQueryParams();
-    final editorUrl = webServer.buildEditorUrl(queryParams: query).toString();
+    final editorUrl =
+        webServer.buildEditorUrl(queryParams: '$query&animationPanel=0').toString();
     await NativeBridge.openAvatarEditor(editorUrl);
   }
 
