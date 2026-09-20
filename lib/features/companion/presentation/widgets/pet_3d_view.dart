@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/engine/pet_procedural_animator.dart';
 import 'package:breakmate/features/companion/presentation/controllers/pet_3d_controller.dart';
 
@@ -181,8 +181,6 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
             1.0,
           );
 
-        final svgPath = widget.definition.species.svgAssetPath;
-
         final viewContent = Stack(
           alignment: Alignment.center,
           clipBehavior: Clip.none,
@@ -210,18 +208,9 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    // Authentic OneWorks Vector SVG Pet (Cat, Fox, Dog, Bear, etc.)
-                    SvgPicture.asset(
-                      svgPath,
-                      fit: BoxFit.contain,
-                      placeholderBuilder: (_) => const Center(
-                        child: SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    ),
+                    // The companion artwork, with its exported backdrop plate
+                    // stripped and its palette applied on the render isolate.
+                    AvatarArtwork.definition(widget.definition),
 
                     // Dynamic 3D Spherical Specular Light & Volumetric Depth Shading
                     IgnorePointer(

@@ -79,6 +79,17 @@ class PipWindowArgs {
   final String? avatarUrl;
   final String? urlParams;
 
+  /// The companion's full appearance as JSON, so the overlay engine can render
+  /// the exact breed, palette, and seed the user picked rather than falling
+  /// back to the stock species behind [themeId].
+  final String? avatarDefinitionJson;
+
+  /// Which renderer the overlay should use: `blob` or `artwork`.
+  final String? renderMode;
+
+  /// Whether the companion stays on screen outside of breaks.
+  final bool? keepOnScreen;
+
   const PipWindowArgs({
     this.x,
     this.y,
@@ -99,6 +110,9 @@ class PipWindowArgs {
     this.previewBackground,
     this.avatarUrl,
     this.urlParams,
+    this.avatarDefinitionJson,
+    this.renderMode,
+    this.keepOnScreen,
   });
 
   Map<String, dynamic> toMap() {
@@ -133,6 +147,11 @@ class PipWindowArgs {
     if (previewBackground != null) map['previewBackground'] = previewBackground;
     if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
     if (urlParams != null) map['urlParams'] = urlParams;
+    if (avatarDefinitionJson != null) {
+      map['avatarDefinitionJson'] = avatarDefinitionJson;
+    }
+    if (renderMode != null) map['renderMode'] = renderMode;
+    if (keepOnScreen != null) map['keepOnScreen'] = keepOnScreen;
     return map;
   }
 
@@ -157,6 +176,9 @@ class PipWindowArgs {
       previewBackground: map['previewBackground'] as String?,
       avatarUrl: map['avatarUrl'] as String?,
       urlParams: map['urlParams'] as String?,
+      avatarDefinitionJson: map['avatarDefinitionJson'] as String?,
+      renderMode: map['renderMode'] as String?,
+      keepOnScreen: map['keepOnScreen'] as bool?,
     );
   }
 }

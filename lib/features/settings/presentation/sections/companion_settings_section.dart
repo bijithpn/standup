@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
@@ -152,15 +153,12 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
                   sectionHeader('Floating PiP Settings'),
                   buildCard([
-                    dropdownRow(
-                      'Background Style',
-                      widget.controller.pipBackgroundStyle,
-                      const ['transparent', 'glass', 'dark', 'light'],
-                      (v) {
-                        if (v != null) {
-                          widget.controller.changePipBackgroundStyle(v);
-                        }
-                      },
+                    toggleRow(
+                      'Keep On Screen',
+                      'Your companion stays out all the time. Turn this off and '
+                          'it only appears while a break is running.',
+                      widget.controller.companionKeepOnScreen,
+                      (v) => widget.controller.changeKeepOnScreen(v),
                     ),
                       divider(),
                       sliderRow(
@@ -459,12 +457,12 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                   )
                 else if (def != null)
-                  SvgPicture.asset(
-                    def.species.svgAssetPath,
+                  AvatarArtwork.definition(def, fit: BoxFit.cover)
+                else if (theme.basePath.endsWith('.svg'))
+                  AvatarArtwork(
+                    recipe: AvatarArtworkRecipe(assetKey: theme.basePath),
                     fit: BoxFit.cover,
                   )
-                else if (theme.basePath.endsWith('.svg'))
-                  SvgPicture.asset(theme.basePath, fit: BoxFit.cover)
                 else if (theme.basePath.isNotEmpty)
                   Image.asset(theme.basePath, fit: BoxFit.cover)
                 else
@@ -678,12 +676,16 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           ),
                         )
                       else if (theme.avatarDefinition != null)
-                        SvgPicture.asset(
-                          theme.avatarDefinition!.species.svgAssetPath,
+                        AvatarArtwork.definition(
+                          theme.avatarDefinition!,
                           fit: BoxFit.cover,
                         )
                       else if (theme.basePath.endsWith('.svg'))
-                        SvgPicture.asset(theme.basePath, fit: BoxFit.cover)
+                        AvatarArtwork(
+                          recipe:
+                              AvatarArtworkRecipe(assetKey: theme.basePath),
+                          fit: BoxFit.cover,
+                        )
                       else if (theme.basePath.isNotEmpty)
                         Image.asset(theme.basePath, fit: BoxFit.cover)
                       else

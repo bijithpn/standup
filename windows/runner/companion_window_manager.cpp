@@ -278,6 +278,12 @@ void CompanionWindowManager::ShowPiP(
   std::string bg_style    = "dark";
   double      pip_opacity = 1.0;
   bool        wandering   = true;
+  // The companion's full appearance travels as JSON so it survives this hop
+  // without needing a field here for every part of it.
+  std::string avatar_definition;
+  std::string render_mode;
+  bool        draggable   = true;
+  bool        keep_on_screen = true;
 
   it = args.find("companionToyType");   if (it != args.end()) toy_type    = ExtractString(it->second, "tennis_ball");
   it = args.find("companionTreatType"); if (it != args.end()) treat_type  = ExtractString(it->second, "sushi");
@@ -285,6 +291,10 @@ void CompanionWindowManager::ShowPiP(
   it = args.find("pipBackgroundStyle"); if (it != args.end()) bg_style    = ExtractString(it->second, "dark");
   it = args.find("pipOpacity");         if (it != args.end()) pip_opacity = ToDouble(it->second, 1.0);
   it = args.find("wanderingEnabled");   if (it != args.end()) wandering   = ExtractBool(it->second, true);
+  it = args.find("avatarDefinitionJson"); if (it != args.end()) avatar_definition = ExtractString(it->second);
+  it = args.find("renderMode");         if (it != args.end()) render_mode = ExtractString(it->second);
+  it = args.find("pipDraggableClickable"); if (it != args.end()) draggable = ExtractBool(it->second, true);
+  it = args.find("keepOnScreen");       if (it != args.end()) keep_on_screen = ExtractBool(it->second, true);
 
   const int iX = static_cast<int>(x);
   const int iY = static_cast<int>(y);
@@ -317,6 +327,10 @@ void CompanionWindowManager::ShowPiP(
   settings[flutter::EncodableValue("pipBackgroundStyle")] = flutter::EncodableValue(bg_style);
   settings[flutter::EncodableValue("pipOpacity")]         = flutter::EncodableValue(pip_opacity);
   settings[flutter::EncodableValue("wanderingEnabled")]   = flutter::EncodableValue(wandering);
+  settings[flutter::EncodableValue("avatarDefinitionJson")] = flutter::EncodableValue(avatar_definition);
+  settings[flutter::EncodableValue("renderMode")]          = flutter::EncodableValue(render_mode);
+  settings[flutter::EncodableValue("pipDraggableClickable")] = flutter::EncodableValue(draggable);
+  settings[flutter::EncodableValue("keepOnScreen")]        = flutter::EncodableValue(keep_on_screen);
   pip_window_->SetInitialSettings(settings);
   pip_window_->SetIsPiP(true);
 

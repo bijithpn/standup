@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
@@ -47,6 +49,13 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _pipDraggableClickable = true;
   String _companionToyType = 'tennis_ball';
   String _companionTreatType = 'sushi';
+
+  /// The companion's saved appearance, as JSON-encoded `AvatarDefinition`.
+  /// Null until the customizer has produced one.
+  String? _companionAvatarDefinition;
+
+  /// Whether the companion stays out all the time, or only during breaks.
+  bool _companionKeepOnScreen = true;
 
   static const List<String> catNames = [
     'Mochi',
@@ -132,9 +141,6 @@ class CompanionOverlayController extends ChangeNotifier {
     : _settingsRepo = settingsRepo {
     _settingsRepo.addListener(_handleSettingsChanged);
     _listenToEvents();
-    try {
-      sl<AvatarWebServer>().start();
-    } catch (_) {}
   }
 
   bool _isBreakActive = false;
@@ -144,22 +150,69 @@ class CompanionOverlayController extends ChangeNotifier {
     _eventSub = sl<EventBus>().stream.listen((event) {
       if (event is TimerStateChangedEvent) {
         _handleTimerStateChanged(event);
+      } else if (event is CompanionInteractionEvent) {
+        _handleCompanionInteraction(event);
       }
     });
+  }
+
+  /// Interactions relayed from the overlay window, which runs in its own
+  /// engine and cannot write settings itself.
+  void _handleCompanionInteraction(CompanionInteractionEvent event) {
+    switch (event.interactionType) {
+      case 'rename':
+        final name = event.metadata?['petName']?.toString().trim();
+        if (name == null || name.isEmpty) return;
+        unawaited(changePetName(name));
+      case 'keepOnScreen':
+        final value = event.metadata?['value'];
+        if (value is bool) unawaited(changeKeepOnScreen(value));
+    }
+  }
+
+  /// Chooses whether the companion stays out all the time, or only shows up
+  /// while a break is running.
+  Future<void> changeKeepOnScreen(bool keepOnScreen) async {
+    if (_companionKeepOnScreen == keepOnScreen) return;
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        companionKeepOnScreen: keepOnScreen,
+      ),
+    );
   }
 
   void _handleTimerStateChanged(TimerStateChangedEvent event) {
     final isBreak = event.state == TimerStateEvent.breakActive;
     if (_isBreakActive == isBreak) return;
     _isBreakActive = isBreak;
-    // We do not show the companion automatically on timer/break transitions
-    // if the user has explicitly closed it.
+    _applyBreakVisibility();
+  }
+
+  /// Shows or hides the companion around a break when it is not pinned.
+  ///
+  /// A pinned companion is left exactly where the user put it — including
+  /// closed, which is a deliberate choice we do not undo on the next break.
+  void _applyBreakVisibility() {
+    if (_companionKeepOnScreen) return;
+    if (!_companionEnabled) return;
+    if (_isPreviewMode) return;
+    if (!_settingsRepo.currentSettings.hasCompletedOnboarding) return;
+
+    if (_isBreakActive && !_isCompanionShown) {
+      unawaited(_showNativeCompanion());
+    } else if (!_isBreakActive && _isCompanionShown) {
+      _isCompanionShown = false;
+      unawaited(NativeBridge.hideCompanion());
+      unawaited(NativeBridge.hidePipWindow());
+    }
   }
 
   bool get isTransitioning => _isTransitioning;
   bool get companionEnabled => _companionEnabled;
   bool get pipModeEnabled => _pipModeEnabled;
   String get companionPetTheme => _companionPetTheme;
+  String? get companionAvatarDefinition => _companionAvatarDefinition;
+  bool get companionKeepOnScreen => _companionKeepOnScreen;
   String get companionPetName => _companionPetName;
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
@@ -205,14 +258,14 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    await _ensureServerStarted();
-
     final settings = _settingsRepo.currentSettings;
 
     _companionEnabled = settings.companionEnabled;
     _pipModeEnabled = settings.pipModeEnabled;
     _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
+    _companionAvatarDefinition = settings.companionAvatarDefinition;
+    _companionKeepOnScreen = settings.companionKeepOnScreen;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
@@ -258,6 +311,12 @@ class CompanionOverlayController extends ChangeNotifier {
         _pipDraggableClickable != settings.pipDraggableClickable;
     final toyTypeChanged = _companionToyType != settings.companionToyType;
     final treatTypeChanged = _companionTreatType != settings.companionTreatType;
+    // Re-colouring or re-breeding the same species leaves the theme id alone,
+    // so without this the customizer's changes never reach the overlay.
+    final definitionChanged =
+        _companionAvatarDefinition != settings.companionAvatarDefinition;
+    final keepOnScreenChanged =
+        _companionKeepOnScreen != settings.companionKeepOnScreen;
 
     if (!enabledChanged &&
         !pipModeChanged &&
@@ -272,7 +331,9 @@ class CompanionOverlayController extends ChangeNotifier {
         !pipOpacityChanged &&
         !pipDraggableClickableChanged &&
         !toyTypeChanged &&
-        !treatTypeChanged) {
+        !treatTypeChanged &&
+        !definitionChanged &&
+        !keepOnScreenChanged) {
       return; // Exit early if no companion settings have changed
     }
 
@@ -280,6 +341,8 @@ class CompanionOverlayController extends ChangeNotifier {
     _pipModeEnabled = settings.pipModeEnabled;
     _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
+    _companionAvatarDefinition = settings.companionAvatarDefinition;
+    _companionKeepOnScreen = settings.companionKeepOnScreen;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
@@ -382,7 +445,14 @@ class CompanionOverlayController extends ChangeNotifier {
         if (followChanged) {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
-        if (animationsChanged ||
+        if (keepOnScreenChanged) {
+          // Un-pinning while no break is running should tidy the pet away now,
+          // not at the end of the next break.
+          _applyBreakVisibility();
+        }
+        if (definitionChanged ||
+            keepOnScreenChanged ||
+            animationsChanged ||
             backgroundChanged ||
             pipBackgroundStyleChanged ||
             pipOpacityChanged ||
@@ -404,12 +474,9 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> _showNativeCompanion() async {
-    await _ensureServerStarted();
     _isCompanionShown = true;
-    final payload = _companionPayload();
-    debugPrint('[CompanionOverlayController] _showNativeCompanion URL: ${payload['avatarUrl']}');
     await NativeBridge.showPipWindow(
-      PipWindowArgs.fromMap(payload),
+      PipWindowArgs.fromMap(_companionPayload()),
     );
   }
 
@@ -618,8 +685,45 @@ class CompanionOverlayController extends ChangeNotifier {
     await NativeBridge.openAvatarEditor(editorUrl);
   }
 
+  /// Which renderer the overlay should use for the current theme.
+  String get _renderMode =>
+      PetTheme.getTheme(_companionPetTheme).isBlobatar ? 'blob' : 'artwork';
+
+  /// The appearance to send to the overlay windows.
+  ///
+  /// Prefers what the customizer saved. When nothing has been customized yet,
+  /// the theme's own definition is encoded instead, so the overlay always has
+  /// a complete description rather than having to guess from an id.
+  String? _resolvedAvatarDefinitionJson() {
+    final saved = _companionAvatarDefinition;
+    if (saved != null && saved.isNotEmpty) return saved;
+
+    final theme = PetTheme.getTheme(_companionPetTheme);
+    final definition = theme.avatarDefinition;
+    if (definition == null) return null;
+
+    try {
+      return jsonEncode(definition.toJson());
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+      return null;
+    }
+  }
+
+  /// Persists the appearance the customizer produced and pushes it to the
+  /// overlay windows.
+  Future<void> saveAvatarDefinition(AvatarDefinition definition) async {
+    final encoded = jsonEncode(definition.toJson());
+    if (_companionAvatarDefinition == encoded) return;
+
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        companionAvatarDefinition: encoded,
+      ),
+    );
+  }
+
   Map<String, dynamic> _companionPayload() {
-    final webServer = sl<AvatarWebServer>();
     final query = _getAvatarQueryParams();
     return {
       'themeId': _companionPetTheme,
@@ -635,9 +739,12 @@ class CompanionOverlayController extends ChangeNotifier {
       'companionToyType': _companionToyType,
       'companionTreatType': _companionTreatType,
       'previewBackground': _companionPreviewBackground,
-      'avatarUrl': webServer.buildCompanionUrl(queryParams: query).toString(),
-      'avatarEditorUrl': webServer.buildEditorUrl(queryParams: query).toString(),
       'urlParams': query,
+      // The overlay runs in its own engine and cannot read settings, so its
+      // whole appearance has to travel with the payload.
+      'avatarDefinitionJson': _resolvedAvatarDefinitionJson(),
+      'renderMode': _renderMode,
+      'keepOnScreen': _companionKeepOnScreen,
     };
   }
 

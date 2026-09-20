@@ -41,6 +41,8 @@ dependencies:
   clock: ^1.1.2
   hotkey_manager: ^0.2.3
   flutter_svg: ^2.0.17
+  vector_graphics: ^1.1.11
+  vector_graphics_compiler: ^1.1.11
   blobatar_flutter: ^0.1.0
 
 dev_dependencies:

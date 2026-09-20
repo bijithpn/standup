@@ -98,6 +98,9 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   override func applicationWillTerminate(_ notification: Notification) {
     OverlayWindowManager.shared.destroyAllInstances()
     CompanionWindowManager.shared.hideCompanion()
+    PiPFlutterWindowManager.shared.hidePipWindow()
+    // The WebView build of this window is no longer routed to, but tear it down
+    // too in case an older session left one on screen.
     PiPWindowManager.shared.hidePipWindow()
     super.applicationWillTerminate(notification)
   }

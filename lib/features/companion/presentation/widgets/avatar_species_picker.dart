@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -185,10 +186,9 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
                 width: 54,
                 height: 54,
                 child: svgPath.isNotEmpty
-                    ? SvgPicture.asset(
-                        svgPath,
-                        fit: BoxFit.contain,
-                        placeholderBuilder: (context) => Center(
+                    ? AvatarArtwork(
+                        recipe: AvatarArtworkRecipe(assetKey: svgPath),
+                        placeholder: Center(
                           child: Text(
                             fallbackEmoji,
                             style: const TextStyle(fontSize: 24),

@@ -4,11 +4,11 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/features/companion/engine/avatar_event_channel.dart';
 import 'package:breakmate/features/companion/services/cursor_tracker.dart';
@@ -63,7 +63,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
 
   StreamSubscription<AvatarEvent>? _eventSub;
   StreamSubscription<ui.Offset>? _cursorSub;
-  Timer? _screenCursorTimer;
+  StreamSubscription<CursorSample>? _feedSub;
 
   Offset _gazeOffset = Offset.zero;
   Offset _targetGaze = Offset.zero;
@@ -144,16 +144,17 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
       _handleScreenCursor(globalCursorPos);
     });
 
-    if (Platform.isMacOS || Platform.isWindows) {
-      _screenCursorTimer?.cancel();
-      _screenCursorTimer = Timer.periodic(const Duration(milliseconds: 33), (_) async {
-        if (!mounted || widget.isStatic || !widget.autoTrackCursor) return;
-        if (widget.externalLookAt != null) return;
-        try {
-          final globalCursor = await NativeBridge.getCursorPosition();
-          if (!mounted) return;
-          _handleScreenCursor(globalCursor);
-        } catch (_) {}
+    // Screen-wide tracking rides the shared cursor feed rather than a timer of
+    // this widget's own. Several of these can be on screen at once, and each
+    // one polling the platform every frame is what made the companion
+    // expensive to leave running.
+    _feedSub?.cancel();
+    if (!widget.isStatic &&
+        widget.externalLookAt == null &&
+        (Platform.isMacOS || Platform.isWindows)) {
+      _feedSub = CursorFeed.instance.subscribe((sample) {
+        if (!mounted || widget.externalLookAt != null) return;
+        _handleScreenCursor(sample.position);
       });
     }
   }
@@ -203,7 +204,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
 
     if (oldWidget.controller != widget.controller) {
       _cursorSub?.cancel();
-      _screenCursorTimer?.cancel();
+      _feedSub?.cancel();
       _eventSub?.cancel();
       if (_ownsController) {
         _controller.dispose();
@@ -227,7 +228,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _cursorSub?.cancel();
-    _screenCursorTimer?.cancel();
+    _feedSub?.cancel();
     _eventSub?.cancel();
     _animController.dispose();
     if (_ownsController) {
@@ -288,7 +289,6 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
       );
     }
 
-    final svgPath = widget.definition.species.svgAssetPath;
     final double avatarWidth = widget.width > 0 ? widget.width : 160.0;
     final double avatarHeight = widget.height > 0 ? widget.height : 160.0;
     final double avatarSize = math.min(avatarWidth, avatarHeight);
@@ -307,17 +307,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
             child: SizedBox(
               width: avatarSize,
               height: avatarSize,
-              child: SvgPicture.asset(
-                svgPath,
-                fit: BoxFit.contain,
-                placeholderBuilder: (_) => const Center(
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-              ),
+              child: AvatarArtwork.definition(widget.definition),
             ),
           ),
         );

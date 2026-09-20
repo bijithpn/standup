@@ -72,6 +72,19 @@ class SettingsModel {
   final List<String> unlockedPets;
   final String? companionAvatarUrlParams;
 
+  /// The companion's full appearance as JSON-encoded `AvatarDefinition`.
+  ///
+  /// Held alongside [companionPetTheme] because a theme id only names a
+  /// species: the breed, palette, and seed the customizer produced have
+  /// nowhere else to live, and the overlay windows need all of it.
+  final String? companionAvatarDefinition;
+
+  /// Whether the floating companion stays on screen all the time.
+  ///
+  /// When false it appears when a break starts and hides when the break ends,
+  /// so the desktop stays clear during focused work.
+  final bool companionKeepOnScreen;
+
   final double companionWindowWidth;
   final double companionWindowHeight;
   final double? companionWindowX; // null = use platform default
@@ -179,6 +192,8 @@ class SettingsModel {
     this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
     this.companionAvatarUrlParams,
+    this.companionAvatarDefinition,
+    this.companionKeepOnScreen = true,
     this.companionWindowWidth = 280.0,
     this.companionWindowHeight = 320.0,
     this.companionWindowX,
@@ -271,6 +286,8 @@ class SettingsModel {
     String? companionPreviewBackground,
     List<String>? unlockedPets,
     String? companionAvatarUrlParams,
+    String? companionAvatarDefinition,
+    bool? companionKeepOnScreen,
     double? companionWindowWidth,
     double? companionWindowHeight,
     double? companionWindowX,
@@ -381,6 +398,10 @@ class SettingsModel {
       unlockedPets: unlockedPets ?? this.unlockedPets,
       companionAvatarUrlParams:
           companionAvatarUrlParams ?? this.companionAvatarUrlParams,
+      companionAvatarDefinition:
+          companionAvatarDefinition ?? this.companionAvatarDefinition,
+      companionKeepOnScreen:
+          companionKeepOnScreen ?? this.companionKeepOnScreen,
       companionWindowWidth: companionWindowWidth ?? this.companionWindowWidth,
       companionWindowHeight:
           companionWindowHeight ?? this.companionWindowHeight,
@@ -483,6 +504,8 @@ class SettingsModel {
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
     'companionAvatarUrlParams': companionAvatarUrlParams,
+    'companionAvatarDefinition': companionAvatarDefinition,
+    'companionKeepOnScreen': companionKeepOnScreen,
     'pettingEnabled': pettingEnabled,
     'ballThrowEnabled': ballThrowEnabled,
     'treatEnabled': treatEnabled,
@@ -601,6 +624,10 @@ class SettingsModel {
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
       companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
+      companionAvatarDefinition:
+          map['companionAvatarDefinition'] as String?,
+      companionKeepOnScreen:
+          map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
       ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
       treatEnabled: map['treatEnabled'] as bool? ?? true,

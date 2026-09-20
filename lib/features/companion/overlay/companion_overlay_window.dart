@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/presentation/widgets/companion_pet.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
-import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 import 'package:breakmate/core/ipc/overlay_config.dart';
@@ -27,6 +27,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   );
 
   late final AvatarEngineController _avatarController;
+  final GlobalKey<CompanionPetState> _petKey = GlobalKey<CompanionPetState>();
   String _themeId = 'grey_cat';
   String _petName = 'Mochi';
   double _scale = 6.0;
@@ -140,6 +141,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         if (s != null) {
           final clip = s.toAvatarClip();
           _avatarController.playAnimation(clip, loop: clip.isLooping);
+          // The pet is drawn natively now, so an incoming state is something
+          // it should notice rather than a clip to play.
+          _petKey.currentState?.nudge();
         }
       }
       _initialized = true;
@@ -229,13 +233,11 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
           alignment: Alignment.center,
           children: [
             Center(
-              child: AvatarView(
+              child: CompanionPet(
+                key: _petKey,
                 definition: avatarDef,
-                controller: _avatarController,
-                width: avatarSize,
-                height: avatarSize,
-                autoTrackCursor: _followMouse,
-                isInteractive: true,
+                size: avatarSize,
+                trackCursor: _followMouse,
                 onTap: _handlePetTap,
               ),
             ),

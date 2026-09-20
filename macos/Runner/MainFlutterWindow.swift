@@ -471,7 +471,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionTheme":
         if let args = call.arguments as? [String: Any], let themeId = args["themeId"] as? String {
           CompanionWindowManager.shared.updateTheme(themeId)
-          PiPWindowManager.shared.syncSettings(["themeId": themeId])
+          PiPFlutterWindowManager.shared.updateTheme(themeId: themeId, extra: args)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing themeId", details: nil))
@@ -480,7 +480,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionName":
         if let args = call.arguments as? [String: Any], let petName = args["petName"] as? String {
           CompanionWindowManager.shared.updatePetName(petName)
-          PiPWindowManager.shared.syncSettings(["petName": petName])
+          PiPFlutterWindowManager.shared.updatePetName(petName)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing petName", details: nil))
@@ -505,18 +505,18 @@ class MainFlutterWindow: NSWindow {
       case "setCompanionFollowMouse":
         if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
           CompanionWindowManager.shared.setFollowMouseEnabled(enabled)
-          PiPWindowManager.shared.syncSettings(["followMouse": enabled])
+          PiPFlutterWindowManager.shared.syncSettings(["followMouse": enabled])
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
         }
 
       case "showPipWindow":
-        PiPWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
+        PiPFlutterWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
         result(nil)
 
       case "hidePipWindow":
-        PiPWindowManager.shared.hidePipWindow()
+        PiPFlutterWindowManager.shared.hidePipWindow()
         result(nil)
 
       case "openAvatarEditor":

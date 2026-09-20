@@ -1,20 +1,39 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
+
+import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/ipc/ipc_bridge.dart';
+import 'package:breakmate/core/ipc/ipc_events.dart';
+import 'package:breakmate/core/ipc/overlay_config.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
+import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
+import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
-import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
+import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork_loader.dart';
+import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
-import 'package:breakmate/core/errors/error_handler.dart';
-import 'package:breakmate/core/services/simple_prefs.dart';
-import 'package:breakmate/core/ipc/overlay_config.dart';
+import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// The floating companion window.
+///
+/// It runs in its own Flutter engine, so everything it needs about the pet
+/// arrives over the `pip_data` channel. Motion comes from a single
+/// [PetBehaviorEngine] on one ticker, reading one shared [CursorFeed] — the
+/// previous version ran three independent polling timers that each made their
+/// own native cursor call every frame.
 class PiPOverlayWindow extends StatefulWidget {
   const PiPOverlayWindow({super.key});
 
@@ -22,9 +41,24 @@ class PiPOverlayWindow extends StatefulWidget {
   State<PiPOverlayWindow> createState() => _PiPOverlayWindowState();
 }
 
-class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
+class _PiPOverlayWindowState extends State<PiPOverlayWindow>
+    with SingleTickerProviderStateMixin {
   static const MethodChannel _channel = MethodChannel(
     'com.breakmate.desktop/pip_data',
+  );
+
+  /// How often the window's own position is re-read. The pet only needs this
+  /// to know where it is relative to the cursor, which tolerates being a frame
+  /// or two stale — and the window rarely moves.
+  static const Duration _viewportSyncInterval = Duration(milliseconds: 400);
+
+  late final PetBehaviorEngine _engine = PetBehaviorEngine();
+  late final Ticker _ticker = createTicker(_engine.tick);
+  StreamSubscription<CursorSample>? _cursorSub;
+  Timer? _viewportTimer;
+
+  late final CompanionWindowManager _windowManager = CompanionWindowManager(
+    displayManager: NativeDisplayManager(),
   );
 
   late String _themeId = SimplePrefs.instance.getString(
@@ -32,23 +66,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     defaultValue: 'avatar_cat',
   );
   String _petName = 'Lily';
-  late double _scale = SimplePrefs.instance.getDouble(
-    'companion_scale',
-    defaultValue: 3.2,
-  );
+  AvatarDefinition? _definition;
+  String? _renderMode;
 
-  late final CompanionWindowManager _windowManager = CompanionWindowManager(
-    displayManager: NativeDisplayManager(),
-  );
-
-  bool _clickThrough = false;
-  bool _acceptsMouse = true;
-  Timer? _clickThroughTimer;
-
-  late String _pipBackgroundStyle = SimplePrefs.instance.getString(
-    'pip_background_style',
-    defaultValue: 'transparent',
-  );
   late double _pipOpacity = SimplePrefs.instance.getDouble(
     'pip_opacity',
     defaultValue: 1.0,
@@ -57,64 +77,80 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     'pip_draggable_clickable',
     defaultValue: true,
   );
+  late bool _keepOnScreen = SimplePrefs.instance.getBool(
+    'companion_keep_on_screen',
+    defaultValue: true,
+  );
+  bool _clickThrough = false;
 
-  Offset _screenLookAt = Offset.zero;
+  Rect _windowRect = Rect.zero;
+  bool _acceptsMouse = true;
+  bool _applyingMouseMode = false;
   bool _isHovered = false;
-  DateTime? _lastHoverTime;
-  bool _isCheckingClickThrough = false;
-  String? _feedbackText;
-  Timer? _feedbackTimer;
-
-  // Dedicated 3D gaze tracking — always fires, independent of click-through
-  Timer? _gazeTrackingTimer;
-  bool _isTrackingGaze = false;
-  // Smoothed gaze — lerped toward the raw cursor position each frame
-  Offset _smoothedLookAt = Offset.zero;
 
   @override
   void initState() {
     super.initState();
 
     _channel.setMethodCallHandler(_handleMethodCall);
-    _fetchInitialSettings();
+    _engine.start();
+    _ticker.start();
+    _cursorSub = CursorFeed.instance.subscribe(_onCursorSample);
+    _viewportTimer = Timer.periodic(_viewportSyncInterval, (_) => _syncViewport());
 
-    // Click-through check: 33 ms cadence
-    _clickThroughTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
-      _checkClickThrough();
-    });
-
-    // 3D gaze tracking: 16 ms (~60 fps) cadence — always active
-    _gazeTrackingTimer = Timer.periodic(const Duration(milliseconds: 16), (_) {
-      _updateGaze();
-    });
+    unawaited(_fetchInitialSettings());
   }
 
   @override
   void dispose() {
     _channel.setMethodCallHandler(null);
-    _feedbackTimer?.cancel();
-    _clickThroughTimer?.cancel();
-    _gazeTrackingTimer?.cancel();
+    _viewportTimer?.cancel();
+    _cursorSub?.cancel();
+    _ticker.dispose();
+    _engine.dispose();
     super.dispose();
   }
 
+  // ── Settings plumbing ─────────────────────────────────────────────────────
+
   Future<dynamic> _handleMethodCall(MethodCall call) async {
+    final args = call.arguments;
+    final map = args is Map ? Map<String, dynamic>.from(args) : null;
+
     switch (call.method) {
       case 'syncPiPSettings':
-        final args = call.arguments as Map<dynamic, dynamic>?;
-        if (args != null) {
-          _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(args)));
+        if (map != null) _applySettings(OverlayConfig.fromJson(map));
+        break;
+
+      // The host sends these as individual updates as well as inside a full
+      // sync. Handling both is what keeps a rename or a re-style from being
+      // silently dropped.
+      case 'updateCompanionTheme':
+        final themeId = map?['themeId']?.toString();
+        if (themeId != null) {
+          setState(() {
+            _themeId = themeId;
+            _definition = _definitionFrom(map);
+            _renderMode = map?['renderMode']?.toString() ?? _renderMode;
+          });
+          _warmArtwork();
         }
         break;
-      case 'updateCompanionTheme':
-        final args = call.arguments as Map<dynamic, dynamic>?;
-        if (args != null && args['themeId'] != null) {
-          setState(() {
-            _themeId = args['themeId'].toString();
-          });
+
+      case 'updateCompanionName':
+      case 'updatePetName':
+        final name = map?['petName']?.toString();
+        if (name != null && name.trim().isNotEmpty) {
+          setState(() => _petName = name.trim());
+          _engine.nudge();
         }
+        break;
+
+      case 'triggerCompanionState':
+        _engine.nudge();
         break;
     }
+    return null;
   }
 
   Future<void> _fetchInitialSettings() async {
@@ -123,238 +159,94 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(result)));
-        await _windowManager.initialize();
-        return;
+        _applySettings(
+          OverlayConfig.fromJson(Map<String, dynamic>.from(result)),
+        );
       }
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }
+
     await _windowManager.initialize();
+    await _syncViewport();
   }
 
   void _applySettings(OverlayConfig config) {
     if (!mounted) return;
 
-    final newThemeId = config.themeId ?? _themeId;
-    final newScale = config.scale ?? _scale;
-    final newPetName = config.petName ?? _petName;
-    final newClickThrough = config.clickThrough ?? _clickThrough;
-    final newPipBackgroundStyle =
-        config.pipBackgroundStyle ?? _pipBackgroundStyle;
-    final newPipOpacity = config.pipOpacity ?? _pipOpacity;
-    final newPipDraggableClickable =
-        config.pipDraggableClickable ?? _pipDraggableClickable;
-
     setState(() {
-      _themeId = newThemeId;
-      _scale = newScale > 0 ? newScale : 3.2;
-      _petName = newPetName;
-      _clickThrough = newClickThrough;
-      _pipBackgroundStyle = newPipBackgroundStyle;
-      _pipOpacity = newPipOpacity;
-      _pipDraggableClickable = newPipDraggableClickable;
+      _themeId = config.themeId ?? _themeId;
+      _petName = config.petName ?? _petName;
+      _renderMode = config.renderMode ?? _renderMode;
+      _clickThrough = config.clickThrough ?? _clickThrough;
+      _pipOpacity = config.pipOpacity ?? _pipOpacity;
+      _keepOnScreen = config.keepOnScreen ?? _keepOnScreen;
+      _pipDraggableClickable =
+          config.pipDraggableClickable ?? _pipDraggableClickable;
+
+      final incoming = config.avatarDefinitionJson;
+      if (incoming != null && incoming.isNotEmpty) {
+        _definition = _tryParseDefinition(incoming) ?? _definition;
+      }
     });
 
-    _windowManager.setOpacity(_pipOpacity);
-    _checkClickThrough();
+    unawaited(_windowManager.setOpacity(_pipOpacity));
+    _warmArtwork();
   }
 
-  /// Runs at ~60 fps. Gets the native cursor position, computes a normalised
-  /// [-1, 1] look-at offset relative to the PiP window center, and lerps
-  /// _smoothedLookAt toward it so the avatar head movement is silky smooth.
-  Future<void> _updateGaze() async {
-    if (_isTrackingGaze || !mounted) return;
-    _isTrackingGaze = true;
+  AvatarDefinition? _definitionFrom(Map<String, dynamic>? map) {
+    final raw = map?['avatarDefinitionJson'];
+    if (raw is String && raw.isNotEmpty) {
+      return _tryParseDefinition(raw) ?? _definition;
+    }
+    return _definition;
+  }
+
+  AvatarDefinition? _tryParseDefinition(String encoded) {
     try {
-      final pos = await _windowManager.getPosition();
-      final size = _windowManager.currentSize;
-      final cursorPos = await NativeBridge.getCursorPosition();
-
-      final windowCenter =
-          Offset(pos.dx + size.width / 2.0, pos.dy + size.height / 2.0);
-      final dx = cursorPos.dx - windowCenter.dx;
-      final dy = cursorPos.dy - windowCenter.dy;
-
-      // Sensitivity: divide by a fraction of screen width so nearby motion
-      // gives strong reaction, far-away gives subtle look.
-      final range = math.max(size.width, size.height) * 1.4;
-      final rawX = (dx / range).clamp(-1.0, 1.0);
-      final rawY = (dy / range).clamp(-1.0, 1.0);
-      final rawLook = Offset(rawX, rawY);
-
-      // Lerp at ~0.12 per frame → smooth ~8-frame settling time at 60fps
-      const lerpT = 0.12;
-      final smoothed = Offset(
-        _smoothedLookAt.dx + (rawLook.dx - _smoothedLookAt.dx) * lerpT,
-        _smoothedLookAt.dy + (rawLook.dy - _smoothedLookAt.dy) * lerpT,
-      );
-
-      if (!mounted) return;
-      if ((_smoothedLookAt - smoothed).distance > 0.003) {
-        setState(() {
-          _smoothedLookAt = smoothed;
-          _screenLookAt = smoothed;
-        });
-      }
-    } catch (_) {
-    } finally {
-      _isTrackingGaze = false;
+      final decoded = jsonDecode(encoded);
+      if (decoded is! Map) return null;
+      return AvatarDefinition.fromJson(Map<String, dynamic>.from(decoded));
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+      return null;
     }
   }
 
-  Future<void> _checkClickThrough() async {
-    if (_isCheckingClickThrough) return;
-    _isCheckingClickThrough = true;
-
-    try {
-      if (!_pipDraggableClickable) {
-        if (_acceptsMouse) {
-          _acceptsMouse = false;
-          await _windowManager.setAcceptsMouse(false);
-        }
-        return;
-      }
-
-      if (!_clickThrough) {
-        if (!_acceptsMouse) {
-          _acceptsMouse = true;
-          await _windowManager.setAcceptsMouse(true);
-        }
-        return;
-      }
-
-      final pos = await _windowManager.getPosition();
-      final size = _windowManager.currentSize;
-      final cursorPos = await NativeBridge.getCursorPosition();
-
-      final windowRect = Rect.fromLTWH(pos.dx, pos.dy, size.width, size.height);
-
-      bool accepts = true;
-      if (windowRect.contains(cursorPos)) {
-        final localX = cursorPos.dx - windowRect.left;
-        final localY = cursorPos.dy - windowRect.top;
-
-        final inCard =
-            localX >= 4.0 &&
-            localX <= (size.width - 4.0) &&
-            localY >= 4.0 &&
-            localY <= (size.height - 4.0);
-
-        accepts = inCard;
-      } else {
-        accepts = false;
-      }
-
-      if (accepts != _acceptsMouse) {
-        _acceptsMouse = accepts;
-        await _windowManager.setAcceptsMouse(accepts);
-      }
-    } catch (_) {
-    } finally {
-      _isCheckingClickThrough = false;
-    }
-  }
-
-  void _closeWindow() {
-    NativeBridge.hidePipWindow();
-  }
-
-  bool get _isBlobatar =>
-      _themeId == 'blobatar' || PetTheme.getTheme(_themeId).isBlobatar;
-
-  void _openNamePrompt() {
-    showBlobatarNameDialog(
-      context,
-      currentName: _petName,
-      onSaved: (newName) {
-        setState(() {
-          _petName = newName;
-        });
-        SimplePrefs.instance.setString('companion_pet_name', newName);
-        _channel
-            .invokeMethod('updatePetName', {'petName': newName}).catchError((_) {});
-      },
+  /// Compiles the pet's artwork before the first frame that needs it, so it
+  /// never appears as an empty box while the window fades in.
+  void _warmArtwork() {
+    if (_isBlob) return;
+    unawaited(
+      AvatarArtworkLoader.precache(<AvatarArtworkRecipe>[
+        avatarRecipeFor(_avatarDefinition),
+      ]),
     );
   }
 
-  void _onHover(PointerHoverEvent event) {
-    final now = DateTime.now();
-    if (_lastHoverTime != null &&
-        now.difference(_lastHoverTime!) < const Duration(milliseconds: 800)) {
-      return;
-    }
-    _lastHoverTime = now;
-  }
+  // ── Pet identity ──────────────────────────────────────────────────────────
 
-  bool get _isLightBackground => _pipBackgroundStyle == 'light';
-
-  Decoration _buildContainerDecoration() {
-    if (_pipBackgroundStyle == 'transparent') {
-      return const BoxDecoration(color: Colors.transparent);
-    }
-
-    if (_pipBackgroundStyle == 'light') {
-      return BoxDecoration(
-        color: const Color(0xFFF5F5FA),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFF161622).withValues(alpha: 0.12),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 16,
-            spreadRadius: 2,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      );
-    }
-
-    if (_pipBackgroundStyle == 'midnight') {
-      return BoxDecoration(
-        color: const Color(0xFF0F111D),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.08),
-          width: 1.0,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 16,
-            spreadRadius: 2,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      );
-    }
-
-    return BoxDecoration(
-      color: const Color(0xFF181924),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(
-        color: Colors.white.withValues(alpha: 0.1),
-        width: 1.0,
-      ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.35),
-          blurRadius: 16,
-          spreadRadius: 2,
-          offset: const Offset(0, 8),
-        ),
-      ],
-    );
+  /// Whether the companion is the generative blob rather than illustrated
+  /// artwork.
+  ///
+  /// The host says so explicitly through [OverlayConfig.renderMode]; the theme
+  /// id is only a fallback. Deciding from the id alone is unreliable in both
+  /// directions, because `PetTheme.getTheme` answers with the blob theme for
+  /// anything it does not recognise.
+  bool get _isBlob {
+    final mode = _renderMode;
+    if (mode != null && mode.isNotEmpty) return mode == 'blob';
+    if (_themeId == 'blobatar') return true;
+    return PetTheme.getTheme(_themeId).isBlobatar;
   }
 
   AvatarDefinition get _avatarDefinition {
+    final explicit = _definition;
+    if (explicit != null) return explicit;
+
     final theme = PetTheme.getTheme(_themeId);
-    if (theme.avatarDefinition != null) {
-      return theme.avatarDefinition!;
-    }
+    if (theme.avatarDefinition != null) return theme.avatarDefinition!;
+
     final cleanId = _themeId.startsWith('avatar_')
         ? _themeId.substring('avatar_'.length)
         : _themeId;
@@ -364,141 +256,302 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     return AvatarDefinition.fromSpecies(species);
   }
 
+  // ── Cursor, viewport, click-through ───────────────────────────────────────
+
+  Future<void> _syncViewport() async {
+    try {
+      final position = await _windowManager.getPosition();
+      final size = _windowManager.currentSize;
+      _windowRect = Rect.fromLTWH(
+        position.dx,
+        position.dy,
+        size.width,
+        size.height,
+      );
+      _engine.setViewport(_windowRect);
+    } catch (_) {
+      // The window may be mid-move or already gone.
+    }
+  }
+
+  /// Decides whether the window should swallow clicks.
+  ///
+  /// This reuses the shared cursor sample rather than asking the platform
+  /// again, so click-through costs nothing beyond the poll the pet already
+  /// needed to know where to look.
+  void _onCursorSample(CursorSample sample) {
+    if (!mounted) return;
+
+    final bool shouldAccept;
+    if (!_pipDraggableClickable) {
+      shouldAccept = false;
+    } else if (!_clickThrough) {
+      shouldAccept = true;
+    } else {
+      shouldAccept =
+          !_windowRect.isEmpty && _windowRect.deflate(4).contains(sample.position);
+    }
+
+    if (shouldAccept == _acceptsMouse || _applyingMouseMode) return;
+    _acceptsMouse = shouldAccept;
+    _applyingMouseMode = true;
+    _windowManager.setAcceptsMouse(shouldAccept).whenComplete(() {
+      _applyingMouseMode = false;
+    });
+  }
+
+  // ── Interaction ───────────────────────────────────────────────────────────
+
+  void _handlePetTap() {
+    _engine.pet();
+  }
+
+  void _handleRename() {
+    showBlobatarNameDialog(
+      context,
+      currentName: _petName,
+      onSaved: (newName) {
+        setState(() => _petName = newName);
+        SimplePrefs.instance.setString('companion_pet_name', newName);
+        // A blob's whole appearance is derived from its name, so the main app
+        // has to hear about this or the two windows drift apart.
+        unawaited(
+          IpcBridge.instance.dispatch(
+            IpcEvent.companionInteraction(
+              interactionType: 'rename',
+              metadata: <String, dynamic>{'petName': newName},
+            ),
+          ),
+        );
+        _engine.pet();
+      },
+    );
+  }
+
+  Future<void> _handleClose() async {
+    await NativeBridge.hidePipWindow();
+  }
+
+  /// Toggles whether the companion stays out all the time or only shows up
+  /// while a break is running.
+  void _toggleKeepOnScreen() {
+    final next = !_keepOnScreen;
+    setState(() => _keepOnScreen = next);
+    SimplePrefs.instance.setBool('companion_keep_on_screen', next);
+    unawaited(
+      IpcBridge.instance.dispatch(
+        IpcEvent.companionInteraction(
+          interactionType: 'keepOnScreen',
+          metadata: <String, dynamic>{'value': next},
+        ),
+      ),
+    );
+    _engine.nudge();
+  }
+
+  // ── Appearance ────────────────────────────────────────────────────────────
+
+  // The window is glass: nothing is drawn behind the pet, ever. Its chrome has
+  // to stay readable over whatever the desktop happens to be, so it carries its
+  // own dark scrim rather than relying on a card underneath.
+  static final Color _chromeForeground = AppTheme.gray100;
+  static final Color _chromeBackground =
+      AppTheme.gray950.withValues(alpha: 0.68);
+
   @override
   Widget build(BuildContext context) {
-    final isLight = _isLightBackground;
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Opacity(
-        opacity: _pipOpacity,
+        opacity: _pipOpacity.clamp(0.2, 1.0),
         child: MouseRegion(
           onEnter: (_) => setState(() => _isHovered = true),
           onExit: (_) => setState(() => _isHovered = false),
-          child: Container(
-            margin: EdgeInsets.zero,
-            decoration: _buildContainerDecoration(),
+          child: Stack(
             clipBehavior: Clip.none,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // 1. Centered Authentic Companion filling viewport
-                Positioned.fill(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final petSize = math.min(constraints.maxWidth, constraints.maxHeight);
-                      if (_isBlobatar) {
-                        return Center(
-                          child: BlobatarCompanionWidget(
-                            name: _petName,
-                            size: petSize,
-                            onTap: _openNamePrompt,
-                            isInteractive: true,
-                          ),
-                        );
-                      }
-                      return Center(
-                        child: AvatarView(
-                          definition: _avatarDefinition,
-                          width: petSize,
-                          height: petSize,
-                          externalLookAt: _screenLookAt,
-                          autoTrackCursor: true,
-                          isInteractive: true,
-                        ),
-                      );
-                    },
-                  ),
-                ),
+            children: <Widget>[
+              Positioned.fill(child: _buildPet()),
+              Positioned.fill(child: _buildChrome()),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                // 2. Drag Handle Bar across top (appears smoothly on hover)
-                Positioned(
-                  top: 6,
-                  left: 0,
-                  right: 0,
-                  height: 24,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onPanStart: (_) => _windowManager.startDrag(),
-                    child: AnimatedOpacity(
-                      opacity: _isHovered ? 1.0 : 0.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Center(
-                        child: Container(
-                          width: 38,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: isLight
-                                ? const Color(0xFF161622).withValues(alpha: 0.3)
-                                : Colors.white.withValues(alpha: 0.4),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
+  /// The pet itself. Rebuilt every frame, and nothing else is.
+  Widget _buildPet() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final extent = math.min(constraints.maxWidth, constraints.maxHeight);
+        final stageSize = math.max(48.0, extent - petStageInset(extent) * 2);
+
+        return Center(
+          child: AnimatedBuilder(
+            animation: _engine,
+            builder: (context, _) => PetStage(
+              snapshot: _engine.snapshot,
+              size: stageSize,
+              definition: _isBlob ? null : _avatarDefinition,
+              blobName: _isBlob ? _petName : null,
+              // A cast shadow needs a surface to fall on, and there is none.
+              showShadow: false,
+              onTap: _handlePetTap,
+              onDoubleTap: _isBlob ? _handleRename : null,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Everything that is not the pet: drag grip, name, close, status. All of it
+  /// fades away when the pointer leaves, so the resting state is just an animal
+  /// on the desktop.
+  Widget _buildChrome() {
+    return AnimatedOpacity(
+      opacity: _isHovered ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      child: IgnorePointer(
+        ignoring: !_isHovered,
+        child: Stack(
+          children: <Widget>[
+            // Drag anywhere along the top edge.
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 34,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (_) => _windowManager.startDrag(),
+                onPanEnd: (_) => _syncViewport(),
+                child: Center(
+                  child: Container(
+                    width: 34,
+                    height: 4,
+                    margin: const EdgeInsets.only(top: 8),
+                    decoration: BoxDecoration(
+                      color: _chromeForeground.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
+              ),
+            ),
 
-                // 3. Cute Pet Name Badge (fades in on hover, tap to rename if Blobatar)
-                Positioned(
-                  top: 14,
-                  left: 0,
-                  right: 0,
-                  child: AnimatedOpacity(
-                    opacity: _isHovered ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Center(
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _isBlobatar ? _openNamePrompt : null,
-                        child: _PetNameBadge(
-                          name: _petName,
-                          isLightBackground: isLight,
-                        ),
-                      ),
-                    ),
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  _ChromeButton(
+                    icon: _keepOnScreen
+                        ? Icons.push_pin_rounded
+                        : Icons.push_pin_outlined,
+                    background: _chromeBackground,
+                    foreground: _chromeForeground,
+                    isActive: _keepOnScreen,
+                    tooltip: _keepOnScreen
+                        ? 'Staying on screen — tap to only show during breaks'
+                        : 'Only shows during breaks — tap to keep on screen',
+                    onTap: _toggleKeepOnScreen,
+                  ),
+                  const SizedBox(width: 4),
+                  _ChromeButton(
+                    icon: Icons.close_rounded,
+                    background: _chromeBackground,
+                    foreground: _chromeForeground,
+                    tooltip: 'Hide companion',
+                    onTap: _handleClose,
+                  ),
+                ],
+              ),
+            ),
+
+            if (_isBlob)
+              Positioned(
+                top: 6,
+                left: 6,
+                child: _ChromeButton(
+                  icon: Icons.edit_rounded,
+                  background: _chromeBackground,
+                  foreground: _chromeForeground,
+                  tooltip: 'Rename ${_petName.trim().isEmpty ? 'companion' : _petName}',
+                  onTap: _handleRename,
+                ),
+              ),
+
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 8,
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _engine,
+                  builder: (context, _) => _StatusPill(
+                    name: _petName,
+                    activity: _engine.snapshot.activity,
+                    background: _chromeBackground,
+                    foreground: _chromeForeground,
                   ),
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
-                // 4. Hover Listener for Interaction
-                Positioned.fill(
-                  child: Listener(
-                    behavior: HitTestBehavior.translucent,
-                    onPointerHover: _onHover,
-                  ),
-                ),
+/// A small round control in the window chrome.
+class _ChromeButton extends StatelessWidget {
+  const _ChromeButton({
+    required this.icon,
+    required this.background,
+    required this.foreground,
+    required this.tooltip,
+    required this.onTap,
+    this.isActive = false,
+  });
 
-                // 5. Feedback Reaction Toast
-                if (_feedbackText != null)
-                  Positioned(
-                    top: 24,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 150),
-                        child: _FeedbackToast(
-                          key: ValueKey(_feedbackText),
-                          text: _feedbackText!,
-                        ),
-                      ),
-                    ),
-                  ),
+  final IconData icon;
+  final Color background;
+  final Color foreground;
+  final String tooltip;
+  final VoidCallback onTap;
+  final bool isActive;
 
-                // 6. Close Button (fades in on hover)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: AnimatedOpacity(
-                    opacity: _isHovered ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: _CloseButton(
-                      onTap: _closeWindow,
-                      isLightBackground: isLight,
-                    ),
-                  ),
-                ),
-              ],
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: background,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isActive
+                    ? AppTheme.accent.withValues(alpha: 0.6)
+                    : foreground.withValues(alpha: 0.12),
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 13,
+              color: isActive
+                  ? AppTheme.accent
+                  : foreground.withValues(alpha: 0.8),
             ),
           ),
         ),
@@ -507,94 +560,61 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
   }
 }
 
-class _PetNameBadge extends StatelessWidget {
-  const _PetNameBadge({required this.name, required this.isLightBackground});
+/// The pet's name and what it is currently up to.
+class _StatusPill extends StatelessWidget {
+  const _StatusPill({
+    required this.name,
+    required this.activity,
+    required this.background,
+    required this.foreground,
+  });
+
   final String name;
-  final bool isLightBackground;
+  final PetActivity activity;
+  final Color background;
+  final Color foreground;
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-      decoration: BoxDecoration(
-        color: isLightBackground
-            ? const Color(0xFFE6E6F0).withValues(alpha: 0.9)
-            : const Color(0xFF2D2D3E).withValues(alpha: 0.85),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        name,
-        style: TextStyle(
-          color: isLightBackground
-              ? const Color(0xFF161622)
-              : const Color(0xFFEAEAFF),
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          fontFamily: 'Inter',
-        ),
-      ),
-    );
+  String get _label {
+    final petName = name.trim().isEmpty ? 'Your companion' : name.trim();
+    switch (activity) {
+      case PetActivity.sleeping:
+        return '$petName is asleep';
+      case PetActivity.drowsy:
+        return '$petName is dozing off';
+      case PetActivity.idle:
+        return petName;
+      case PetActivity.curious:
+        return '$petName noticed you';
+      case PetActivity.watching:
+        return '$petName is watching you';
+      case PetActivity.playful:
+        return '$petName wants to play';
+      case PetActivity.startled:
+        return 'You startled $petName';
+      case PetActivity.delighted:
+        return '$petName loves that';
+    }
   }
-}
-
-class _FeedbackToast extends StatelessWidget {
-  const _FeedbackToast({super.key, required this.text});
-  final String text;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(12),
+        color: background,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: foreground.withValues(alpha: 0.1)),
       ),
       child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-}
-
-class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onTap, required this.isLightBackground});
-  final VoidCallback onTap;
-  final bool isLightBackground;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Container(
-        width: 22,
-        height: 22,
-        decoration: BoxDecoration(
-          color: isLightBackground
-              ? const Color(0xFFE2E2EC)
-              : const Color(0xFF2C2C3E),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Icon(
-            Icons.close_rounded,
-            size: 13,
-            color: isLightBackground
-                ? const Color(0xFF6E6E82)
-                : const Color(0xFFA0A0BA),
-          ),
+        _label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          letterSpacing: -0.1,
+          color: foreground.withValues(alpha: 0.9),
         ),
       ),
     );
