@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
@@ -19,6 +22,27 @@ class CompanionSettingsSection extends StatefulWidget {
 }
 
 class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
+  void _openCustomizer() {
+    final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
+    final def = theme.avatarDefinition ??
+        AvatarDefinition.fromSpecies(
+          AvatarSpecies.tryParse(widget.controller.companionPetTheme) ??
+              AvatarSpecies.cat,
+        );
+
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute<AvatarDefinition>(
+        fullscreenDialog: true,
+        builder: (_) => AvatarCustomizerPage(
+          initialDefinition: def,
+          onSaved: (newDef) {
+            widget.controller.changeTheme('avatar_${newDef.species.name}');
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -194,29 +218,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       (v) => widget.controller.changeQuietModeAutoActivate(v),
                     ),
                   ]),
-
-                  const SizedBox(height: 32),
-                  sectionHeader(
-                    '3D Pet Customizer',
-                    subtitle: 'Choose from 30+ species, custom seeds, and OneWorks palettes',
-                  ),
-                  buildCard([
-                    buildListRow(
-                      'Open 3D Pet Customizer',
-                      'Customize procedural 3D avatar with 30+ species, colors, seeds and animations.',
-                      null,
-                      Icons.pets_rounded,
-                      null,
-                      onTap: () => widget.controller.openAvatarEditor(),
-                      trailing: Icon(
-                        CupertinoIcons.chevron_right,
-                        size: 14,
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ]),
-
-
                 ],
                 const SizedBox(height: 40),
               ],
@@ -536,7 +537,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
-                  onPressed: () => widget.controller.openAvatarEditor(),
+                  onPressed: _openCustomizer,
                   icon: const Icon(Icons.tune_rounded, size: 16),
                   label: const Text('Open 3D Customizer'),
                   style: FilledButton.styleFrom(
@@ -562,23 +563,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       children: [
         _buildActiveCompanionShowcase(),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            sectionHeader(
-              '3D Pet Gallery',
-              subtitle: 'Select from 30+ OneWorks 3D species',
-            ),
-            TextButton.icon(
-              onPressed: () => widget.controller.openAvatarEditor(),
-              icon: const Icon(Icons.palette_outlined, size: 16),
-              label: const Text('Customize 3D'),
-              style: TextButton.styleFrom(
-                foregroundColor: AppTheme.accentColor,
-                textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
-              ),
-            ),
-          ],
+        sectionHeader(
+          '3D Pet Gallery',
+          subtitle: 'Select from 30+ OneWorks 3D species',
         ),
 
         const SizedBox(height: 12),
