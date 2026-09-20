@@ -505,6 +505,7 @@ class MainFlutterWindow: NSWindow {
       case "setCompanionFollowMouse":
         if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
           CompanionWindowManager.shared.setFollowMouseEnabled(enabled)
+          PiPWindowManager.shared.syncSettings(["followMouse": enabled])
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))

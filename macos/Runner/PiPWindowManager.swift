@@ -45,15 +45,122 @@ final class PiPWebView: WKWebView {
     }
 }
 
+final class PiPDragHandleView: NSView {
+    var isDraggable: Bool = true
+    private var dragStartScreenPoint: NSPoint = .zero
+    private var dragStartWindowOrigin: NSPoint = .zero
+    private var isHovered: Bool = false
+
+    override init(frame: NSRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        let tracking = NSTrackingArea(
+            rect: bounds,
+            options: [.mouseEnteredAndExited, .activeAlways, .inVisibleRect],
+            owner: self,
+            userInfo: nil
+        )
+        addTrackingArea(tracking)
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        if isDraggable {
+            addCursorRect(bounds, cursor: .openHand)
+        }
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        isHovered = true
+        needsDisplay = true
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        isHovered = false
+        needsDisplay = true
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        if isDraggable, let window = self.window {
+            NSCursor.closedHand.push()
+            dragStartScreenPoint = NSEvent.mouseLocation
+            dragStartWindowOrigin = window.frame.origin
+            return
+        }
+        super.mouseDown(with: event)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        NSCursor.pop()
+        super.mouseUp(with: event)
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        if isDraggable, let window = self.window {
+            let current = NSEvent.mouseLocation
+            let deltaX = current.x - dragStartScreenPoint.x
+            let deltaY = current.y - dragStartScreenPoint.y
+            window.setFrameOrigin(NSPoint(x: dragStartWindowOrigin.x + deltaX, y: dragStartWindowOrigin.y + deltaY))
+            return
+        }
+        super.mouseDragged(with: event)
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+        guard let ctx = NSGraphicsContext.current?.cgContext else { return }
+
+        // Draw 2 rows of 4 dots (8 dots total: •••• / ••••)
+        let cols = 4
+        let rows = 2
+        let dotRadius: CGFloat = 1.75
+        let spacingX: CGFloat = 6.5
+        let spacingY: CGFloat = 5.0
+
+        let gridW = CGFloat(cols - 1) * spacingX + (dotRadius * 2)
+        let gridH = CGFloat(rows - 1) * spacingY + (dotRadius * 2)
+
+        let startX = (bounds.width - gridW) / 2.0 + dotRadius
+        let startY = (bounds.height - gridH) / 2.0 + dotRadius
+
+        let alpha: CGFloat = isHovered ? 0.85 : 0.42
+        let dotColor = NSColor(white: 0.88, alpha: alpha).cgColor
+        let shadowColor = NSColor(white: 0.0, alpha: isHovered ? 0.45 : 0.25).cgColor
+
+        for r in 0..<rows {
+            for c in 0..<cols {
+                let cx = startX + CGFloat(c) * spacingX
+                let cy = startY + CGFloat(r) * spacingY
+
+                // Subtle shadow for legibility over bright or complex backgrounds
+                ctx.setFillColor(shadowColor)
+                ctx.fillEllipse(in: CGRect(x: cx - dotRadius, y: cy - dotRadius - 0.75, width: dotRadius * 2, height: dotRadius * 2))
+
+                // Dots
+                ctx.setFillColor(dotColor)
+                ctx.fillEllipse(in: CGRect(x: cx - dotRadius, y: cy - dotRadius, width: dotRadius * 2, height: dotRadius * 2))
+            }
+        }
+    }
+}
+
 final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     static let shared = PiPWindowManager()
 
     private var pipWindow: PiPPanel?
     private var webView: PiPWebView?
+    private var dragHandleView: PiPDragHandleView?
     private var containerView: NSView?
     private var visualEffectView: NSVisualEffectView?
     private var currentUrlStr: String?
     private var currentBackgroundStyle: String = "transparent"
+
+    private var cursorTrackingTimer: Timer?
+    private var isFollowMouseEnabled: Bool = true
+    private var currentYaw: Double = 0.0
+    private var currentPitch: Double = 0.0
 
     private override init() { super.init() }
 
@@ -112,6 +219,17 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         let cleanCompanionScript = WKUserScript(
             source: """
             (function() {
+                window.AvatarBridge = {
+                    setLookAt: function(x, y) {
+                        const yaw = x * 0.42;
+                        const pitch = -y * 0.32;
+                        window.postMessage({ type: 'SET_POSE', yaw: yaw, pitch: pitch }, '*');
+                    },
+                    setYaw: function(r) {
+                        window.postMessage({ type: 'SET_POSE', yaw: r }, '*');
+                    }
+                };
+
                 const styleId = 'pip-companion-clean-style';
                 function injectCleanStyle() {
                     if (document.getElementById(styleId)) return;
@@ -142,15 +260,56 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
                             overflow: hidden !important;
                             margin: 0 !important;
                             padding: 0 !important;
+                            width: 100vw !important;
+                            height: 100vh !important;
+                            min-height: 100vh !important;
                             user-select: none !important;
                             -webkit-user-select: none !important;
                         }
 
+                        .avatar-app,
+                        .avatar-app__workspace,
+                        .avatar-app__stage {
+                            display: flex !important;
+                            flex-direction: column !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                        }
+
+                        .avatar-app__stage-preview {
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            width: 100% !important;
+                            height: 100% !important;
+                            max-width: none !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                            padding-bottom: 16px !important;
+                        }
+
                         #avatar-camera-frame {
+                            display: flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
                             background: transparent !important;
                             background-color: transparent !important;
                             box-shadow: none !important;
                             border: none !important;
+                            width: 100% !important;
+                            height: 100% !important;
+                            max-width: none !important;
+                            max-height: none !important;
+                            aspect-ratio: auto !important;
+                        }
+
+                        .interactive-avatar,
+                        .interactive-avatar__canvas {
+                            display: block !important;
+                            width: 100% !important;
+                            height: 100% !important;
+                            max-width: 100% !important;
+                            max-height: 100% !important;
                         }
 
                         html, body, .avatar-app, .avatar-app__stage, .avatar-app__stage-preview, #avatar-camera-frame, svg, canvas {
@@ -224,6 +383,18 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         }
         container.addSubview(wv)
 
+        let handleWidth: CGFloat = 48
+        let handleHeight: CGFloat = 16
+        let handleX = (container.bounds.width - handleWidth) / 2.0
+        let handleY: CGFloat = 8.0
+        let dragHandle = PiPDragHandleView(frame: NSRect(x: handleX, y: handleY, width: handleWidth, height: handleHeight))
+        dragHandle.autoresizingMask = [.minYMargin, .minXMargin, .maxXMargin]
+        if let draggableClickable = args?["pipDraggableClickable"] as? Bool {
+            dragHandle.isDraggable = draggableClickable
+        }
+        container.addSubview(dragHandle)
+        self.dragHandleView = dragHandle
+
         window.contentView = container
         self.pipWindow = window
         self.webView = wv
@@ -243,7 +414,13 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         if let draggableClickable = args?["pipDraggableClickable"] as? Bool {
             window.ignoresMouseEvents = !draggableClickable
             wv.isDraggable = draggableClickable
+            dragHandle.isDraggable = draggableClickable
         }
+
+        if let followMouse = args?["followMouse"] as? Bool {
+            self.isFollowMouseEnabled = followMouse
+        }
+        startCursorTracking()
 
         currentUrlStr = avatarUrlStr
         if let url = URL(string: avatarUrlStr) {
@@ -256,15 +433,57 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
     }
 
     func hidePipWindow() {
+        stopCursorTracking()
         guard let window = pipWindow, let wv = webView else { return }
         wv.stopLoading()
         window.orderOut(nil)
         window.contentView = nil
         self.pipWindow = nil
         self.webView = nil
+        self.dragHandleView = nil
         self.containerView = nil
         self.visualEffectView = nil
         self.currentUrlStr = nil
+    }
+
+    private func startCursorTracking() {
+        cursorTrackingTimer?.invalidate()
+        cursorTrackingTimer = Timer.scheduledTimer(withTimeInterval: 0.033, repeats: true) { [weak self] _ in
+            self?.updateHeadTracking()
+        }
+    }
+
+    private func stopCursorTracking() {
+        cursorTrackingTimer?.invalidate()
+        cursorTrackingTimer = nil
+    }
+
+    private func updateHeadTracking() {
+        guard isFollowMouseEnabled, let window = pipWindow, window.isVisible, let wv = webView else { return }
+        let mouseLoc = NSEvent.mouseLocation
+        let frame = window.frame
+        let centerX = frame.midX
+        let centerY = frame.midY
+
+        let dx = mouseLoc.x - centerX
+        let dy = mouseLoc.y - centerY // In Cocoa, higher Y is higher on screen
+
+        let normX = max(-1.0, min(1.0, dx / 400.0))
+        let normY = max(-1.0, min(1.0, dy / 400.0))
+
+        let targetYaw = normX * 0.42
+        let targetPitch = -normY * 0.32
+
+        // Smooth lerp (0.25)
+        let nextYaw = currentYaw + (targetYaw - currentYaw) * 0.25
+        let nextPitch = currentPitch + (targetPitch - currentPitch) * 0.25
+
+        if abs(nextYaw - currentYaw) > 0.003 || abs(nextPitch - currentPitch) > 0.003 {
+            currentYaw = nextYaw
+            currentPitch = nextPitch
+            let script = "window.postMessage({ type: 'SET_POSE', yaw: \(nextYaw), pitch: \(nextPitch) }, '*');"
+            wv.evaluateJavaScript(script, completionHandler: nil)
+        }
     }
 
     func syncSettings(_ args: [String: Any]) {
@@ -281,6 +500,16 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         if let draggableClickable = args["pipDraggableClickable"] as? Bool {
             window.ignoresMouseEvents = !draggableClickable
             wv.isDraggable = draggableClickable
+            dragHandleView?.isDraggable = draggableClickable
+        }
+
+        if let followMouse = args["followMouse"] as? Bool {
+            isFollowMouseEnabled = followMouse
+            if !followMouse {
+                wv.evaluateJavaScript("window.postMessage({ type: 'SET_POSE', yaw: 0, pitch: 0 }, '*');", completionHandler: nil)
+                currentYaw = 0.0
+                currentPitch = 0.0
+            }
         }
 
         if let avatarUrlStr = args["avatarUrl"] as? String,
