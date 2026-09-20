@@ -317,6 +317,106 @@ class AvatarFaceStyle {
     return copyWith(height: height * openness.clamp(0.02, 1.0));
   }
 
+  /// A copy with the channels an expression is allowed to move.
+  ///
+  /// Deliberately narrow: an expression may reshape the eyes and mouth, but it
+  /// must not relocate the nose or change the eye shape the species was drawn
+  /// with, or a happy cat stops looking like a cat.
+  AvatarFaceStyle copyWithExpression({
+    double? height,
+    double? width,
+    double? gap,
+    double? eyeRoundness,
+    double? leftEyeRotation,
+    double? rightEyeRotation,
+    bool? mouthEnabled,
+    String? mouthShape,
+    double? mouthCurve,
+    double? mouthWidth,
+    double? mouthHeight,
+    bool? highlightEnabled,
+    double? highlightSize,
+  }) {
+    return AvatarFaceStyle(
+      gap: gap ?? this.gap,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      rotation: rotation,
+      leftEyeRotation: leftEyeRotation ?? this.leftEyeRotation,
+      rightEyeRotation: rightEyeRotation ?? this.rightEyeRotation,
+      eyeShape: eyeShape,
+      eyeRoundness: eyeRoundness ?? this.eyeRoundness,
+      noseEnabled: noseEnabled,
+      noseShape: noseShape,
+      noseWidth: noseWidth,
+      noseHeight: noseHeight,
+      noseY: noseY,
+      noseRotation: noseRotation,
+      mouthEnabled: mouthEnabled ?? this.mouthEnabled,
+      mouthShape: mouthShape ?? this.mouthShape,
+      mouthWidth: mouthWidth ?? this.mouthWidth,
+      mouthHeight: mouthHeight ?? this.mouthHeight,
+      mouthY: mouthY,
+      mouthCurve: mouthCurve ?? this.mouthCurve,
+      mouthRotation: mouthRotation,
+      highlightEnabled: highlightEnabled ?? this.highlightEnabled,
+      highlightColor: highlightColor,
+      highlightOffsetX: highlightOffsetX,
+      highlightOffsetY: highlightOffsetY,
+      highlightOpacity: highlightOpacity,
+      highlightSize: highlightSize ?? this.highlightSize,
+    );
+  }
+
+  /// A copy with the channels a *user's* styling may move.
+  ///
+  /// Wider than [copyWithExpression], because this is someone deliberately
+  /// changing how their companion looks rather than a mood passing over it —
+  /// but still not everything: the eye shape and the nose's position stay as
+  /// the species was drawn, so no amount of styling turns one animal into
+  /// another.
+  AvatarFaceStyle restyle({
+    double? gap,
+    double? width,
+    double? height,
+    double? mouthWidth,
+    double? mouthHeight,
+    double? mouthY,
+    bool? noseEnabled,
+    bool? highlightEnabled,
+    double? highlightSize,
+  }) {
+    return AvatarFaceStyle(
+      gap: gap ?? this.gap,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      rotation: rotation,
+      leftEyeRotation: leftEyeRotation,
+      rightEyeRotation: rightEyeRotation,
+      eyeShape: eyeShape,
+      eyeRoundness: eyeRoundness,
+      noseEnabled: noseEnabled ?? this.noseEnabled,
+      noseShape: noseShape,
+      noseWidth: noseWidth,
+      noseHeight: noseHeight,
+      noseY: noseY,
+      noseRotation: noseRotation,
+      mouthEnabled: mouthEnabled,
+      mouthShape: mouthShape,
+      mouthWidth: mouthWidth ?? this.mouthWidth,
+      mouthHeight: mouthHeight ?? this.mouthHeight,
+      mouthY: mouthY ?? this.mouthY,
+      mouthCurve: mouthCurve,
+      mouthRotation: mouthRotation,
+      highlightEnabled: highlightEnabled ?? this.highlightEnabled,
+      highlightColor: highlightColor,
+      highlightOffsetX: highlightOffsetX,
+      highlightOffsetY: highlightOffsetY,
+      highlightOpacity: highlightOpacity,
+      highlightSize: highlightSize ?? this.highlightSize,
+    );
+  }
+
   AvatarFaceStyle copyWith({double? height, double? gap}) {
     return AvatarFaceStyle(
       gap: gap ?? this.gap,
@@ -432,25 +532,52 @@ class AvatarScene {
     return parts.isEmpty ? null : parts.first;
   }
 
+  /// A copy wearing different part colours, for palette application.
+  AvatarScene copyWithParts(
+    List<AvatarPart> parts, {
+    AvatarOutlineStyle? outlineStyle,
+  }) {
+    return AvatarScene(
+      preset: preset,
+      parts: parts,
+      faceStyle: faceStyle,
+      viewState: viewState,
+      outlineStyle: outlineStyle ?? this.outlineStyle,
+      shadowStyle: shadowStyle,
+      cameraBackground: cameraBackground,
+      gridDensity: gridDensity,
+      lightAzimuth: lightAzimuth,
+      lightElevation: lightElevation,
+      lightDistance: lightDistance,
+      showOutline: showOutline,
+      showAvatarShadow: showAvatarShadow,
+    );
+  }
+
   AvatarScene copyWith({
     AvatarViewState? viewState,
     AvatarFaceStyle? faceStyle,
     double? gridDensity,
+    AvatarOutlineStyle? outlineStyle,
+    bool? showOutline,
+    bool? showAvatarShadow,
+    double? lightAzimuth,
+    double? lightElevation,
   }) {
     return AvatarScene(
       preset: preset,
       parts: parts,
       faceStyle: faceStyle ?? this.faceStyle,
       viewState: viewState ?? this.viewState,
-      outlineStyle: outlineStyle,
+      outlineStyle: outlineStyle ?? this.outlineStyle,
       shadowStyle: shadowStyle,
       cameraBackground: cameraBackground,
       gridDensity: gridDensity ?? this.gridDensity,
-      lightAzimuth: lightAzimuth,
-      lightElevation: lightElevation,
+      lightAzimuth: lightAzimuth ?? this.lightAzimuth,
+      lightElevation: lightElevation ?? this.lightElevation,
       lightDistance: lightDistance,
-      showOutline: showOutline,
-      showAvatarShadow: showAvatarShadow,
+      showOutline: showOutline ?? this.showOutline,
+      showAvatarShadow: showAvatarShadow ?? this.showAvatarShadow,
     );
   }
 

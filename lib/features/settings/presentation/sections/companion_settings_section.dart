@@ -176,7 +176,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                   ]),
 
-                  sectionHeader('Floating PiP Settings'),
+                  sectionHeader('Floating Window'),
                   buildCard([
                     dropdownRow(
                       'Backdrop',
@@ -236,6 +236,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       widget.controller.companionFollowMouse,
                       (v) => widget.controller.changeFollowMouse(v),
                     ),
+                    divider(),
+                    toggleRow(
+                      'Wander Around the Screen',
+                      'Every so often the pet strolls to a new spot near the '
+                          'edge of your display. It never moves while you are '
+                          'hovering over it or dragging it.',
+                      widget.controller.companionWanderingEnabled,
+                      (v) => widget.controller.changeWandering(v),
+                    ),
                   ]),
 
                   const SizedBox(height: 32),
@@ -244,11 +253,27 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   buildCard([
                     toggleRow(
                       'Petting & Affection',
-                      'Interact with your pet by hovering or moving your cursor over it.',
+                      'Offers a "pet" button when you hover the companion, and '
+                          'lets you scratch it by clicking.',
                       widget.controller.pettingEnabled,
                       (v) => widget.controller.changePettingEnabled(v),
                     ),
-
+                    divider(),
+                    toggleRow(
+                      'Play',
+                      'Offers a game when you hover the companion. It stays '
+                          'wound up for a while afterwards.',
+                      widget.controller.ballThrowEnabled,
+                      (v) => widget.controller.changeBallThrowEnabled(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Treats',
+                      'Offers a treat when you hover the companion. The '
+                          'quickest way to win it over.',
+                      widget.controller.treatEnabled,
+                      (v) => widget.controller.changeTreatEnabled(v),
+                    ),
                     divider(),
                     toggleRow(
                       'Developer Milestones',

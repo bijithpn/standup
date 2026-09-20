@@ -11,6 +11,9 @@ import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/avatar_breed.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
@@ -53,6 +56,7 @@ enum _StudioSection {
   species('Species', Icons.pets_rounded),
   breed('Breed', Icons.auto_awesome_mosaic_rounded),
   palette('Palette', Icons.palette_rounded),
+  style('Style', Icons.tune_rounded),
   seed('Seed', Icons.casino_rounded);
 
   const _StudioSection(this.label, this.icon);
@@ -451,6 +455,8 @@ class _StudioSidebar extends StatelessWidget {
         return _BreedPanel(definition: definition, onUpdate: onUpdate);
       case _StudioSection.palette:
         return _PalettePanel(definition: definition, onUpdate: onUpdate);
+      case _StudioSection.style:
+        return _StylePanel(definition: definition, onUpdate: onUpdate);
       case _StudioSection.seed:
         return _SeedPanel(
           definition: definition,
@@ -577,13 +583,28 @@ class _PanelScaffold extends StatelessWidget {
 /// stall in this page.
 class _ArtworkTile extends StatelessWidget {
   const _ArtworkTile({
-    required this.recipe,
+    required this.species,
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.palette,
+    this.style = AvatarSceneStyle.authored,
+    this.fallbackAsset,
   });
 
-  final AvatarArtworkRecipe recipe;
+  /// The species the tile previews, as an app-side enum name.
+  final String species;
+
+  /// Applied so a tile shows the companion as it would actually look.
+  final AvatarPalette? palette;
+
+  /// Ditto for the scene styling, so a lit-from-the-left companion is lit
+  /// that way in the grid the user picks it from.
+  final AvatarSceneStyle style;
+
+  /// Flat artwork for anything the scene catalog cannot build.
+  final String? fallbackAsset;
+
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
@@ -611,7 +632,33 @@ class _ArtworkTile extends StatelessWidget {
           ),
           child: Column(
             children: <Widget>[
-              Expanded(child: AvatarArtwork(recipe: recipe)),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final extent = math.min(
+                      constraints.maxWidth,
+                      constraints.maxHeight,
+                    );
+                    if (!hasAvatarScene(species)) {
+                      return AvatarArtwork(
+                        recipe: AvatarArtworkRecipe(
+                          assetKey: fallbackAsset ?? '',
+                        ),
+                      );
+                    }
+                    return Avatar3DView(
+                      preset: avatarPresetFor(species),
+                      size: extent,
+                      palette: palette,
+                      style: style,
+                      // A grid of tiles is the one place the mesh cost
+                      // multiplies, so each one is drawn coarsely.
+                      densityScale: 0.4,
+                      showShadow: false,
+                    );
+                  },
+                ),
+              ),
               const SizedBox(height: 3),
               Text(
                 label,
@@ -657,7 +704,12 @@ class _SpeciesPanel extends StatelessWidget {
         itemBuilder: (context, index) {
           final entry = species[index];
           return _ArtworkTile(
-            recipe: AvatarArtworkRecipe(assetKey: entry.svgAssetPath),
+            species: entry.name,
+            fallbackAsset: entry.svgAssetPath,
+            palette: definition.palette == AvatarPalette.defaultPalette
+                ? null
+                : definition.palette,
+            style: avatarStyleFrom(definition.parts),
             label: entry.displayName,
             isSelected: entry == definition.species,
             onTap: () => onSelected(entry),
@@ -713,7 +765,14 @@ class _BreedPanel extends StatelessWidget {
         itemBuilder: (context, index) {
           final breed = breeds[index];
           return _ArtworkTile(
-            recipe: AvatarArtworkRecipe(assetKey: breed.svgAssetPath),
+            // Breeds are variations of one species, so each tile previews the
+            // species scene; the breed's own artwork is the fallback.
+            species: definition.species.name,
+            fallbackAsset: breed.svgAssetPath,
+            palette: definition.palette == AvatarPalette.defaultPalette
+                ? null
+                : definition.palette,
+            style: avatarStyleFrom(definition.parts),
             label: breed.displayName,
             isSelected: breed.id == selected,
             onTap: () => onUpdate(definition.copyWith(breed: breed.id)),
@@ -795,6 +854,302 @@ class _PalettePanel extends StatelessWidget {
       (m) => '${m[1]} ${m[2]}',
     );
     return spaced[0].toUpperCase() + spaced.substring(1);
+  }
+}
+
+/// Everything about the companion's look that is not its species or its
+/// colours.
+///
+/// These were all in the scene data from the start and none of them were
+/// reachable, so every companion wore exactly the look its illustrator picked:
+/// the same light, the same outline weight, the same face proportions. Each
+/// control here is an override, and "Reset" puts every one of them back to
+/// whatever the scene was authored with rather than to some global default.
+class _StylePanel extends StatelessWidget {
+  const _StylePanel({required this.definition, required this.onUpdate});
+
+  final AvatarDefinition definition;
+  final ValueChanged<AvatarDefinition> onUpdate;
+
+  AvatarSceneStyle get _style => avatarStyleFrom(definition.parts);
+
+  /// The scene as authored, when the catalog has it. Used for the starting
+  /// position of controls the user has not touched, so a slider at rest shows
+  /// the truth rather than a made-up default.
+  AvatarScene? get _authored =>
+      AvatarSceneCatalog.instance.sceneFor(avatarPresetFor(definition.species.name));
+
+  void _apply(AvatarSceneStyle style) {
+    onUpdate(
+      definition.copyWith(parts: withAvatarStyle(definition.parts, style)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = _style;
+    final scene = _authored;
+
+    return _PanelScaffold(
+      title: 'Style',
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        children: <Widget>[
+          _StyleGroup(
+            label: 'Light',
+            children: <Widget>[
+              _StyleSlider(
+                label: 'Direction',
+                value: style.lightAzimuth ??
+                    scene?.lightAzimuth ??
+                    kDefaultLightAzimuth,
+                min: -180,
+                max: 180,
+                format: (v) => '${v.round()}°',
+                onChanged: (v) =>
+                    _apply(style.copyWith(lightAzimuth: normaliseAzimuth(v))),
+              ),
+              _StyleSlider(
+                label: 'Height',
+                value: style.lightElevation ??
+                    scene?.lightElevation ??
+                    kDefaultLightElevation,
+                min: AvatarSceneStyle.minElevation,
+                max: AvatarSceneStyle.maxElevation,
+                format: (v) => '${v.round()}°',
+                onChanged: (v) => _apply(style.copyWith(lightElevation: v)),
+              ),
+            ],
+          ),
+          _StyleGroup(
+            label: 'Linework',
+            children: <Widget>[
+              _StyleSwitch(
+                label: 'Outline',
+                value: style.showOutline ?? scene?.showOutline ?? true,
+                onChanged: (v) => _apply(style.copyWith(showOutline: v)),
+              ),
+              _StyleSlider(
+                label: 'Weight',
+                value: style.outlineWidth ?? 1.0,
+                min: AvatarSceneStyle.minOutlineWidth,
+                max: AvatarSceneStyle.maxOutlineWidth,
+                format: (v) => '${v.toStringAsFixed(2)}x',
+                enabled: style.showOutline ?? scene?.showOutline ?? true,
+                onChanged: (v) => _apply(style.copyWith(outlineWidth: v)),
+              ),
+              _StyleSwitch(
+                label: 'Drop shadow',
+                value: style.showShadow ?? scene?.showAvatarShadow ?? true,
+                onChanged: (v) => _apply(style.copyWith(showShadow: v)),
+              ),
+            ],
+          ),
+          _StyleGroup(
+            label: 'Face',
+            children: <Widget>[
+              _StyleSlider(
+                label: 'Size',
+                value: style.faceScale ?? 1.0,
+                min: AvatarSceneStyle.minFaceScale,
+                max: AvatarSceneStyle.maxFaceScale,
+                format: (v) => '${v.toStringAsFixed(2)}x',
+                onChanged: (v) => _apply(style.copyWith(faceScale: v)),
+              ),
+              _StyleSlider(
+                label: 'Eye spacing',
+                value: style.eyeSpacing ?? 1.0,
+                min: AvatarSceneStyle.minEyeSpacing,
+                max: AvatarSceneStyle.maxEyeSpacing,
+                format: (v) => '${v.toStringAsFixed(2)}x',
+                onChanged: (v) => _apply(style.copyWith(eyeSpacing: v)),
+              ),
+              _StyleSwitch(
+                label: 'Eye sparkle',
+                value: style.eyeSparkle ?? scene?.faceStyle.highlightEnabled ?? false,
+                onChanged: (v) => _apply(style.copyWith(eyeSparkle: v)),
+              ),
+              _StyleSwitch(
+                label: 'Nose',
+                value: style.nose ?? scene?.faceStyle.noseEnabled ?? false,
+                onChanged: (v) => _apply(style.copyWith(nose: v)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: style.isAuthored
+                  ? null
+                  : () => _apply(AvatarSceneStyle.authored),
+              icon: const Icon(Icons.restart_alt_rounded, size: 15),
+              label: const Text('Back to the original look'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.textSecondary,
+                textStyle: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StyleGroup extends StatelessWidget {
+  const _StyleGroup({required this.label, required this.children});
+
+  final String label;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6, left: 2),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceCard,
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+              border: Border.all(color: AppTheme.border),
+            ),
+            child: Column(children: children),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StyleSlider extends StatelessWidget {
+  const _StyleSlider({
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.format,
+    required this.onChanged,
+    this.enabled = true,
+  });
+
+  final String label;
+  final double value;
+  final double min;
+  final double max;
+  final String Function(double) format;
+  final ValueChanged<double> onChanged;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = enabled ? AppTheme.textSecondary : AppTheme.textMuted;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11.5,
+                    color: enabled ? AppTheme.textPrimary : AppTheme.textMuted,
+                  ),
+                ),
+              ),
+              Text(
+                format(value),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: muted,
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+            ),
+            child: Slider(
+              value: value.clamp(min, max),
+              min: min,
+              max: max,
+              activeColor: AppTheme.accent,
+              onChanged: enabled ? onChanged : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StyleSwitch extends StatelessWidget {
+  const _StyleSwitch({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: <Widget>[
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11.5,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+          Transform.scale(
+            scale: 0.75,
+            child: Switch(
+              value: value,
+              activeThumbColor: AppTheme.accent,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

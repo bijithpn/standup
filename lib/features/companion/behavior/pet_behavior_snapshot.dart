@@ -1,5 +1,7 @@
 import 'dart:ui' show Offset;
 
+import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
+
 /// What the pet is doing right now, at the coarse level a viewer would name.
 enum PetActivity {
   /// Eyes shut, breathing deep and slow.
@@ -44,6 +46,7 @@ class PetBehaviorSnapshot {
     this.arousal = 0.3,
     this.attention = 0.0,
     this.activity = PetActivity.idle,
+    this.emotion = PetEmotionState.neutral,
   });
 
   /// Where the eyes point, each axis -1..1. Positive is right and down.
@@ -79,6 +82,10 @@ class PetBehaviorSnapshot {
 
   final PetActivity activity;
 
+  /// What the companion is feeling. Drives its face, and nothing else needs to
+  /// say it out loud.
+  final PetEmotionState emotion;
+
   /// True when the pet is alert enough to react to things.
   bool get isAwake =>
       activity != PetActivity.sleeping && activity != PetActivity.drowsy;
@@ -95,6 +102,7 @@ class PetBehaviorSnapshot {
     double? arousal,
     double? attention,
     PetActivity? activity,
+    PetEmotionState? emotion,
   }) {
     return PetBehaviorSnapshot(
       gaze: gaze ?? this.gaze,
@@ -108,6 +116,7 @@ class PetBehaviorSnapshot {
       arousal: arousal ?? this.arousal,
       attention: attention ?? this.attention,
       activity: activity ?? this.activity,
+      emotion: emotion ?? this.emotion,
     );
   }
 

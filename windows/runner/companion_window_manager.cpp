@@ -284,6 +284,10 @@ void CompanionWindowManager::ShowPiP(
   std::string render_mode;
   bool        draggable   = true;
   bool        keep_on_screen = true;
+  // Which interactions the PiP may offer when the pointer is over it.
+  bool        petting_enabled = true;
+  bool        play_enabled    = true;
+  bool        treat_enabled   = true;
 
   it = args.find("companionToyType");   if (it != args.end()) toy_type    = ExtractString(it->second, "tennis_ball");
   it = args.find("companionTreatType"); if (it != args.end()) treat_type  = ExtractString(it->second, "sushi");
@@ -295,6 +299,9 @@ void CompanionWindowManager::ShowPiP(
   it = args.find("renderMode");         if (it != args.end()) render_mode = ExtractString(it->second);
   it = args.find("pipDraggableClickable"); if (it != args.end()) draggable = ExtractBool(it->second, true);
   it = args.find("keepOnScreen");       if (it != args.end()) keep_on_screen = ExtractBool(it->second, true);
+  it = args.find("pettingEnabled");     if (it != args.end()) petting_enabled = ExtractBool(it->second, true);
+  it = args.find("playEnabled");        if (it != args.end()) play_enabled    = ExtractBool(it->second, true);
+  it = args.find("treatEnabled");       if (it != args.end()) treat_enabled   = ExtractBool(it->second, true);
 
   const int iX = static_cast<int>(x);
   const int iY = static_cast<int>(y);
@@ -331,6 +338,9 @@ void CompanionWindowManager::ShowPiP(
   settings[flutter::EncodableValue("renderMode")]          = flutter::EncodableValue(render_mode);
   settings[flutter::EncodableValue("pipDraggableClickable")] = flutter::EncodableValue(draggable);
   settings[flutter::EncodableValue("keepOnScreen")]        = flutter::EncodableValue(keep_on_screen);
+  settings[flutter::EncodableValue("pettingEnabled")]      = flutter::EncodableValue(petting_enabled);
+  settings[flutter::EncodableValue("playEnabled")]         = flutter::EncodableValue(play_enabled);
+  settings[flutter::EncodableValue("treatEnabled")]        = flutter::EncodableValue(treat_enabled);
   pip_window_->SetInitialSettings(settings);
   pip_window_->SetIsPiP(true);
 

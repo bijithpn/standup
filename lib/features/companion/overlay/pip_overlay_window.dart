@@ -14,7 +14,8 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
-import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
+import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
+import 'package:breakmate/features/companion/behavior/pet_wanderer.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -61,6 +62,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     displayManager: NativeDisplayManager(),
   );
 
+  late final PetWanderer _wanderer = PetWanderer.forWindow(
+    windowManager: _windowManager,
+    engine: _engine,
+    // Wherever it walks to is where it now lives, so whatever the pet knows
+    // about its own position has to be brought back into line.
+    onArrived: _syncViewport,
+  );
+
   late String _themeId = SimplePrefs.instance.getString(
     'companion_pet_theme',
     defaultValue: 'avatar_cat',
@@ -90,6 +99,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   );
   bool _clickThrough = false;
 
+  /// Which interactions the user has left switched on. Everything is on until
+  /// the host says otherwise, so the affordances appear on the first frame
+  /// rather than popping in once settings arrive.
+  bool _pettingEnabled = true;
+  bool _playEnabled = true;
+  bool _treatEnabled = true;
+
   Rect _windowRect = Rect.zero;
   bool _acceptsMouse = true;
   bool _applyingMouseMode = false;
@@ -113,6 +129,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     _channel.setMethodCallHandler(null);
     _viewportTimer?.cancel();
     _cursorSub?.cancel();
+    _wanderer.dispose();
     _ticker.dispose();
     _engine.dispose();
     super.dispose();
@@ -176,6 +193,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     await _windowManager.initialize();
     await _syncViewport();
+
+    // Started only once the window manager knows where the window actually
+    // is; before that the wanderer would be walking from a guess.
+    if (mounted) _wanderer.start();
   }
 
   void _applySettings(OverlayConfig config) {
@@ -191,6 +212,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       _backdrop = config.pipBackgroundStyle ?? _backdrop;
       _pipDraggableClickable =
           config.pipDraggableClickable ?? _pipDraggableClickable;
+      _pettingEnabled = config.pettingEnabled ?? _pettingEnabled;
+      _playEnabled = config.playEnabled ?? _playEnabled;
+      _treatEnabled = config.treatEnabled ?? _treatEnabled;
 
       final incoming = config.avatarDefinitionJson;
       if (incoming != null && incoming.isNotEmpty) {
@@ -198,6 +222,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       }
     });
 
+    _wanderer.enabled = config.wanderingEnabled ?? _wanderer.enabled;
     unawaited(_windowManager.setOpacity(_pipOpacity));
     _warmArtwork();
   }
@@ -312,6 +337,45 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   void _handlePetTap() {
     _engine.pet();
+    _report('pet');
+  }
+
+  /// Carries out one of the offered interactions.
+  ///
+  /// Each one is two things at once: something that happens to the pet now,
+  /// and a note to the host, which is the only side that can write settings or
+  /// touch the break timer.
+  void _handleWish(PetWish wish) {
+    switch (wish) {
+      case PetWish.petting:
+        _engine.pet();
+        _report('pet');
+      case PetWish.play:
+        _engine.play();
+        _report('play');
+      case PetWish.treat:
+        _engine.feed();
+        _report('treat');
+      case PetWish.rest:
+        _engine.onBreakTaken();
+        _engine.pet();
+        _report('takeBreak');
+      case PetWish.none:
+        break;
+    }
+    // Whatever just happened, the pet is now busy with the user.
+    _wanderer.suspend();
+  }
+
+  void _report(String interactionType) {
+    unawaited(
+      IpcBridge.instance.dispatch(
+        IpcEvent.companionInteraction(
+          interactionType: interactionType,
+          metadata: <String, dynamic>{'petName': _petName},
+        ),
+      ),
+    );
   }
 
   void _handleRename() {
@@ -372,6 +436,15 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   bool get _hasBackdrop => _backdrop != 'none' && _backdrop != 'transparent';
 
+  /// The interactions this window is allowed to offer, in the order they are
+  /// shown. Resting is not in the list: it only appears when the companion
+  /// actually asks for it.
+  List<PetWish> get _availableActions => <PetWish>[
+        if (_pettingEnabled) PetWish.petting,
+        if (_playEnabled) PetWish.play,
+        if (_treatEnabled) PetWish.treat,
+      ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -379,8 +452,15 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       body: Opacity(
         opacity: _pipOpacity.clamp(0.2, 1.0),
         child: MouseRegion(
-          onEnter: (_) => setState(() => _isHovered = true),
-          onExit: (_) => setState(() => _isHovered = false),
+          onEnter: (_) {
+            setState(() => _isHovered = true);
+            // Nothing walks off while it is being looked at.
+            _wanderer.suspend();
+          },
+          onExit: (_) {
+            setState(() => _isHovered = false);
+            _wanderer.resume();
+          },
           child: Stack(
             clipBehavior: Clip.none,
             children: <Widget>[
@@ -441,8 +521,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               height: 34,
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onPanStart: (_) => _windowManager.startDrag(),
-                onPanEnd: (_) => _syncViewport(),
+                onPanStart: (_) {
+                  _wanderer.suspend();
+                  _windowManager.startDrag();
+                },
+                onPanEnd: (_) {
+                  _syncViewport();
+                  _wanderer.resume();
+                },
                 child: Center(
                   child: Container(
                     width: 34,
@@ -487,18 +573,36 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               ),
             ),
 
-            if (_isBlob)
-              Positioned(
-                top: 6,
-                left: 6,
-                child: _ChromeButton(
-                  icon: Icons.edit_rounded,
-                  background: _chromeBackground,
-                  foreground: _chromeForeground,
-                  tooltip: 'Rename ${_petName.trim().isEmpty ? 'companion' : _petName}',
-                  onTap: _handleRename,
-                ),
+            // Name and edit sit top-left so the bottom of the window is free
+            // for the interactions, which are the part a new user needs.
+            Positioned(
+              top: 6,
+              left: 6,
+              right: 60,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (_isBlob) ...<Widget>[
+                    _ChromeButton(
+                      icon: Icons.edit_rounded,
+                      background: _chromeBackground,
+                      foreground: _chromeForeground,
+                      tooltip: 'Rename '
+                          '${_petName.trim().isEmpty ? 'companion' : _petName}',
+                      onTap: _handleRename,
+                    ),
+                    const SizedBox(width: 4),
+                  ],
+                  Flexible(
+                    child: _NamePill(
+                      name: _petName,
+                      background: _chromeBackground,
+                      foreground: _chromeForeground,
+                    ),
+                  ),
+                ],
               ),
+            ),
 
             Positioned(
               left: 0,
@@ -507,16 +611,215 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               child: Center(
                 child: AnimatedBuilder(
                   animation: _engine,
-                  builder: (context, _) => _StatusPill(
-                    name: _petName,
-                    activity: _engine.snapshot.activity,
+                  builder: (context, _) => _ActionBar(
+                    actions: _availableActions,
+                    suggested: _engine.wish,
                     background: _chromeBackground,
                     foreground: _chromeForeground,
+                    onSelected: _handleWish,
                   ),
                 ),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// How one interaction is presented.
+class _WishStyle {
+  const _WishStyle(this.icon, this.label, this.hint);
+
+  final IconData icon;
+
+  /// One word, shown under the row for whichever button is in play.
+  final String label;
+
+  /// The longer form, for the tooltip.
+  final String hint;
+}
+
+const Map<PetWish, _WishStyle> _wishStyles = <PetWish, _WishStyle>{
+  PetWish.petting: _WishStyle(
+    Icons.back_hand_rounded,
+    'Pet',
+    'Give it a scratch',
+  ),
+  PetWish.play: _WishStyle(
+    Icons.sports_baseball_rounded,
+    'Play',
+    'Throw something for it',
+  ),
+  PetWish.treat: _WishStyle(
+    Icons.cookie_rounded,
+    'Treat',
+    'Offer a treat',
+  ),
+  PetWish.rest: _WishStyle(
+    Icons.self_improvement_rounded,
+    'Rest',
+    'Start a break now',
+  ),
+};
+
+/// The things a user can actually do to the companion, shown on hover.
+///
+/// The face says what the pet feels, and that was the whole of it before —
+/// which left anyone seeing it for the first time with a wistful animal and no
+/// idea that the answer was to click it. So the options appear under the pet
+/// the moment the pointer arrives, with the one it would most appreciate right
+/// now picked out in the accent colour, and a single word naming whichever
+/// button is in play.
+class _ActionBar extends StatefulWidget {
+  const _ActionBar({
+    required this.actions,
+    required this.suggested,
+    required this.background,
+    required this.foreground,
+    required this.onSelected,
+  });
+
+  /// The interactions the user has left switched on.
+  final List<PetWish> actions;
+
+  /// What the pet would most like. Highlighted, and prepended to the row when
+  /// it is something the list does not already offer.
+  final PetWish suggested;
+
+  final Color background;
+  final Color foreground;
+  final ValueChanged<PetWish> onSelected;
+
+  @override
+  State<_ActionBar> createState() => _ActionBarState();
+}
+
+class _ActionBarState extends State<_ActionBar> {
+  PetWish? _hovered;
+
+  @override
+  Widget build(BuildContext context) {
+    final suggested = widget.suggested;
+    final actions = <PetWish>[
+      // Resting is the companion's own suggestion rather than a standing
+      // option, so it is only ever here when it is being asked for.
+      if (suggested == PetWish.rest) PetWish.rest,
+      ...widget.actions,
+    ];
+    if (actions.isEmpty) return const SizedBox.shrink();
+
+    // The hovered button wins the caption, because that is the one the user is
+    // asking about. Otherwise it names what the pet wants.
+    final labelled = _hovered ?? (actions.contains(suggested) ? suggested : null);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            for (final action in actions) ...<Widget>[
+              _ActionButton(
+                style: _wishStyles[action]!,
+                background: widget.background,
+                foreground: widget.foreground,
+                isSuggested: action == suggested,
+                onEnter: () => setState(() => _hovered = action),
+                onExit: () {
+                  if (_hovered == action) setState(() => _hovered = null);
+                },
+                onTap: () => widget.onSelected(action),
+              ),
+              const SizedBox(width: 6),
+            ],
+          ]..removeLast(),
+        ),
+        SizedBox(
+          height: 16,
+          child: labelled == null
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _wishStyles[labelled]!.label,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                      color: labelled == suggested
+                          ? AppTheme.accent
+                          : widget.foreground.withValues(alpha: 0.75),
+                      shadows: const <Shadow>[
+                        // The caption can land on anything from a dark card to
+                        // a white desktop, so it carries its own contrast.
+                        Shadow(blurRadius: 4, color: Color(0xCC000000)),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.style,
+    required this.background,
+    required this.foreground,
+    required this.isSuggested,
+    required this.onEnter,
+    required this.onExit,
+    required this.onTap,
+  });
+
+  final _WishStyle style;
+  final Color background;
+  final Color foreground;
+  final bool isSuggested;
+  final VoidCallback onEnter;
+  final VoidCallback onExit;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: style.hint,
+      waitDuration: const Duration(milliseconds: 400),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) => onEnter(),
+        onExit: (_) => onExit(),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: isSuggested
+                  ? AppTheme.accent.withValues(alpha: 0.22)
+                  : background,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSuggested
+                    ? AppTheme.accent.withValues(alpha: 0.85)
+                    : foreground.withValues(alpha: 0.14),
+                width: isSuggested ? 1.4 : 1.0,
+              ),
+            ),
+            child: Icon(
+              style.icon,
+              size: 15,
+              color: isSuggested
+                  ? AppTheme.accent
+                  : foreground.withValues(alpha: 0.85),
+            ),
+          ),
         ),
       ),
     );
@@ -576,44 +879,27 @@ class _ChromeButton extends StatelessWidget {
   }
 }
 
-/// The pet's name and what it is currently up to.
-class _StatusPill extends StatelessWidget {
-  const _StatusPill({
+/// The companion's name, and nothing else.
+///
+/// What it is feeling is on its face. Narrating that in a caption would say
+/// the same thing twice and worse — a pet that has to tell you it is happy
+/// is not a pet, it is a status bar.
+class _NamePill extends StatelessWidget {
+  const _NamePill({
     required this.name,
-    required this.activity,
     required this.background,
     required this.foreground,
   });
 
   final String name;
-  final PetActivity activity;
   final Color background;
   final Color foreground;
 
-  String get _label {
-    final petName = name.trim().isEmpty ? 'Your companion' : name.trim();
-    switch (activity) {
-      case PetActivity.sleeping:
-        return '$petName is asleep';
-      case PetActivity.drowsy:
-        return '$petName is dozing off';
-      case PetActivity.idle:
-        return petName;
-      case PetActivity.curious:
-        return '$petName noticed you';
-      case PetActivity.watching:
-        return '$petName is watching you';
-      case PetActivity.playful:
-        return '$petName wants to play';
-      case PetActivity.startled:
-        return 'You startled $petName';
-      case PetActivity.delighted:
-        return '$petName loves that';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final label = name.trim();
+    if (label.isEmpty) return const SizedBox.shrink();
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -622,7 +908,7 @@ class _StatusPill extends StatelessWidget {
         border: Border.all(color: foreground.withValues(alpha: 0.1)),
       ),
       child: Text(
-        _label,
+        label,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(

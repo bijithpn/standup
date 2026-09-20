@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
+import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 
 /// Simulates how a small animal attends to a cursor.
 ///
@@ -55,6 +56,16 @@ class PetBehaviorEngine extends ChangeNotifier {
   static const double _drowsyAfter = 75.0;
   static const double _sleepAfter = 140.0;
 
+  /// How long being ignored takes to turn into visible loneliness.
+  ///
+  /// Long enough that stepping away for a coffee does not produce a sad pet,
+  /// short enough that a whole afternoon of neglect shows.
+  static const double _lonelyAfter = 45 * 60;
+
+  /// How long an unbroken working stretch takes to show as weariness. Paired
+  /// with the break system: this is the pet noticing what BreakMate is for.
+  static const double _wearyAfter = 75 * 60;
+
   /// A cursor sample older than this counts as a cursor holding still.
   ///
   /// The feed slows down and eventually stops sampling when nothing moves, so
@@ -96,6 +107,24 @@ class PetBehaviorEngine extends ChangeNotifier {
   double _idleGazeTimer = 1.5;
   double _startle = 0.0;
   double _delight = 0.0;
+
+  /// How much of a game is still in progress, 1 at the moment of play and
+  /// decaying over a minute or two. Long-lived on purpose: petting is a
+  /// moment, playing is a mood.
+  double _playing = 0.0;
+
+  /// Direction and vigour of self-propelled travel, each axis -1..1. Set by
+  /// the wanderer while the window is moving itself across the screen.
+  Offset _travel = Offset.zero;
+  double _travelPhase = 0.0;
+
+  // The slow drives behind emotion. Unlike arousal and attention, which move
+  // second to second, these accumulate over the working day.
+  double _affection = 0.0;
+  double _loneliness = 0.0;
+  double _fatigue = 0.0;
+  double _sinceInteraction = 0.0;
+  double _sinceBreak = 0.0;
   double _bounceVelocity = 0.0;
   double _bounce = 0.0;
 
@@ -164,15 +193,115 @@ class PetBehaviorEngine extends ChangeNotifier {
     _attention = 1.0;
     _arousal = math.min(1.0, _arousal + 0.45);
     _quietSeconds = 0.0;
+    // Affection builds with repeated attention rather than maxing on one
+    // touch, so a pet that is looked after looks different from one that was
+    // clicked once.
+    _affection = math.min(1.0, _affection + 0.35);
+    _loneliness = math.max(0.0, _loneliness - 0.5);
+    _sinceInteraction = 0.0;
     if (!reducedMotion) _bounceVelocity = -150.0;
     _wake();
   }
+
+  /// The user started a game.
+  ///
+  /// Unlike [pet], this leaves a mood behind rather than a moment: the pet
+  /// stays wound up for a good while afterwards, which is what makes playing
+  /// feel like a different act from touching it.
+  void play() {
+    _playing = 1.0;
+    _attention = 1.0;
+    _arousal = 1.0;
+    _quietSeconds = 0.0;
+    _affection = math.min(1.0, _affection + 0.2);
+    _loneliness = math.max(0.0, _loneliness - 0.6);
+    _sinceInteraction = 0.0;
+    if (!reducedMotion) _bounceVelocity = -260.0;
+    _wake();
+  }
+
+  /// The user offered a treat.
+  ///
+  /// Warmer than a pet and slower to fade — being fed is the thing an animal
+  /// remembers about you.
+  void feed() {
+    _delight = 1.0;
+    _attention = 1.0;
+    _arousal = math.min(1.0, _arousal + 0.3);
+    _quietSeconds = 0.0;
+    _affection = math.min(1.0, _affection + 0.5);
+    _loneliness = 0.0;
+    _sinceInteraction = 0.0;
+    if (!reducedMotion) _bounceVelocity = -110.0;
+    _wake();
+  }
+
+  /// The user took a break. The companion is glad of it.
+  void onBreakTaken() {
+    _fatigue = math.max(0.0, _fatigue - 0.6);
+    _sinceBreak = 0.0;
+    _affection = math.min(1.0, _affection + 0.15);
+  }
+
+  /// The pet's current feeling, for the face to wear.
+  PetEmotionState get emotion => _emotion;
+
+  /// What the companion would most appreciate right now.
+  ///
+  /// The face already says how it feels. This exists because feeling and
+  /// remedy are not the same question, and a first-time user looking at a
+  /// wistful animal has no way to guess that the answer is to touch it.
+  PetWish get wish {
+    if (_quietSeconds > _drowsyAfter) return PetWish.none;
+    // Weariness is measured from how long the *user* has gone without a
+    // break, so the companion asking to rest is really asking on their behalf.
+    if (_fatigue > 0.45) return PetWish.rest;
+    if (_loneliness > 0.4) return PetWish.petting;
+    // Already mid-game: it does not need another ball thrown at it.
+    if (_playing > 0.2) return PetWish.petting;
+    if (_arousal > 0.6) return PetWish.play;
+    if (_affection < 0.2) return PetWish.petting;
+    return PetWish.treat;
+  }
+
+  /// Tells the pet it is moving itself across the screen, at [velocity] in
+  /// logical pixels a second.
+  ///
+  /// Travel is a separate channel from the cursor-driven posture: a creature
+  /// crossing a desktop leans into the direction it is going and bobs as it
+  /// goes, and without that it reads as a window sliding rather than an
+  /// animal walking. Pass [Offset.zero] when it stops.
+  void setTravel(Offset velocity) {
+    if (reducedMotion) {
+      _travel = Offset.zero;
+      return;
+    }
+
+    final speed = velocity.distance;
+    // Below this it is drift, not travel, and leaning into it would just
+    // jitter the body.
+    if (speed < 6) {
+      _travel = Offset.zero;
+      return;
+    }
+
+    final vigour = (speed / _travelFullSpeed).clamp(0.0, 1.0);
+    _travel = Offset(
+      velocity.dx / speed * vigour,
+      velocity.dy / speed * vigour,
+    );
+  }
+
+  /// The speed at which travel motion is drawn at full strength.
+  static const double _travelFullSpeed = 240.0;
 
   /// The user did something the pet should notice, without touching it.
   void nudge() {
     _attention = math.max(_attention, 0.8);
     _arousal = math.min(1.0, _arousal + 0.2);
     _quietSeconds = 0.0;
+    _sinceInteraction = 0.0;
+    _loneliness = math.max(0.0, _loneliness - 0.15);
     _wake();
   }
 
@@ -268,6 +397,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     _integratePosture(dt);
     _updateBlink(dt);
     _updateImpulses(dt);
+    _updateDrives(dt);
 
     _breathPhase += dt * _breathRate();
     if (_breathPhase > math.pi * 2) _breathPhase -= math.pi * 2;
@@ -314,7 +444,10 @@ class PetBehaviorEngine extends ChangeNotifier {
             : 0.3;
     final target = math.max(
       resting,
-      math.max(_attention * 0.75, math.max(_startle, _delight)),
+      math.max(
+        _attention * 0.75,
+        math.max(_startle, math.max(_delight, _playing)),
+      ),
     );
     // Arousal climbs quickly and settles slowly, like a real startle response.
     final rate = target > _arousal ? 6.0 : 0.55;
@@ -507,6 +640,14 @@ class PetBehaviorEngine extends ChangeNotifier {
   void _updateImpulses(double dt) {
     _startle = _decay(_startle, 2.4, dt);
     _delight = _decay(_delight, 1.6, dt);
+    // Much slower than the others: a game lasts, where a touch is over as
+    // soon as the hand lifts. This rate keeps the pet visibly excited for
+    // about forty seconds after a game and calm again within two minutes.
+    _playing = _decay(_playing, 0.04, dt);
+
+    // The walk cycle runs faster the harder the pet is travelling, and stops
+    // dead when it is not.
+    _travelPhase += dt * (5.5 + 7.0 * _travel.distance);
 
     if (reducedMotion) {
       _bounce = 0.0;
@@ -525,6 +666,73 @@ class PetBehaviorEngine extends ChangeNotifier {
     }
   }
 
+  /// Advances the slow feelings: affection fades, loneliness grows while
+  /// ignored, weariness grows while working without a break.
+  void _updateDrives(double dt) {
+    _sinceInteraction += dt;
+    _sinceBreak += dt;
+
+    // Affection fades over roughly half an hour untended, so the warm face is
+    // earned rather than permanent.
+    _affection = math.max(0.0, _affection - dt / 1800);
+
+    if (_sinceInteraction > _lonelyAfter) {
+      _loneliness = math.min(1.0, _loneliness + dt / _lonelyAfter);
+    } else {
+      _loneliness = math.max(0.0, _loneliness - dt / 600);
+    }
+
+    // Weariness only accrues while the user is actually at the machine; a
+    // laptop asleep overnight should not tire the pet out.
+    if (!_cursorIsStill && _sinceBreak > _wearyAfter) {
+      _fatigue = math.min(1.0, _fatigue + dt / _wearyAfter);
+    } else if (_cursorIsStill) {
+      _fatigue = math.max(0.0, _fatigue - dt / 3600);
+    }
+
+    _emotion = _resolveEmotion();
+  }
+
+  /// Picks the single feeling the face should wear.
+  ///
+  /// Ordered by urgency rather than magnitude: a fright interrupts everything,
+  /// and sleep beats any feeling the pet had before it dropped off. Only one
+  /// emotion shows at a time, because a face blending three of them reads as
+  /// none of them.
+  PetEmotionState _resolveEmotion() {
+    PetEmotionState state(PetEmotion emotion, double intensity) =>
+        PetEmotionState(
+          emotion: emotion,
+          intensity: intensity.clamp(0.0, 1.0),
+          affection: _affection,
+          loneliness: _loneliness,
+          fatigue: _fatigue,
+        );
+
+    if (_startle > 0.25) return state(PetEmotion.startled, _startle);
+    // A game outranks everything except a fright, and outlasts it too.
+    if (_playing > 0.2) return state(PetEmotion.excited, 0.55 + _playing * 0.45);
+    if (_quietSeconds > _sleepAfter) return state(PetEmotion.sleepy, 1.0);
+    if (_delight > 0.25) {
+      return state(PetEmotion.affectionate, 0.6 + _delight * 0.4);
+    }
+    if (_quietSeconds > _drowsyAfter) {
+      return state(PetEmotion.sleepy, 0.55);
+    }
+    if (_fatigue > 0.45) return state(PetEmotion.weary, _fatigue);
+    if (_loneliness > 0.4) return state(PetEmotion.lonely, _loneliness);
+    if (_attention > 0.75 && _arousal > 0.7) {
+      return state(PetEmotion.excited, _arousal);
+    }
+    if (_affection > 0.35) {
+      return state(PetEmotion.happy, 0.45 + _affection * 0.55);
+    }
+    if (_attention > 0.45) return state(PetEmotion.curious, _attention);
+    return state(PetEmotion.content, 0.35 + _affection * 0.3);
+  }
+
+  PetEmotionState _emotion = PetEmotionState.neutral;
+
   double _breathRate() {
     if (_quietSeconds > _sleepAfter) return 1.05;
     if (_quietSeconds > _drowsyAfter) return 1.5;
@@ -535,6 +743,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     if (_quietSeconds > _sleepAfter) return PetActivity.sleeping;
     if (_delight > 0.25) return PetActivity.delighted;
     if (_startle > 0.25) return PetActivity.startled;
+    if (_playing > 0.2) return PetActivity.playful;
     if (_quietSeconds > _drowsyAfter) return PetActivity.drowsy;
     if (_attention > 0.75 && _arousal > 0.72) return PetActivity.playful;
     if (_attention > 0.5) return PetActivity.watching;
@@ -547,20 +756,32 @@ class PetBehaviorEngine extends ChangeNotifier {
     final startleRecoil = reducedMotion ? 0.0 : _startle * 8.0;
     final delightLift = reducedMotion ? 0.0 : _delight * 6.0;
 
+    // Travel rides on top of the cursor-driven posture rather than replacing
+    // it, so a pet crossing the screen can still glance at where the pointer
+    // went. The bob is what sells it as steps rather than a slide.
+    final travelVigour = _travel.distance;
+    final trot = travelVigour == 0
+        ? 0.0
+        : math.sin(_travelPhase) * 3.4 * travelVigour;
+
     _snapshot = PetBehaviorSnapshot(
       gaze: _gaze,
       headTurn: _head,
-      bodyLean: _body,
+      bodyLean: Offset(
+        (_body.dx + _travel.dx * 0.55).clamp(-1.0, 1.0),
+        (_body.dy + _travel.dy * 0.3).clamp(-1.0, 1.0),
+      ),
       blink: _blink.clamp(0.0, 1.0),
       breath: breath,
-      bounce: _bounce - delightLift + startleRecoil,
+      bounce: _bounce - delightLift + startleRecoil - trot.abs(),
       squash: reducedMotion
           ? 1.0
           : 1.0 + breath * 0.012 + _delight * 0.05 - _startle * 0.03,
-      tilt: _tilt,
+      tilt: _tilt + _travel.dx * 0.11,
       arousal: _arousal.clamp(0.0, 1.0),
       attention: _attention.clamp(0.0, 1.0),
       activity: _activity(),
+      emotion: _emotion,
     );
     notifyListeners();
   }

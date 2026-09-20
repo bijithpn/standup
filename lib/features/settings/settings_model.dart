@@ -68,6 +68,13 @@ class SettingsModel {
   final double companionScale;
   final bool companionClickThrough;
   final bool companionFollowMouse;
+
+  /// Whether the companion may move its own window around the screen.
+  ///
+  /// On by default: a pet that only ever sits where it was dropped reads as a
+  /// widget. Off is for anyone who wants the window exactly where they put it
+  /// and nowhere else.
+  final bool companionWanderingEnabled;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
   final String? companionAvatarUrlParams;
@@ -195,6 +202,7 @@ class SettingsModel {
     this.companionScale = 6.0,
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
+    this.companionWanderingEnabled = true,
     this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
     this.companionAvatarUrlParams,
@@ -290,6 +298,7 @@ class SettingsModel {
     double? companionScale,
     bool? companionClickThrough,
     bool? companionFollowMouse,
+    bool? companionWanderingEnabled,
     String? companionPreviewBackground,
     List<String>? unlockedPets,
     String? companionAvatarUrlParams,
@@ -401,6 +410,8 @@ class SettingsModel {
       companionClickThrough:
           companionClickThrough ?? this.companionClickThrough,
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
+      companionWanderingEnabled:
+          companionWanderingEnabled ?? this.companionWanderingEnabled,
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
       unlockedPets: unlockedPets ?? this.unlockedPets,
@@ -511,6 +522,7 @@ class SettingsModel {
     'companionScale': companionScale,
     'companionClickThrough': companionClickThrough,
     'companionFollowMouse': companionFollowMouse,
+    'companionWanderingEnabled': companionWanderingEnabled,
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
     'companionAvatarUrlParams': companionAvatarUrlParams,
@@ -626,6 +638,8 @@ class SettingsModel {
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
+      companionWanderingEnabled:
+          map['companionWanderingEnabled'] as bool? ?? true,
       companionPreviewBackground:
           map['companionPreviewBackground'] as String? ??
           '',

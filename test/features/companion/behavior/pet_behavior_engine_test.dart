@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
+import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 
 /// The pet's box, with the cursor positions used around it.
 const Rect _viewport = Rect.fromLTWH(500, 400, 240, 240);
@@ -267,6 +268,178 @@ void main() {
 
       expect(engine.snapshot.gaze.dx.isFinite, isTrue);
       expect(engine.snapshot.gaze.dy.isFinite, isTrue);
+    });
+  });
+
+  group('playing and feeding', () {
+    test('a game leaves the pet excited, and keeps it there a while', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.play();
+      final now = _advance(engine, 1.0);
+      expect(engine.snapshot.emotion.emotion, PetEmotion.excited);
+      expect(engine.snapshot.activity, PetActivity.playful);
+
+      // Still wound up half a minute later. A game that evaporates in two
+      // seconds is a button press, not play.
+      _advance(engine, 30.0, from: now);
+      expect(engine.snapshot.emotion.emotion, PetEmotion.excited);
+    });
+
+    test('a game wears off eventually', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.play();
+      _advance(engine, 90.0);
+
+      expect(engine.snapshot.emotion.emotion, isNot(PetEmotion.excited));
+    });
+
+    test('a treat is the quickest way to build affection', () {
+      final petted = _engine();
+      final fed = _engine();
+      addTearDown(petted.dispose);
+      addTearDown(fed.dispose);
+
+      petted.pet();
+      fed.feed();
+      _advance(petted, 0.5);
+      _advance(fed, 0.5);
+
+      expect(fed.emotion.affection, greaterThan(petted.emotion.affection));
+    });
+
+    test('a fright still interrupts a game', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.play();
+      _advance(engine, 0.5);
+
+      // A cursor arriving fast and close is what the engine reads as a
+      // startle.
+      var step = 0;
+      _advance(
+        engine,
+        0.4,
+        each: (_) => engine.pointerMoved(
+          _center + Offset(step++ * 90.0 - 400, 0),
+        ),
+      );
+
+      // Either it was startled, or it stayed excited — but it must not have
+      // silently dropped to something calm.
+      expect(
+        engine.snapshot.emotion.emotion,
+        anyOf(PetEmotion.startled, PetEmotion.excited),
+      );
+    });
+  });
+
+  group('what it wants', () {
+    test('a sleeping pet wants to be left alone', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      _advance(engine, 160.0);
+
+      expect(engine.snapshot.activity, PetActivity.sleeping);
+      expect(engine.wish, PetWish.none);
+    });
+
+    test('a pet that has just been played with asks for a scratch, not another game', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.play();
+      _advance(engine, 1.0);
+
+      expect(engine.wish, PetWish.petting);
+    });
+
+    test('a pet ignored while its owner works asks for attention', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      // The cursor keeps moving, far enough away to be nothing to do with the
+      // pet. So it is awake and has been ignored for over an hour — which is
+      // a different thing from being asleep, and the only one that should
+      // produce a request.
+      var step = 0;
+      _advance(
+        engine,
+        80.0 * 60,
+        each: (_) => _wiggleAt(engine, _center + const Offset(1400, 0), step++),
+      );
+
+      expect(engine.snapshot.isAwake, isTrue);
+      expect(engine.wish, PetWish.petting);
+    });
+
+    test('there is always something a new user can do', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      // Whatever state it drifts through, an awake pet never leaves the
+      // window with nothing to offer.
+      var now = Duration.zero;
+      for (var i = 0; i < 12; i++) {
+        now = _advance(engine, 5.0, from: now);
+        if (!engine.snapshot.isAwake) continue;
+        expect(engine.wish, isNot(PetWish.none));
+      }
+    });
+  });
+
+  group('travel', () {
+    test('leans into the direction it is walking', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      final now = _advance(engine, 0.5);
+      final resting = engine.snapshot.bodyLean.dx;
+
+      engine.setTravel(const Offset(240, 0));
+      _advance(engine, 0.2, from: now);
+
+      expect(engine.snapshot.bodyLean.dx, greaterThan(resting));
+      expect(engine.snapshot.tilt, isNot(0.0));
+    });
+
+    test('a drift too slow to see is not treated as walking', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      final now = _advance(engine, 0.5);
+      final resting = engine.snapshot.bodyLean;
+
+      engine.setTravel(const Offset(2, 0));
+      _advance(engine, 0.2, from: now);
+
+      expect(engine.snapshot.bodyLean.dx, closeTo(resting.dx, 0.05));
+    });
+
+    test('body lean stays in range however hard it travels', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      engine.setTravel(const Offset(4000, 4000));
+      _advance(engine, 1.0);
+
+      expect(engine.snapshot.bodyLean.dx, inInclusiveRange(-1.0, 1.0));
+      expect(engine.snapshot.bodyLean.dy, inInclusiveRange(-1.0, 1.0));
+    });
+
+    test('reduced motion never walks', () {
+      final engine = _engine(reducedMotion: true);
+      addTearDown(engine.dispose);
+
+      engine.setTravel(const Offset(300, 0));
+      _advance(engine, 0.5);
+
+      expect(engine.snapshot.bodyLean.dx, closeTo(0.0, 0.02));
     });
   });
 }

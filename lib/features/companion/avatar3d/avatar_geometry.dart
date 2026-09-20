@@ -557,18 +557,26 @@ FaceGeometry _buildFace(
 
   FaceFeature? mouth;
   if (style.mouthEnabled) {
-    mouth = projectFeature(
-      0,
-      style.mouthY,
-      _mouthBoundary(
-        0,
-        style.mouthY,
-        style.mouthWidth,
-        style.mouthHeight,
-        style.mouthCurve,
-        style.mouthRotation,
-      ),
-    );
+    // An open mouth is a shape, not a stroke. Drawing surprise as a thick
+    // curved band reads as a smear across the chin; an ellipse reads as a
+    // mouth that is open.
+    final boundary = style.mouthShape == 'ellipse'
+        ? _ellipseBoundary(
+            0,
+            style.mouthY,
+            style.mouthWidth,
+            style.mouthHeight,
+            style.mouthRotation,
+          )
+        : _mouthBoundary(
+            0,
+            style.mouthY,
+            style.mouthWidth,
+            style.mouthHeight,
+            style.mouthCurve,
+            style.mouthRotation,
+          );
+    mouth = projectFeature(0, style.mouthY, boundary);
   }
 
   return FaceGeometry(

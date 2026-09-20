@@ -41,6 +41,15 @@ sealed class OverlayConfig with _$OverlayConfig {
     double? pipOpacity,
     bool? pipDraggableClickable,
     String? previewBackground,
+
+    /// Which of the pet's interactions the user has left switched on.
+    ///
+    /// The overlay offers these on hover, so it has to know which ones are
+    /// permitted. Sending them saves the overlay engine a settings lookup it
+    /// has no way to perform.
+    bool? pettingEnabled,
+    bool? playEnabled,
+    bool? treatEnabled,
   }) = _OverlayConfig;
 
   factory OverlayConfig.fromJson(Map<String, dynamic> json) =>

@@ -172,6 +172,34 @@ class CompanionWindowManager {
     _persistPosition(_currentPosition);
   }
 
+  /// Moves the window without the off-screen recovery pass or a preference
+  /// write.
+  ///
+  /// [setPosition] enumerates displays and writes two preferences on every
+  /// call. That is right for a one-off move and far too heavy for an animation
+  /// running twenty-five times a second, which is what the companion's
+  /// wandering is — so a caller that has already clamped its own path to a
+  /// display takes this instead, and calls [persistPosition] once it arrives.
+  Future<void> moveTo(Offset position) async {
+    _currentPosition = position;
+
+    double targetY = position.dy;
+    if (Platform.isMacOS) {
+      // Cached, because flipping into AppKit's bottom-left origin needs the
+      // screen height and asking the platform for it mid-animation would
+      // undo the point of this method.
+      _cachedPrimaryHeight ??= await _getPrimaryScreenHeight();
+      targetY = _cachedPrimaryHeight! - position.dy - _currentSize.height;
+    }
+
+    await _windowController.setPosition(position.dx, targetY);
+  }
+
+  /// Writes the current position to preferences. Pairs with [moveTo].
+  void persistPosition() => _persistPosition(_currentPosition);
+
+  double? _cachedPrimaryHeight;
+
   Future<void> setOpacity(double opacity) async {
     await _windowController.setOpacity(opacity);
   }

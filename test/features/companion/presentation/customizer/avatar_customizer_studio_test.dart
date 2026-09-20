@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
@@ -31,7 +32,7 @@ void main() {
   }
 
   group('Companion studio', () {
-    testWidgets('shows one surface with the four control sections',
+    testWidgets('shows one surface with every control section',
         (tester) async {
       await pumpStudio(tester);
 
@@ -39,6 +40,7 @@ void main() {
       expect(find.text('Species'), findsOneWidget);
       expect(find.text('Breed'), findsOneWidget);
       expect(find.text('Palette'), findsOneWidget);
+      expect(find.text('Style'), findsOneWidget);
       expect(find.text('Seed'), findsOneWidget);
       expect(find.byType(PetStage), findsOneWidget);
     });
@@ -116,5 +118,56 @@ void main() {
       expect(saved!.palette, AvatarPalette.cyberpunk);
     });
 
+    testWidgets('the style panel exposes the scene controls', (tester) async {
+      await pumpStudio(tester);
+
+      await tester.tap(find.text('Style'));
+      await tester.pump();
+
+      // These come from the scene data and had no way in before.
+      expect(find.text('Direction'), findsOneWidget);
+      expect(find.text('Height'), findsOneWidget);
+      expect(find.text('Outline'), findsOneWidget);
+      expect(find.text('Drop shadow'), findsOneWidget);
+      expect(find.text('Size'), findsOneWidget);
+      expect(find.text('Eye spacing'), findsOneWidget);
+      expect(find.text('Eye sparkle'), findsOneWidget);
+      expect(find.text('Nose'), findsOneWidget);
+    });
+
+    testWidgets('a style change carries into the saved definition',
+        (tester) async {
+      AvatarDefinition? saved;
+      await pumpStudio(tester, onSaved: (definition) => saved = definition);
+
+      await tester.tap(find.text('Style'));
+      await tester.pump();
+
+      // Outline, then drop shadow, then the two face toggles.
+      await tester.tap(find.byType(Switch).at(1));
+      await tester.pump();
+
+      await tester.tap(find.text('Save companion'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 4));
+
+      expect(saved, isNotNull);
+      expect(avatarStyleFrom(saved!.parts).isAuthored, isFalse);
+    });
+
+    testWidgets('an untouched companion carries no style at all',
+        (tester) async {
+      AvatarDefinition? saved;
+      await pumpStudio(tester, onSaved: (definition) => saved = definition);
+
+      await tester.tap(find.text('Save companion'));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 4));
+
+      // Nothing overridden means nothing stored, so a companion made before
+      // styling existed and one made now are indistinguishable.
+      expect(saved, isNotNull);
+      expect(avatarStyleFrom(saved!.parts).isAuthored, isTrue);
+    });
   });
 }

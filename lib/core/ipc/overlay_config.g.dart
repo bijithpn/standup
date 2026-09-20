@@ -28,6 +28,9 @@ _OverlayConfig _$OverlayConfigFromJson(Map<String, dynamic> json) =>
       pipOpacity: (json['pipOpacity'] as num?)?.toDouble(),
       pipDraggableClickable: json['pipDraggableClickable'] as bool?,
       previewBackground: json['previewBackground'] as String?,
+      pettingEnabled: json['pettingEnabled'] as bool?,
+      playEnabled: json['playEnabled'] as bool?,
+      treatEnabled: json['treatEnabled'] as bool?,
     );
 
 Map<String, dynamic> _$OverlayConfigToJson(_OverlayConfig instance) =>
@@ -52,4 +55,7 @@ Map<String, dynamic> _$OverlayConfigToJson(_OverlayConfig instance) =>
       'pipOpacity': instance.pipOpacity,
       'pipDraggableClickable': instance.pipDraggableClickable,
       'previewBackground': instance.previewBackground,
+      'pettingEnabled': instance.pettingEnabled,
+      'playEnabled': instance.playEnabled,
+      'treatEnabled': instance.treatEnabled,
     };

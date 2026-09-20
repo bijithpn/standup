@@ -2,11 +2,15 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_face_expression.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_geometry.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_painter.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_palette_mapper.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
+import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 
 /// Asks [Avatar3DView] to use the card colour the scene was authored with.
 const Color kSceneAuthoredBackground = Color(0x00FFFFFE);
@@ -29,6 +33,9 @@ class Avatar3DView extends StatefulWidget {
     this.showShadow = true,
     this.densityScale = 1.0,
     this.lookRange = 0.55,
+    this.palette,
+    this.paletteStrength = 0.85,
+    this.style = AvatarSceneStyle.authored,
     this.onTap,
     this.onDoubleTap,
     this.placeholder,
@@ -54,6 +61,16 @@ class Avatar3DView extends StatefulWidget {
 
   /// How far, in radians, a full-deflection gaze turns the head.
   final double lookRange;
+
+  /// Recolours the authored scene. Null keeps the colours it shipped with.
+  final AvatarPalette? palette;
+
+  /// How far the recolour pulls toward [palette], 0..1.
+  final double paletteStrength;
+
+  /// The user's scene-level styling: outline, shadow, lighting, face size.
+  /// Defaults to the look the scene was authored with.
+  final AvatarSceneStyle style;
 
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
@@ -85,7 +102,10 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   @override
   void didUpdateWidget(Avatar3DView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.preset != widget.preset) {
+    if (oldWidget.preset != widget.preset ||
+        oldWidget.palette != widget.palette ||
+        oldWidget.paletteStrength != widget.paletteStrength ||
+        oldWidget.style != widget.style) {
       _geometry = null;
       _builtYaw = double.nan;
       _resolveScene();
@@ -96,13 +116,27 @@ class _Avatar3DViewState extends State<Avatar3DView> {
     final catalog = AvatarSceneCatalog.instance;
     final ready = catalog.sceneFor(widget.preset);
     if (ready != null) {
-      _scene = ready;
+      _scene = _tinted(ready);
       return;
     }
 
     await catalog.load();
     if (!mounted) return;
-    setState(() => _scene = catalog.sceneFor(widget.preset));
+    setState(() => _scene = _tinted(catalog.sceneFor(widget.preset)));
+  }
+
+  /// Recolouring and restyling are done once when the scene resolves, not per
+  /// frame: both walk the whole scene and neither depends on what the pet is
+  /// doing. Only the pose and the expression change frame to frame.
+  AvatarScene? _tinted(AvatarScene? scene) {
+    if (scene == null) return null;
+    return widget.style.applyTo(
+      applyPalette(
+        scene,
+        widget.palette,
+        strength: widget.paletteStrength,
+      ),
+    );
   }
 
   /// The camera for this frame, from the scene's authored pose plus the pet's.
@@ -121,7 +155,13 @@ class _Avatar3DViewState extends State<Avatar3DView> {
 
     return scene.copyWith(
       viewState: base.copyWith(yaw: yaw, pitch: pitch, roll: roll),
-      faceStyle: scene.faceStyle.withEyeOpenness(1 - snapshot.blink),
+      // The face is where the companion says what it feels. Nothing else has
+      // to: no caption, no badge, no colour code.
+      faceStyle: expressFace(
+        scene.faceStyle,
+        snapshot.emotion,
+        blink: snapshot.blink,
+      ),
     );
   }
 

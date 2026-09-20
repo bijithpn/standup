@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -195,6 +196,13 @@ class CompanionOverlayController extends ChangeNotifier {
       case 'keepOnScreen':
         final value = event.metadata?['value'];
         if (value is bool) unawaited(changeKeepOnScreen(value));
+      case 'takeBreak':
+        // The companion asks for this when it has watched the user work for a
+        // long unbroken stretch. It is the one interaction that is not really
+        // about the pet.
+        if (sl.isRegistered<TimerEngine>()) {
+          sl<TimerEngine>().triggerBreakNow();
+        }
     }
   }
 
@@ -250,6 +258,15 @@ class CompanionOverlayController extends ChangeNotifier {
   bool get pipDraggableClickable => _pipDraggableClickable;
   String get companionToyType => _companionToyType;
   String get companionTreatType => _companionTreatType;
+  bool get companionWanderingEnabled =>
+      _settingsRepo.currentSettings.companionWanderingEnabled;
+
+  /// The interaction toggles rolled into one comparable value.
+  static String _interactionSignature(SettingsModel settings) =>
+      '${settings.companionWanderingEnabled}/${settings.pettingEnabled}'
+      '/${settings.ballThrowEnabled}/${settings.treatEnabled}';
+
+  String? _lastInteractionSignature;
   bool get pettingEnabled => _settingsRepo.currentSettings.pettingEnabled;
   bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
   bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
@@ -258,7 +275,10 @@ class CompanionOverlayController extends ChangeNotifier {
   bool get quietModeAutoActivate =>
       _settingsRepo.currentSettings.quietModeAutoActivate;
   bool get isLowDistractionMode =>
-      _companionClickThrough && !_companionFollowMouse && !_enableAnimations;
+      _companionClickThrough &&
+      !_companionFollowMouse &&
+      !_enableAnimations &&
+      !companionWanderingEnabled;
   String get companionStateExplanation {
     if (!_companionEnabled) {
       return 'Companion is disabled in settings.';
@@ -346,6 +366,13 @@ class CompanionOverlayController extends ChangeNotifier {
     final keepOnScreenChanged =
         _companionKeepOnScreen != settings.companionKeepOnScreen;
 
+    // The overlay decides what to offer on hover from these, so a toggle the
+    // user flips in settings has to reach it. They are compared as a group
+    // because none of them is worth a field of its own.
+    final interactions = _interactionSignature(settings);
+    final interactionsChanged = _lastInteractionSignature != interactions;
+    _lastInteractionSignature = interactions;
+
     if (!enabledChanged &&
         !pipModeChanged &&
         !themeChanged &&
@@ -361,7 +388,8 @@ class CompanionOverlayController extends ChangeNotifier {
         !toyTypeChanged &&
         !treatTypeChanged &&
         !definitionChanged &&
-        !keepOnScreenChanged) {
+        !keepOnScreenChanged &&
+        !interactionsChanged) {
       return; // Exit early if no companion settings have changed
     }
 
@@ -759,8 +787,14 @@ class CompanionOverlayController extends ChangeNotifier {
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
       'followMouse': _companionFollowMouse,
-      'wanderingEnabled': _enableAnimations,
+      // Two switches have to agree: the user's own choice, and whether motion
+      // is allowed at all. A companion that walks about while animations are
+      // off would be the most conspicuous thing on the screen.
+      'wanderingEnabled': companionWanderingEnabled && _enableAnimations,
       'isLowPowerMode': !_enableAnimations,
+      'pettingEnabled': pettingEnabled,
+      'playEnabled': ballThrowEnabled,
+      'treatEnabled': treatEnabled,
       'pipBackgroundStyle': _pipBackgroundStyle,
       'pipOpacity': _pipOpacity,
       'pipDraggableClickable': _pipDraggableClickable,
@@ -910,11 +944,24 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
   }
 
+  Future<void> changeWandering(bool enabled) async {
+    if (companionWanderingEnabled == enabled || _isTransitioning) return;
+
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionWanderingEnabled: enabled,
+    );
+    await _settingsRepo.save(updated);
+  }
+
   Future<void> setLowDistractionMode(bool enabled) async {
     final current = _settingsRepo.currentSettings;
     final updated = current.copyWith(
       companionClickThrough: enabled ? true : current.companionClickThrough,
       companionFollowMouse: enabled ? false : current.companionFollowMouse,
+      // Wandering is the single most distracting thing the companion does, so
+      // low-distraction mode has to stop it as well.
+      companionWanderingEnabled:
+          enabled ? false : current.companionWanderingEnabled,
       enableAnimations: enabled ? false : true,
     );
     await _settingsRepo.save(updated);

@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
+import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 
 /// Draws the companion for one frame of [PetBehaviorSnapshot].
@@ -114,6 +116,10 @@ class PetStage extends StatelessWidget {
         showOutline: showOutline,
         showShadow: showSceneShadow,
         densityScale: avatarDensityFor(size),
+        // The palette the user chose, applied to the companion itself rather
+        // than only to swatches in the customizer.
+        palette: def.palette == AvatarPalette.defaultPalette ? null : def.palette,
+        style: avatarStyleFrom(def.parts),
       );
     }
 
