@@ -90,6 +90,15 @@ class PipWindowArgs {
   /// Whether the companion stays on screen outside of breaks.
   final bool? keepOnScreen;
 
+  /// Which interactions the overlay may offer when the pointer is over it.
+  ///
+  /// The overlay runs in its own engine and cannot read settings, so the only
+  /// way it knows a user has switched one of these off is for it to travel in
+  /// the payload.
+  final bool? pettingEnabled;
+  final bool? playEnabled;
+  final bool? treatEnabled;
+
   const PipWindowArgs({
     this.x,
     this.y,
@@ -113,6 +122,9 @@ class PipWindowArgs {
     this.avatarDefinitionJson,
     this.renderMode,
     this.keepOnScreen,
+    this.pettingEnabled,
+    this.playEnabled,
+    this.treatEnabled,
   });
 
   Map<String, dynamic> toMap() {
@@ -152,6 +164,9 @@ class PipWindowArgs {
     }
     if (renderMode != null) map['renderMode'] = renderMode;
     if (keepOnScreen != null) map['keepOnScreen'] = keepOnScreen;
+    if (pettingEnabled != null) map['pettingEnabled'] = pettingEnabled;
+    if (playEnabled != null) map['playEnabled'] = playEnabled;
+    if (treatEnabled != null) map['treatEnabled'] = treatEnabled;
     return map;
   }
 
@@ -179,6 +194,9 @@ class PipWindowArgs {
       avatarDefinitionJson: map['avatarDefinitionJson'] as String?,
       renderMode: map['renderMode'] as String?,
       keepOnScreen: map['keepOnScreen'] as bool?,
+      pettingEnabled: map['pettingEnabled'] as bool?,
+      playEnabled: map['playEnabled'] as bool?,
+      treatEnabled: map['treatEnabled'] as bool?,
     );
   }
 }

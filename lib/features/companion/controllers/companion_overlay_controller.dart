@@ -514,7 +514,11 @@ class CompanionOverlayController extends ChangeNotifier {
             pipOpacityChanged ||
             pipDraggableClickableChanged ||
             toyTypeChanged ||
-            treatTypeChanged) {
+            treatTypeChanged ||
+            // Wandering and the hover interactions live only in the payload,
+            // so without this a user unticking one of them would see no
+            // change until something else happened to trigger a push.
+            interactionsChanged) {
           if (_pipModeEnabled) {
             NativeBridge.showPipWindow(
               PipWindowArgs.fromMap(_companionPayload()),

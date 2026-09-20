@@ -194,9 +194,19 @@ final class PiPFlutterWindowManager: NSObject {
 
     // MARK: - Live updates
 
+    /// Pushes a settings change to the running PiP engine.
+    ///
+    /// `args` may be partial — `setCompanionFollowMouse` sends a single key —
+    /// so it is merged into what is already held rather than replacing it.
+    /// Replacing would leave `getInitialSettings` answering a later cold read
+    /// with just that one key, and the pet would come back stripped of its
+    /// appearance, its name and its interactions.
     func syncSettings(_ args: [String: Any]) {
         guard let current = instance else { return }
-        pendingInitialArgs = args
+        var merged = pendingInitialArgs ?? [:]
+        for (key, value) in args { merged[key] = value }
+        pendingInitialArgs = merged
+
         applyWindowSettings(args: args, window: current.window)
         current.channel.invokeMethod("syncPiPSettings", arguments: args)
     }

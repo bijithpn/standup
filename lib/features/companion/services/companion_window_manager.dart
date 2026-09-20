@@ -185,20 +185,44 @@ class CompanionWindowManager {
 
     double targetY = position.dy;
     if (Platform.isMacOS) {
-      // Cached, because flipping into AppKit's bottom-left origin needs the
-      // screen height and asking the platform for it mid-animation would
-      // undo the point of this method.
-      _cachedPrimaryHeight ??= await _getPrimaryScreenHeight();
-      targetY = _cachedPrimaryHeight! - position.dy - _currentSize.height;
+      targetY =
+          await _primaryScreenHeight() - position.dy - _currentSize.height;
     }
 
-    await _windowController.setPosition(position.dx, targetY);
+    // Never animated: the caller is already drawing the motion frame by frame,
+    // and on macOS an animated move blocks the main thread until it finishes.
+    await _windowController.setPosition(position.dx, targetY, animate: false);
   }
 
   /// Writes the current position to preferences. Pairs with [moveTo].
   void persistPosition() => _persistPosition(_currentPosition);
 
+  /// The primary screen's height, cached.
+  ///
+  /// Flipping into AppKit's bottom-left origin needs this on every frame of a
+  /// move, and enumerating displays that often would undo the point of
+  /// [moveTo]. The cache expires because monitors get swapped and resolutions
+  /// change, and a stale height would put the companion at the wrong height on
+  /// screen rather than merely being slow.
+  Future<double> _primaryScreenHeight() async {
+    final cached = _cachedPrimaryHeight;
+    final measuredAt = _primaryHeightMeasuredAt;
+    if (cached != null &&
+        measuredAt != null &&
+        DateTime.now().difference(measuredAt) < _primaryHeightTtl) {
+      return cached;
+    }
+
+    final height = await _getPrimaryScreenHeight();
+    _cachedPrimaryHeight = height;
+    _primaryHeightMeasuredAt = DateTime.now();
+    return height;
+  }
+
+  static const Duration _primaryHeightTtl = Duration(seconds: 30);
+
   double? _cachedPrimaryHeight;
+  DateTime? _primaryHeightMeasuredAt;
 
   Future<void> setOpacity(double opacity) async {
     await _windowController.setOpacity(opacity);

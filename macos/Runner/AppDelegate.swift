@@ -193,13 +193,22 @@ class WindowBridge: NSObject, FlutterPlugin {
     private let channel: FlutterMethodChannel
     private weak var registrar: FlutterPluginRegistrar?
     
+    /// Whether this bridge may act on the app's main window when its own
+    /// engine has no window attached.
+    ///
+    /// True for the main engine, where "the window" and "the app's window" are
+    /// the same thing. False for every secondary engine — see `window`.
+    private let allowsAppWindowFallback: Bool
+
+    /// Secondary engines (companion, PiP, overlays) register through here.
     static func register(with registrar: FlutterPluginRegistrar) {
-        let bridge = WindowBridge(registrar: registrar)
+        let bridge = WindowBridge(registrar: registrar, allowsAppWindowFallback: false)
         registrar.addMethodCallDelegate(bridge, channel: bridge.channel)
     }
-    
-    init(registrar: FlutterPluginRegistrar) {
+
+    init(registrar: FlutterPluginRegistrar, allowsAppWindowFallback: Bool = true) {
         self.registrar = registrar
+        self.allowsAppWindowFallback = allowsAppWindowFallback
         channel = FlutterMethodChannel(
             name: "com.breakmate/window",
             binaryMessenger: registrar.messenger
@@ -207,10 +216,31 @@ class WindowBridge: NSObject, FlutterPlugin {
         super.init()
         registrar.addMethodCallDelegate(self, channel: channel)
     }
-    
+
+    /// The window this bridge is allowed to touch.
+    ///
+    /// A secondary engine owns exactly one window, and if that window is not
+    /// attached yet there is simply nothing to act on. Falling back to the
+    /// app's main window here would be actively harmful now that the companion
+    /// moves its own window around the screen: a failed lookup in the PiP
+    /// engine would send the user's main BreakMate window wandering off
+    /// instead of the pet.
     private var window: NSWindow? {
-        return registrar?.view?.window ?? NSApp.mainWindow ?? NSApp.keyWindow
+        if let own = registrar?.view?.window { return own }
+        guard allowsAppWindowFallback else {
+            // Logged once rather than per call: the companion asks to be moved
+            // twenty-five times a second while it walks, and this is the one
+            // thing that would make that silently do nothing.
+            if !hasWarnedAboutMissingWindow {
+                hasWarnedAboutMissingWindow = true
+                NSLog("WindowBridge: secondary engine has no window attached; window calls are being ignored")
+            }
+            return nil
+        }
+        return NSApp.mainWindow ?? NSApp.keyWindow
     }
+
+    private var hasWarnedAboutMissingWindow = false
     
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args = call.arguments as? [String: Any]
@@ -279,7 +309,14 @@ class WindowBridge: NSObject, FlutterPlugin {
         var frame = window.frame
         frame.origin.x = x
         frame.origin.y = y
-        window.setFrame(frame, display: true, animate: true)
+        // `animate: true` runs a nested run loop until AppKit's animation
+        // finishes. That is right for a one-off move and ruinous for the
+        // companion's wandering, which sets a new position twenty-five times a
+        // second: every call would block the main thread, and each animation
+        // would be fighting the one before it. Callers driving their own
+        // motion pass false and get an immediate move.
+        let animate = args?["animate"] as? Bool ?? true
+        window.setFrame(frame, display: true, animate: animate)
         result(nil)
     }
     
