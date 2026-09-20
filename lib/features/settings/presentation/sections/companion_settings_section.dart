@@ -5,6 +5,9 @@ import 'package:breakmate/features/companion/controllers/companion_overlay_contr
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:blobatar_flutter/blobatar_flutter.dart';
+import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
+import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
 import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -22,6 +25,15 @@ class CompanionSettingsSection extends StatefulWidget {
 }
 
 class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
+  void _openBlobatarRenameDialog() {
+    showBlobatarNameDialog(
+      context,
+      currentName: widget.controller.companionPetName,
+      onSaved: (newName) {
+        widget.controller.changePetName(newName);
+      },
+    );
+  }
   void _openCustomizer() {
     final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
     final def = theme.avatarDefinition ??
@@ -405,6 +417,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
   Widget _buildActiveCompanionShowcase() {
     final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
+    final isBlobatar = theme.isBlobatar;
     final def = theme.avatarDefinition;
 
     return Container(
@@ -424,7 +437,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       ),
       child: Row(
         children: [
-          // Left: Clean full SVG showcase
+          // Left: Clean full SVG or Blobatar showcase
           Container(
             width: 140,
             height: 140,
@@ -437,7 +450,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (def != null)
+                if (isBlobatar)
+                  Center(
+                    child: BlobatarCompanionWidget(
+                      name: widget.controller.companionPetName,
+                      size: 110,
+                      onTap: _openBlobatarRenameDialog,
+                    ),
+                  )
+                else if (def != null)
                   SvgPicture.asset(
                     def.species.svgAssetPath,
                     fit: BoxFit.cover,
@@ -528,7 +549,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${theme.name} · ${theme.species.name.toUpperCase()}',
+                  isBlobatar
+                      ? 'Blobatar · GENERATIVE DYNAMIC PET'
+                      : '${theme.name} · ${theme.species.name.toUpperCase()}',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -536,19 +559,34 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _openCustomizer,
-                  icon: const Icon(Icons.tune_rounded, size: 16),
-                  label: const Text('Open 3D Customizer'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppTheme.accentColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                if (isBlobatar)
+                  FilledButton.icon(
+                    onPressed: _openBlobatarRenameDialog,
+                    icon: const Icon(Icons.edit_rounded, size: 16),
+                    label: const Text('Name & Morph Blob'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.accentColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  )
+                else
+                  FilledButton.icon(
+                    onPressed: _openCustomizer,
+                    icon: const Icon(Icons.tune_rounded, size: 16),
+                    label: const Text('Open 3D Customizer'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.accentColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -565,7 +603,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         const SizedBox(height: 16),
         sectionHeader(
           '3D Pet Gallery',
-          subtitle: 'Select from 30+ OneWorks 3D species',
+          subtitle: 'Select from 30+ OneWorks 3D species and generative Blobatar',
         ),
 
         const SizedBox(height: 12),
@@ -589,12 +627,18 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             return Tooltip(
               message: isLocked
                   ? 'Requires a ${theme.requiredConsistencyDays}-day streak to unlock!'
-                  : '',
+                  : (theme.isBlobatar ? 'Blobatar: Tap to select or rename!' : ''),
               waitDuration: const Duration(milliseconds: 400),
               child: GestureDetector(
                 onTap: isLocked
                     ? null
-                    : () => widget.controller.changeTheme(theme.id),
+                    : () {
+                        if (theme.isBlobatar && isSelected) {
+                          _openBlobatarRenameDialog();
+                        } else {
+                          widget.controller.changeTheme(theme.id);
+                        }
+                      },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
@@ -624,7 +668,16 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     fit: StackFit.expand,
                     children: [
                       // 1. Full-bleed Pet Image filling the entire card without padding
-                      if (theme.avatarDefinition != null)
+                      if (theme.isBlobatar)
+                        Center(
+                          child: BlobatarCompanionWidget(
+                            name: widget.controller.companionPetName,
+                            size: 64,
+                            isInteractive: false,
+                            animate: BlobatarAnimate.hover,
+                          ),
+                        )
+                      else if (theme.avatarDefinition != null)
                         SvgPicture.asset(
                           theme.avatarDefinition!.species.svgAssetPath,
                           fit: BoxFit.cover,

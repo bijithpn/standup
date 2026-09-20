@@ -117,6 +117,17 @@ class CompanionOverlayController extends ChangeNotifier {
     'Sunset',
   ];
 
+  static const List<String> blobatarNames = [
+    'Bubbles',
+    'Mochi',
+    'Cosmo',
+    'Ziggy',
+    'Pebble',
+    'Pixel',
+    'Noodle',
+    'Pip',
+  ];
+
   CompanionOverlayController({required SettingsRepository settingsRepo})
     : _settingsRepo = settingsRepo {
     _settingsRepo.addListener(_handleSettingsChanged);
@@ -674,7 +685,9 @@ class CompanionOverlayController extends ChangeNotifier {
     final random = Random();
     final List<String> names;
 
-    if (species == PetSpecies.dog) {
+    if (themeId == 'blobatar' || PetTheme.getTheme(themeId).isBlobatar) {
+      names = blobatarNames;
+    } else if (species == PetSpecies.dog) {
       names = dogNames;
     } else if (species == PetSpecies.flamingo) {
       names = flamingoNames;
@@ -724,7 +737,9 @@ class CompanionOverlayController extends ChangeNotifier {
 
   Future<void> changePetName(String petName) async {
     final trimmedName = petName.trim();
-    final nextName = trimmedName.isEmpty ? 'Mochi' : trimmedName;
+    final nextName = trimmedName.isEmpty
+        ? (_companionPetTheme == 'blobatar' ? 'Blobby' : 'Mochi')
+        : trimmedName;
     if (_companionPetName == nextName || _isTransitioning) return;
 
     final updated = _settingsRepo.currentSettings.copyWith(

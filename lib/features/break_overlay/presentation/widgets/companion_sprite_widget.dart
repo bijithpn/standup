@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -10,6 +11,7 @@ import 'package:breakmate/features/companion/domain/environment_theme_config.dar
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
+import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
@@ -329,6 +331,25 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   Widget build(BuildContext context) {
     final double effectiveScale =
         widget.scale * (32.0 / widget.petTheme.spriteSize);
+
+    if (widget.petTheme.isBlobatar) {
+      final effectiveW =
+          widget.size?.width ?? (widget.petTheme.spriteSize * effectiveScale);
+      final effectiveH =
+          widget.size?.height ?? (widget.petTheme.spriteSize * effectiveScale);
+      final size = math.min(effectiveW, effectiveH);
+      return SizedBox(
+        width: effectiveW,
+        height: effectiveH,
+        child: Center(
+          child: BlobatarCompanionWidget(
+            name: widget.petTheme.name,
+            size: size,
+            isInteractive: true,
+          ),
+        ),
+      );
+    }
 
     if (widget.petTheme.isAvatar || widget.use3dAvatar || widget.avatarDefinition != null) {
       final species = AvatarSpecies.tryParse(widget.petTheme.id) ?? AvatarSpecies.cat;

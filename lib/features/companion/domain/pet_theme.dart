@@ -3,7 +3,7 @@ import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 
-enum PetType { composite, separate, avatar }
+enum PetType { composite, separate, avatar, blobatar }
 
 class PetTheme {
   final String id;
@@ -53,7 +53,26 @@ class PetTheme {
     );
   }
 
+  factory PetTheme.blobatar({
+    String? id,
+    String? name,
+    int requiredConsistencyDays = 0,
+  }) {
+    return PetTheme(
+      id: id ?? 'blobatar',
+      name: name ?? 'Blobatar (Dynamic)',
+      basePath: AvatarSpecies.cat.svgAssetPath,
+      type: PetType.blobatar,
+      spriteSize: 160,
+      animations: const {},
+      species: PetSpecies.cat,
+      requiredConsistencyDays: requiredConsistencyDays,
+      avatarDefinition: AvatarDefinition.fromSpecies(AvatarSpecies.cat),
+    );
+  }
+
   bool get isAvatar => type == PetType.avatar || avatarDefinition != null;
+  bool get isBlobatar => type == PetType.blobatar || id == 'blobatar';
 
   static const String keyGreyCat = 'grey_cat';
   static const String keyOrangeCat = 'orange_cat';
@@ -72,6 +91,9 @@ class PetTheme {
   static const String keyFlamingo = 'flamingo';
 
   static final List<PetTheme> themes = [
+    // Dynamic Blobatar Companion (Generative from Name)
+    PetTheme.blobatar(),
+
     // Primary 3D Avatars (All 33 OneWorks Species)
     PetTheme.avatar(
       id: 'avatar_cat',

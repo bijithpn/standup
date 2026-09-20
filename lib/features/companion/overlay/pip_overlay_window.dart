@@ -7,6 +7,8 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
+import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
+import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
@@ -258,6 +260,24 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
     NativeBridge.hidePipWindow();
   }
 
+  bool get _isBlobatar =>
+      _themeId == 'blobatar' || PetTheme.getTheme(_themeId).isBlobatar;
+
+  void _openNamePrompt() {
+    showBlobatarNameDialog(
+      context,
+      currentName: _petName,
+      onSaved: (newName) {
+        setState(() {
+          _petName = newName;
+        });
+        SimplePrefs.instance.setString('companion_pet_name', newName);
+        _channel
+            .invokeMethod('updatePetName', {'petName': newName}).catchError((_) {});
+      },
+    );
+  }
+
   void _onHover(PointerHoverEvent event) {
     final now = DateTime.now();
     if (_lastHoverTime != null &&
@@ -362,11 +382,21 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                // 1. Centered Authentic Animated SVG Vector Companion filling viewport
+                // 1. Centered Authentic Companion filling viewport
                 Positioned.fill(
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final petSize = math.min(constraints.maxWidth, constraints.maxHeight);
+                      if (_isBlobatar) {
+                        return Center(
+                          child: BlobatarCompanionWidget(
+                            name: _petName,
+                            size: petSize,
+                            onTap: _openNamePrompt,
+                            isInteractive: true,
+                          ),
+                        );
+                      }
                       return Center(
                         child: AvatarView(
                           definition: _avatarDefinition,
@@ -409,7 +439,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
                   ),
                 ),
 
-                // 3. Cute Pet Name Badge (fades in on hover)
+                // 3. Cute Pet Name Badge (fades in on hover, tap to rename if Blobatar)
                 Positioned(
                   top: 14,
                   left: 0,
@@ -418,9 +448,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow> {
                     opacity: _isHovered ? 1.0 : 0.0,
                     duration: const Duration(milliseconds: 200),
                     child: Center(
-                      child: _PetNameBadge(
-                        name: _petName,
-                        isLightBackground: isLight,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _isBlobatar ? _openNamePrompt : null,
+                        child: _PetNameBadge(
+                          name: _petName,
+                          isLightBackground: isLight,
+                        ),
                       ),
                     ),
                   ),
