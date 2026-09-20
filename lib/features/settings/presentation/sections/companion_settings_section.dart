@@ -153,6 +153,17 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
                   sectionHeader('Floating PiP Settings'),
                   buildCard([
+                    dropdownRow(
+                      'Backdrop',
+                      widget.controller.pipBackgroundStyle,
+                      const ['scene', 'none'],
+                      (v) {
+                        if (v != null) {
+                          widget.controller.changePipBackgroundStyle(v);
+                        }
+                      },
+                    ),
+                      divider(),
                     toggleRow(
                       'Keep On Screen',
                       'Your companion stays out all the time. Turn this off and '

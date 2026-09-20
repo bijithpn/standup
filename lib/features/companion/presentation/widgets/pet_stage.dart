@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:blobatar_flutter/blobatar_flutter.dart';
 import 'package:flutter/material.dart';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
@@ -23,6 +24,9 @@ class PetStage extends StatelessWidget {
     this.showShadow = true,
     this.onTap,
     this.onDoubleTap,
+    this.background,
+    this.showOutline = true,
+    this.showSceneShadow = true,
   });
 
   final PetBehaviorSnapshot snapshot;
@@ -39,6 +43,16 @@ class PetStage extends StatelessWidget {
   final bool showShadow;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
+
+  /// The card the editor draws behind the companion. Null leaves it off.
+  ///
+  /// Pass [kSceneAuthoredBackground] to use whatever colour the scene itself
+  /// was authored with.
+  final Color? background;
+
+  /// The companion's own outline stroke and contact shadow, as authored.
+  final bool showOutline;
+  final bool showSceneShadow;
 
   bool get _isBlob => blobName != null && blobName!.trim().isNotEmpty;
 
@@ -83,15 +97,31 @@ class PetStage extends StatelessWidget {
     );
   }
 
-  /// The illustrated companion, posed in perspective.
+  /// The companion, as the 3D scene the editor authored.
   ///
-  /// The artwork has no separate eyes to move, so the gaze has to be carried by
-  /// the whole head: a yaw and pitch, a little roll, and a slight shift of the
-  /// body underneath it.
+  /// Falls back to the flat snapshot artwork only for species the scene
+  /// catalog has no entry for.
   Widget _buildArtwork() {
     final def = definition;
     if (def == null) return SizedBox(width: size, height: size);
 
+    if (hasAvatarScene(def.species.name)) {
+      return Avatar3DView(
+        preset: avatarPresetFor(def.species.name),
+        size: size,
+        snapshot: snapshot,
+        background: background,
+        showOutline: showOutline,
+        showShadow: showSceneShadow,
+        densityScale: avatarDensityFor(size),
+      );
+    }
+
+    return _buildFlatArtwork(def);
+  }
+
+  /// The pre-rendered snapshot, for anything the catalog cannot build in 3D.
+  Widget _buildFlatArtwork(AvatarDefinition def) {
     final head = snapshot.headTurn;
     final body = snapshot.bodyLean;
     final breath = snapshot.breath;

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/utils/toast.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/avatar_breed.dart';
@@ -60,10 +61,13 @@ enum _StudioSection {
   final IconData icon;
 }
 
-/// The backdrops the preview can be checked against. A companion that reads
-/// well on one background can disappear on another, so the studio makes it
-/// easy to try the extremes before saving.
+/// The backdrops the preview can be checked against.
+///
+/// The first is the colour the companion was authored with, which is what the
+/// editor shows; the rest are there because a companion that reads well on one
+/// background can disappear on another.
 const List<Color> _backdrops = <Color>[
+  kSceneAuthoredBackground,
   Color(0xFF1B1B20),
   Color(0xFF0B1220),
   Color(0xFF243B34),
@@ -1004,20 +1008,10 @@ class _StudioPreview extends StatelessWidget {
                 child: Stack(
                   children: <Widget>[
                     Positioned.fill(
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: RadialGradient(
-                            center: const Alignment(0, -0.25),
-                            radius: 1.1,
-                            colors: <Color>[
-                              Color.alphaBlend(
-                                Colors.white.withValues(alpha: 0.07),
-                                backdrop,
-                              ),
-                              backdrop,
-                            ],
-                          ),
-                        ),
+                      child: ColoredBox(
+                        color: backdrop == kSceneAuthoredBackground
+                            ? AppTheme.gray950
+                            : backdrop,
                       ),
                     ),
                     Center(
@@ -1027,6 +1021,8 @@ class _StudioPreview extends StatelessWidget {
                           snapshot: engine.snapshot,
                           size: stageSize,
                           definition: definition,
+                          background: backdrop,
+                          showShadow: false,
                           onTap: engine.pet,
                         ),
                       ),

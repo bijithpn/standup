@@ -69,6 +69,8 @@ flutter:
     - assets/avatars/breeds/
     # OneWorks Avatar — Pixel Style Snapshots
     - assets/avatars/pixel/
+    # OneWorks Avatar — authored 3D scenes (primitives, face, camera, light)
+    - assets/avatars/scenes/
     # OneWorks Avatar — Animation Cover SVGs (idle, happy, celebrate, etc.)
     - assets/avatars/web/
     - assets/avatars/web/assets/

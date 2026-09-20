@@ -19,6 +19,7 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_loader.dart';
@@ -80,6 +81,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   late bool _keepOnScreen = SimplePrefs.instance.getBool(
     'companion_keep_on_screen',
     defaultValue: true,
+  );
+
+  /// How the card behind the companion is drawn: `scene` for the colour the
+  /// avatar was authored with, `none` for nothing, or a `#RRGGBB` of your own.
+  late String _backdrop = SimplePrefs.instance.getString(
+    'pip_background_style',
+    defaultValue: 'scene',
   );
   bool _clickThrough = false;
 
@@ -181,6 +189,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       _clickThrough = config.clickThrough ?? _clickThrough;
       _pipOpacity = config.pipOpacity ?? _pipOpacity;
       _keepOnScreen = config.keepOnScreen ?? _keepOnScreen;
+      _backdrop = config.pipBackgroundStyle ?? _backdrop;
       _pipDraggableClickable =
           config.pipDraggableClickable ?? _pipDraggableClickable;
 
@@ -351,12 +360,28 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   // ── Appearance ────────────────────────────────────────────────────────────
 
-  // The window is glass: nothing is drawn behind the pet, ever. Its chrome has
-  // to stay readable over whatever the desktop happens to be, so it carries its
-  // own dark scrim rather than relying on a card underneath.
+  // The chrome has to stay readable whether the pet sits on its own card or
+  // straight on the desktop, so it carries its own scrim either way.
   static final Color _chromeForeground = AppTheme.gray100;
   static final Color _chromeBackground =
       AppTheme.gray950.withValues(alpha: 0.68);
+
+  /// The card colour to draw behind the companion, or null for none.
+  Color? get _backdropColor {
+    switch (_backdrop) {
+      case 'none':
+      case 'transparent':
+        return null;
+      case 'scene':
+        return kSceneAuthoredBackground;
+      default:
+        final hex = _backdrop.startsWith('#') ? _backdrop.substring(1) : _backdrop;
+        final value = int.tryParse(hex, radix: 16);
+        return value == null ? kSceneAuthoredBackground : Color(0xFF000000 | value);
+    }
+  }
+
+  bool get _hasBackdrop => _backdrop != 'none' && _backdrop != 'transparent';
 
   @override
   Widget build(BuildContext context) {
@@ -394,8 +419,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               size: stageSize,
               definition: _isBlob ? null : _avatarDefinition,
               blobName: _isBlob ? _petName : null,
-              // A cast shadow needs a surface to fall on, and there is none.
+              background: _backdropColor,
+              // The contact shadow needs a surface to fall on.
               showShadow: false,
+              showSceneShadow: _hasBackdrop,
               onTap: _handlePetTap,
               onDoubleTap: _isBlob ? _handleRename : null,
             ),

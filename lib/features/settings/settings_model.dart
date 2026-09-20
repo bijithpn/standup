@@ -198,7 +198,7 @@ class SettingsModel {
     this.companionWindowHeight = 320.0,
     this.companionWindowX,
     this.companionWindowY,
-    this.pipBackgroundStyle = 'transparent',
+    this.pipBackgroundStyle = 'scene',
     this.pipOpacity = 1.0,
     this.pipDraggableClickable = true,
     this.companionToyType = 'tennis_ball',

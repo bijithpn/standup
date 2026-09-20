@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -753,6 +754,10 @@ Future<void> companionMain() async {
     }
   }
 
+  // The companion is the first thing these windows draw, so have its scenes
+  // parsed before the first frame rather than a beat after it.
+  unawaited(AvatarSceneCatalog.instance.load());
+
   try {
     CustomEnvironmentRepository().loadSync();
   } catch (e, st) {
@@ -785,6 +790,10 @@ Future<void> pipMain() async {
       debugPrint('Window.setEffect failed: $e');
     }
   }
+
+  // The companion is the first thing these windows draw, so have its scenes
+  // parsed before the first frame rather than a beat after it.
+  unawaited(AvatarSceneCatalog.instance.load());
 
   try {
     CustomEnvironmentRepository().loadSync();

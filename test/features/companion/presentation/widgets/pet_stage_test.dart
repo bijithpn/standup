@@ -6,6 +6,7 @@ import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
+import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 
 void main() {
@@ -40,7 +41,7 @@ void main() {
       await pumpStage(tester, blobName: 'Bubbles');
 
       expect(find.byType(Blobatar), findsOneWidget);
-      expect(find.byType(AvatarArtwork), findsNothing);
+      expect(find.byType(Avatar3DView), findsNothing);
     });
 
     testWidgets('the blob wins over a definition, so a blob companion is '
@@ -52,10 +53,10 @@ void main() {
       );
 
       expect(find.byType(Blobatar), findsOneWidget);
-      expect(find.byType(AvatarArtwork), findsNothing);
+      expect(find.byType(Avatar3DView), findsNothing);
     });
 
-    testWidgets('a blank blob name falls back to the artwork', (tester) async {
+    testWidgets('a blank blob name falls back to the companion', (tester) async {
       await pumpStage(
         tester,
         blobName: '   ',
@@ -63,17 +64,19 @@ void main() {
       );
 
       expect(find.byType(Blobatar), findsNothing);
-      expect(find.byType(AvatarArtwork), findsOneWidget);
+      expect(find.byType(Avatar3DView), findsOneWidget);
     });
 
-    testWidgets('draws the illustrated companion from a definition',
-        (tester) async {
+    testWidgets('draws the companion as its authored 3D scene', (tester) async {
       await pumpStage(
         tester,
         definition: AvatarDefinition.fromSpecies(AvatarSpecies.fox),
       );
 
-      expect(find.byType(AvatarArtwork), findsOneWidget);
+      // The scene catalog covers the fox, so it is built from primitives
+      // rather than drawn from a flat snapshot.
+      expect(find.byType(Avatar3DView), findsOneWidget);
+      expect(find.byType(AvatarArtwork), findsNothing);
     });
 
     testWidgets('renaming the blob rebuilds it under the new name',
@@ -132,8 +135,21 @@ void main() {
           tester,
           definition: AvatarDefinition.fromSpecies(species),
         );
-        expect(find.byType(AvatarArtwork), findsOneWidget);
+        // Whichever renderer claims it, exactly one must draw the pet.
+        final drawn = tester.widgetList(find.byType(Avatar3DView)).length +
+            tester.widgetList(find.byType(AvatarArtwork)).length;
+        expect(drawn, 1, reason: '${species.name} drew $drawn companions');
       }
+    });
+
+    testWidgets('every species the app offers has an authored 3D scene',
+        (tester) async {
+      final missing = AvatarSpecies.values
+          .where((species) => !hasAvatarScene(species.name))
+          .map((species) => species.name)
+          .toList();
+
+      expect(missing, isEmpty, reason: 'no 3D scene for: $missing');
     });
   });
 }
