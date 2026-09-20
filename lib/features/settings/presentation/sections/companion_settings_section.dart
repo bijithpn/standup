@@ -119,7 +119,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     dropdownRow(
                       'Background Style',
                       widget.controller.pipBackgroundStyle,
-                      const ['transparent', 'midnight', 'dark', 'light'],
+                      const ['transparent', 'glass', 'dark', 'light'],
                       (v) {
                         if (v != null) {
                           widget.controller.changePipBackgroundStyle(v);

@@ -347,13 +347,19 @@ class OverlayWindowManager: NSObject {
 }
 
 class MainFlutterWindow: NSWindow {
+  static weak var shared: MainFlutterWindow?
   fileprivate var bridgeChannel: FlutterMethodChannel?
 
   // Dedicated bridge for all EventKit / calendar operations.
   // Declared as a lazy var so it is created after the window is fully set up.
   private lazy var calendarBridge = CalendarBridge()
 
+  func notifyPipBackgroundStyleChanged(_ style: String) {
+    bridgeChannel?.invokeMethod("onPipBackgroundStyleChanged", arguments: ["style": style])
+  }
+
   override func awakeFromNib() {
+    MainFlutterWindow.shared = self
     let flutterViewController = FlutterViewController()
     flutterViewController.backgroundColor = .clear
     flutterViewController.view.wantsLayer = true

@@ -417,7 +417,7 @@ class CompanionOverlayController extends ChangeNotifier {
     if (species == AvatarSpecies.guineaPig) entityName = 'guinea-pig';
     if (species == AvatarSpecies.redPanda) entityName = 'bear';
 
-    return 'entity=$entityName&bg=transparent';
+    return 'entity=$entityName&bg=$_pipBackgroundStyle';
   }
 
   Future<void> saveAvatarUrlParams(String params) async {

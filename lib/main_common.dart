@@ -582,6 +582,11 @@ void mainCommon(FlavorConfig config) async {
             if (urlParams != null && sl.isRegistered<CompanionOverlayController>()) {
               await sl<CompanionOverlayController>().saveAvatarUrlParams(urlParams);
             }
+          } else if (call.method == 'onPipBackgroundStyleChanged') {
+            final style = call.arguments?['style'] as String?;
+            if (style != null && sl.isRegistered<CompanionOverlayController>()) {
+              await sl<CompanionOverlayController>().changePipBackgroundStyle(style);
+            }
           }
         });
 
