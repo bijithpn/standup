@@ -564,8 +564,7 @@ class CompanionGame extends FlameGame {
   }
 
   void _onPettingTick() {
-    final pos = _petCenter;
-    _spawnParticle(MicroParticleFactory.heart(pos, quietMode: isQuietMode));
+    // Love/heart particles removed on click/petting
   }
 
   void _onEatingStarted() {

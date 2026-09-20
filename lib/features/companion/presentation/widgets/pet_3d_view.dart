@@ -2,7 +2,6 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
-import 'package:breakmate/features/companion/domain/pet_animation.dart';
 import 'package:breakmate/features/companion/engine/pet_procedural_animator.dart';
 import 'package:breakmate/features/companion/presentation/controllers/pet_3d_controller.dart';
 
@@ -52,22 +51,13 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
   late Pet3DController _controller;
   bool _ownsController = false;
   AnimationController? _tickController;
-  late AnimationController _bounceController;
   final PetProceduralAnimator _proceduralAnimator = PetProceduralAnimator();
-
-  final List<_Pet3DParticle> _particles = [];
-  final math.Random _rng = math.Random();
   double _baseDistance = 1.0;
 
   @override
   void initState() {
     super.initState();
     _initController();
-
-    _bounceController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 450),
-    );
 
     if (!widget.isStatic) {
       _tickController = AnimationController(
@@ -91,7 +81,6 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
 
   void _onTick() {
     _proceduralAnimator.update(0.016);
-    _updateParticles(0.016);
     if (widget.autoRotate) {
       _controller.rotate(deltaAzimuth: 0.5, deltaElevation: 0.0);
     }
@@ -109,55 +98,12 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
   @override
   void dispose() {
     _tickController?.dispose();
-    _bounceController.dispose();
     if (_ownsController) _controller.dispose();
     super.dispose();
   }
 
-  void _spawnParticles(Offset origin) {
-    final colors = [
-      const Color(0xFFFF5252),
-      const Color(0xFFFF4081),
-      const Color(0xFFFFB74D),
-      const Color(0xFF64B5F6),
-      const Color(0xFFE040FB),
-    ];
-    for (int i = 0; i < 6; i++) {
-      final angle = (_rng.nextDouble() * math.pi) - math.pi;
-      final speed = 30.0 + _rng.nextDouble() * 50.0;
-      _particles.add(
-        _Pet3DParticle(
-          position: origin,
-          velocity: Offset(
-            math.cos(angle) * speed,
-            math.sin(angle) * speed - 25.0,
-          ),
-          opacity: 1.0,
-          scale: 0.8 + _rng.nextDouble() * 0.6,
-          color: colors[_rng.nextInt(colors.length)],
-          isHeart: i % 2 == 0,
-        ),
-      );
-    }
-  }
-
-  void _updateParticles(double dt) {
-    if (_particles.isEmpty) return;
-    for (int i = _particles.length - 1; i >= 0; i--) {
-      final p = _particles[i];
-      p.position += p.velocity * dt;
-      p.opacity -= dt * 1.5;
-      p.scale += dt * 0.3;
-      if (p.opacity <= 0) {
-        _particles.removeAt(i);
-      }
-    }
-  }
-
   void _handleTap() {
-    _bounceController.forward(from: 0.0);
-    _spawnParticles(Offset(widget.width / 2, widget.height / 2));
-    _proceduralAnimator.playAnimation(PetAnimation.happy);
+    // Remove jumping bounce and love/heart particle animation on click
     widget.onTap?.call();
   }
 
@@ -186,7 +132,7 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final listenables = <Listenable>[_controller, _bounceController];
+    final listenables = <Listenable>[_controller];
     if (_tickController != null) listenables.add(_tickController!);
 
     return AnimatedBuilder(
@@ -210,17 +156,9 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
             math.min(widget.width, widget.height) * 0.85 * widget.definition.scale;
         final double currentSize = baseAvatarSize * zoomScale;
 
-        // Dynamic squash and stretch from bounce
-        double bounceY = proc.offsetY;
-        double scaleX = proc.scaleX;
-        double scaleY = proc.scaleY;
-
-        final bounceVal = _bounceController.value;
-        if (bounceVal > 0) {
-          bounceY -= math.sin(bounceVal * math.pi) * 16.0;
-          scaleX *= 1.0 + math.sin(bounceVal * math.pi) * 0.12;
-          scaleY *= 1.0 - math.sin(bounceVal * math.pi) * 0.10;
-        }
+        final double bounceY = proc.offsetY;
+        final double scaleX = proc.scaleX;
+        final double scaleY = proc.scaleY;
 
         final shadowScale = math.max(0.4, 1.0 - (-bounceY / 35.0));
 
@@ -310,18 +248,6 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
                 ),
               ),
             ),
-
-            // 3. Floating Interactive Tap Particles
-            if (_particles.isNotEmpty)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(
-                    painter: _Pet3DParticlesPainter(
-                      particles: List.unmodifiable(_particles),
-                    ),
-                  ),
-                ),
-              ),
           ],
         );
 
@@ -382,65 +308,4 @@ class _Pet3DShadowPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _Pet3DShadowPainter oldDelegate) =>
       oldDelegate.scale != scale || oldDelegate.skewX != skewX;
-}
-
-class _Pet3DParticle {
-  Offset position;
-  Offset velocity;
-  double opacity;
-  double scale;
-  Color color;
-  bool isHeart;
-
-  _Pet3DParticle({
-    required this.position,
-    required this.velocity,
-    required this.opacity,
-    required this.scale,
-    required this.color,
-    required this.isHeart,
-  });
-}
-
-class _Pet3DParticlesPainter extends CustomPainter {
-  final List<_Pet3DParticle> particles;
-
-  _Pet3DParticlesPainter({required this.particles});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final p in particles) {
-      final paint = Paint()
-        ..color = p.color.withValues(alpha: p.opacity.clamp(0.0, 1.0))
-        ..style = PaintingStyle.fill;
-
-      if (p.isHeart) {
-        final s = 7.0 * p.scale;
-        final path = Path()
-          ..moveTo(p.position.dx, p.position.dy)
-          ..cubicTo(
-            p.position.dx - s,
-            p.position.dy - s * 1.2,
-            p.position.dx - s * 1.5,
-            p.position.dy + s * 0.2,
-            p.position.dx,
-            p.position.dy + s * 1.3,
-          )
-          ..cubicTo(
-            p.position.dx + s * 1.5,
-            p.position.dy + s * 0.2,
-            p.position.dx + s,
-            p.position.dy - s * 1.2,
-            p.position.dx,
-            p.position.dy,
-          );
-        canvas.drawPath(path, paint);
-      } else {
-        canvas.drawCircle(p.position, 3.5 * p.scale, paint);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _Pet3DParticlesPainter oldDelegate) => true;
 }

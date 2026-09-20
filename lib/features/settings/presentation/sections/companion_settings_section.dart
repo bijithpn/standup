@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 
@@ -427,25 +427,64 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           Container(
             width: 140,
             height: 140,
-            padding: const EdgeInsets.all(10),
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: AppTheme.surfaceElevated.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppTheme.border),
             ),
-            child: def != null
-                ? AvatarView(
-                    definition: def,
-                    isInteractive: false,
-                    autoTrackCursor: false,
-                    width: 120,
-                    height: 120,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (def != null)
+                  SvgPicture.asset(
+                    def.species.svgAssetPath,
+                    fit: BoxFit.cover,
                   )
-                : Icon(
+                else if (theme.basePath.endsWith('.svg'))
+                  SvgPicture.asset(theme.basePath, fit: BoxFit.cover)
+                else if (theme.basePath.isNotEmpty)
+                  Image.asset(theme.basePath, fit: BoxFit.cover)
+                else
+                  Icon(
                     Icons.pets_rounded,
                     size: 64,
                     color: AppTheme.accentColor,
                   ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 6,
+                      horizontal: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.12),
+                          width: 0.5,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      theme.name,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: 0.2,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(width: 20),
           // Right: Pet Details & Actions
@@ -550,7 +589,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
             crossAxisCount: 4,
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
-            childAspectRatio: 0.9,
+            childAspectRatio: 0.95,
           ),
           itemCount: PetTheme.themes.length,
           itemBuilder: (context, index) {
@@ -572,7 +611,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   curve: Curves.easeInOut,
-                  padding: const EdgeInsets.all(8),
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.accentColor.withValues(alpha: 0.15)
@@ -580,69 +619,135 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isSelected ? AppTheme.accentColor : AppTheme.border,
-                      width: isSelected ? 2 : 1,
+                      width: isSelected ? 2.5 : 1,
                     ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Expanded(
-                        child: Center(
-                          child: theme.avatarDefinition != null
-                              ? AvatarView(
-                                  definition: theme.avatarDefinition!,
-                                  isInteractive: false,
-                                  autoTrackCursor: false,
-                                  width: 56,
-                                  height: 56,
-                                )
-                              : Icon(
-                                  Icons.pets_rounded,
-                                  size: 36,
-                                  color: isSelected
-                                      ? AppTheme.accentColor
-                                      : AppTheme.textMuted,
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        theme.name,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight:
-                              isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected
-                              ? AppTheme.accentColor
-                              : AppTheme.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                      if (isLocked)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                CupertinoIcons.lock_fill,
-                                size: 10,
-                                color: AppTheme.textMuted,
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.accentColor.withValues(
+                                alpha: 0.25,
                               ),
-                              const SizedBox(width: 2),
-                              Text(
-                                '${theme.requiredConsistencyDays}d',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  color: AppTheme.textMuted,
-                                  fontWeight: FontWeight.w600,
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // 1. Full-bleed Pet Image filling the entire card without padding
+                      if (theme.avatarDefinition != null)
+                        SvgPicture.asset(
+                          theme.avatarDefinition!.species.svgAssetPath,
+                          fit: BoxFit.cover,
+                        )
+                      else if (theme.basePath.endsWith('.svg'))
+                        SvgPicture.asset(theme.basePath, fit: BoxFit.cover)
+                      else if (theme.basePath.isNotEmpty)
+                        Image.asset(theme.basePath, fit: BoxFit.cover)
+                      else
+                        Center(
+                          child: Icon(
+                            Icons.pets_rounded,
+                            size: 40,
+                            color: isSelected
+                                ? AppTheme.accentColor
+                                : AppTheme.textMuted,
+                          ),
+                        ),
+
+                      // 2. Lock badge if locked
+                      if (isLocked)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  CupertinoIcons.lock_fill,
+                                  size: 9,
+                                  color: Colors.white70,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '${theme.requiredConsistencyDays}d',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // 3. Bottom black overlay banner with reduced opacity to showcase the name
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 5,
+                            horizontal: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.28),
+                            border: Border(
+                              top: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (isSelected) ...[
+                                Container(
+                                  width: 5,
+                                  height: 5,
+                                  margin: const EdgeInsets.only(right: 4),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.accentColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ],
+                              Flexible(
+                                child: Text(
+                                  theme.name,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: isSelected
+                                        ? AppTheme.accentColor
+                                        : Colors.white,
+                                    letterSpacing: 0.2,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
                             ],
                           ),
                         ),
+                      ),
                     ],
                   ),
                 ),

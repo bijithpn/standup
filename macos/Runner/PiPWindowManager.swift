@@ -219,6 +219,18 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         let cleanCompanionScript = WKUserScript(
             source: """
             (function() {
+                // Safeguard against WebKit's 100 replaceState per 10s rate limit during rapid pose/gaze tracking
+                try {
+                    const origReplace = history.replaceState.bind(history);
+                    let lastReplace = 0;
+                    history.replaceState = function(state, title, url) {
+                        const now = Date.now();
+                        if (now - lastReplace < 300) return;
+                        lastReplace = now;
+                        try { origReplace(state, title, url); } catch (_) {}
+                    };
+                } catch (_) {}
+
                 window.AvatarBridge = {
                     setLookAt: function(x, y) {
                         const yaw = x * 0.42;
@@ -285,7 +297,8 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
                             max-width: none !important;
                             padding: 0 !important;
                             margin: 0 !important;
-                            padding-bottom: 16px !important;
+                            padding-top: 16px !important;
+                            padding-bottom: 0 !important;
                         }
 
                         #avatar-camera-frame {
@@ -386,7 +399,7 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         let handleWidth: CGFloat = 48
         let handleHeight: CGFloat = 16
         let handleX = (container.bounds.width - handleWidth) / 2.0
-        let handleY: CGFloat = 8.0
+        let handleY = container.bounds.height - handleHeight - 8.0
         let dragHandle = PiPDragHandleView(frame: NSRect(x: handleX, y: handleY, width: handleWidth, height: handleHeight))
         dragHandle.autoresizingMask = [.minYMargin, .minXMargin, .maxXMargin]
         if let draggableClickable = args?["pipDraggableClickable"] as? Bool {
@@ -448,7 +461,7 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
 
     private func startCursorTracking() {
         cursorTrackingTimer?.invalidate()
-        cursorTrackingTimer = Timer.scheduledTimer(withTimeInterval: 0.033, repeats: true) { [weak self] _ in
+        cursorTrackingTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
             self?.updateHeadTracking()
         }
     }
@@ -474,11 +487,11 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         let targetYaw = normX * 0.42
         let targetPitch = -normY * 0.32
 
-        // Smooth lerp (0.25)
-        let nextYaw = currentYaw + (targetYaw - currentYaw) * 0.25
-        let nextPitch = currentPitch + (targetPitch - currentPitch) * 0.25
+        // Smooth lerp (0.22)
+        let nextYaw = currentYaw + (targetYaw - currentYaw) * 0.22
+        let nextPitch = currentPitch + (targetPitch - currentPitch) * 0.22
 
-        if abs(nextYaw - currentYaw) > 0.003 || abs(nextPitch - currentPitch) > 0.003 {
+        if abs(nextYaw - currentYaw) > 0.008 || abs(nextPitch - currentPitch) > 0.008 {
             currentYaw = nextYaw
             currentPitch = nextPitch
             let script = "window.postMessage({ type: 'SET_POSE', yaw: \(nextYaw), pitch: \(nextPitch) }, '*');"
