@@ -41,6 +41,7 @@ dependencies:
   clock: ^1.1.2
   hotkey_manager: ^0.2.3
   flutter_svg: ^2.0.17
+  blobatar_flutter: ^0.1.0
 
 dev_dependencies:
   flutter_test:

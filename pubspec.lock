@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.3.1"
+  blobatar_flutter:
+    dependency: "direct main"
+    description:
+      name: blobatar_flutter
+      sha256: bebce9dcf3dbb5ca41d2fd2bdbb50ecd035d81ca1fb0486aed60876644c59c9c
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   boolean_selector:
     dependency: transitive
     description:
