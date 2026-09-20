@@ -22,9 +22,29 @@ import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/services/pet_registry_service.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
 
 class CompanionOverlayController extends ChangeNotifier {
   final SettingsRepository _settingsRepo;
+
+  /// Increments whenever an external surface (such as the PiP window) requests
+  /// opening the Blobatar rename dialog in the main app.
+  final ValueNotifier<int> openBlobatarNameDialogNotifier = ValueNotifier<int>(0);
+  bool _pendingBlobatarNameDialogRequest = false;
+
+  void requestOpenBlobatarNameDialog() {
+    _pendingBlobatarNameDialogRequest = true;
+    openBlobatarNameDialogNotifier.value++;
+  }
+
+  bool consumePendingBlobatarNameDialogRequest() {
+    if (_pendingBlobatarNameDialogRequest) {
+      _pendingBlobatarNameDialogRequest = false;
+      return true;
+    }
+    return false;
+  }
 
   List<PetProfile> get availablePets =>
       sl<PetRegistryService>().getEnabledProfiles();
@@ -160,6 +180,14 @@ class CompanionOverlayController extends ChangeNotifier {
   /// engine and cannot write settings itself.
   void _handleCompanionInteraction(CompanionInteractionEvent event) {
     switch (event.interactionType) {
+      case 'openBlobatarEditor':
+        if (sl.isRegistered<OverlayWindowService>()) {
+          unawaited(sl<OverlayWindowService>().showDashboard(forceShow: true));
+        }
+        if (sl.isRegistered<AppNavigationService>()) {
+          sl<AppNavigationService>().openSection('Companion');
+        }
+        requestOpenBlobatarNameDialog();
       case 'rename':
         final name = event.metadata?['petName']?.toString().trim();
         if (name == null || name.isEmpty) return;
@@ -1014,6 +1042,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   @override
   void dispose() {
+    openBlobatarNameDialogNotifier.dispose();
     _settingsRepo.removeListener(_handleSettingsChanged);
     _eventSub?.cancel();
     if (_companionEnabled) {

@@ -18,7 +18,6 @@ import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
@@ -316,25 +315,15 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   }
 
   void _handleRename() {
-    showBlobatarNameDialog(
-      context,
-      currentName: _petName,
-      onSaved: (newName) {
-        setState(() => _petName = newName);
-        SimplePrefs.instance.setString('companion_pet_name', newName);
-        // A blob's whole appearance is derived from its name, so the main app
-        // has to hear about this or the two windows drift apart.
-        unawaited(
-          IpcBridge.instance.dispatch(
-            IpcEvent.companionInteraction(
-              interactionType: 'rename',
-              metadata: <String, dynamic>{'petName': newName},
-            ),
-          ),
-        );
-        _engine.pet();
-      },
+    unawaited(
+      IpcBridge.instance.dispatch(
+        IpcEvent.companionInteraction(
+          interactionType: 'openBlobatarEditor',
+          metadata: <String, dynamic>{'petName': _petName},
+        ),
+      ),
     );
+    unawaited(NativeBridge.focusApp());
   }
 
   Future<void> _handleClose() async {

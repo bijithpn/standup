@@ -26,15 +26,35 @@ class CompanionSettingsSection extends StatefulWidget {
 }
 
 class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
+  bool _isRenameDialogOpen = false;
+
   void _openBlobatarRenameDialog() {
+    if (_isRenameDialogOpen) return;
+    _isRenameDialogOpen = true;
     showBlobatarNameDialog(
       context,
       currentName: widget.controller.companionPetName,
       onSaved: (newName) {
         widget.controller.changePetName(newName);
       },
-    );
+    ).whenComplete(() {
+      if (mounted) {
+        _isRenameDialogOpen = false;
+      }
+    });
   }
+
+  void _handleRenameDialogRequest() {
+    if (!mounted || _isRenameDialogOpen) return;
+    if (widget.controller.consumePendingBlobatarNameDialogRequest()) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isRenameDialogOpen) {
+          _openBlobatarRenameDialog();
+        }
+      });
+    }
+  }
+
   void _openCustomizer() {
     final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
     final def = theme.avatarDefinition ??
@@ -59,15 +79,20 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   @override
   void initState() {
     super.initState();
+    widget.controller.openBlobatarNameDialogNotifier.addListener(_handleRenameDialogRequest);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         widget.controller.setPreviewMode(true);
+        if (widget.controller.consumePendingBlobatarNameDialogRequest()) {
+          _openBlobatarRenameDialog();
+        }
       }
     });
   }
 
   @override
   void dispose() {
+    widget.controller.openBlobatarNameDialogNotifier.removeListener(_handleRenameDialogRequest);
     widget.controller.setPreviewMode(false);
     super.dispose();
   }

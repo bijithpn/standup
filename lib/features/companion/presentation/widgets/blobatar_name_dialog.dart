@@ -97,10 +97,12 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
             // Title
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -279,6 +281,7 @@ class _BlobatarNameDialogState extends State<_BlobatarNameDialog> {
               ],
             ),
           ],
+          ),
         ),
       ),
     );
