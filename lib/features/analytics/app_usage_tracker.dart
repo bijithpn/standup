@@ -1,22 +1,34 @@
 import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
+import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/focus_session_detector.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/analytics/segments/activity_segment_builder.dart';
+import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
-/// Polls the active app every 10s while tracking is enabled and the user
-/// isn't idle, accumulates seconds in memory, and flushes into
-/// [AppUsageService] every 30s. Only the app's executable-derived name is
-/// stored (never the window title `getActiveApp` also returns), to keep
-/// usage history at app-level detail only.
+/// Polls the active app every 10s while tracking is enabled, accumulates
+/// seconds in memory, and flushes into [AppUsageService] every 30s. Only the
+/// app's executable-derived name is stored (never the window title
+/// `getActiveApp` also returns), to keep usage history at app-level detail
+/// only.
+///
+/// The same tick also feeds an [ActivitySegmentBuilder], which records *when*
+/// each stretch happened rather than only how long it lasted. Daily totals
+/// alone cannot answer "what was I doing at 10am", so the timeline, per-app
+/// sessions, and every time-of-day pattern are built on those segments. It
+/// rides this existing loop deliberately — a second poller watching the same
+/// thing would double the cost for the same information.
 class AppUsageTracker {
   final AppTrackingService _appTracking;
   final AppUsageService _usageService;
@@ -25,6 +37,11 @@ class AppUsageTracker {
   final FocusSessionService? _focusSessionService;
   final ContextSwitchTracker? _contextSwitchTracker;
   final FocusSessionDetector _focusDetector = FocusSessionDetector();
+  final ActivitySegmentRepository? _segments;
+  final ActivitySegmentBuilder _segmentBuilder =
+      ActivitySegmentBuilder(pollInterval: _pollInterval);
+  final EventBus? _eventBus;
+  StreamSubscription<AppEvent>? _eventSub;
   final AppLogger _logger = AppLogger();
 
   static const _pollInterval = Duration(seconds: 10);
@@ -45,7 +62,11 @@ class AppUsageTracker {
     required ActivityMonitor activityMonitor,
     FocusSessionService? focusSessionService,
     ContextSwitchTracker? contextSwitchTracker,
-  })  : _appTracking = appTracking,
+    ActivitySegmentRepository? segmentRepository,
+    EventBus? eventBus,
+  })  : _segments = segmentRepository,
+        _eventBus = eventBus,
+        _appTracking = appTracking,
         _usageService = usageService,
         _settingsRepo = settingsRepo,
         _activityMonitor = activityMonitor,
@@ -55,6 +76,16 @@ class AppUsageTracker {
   void start() {
     _pollTimer ??= Timer.periodic(_pollInterval, (_) => tickOnce());
     _flushTimer ??= Timer.periodic(_flushInterval, (_) => flushNow());
+
+    // Breaks bracket the timeline: without them a break reads as idle, and
+    // "where did the day go" cannot tell resting apart from walking away.
+    _eventSub ??= _eventBus?.stream.listen((event) {
+      if (event is BreakStartedEvent) {
+        onBreakStarted(at: event.timestamp);
+      } else if (event is BreakEndedEvent) {
+        onBreakEnded(at: event.timestamp);
+      }
+    });
   }
 
   void stop() {
@@ -62,14 +93,35 @@ class AppUsageTracker {
     _pollTimer = null;
     _flushTimer?.cancel();
     _flushTimer = null;
+    _eventSub?.cancel();
+    _eventSub = null;
+    _recordSegment(_segmentBuilder.close(clock.now()));
     flushNow();
     _recordFocusSession(_focusDetector.closeOpenSession());
   }
 
+  /// A break started, so the stretch it interrupted ends here.
+  ///
+  /// [at] is the moment the break actually began. Events arrive asynchronously,
+  /// so reading the clock on delivery would attribute the queueing delay to
+  /// whatever the break interrupted.
+  void onBreakStarted({DateTime? at}) =>
+      _recordSegment(_segmentBuilder.onBreakStarted(at ?? clock.now()));
+
+  /// The break ended; the next poll opens whatever comes after it.
+  void onBreakEnded({DateTime? at}) =>
+      _recordSegment(_segmentBuilder.onBreakEnded(at ?? clock.now()));
+
   @visibleForTesting
   Future<void> tickOnce() async {
     if (!_settingsRepo.currentSettings.appUsageTrackingEnabled) return;
-    if (_activityMonitor.isIdle) return;
+
+    // Idle time is recorded rather than skipped: "where did the day go" needs
+    // to account for the hour the machine sat untouched, not quietly drop it.
+    if (_activityMonitor.isIdle) {
+      _recordSegment(_segmentBuilder.onIdle(clock.now()));
+      return;
+    }
 
     try {
       final app = await _appTracking.getActiveApp();
@@ -96,6 +148,15 @@ class AppUsageTracker {
       _pendingNames[appKey] = displayName;
       _pendingCategories[appKey] = category;
 
+      _recordSegment(
+        _segmentBuilder.onActive(
+          appKey: appKey,
+          appName: displayName,
+          category: category,
+          now: clock.now(),
+        ),
+      );
+
       _recordFocusSession(_focusDetector.onTick(category, clock.now()));
     } catch (e) {
       _logger.error('AppUsageTracker tick failed: $e');
@@ -106,8 +167,16 @@ class AppUsageTracker {
     if (session != null) _focusSessionService?.recordSession(session);
   }
 
+  void _recordSegment(ActivitySegment? segment) {
+    if (segment != null) _segments?.record(segment);
+  }
+
   @visibleForTesting
   void flushNow() {
+    _segments?.flush();
+    _segments?.applyRetention(
+      _settingsRepo.currentSettings.activityHistoryRetentionDays,
+    );
     if (_pendingSeconds.isEmpty) return;
 
     for (final dateEntry in _pendingSeconds.entries) {

@@ -26,6 +26,8 @@ import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
+import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
+import 'package:breakmate/features/analytics/segments/productivity_repository.dart';
 import 'package:breakmate/features/analytics/app_icon_cache.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
@@ -96,6 +98,12 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton<AppIconCache>(
     () => AppIconCache(appTracking: sl()),
   );
+  sl.registerSingleton<ActivitySegmentRepository>(
+    ActivitySegmentRepository(storage: sl()),
+  );
+  sl.registerSingleton<ProductivityRepository>(
+    ProductivityRepository(segments: sl<ActivitySegmentRepository>()),
+  );
   sl.registerSingleton<AppUsageTracker>(
     AppUsageTracker(
       appTracking: sl(),
@@ -104,6 +112,8 @@ Future<void> initDependencies() async {
       activityMonitor: sl(),
       focusSessionService: sl(),
       contextSwitchTracker: sl(),
+      segmentRepository: sl(),
+      eventBus: sl(),
     ),
   );
   sl.registerSingleton<CompanionStreakService>(

@@ -124,6 +124,12 @@ class SettingsModel {
 
   final bool appUsageTrackingEnabled;
 
+  /// How many days of activity history to keep, or 0 for no limit.
+  ///
+  /// Matches the 30-day window app usage has always pruned to, so upgrading
+  /// does not silently change how much history a user has.
+  final int activityHistoryRetentionDays;
+
   /// Opt-in, local-only daily time budgets per [AppCategory] name (e.g.
   /// `{'browsing': 120}` for a 2h/day soft cap). A category absent from the
   /// map has no budget. Purely a UI nudge threshold — never enforced by
@@ -221,6 +227,7 @@ class SettingsModel {
     this.calendarEnabled = false,
     this.enableSessionResume = true,
     this.appUsageTrackingEnabled = false,
+    this.activityHistoryRetentionDays = 30,
     this.categoryDailyBudgetMinutes = const {},
   });
 
@@ -308,6 +315,7 @@ class SettingsModel {
     bool? calendarEnabled,
     bool? enableSessionResume,
     bool? appUsageTrackingEnabled,
+    int? activityHistoryRetentionDays,
     Map<String, int>? categoryDailyBudgetMinutes,
     String? pipBackgroundStyle,
     double? pipOpacity,
@@ -429,6 +437,8 @@ class SettingsModel {
       enableSessionResume: enableSessionResume ?? this.enableSessionResume,
       appUsageTrackingEnabled:
           appUsageTrackingEnabled ?? this.appUsageTrackingEnabled,
+      activityHistoryRetentionDays:
+          activityHistoryRetentionDays ?? this.activityHistoryRetentionDays,
       categoryDailyBudgetMinutes:
           categoryDailyBudgetMinutes ?? this.categoryDailyBudgetMinutes,
       pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
@@ -522,6 +532,7 @@ class SettingsModel {
     'calendarEnabled': calendarEnabled,
     'enableSessionResume': enableSessionResume,
     'appUsageTrackingEnabled': appUsageTrackingEnabled,
+    'activityHistoryRetentionDays': activityHistoryRetentionDays,
     'categoryDailyBudgetMinutes': categoryDailyBudgetMinutes,
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
@@ -646,6 +657,8 @@ class SettingsModel {
       calendarEnabled: map['calendarEnabled'] as bool? ?? false,
       enableSessionResume: map['enableSessionResume'] as bool? ?? true,
       appUsageTrackingEnabled: map['appUsageTrackingEnabled'] as bool? ?? false,
+      activityHistoryRetentionDays:
+          (map['activityHistoryRetentionDays'] as num?)?.toInt() ?? 30,
       categoryDailyBudgetMinutes:
           (map['categoryDailyBudgetMinutes'] as Map?)?.map(
             (k, v) => MapEntry(k as String, v as int),

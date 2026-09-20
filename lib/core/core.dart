@@ -56,6 +56,7 @@ export 'services/window_service.dart';
 export 'storage/models/calendar_event_model.dart';
 export 'storage/models/calendar_model.dart';
 export 'storage/models/companion_preferences.dart';
+export 'storage/models/activity_segment.dart';
 export 'storage/models/daily_stats.dart';
 export 'storage/models/key_value_record.dart';
 export 'storage/models/session_state.dart';
