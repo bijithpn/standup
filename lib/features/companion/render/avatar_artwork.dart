@@ -22,10 +22,12 @@ AvatarArtworkRecipe avatarRecipeFor(
   final breed =
       breedId == null ? null : AvatarBreed.find(definition.species, breedId);
 
-  // A breed already carries its own colouring, so only recolour it when the
-  // user has moved off the default palette on purpose.
-  final palette = !applyPalette ||
-          (breed != null && definition.palette == AvatarPalette.defaultPalette)
+  // Both base species snapshots and breed snapshots carry authored colouring.
+  // Only recolour when the user has explicitly moved off the default palette.
+  final isDefaultPalette =
+      definition.palette == AvatarPalette.defaultPalette ||
+      definition.palette.name == 'default';
+  final palette = !applyPalette || isDefaultPalette
       ? null
       : definition.palette;
 
