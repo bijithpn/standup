@@ -884,3 +884,207 @@ final class AvatarEditorWindowManager: NSObject, WKScriptMessageHandler, NSWindo
         webView = nil
     }
 }
+
+final class CustomizerViewportManager: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+    static let shared = CustomizerViewportManager()
+
+    private var webView: WKWebView?
+    private var isVisible: Bool = false
+    private var currentUrlStr: String?
+    private var currentMode: String = "companion"
+    private var onSavedCallback: ((String) -> Void)?
+
+    func showViewport(args: [String: Any]?, onSaved: ((String) -> Void)? = nil) {
+        guard let window = MainFlutterWindow.shared, let contentView = window.contentView else { return }
+        self.onSavedCallback = onSaved
+
+        let x = (args?["x"] as? Double) ?? 0.0
+        let y = (args?["y"] as? Double) ?? 0.0
+        let w = max(100.0, (args?["width"] as? Double) ?? 300.0)
+        let h = max(100.0, (args?["height"] as? Double) ?? 300.0)
+        let avatarUrlStr = (args?["avatarUrl"] as? String) ?? "http://127.0.0.1:5173/?companion=1#/companion"
+        let mode = (args?["mode"] as? String) ?? "companion"
+        self.currentMode = mode
+
+        let windowH = contentView.bounds.height
+        let cocoaX = CGFloat(x)
+        let cocoaY = windowH - CGFloat(y) - CGFloat(h)
+        let frame = NSRect(x: cocoaX, y: cocoaY, width: CGFloat(w), height: CGFloat(h))
+
+        if let existing = webView {
+            existing.frame = frame
+            if existing.superview == nil {
+                contentView.addSubview(existing)
+            }
+            if currentUrlStr != avatarUrlStr {
+                currentUrlStr = avatarUrlStr
+                if let url = URL(string: avatarUrlStr) {
+                    existing.load(URLRequest(url: url))
+                }
+            } else if let params = args?["urlParams"] as? String {
+                let script = "window.postMessage({ type: 'SET_PARAMS', params: '\(params)' }, '*');"
+                existing.evaluateJavaScript(script, completionHandler: nil)
+            }
+            existing.isHidden = false
+            isVisible = true
+            return
+        }
+
+        let webConfiguration = WKWebViewConfiguration()
+        let userContentController = WKUserContentController()
+
+        let scriptSource = """
+        (function() {
+            try {
+                const origReplace = history.replaceState.bind(history);
+                let lastReplace = 0;
+                history.replaceState = function(state, title, url) {
+                    const now = Date.now();
+                    if (now - lastReplace < 300) return;
+                    lastReplace = now;
+                    try { origReplace(state, title, url); } catch (_) {}
+                };
+            } catch (_) {}
+
+            window.AvatarBridge = {
+                setLookAt: function(x, y) {
+                    const yaw = x * 0.42;
+                    const pitch = -y * 0.32;
+                    window.postMessage({ type: 'SET_POSE', yaw: yaw, pitch: pitch }, '*');
+                },
+                setYaw: function(r) {
+                    window.postMessage({ type: 'SET_POSE', yaw: r }, '*');
+                }
+            };
+
+            const styleId = 'customizer-clean-viewport-style';
+            function injectCleanStyle() {
+                if (document.getElementById(styleId)) return;
+                const style = document.createElement('style');
+                style.id = styleId;
+                style.textContent = `
+                    /* Completely hide timeline and animation controls */
+                    .avatar-app__interaction-mode,
+                    .avatar-app__animation-toggle,
+                    .avatar-animation-panel,
+                    #avatar-controls-left-tab-animation,
+                    #avatar-controls-right-tab-animation,
+                    [id*="-tab-animation"],
+                    [aria-controls*="-panel-animation"],
+                    .avatar-orientation-control,
+                    .avatar-header,
+                    .avatar-app__header {
+                        display: none !important;
+                        visibility: hidden !important;
+                        opacity: 0 !important;
+                        pointer-events: none !important;
+                    }
+
+                    html, body, #root, .avatar-app, .avatar-app__stage, .avatar-app__workspace {
+                        background: transparent !important;
+                        background-color: transparent !important;
+                        overflow: hidden !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
+                    .interactive-avatar,
+                    .interactive-avatar__canvas {
+                        display: block !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                    }
+                `;
+                (document.head || document.documentElement).appendChild(style);
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', injectCleanStyle);
+            } else {
+                injectCleanStyle();
+            }
+            const observer = new MutationObserver(injectCleanStyle);
+            observer.observe(document.documentElement, { childList: true, subtree: true });
+        })();
+        """
+
+        let cleanScript = WKUserScript(source: scriptSource, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        userContentController.addUserScript(cleanScript)
+        userContentController.add(self, name: "onAvatarSaved")
+        webConfiguration.userContentController = userContentController
+        webConfiguration.preferences.setValue(true, forKey: "developerExtrasEnabled")
+
+        let wv = WKWebView(frame: frame, configuration: webConfiguration)
+        wv.autoresizingMask = []
+        wv.setValue(false, forKey: "drawsBackground")
+        if #available(macOS 12.0, *) {
+            wv.underPageBackgroundColor = .clear
+        }
+        if #available(macOS 13.3, *) {
+            wv.isInspectable = true
+        }
+        wv.navigationDelegate = self
+
+        contentView.addSubview(wv)
+        self.webView = wv
+        self.isVisible = true
+        self.currentUrlStr = avatarUrlStr
+
+        if let url = URL(string: avatarUrlStr) {
+            wv.load(URLRequest(url: url))
+        }
+    }
+
+    func updateViewport(args: [String: Any]?) {
+        guard let wv = webView, let contentView = MainFlutterWindow.shared?.contentView else { return }
+
+        if let x = args?["x"] as? Double,
+           let y = args?["y"] as? Double,
+           let w = args?["width"] as? Double,
+           let h = args?["height"] as? Double {
+            let windowH = contentView.bounds.height
+            let cocoaX = CGFloat(x)
+            let cocoaY = windowH - CGFloat(y) - CGFloat(h)
+            let newFrame = NSRect(x: cocoaX, y: cocoaY, width: CGFloat(max(100.0, w)), height: CGFloat(max(100.0, h)))
+            if wv.frame != newFrame {
+                wv.frame = newFrame
+            }
+        }
+
+        if let urlStr = args?["avatarUrl"] as? String, !urlStr.isEmpty, urlStr != currentUrlStr {
+            currentUrlStr = urlStr
+            if let url = URL(string: urlStr) {
+                wv.load(URLRequest(url: url))
+            }
+            return
+        }
+
+        if let params = args?["urlParams"] as? String {
+            let script = "window.postMessage({ type: 'SET_PARAMS', params: '\(params)' }, '*');"
+            wv.evaluateJavaScript(script, completionHandler: nil)
+        }
+
+        if let lookX = args?["lookX"] as? Double, let lookY = args?["lookY"] as? Double {
+            let yaw = lookX * 0.42
+            let pitch = -lookY * 0.32
+            let script = "window.postMessage({ type: 'SET_POSE', yaw: \(yaw), pitch: \(pitch) }, '*');"
+            wv.evaluateJavaScript(script, completionHandler: nil)
+        }
+    }
+
+    func hideViewport() {
+        guard let wv = webView else { return }
+        wv.stopLoading()
+        wv.removeFromSuperview()
+        self.webView = nil
+        self.isVisible = false
+        self.currentUrlStr = nil
+    }
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        if message.name == "onAvatarSaved", let query = message.body as? String {
+            onSavedCallback?(query)
+        }
+    }
+}
+

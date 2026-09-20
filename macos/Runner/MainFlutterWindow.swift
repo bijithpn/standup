@@ -529,6 +529,20 @@ class MainFlutterWindow: NSWindow {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing editorUrl", details: nil))
         }
 
+      case "showCustomizerViewport":
+        CustomizerViewportManager.shared.showViewport(args: call.arguments as? [String: Any]) { [weak self] query in
+          self?.bridgeChannel?.invokeMethod("onAvatarSaved", arguments: ["urlParams": query])
+        }
+        result(nil)
+
+      case "updateCustomizerViewport":
+        CustomizerViewportManager.shared.updateViewport(args: call.arguments as? [String: Any])
+        result(nil)
+
+      case "hideCustomizerViewport":
+        CustomizerViewportManager.shared.hideViewport()
+        result(nil)
+
       // ── Behavior Engine PAL methods ───────────────────────────────────────
 
       case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",

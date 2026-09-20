@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 class AvatarDefinition {
   final int schemaVersion;
   final AvatarSpecies species;
+  final String? breed;
   final AvatarPalette palette;
   final String pattern;
   final String seed;
@@ -15,6 +16,7 @@ class AvatarDefinition {
   const AvatarDefinition({
     this.schemaVersion = 1,
     required this.species,
+    this.breed,
     required this.palette,
     this.pattern = 'solid',
     required this.seed,
@@ -25,6 +27,7 @@ class AvatarDefinition {
 
   factory AvatarDefinition.fromSpecies(
     AvatarSpecies species, {
+    String? breed,
     AvatarPalette? palette,
     String? pattern,
     String? seed,
@@ -36,6 +39,7 @@ class AvatarDefinition {
     return AvatarDefinition(
       schemaVersion: 1,
       species: species,
+      breed: breed,
       palette: palette ?? AvatarPalette.defaultPalette,
       pattern: pattern ?? 'solid',
       seed: effectiveSeed,
@@ -78,6 +82,7 @@ class AvatarDefinition {
   AvatarDefinition copyWith({
     int? schemaVersion,
     AvatarSpecies? species,
+    String? breed,
     AvatarPalette? palette,
     String? pattern,
     String? seed,
@@ -88,6 +93,7 @@ class AvatarDefinition {
     return AvatarDefinition(
       schemaVersion: schemaVersion ?? this.schemaVersion,
       species: species ?? this.species,
+      breed: breed ?? this.breed,
       palette: palette ?? this.palette,
       pattern: pattern ?? this.pattern,
       seed: seed ?? this.seed,
@@ -101,6 +107,7 @@ class AvatarDefinition {
     return {
       'schemaVersion': schemaVersion,
       'species': species.name,
+      if (breed != null) 'breed': breed,
       'palette': palette.toJson(),
       'pattern': pattern,
       'seed': seed,
@@ -113,6 +120,7 @@ class AvatarDefinition {
   factory AvatarDefinition.fromJson(Map<String, dynamic> json) {
     final speciesStr = json['species'] as String? ?? 'cat';
     final parsedSpecies = AvatarSpecies.tryParse(speciesStr) ?? AvatarSpecies.cat;
+    final parsedBreed = json['breed'] as String?;
 
     AvatarPalette parsedPalette;
     if (json['palette'] is Map<String, dynamic>) {
@@ -126,6 +134,7 @@ class AvatarDefinition {
     return AvatarDefinition(
       schemaVersion: json['schemaVersion'] as int? ?? 1,
       species: parsedSpecies,
+      breed: parsedBreed,
       palette: parsedPalette,
       pattern: json['pattern'] as String? ?? 'solid',
       seed: json['seed'] as String? ?? 'default',

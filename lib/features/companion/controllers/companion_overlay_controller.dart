@@ -527,6 +527,64 @@ class CompanionOverlayController extends ChangeNotifier {
     return 'entity=$entityName$breedQuery&nose=1&mouth=1&bg=$_pipBackgroundStyle';
   }
 
+  static String buildQueryParamsForAvatar({
+    required AvatarSpecies species,
+    String? breed,
+    String? paletteId,
+    String bg = 'transparent',
+  }) {
+    String entityName = species.name;
+    String? breedName = breed;
+
+    if (breedName == null || breedName.isEmpty) {
+      switch (species) {
+        case AvatarSpecies.alpaca: breedName = 'cream-alpaca'; break;
+        case AvatarSpecies.beaver: breedName = 'north-american-beaver'; break;
+        case AvatarSpecies.capybara: breedName = 'capybara'; break;
+        case AvatarSpecies.cat: breedName = 'british-shorthair'; break;
+        case AvatarSpecies.chinchilla: breedName = 'gray-chinchilla'; break;
+        case AvatarSpecies.chick: breedName = 'yellow-chick'; break;
+        case AvatarSpecies.cow: breedName = 'dairy-cow'; break;
+        case AvatarSpecies.dog: breedName = 'shiba-inu'; break;
+        case AvatarSpecies.duck: breedName = 'mallard-duck'; break;
+        case AvatarSpecies.deer: breedName = 'sika-deer'; break;
+        case AvatarSpecies.fox: breedName = 'red-fox'; break;
+        case AvatarSpecies.ferret: breedName = 'sable-ferret'; break;
+        case AvatarSpecies.guineaPig: entityName = 'guinea-pig'; breedName = 'american-guinea-pig'; break;
+        case AvatarSpecies.hamster: breedName = 'syrian-hamster'; break;
+        case AvatarSpecies.hedgehog: breedName = 'european-hedgehog'; break;
+        case AvatarSpecies.lion: breedName = 'african-lion'; break;
+        case AvatarSpecies.monkey: breedName = 'macaque'; break;
+        case AvatarSpecies.otter: breedName = 'sea-otter'; break;
+        case AvatarSpecies.owl: breedName = 'barn-owl'; break;
+        case AvatarSpecies.panda: entityName = 'bear'; breedName = 'giant-panda'; break;
+        case AvatarSpecies.parrot: breedName = 'scarlet-macaw'; break;
+        case AvatarSpecies.penguin: breedName = 'emperor-penguin'; break;
+        case AvatarSpecies.pig: breedName = 'pink-pig'; break;
+        case AvatarSpecies.rabbit: breedName = 'holland-lop'; break;
+        case AvatarSpecies.raccoon: entityName = 'bear'; breedName = 'raccoon'; break;
+        case AvatarSpecies.redPanda: entityName = 'bear'; breedName = 'red-panda'; break;
+        case AvatarSpecies.sheep: breedName = 'white-sheep'; break;
+        case AvatarSpecies.seal: breedName = 'harbor-seal'; break;
+        case AvatarSpecies.squirrel: breedName = 'red-squirrel'; break;
+        case AvatarSpecies.tiger: breedName = 'bengal-tiger'; break;
+        case AvatarSpecies.wolf: entityName = 'dog'; breedName = 'husky'; break;
+        case AvatarSpecies.bear: breedName = 'brown-bear'; break;
+        case AvatarSpecies.goose: breedName = 'greylag-goose'; break;
+      }
+    } else {
+      if (species == AvatarSpecies.guineaPig) entityName = 'guinea-pig';
+      if (species == AvatarSpecies.panda || species == AvatarSpecies.raccoon || species == AvatarSpecies.redPanda) entityName = 'bear';
+      if (species == AvatarSpecies.wolf) entityName = 'dog';
+    }
+
+    var query = 'entity=$entityName&breed=$breedName&nose=1&mouth=1&bg=$bg';
+    if (paletteId != null && paletteId.isNotEmpty) {
+      query += '&palette=$paletteId';
+    }
+    return query;
+  }
+
   Future<void> saveAvatarUrlParams(String params) async {
     final updated = _settingsRepo.currentSettings.copyWith(
       companionAvatarUrlParams: params,

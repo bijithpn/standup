@@ -299,6 +299,21 @@ class MacOSBridge implements NativeBridgePlatform {
     await _invokeSafely('openAvatarEditor', {'editorUrl': editorUrl});
   }
 
+  @override
+  Future<void> showCustomizerViewport(Map<String, dynamic> args) async {
+    await _invokeSafely('showCustomizerViewport', args);
+  }
+
+  @override
+  Future<void> updateCustomizerViewport(Map<String, dynamic> args) async {
+    await _invokeSafely('updateCustomizerViewport', args);
+  }
+
+  @override
+  Future<void> hideCustomizerViewport() async {
+    await _invokeSafely('hideCustomizerViewport');
+  }
+
   Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);

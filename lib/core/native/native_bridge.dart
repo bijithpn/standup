@@ -312,6 +312,12 @@ abstract class NativeBridgePlatform {
   Future<void> hidePipWindow();
 
   Future<void> openAvatarEditor(String editorUrl);
+
+  Future<void> showCustomizerViewport(Map<String, dynamic> args);
+
+  Future<void> updateCustomizerViewport(Map<String, dynamic> args);
+
+  Future<void> hideCustomizerViewport();
 }
 
 class FallbackBridge implements NativeBridgePlatform {
@@ -440,6 +446,15 @@ class FallbackBridge implements NativeBridgePlatform {
 
   @override
   Future<void> openAvatarEditor(String editorUrl) async {}
+
+  @override
+  Future<void> showCustomizerViewport(Map<String, dynamic> args) async {}
+
+  @override
+  Future<void> updateCustomizerViewport(Map<String, dynamic> args) async {}
+
+  @override
+  Future<void> hideCustomizerViewport() async {}
 }
 
 class NativeBridge {
@@ -598,4 +613,14 @@ class NativeBridge {
 
   static Future<void> openAvatarEditor(String editorUrl) =>
       _platform.openAvatarEditor(editorUrl);
+
+  static Future<void> showCustomizerViewport(Map<String, dynamic> args) =>
+      _platform.showCustomizerViewport(args);
+
+  static Future<void> updateCustomizerViewport(Map<String, dynamic> args) =>
+      _platform.updateCustomizerViewport(args);
+
+  static Future<void> hideCustomizerViewport() =>
+      _platform.hideCustomizerViewport();
 }
+
