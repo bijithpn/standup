@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
+import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
@@ -74,6 +75,10 @@ class AppUsageTracker {
         _contextSwitchTracker = contextSwitchTracker;
 
   void start() {
+    // The build's own switch, checked before the user's: a disabled module
+    // records nothing regardless of what consent was given earlier.
+    if (!ProductivityConfig.current.backgroundMonitoringEnabled) return;
+
     _pollTimer ??= Timer.periodic(_pollInterval, (_) => tickOnce());
     _flushTimer ??= Timer.periodic(_flushInterval, (_) => flushNow());
 

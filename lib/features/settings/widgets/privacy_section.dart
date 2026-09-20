@@ -1,3 +1,7 @@
+import 'package:breakmate/core/config/productivity_config.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/activity_tracking_intro.dart';
+import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
+import 'package:breakmate/features/analytics/segments/productivity_repository.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
@@ -22,6 +26,16 @@ class PrivacySection extends StatefulWidget {
 
 class _PrivacySectionState extends State<PrivacySection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
+
+  /// How many activity entries are stored, so "clear history" can say what it
+  /// would actually delete.
+  int _segmentCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshSegmentCount();
+  }
 
   UsagePeriod get _usagePeriod {
     switch (_selectedFilter) {
@@ -113,13 +127,45 @@ class _PrivacySectionState extends State<PrivacySection> {
         buildCard([
           toggleRow(
             'Track App Usage',
-            'See which apps you use most, right here and on the Statistics screen. '
+            'See which apps you use most, here and on the Productivity screen. '
                 'Only app names and time spent are stored, locally — never window titles or URLs.',
             settings.appUsageTrackingEnabled,
-            (value) =>
-                widget.onSave(settings.copyWith(appUsageTrackingEnabled: value)),
+            (value) => _setTracking(settings, value),
           ),
         ]),
+
+        if (settings.appUsageTrackingEnabled) ...[
+          const SizedBox(height: 16),
+          buildCard([
+            dropdownRow(
+              'Keep Activity History',
+              ActivityRetention.fromDays(
+                settings.activityHistoryRetentionDays,
+              ).label,
+              ActivityRetention.values.map((r) => r.label).toList(),
+              (value) {
+                if (value == null) return;
+                widget.onSave(
+                  settings.copyWith(
+                    activityHistoryRetentionDays:
+                        ActivityRetention.fromLabel(value).days,
+                  ),
+                );
+              },
+            ),
+            divider(),
+            actionRow(
+              label: 'Clear Activity History',
+              subtitle: _segmentCount == 0
+                  ? 'No activity has been recorded yet.'
+                  : '$_segmentCount recorded entries make up your timeline, '
+                      'application totals and insights.',
+              buttonText: 'Clear History',
+              onPressed: _segmentCount == 0 ? null : _clearActivityHistory,
+              isDestructive: true,
+            ),
+          ]),
+        ],
 
         if (settings.appUsageTrackingEnabled) ...[
           const SizedBox(height: 16),
@@ -169,6 +215,46 @@ class _PrivacySectionState extends State<PrivacySection> {
         ]),
       ],
     );
+  }
+
+  /// Turning tracking on for the first time explains itself before it starts;
+  /// turning it off is immediate, because stopping never needs consent.
+  Future<void> _setTracking(SettingsModel settings, bool value) async {
+    if (!value) {
+      widget.onSave(settings.copyWith(appUsageTrackingEnabled: false));
+      return;
+    }
+
+    final accepted = await ActivityTrackingIntro.show(context);
+    if (!accepted) return;
+
+    widget.onSave(settings.copyWith(appUsageTrackingEnabled: true));
+    _refreshSegmentCount();
+  }
+
+  Future<void> _clearActivityHistory() async {
+    if (!sl.isRegistered<ActivitySegmentRepository>()) return;
+
+    final confirmed = await ClearActivityHistoryDialog.show(
+      context,
+      segmentCount: _segmentCount,
+    );
+    if (!confirmed) return;
+
+    sl<ActivitySegmentRepository>().clearAll();
+    if (sl.isRegistered<ProductivityRepository>()) {
+      sl<ProductivityRepository>().invalidate();
+    }
+    _refreshSegmentCount();
+  }
+
+  void _refreshSegmentCount() {
+    if (!mounted) return;
+    setState(() {
+      _segmentCount = sl.isRegistered<ActivitySegmentRepository>()
+          ? sl<ActivitySegmentRepository>().count()
+          : 0;
+    });
   }
 
   Widget _settingsInfoTile(
