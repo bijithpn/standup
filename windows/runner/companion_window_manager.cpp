@@ -1,4 +1,5 @@
 #include "companion_window_manager.h"
+#include <algorithm>
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
 #include <dwmapi.h>
@@ -262,8 +263,8 @@ void CompanionWindowManager::ShowPiP(
 
   auto it = args.find("x");         if (it != args.end()) x         = ToDouble(it->second, 100.0);
   it = args.find("y");              if (it != args.end()) y         = ToDouble(it->second, 100.0);
-  it = args.find("width");          if (it != args.end()) pip_w     = ToDouble(it->second, 280.0);
-  it = args.find("height");         if (it != args.end()) pip_h     = ToDouble(it->second, 320.0);
+  it = args.find("width");  if (it != args.end()) pip_w = std::clamp(ToDouble(it->second, 280.0), 180.0, 360.0);
+  it = args.find("height"); if (it != args.end()) pip_h = std::clamp(ToDouble(it->second, 320.0), 210.0, 420.0);
   it = args.find("themeId");        if (it != args.end()) theme_id  = ExtractString(it->second, "grey_cat");
   it = args.find("petName");        if (it != args.end()) pet_name  = ExtractString(it->second, "Mochi");
   it = args.find("scale");          if (it != args.end()) scale     = ToDouble(it->second, 3.0);

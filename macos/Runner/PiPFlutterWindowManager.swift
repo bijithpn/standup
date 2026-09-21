@@ -70,8 +70,8 @@ final class PiPFlutterWindowManager: NSObject {
         let screen = NSScreen.main ?? NSScreen.screens.first
         let screenFrame = screen?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
 
-        let width = min(max((args?["width"] as? Double) ?? 280, 160), 640)
-        let height = min(max((args?["height"] as? Double) ?? 320, 180), 720)
+        let width = min(max((args?["width"] as? Double) ?? 280, 180), 360)
+        let height = min(max((args?["height"] as? Double) ?? 320, 210), 420)
         let x = (args?["x"] as? Double) ?? Double(screenFrame.maxX - CGFloat(width) - 20)
         let y = (args?["y"] as? Double) ?? Double(screenFrame.minY + 20)
 
@@ -83,6 +83,9 @@ final class PiPFlutterWindowManager: NSObject {
             backing: .buffered,
             defer: false
         )
+
+        window.minSize = NSSize(width: 180, height: 210)
+        window.maxSize = NSSize(width: 360, height: 420)
 
         window.backgroundColor = .clear
         window.isOpaque = false

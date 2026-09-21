@@ -513,32 +513,23 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         ignoring: !_isHovered,
         child: Stack(
           children: <Widget>[
-            // Drag anywhere along the top edge.
+            // Dotted grid drag handle along the top edge.
             Positioned(
-              top: 0,
+              top: 6,
               left: 0,
               right: 0,
-              height: 34,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onPanStart: (_) {
-                  _wanderer.suspend();
-                  _windowManager.startDrag();
-                },
-                onPanEnd: (_) {
-                  _syncViewport();
-                  _wanderer.resume();
-                },
-                child: Center(
-                  child: Container(
-                    width: 34,
-                    height: 4,
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      color: _chromeForeground.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+              child: Center(
+                child: _DottedDragHandle(
+                  foreground: _chromeForeground,
+                  background: _chromeBackground,
+                  onDragStart: () {
+                    _wanderer.suspend();
+                    _windowManager.startDrag();
+                  },
+                  onDragEnd: () {
+                    _syncViewport();
+                    _wanderer.resume();
+                  },
                 ),
               ),
             ),
@@ -922,3 +913,117 @@ class _NamePill extends StatelessWidget {
     );
   }
 }
+
+/// A top drag grip displaying a 2x4 dotted grid with grab mouse cursors.
+class _DottedDragHandle extends StatefulWidget {
+  const _DottedDragHandle({
+    required this.foreground,
+    required this.background,
+    required this.onDragStart,
+    required this.onDragEnd,
+  });
+
+  final Color foreground;
+  final Color background;
+  final VoidCallback onDragStart;
+  final VoidCallback onDragEnd;
+
+  @override
+  State<_DottedDragHandle> createState() => _DottedDragHandleState();
+}
+
+class _DottedDragHandleState extends State<_DottedDragHandle> {
+  bool _isHandleHovered = false;
+  bool _isDragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final dotColor = widget.foreground.withValues(
+      alpha: _isDragging ? 0.95 : (_isHandleHovered ? 0.8 : 0.45),
+    );
+
+    return Tooltip(
+      message: 'Drag to move companion',
+      waitDuration: const Duration(milliseconds: 500),
+      child: MouseRegion(
+        cursor: _isDragging
+            ? SystemMouseCursors.grabbing
+            : SystemMouseCursors.grab,
+        onEnter: (_) => setState(() => _isHandleHovered = true),
+        onExit: (_) => setState(() => _isHandleHovered = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanStart: (_) {
+            setState(() => _isDragging = true);
+            widget.onDragStart();
+          },
+          onPanEnd: (_) {
+            setState(() => _isDragging = false);
+            widget.onDragEnd();
+          },
+          onPanCancel: () {
+            setState(() => _isDragging = false);
+            widget.onDragEnd();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 140),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: _isHandleHovered || _isDragging
+                  ? widget.background.withValues(alpha: 0.85)
+                  : widget.background.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: widget.foreground.withValues(
+                  alpha: _isDragging ? 0.3 : (_isHandleHovered ? 0.2 : 0.1),
+                ),
+                width: 1.0,
+              ),
+            ),
+            child: SizedBox(
+              width: 22,
+              height: 8,
+              child: CustomPaint(
+                painter: _DottedGridPainter(color: dotColor),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Custom painter for a clean 2x4 dotted grid.
+class _DottedGridPainter extends CustomPainter {
+  const _DottedGridPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    const int cols = 4;
+    const int rows = 2;
+    const double radius = 1.25;
+
+    final double stepX = cols > 1 ? (size.width - 2 * radius) / (cols - 1) : 0;
+    final double stepY = rows > 1 ? (size.height - 2 * radius) / (rows - 1) : 0;
+
+    for (int r = 0; r < rows; r++) {
+      for (int c = 0; c < cols; c++) {
+        final cx = radius + c * stepX;
+        final cy = radius + r * stepY;
+        canvas.drawCircle(Offset(cx, cy), radius, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DottedGridPainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+

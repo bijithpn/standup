@@ -48,8 +48,8 @@ class CompanionWindowManager {
   DisplayManager? get displayManager => _displayManager;
 
   static const Size defaultSize = Size(280, 320);
-  static const Size minSize = Size(160, 180);
-  static const Size maxSize = Size(560, 640);
+  static const Size minSize = Size(180, 210);
+  static const Size maxSize = Size(360, 420);
   static const double handleHeight = 24.0;
   static const double minIntersection = 20.0;
 
