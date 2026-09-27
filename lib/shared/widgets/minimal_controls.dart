@@ -115,12 +115,14 @@ class MinimalSlider extends StatefulWidget {
   final double min;
   final double max;
   final ValueChanged<double> onChanged;
+  final ValueChanged<double>? onChangeEnd;
   final Color? activeColor;
 
   const MinimalSlider({
     super.key,
     required this.value,
     required this.onChanged,
+    this.onChangeEnd,
     this.min = 0.0,
     this.max = 1.0,
     this.activeColor,
@@ -133,12 +135,19 @@ class MinimalSlider extends StatefulWidget {
 class _MinimalSliderState extends State<MinimalSlider> {
   bool _isHovering = false;
   bool _isDragging = false;
+  double? _interactionValue;
 
   void _updateValue(Offset localPosition, double width) {
     if (width <= 0) return;
     final percent = (localPosition.dx / width).clamp(0.0, 1.0);
     final newValue = widget.min + (widget.max - widget.min) * percent;
+    _interactionValue = newValue;
     widget.onChanged(newValue);
+  }
+
+  void _finishInteraction() {
+    widget.onChangeEnd?.call(_interactionValue ?? widget.value);
+    _interactionValue = null;
   }
 
   @override
@@ -162,9 +171,16 @@ class _MinimalSliderState extends State<MinimalSlider> {
             },
             onPanUpdate: (details) =>
                 _updateValue(details.localPosition, width),
-            onPanEnd: (_) => setState(() => _isDragging = false),
-            onPanCancel: () => setState(() => _isDragging = false),
+            onPanEnd: (_) {
+              setState(() => _isDragging = false);
+              _finishInteraction();
+            },
+            onPanCancel: () {
+              setState(() => _isDragging = false);
+              _finishInteraction();
+            },
             onTapDown: (details) => _updateValue(details.localPosition, width),
+            onTapUp: (_) => _finishInteraction(),
             child: Container(
               height: 24, // Touch target size
               color: Colors.transparent,

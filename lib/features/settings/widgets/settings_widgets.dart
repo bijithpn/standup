@@ -165,6 +165,7 @@ Widget sliderRow(
   String label,
   double value,
   ValueChanged<double> onChanged, {
+  ValueChanged<double>? onChangeEnd,
   double min = 0.0,
   double max = 1.0,
 }) {
@@ -201,6 +202,7 @@ Widget sliderRow(
                       min: min,
                       max: max,
                       onChanged: onChanged,
+                      onChangeEnd: onChangeEnd,
                       activeColor: AppTheme.accentColor,
                     ),
                   ),
@@ -350,10 +352,7 @@ Widget buildListRow(
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
               ),
             ],
           ),
