@@ -1,9 +1,8 @@
 import Cocoa
 import FlutterMacOS
-import Intents
 
-/// Modern Focus Mode / Do Not Disturb detector leveraging Apple's Intents framework
-/// (INFocusStatusCenter) on macOS 12+, matching DeskRest's implementation.
+/// Focus Mode / Do Not Disturb detector leveraging macOS DistributedNotificationCenter
+/// and system defaults, matching DeskRest's implementation safely without TCC crashes.
 class FocusModeBridge: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     private var periodicTimer: Timer?
@@ -17,14 +16,6 @@ class FocusModeBridge: NSObject, FlutterStreamHandler {
     }
 
     private func setupFocusMonitoring() {
-        if #available(macOS 12.0, *) {
-            INFocusStatusCenter.default.requestAuthorization { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.checkFocusMode()
-                }
-            }
-        }
-        
         let center = DistributedNotificationCenter.default()
         center.addObserver(
             self,
@@ -58,12 +49,7 @@ class FocusModeBridge: NSObject, FlutterStreamHandler {
     }
 
     @objc private func checkFocusMode() {
-        var isFocused = false
-        if #available(macOS 12.0, *) {
-            isFocused = INFocusStatusCenter.default.focusStatus.isFocused ?? false
-        } else {
-            isFocused = UserDefaults(suiteName: "com.apple.notificationcenterui")?.bool(forKey: "doNotDisturb") ?? false
-        }
+        let isFocused = UserDefaults(suiteName: "com.apple.notificationcenterui")?.bool(forKey: "doNotDisturb") ?? false
         
         DispatchQueue.main.async { [weak self] in
             self?.eventSink?(isFocused)

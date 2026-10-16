@@ -45,8 +45,6 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     let currentApp = NSRunningApplication.current
     let runningApps = NSWorkspace.shared.runningApplications
     let currentBundleId = currentApp.bundleIdentifier
-    let currentLocalizedName = currentApp.localizedName
-    let currentBundleName = currentApp.bundleURL?.lastPathComponent
     let currentProcessId = currentApp.processIdentifier
     
     var terminatedAny = false
@@ -55,15 +53,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
       if app.processIdentifier == currentProcessId { continue }
       
       let isSameBundle = currentBundleId != nil && app.bundleIdentifier == currentBundleId
-      let isSameName = currentLocalizedName != nil && app.localizedName == currentLocalizedName
-      let isSameBundleName = currentBundleName != nil && app.bundleURL?.lastPathComponent == currentBundleName
-      
-      // Specifically target "com.bijith.breakmate" or "BreakMate" as additional safety fallbacks
-      let isTargetBundle = app.bundleIdentifier == "com.bijith.breakmate"
-      let isTargetName = app.localizedName?.lowercased().contains("breakmate") == true || app.localizedName?.lowercased().contains("break-mate") == true
-      let isTargetBundleName = app.bundleURL?.lastPathComponent.lowercased().contains("breakmate") == true || app.bundleURL?.lastPathComponent.lowercased().contains("break-mate") == true
-      
-      if isSameBundle || isSameName || isSameBundleName || isTargetBundle || isTargetName || isTargetBundleName {
+      if isSameBundle {
         NSLog("Terminating stale running instance of BreakMate (PID: \(app.processIdentifier), Name: \(app.localizedName ?? "unknown")) to release database lock")
         app.forceTerminate()
         terminatedAny = true
@@ -169,6 +159,14 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     
     super.applicationDidFinishLaunching(notification)
     NSLog("Sparkle: applicationDidFinishLaunching completed")
+    
+    DispatchQueue.main.async { [weak self] in
+      if let window = self?.mainFlutterWindow {
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+      }
+    }
     
     if let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu {
       let checkForUpdatesItem = NSMenuItem(

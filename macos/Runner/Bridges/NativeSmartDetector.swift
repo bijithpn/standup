@@ -3,7 +3,6 @@ import FlutterMacOS
 import CoreAudio
 import CoreMediaIO
 import IOKit.pwr_mgt
-import Intents
 
 public class NativeSmartDetector: NSObject, FlutterStreamHandler {
     public static let shared = NativeSmartDetector()
@@ -208,16 +207,8 @@ public class NativeSmartDetector: NSObject, FlutterStreamHandler {
         }
     }
     
-    // MARK: - Focus Mode Detection (INFocusStatusCenter)
+    // MARK: - Focus Mode Detection
     private func setupFocusModeListener() {
-        if #available(macOS 12.0, *) {
-            INFocusStatusCenter.default.requestAuthorization { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.handleFocusStatusChanged()
-                }
-            }
-        }
-        
         let center = DistributedNotificationCenter.default()
         center.addObserver(
             self,
@@ -242,12 +233,7 @@ public class NativeSmartDetector: NSObject, FlutterStreamHandler {
     }
     
     @objc private func handleFocusStatusChanged() {
-        var focused = false
-        if #available(macOS 12.0, *) {
-            focused = INFocusStatusCenter.default.focusStatus.isFocused ?? false
-        } else {
-            focused = UserDefaults(suiteName: "com.apple.notificationcenterui")?.bool(forKey: "doNotDisturb") ?? false
-        }
+        let focused = UserDefaults(suiteName: "com.apple.notificationcenterui")?.bool(forKey: "doNotDisturb") ?? false
         
         if isFocusModeActive != focused {
             isFocusModeActive = focused
