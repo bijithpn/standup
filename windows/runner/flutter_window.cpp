@@ -452,11 +452,13 @@ void FlutterWindow::SetupWindowBridge() {
           result->Success();
         }
         else if (method_name == "startDrag") {
-          // Release mouse capture and let the OS handle window dragging via
-          // the caption hit-test — the standard mechanism for borderless windows.
+          // Queue the native move after this platform-channel callback has
+          // returned. A synchronous SendMessage here enters Windows' modal
+          // move loop while Flutter is still waiting for the method result,
+          // which can deadlock or terminate a secondary engine.
           HWND hwnd = GetHandle();
           ReleaseCapture();
-          SendMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
+          PostMessage(hwnd, WM_NCLBUTTONDOWN, HTCAPTION, 0);
           result->Success();
         }
         else if (method_name == "setNonActivating") {

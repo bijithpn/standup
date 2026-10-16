@@ -52,11 +52,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   /// to know where it is relative to the cursor, which tolerates being a frame
   /// or two stale — and the window rarely moves.
   static const Duration _viewportSyncInterval = Duration(milliseconds: 400);
+  static const Duration _frameInterval = Duration(milliseconds: 33);
 
   late final PetBehaviorEngine _engine = PetBehaviorEngine();
-  late final Ticker _ticker = createTicker(_engine.tick);
+  late final Ticker _ticker = createTicker(_tickEngine);
   StreamSubscription<CursorSample>? _cursorSub;
   Timer? _viewportTimer;
+  Duration _lastFrameElapsed = Duration.zero;
 
   late final CompanionWindowManager _windowManager = CompanionWindowManager(
     displayManager: NativeDisplayManager(),
@@ -81,6 +83,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   late double _pipOpacity = SimplePrefs.instance.getDouble(
     'pip_opacity',
     defaultValue: 1.0,
+  );
+  late double _scale = SimplePrefs.instance.getDouble(
+    'companion_scale',
+    defaultValue: 6.0,
   );
   late bool _pipDraggableClickable = SimplePrefs.instance.getBool(
     'pip_draggable_clickable',
@@ -109,6 +115,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   Rect _windowRect = Rect.zero;
   bool _acceptsMouse = true;
   bool _applyingMouseMode = false;
+  bool _isDraggingWindow = false;
   bool _isHovered = false;
 
   @override
@@ -119,7 +126,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     _engine.start();
     _ticker.start();
     _cursorSub = CursorFeed.instance.subscribe(_onCursorSample);
-    _viewportTimer = Timer.periodic(_viewportSyncInterval, (_) => _syncViewport());
+    _viewportTimer = Timer.periodic(
+      _viewportSyncInterval,
+      (_) => _syncViewport(),
+    );
 
     unawaited(_fetchInitialSettings());
   }
@@ -206,6 +216,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       _themeId = config.themeId ?? _themeId;
       _petName = config.petName ?? _petName;
       _renderMode = config.renderMode ?? _renderMode;
+      _scale = (config.scale ?? _scale).clamp(2.0, 15.0).toDouble();
       _clickThrough = config.clickThrough ?? _clickThrough;
       _pipOpacity = config.pipOpacity ?? _pipOpacity;
       _keepOnScreen = config.keepOnScreen ?? _keepOnScreen;
@@ -224,6 +235,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
     _wanderer.enabled = config.wanderingEnabled ?? _wanderer.enabled;
     unawaited(_windowManager.setOpacity(_pipOpacity));
+    final acceptsMouse = _pipDraggableClickable && !_clickThrough;
+    _acceptsMouse = acceptsMouse;
+    unawaited(_windowManager.setAcceptsMouse(acceptsMouse));
     _warmArtwork();
   }
 
@@ -283,13 +297,20 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     final cleanId = _themeId.startsWith('avatar_')
         ? _themeId.substring('avatar_'.length)
         : _themeId;
-    final species = AvatarSpecies.tryParse(cleanId) ??
+    final species =
+        AvatarSpecies.tryParse(cleanId) ??
         AvatarSpecies.tryParse(_themeId) ??
         AvatarSpecies.cat;
     return AvatarDefinition.fromSpecies(species);
   }
 
   // ── Cursor, viewport, click-through ───────────────────────────────────────
+
+  void _tickEngine(Duration elapsed) {
+    if (elapsed - _lastFrameElapsed < _frameInterval) return;
+    _lastFrameElapsed = elapsed;
+    _engine.tick(elapsed);
+  }
 
   Future<void> _syncViewport() async {
     try {
@@ -313,7 +334,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   /// again, so click-through costs nothing beyond the poll the pet already
   /// needed to know where to look.
   void _onCursorSample(CursorSample sample) {
-    if (!mounted) return;
+    if (!mounted || _isDraggingWindow) return;
 
     final bool shouldAccept;
     if (!_pipDraggableClickable) {
@@ -322,7 +343,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       shouldAccept = true;
     } else {
       shouldAccept =
-          !_windowRect.isEmpty && _windowRect.deflate(4).contains(sample.position);
+          !_windowRect.isEmpty &&
+          _windowRect.deflate(4).contains(sample.position);
     }
 
     if (shouldAccept == _acceptsMouse || _applyingMouseMode) return;
@@ -337,7 +359,27 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   void _handlePetTap() {
     _engine.pet();
-    _report('pet');
+    _wanderer.suspend();
+  }
+
+  Future<void> _startWindowDrag() async {
+    if (!_pipDraggableClickable || _isDraggingWindow) return;
+    _isDraggingWindow = true;
+    _wanderer.suspend();
+
+    try {
+      if (!_acceptsMouse) {
+        _acceptsMouse = true;
+        await _windowManager.setAcceptsMouse(true);
+      }
+      await _windowManager.startDrag();
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    } finally {
+      _isDraggingWindow = false;
+      await _syncViewport();
+      _wanderer.resume();
+    }
   }
 
   /// Carries out one of the offered interactions.
@@ -349,13 +391,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     switch (wish) {
       case PetWish.petting:
         _engine.pet();
-        _report('pet');
       case PetWish.play:
         _engine.play();
-        _report('play');
       case PetWish.treat:
         _engine.feed();
-        _report('treat');
       case PetWish.rest:
         _engine.onBreakTaken();
         _engine.pet();
@@ -416,8 +455,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   // The chrome has to stay readable whether the pet sits on its own card or
   // straight on the desktop, so it carries its own scrim either way.
   static final Color _chromeForeground = AppTheme.gray100;
-  static final Color _chromeBackground =
-      AppTheme.gray950.withValues(alpha: 0.68);
+  static final Color _chromeBackground = AppTheme.gray950.withValues(
+    alpha: 0.68,
+  );
 
   /// The card colour to draw behind the companion, or null for none.
   Color? get _backdropColor {
@@ -428,22 +468,34 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       case 'scene':
         return kSceneAuthoredBackground;
       default:
-        final hex = _backdrop.startsWith('#') ? _backdrop.substring(1) : _backdrop;
+        final hex = _backdrop.startsWith('#')
+            ? _backdrop.substring(1)
+            : _backdrop;
         final value = int.tryParse(hex, radix: 16);
-        return value == null ? kSceneAuthoredBackground : Color(0xFF000000 | value);
+        return value == null
+            ? kSceneAuthoredBackground
+            : Color(0xFF000000 | value);
     }
   }
 
   bool get _hasBackdrop => _backdrop != 'none' && _backdrop != 'transparent';
 
+  /// Maps the existing 2–15 preference range to a useful percentage of the
+  /// PiP's safe drawing area. Even at 100%, the layout below keeps animation
+  /// headroom above the stage instead of letting a bounce hit the window edge.
+  double get _petSizeFactor {
+    final normalized = ((_scale - 2.0) / 13.0).clamp(0.0, 1.0);
+    return 0.60 + normalized * 0.40;
+  }
+
   /// The interactions this window is allowed to offer, in the order they are
   /// shown. Resting is not in the list: it only appears when the companion
   /// actually asks for it.
   List<PetWish> get _availableActions => <PetWish>[
-        if (_pettingEnabled) PetWish.petting,
-        if (_playEnabled) PetWish.play,
-        if (_treatEnabled) PetWish.treat,
-      ];
+    if (_pettingEnabled) PetWish.petting,
+    if (_playEnabled) PetWish.play,
+    if (_treatEnabled) PetWish.treat,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -461,12 +513,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
             setState(() => _isHovered = false);
             _wanderer.resume();
           },
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: <Widget>[
-              Positioned.fill(child: _buildPet()),
-              Positioned.fill(child: _buildChrome()),
-            ],
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onPanStart: _pipDraggableClickable
+                ? (_) => unawaited(_startWindowDrag())
+                : null,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: <Widget>[
+                Positioned.fill(child: _buildPet()),
+                Positioned.fill(child: _buildChrome()),
+              ],
+            ),
           ),
         ),
       ),
@@ -477,23 +535,43 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   Widget _buildPet() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final extent = math.min(constraints.maxWidth, constraints.maxHeight);
-        final stageSize = math.max(48.0, extent - petStageInset(extent) * 2);
+        final topHeadroom = math.max(36.0, constraints.maxHeight * 0.12);
+        final bottomHeadroom = math.max(30.0, constraints.maxHeight * 0.09);
+        const horizontalInset = 12.0;
+        final safeWidth = math.max(
+          48.0,
+          constraints.maxWidth - horizontalInset * 2,
+        );
+        final safeHeight = math.max(
+          48.0,
+          constraints.maxHeight - topHeadroom - bottomHeadroom,
+        );
+        final safeExtent = math.min(safeWidth, safeHeight);
+        final stageSize = math.max(48.0, safeExtent * _petSizeFactor);
 
-        return Center(
-          child: AnimatedBuilder(
-            animation: _engine,
-            builder: (context, _) => PetStage(
-              snapshot: _engine.snapshot,
-              size: stageSize,
-              definition: _isBlob ? null : _avatarDefinition,
-              blobName: _isBlob ? _petName : null,
-              background: _backdropColor,
-              // The contact shadow needs a surface to fall on.
-              showShadow: false,
-              showSceneShadow: _hasBackdrop,
-              onTap: _handlePetTap,
-              onDoubleTap: _isBlob ? _handleRename : null,
+        return Padding(
+          padding: EdgeInsets.fromLTRB(
+            horizontalInset,
+            topHeadroom,
+            horizontalInset,
+            bottomHeadroom,
+          ),
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedBuilder(
+              animation: _engine,
+              builder: (context, _) => PetStage(
+                snapshot: _engine.snapshot,
+                size: stageSize,
+                definition: _isBlob ? null : _avatarDefinition,
+                blobName: _isBlob ? _petName : null,
+                background: _backdropColor,
+                // The contact shadow needs a surface to fall on.
+                showShadow: false,
+                showSceneShadow: _hasBackdrop,
+                onTap: _handlePetTap,
+                onDoubleTap: _isBlob ? _handleRename : null,
+              ),
             ),
           ),
         );
@@ -522,14 +600,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                 child: _DottedDragHandle(
                   foreground: _chromeForeground,
                   background: _chromeBackground,
-                  onDragStart: () {
-                    _wanderer.suspend();
-                    _windowManager.startDrag();
-                  },
-                  onDragEnd: () {
-                    _syncViewport();
-                    _wanderer.resume();
-                  },
+                  onDragStart: () => unawaited(_startWindowDrag()),
+                  onDragEnd: () {},
                 ),
               ),
             ),
@@ -578,7 +650,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                       icon: Icons.edit_rounded,
                       background: _chromeBackground,
                       foreground: _chromeForeground,
-                      tooltip: 'Rename '
+                      tooltip:
+                          'Rename '
                           '${_petName.trim().isEmpty ? 'companion' : _petName}',
                       onTap: _handleRename,
                     ),
@@ -643,11 +716,7 @@ const Map<PetWish, _WishStyle> _wishStyles = <PetWish, _WishStyle>{
     'Play',
     'Throw something for it',
   ),
-  PetWish.treat: _WishStyle(
-    Icons.cookie_rounded,
-    'Treat',
-    'Offer a treat',
-  ),
+  PetWish.treat: _WishStyle(Icons.cookie_rounded, 'Treat', 'Offer a treat'),
   PetWish.rest: _WishStyle(
     Icons.self_improvement_rounded,
     'Rest',
@@ -703,7 +772,8 @@ class _ActionBarState extends State<_ActionBar> {
 
     // The hovered button wins the caption, because that is the one the user is
     // asking about. Otherwise it names what the pet wants.
-    final labelled = _hovered ?? (actions.contains(suggested) ? suggested : null);
+    final labelled =
+        _hovered ?? (actions.contains(suggested) ? suggested : null);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -983,9 +1053,7 @@ class _DottedDragHandleState extends State<_DottedDragHandle> {
             child: SizedBox(
               width: 22,
               height: 8,
-              child: CustomPaint(
-                painter: _DottedGridPainter(color: dotColor),
-              ),
+              child: CustomPaint(painter: _DottedGridPainter(color: dotColor)),
             ),
           ),
         ),
@@ -1026,4 +1094,3 @@ class _DottedGridPainter extends CustomPainter {
   bool shouldRepaint(_DottedGridPainter oldDelegate) =>
       oldDelegate.color != color;
 }
-

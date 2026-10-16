@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
@@ -26,7 +28,69 @@ class CompanionSettingsSection extends StatefulWidget {
 }
 
 class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
+  static const double _minimumPetSize = 2.0;
+  static const double _maximumPetSize = 15.0;
+
   bool _isRenameDialogOpen = false;
+  bool _isApplyingTheme = false;
+  String? _previewThemeId;
+  double? _previewScale;
+
+  String get _displayedThemeId =>
+      _previewThemeId ?? widget.controller.companionPetTheme;
+
+  double get _displayedScale =>
+      _previewScale ?? widget.controller.companionScale;
+
+  double _snapScale(double value) => (value * 2.0).roundToDouble() / 2.0;
+
+  double _petSizeFactor(double value) {
+    final normalized =
+        ((value.clamp(_minimumPetSize, _maximumPetSize) - _minimumPetSize) /
+                (_maximumPetSize - _minimumPetSize))
+            .clamp(0.0, 1.0);
+    return 0.60 + normalized * 0.40;
+  }
+
+  int _petSizePercent(double value) => (_petSizeFactor(value) * 100).round();
+
+  void _previewPetSize(double value) {
+    final snapped = _snapScale(value);
+    if (_previewScale == snapped) return;
+    setState(() => _previewScale = snapped);
+  }
+
+  Future<void> _commitPetSize(double value) async {
+    final snapped = _snapScale(value);
+    try {
+      await widget.controller.changeScale(snapped);
+    } finally {
+      if (mounted) setState(() => _previewScale = null);
+    }
+  }
+
+  Future<void> _selectTheme(PetTheme theme) async {
+    if (_isApplyingTheme || theme.id == _displayedThemeId) return;
+
+    setState(() {
+      _isApplyingTheme = true;
+      _previewThemeId = theme.id;
+    });
+
+    try {
+      await widget.controller.changeTheme(theme.id);
+    } catch (error, stackTrace) {
+      debugPrint('Unable to change companion theme: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isApplyingTheme = false;
+          _previewThemeId = null;
+        });
+      }
+    }
+  }
 
   void _openBlobatarRenameDialog() {
     if (_isRenameDialogOpen) return;
@@ -56,8 +120,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   void _openCustomizer() {
-    final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
-    final def = theme.avatarDefinition ??
+    final theme = PetTheme.getTheme(_displayedThemeId);
+    final def =
+        theme.avatarDefinition ??
         AvatarDefinition.fromSpecies(
           AvatarSpecies.tryParse(widget.controller.companionPetTheme) ??
               AvatarSpecies.cat,
@@ -79,7 +144,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   @override
   void initState() {
     super.initState();
-    widget.controller.openBlobatarNameDialogNotifier.addListener(_handleRenameDialogRequest);
+    widget.controller.openBlobatarNameDialogNotifier.addListener(
+      _handleRenameDialogRequest,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         widget.controller.setPreviewMode(true);
@@ -92,7 +159,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
 
   @override
   void dispose() {
-    widget.controller.openBlobatarNameDialogNotifier.removeListener(_handleRenameDialogRequest);
+    widget.controller.openBlobatarNameDialogNotifier.removeListener(
+      _handleRenameDialogRequest,
+    );
     widget.controller.setPreviewMode(false);
     super.dispose();
   }
@@ -165,14 +234,12 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     ),
                     divider(),
                     sliderRow(
-                      'Visual Scale (${widget.controller.companionScale.toStringAsFixed(1)}x)',
-                      widget.controller.companionScale,
-                      (v) {
-                        final snapped = (v * 2.0).roundToDouble() / 2.0;
-                        widget.controller.changeScale(snapped);
-                      },
-                      min: 2.0,
-                      max: 15.0,
+                      'Pet Size (${_petSizePercent(_displayedScale)}%)',
+                      _displayedScale,
+                      _previewPetSize,
+                      onChangeEnd: (value) => unawaited(_commitPetSize(value)),
+                      min: _minimumPetSize,
+                      max: _maximumPetSize,
                     ),
                   ]),
 
@@ -188,7 +255,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                         }
                       },
                     ),
-                      divider(),
+                    divider(),
                     toggleRow(
                       'Keep On Screen',
                       'Your companion stays out all the time. Turn this off and '
@@ -196,22 +263,22 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       widget.controller.companionKeepOnScreen,
                       (v) => widget.controller.changeKeepOnScreen(v),
                     ),
-                      divider(),
-                      sliderRow(
-                        'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
-                        widget.controller.pipOpacity,
-                        (v) => widget.controller.changePipOpacity(v),
-                        min: 0.1,
-                        max: 1.0,
-                      ),
-                      divider(),
-                      toggleRow(
-                        'Draggable Area Clickable',
-                        'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
-                        widget.controller.pipDraggableClickable,
-                        (v) => widget.controller.changePipDraggableClickable(v),
-                      ),
-                    ]),
+                    divider(),
+                    sliderRow(
+                      'Window Opacity (${(widget.controller.pipOpacity * 100).round()}%)${widget.controller.pipOpacity == 1.0 ? " (Opaque)" : ""}',
+                      widget.controller.pipOpacity,
+                      (v) => widget.controller.changePipOpacity(v),
+                      min: 0.1,
+                      max: 1.0,
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Draggable Area Clickable',
+                      'Enables click/drag on the handle. If disabled, the entire window ignores mouse clicks (click-through).',
+                      widget.controller.pipDraggableClickable,
+                      (v) => widget.controller.changePipDraggableClickable(v),
+                    ),
+                  ]),
 
                   const SizedBox(height: 32),
                   sectionHeader('Behavior'),
@@ -348,7 +415,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   Widget _buildHeroHeader() {
-    final currentTheme = PetTheme.getTheme(widget.controller.companionPetTheme);
+    final currentTheme = PetTheme.getTheme(_displayedThemeId);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +511,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       Text(
                         current > 0
                             ? '$current-day streak'
-                                '${highest != null ? ' · ${highest.label}' : ''}'
+                                  '${highest != null ? ' · ${highest.label}' : ''}'
                             : 'No active streak yet',
                         style: TextStyle(
                           color: AppTheme.textPrimary,
@@ -452,7 +519,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (next != null && daysToNext != null && daysToNext > 0) ...[
+                      if (next != null &&
+                          daysToNext != null &&
+                          daysToNext > 0) ...[
                         const SizedBox(height: 2),
                         Text(
                           '$daysToNext day${daysToNext == 1 ? '' : 's'} to '
@@ -475,9 +544,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   Widget _buildActiveCompanionShowcase() {
-    final theme = PetTheme.getTheme(widget.controller.companionPetTheme);
+    final theme = PetTheme.getTheme(_displayedThemeId);
     final isBlobatar = theme.isBlobatar;
     final def = theme.avatarDefinition;
+    final previewSize = 124.0 * _petSizeFactor(_displayedScale);
 
     return Container(
       margin: const EdgeInsets.only(top: 16, bottom: 20),
@@ -485,7 +555,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       decoration: BoxDecoration(
         color: AppTheme.surfaceElevated,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppTheme.accentColor.withValues(alpha: 0.3), width: 1.5),
+        border: Border.all(
+          color: AppTheme.accentColor.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: AppTheme.accentColor.withValues(alpha: 0.08),
@@ -513,19 +586,37 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   Center(
                     child: BlobatarCompanionWidget(
                       name: widget.controller.companionPetName,
-                      size: 110,
+                      size: previewSize,
                       onTap: _openBlobatarRenameDialog,
                     ),
                   )
                 else if (def != null)
-                  AvatarArtwork.definition(def, fit: BoxFit.cover)
+                  Center(
+                    child: AvatarArtwork.definition(
+                      def,
+                      width: previewSize,
+                      height: previewSize,
+                      fit: BoxFit.contain,
+                    ),
+                  )
                 else if (theme.basePath.endsWith('.svg'))
-                  AvatarArtwork(
-                    recipe: AvatarArtworkRecipe(assetKey: theme.basePath),
-                    fit: BoxFit.cover,
+                  Center(
+                    child: AvatarArtwork(
+                      recipe: AvatarArtworkRecipe(assetKey: theme.basePath),
+                      width: previewSize,
+                      height: previewSize,
+                      fit: BoxFit.contain,
+                    ),
                   )
                 else if (theme.basePath.isNotEmpty)
-                  Image.asset(theme.basePath, fit: BoxFit.cover)
+                  Center(
+                    child: Image.asset(
+                      theme.basePath,
+                      width: previewSize,
+                      height: previewSize,
+                      fit: BoxFit.contain,
+                    ),
+                  )
                 else
                   Icon(
                     Icons.pets_rounded,
@@ -626,7 +717,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.accentColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -640,7 +734,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.accentColor,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -654,6 +751,38 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
     );
   }
 
+  String _speciesThumbnailAsset(PetTheme theme) {
+    final species = theme.avatarDefinition?.species;
+    return switch (species) {
+      AvatarSpecies.panda ||
+      AvatarSpecies.redPanda ||
+      AvatarSpecies.raccoon => 'assets/avatars/species/bear.thumbnail.png',
+      AvatarSpecies.wolf => 'assets/avatars/species/dog.thumbnail.png',
+      AvatarSpecies.guineaPig =>
+        'assets/avatars/species/guinea-pig.thumbnail.png',
+      final AvatarSpecies species =>
+        'assets/avatars/species/${species.name}.thumbnail.png',
+      null => theme.basePath,
+    };
+  }
+
+  Widget _buildSpeciesThumbnail(PetTheme theme) {
+    return RepaintBoundary(
+      child: Image.asset(
+        _speciesThumbnailAsset(theme),
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        cacheWidth: 256,
+        cacheHeight: 256,
+        filterQuality: FilterQuality.medium,
+        isAntiAlias: true,
+        errorBuilder: (_, _, _) => Center(
+          child: Icon(Icons.pets_rounded, size: 34, color: AppTheme.textMuted),
+        ),
+      ),
+    );
+  }
+
   Widget _buildPetGallery() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,7 +791,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         const SizedBox(height: 16),
         sectionHeader(
           '3D Pet Gallery',
-          subtitle: 'Select from 30+ OneWorks 3D species and generative Blobatar',
+          subtitle:
+              'Select from 30+ OneWorks 3D species and generative Blobatar',
         ),
 
         const SizedBox(height: 12),
@@ -678,24 +808,28 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           itemCount: PetTheme.themes.length,
           itemBuilder: (context, index) {
             final theme = PetTheme.themes[index];
-            final isSelected = widget.controller.companionPetTheme == theme.id;
-            final isLocked = theme.requiredConsistencyDays > 0 &&
+            final isSelected = _displayedThemeId == theme.id;
+            final isLocked =
+                theme.requiredConsistencyDays > 0 &&
                 (sl<CompanionStreakService>().currentStreakDays <
                     theme.requiredConsistencyDays);
 
             return Tooltip(
               message: isLocked
-                  ? 'Requires a ${theme.requiredConsistencyDays}-day streak to unlock!'
-                  : (theme.isBlobatar ? 'Blobatar: Tap to select or rename!' : ''),
+                  ? 'Requires a ${theme.requiredConsistencyDays}-day streak to unlock'
+                  : (theme.isBlobatar
+                        ? 'Blobatar: tap to select or rename'
+                        : ''),
               waitDuration: const Duration(milliseconds: 400),
               child: GestureDetector(
                 onTap: isLocked
                     ? null
                     : () {
+                        if (_isApplyingTheme) return;
                         if (theme.isBlobatar && isSelected) {
                           _openBlobatarRenameDialog();
                         } else {
-                          widget.controller.changeTheme(theme.id);
+                          unawaited(_selectTheme(theme));
                         }
                       },
                 child: AnimatedContainer(
@@ -703,12 +837,24 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   curve: Curves.easeInOut,
                   clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? AppTheme.accentColor.withValues(alpha: 0.15)
-                        : AppTheme.surfaceElevated.withValues(alpha: 0.6),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isSelected
+                          ? [
+                              AppTheme.accentColor.withValues(alpha: 0.22),
+                              AppTheme.accentColor.withValues(alpha: 0.08),
+                            ]
+                          : [
+                              AppTheme.surfaceElevated,
+                              AppTheme.accentColor.withValues(alpha: 0.05),
+                            ],
+                    ),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSelected ? AppTheme.accentColor : AppTheme.border,
+                      color: isSelected
+                          ? AppTheme.accentColor
+                          : AppTheme.border,
                       width: isSelected ? 2.5 : 1,
                     ),
                     boxShadow: isSelected
@@ -726,7 +872,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // 1. Full-bleed Pet Image filling the entire card without padding
+                      // Full-bleed authored species artwork for a fast, reliable
+                      // thumbnail. The full avatar renderer is reserved for the
+                      // larger active-companion preview.
                       if (theme.isBlobatar)
                         Center(
                           child: BlobatarCompanionWidget(
@@ -736,19 +884,9 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                             animate: BlobatarAnimate.hover,
                           ),
                         )
-                      else if (theme.avatarDefinition != null)
-                        AvatarArtwork.definition(
-                          theme.avatarDefinition!,
-                          fit: BoxFit.cover,
-                        )
-                      else if (theme.basePath.endsWith('.svg'))
-                        AvatarArtwork(
-                          recipe:
-                              AvatarArtworkRecipe(assetKey: theme.basePath),
-                          fit: BoxFit.cover,
-                        )
-                      else if (theme.basePath.isNotEmpty)
-                        Image.asset(theme.basePath, fit: BoxFit.cover)
+                      else if (theme.avatarDefinition != null ||
+                          theme.basePath.endsWith('.svg'))
+                        _buildSpeciesThumbnail(theme)
                       else
                         Center(
                           child: Icon(
@@ -760,43 +898,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           ),
                         ),
 
-                      // 2. Lock badge if locked
-                      if (isLocked)
-                        Positioned(
-                          top: 6,
-                          right: 6,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  CupertinoIcons.lock_fill,
-                                  size: 9,
-                                  color: Colors.white70,
-                                ),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${theme.requiredConsistencyDays}d',
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                      // 3. Bottom black overlay banner with reduced opacity to showcase the name
+                      // Bottom banner keeps names readable over every authored
+                      // background without hiding the colourful artwork.
                       Positioned(
                         left: 0,
                         right: 0,
@@ -851,6 +954,48 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           ),
                         ),
                       ),
+
+                      if (isLocked) ...[
+                        Positioned.fill(
+                          child: ColoredBox(
+                            color: Colors.black.withValues(alpha: 0.16),
+                          ),
+                        ),
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.42),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.22),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  CupertinoIcons.lock_fill,
+                                  size: 18,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  '${theme.requiredConsistencyDays} days',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

@@ -312,8 +312,17 @@ void CompanionWindowManager::ShowPiP(
   if (pip_window_) {
     HWND hwnd = pip_window_->GetHandle();
     if (hwnd) {
-      SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH,
-                   SWP_NOACTIVATE | SWP_SHOWWINDOW);
+      // Settings updates reuse ShowPiP but normally carry no geometry. Keep a
+      // window the user has dragged exactly where it is unless the caller
+      // explicitly supplies a complete position or size.
+      const bool has_position = args.find("x") != args.end() &&
+                                args.find("y") != args.end();
+      const bool has_size = args.find("width") != args.end() &&
+                            args.find("height") != args.end();
+      UINT flags = SWP_NOACTIVATE | SWP_SHOWWINDOW;
+      if (!has_position) flags |= SWP_NOMOVE;
+      if (!has_size) flags |= SWP_NOSIZE;
+      SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH, flags);
     }
     UpdatePiPParams(args);
     return;

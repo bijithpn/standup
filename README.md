@@ -110,17 +110,27 @@ To run BreakMate locally for development, follow these steps. BreakMate targets 
    ```
 
 3. **Run the Application**:
-   BreakMate supports build flavors (`prod` and `dev`). Run with your target flavor:
+   BreakMate supports `prod` and `dev` configurations. The macOS runner uses
+   Xcode flavors, while the Windows runner receives the configuration through
+   `FLUTTER_FLAVOR` because Flutter does not support `--flavor` for Windows
+   desktop builds:
 
    ```bash
-   # Run with Dev configuration
-   flutter run -t lib/main_dev.dart --flavor dev
+   # Windows — Dev configuration
+   flutter run -d windows -t lib/main_dev.dart --dart-define=FLUTTER_FLAVOR=dev
 
-   # Run with Production configuration
-   flutter run -t lib/main_prod.dart --flavor prod
+   # Windows — Production configuration
+   flutter run -d windows -t lib/main_prod.dart --dart-define=FLUTTER_FLAVOR=prod
+
+   # macOS — Dev configuration
+   flutter run -d macos -t lib/main_dev.dart --flavor dev
+
+   # macOS — Production configuration
+   flutter run -d macos -t lib/main_prod.dart --flavor prod
    ```
 
-   On Windows, flavors are handled the same way — Flutter selects the desktop target automatically based on the host OS, so no extra `-d` flag is needed unless you have multiple devices attached.
+   Equivalent platform-specific launch configurations are included in
+   `.vscode/launch.json`.
 
 4. **Run the Test Suite**:
 
@@ -134,8 +144,8 @@ To run BreakMate locally for development, follow these steps. BreakMate targets 
    `flutter analyze` does **not** compile Swift or C++ — it only checks Dart. Native-side changes need a real build to catch registration/linker errors:
 
    ```bash
-   flutter build macos --debug --flavor dev     # macOS
-   flutter build windows --debug --flavor dev   # Windows
+   flutter build macos --debug --flavor dev -t lib/main_dev.dart
+   flutter build windows --debug -t lib/main_dev.dart --dart-define=FLUTTER_FLAVOR=dev
    ```
 
 ---

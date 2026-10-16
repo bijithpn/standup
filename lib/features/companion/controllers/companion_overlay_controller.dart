@@ -31,7 +31,9 @@ class CompanionOverlayController extends ChangeNotifier {
 
   /// Increments whenever an external surface (such as the PiP window) requests
   /// opening the Blobatar rename dialog in the main app.
-  final ValueNotifier<int> openBlobatarNameDialogNotifier = ValueNotifier<int>(0);
+  final ValueNotifier<int> openBlobatarNameDialogNotifier = ValueNotifier<int>(
+    0,
+  );
   bool _pendingBlobatarNameDialogRequest = false;
 
   void requestOpenBlobatarNameDialog() {
@@ -410,8 +412,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionToyType = settings.companionToyType;
     _companionTreatType = settings.companionTreatType;
 
-    final shouldShow =
-        _companionEnabled && settings.hasCompletedOnboarding;
+    final shouldShow = _companionEnabled && settings.hasCompletedOnboarding;
 
     final needsShowOrToggle =
         shouldShow && (!_isCompanionShown || pipModeChanged);
@@ -494,6 +495,11 @@ class CompanionOverlayController extends ChangeNotifier {
         }
         if (scaleChanged) {
           NativeBridge.updateCompanionScale(_companionScale);
+          if (_pipModeEnabled) {
+            NativeBridge.showPipWindow(
+              PipWindowArgs.fromMap(_companionPayload()),
+            );
+          }
         }
         if (clickChanged) {
           NativeBridge.setCompanionClickThrough(_companionClickThrough);
@@ -547,7 +553,8 @@ class CompanionOverlayController extends ChangeNotifier {
     }
 
     final theme = PetTheme.getTheme(_companionPetTheme);
-    final species = theme.avatarDefinition?.species ??
+    final species =
+        theme.avatarDefinition?.species ??
         AvatarSpecies.tryParse(_companionPetTheme) ??
         AvatarSpecies.cat;
 
@@ -676,43 +683,118 @@ class CompanionOverlayController extends ChangeNotifier {
 
     if (breedName == null || breedName.isEmpty) {
       switch (species) {
-        case AvatarSpecies.alpaca: breedName = 'cream-alpaca'; break;
-        case AvatarSpecies.beaver: breedName = 'north-american-beaver'; break;
-        case AvatarSpecies.capybara: breedName = 'capybara'; break;
-        case AvatarSpecies.cat: breedName = 'british-shorthair'; break;
-        case AvatarSpecies.chinchilla: breedName = 'gray-chinchilla'; break;
-        case AvatarSpecies.chick: breedName = 'yellow-chick'; break;
-        case AvatarSpecies.cow: breedName = 'dairy-cow'; break;
-        case AvatarSpecies.dog: breedName = 'shiba-inu'; break;
-        case AvatarSpecies.duck: breedName = 'mallard-duck'; break;
-        case AvatarSpecies.deer: breedName = 'sika-deer'; break;
-        case AvatarSpecies.fox: breedName = 'red-fox'; break;
-        case AvatarSpecies.ferret: breedName = 'sable-ferret'; break;
-        case AvatarSpecies.guineaPig: entityName = 'guinea-pig'; breedName = 'american-guinea-pig'; break;
-        case AvatarSpecies.hamster: breedName = 'syrian-hamster'; break;
-        case AvatarSpecies.hedgehog: breedName = 'european-hedgehog'; break;
-        case AvatarSpecies.lion: breedName = 'african-lion'; break;
-        case AvatarSpecies.monkey: breedName = 'macaque'; break;
-        case AvatarSpecies.otter: breedName = 'sea-otter'; break;
-        case AvatarSpecies.owl: breedName = 'barn-owl'; break;
-        case AvatarSpecies.panda: entityName = 'bear'; breedName = 'giant-panda'; break;
-        case AvatarSpecies.parrot: breedName = 'scarlet-macaw'; break;
-        case AvatarSpecies.penguin: breedName = 'emperor-penguin'; break;
-        case AvatarSpecies.pig: breedName = 'pink-pig'; break;
-        case AvatarSpecies.rabbit: breedName = 'holland-lop'; break;
-        case AvatarSpecies.raccoon: entityName = 'bear'; breedName = 'raccoon'; break;
-        case AvatarSpecies.redPanda: entityName = 'bear'; breedName = 'red-panda'; break;
-        case AvatarSpecies.sheep: breedName = 'white-sheep'; break;
-        case AvatarSpecies.seal: breedName = 'harbor-seal'; break;
-        case AvatarSpecies.squirrel: breedName = 'red-squirrel'; break;
-        case AvatarSpecies.tiger: breedName = 'bengal-tiger'; break;
-        case AvatarSpecies.wolf: entityName = 'dog'; breedName = 'husky'; break;
-        case AvatarSpecies.bear: breedName = 'brown-bear'; break;
-        case AvatarSpecies.goose: breedName = 'greylag-goose'; break;
+        case AvatarSpecies.alpaca:
+          breedName = 'cream-alpaca';
+          break;
+        case AvatarSpecies.beaver:
+          breedName = 'north-american-beaver';
+          break;
+        case AvatarSpecies.capybara:
+          breedName = 'capybara';
+          break;
+        case AvatarSpecies.cat:
+          breedName = 'british-shorthair';
+          break;
+        case AvatarSpecies.chinchilla:
+          breedName = 'gray-chinchilla';
+          break;
+        case AvatarSpecies.chick:
+          breedName = 'yellow-chick';
+          break;
+        case AvatarSpecies.cow:
+          breedName = 'dairy-cow';
+          break;
+        case AvatarSpecies.dog:
+          breedName = 'shiba-inu';
+          break;
+        case AvatarSpecies.duck:
+          breedName = 'mallard-duck';
+          break;
+        case AvatarSpecies.deer:
+          breedName = 'sika-deer';
+          break;
+        case AvatarSpecies.fox:
+          breedName = 'red-fox';
+          break;
+        case AvatarSpecies.ferret:
+          breedName = 'sable-ferret';
+          break;
+        case AvatarSpecies.guineaPig:
+          entityName = 'guinea-pig';
+          breedName = 'american-guinea-pig';
+          break;
+        case AvatarSpecies.hamster:
+          breedName = 'syrian-hamster';
+          break;
+        case AvatarSpecies.hedgehog:
+          breedName = 'european-hedgehog';
+          break;
+        case AvatarSpecies.lion:
+          breedName = 'african-lion';
+          break;
+        case AvatarSpecies.monkey:
+          breedName = 'macaque';
+          break;
+        case AvatarSpecies.otter:
+          breedName = 'sea-otter';
+          break;
+        case AvatarSpecies.owl:
+          breedName = 'barn-owl';
+          break;
+        case AvatarSpecies.panda:
+          entityName = 'bear';
+          breedName = 'giant-panda';
+          break;
+        case AvatarSpecies.parrot:
+          breedName = 'scarlet-macaw';
+          break;
+        case AvatarSpecies.penguin:
+          breedName = 'emperor-penguin';
+          break;
+        case AvatarSpecies.pig:
+          breedName = 'pink-pig';
+          break;
+        case AvatarSpecies.rabbit:
+          breedName = 'holland-lop';
+          break;
+        case AvatarSpecies.raccoon:
+          entityName = 'bear';
+          breedName = 'raccoon';
+          break;
+        case AvatarSpecies.redPanda:
+          entityName = 'bear';
+          breedName = 'red-panda';
+          break;
+        case AvatarSpecies.sheep:
+          breedName = 'white-sheep';
+          break;
+        case AvatarSpecies.seal:
+          breedName = 'harbor-seal';
+          break;
+        case AvatarSpecies.squirrel:
+          breedName = 'red-squirrel';
+          break;
+        case AvatarSpecies.tiger:
+          breedName = 'bengal-tiger';
+          break;
+        case AvatarSpecies.wolf:
+          entityName = 'dog';
+          breedName = 'husky';
+          break;
+        case AvatarSpecies.bear:
+          breedName = 'brown-bear';
+          break;
+        case AvatarSpecies.goose:
+          breedName = 'greylag-goose';
+          break;
       }
     } else {
       if (species == AvatarSpecies.guineaPig) entityName = 'guinea-pig';
-      if (species == AvatarSpecies.panda || species == AvatarSpecies.raccoon || species == AvatarSpecies.redPanda) entityName = 'bear';
+      if (species == AvatarSpecies.panda ||
+          species == AvatarSpecies.raccoon ||
+          species == AvatarSpecies.redPanda) {
+        entityName = 'bear';
+      }
       if (species == AvatarSpecies.wolf) entityName = 'dog';
     }
 
@@ -729,9 +811,7 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
     if (_pipModeEnabled) {
-      NativeBridge.showPipWindow(
-        PipWindowArgs.fromMap(_companionPayload()),
-      );
+      NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
     }
     notifyListeners();
   }
@@ -740,8 +820,9 @@ class CompanionOverlayController extends ChangeNotifier {
     await _ensureServerStarted();
     final webServer = sl<AvatarWebServer>();
     final query = _getAvatarQueryParams();
-    final editorUrl =
-        webServer.buildEditorUrl(queryParams: '$query&animationPanel=0').toString();
+    final editorUrl = webServer
+        .buildEditorUrl(queryParams: '$query&animationPanel=0')
+        .toString();
     await NativeBridge.openAvatarEditor(editorUrl);
   }
 
@@ -964,8 +1045,9 @@ class CompanionOverlayController extends ChangeNotifier {
       companionFollowMouse: enabled ? false : current.companionFollowMouse,
       // Wandering is the single most distracting thing the companion does, so
       // low-distraction mode has to stop it as well.
-      companionWanderingEnabled:
-          enabled ? false : current.companionWanderingEnabled,
+      companionWanderingEnabled: enabled
+          ? false
+          : current.companionWanderingEnabled,
       enableAnimations: enabled ? false : true,
     );
     await _settingsRepo.save(updated);
