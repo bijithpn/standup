@@ -85,14 +85,15 @@ class TimerContextManager {
     final pauseForPresentation =
         settings.presentationPauseEnabled &&
         (_presentationDetectionService?.isPresenting ?? false);
-    return pauseForFocus || pauseForPresentation;
+    final pauseForVideo =
+        settings.detectVideoCalls &&
+        (_smartDetectionService?.isVideoPlaying ?? false);
+    return pauseForFocus || pauseForPresentation || pauseForVideo;
   }
 
   /// Whether the user currently appears to be in a meeting or video call —
-  /// covers both calendar-synced meeting detection and frontmost-app video
-  /// call detection (Zoom/Meet/Teams/etc). Never consulted by
-  /// [isSmartPauseActive]/[shouldRunWorkTimer]: it only steers how break
-  /// reminders are shown (a quiet notification instead of the full overlay).
+  /// covers both calendar-synced meeting detection, hardware microphone/camera,
+  /// and intelligent video playback detection.
   bool isMeetingActive() {
     final settings = _settingsRepository.currentSettings;
     final inCalendarMeeting =
@@ -100,7 +101,8 @@ class TimerContextManager {
         (_meetingDetectionService?.isMeetingActive ?? false);
     final inVideoCall =
         settings.detectVideoCalls &&
-        (_smartDetectionService?.isVideoCallActive ?? false);
+        ((_smartDetectionService?.isVideoCallActive ?? false) ||
+         (_smartDetectionService?.isVideoPlaying ?? false));
     return inCalendarMeeting || inVideoCall;
   }
 

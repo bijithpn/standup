@@ -18,6 +18,7 @@ import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 import 'package:breakmate/core/services/timer_state.dart';
+import 'package:breakmate/core/services/break_determination_strategy.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -52,6 +53,8 @@ class TimerEngine extends ChangeNotifier {
   int _longBreakDurationMinutes = AppConstants.defaultLongBreakDurationMinutes;
   int _pauseTimerAfterMinutes = 5;
   int _resetTimerAfterMinutes = 15;
+  BreakDeterminationStrategy _breakDeterminationStrategy =
+      const IdleTimeBreakStrategy(innerStrategy: RepeatCycleBreakStrategy());
 
   // Health reminders (posture/eye rest) no longer run on a fixed,
   // user-set countdown — each fires once at a randomized point within the
@@ -171,6 +174,23 @@ class TimerEngine extends ChangeNotifier {
     _resetTimerAfterMinutes = val;
     notifyListeners();
   }
+
+  BreakDeterminationStrategy get breakDeterminationStrategy =>
+      _breakDeterminationStrategy;
+  set breakDeterminationStrategy(BreakDeterminationStrategy strategy) {
+    _breakDeterminationStrategy = strategy;
+    notifyListeners();
+  }
+
+  int get completedShortBreaksInCycle => _stateData.completedShortBreaksInCycle;
+  set completedShortBreaksInCycle(int val) {
+    _stateData.completedShortBreaksInCycle = val;
+    notifyListeners();
+  }
+
+  int get repeatCycle => (_shortBreakIntervalMinutes > 0)
+      ? max(1, (_longBreakIntervalMinutes / _shortBreakIntervalMinutes).round())
+      : 4;
 
   TimerState get state => _stateData.state;
   WorkMode get mode => _stateData.mode;
@@ -548,26 +568,34 @@ class TimerEngine extends ChangeNotifier {
 
     final isLongBreak = isLongBreakDue();
 
+    final durationSeconds =
+        _breakDeterminationStrategy.determineBreakDurationSeconds(
+      isLongBreak: isLongBreak,
+      shortBreakDurationSeconds: _shortBreakDurationSeconds,
+      longBreakDurationMinutes: _longBreakDurationMinutes,
+    );
+    _stateData.countdownSeconds = durationSeconds;
+
     if (isLongBreak) {
-      _stateData.countdownSeconds = _longBreakDurationMinutes * 60;
       _stateData.activeBreak = BreakModel(
         type: BreakType.long,
         durationSeconds: countdownSeconds,
         title: 'LONG BREAK',
         tip:
             'Time to stand, stretch, and mentally reset. Step away from your desk.',
-        triggerReason: 'Long focus session completed',
+        triggerReason: 'Long focus session completed (cycle reached)',
       );
       _stateData.longBreakWindowStartedAt = clock.now();
+      _stateData.completedShortBreaksInCycle = 0;
     } else {
-      _stateData.countdownSeconds = _shortBreakDurationSeconds;
       _stateData.activeBreak = BreakModel(
         type: BreakType.short,
         durationSeconds: countdownSeconds,
         title: 'Eye Rest',
         tip: _randomTip(AppConstants.shortBreakTips),
-        triggerReason: '20-minute interval reached',
+        triggerReason: 'Short break interval reached',
       );
+      _stateData.completedShortBreaksInCycle++;
     }
 
     _stateData.breakEndTime = clock.now().add(
@@ -644,7 +672,21 @@ class TimerEngine extends ChangeNotifier {
     final elapsedSinceLong = now.difference(
       _stateData.longBreakWindowStartedAt!,
     );
-    return elapsedSinceLong >= Duration(minutes: _longBreakIntervalMinutes);
+    return _breakDeterminationStrategy.isLongBreakDue(
+      completedShortBreaksInCycle: _stateData.completedShortBreaksInCycle,
+      workElapsed: _stateData.workElapsed,
+      elapsedSinceLastLongBreak: elapsedSinceLong,
+      repeatCycle: repeatCycle,
+      longBreakIntervalMinutes: _longBreakIntervalMinutes,
+    );
+  }
+
+  void resetCycleOnIdle() {
+    _stateData.workElapsed = Duration.zero;
+    _stateData.completedShortBreaksInCycle = 0;
+    _stateData.longBreakWindowStartedAt = clock.now();
+    _logger.info('Reset break cycle after user idle timeout');
+    notifyListeners();
   }
 
   void updateSettings({
@@ -732,6 +774,8 @@ class TimerEngine extends ChangeNotifier {
     _postureTargetSeconds = null;
     _eyeBlinkTargetSeconds = null;
     _stateData.state = TimerState.idle;
+    _stateData.completedShortBreaksInCycle = 0;
+    _stateData.longBreakWindowStartedAt = clock.now();
     _stateData.isManuallyPaused = false;
     _stateData.manualOverride = false;
     _stateData.clockOutTriggered = false;

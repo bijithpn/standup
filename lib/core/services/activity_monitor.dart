@@ -1,3 +1,4 @@
+import 'package:breakmate/core/services/away_break_service.dart';
 import 'package:breakmate/core/services/background_polling_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
@@ -30,6 +31,8 @@ class ActivityMonitor {
   void updateIdleStatus(bool isIdle, double idleSeconds) {
     final wasIdle = _isIdle;
     _isIdle = isIdle;
+
+    AwayBreakService.instance.handleIdleTimeUpdate(idleSeconds);
 
     if (wasIdle != _isIdle) {
       _logger.info(

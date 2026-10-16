@@ -124,6 +124,40 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     NSLog("Sparkle: Configured with Public Key: \(publicKey)")
 
     meetingBridge = MeetingDetectionBridge(registrar: registrar)
+      NativeSmartDetector.shared.register(with: registrar.messenger)
+
+      let enhancementChannel = FlutterMethodChannel(name: "com.breakmate/native_enhancements", binaryMessenger: registrar.messenger)
+      enhancementChannel.setMethodCallHandler { call, result in
+          switch call.method {
+          case "showCursorCountdown":
+              let seconds = (call.arguments as? [String: Any])?["seconds"] as? Int ?? 15
+              NativeCursorCountdownWindow.shared.startCountdown(seconds: seconds)
+              result(nil)
+          case "hideCursorCountdown":
+              NativeCursorCountdownWindow.shared.dismissCountdown()
+              result(nil)
+          case "triggerFlashReminder":
+              guard let args = call.arguments as? [String: Any],
+                    let text = args["text"] as? String else {
+                  result(FlutterError(code: "INVALID_ARGS", message: "text required", details: nil))
+                  return
+              }
+              let duration = args["durationMs"] as? Int ?? 250
+              let opacity = CGFloat(args["opacity"] as? Double ?? 0.35)
+              let colorHex = args["colorHex"] as? String ?? "#000000"
+              NativeFlashReminderWindow.shared.triggerFlash(text: text, durationMs: duration, opacity: opacity, colorHex: colorHex)
+              result(nil)
+          case "preventDisplaySleep":
+              let reason = (call.arguments as? [String: Any])?["reason"] as? String ?? "BreakMate Break Active"
+              NativePowerAssertionManager.shared.preventDisplaySleep(reason: reason)
+              result(nil)
+          case "releaseDisplaySleep":
+              NativePowerAssertionManager.shared.releaseDisplaySleep()
+              result(nil)
+          default:
+              result(FlutterMethodNotImplemented)
+          }
+      }
 
       focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)

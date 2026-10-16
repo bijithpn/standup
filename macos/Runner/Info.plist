@@ -44,6 +44,8 @@
 	<string>BreakMate needs calendar access to automatically pause breaks during your meetings.</string>
 	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
 	<string>BreakMate needs calendar access to automatically pause breaks during your meetings.</string>
+	<key>NSFocusStatusUsageDescription</key>
+	<string>Allow BreakMate to detect your Focus status to intelligently manage break reminders. When you're in Focus mode, we'll pause breaks to avoid disrupting your workflow.</string>
     <key>SUEnableInstallerLauncherService</key>
     <true/>
     <key>NSAppSleepDisabled</key>

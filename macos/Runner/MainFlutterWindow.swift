@@ -51,6 +51,7 @@ class OverlayWindowManager: NSObject {
         if !isReminder && !isPreview {
             wasMainWindowVisible = mainWindow.isVisible
             mainWindow.orderOut(nil)
+            NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
         }
         
         let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
@@ -109,6 +110,7 @@ class OverlayWindowManager: NSObject {
 
     func hideOverlay(restoreMainWindow: Bool = true) {
         showGeneration += 1
+        NativePowerAssertionManager.shared.releaseDisplaySleep()
         if overlayInstances.isEmpty { return }
 
         let entries = overlayInstances
@@ -164,6 +166,7 @@ class OverlayWindowManager: NSObject {
     /// is quitting. Everyday hide/show should never reach this; that's the
     /// whole point of `warmPool`.
     func destroyAllInstances() {
+        NativePowerAssertionManager.shared.releaseDisplaySleep()
         for instance in overlayInstances.values { destroyInstance(instance) }
         for instance in warmPool.values { destroyInstance(instance) }
         overlayInstances.removeAll()

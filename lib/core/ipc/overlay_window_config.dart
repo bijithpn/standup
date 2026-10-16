@@ -39,6 +39,11 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     @Default(false) bool allowFullPoster,
   }) = _OverlayWindowConfig;
 
-  factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) =>
-      _$OverlayWindowConfigFromJson(json);
+  factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+    if (normalized['breakTemplate'] == null && normalized['template'] != null) {
+      normalized['breakTemplate'] = normalized['template'];
+    }
+    return _$OverlayWindowConfigFromJson(normalized);
+  }
 }

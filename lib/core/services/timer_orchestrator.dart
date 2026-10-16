@@ -23,6 +23,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/native_enhancements_service.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
 /// Coordinates cross-service actions driven by the state updates of TimerEngine.
@@ -88,7 +89,7 @@ class TimerOrchestrator {
 
     _eventSubscription = eventBus.stream.listen(_handleEvent);
 
-    timerEngine.countdownNotifier.addListener(_updateTray);
+    timerEngine.countdownNotifier.addListener(_onCountdownTick);
     timerEngine.workElapsedNotifier.addListener(_updateTray);
 
     timerEngine.addListener(_onTimerEngineChanged);
@@ -105,6 +106,16 @@ class TimerOrchestrator {
         saveState();
       }
     });
+  }
+
+  void _onCountdownTick() {
+    _updateTray();
+    final remaining = timerEngine.countdownNotifier.value;
+    if (timerEngine.state == TimerState.running && remaining == 15) {
+      NativeEnhancementsService.instance.showCursorCountdown(seconds: 15);
+    } else if (remaining <= 0 || timerEngine.state != TimerState.running) {
+      NativeEnhancementsService.instance.hideCursorCountdown();
+    }
   }
 
   void _onTimerEngineChanged() {
@@ -144,6 +155,11 @@ class TimerOrchestrator {
   }
 
   void _handleBreakStarted(BreakStartedEvent event) {
+    NativeEnhancementsService.instance.hideCursorCountdown();
+    NativeEnhancementsService.instance.preventDisplaySleep(
+      reason: event.isLongBreak ? 'Long Break Active' : 'Short Break Active',
+    );
+
     IpcBridge.instance.dispatch(
       BreakStartedIpcEvent(
         isLongBreak: event.isLongBreak,
@@ -164,6 +180,7 @@ class TimerOrchestrator {
   }
 
   Future<void> _handleBreakEnded(BreakEndedEvent event) async {
+    NativeEnhancementsService.instance.releaseDisplaySleep();
     IpcBridge.instance.dispatch(BreakEndedIpcEvent(skipped: event.skipped));
 
     trayManagerService.setBreakActive(false);
@@ -245,6 +262,12 @@ class TimerOrchestrator {
     // defaults to the full break-timer template ('breakScreen') when that
     // key is missing. Without it, health reminders rendered the wrong
     // overlay.
+    NativeEnhancementsService.instance.triggerFlashReminder(
+      text: event.reminderType == 'posture'
+          ? 'Straighten posture & relax shoulders'
+          : 'Blink eyes & look into distance',
+    );
+
     sl<OverlayWindowService>().showOverlay(
       type: OverlayType.quickReminder,
       builder: (_) => const SizedBox.shrink(),
@@ -282,6 +305,8 @@ class TimerOrchestrator {
   }
 
   void _handleBreakPostponed(BreakPostponedEvent event) {
+    NativeEnhancementsService.instance.hideCursorCountdown();
+    NativeEnhancementsService.instance.releaseDisplaySleep();
     final settings = settingsRepository.currentSettings;
     if (settings.companionEnabled) {
       eventBus.emit(CompanionInteractionEvent(interactionType: 'meow'));
@@ -365,9 +390,9 @@ class TimerOrchestrator {
           Duration(minutes: timerEngine.resetTimerAfterMinutes),
           () {
             if (timerEngine.state == TimerState.paused) {
-              timerEngine.stateData.workElapsed = Duration.zero;
+              timerEngine.resetCycleOnIdle();
               _logger.info(
-                'Timer reset after ${timerEngine.resetTimerAfterMinutes} min idle',
+                'Timer & break cycle reset after ${timerEngine.resetTimerAfterMinutes} min idle',
               );
             }
           },

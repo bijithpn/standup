@@ -28,37 +28,6 @@ enum BreakTheme {
   zen, // Soft earth tones and cream
 }
 
-const _kTemplatesWithChrome = {
-  'minimal',
-  'activities',
-  'companion',
-  'zen',
-  'hud',
-  'floating',
-  'classic',
-  'soft_arc',
-  'breathe_line',
-  'clock_face',
-  'one_word',
-  'open_field',
-  'haiku_card',
-  'ring_only',
-  'step_guide',
-  'time_slice',
-  'day_stack',
-  'pulse_dot',
-  'mono_time',
-  'split_view',
-  'warm_amber',
-  'focus_orb',
-  'wave_calm',
-  'iris_rest',
-  'quiet_pill',
-  'paper_light',
-  'dusk_glow',
-  'night_sky',
-};
-
 class StandaloneBreakOverlay extends StatefulWidget {
   final String title;
   final String message;
@@ -629,7 +598,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
             settings: settings,
             remaining: remaining,
             total: total,
-            onSkip: onSkip,
+            onSkip: null, // OverlayChrome handles the authoritative skip button
           ),
         ),
       ),
@@ -658,12 +627,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
   }
 
   bool get _templateOwnsChrome {
-    // This prevents the global pill / close / swipe-hint from being stacked
+    // Only full-screen custom routines (like wind_down) own their entire layout.
+    // All other templates receive unified OverlayChrome (context pill, controls).
     final isWindDown =
         _title.toUpperCase().contains('WIND DOWN') ||
-        (_breakTypeStr == 'windDown');
-    if (isWindDown) return true;
-    return _kTemplatesWithChrome.contains(_breakTemplate) ||
+        (_breakTypeStr == 'windDown') ||
         _breakTemplate == 'wind_down';
+    return isWindDown;
   }
 }
