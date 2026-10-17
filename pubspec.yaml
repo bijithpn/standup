@@ -1,7 +1,7 @@
 name: breakmate
 description: "BreakMate — a macOS menu bar break reminder app for healthy work habits."
 publish_to: "none"
-version: 1.8.0+37
+version: 1.8.1+38
 #BreakMate
 environment:
   sdk: ^3.10.4

@@ -217,6 +217,12 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     func updater(_ updater: SPUUpdater, didFinishLoading appcast: SUAppcast) {
         NSLog("Sparkle: Finished loading appcast with \(appcast.items.count) items")
     }
+
+    func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: Error?) {
+        guard let error = error else { return }
+        NSLog("Sparkle: Update check cycle failed: \(error.localizedDescription)")
+        sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
 }
 
 // MARK: - WindowBridge
@@ -511,8 +517,19 @@ class SparkleBridge: NSObject {
             NSLog("SparkleBridge: Received method call: \(call.method)")
             switch call.method {
             case "checkForUpdates":
-                NSLog("SparkleBridge: Triggering checkForUpdatesInBackground")
-                self?.updater.checkForUpdatesInBackground()
+                // This app action needs a fresh check with a result in our own UI.
+                // An informational probe bypasses the background scheduler and
+                // does not open Sparkle's separate update window.
+                guard let self = self else {
+                    result(FlutterError(code: "UPDATER_UNAVAILABLE", message: "The updater is unavailable.", details: nil))
+                    return
+                }
+                guard self.updater.canCheckForUpdates else {
+                    result(FlutterError(code: "UPDATE_CHECK_UNAVAILABLE", message: "An update check cannot be started right now.", details: nil))
+                    return
+                }
+                NSLog("SparkleBridge: Triggering checkForUpdateInformation")
+                self.updater.checkForUpdateInformation()
                 result(nil)
             case "startUpdate":
                 NSLog("SparkleBridge: Triggering checkForUpdates (User-facing)")
