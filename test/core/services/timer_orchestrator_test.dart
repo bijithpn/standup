@@ -283,6 +283,11 @@ class FakeNotificationService extends NotificationService {
   }
 
   @override
+  Future<void> showBreakStarted({required String breakTitle}) async {
+    showBreakReminderCalled = true;
+  }
+
+  @override
   Future<void> showClockOutReminder() async {
     showClockOutReminderCalled = true;
   }

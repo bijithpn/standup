@@ -8,6 +8,8 @@ class QuickReminderOverlay extends StatelessWidget {
   final Animation<double> fadeAnimation;
   final String title;
   final int durationSeconds;
+  final ValueNotifier<int>? remainingSecondsNotifier;
+  final VoidCallback? onSkip;
 
   /// Whether it's safe to show the full-screen [PosterReminderOverlay]
   /// instead of the small translucent pill. Defaults to `false` so every
@@ -23,6 +25,8 @@ class QuickReminderOverlay extends StatelessWidget {
     required this.fadeAnimation,
     required this.title,
     required this.durationSeconds,
+    this.remainingSecondsNotifier,
+    this.onSkip,
     this.allowFullPoster = false,
   });
 
@@ -39,6 +43,8 @@ class QuickReminderOverlay extends StatelessWidget {
         title: title,
         durationSeconds: durationSeconds,
         isPreBreak: overlayType == 'preBreakWarning',
+        remainingSecondsNotifier: remainingSecondsNotifier,
+        onSkip: onSkip,
       );
     }
 

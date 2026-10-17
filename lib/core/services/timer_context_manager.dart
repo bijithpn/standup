@@ -114,6 +114,8 @@ class TimerContextManager {
   /// (or show up in) whatever is being presented, so break UI should stay
   /// out of the way, the same as [isMeetingActive].
   bool isPresentationActive() {
+    final settings = _settingsRepository.currentSettings;
+    if (!settings.presentationPauseEnabled) return false;
     return _presentationDetectionService?.isPresenting ?? false;
   }
 

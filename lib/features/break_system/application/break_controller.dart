@@ -123,9 +123,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
       _currentTemplate = settings.breakTemplate;
 
-      // Meeting or presentation: a fullscreen break would cover (or show up
-      // in) whatever's on screen, so swap it for the quiet, low-opacity,
-      // auto-dismissing reminder instead.
       if (isMeetingActive || isPresenting) {
         if (!_hasShownMeetingBreakNotice) {
           _hasShownMeetingBreakNotice = true;
@@ -133,27 +130,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
             isPresenting: isPresenting && !isMeetingActive,
           );
         }
-
-        overlayService.showOverlay(
-          type: OverlayType.quickReminder,
-          builder: (_) => const SizedBox.shrink(),
-          reminderType: 'meetingBreak',
-          // A brief reminder only needs the active display — one Flutter
-          // engine per connected monitor for a 2-second poster is wasted CPU.
-          showOnAllDisplays: false,
-          overlayData: {
-            // `type` above only picks the native window's behavior — the
-            // Dart overlay reads `overlayType` from this payload to pick
-            // its widget, defaulting to the full break-timer template when
-            // it's missing.
-            'overlayType': 'quickReminder',
-            'title': 'Break ready',
-            'tip': isMeetingActive ? 'You are in a meeting' : 'You are presenting',
-            'durationSeconds': 2,
-            'remainingSeconds': 2,
-          },
-        );
-        return;
       }
 
       if (_currentTemplate == 'activities') {

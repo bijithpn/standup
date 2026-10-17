@@ -31,16 +31,37 @@ class OverlayWindowManager: NSObject {
     func showOverlay(args: [String: Any]? = nil) {
         self.lastShowArgs = args
         
+        let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
+        let isReminder = type == "quickReminder" || type == "preBreakWarning"
+        let isPreview = args?["isPreview"] as? Bool ?? false
+        
         if !overlayInstances.isEmpty {
+            // Cancel any pending reminder auto-dismiss timer
+            showGeneration += 1
+            
+            // If transitioning from a reminder/pre-break warning to a full break screen, promote the window
+            if !isReminder {
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow,
+                   !isPreview {
+                    wasMainWindowVisible = mainWindow.isVisible
+                    mainWindow.orderOut(nil)
+                    NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
+                }
+                
+                for instance in overlayInstances.values {
+                    instance.window.isReminder = false
+                    instance.window.ignoresMouseEvents = false
+                    instance.window.orderFrontRegardless()
+                    instance.window.makeKey()
+                }
+            }
+            
             if let args = args {
                 updateData(args)
             }
             return
         }
-        
-        let type = args?["type"] as? String ?? "breakScreen"
-        let isReminder = type == "quickReminder" || type == "preBreakWarning"
-        let isPreview = args?["isPreview"] as? Bool ?? false
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,
               let mainWindow = appDelegate.mainFlutterWindow else {
@@ -98,7 +119,9 @@ class OverlayWindowManager: NSObject {
         // would otherwise sit there forever with no way for the user to
         // close it. This is a hard backstop, independent of Dart, so a
         // reminder always goes away on its own.
-        if isReminder {
+        // Only quick health reminders (which last 4s) have a hard 6s backstop.
+        // Pre-break warnings must run their full countdown (e.g. 20s).
+        if type == "quickReminder" {
             showGeneration += 1
             let generation = showGeneration
             DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
@@ -181,6 +204,16 @@ class OverlayWindowManager: NSObject {
     }
     
     func updateData(_ data: [String: Any]) {
+        let type = data["type"] as? String ?? data["overlayType"] as? String ?? ""
+        if !type.isEmpty {
+            let isReminder = type == "quickReminder" || type == "preBreakWarning"
+            for instance in overlayInstances.values {
+                instance.window.isReminder = isReminder
+                if !isReminder {
+                    instance.window.ignoresMouseEvents = false
+                }
+            }
+        }
         for instance in overlayInstances.values {
             let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
             channel.invokeMethod("updateOverlayData", arguments: data)

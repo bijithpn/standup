@@ -6,7 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
-| `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity insights, break experience updates & startup fixes |
+| `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements |
 | `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
 | `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
 | `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
@@ -32,12 +32,12 @@ Tags: `v1.8.0`
 
 Build: `37`
 
-Release title: Companion Customization, Productivity Insights & Break Experience Updates
+Release title: Companion Customization, Productivity Charts & Break Reminder Improvements
 
 ### Added
 
 - **Customizable 3D Companions:** Choose companion shapes, species, breeds, colors, and expressions, and set a custom name.
-- **Productivity Insights:** Review activity segments, inspect focus time by day, and explore productivity trends with interactive chart details.
+- **Productivity Insights:** Review activity segments, inspect focus time by day, and explore productivity trends with interactive chart details and clearer day comparisons.
 - **Companion Wandering:** Let the desktop companion move around the workspace and configure its behavior.
 - **Break Experience Updates:** Added animated poster reminders, automatic posture and eye-rest prompts, a yearly break heatmap, and the Night Sky template.
 - **Companion Habit Summary:** View break and focus streaks in companion settings.
@@ -48,6 +48,9 @@ Release title: Companion Customization, Productivity Insights & Break Experience
 - Refined companion rendering, gaze tracking, avatar appearance, and interaction behavior.
 - Improved macOS single-instance startup, app focus handling, and break overlay cleanup.
 - Updated the tray icon to use the app icon.
+- Refined break countdown warnings with a visible timer and skip action, and shortened the default pre-break warning to 20 seconds.
+- Improved reminder-to-break overlay transitions, including restoring interaction when a reminder becomes a full break.
+- Presentation detection now respects the presentation-pause setting.
 
 ### Fixed
 
