@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
 | `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
 | `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
 | `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
@@ -23,6 +24,35 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.7.0] - 2026-10-17
+
+Tags: `v1.7.0`
+
+Build: `36`
+
+Release title: Customizable Companions, Productivity Insights & PiP Improvements
+
+### Added
+
+- **3D Companion Customization:** Build and personalize 3D avatar companions with editable shapes, species and breed choices, saved names, colors, and facial expressions.
+- **Productivity Tracking:** Review activity segments and inspect how focused work is distributed throughout the day.
+- **Clock Out Reflections:** End the workday with a guided reflection and summary of the day.
+- **Companion Wandering:** Let the desktop companion move around the workspace with configurable behavior.
+- **Richer Break Reminders:** New animated poster reminders, automatic posture and eye-rest prompts, an expanded break statistics view with yearly heatmap, and the Night Sky break template.
+- **Companion Habits Summary:** See break and focus streaks alongside companion activity.
+
+### Changed
+
+- **Picture-in-Picture Controls:** Improved companion dragging, resizing constraints, background selection, and window positioning.
+- **Companion Rendering:** Refined companion architecture, gaze tracking, avatar appearance, and interaction behavior.
+- **macOS Window Handling:** Improved single-instance port binding and app focus behavior.
+- **Break Experience:** Refreshed break visuals and presentation-aware reminder behavior.
+
+### Fixed
+
+- Preserved authored colors for base avatar species and breeds.
+- Improved cleanup of secondary overlay windows and avatar interaction behavior.
 
 ## [1.6.0] - 2026-09-02
 
@@ -360,6 +390,7 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
+[1.7.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.7.0
 [1.4.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0
 [1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1
