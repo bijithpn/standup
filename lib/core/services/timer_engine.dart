@@ -97,6 +97,7 @@ class TimerEngine extends ChangeNotifier {
       contextSwitchTracker: contextSwitchTracker,
     );
     _syncSettingsFromRepo();
+    _settingsRepository.addListener(_onSettingsChanged);
 
     countdownNotifier.value = _stateData.countdownSeconds;
     workElapsedNotifier.value = _stateData.workElapsed;
@@ -116,6 +117,22 @@ class TimerEngine extends ChangeNotifier {
     _longBreakDurationMinutes = s.longBreakDurationMinutes;
     _pauseTimerAfterMinutes = s.pauseTimerAfterMinutes;
     _resetTimerAfterMinutes = s.resetTimerAfterMinutes;
+  }
+
+  void _onSettingsChanged() {
+    _syncSettingsFromRepo();
+    if (state == TimerState.running) {
+      _stateData.workEndTime = clock.now().add(timeUntilNextShortBreak);
+      final remaining = timeUntilNextShortBreak.inSeconds;
+      _stateData.countdownSeconds = remaining;
+      countdownNotifier.value = remaining;
+      notifyListeners();
+    } else if (state == TimerState.paused && !_stateData.isManuallyPaused) {
+      final remaining = timeUntilNextShortBreak.inSeconds;
+      _stateData.countdownSeconds = remaining;
+      countdownNotifier.value = remaining;
+      notifyListeners();
+    }
   }
 
   TimerStateData get stateData => _stateData;
@@ -293,7 +310,15 @@ class TimerEngine extends ChangeNotifier {
         return;
       }
 
-      if (state == TimerState.paused || state == TimerState.idle) {
+      if (state == TimerState.paused) {
+        if (!_stateData.isManuallyPaused && _contextManager.shouldRunWorkTimer()) {
+          _logger.info('Auto-resuming work timer: smart pause condition cleared');
+          resumeTimers();
+        }
+        return;
+      }
+
+      if (state == TimerState.idle) {
         return;
       }
 
@@ -900,6 +925,7 @@ class TimerEngine extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _tickTimer?.cancel();
+    _settingsRepository.removeListener(_onSettingsChanged);
     super.dispose();
   }
 

@@ -53,10 +53,11 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     void triggerDismiss() {
       if (callbackTriggered) return;
       callbackTriggered = true;
-      if (isInternalPreview ||
-          overlayType == 'preBreakWarning' ||
-          overlayType == 'quickReminder') {
+      if (isInternalPreview) {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': true});
+      } else if (overlayType == 'preBreakWarning' ||
+          overlayType == 'quickReminder') {
+        bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
         bridgeChannel.invokeMethod('completeBreak');
       }
@@ -77,10 +78,11 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     void triggerDismiss() {
       if (callbackTriggered) return;
       callbackTriggered = true;
-      if (isInternalPreview ||
-          overlayType == 'preBreakWarning' ||
-          overlayType == 'quickReminder') {
+      if (isInternalPreview) {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': true});
+      } else if (overlayType == 'preBreakWarning' ||
+          overlayType == 'quickReminder') {
+        bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
         NativeBridge.skipBreak();
       }

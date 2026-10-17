@@ -33,6 +33,7 @@ class OverlayWindowService extends ChangeNotifier {
         // If the overlay is already showing, we can still update its data in real-time
         final args = <String, dynamic>{
           'type': type.name,
+          'overlayType': type.name,
           'showOnAllDisplays': showOnAllDisplays,
           'isPreview': isPreview,
           'theme': breakTheme,
@@ -51,7 +52,9 @@ class OverlayWindowService extends ChangeNotifier {
     }
 
     if (!_isOverlayVisible) {
-      _wasMainVisibleBeforeOverlay = await windowManager.isVisible();
+      // Only full break screens hide the main window; reminders leave it untouched.
+      _wasMainVisibleBeforeOverlay =
+          type == OverlayType.breakScreen && (await windowManager.isVisible());
       _logger.info(
         'Main window visibility status before overlay: $_wasMainVisibleBeforeOverlay',
       );
@@ -67,6 +70,7 @@ class OverlayWindowService extends ChangeNotifier {
           // Use unified bridge for Windows overlay configuration
           final args = <String, dynamic>{
             'type': type.name,
+            'overlayType': type.name,
             'showOnAllDisplays': showOnAllDisplays,
             'isPreview': isPreview,
             'theme': breakTheme,
@@ -92,6 +96,7 @@ class OverlayWindowService extends ChangeNotifier {
           // Use native multi-monitor overlay for all real overlays
           final args = <String, dynamic>{
             'type': type.name,
+            'overlayType': type.name,
             'showOnAllDisplays': showOnAllDisplays,
             'isPreview': isPreview,
             'theme': breakTheme,
@@ -257,6 +262,7 @@ class OverlayWindowService extends ChangeNotifier {
           await NativeBridge.focusApp();
         }
       }
+      _wasMainVisibleBeforeOverlay = false;
 
       _logger.info('Overlay hidden successfully');
     } catch (e) {

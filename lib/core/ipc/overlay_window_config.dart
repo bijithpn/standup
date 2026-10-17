@@ -41,6 +41,9 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
 
   factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) {
     final normalized = Map<String, dynamic>.from(json);
+    if (normalized['overlayType'] == null && normalized['type'] != null) {
+      normalized['overlayType'] = normalized['type'];
+    }
     if (normalized['breakTemplate'] == null && normalized['template'] != null) {
       normalized['breakTemplate'] = normalized['template'];
     }

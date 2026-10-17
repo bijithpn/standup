@@ -69,25 +69,34 @@ class AppTrackingBridge: NSObject {
         }
     }
 
-    private func handleGetAppIcon(call: FlutterMethodCall, result: FlutterResult) {
+    private func handleGetAppIcon(call: FlutterMethodCall, result: @escaping FlutterResult) {
         guard let args = call.arguments as? [String: Any],
-              let bundleId = args["bundleId"] as? String,
-              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
+              let bundleId = args["bundleId"] as? String else {
             result(nil)
             return
         }
 
-        let icon = NSWorkspace.shared.icon(forFile: url.path)
-        icon.size = NSSize(width: 64, height: 64)
+        workQueue.async {
+            guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleId) else {
+                DispatchQueue.main.async { result(nil) }
+                return
+            }
 
-        guard let tiff = icon.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff),
-              let png = rep.representation(using: .png, properties: [:]) else {
-            result(nil)
-            return
+            let icon = NSWorkspace.shared.icon(forFile: url.path)
+            icon.size = NSSize(width: 64, height: 64)
+
+            guard let tiff = icon.tiffRepresentation,
+                  let rep = NSBitmapImageRep(data: tiff),
+                  let png = rep.representation(using: .png, properties: [:]) else {
+                DispatchQueue.main.async { result(nil) }
+                return
+            }
+
+            let data = FlutterStandardTypedData(bytes: png)
+            DispatchQueue.main.async {
+                result(data)
+            }
         }
-
-        result(FlutterStandardTypedData(bytes: png))
     }
 
     private func getActiveWindowTitle(pid: pid_t) -> String? {

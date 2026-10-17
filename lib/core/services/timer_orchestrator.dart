@@ -173,7 +173,7 @@ class TimerOrchestrator {
     if (event.isLongBreak) {
       notificationService.showClockOutReminder();
     } else {
-      notificationService.showBreakReminder(isLong: event.isLongBreak);
+      notificationService.showBreakStarted(breakTitle: event.title);
     }
 
     saveState();

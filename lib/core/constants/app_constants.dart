@@ -101,8 +101,8 @@ class AppConstants {
     'Sometimes the most productive thing you can do is relax.',
   ];
 
-  /// Tray icon — updated to use the avatar bear snapshot.
-  /// Previously pointed to assets/icons/app_icon_bg.png (removed in avatar-main migration).
-  static const String trayIconPath = 'assets/avatars/species/bear.svg';
+  /// Tray icon — updated to use the avatar bear raster thumbnail.
+  /// Points to raster PNG with alpha suitable for tray template extraction.
+  static const String trayIconPath = 'assets/avatars/species/bear.thumbnail.png';
 }
 

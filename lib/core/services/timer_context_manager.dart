@@ -101,8 +101,7 @@ class TimerContextManager {
         (_meetingDetectionService?.isMeetingActive ?? false);
     final inVideoCall =
         settings.detectVideoCalls &&
-        ((_smartDetectionService?.isVideoCallActive ?? false) ||
-         (_smartDetectionService?.isVideoPlaying ?? false));
+        (_smartDetectionService?.isVideoCallActive ?? false);
     return inCalendarMeeting || inVideoCall;
   }
 

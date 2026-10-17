@@ -118,6 +118,7 @@ class OverlayWindowManager: NSObject {
         let instances = Array(entries.values)
 
         let shouldRestore = restoreMainWindow && wasMainWindowVisible
+        wasMainWindowVisible = false
         
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3

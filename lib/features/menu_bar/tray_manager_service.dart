@@ -89,7 +89,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
             final filename = p.basename(file.path);
             // Only delete icon frame caches, never touch database or metadata
             if (filename.startsWith('bm_pframe_') ||
-                filename.startsWith('bm_ccat_')) {
+                filename.startsWith('bm_ccat_') ||
+                filename.startsWith('bm_tray_')) {
               file.deleteSync();
             }
           }

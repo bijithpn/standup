@@ -212,6 +212,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         builder: (_) => const SizedBox.shrink(),
         reminderType: 'breakStart',
         overlayData: {
+          'overlayType': 'preBreakWarning',
+          'type': 'preBreakWarning',
           'secondsRemaining': _timerEngine.countdownSeconds,
           'remainingSeconds': _timerEngine.countdownSeconds,
           'durationSeconds': _timerEngine.countdownSeconds,
