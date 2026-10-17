@@ -4,7 +4,47 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                                        <item>
+                                                <item>
+            <title>Version 1.8.0</title>
+            <pubDate>Sat, 17 Oct 2026 12:47:39 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.8.0</h3>
+                <p># BreakMate 1.8.0 — Companion Customization, Productivity Charts &amp; Break Reminder Improvements
+
+BreakMate 1.8.0 brings deeper companion customization, clearer productivity charts, and more useful break reminders.
+
+## What's New
+
+- **Build a 3D companion:** Customize its shape, species, breed, colors, and expression, then give it a name.
+- **Understand your workday:** Explore activity segments, focus time, and productivity trends with interactive chart details and clearer day comparisons.
+- **Let your companion wander:** Enable movement around the workspace and adjust its behavior.
+- **See your habits:** Review break and focus streaks in the companion settings.
+- **More ways to take a break:** Try animated poster reminders, automatic posture and eye-rest prompts, a yearly break heatmap, and the Night Sky template.
+
+## Improvements
+
+- Improved Picture-in-Picture dragging, sizing, positioning, and background controls.
+- Refined companion rendering, gaze tracking, and interactions.
+- Improved macOS single-instance startup and app focus handling.
+- Improved secondary overlay cleanup and companion interactions.
+- Updated the menu bar tray icon.
+- Break countdown warnings now show the remaining time and offer a skip action. The default warning is 20 seconds.
+- Reminder windows now transition more reliably into full break screens, and presentation detection follows its setting.
+
+Build 37 · 17 October 2026</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.8.0/BreakMate-Installer.dmg"
+                       sparkle:version="37"
+                       sparkle:shortVersionString="1.8.0"
+                       sparkle:edSignature="d3OpmCnL+hcQ/WSVArighwk8r7z5eGZ7KYjIAOomE8e7CICOnUgg3/Sdb6Ith9ena9Ko9OH8KdXg9nLPx7dRAQ=="
+                       length="37636647"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.7.0</title>
             <pubDate>Sat, 17 Oct 2026 06:09:23 +0000</pubDate>
             <description><![CDATA[
