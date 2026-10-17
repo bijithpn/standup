@@ -13,6 +13,7 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
@@ -859,9 +860,11 @@ class PetAssetLoader {
     );
 
     if (theme.type == PetType.avatar || theme.isAvatar) {
-      final species = theme.avatarDefinition?.species ?? AvatarSpecies.bear;
-      final thumbPath = species.thumbnailPngAssetPath;
-      return extractAndWhitenAsset(thumbPath, file.path, targetSize: 44.0);
+      return extractAndWhitenAsset(
+        AppConstants.trayIconPath,
+        file.path,
+        targetSize: 44.0,
+      );
     }
 
     if (await file.exists()) {

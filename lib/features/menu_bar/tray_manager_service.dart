@@ -51,6 +51,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
     final supportDir = await getApplicationSupportDirectory();
     final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
+    try {
+      final f = File(defaultFile);
+      if (f.existsSync()) f.deleteSync();
+    } catch (_) {}
 
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(

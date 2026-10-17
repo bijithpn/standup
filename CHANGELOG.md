@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity insights, break experience updates & startup fixes |
 | `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
 | `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
 | `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
@@ -24,6 +25,34 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.8.0] - 2026-10-17
+
+Tags: `v1.8.0`
+
+Build: `37`
+
+Release title: Companion Customization, Productivity Insights & Break Experience Updates
+
+### Added
+
+- **Customizable 3D Companions:** Choose companion shapes, species, breeds, colors, and expressions, and set a custom name.
+- **Productivity Insights:** Review activity segments, inspect focus time by day, and explore productivity trends with interactive chart details.
+- **Companion Wandering:** Let the desktop companion move around the workspace and configure its behavior.
+- **Break Experience Updates:** Added animated poster reminders, automatic posture and eye-rest prompts, a yearly break heatmap, and the Night Sky template.
+- **Companion Habit Summary:** View break and focus streaks in companion settings.
+
+### Changed
+
+- Improved Picture-in-Picture dragging, resizing, positioning, and background controls.
+- Refined companion rendering, gaze tracking, avatar appearance, and interaction behavior.
+- Improved macOS single-instance startup, app focus handling, and break overlay cleanup.
+- Updated the tray icon to use the app icon.
+
+### Fixed
+
+- Preserved authored colors for base avatar species and breeds.
+- Improved secondary overlay window cleanup and companion interaction handling.
 
 ## [1.7.0] - 2026-10-17
 
@@ -390,6 +419,7 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
+[1.8.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.8.0
 [1.7.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.7.0
 [1.4.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0

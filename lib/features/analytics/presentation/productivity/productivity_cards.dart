@@ -315,7 +315,8 @@ class InsightCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (insight.confidence == InsightConfidence.low) ...<Widget>[
+                    if (insight.confidence ==
+                        InsightConfidence.low) ...<Widget>[
                       const SizedBox(width: 6),
                       Text(
                         insight.title,
@@ -409,12 +410,12 @@ class ProductivityEmptyState extends StatelessWidget {
               Text(
                 trackingEnabled
                     ? 'BreakMate needs a little activity history before it can '
-                        'show anything useful. Keep working normally — your '
-                        'first insights appear once enough has been recorded.'
+                          'show anything useful. Keep working normally — your '
+                          'first insights appear once enough has been recorded.'
                     : 'Turn on activity tracking and BreakMate will record '
-                        'which applications you use and when, so it can show '
-                        'you where your time goes. Your private content is '
-                        'never read.',
+                          'which applications you use and when, so it can show '
+                          'you where your time goes. Your private content is '
+                          'never read.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Inter',
@@ -452,98 +453,445 @@ class ProductivityEmptyState extends StatelessWidget {
 }
 
 /// The daily bars behind the week and month views.
-class DailyActivityBars extends StatelessWidget {
+class DailyActivityBars extends StatefulWidget {
   const DailyActivityBars({super.key, required this.days});
 
   final List<DailyProductivitySummary> days;
 
   @override
-  Widget build(BuildContext context) {
-    if (days.isEmpty) return const SizedBox.shrink();
+  State<DailyActivityBars> createState() => _DailyActivityBarsState();
+}
 
-    final peak = days
+class _DailyActivityBarsState extends State<DailyActivityBars> {
+  DailyProductivitySummary? _hoveredDay;
+
+  static const _monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
+  String _todayStr() {
+    final now = DateTime.now();
+    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.days.isEmpty) return const SizedBox.shrink();
+
+    final todayStr = _todayStr();
+    final peak = widget.days
         .map((day) => day.activeSeconds)
         .fold<int>(0, (best, value) => value > best ? value : best);
 
+    final activeDays = widget.days.where((d) => d.activeSeconds > 0).toList();
+    final totalActiveSeconds = widget.days.fold<int>(
+      0,
+      (sum, d) => sum + d.activeSeconds,
+    );
+    final avgActiveSeconds = widget.days.isEmpty
+        ? 0
+        : totalActiveSeconds ~/ (activeDays.isEmpty ? 1 : activeDays.length);
+
+    DailyProductivitySummary? peakDay;
+    for (final day in widget.days) {
+      if (peakDay == null || day.activeSeconds > peakDay.activeSeconds) {
+        peakDay = day;
+      }
+    }
+
+    final isSparseLabels = widget.days.length > 10;
+    final labelInterval = isSparseLabels
+        ? (widget.days.length / 5).ceil().clamp(1, widget.days.length)
+        : 1;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(14, 16, 14, 10),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         color: AppTheme.surfaceCard,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         border: Border.all(color: AppTheme.border),
       ),
-      child: SizedBox(
-        height: 132,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            for (final day in days)
-              Expanded(
-                child: _DayBar(
-                  day: day,
-                  peakSeconds: peak,
-                  showLabel: days.length <= 10,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeaderHud(avgActiveSeconds, peakDay, todayStr),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 124,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildYAxisLabels(peak),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      _buildGuidelines(),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          for (int i = 0; i < widget.days.length; i++)
+                            Expanded(
+                              child: _buildBarItem(
+                                day: widget.days[i],
+                                peakSeconds: peak,
+                                isToday: widget.days[i].date == todayStr,
+                                isHovered:
+                                    _hoveredDay?.date == widget.days[i].date,
+                                showLabel:
+                                    !isSparseLabels ||
+                                    i == 0 ||
+                                    i == widget.days.length - 1 ||
+                                    i % labelInterval == 0,
+                                isSparseLabels: isSparseLabels,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-          ],
-        ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
-}
 
-class _DayBar extends StatelessWidget {
-  const _DayBar({
-    required this.day,
-    required this.peakSeconds,
-    required this.showLabel,
-  });
+  Widget _buildHeaderHud(
+    int avgActiveSeconds,
+    DailyProductivitySummary? peakDay,
+    String todayStr,
+  ) {
+    if (_hoveredDay != null) {
+      final day = _hoveredDay!;
+      final isToday = day.date == todayStr;
+      final parsed = DateTime.tryParse(day.date);
+      final monthName = parsed != null ? _monthNames[parsed.month - 1] : '';
+      final dateLabel = isToday
+          ? 'Today'
+          : parsed != null
+          ? '${shortWeekday(day.date)}, ${parsed.day} $monthName'
+          : day.date;
 
-  final DailyProductivitySummary day;
-  final int peakSeconds;
-  final bool showLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final fraction = peakSeconds == 0 ? 0.0 : day.activeSeconds / peakSeconds;
-
-    return Tooltip(
-      message: '${formatDateKey(day.date)}\n'
-          '${formatDuration(day.activeSeconds)} active',
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: <Widget>[
-            Expanded(
-              child: FractionallySizedBox(
-                alignment: Alignment.bottomCenter,
-                // A day with a little activity still gets a visible sliver, so
-                // "barely worked" reads differently from "did not work".
-                heightFactor: day.activeSeconds == 0
-                    ? 0.0
-                    : fraction.clamp(0.04, 1.0),
-                child: Container(
+      return Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: AppTheme.accent.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
                   decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.85),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(3),
-                    ),
+                    color: AppTheme.accent,
+                    shape: BoxShape.circle,
                   ),
                 ),
+                const SizedBox(width: 5),
+                Text(
+                  dateLabel,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.accent,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            '${formatDuration(day.activeSeconds)} active',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          if (day.breakSeconds > 0) ...[
+            const SizedBox(width: 8),
+            Text(
+              '•',
+              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${formatDuration(day.breakSeconds)} breaks',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.success,
               ),
             ),
-            if (showLabel) ...<Widget>[
-              const SizedBox(height: 6),
-              Text(
-                shortWeekday(day.date),
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 10,
-                  color: AppTheme.textMuted,
-                ),
+          ],
+          if (day.contextSwitches > 0) ...[
+            const SizedBox(width: 8),
+            Text(
+              '•',
+              style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${day.contextSwitches} switches',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11.5,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.warning,
               ),
-            ],
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: AppTheme.accent,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Daily average: ',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11.5,
+                color: AppTheme.textMuted,
+              ),
+            ),
+            Text(
+              formatDuration(avgActiveSeconds),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        if (peakDay != null && peakDay.activeSeconds > 0)
+          Text(
+            'Peak: ${formatDuration(peakDay.activeSeconds)} (${shortWeekday(peakDay.date)})',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textMuted,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildYAxisLabels(int peakSeconds) {
+    final peakHours = peakSeconds > 0 ? (peakSeconds / 3600) : 0.0;
+    final topLabel = peakHours >= 1
+        ? '${peakHours.round()}h'
+        : peakSeconds > 0
+        ? '${(peakSeconds / 60).round()}m'
+        : '0h';
+    final midLabel = peakHours >= 1
+        ? '${(peakHours / 2).round()}h'
+        : peakSeconds > 0
+        ? '${(peakSeconds / 120).round()}m'
+        : '';
+
+    return SizedBox(
+      width: 24,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            topLabel,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 9.5,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textMuted.withValues(alpha: 0.65),
+            ),
+          ),
+          if (midLabel.isNotEmpty)
+            Text(
+              midLabel,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 9.5,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textMuted.withValues(alpha: 0.5),
+              ),
+            ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGuidelines() {
+    return Positioned.fill(
+      bottom: 22,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            height: 1,
+            color: AppTheme.textMuted.withValues(alpha: 0.08),
+          ),
+          Container(
+            height: 1,
+            color: AppTheme.textMuted.withValues(alpha: 0.06),
+          ),
+          Container(
+            height: 1,
+            color: AppTheme.textMuted.withValues(alpha: 0.08),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBarItem({
+    required DailyProductivitySummary day,
+    required int peakSeconds,
+    required bool isToday,
+    required bool isHovered,
+    required bool showLabel,
+    required bool isSparseLabels,
+  }) {
+    final fraction = peakSeconds == 0 ? 0.0 : day.activeSeconds / peakSeconds;
+    final parsed = DateTime.tryParse(day.date);
+    final bottomLabel = isSparseLabels
+        ? (isToday
+              ? 'Today'
+              : parsed != null
+              ? '${parsed.day}'
+              : '')
+        : shortWeekday(day.date);
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hoveredDay = day),
+      onExit: (_) => setState(() {
+        if (_hoveredDay?.date == day.date) _hoveredDay = null;
+      }),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: isSparseLabels ? 1.5 : 4),
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                alignment: Alignment.bottomCenter,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.04),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(4),
+                      ),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    alignment: Alignment.bottomCenter,
+                    heightFactor: day.activeSeconds == 0
+                        ? 0.0
+                        : fraction.clamp(0.05, 1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: isHovered
+                              ? [
+                                  AppTheme.accent,
+                                  Color.lerp(
+                                        AppTheme.accent,
+                                        Colors.white,
+                                        0.35,
+                                      ) ??
+                                      AppTheme.accent,
+                                ]
+                              : isToday
+                              ? [
+                                  AppTheme.accent,
+                                  Color.lerp(
+                                        AppTheme.accent,
+                                        Colors.white,
+                                        0.2,
+                                      ) ??
+                                      AppTheme.accent,
+                                ]
+                              : [
+                                  AppTheme.accent.withValues(alpha: 0.55),
+                                  AppTheme.accent.withValues(alpha: 0.9),
+                                ],
+                        ),
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(4),
+                        ),
+                        boxShadow: isHovered
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.accent.withValues(alpha: 0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, -1),
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              height: 16,
+              child: showLabel
+                  ? Text(
+                      bottomLabel,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: isSparseLabels ? 9 : 10,
+                        fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
+                        color: isToday
+                            ? AppTheme.accent
+                            : AppTheme.textMuted.withValues(alpha: 0.8),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
           ],
         ),
       ),
