@@ -150,10 +150,19 @@ class OverlayWindowManager: NSObject {
             }
         }, completionHandler: {
             // Restore main window visibility only if requested and was visible before
+            // Never activate the app here: a finished/skipped break must not pull
+            // BreakMate in front of whatever the user is working in. If the app
+            // is already active (user was in BreakMate) bring the window back
+            // normally; otherwise put it behind other windows, ready for when
+            // the user explicitly opens the app.
             if shouldRestore,
                let appDelegate = NSApp.delegate as? AppDelegate,
                let mainWindow = appDelegate.mainFlutterWindow {
-                mainWindow.makeKeyAndOrderFront(nil)
+                if NSApp.isActive {
+                    mainWindow.makeKeyAndOrderFront(nil)
+                } else {
+                    mainWindow.orderBack(nil)
+                }
             }
 
             for instance in instances {

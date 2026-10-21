@@ -218,7 +218,22 @@ class TimerEngine extends ChangeNotifier {
         state == TimerState.idle) {
       return timeUntilNextShortBreak.inSeconds;
     }
+    if (state == TimerState.breakActive) {
+      return _remainingUntilBreakEnd()?.inSeconds ??
+          _stateData.countdownSeconds;
+    }
     return _stateData.countdownSeconds;
+  }
+
+  /// Remaining time to the absolute break deadline, rounded up to whole
+  /// seconds so the display never shows 0 before the deadline. Null when no
+  /// deadline is set.
+  Duration? _remainingUntilBreakEnd() {
+    final end = _stateData.breakEndTime;
+    if (end == null) return null;
+    final ms = end.difference(clock.now()).inMilliseconds;
+    if (ms <= 0) return Duration.zero;
+    return Duration(seconds: (ms + 999) ~/ 1000);
   }
 
   bool get isCompletionState => _stateData.isCompletionState;
@@ -271,8 +286,8 @@ class TimerEngine extends ChangeNotifier {
 
     // Recalculate target end times based on the current system clock to prevent drift after suspension.
     if (state == TimerState.breakActive) {
-      _stateData.breakEndTime = clock.now().add(
-        Duration(seconds: countdownSeconds),
+      _stateData.breakEndTime ??= clock.now().add(
+        Duration(seconds: _stateData.countdownSeconds),
       );
       _stateData.workEndTime = null;
     } else if (state == TimerState.running) {
@@ -311,8 +326,11 @@ class TimerEngine extends ChangeNotifier {
       }
 
       if (state == TimerState.paused) {
-        if (!_stateData.isManuallyPaused && _contextManager.shouldRunWorkTimer()) {
-          _logger.info('Auto-resuming work timer: smart pause condition cleared');
+        if (!_stateData.isManuallyPaused &&
+            _contextManager.shouldRunWorkTimer()) {
+          _logger.info(
+            'Auto-resuming work timer: smart pause condition cleared',
+          );
           resumeTimers();
         }
         return;
@@ -356,10 +374,13 @@ class TimerEngine extends ChangeNotifier {
         _stateData.countdownSeconds = remainingSeconds;
         countdownNotifier.value = remainingSeconds;
       } else if (state == TimerState.breakActive) {
-        _stateData.countdownSeconds--;
+        _stateData.breakEndTime ??= now.add(
+          Duration(seconds: _stateData.countdownSeconds),
+        );
+        _stateData.countdownSeconds = countdownSeconds;
         countdownNotifier.value = _stateData.countdownSeconds;
 
-        if (countdownSeconds <= 0) {
+        if (_stateData.countdownSeconds <= 0) {
           finishBreak(skipped: false);
           return;
         }
@@ -369,9 +390,6 @@ class TimerEngine extends ChangeNotifier {
       final prevBreakEndTime = _stateData.breakEndTime;
 
       if (state == TimerState.breakActive) {
-        _stateData.breakEndTime ??= clock.now().add(
-          Duration(seconds: countdownSeconds),
-        );
         _stateData.workEndTime = null;
       } else if (state == TimerState.running) {
         _stateData.workEndTime ??= clock.now().add(timeUntilNextShortBreak);
@@ -499,9 +517,10 @@ class TimerEngine extends ChangeNotifier {
     // while staying inside a sensible range. This piggybacks on the tick
     // this method is already called from every second — no extra timers,
     // no added CPU cost.
-    final activityRatio = (_shortBreakIntervalMinutes /
-            AppConstants.defaultShortBreakIntervalMinutes)
-        .clamp(0.8, 1.2);
+    final activityRatio =
+        (_shortBreakIntervalMinutes /
+                AppConstants.defaultShortBreakIntervalMinutes)
+            .clamp(0.8, 1.2);
     final slowdown =
         settings.quietModeEnabled && settings.quietModePreset == 'low_battery'
         ? 2
@@ -593,13 +612,16 @@ class TimerEngine extends ChangeNotifier {
 
     final isLongBreak = isLongBreakDue();
 
-    final durationSeconds =
-        _breakDeterminationStrategy.determineBreakDurationSeconds(
-      isLongBreak: isLongBreak,
-      shortBreakDurationSeconds: _shortBreakDurationSeconds,
-      longBreakDurationMinutes: _longBreakDurationMinutes,
-    );
+    final durationSeconds = _breakDeterminationStrategy
+        .determineBreakDurationSeconds(
+          isLongBreak: isLongBreak,
+          shortBreakDurationSeconds: _shortBreakDurationSeconds,
+          longBreakDurationMinutes: _longBreakDurationMinutes,
+        );
     _stateData.countdownSeconds = durationSeconds;
+    _stateData.breakEndTime = clock.now().add(
+      Duration(seconds: durationSeconds),
+    );
 
     if (isLongBreak) {
       _stateData.activeBreak = BreakModel(
@@ -833,10 +855,10 @@ class TimerEngine extends ChangeNotifier {
   }
 
   void postponeBreak() {
-    _stateData.countdownSeconds += 120;
-    _stateData.breakEndTime =
-        _stateData.breakEndTime?.add(const Duration(seconds: 120)) ??
-        clock.now().add(Duration(seconds: countdownSeconds));
+    final base = _stateData.breakEndTime ?? clock.now();
+    _stateData.breakEndTime = base.add(const Duration(seconds: 120));
+    _stateData.countdownSeconds = countdownSeconds;
+    countdownNotifier.value = _stateData.countdownSeconds;
     _emit(BreakPostponedEvent(additionalSeconds: 120));
     _emit(
       TimerStateChangedEvent(
@@ -869,13 +891,24 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Handles recovery upon system wake or screen unlock.
-  /// If the duration away exceeds the short break interval, we assume the user took an offline break
-  /// and reset the focus session. Otherwise, we resume the timer.
+  /// Handles recovery upon system wake or screen unlock by reconciling against
+  /// the authoritative deadlines rather than any per-tick counter:
+  ///  - Active break: remaining time is recomputed from `breakEndTime`. If the
+  ///    deadline passed while asleep the break completes exactly once (the
+  ///    `breakActive` guard in `finishBreak` makes repeated wakes a no-op).
+  ///  - Manually paused: stays paused; the paused remaining time is untouched.
+  ///  - Work timer: if the user was away at least one break interval we assume
+  ///    they took an offline break and reset; otherwise work resumes with the
+  ///    time that was left (sleep is not counted as work).
+  ///
+  /// Limitation: deadlines are wall-clock `DateTime`s, so a manual clock change
+  /// or DST shift while a break is active moves the deadline by the same
+  /// amount. Breaks are short (minutes) so the effect is bounded.
   void handleSystemWake() {
     _logger.info(
       'System wake or screen unlock detected: checking recovery flow',
     );
+    final wasAsleep = _stateData.systemSleepPaused;
     _stateData.systemSleepPaused = false;
 
     if (_stateData.lastTickTime == null) {
@@ -894,25 +927,55 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
-    final lastTick = _stateData.lastTickTime ?? clock.now();
-    final durationAway = clock.now().difference(lastTick);
-
-    if (durationAway.inMinutes >= _shortBreakIntervalMinutes) {
-      _logger.info(
-        'Away for ${durationAway.inMinutes}m. Resetting focus session.',
-      );
-      resetTimers();
-    } else {
-      _stateData.lastTickTime = clock.now();
-      resumeTimers();
-    }
-
     try {
       sl<StorageService>().setInt('timer_last_tick_time', 0);
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }
 
+    // Duplicate wake/unlock notifications (lock + wake fire back to back).
+    if (!wasAsleep && state != TimerState.breakActive) {
+      syncNotifiersFromState();
+      notifyListeners();
+      return;
+    }
+
+    if (state == TimerState.breakActive) {
+      final remaining = _remainingUntilBreakEnd();
+      if (remaining != null && remaining <= Duration.zero) {
+        _logger.info('Break deadline passed during sleep: completing break');
+        finishBreak(skipped: false);
+      } else {
+        _stateData.lastTickTime = clock.now();
+        _stateData.countdownSeconds = countdownSeconds;
+        syncNotifiersFromState();
+        notifyListeners();
+      }
+      return;
+    }
+
+    if (state == TimerState.paused && _stateData.isManuallyPaused) {
+      _stateData.lastTickTime = clock.now();
+      syncNotifiersFromState();
+      notifyListeners();
+      return;
+    }
+
+    final lastTick = _stateData.lastTickTime ?? clock.now();
+    final durationAway = clock.now().difference(lastTick);
+
+    if (state != TimerState.windDown &&
+        durationAway.inMinutes >= _shortBreakIntervalMinutes) {
+      _logger.info(
+        'Away for ${durationAway.inMinutes}m. Resetting focus session.',
+      );
+      resetTimers();
+    } else if (state == TimerState.running || state == TimerState.paused) {
+      _stateData.lastTickTime = clock.now();
+      resumeTimers();
+    }
+
+    syncNotifiersFromState();
     notifyListeners();
   }
 

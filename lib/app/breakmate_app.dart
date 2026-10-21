@@ -66,7 +66,9 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
       final overlayService = sl<OverlayWindowService>();
       if (!controller.isBreakActive &&
           overlayService.currentOverlayType == OverlayType.breakScreen) {
-        overlayService.showDashboard();
+        // Break ended automatically or was skipped: tear the overlay down
+        // without activating the main window.
+        overlayService.hideOverlay();
       }
     });
   }

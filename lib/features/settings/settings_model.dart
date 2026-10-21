@@ -157,7 +157,7 @@ class SettingsModel {
     this.shortBreakDurationSeconds = 20,
     this.preBreakWarningSeconds = 3,
     this.longBreakIntervalMinutes = 60,
-    this.longBreakDurationMinutes = 5,
+    this.longBreakDurationMinutes = 1,
 
     this.soundEnabled = true,
     this.notificationsEnabled = true,
@@ -578,7 +578,7 @@ class SettingsModel {
       shortBreakDurationSeconds: map['shortBreakDurationSeconds'] as int? ?? 20,
       preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 3,
       longBreakIntervalMinutes: map['longBreakIntervalMinutes'] as int? ?? 60,
-      longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 5,
+      longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 1,
 
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,

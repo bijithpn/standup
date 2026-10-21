@@ -22,7 +22,7 @@ class BreakProfile {
       shortIntervalMinutes: 20,
       shortDurationSeconds: 20,
       longIntervalMinutes: 60,
-      longDurationMinutes: 5,
+      longDurationMinutes: 1,
     ),
     BreakProfile(
       id: 'developer',
@@ -30,7 +30,7 @@ class BreakProfile {
       shortIntervalMinutes: 30,
       shortDurationSeconds: 30,
       longIntervalMinutes: 90,
-      longDurationMinutes: 10,
+      longDurationMinutes: 2,
     ),
     BreakProfile(
       id: 'deep_work',
@@ -38,7 +38,7 @@ class BreakProfile {
       shortIntervalMinutes: 50,
       shortDurationSeconds: 60,
       longIntervalMinutes: 120,
-      longDurationMinutes: 15,
+      longDurationMinutes: 3,
     ),
     BreakProfile(
       id: 'pomodoro',

@@ -13,7 +13,7 @@ class AppConstants {
   static const int defaultPreBreakWarningSeconds = 3;
 
   static const int defaultLongBreakIntervalMinutes = 60;
-  static const int defaultLongBreakDurationMinutes = 5;
+  static const int defaultLongBreakDurationMinutes = 1;
 
   static const int idleThresholdMinutes = 3;
 

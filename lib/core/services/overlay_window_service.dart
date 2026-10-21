@@ -250,29 +250,23 @@ class OverlayWindowService extends ChangeNotifier {
       _currentOverlayType = null;
       notifyListeners();
 
-      // Always restore the main window so the app doesn't go blank
+      // Restore the main window's geometry only. Visibility is restored by
+      // the native hideOverlay (without activating the app), so an automatic
+      // break completion/skip never steals focus from the user's current app.
+      // Explicit user actions use showDashboard(forceShow: true) instead.
       if (_wasMainVisibleBeforeOverlay) {
         await windowManager.setIgnoreMouseEvents(false);
         await windowManager.setSize(const Size(1100, 750));
-        final isMinimized = await windowManager.isMinimized();
-        if (isMinimized) await windowManager.restore();
-        await windowManager.show();
-        await windowManager.focus();
-        if (Platform.isMacOS) {
-          await NativeBridge.focusApp();
-        }
       }
       _wasMainVisibleBeforeOverlay = false;
 
       _logger.info('Overlay hidden successfully');
     } catch (e) {
       _logger.error('Failed to hide overlay: $e');
-      // Last-resort recovery: force show main window
+      // Last-resort recovery: reset state only; never activate the app here.
       try {
         _isOverlayVisible = false;
         _currentOverlayType = null;
-        await windowManager.show();
-        await windowManager.focus();
       } catch (e, st) {
         ErrorHandler().handleError(e, st);
       }
