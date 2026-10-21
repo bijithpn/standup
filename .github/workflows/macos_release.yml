@@ -7,8 +7,9 @@ on:
     branches:
       - main
     paths-ignore:
-      - appcast.xml
-      - release_notes.md
+      - 'appcast.xml'
+      - '*.md'
+      - 'docs/**'
 
 jobs:
   build-and-release:
@@ -24,7 +25,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract Version
+      - name: Extract Version Info
         id: version_info
         shell: bash
         run: |
@@ -37,180 +38,150 @@ jobs:
           echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_OUTPUT
 
+          echo "Extracted Version: $SHORT_VERSION (Build $BUILD_NUMBER), Tag: $TAG_NAME"
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
 
-      - name: Debug Environment
-        run: |
-          flutter --version
-          dart --version
-          xcodebuild -version
-
       - name: Install Dependencies
         run: |
-          brew install create-dmg
           npm install -g appdmg
-
-      - name: Flutter Clean
-        run: flutter clean
-
-      - name: Get Packages
-        run: flutter pub get
-
-      - name: Reset CocoaPods
-        run: |
-          rm -rf macos/Pods
-
-      - name: Install CocoaPods
-        run: |
-          cd macos
-          pod install --repo-update
 
       - name: Build macOS App
         run: |
-          flutter build macos \
-          --flavor prod \
-          --release \
-          --verbose
-
-      - name: Verify Build Output
-        run: |
-          echo "Checking build output..."
-          ls -la build/macos/Build/Products/
-          ls -la build/macos/Build/Products/Release-prod/
+          flutter pub get
+          flutter build macos --flavor prod --release --verbose
 
       - name: Create DMG
         run: |
           mkdir -p release_dmg
-
-          APP_PATH="build/macos/Build/Products/Release-prod/BreakMate.app"
           DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+          APP_PATH="build/macos/Build/Products/Release-prod/BreakMate.app"
 
           if [ ! -d "$APP_PATH" ]; then
-            echo "❌ App not found at $APP_PATH"
+            echo "❌ App bundle not found at $APP_PATH"
             exit 1
           fi
 
-          create-dmg \
-            --volname "BreakMate" \
-            --window-pos 200 120 \
-            --window-size 800 400 \
-            --icon-size 100 \
-            --app-drop-link 600 185 \
-            "$DMG_PATH" \
-            "$APP_PATH"
+          rm -f "$DMG_PATH"
+          appdmg scripts/appdmg.json "$DMG_PATH"
 
-          echo "✅ DMG created successfully"
-          ls -la release_dmg/
+          echo "✅ DMG created successfully at $DMG_PATH"
+          ls -la "$DMG_PATH"
 
-      - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: BreakMate-macOS
-          path: |
-            build/macos/Build/Products/Release-prod/BreakMate.app
-            release_dmg/BreakMate-Installer.dmg
-
-      - name: Sign DMG
+      - name: Sign DMG with Sparkle
         id: signing
         env:
           SPARKLE_PRIVATE_KEY_CONTENT: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
-          echo "$SPARKLE_PRIVATE_KEY_CONTENT" > /tmp/sparkle_private.pem
+          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+          FILE_SIZE=$(stat -f%z "$DMG_PATH")
+          echo "file_size=$FILE_SIZE" >> $GITHUB_OUTPUT
 
-          SIGN_UPDATE=$(find macos/Pods/Sparkle -name sign_update -type f | head -1)
-
+          # Locate sign_update tool
+          SIGN_UPDATE=""
+          for candidate in macos/Pods/Sparkle/bin/sign_update scripts/sign_update /usr/local/bin/sign_update /opt/homebrew/bin/sign_update; do
+            if [ -x "$candidate" ]; then SIGN_UPDATE="$candidate"; break; fi
+          done
           if [ -z "$SIGN_UPDATE" ]; then
-            echo "sign_update tool not found"
-            exit 1
+            SIGN_UPDATE=$(find macos/Pods/Sparkle -name sign_update -type f 2>/dev/null | head -1)
           fi
 
-          chmod +x "$SIGN_UPDATE"
+          SIGNATURE=""
+          if [ -n "$SPARKLE_PRIVATE_KEY_CONTENT" ] && [ -n "$SIGN_UPDATE" ] && [ -f "$SIGN_UPDATE" ]; then
+            chmod +x "$SIGN_UPDATE"
+            echo "$SPARKLE_PRIVATE_KEY_CONTENT" > /tmp/sparkle_private.pem
+            chmod 600 /tmp/sparkle_private.pem
 
-          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+            SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" --ed-key-file /tmp/sparkle_private.pem 2>&1 || true)
+            rm -f /tmp/sparkle_private.pem
 
-          SIGN_OUTPUT=$("$SIGN_UPDATE" "$DMG_PATH" --ed-key-file /tmp/sparkle_private.pem)
-
-          SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -oE 'sparkle:edSignature="[^"]+"' | sed 's/sparkle:edSignature="//;s/"$//')
-
-          FILE_SIZE=$(stat -f%z "$DMG_PATH")
+            SIGNATURE=$(echo "$SIGN_OUTPUT" | grep -oE 'sparkle:edSignature="[^"]+"' | sed 's/sparkle:edSignature="//;s/"$//')
+            if [ -n "$SIGNATURE" ]; then
+              echo "✅ Successfully generated Sparkle Ed25519 signature."
+            else
+              echo "::warning::sign_update did not produce a signature. Output: $SIGN_OUTPUT"
+            fi
+          else
+            echo "::warning::SPARKLE_PRIVATE_KEY secret is not configured or sign_update tool is missing. Skipping Sparkle signature."
+          fi
 
           echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
-          echo "file_size=$FILE_SIZE" >> $GITHUB_OUTPUT
-          echo "pub_date=$(date -u +'%a, %d %b %Y %H:%M:%S +0000')" >> $GITHUB_OUTPUT
 
       - name: Update Appcast
-        shell: python
-        run: |
-          import re
-
-          appcast_path = "appcast.xml"
-
-          version = "${{ steps.version_info.outputs.SHORT_VERSION }}"
-          build = "${{ steps.version_info.outputs.BUILD_NUMBER }}"
-          signature = "${{ steps.signing.outputs.signature }}"
-          file_size = "${{ steps.signing.outputs.file_size }}"
-          pub_date = "${{ steps.signing.outputs.pub_date }}"
-
-          download_url = (
-              f"https://github.com/bijithintersmart/standup/releases/download/v{version}/BreakMate-Installer.dmg"
-          )
-
-          with open(appcast_path, "r", encoding="utf-8") as f:
-              content = f.read()
-
-          item = f"""
-          <item>
-              <title>Version {version}</title>
-              <pubDate>{pub_date}</pubDate>
-              <description><![CDATA[
-              <h3>BreakMate v{version}</h3>
-              <p>Bug fixes and performance improvements.</p>
-              ]]></description>
-              <enclosure
-                  url="{download_url}"
-                  sparkle:version="{build}"
-                  sparkle:shortVersionString="{version}"
-                  sparkle:edSignature="{signature}"
-                  length="{file_size}"
-                  type="application/octet-stream" />
-          </item>
-          """
-
-          content = content.replace(
-              "</channel>",
-              item + "\n</channel>"
-          )
-
-          with open(appcast_path, "w", encoding="utf-8") as f:
-              f.write(content)
-
-      - name: Create Tag
-        run: |
-          git tag -f ${{ steps.version_info.outputs.TAG_NAME }}
-          git push origin ${{ steps.version_info.outputs.TAG_NAME }} --force
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version_info.outputs.TAG_NAME }}
-          name: Release ${{ steps.version_info.outputs.TAG_NAME }}
-          files: |
-            release_dmg/BreakMate-Installer.dmg
-          generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Commit Appcast
+          VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+          BUILD_NUMBER: ${{ steps.version_info.outputs.BUILD_NUMBER }}
+          SIGNATURE: ${{ steps.signing.outputs.signature }}
+          FILE_SIZE: ${{ steps.signing.outputs.file_size }}
+          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
+          REPO: ${{ github.repository }}
         run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
+          DOWNLOAD_URL="https://github.com/${REPO}/releases/download/${TAG_NAME}/BreakMate-Installer.dmg"
+          NOTES_FLAG=""
+          if [ -f release_notes.md ]; then
+            NOTES_FLAG="--notes-file release_notes.md"
+          fi
 
-          git add appcast.xml
+          python3 scripts/patch_appcast.py \
+            --appcast appcast.xml \
+            --version "$VERSION" \
+            --build "$BUILD_NUMBER" \
+            --signature "$SIGNATURE" \
+            --size "$FILE_SIZE" \
+            --url "$DOWNLOAD_URL" \
+            $NOTES_FLAG
 
-          git commit -m "chore: update appcast.xml for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]" || true
+      - name: Commit and Push Appcast
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git push origin main
+          if ! git diff --quiet appcast.xml; then
+            git add appcast.xml
+            git commit -m "chore: update appcast.xml for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]"
+            git push origin HEAD:main
+            echo "✅ appcast.xml committed and pushed to main"
+          else
+            echo "appcast.xml unchanged — nothing to commit."
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
+          VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+        run: |
+          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+
+          # Delete existing release/tag if it exists to allow safe re-runs (matching create_dmg.sh)
+          if gh release view "$TAG_NAME" &>/dev/null; then
+            echo "Release $TAG_NAME already exists — deleting and recreating..."
+            gh release delete "$TAG_NAME" --yes
+            git push origin ":refs/tags/$TAG_NAME" 2>/dev/null || true
+          fi
+
+          if [ -f release_notes.md ] && [ -s release_notes.md ]; then
+            gh release create "$TAG_NAME" \
+              "$DMG_PATH" \
+              --title "BreakMate v${VERSION}" \
+              --notes-file release_notes.md
+          else
+            gh release create "$TAG_NAME" \
+              "$DMG_PATH" \
+              --title "BreakMate v${VERSION}" \
+              --generate-notes
+          fi
+
+          echo "✅ Release $TAG_NAME published successfully."
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: BreakMate-macOS-Installer
+          path: |
+            release_dmg/BreakMate-Installer.dmg
