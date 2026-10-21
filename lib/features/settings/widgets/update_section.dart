@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:markdown/markdown.dart' as md;
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';

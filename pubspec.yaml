@@ -28,7 +28,7 @@ dependencies:
   flame: ^1.37.0
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.14+1
-  flutter_widget_from_html: ^0.17.2
+  flutter_widget_from_html_core: ^0.17.3
   markdown: ^7.3.1
   sentry_flutter: ^9.20.0
   path: ^1.9.1
@@ -62,6 +62,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  config:
+    enable-swift-package-manager: false
   assets:
     # OneWorks Avatar — Species Snapshots (alpaca, bear, cat, dog, etc.)
     - assets/avatars/species/
