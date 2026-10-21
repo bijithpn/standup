@@ -63,12 +63,10 @@ jobs:
       - name: Reset CocoaPods
         run: |
           rm -rf macos/Pods
-          rm -f macos/Podfile.lock
 
       - name: Install CocoaPods
         run: |
           cd macos
-          pod repo update
           pod install --repo-update
 
       - name: Build macOS App

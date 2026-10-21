@@ -35,7 +35,7 @@ PODS:
     - Flutter
     - FlutterMacOS
     - Sentry/HybridSDK (= 8.58.4)
-  - Sparkle (2.9.2)
+  - Sparkle (2.9.6)
   - sqflite_darwin (0.0.4):
     - Flutter
     - FlutterMacOS
@@ -147,7 +147,7 @@ SPEC CHECKSUMS:
   screen_retriever_macos: c5508cc3c66ff0d4db650480cf0ab691e220d933
   Sentry: 5321d74bdd28d6f6f8beaa1ca06f1fdc746bff49
   sentry_flutter: 771dee2d190e0952aa3873211c4a3a10f0c1ef04
-  Sparkle: 2d0c930d42d53ee0fdf98bbb342c08eaf18ab5f0
+  Sparkle: b8c9cf4ced217ffc708a1ca5f988a7ba877658db
   sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   tray_manager: 19c369010e59c073f13b82354d78a35f7972d609
   url_launcher_macos: f87a979182d112f911de6820aefddaf56ee9fbfd
@@ -156,6 +156,6 @@ SPEC CHECKSUMS:
   webview_flutter_wkwebview: 8ebf4fded22593026f7dbff1fbff31ea98573c8d
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
-PODFILE CHECKSUM: a7a28b46961633d3f0020c5fa43ae9556914b961
+PODFILE CHECKSUM: 64c66dc9af04c79ca97425a35cb8ace9b12c0401
 
 COCOAPODS: 1.16.2
