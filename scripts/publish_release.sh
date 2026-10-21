@@ -65,7 +65,7 @@ fi
 
 # ── Derived config (built from .env.release values) ───────────────────────────
 APP_NAME="${APP_NAME:-BreakMate}"
-RELEASE_GITHUB_REPO="${RELEASE_GITHUB_REPO:-bijithintersmart/standup}"
+RELEASE_GITHUB_REPO="${RELEASE_GITHUB_REPO:-bijithpn/standup}"
 APPCAST_GITHUB_REPO="${APPCAST_GITHUB_REPO:-$RELEASE_GITHUB_REPO}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 APPCAST_SUBPATH="${APPCAST_SUBPATH:-appcast.xml}"
@@ -252,10 +252,8 @@ fi
 
 # ── Build release metadata ─────────────────────────────────────────────────────
 PUB_DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
-DOWNLOAD_URL="https://github.com/${APPCAST_GITHUB_REPO}/releases/download/v${VERSION}/${APP_NAME}-Installer.dmg"
+DOWNLOAD_URL="https://github.com/${RELEASE_GITHUB_REPO}/releases/download/v${VERSION}/${APP_NAME}-Installer.dmg"
 
-# HTML-escape the notes for CDATA safety
-NOTES_HTML=$(echo "$RELEASE_NOTES" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
 
 step "Release metadata"
 info "Version:   $VERSION (build $BUILD_NUMBER)"
@@ -266,127 +264,13 @@ info "Notes:     ${RELEASE_NOTES:0:60}…"
 # ── Patch appcast.xml using Python ────────────────────────────────────────────
 step "Patching appcast.xml"
 
-PATCH_SCRIPT=$(cat <<'PYEOF'
-import sys
-import re
-
-appcast_path = sys.argv[1]
-version      = sys.argv[2]
-build        = sys.argv[3]
-signature    = sys.argv[4]
-file_size    = sys.argv[5]
-download_url = sys.argv[6]
-pub_date     = sys.argv[7]
-notes_html   = sys.argv[8]
-dry_run      = sys.argv[9] == "true"
-
-with open(appcast_path, "r", encoding="utf-8") as f:
-    content = f.read()
-
-# ── Does this version already exist? ────────────────────────────────────────
-short_ver_pattern = rf'sparkle:shortVersionString="{re.escape(version)}"'
-version_exists = bool(re.search(short_ver_pattern, content))
-
-if version_exists:
-    print(f"[PATCH] Version {version} found — updating signature and length only.")
-
-    def patch_enclosure(text, ver, sig, size):
-        """
-        Find the enclosure block belonging to this version and update
-        sparkle:edSignature and length in place.
-        """
-        # First try: match the whole enclosure that has our version, replace sig+length
-        pattern = (
-            r'(<enclosure\b[^>]*?)'
-            r'(sparkle:shortVersionString="' + re.escape(ver) + r'")'
-            r'([^>]*?)'
-            r'sparkle:edSignature="[^"]*"'
-            r'([^>]*?)'
-            r'length="[^"]*"'
-            r'([^>]*?>)'
-        )
-        repl = (
-            r'\g<1>\g<2>\g<3>'
-            f'sparkle:edSignature="{sig}"'
-            r'\g<4>'
-            f'length="{size}"'
-            r'\g<5>'
-        )
-        result, n = re.subn(pattern, repl, text, flags=re.DOTALL)
-        if n > 0:
-            return result
-
-        # Fallback: patch each attribute independently for this version block
-        result = re.sub(
-            r'(sparkle:shortVersionString="' + re.escape(ver) + r'"[^>]*?)'
-            r'sparkle:edSignature="[^"]*"',
-            r'\g<1>' + f'sparkle:edSignature="{sig}"',
-            text, flags=re.DOTALL
-        )
-        result = re.sub(
-            r'(sparkle:shortVersionString="' + re.escape(ver) + r'"[^>]*?)'
-            r'length="[^"]*"',
-            r'\g<1>' + f'length="{size}"',
-            result, flags=re.DOTALL
-        )
-        return result
-
-    new_content = patch_enclosure(content, version, signature, file_size)
-
-else:
-    print(f"[PATCH] Version {version} not found — inserting new <item> block at top.")
-
-    new_item = f"""\
-        <item>
-            <title>Version {version}</title>
-            <pubDate>{pub_date}</pubDate>
-            <description><![CDATA[
-                <h3>BreakMate v{version}</h3>
-                <p>{notes_html}</p>
-                <h4>Installation Note (macOS)</h4>
-                <p>Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
-                Open System Settings, go to Privacy and Security, and click Allow Anyway next to BreakMate.</p>
-            ]]></description>
-            <enclosure url="{download_url}"
-                       sparkle:version="{build}"
-                       sparkle:shortVersionString="{version}"
-                       sparkle:edSignature="{signature}"
-                       length="{file_size}"
-                       type="application/octet-stream" />
-        </item>
-"""
-    # Insert immediately after <language> line so it sits at the top
-    m = re.search(r'<language>[^<]+</language>\s*', content)
-    if m:
-        pos = m.end()
-        new_content = content[:pos] + new_item + content[pos:]
-    else:
-        print("[WARN] Could not find <language> tag — appending before </channel>.")
-        new_content = content.replace("</channel>", new_item + "    </channel>")
-
-if dry_run:
-    print("[DRY-RUN] appcast.xml would become:")
-    print("-" * 60)
-    print(new_content[:2500])
-    print("… (truncated)")
-else:
-    with open(appcast_path, "w", encoding="utf-8") as f:
-        f.write(new_content)
-    print("[OK] appcast.xml updated successfully.")
-PYEOF
-)
-
-python3 - \
-  "$APPCAST" \
-  "$VERSION" \
-  "$BUILD_NUMBER" \
-  "$SIGNATURE" \
-  "$FILE_SIZE" \
-  "$DOWNLOAD_URL" \
-  "$PUB_DATE" \
-  "$NOTES_HTML" \
-  "$DRY_RUN" \
-  <<< "$PATCH_SCRIPT"
+NOTES_TMP="$(mktemp)"
+printf '%s\n' "$RELEASE_NOTES" > "$NOTES_TMP"
+PATCH_ARGS=(--appcast "$APPCAST" --version "$VERSION" --build "$BUILD_NUMBER"
+  --signature "$SIGNATURE" --size "$FILE_SIZE" --url "$DOWNLOAD_URL" --notes-file "$NOTES_TMP")
+[[ "$DRY_RUN" == true ]] && PATCH_ARGS+=(--dry-run)
+python3 "$SCRIPT_DIR/patch_appcast.py" "${PATCH_ARGS[@]}"
+rm -f "$NOTES_TMP"
 
 # ── Verify ─────────────────────────────────────────────────────────────────────
 if [[ "$DRY_RUN" == false ]]; then

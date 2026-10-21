@@ -422,16 +422,16 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
-[1.8.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.8.0
-[1.7.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.7.0
-[1.4.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.4.0
-[1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0
-[1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1
-[1.2.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.0
-[1.1.4]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.4
-[1.1.3]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.3
-[1.1.2]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.2
-[1.1.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.1
-[1.1.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.1.0
-[1.0.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.0.1
-[1.0.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.0.0
+[1.8.0]: https://github.com/bijithpn/standup/releases/tag/v1.8.0
+[1.7.0]: https://github.com/bijithpn/standup/releases/tag/v1.7.0
+[1.4.0]: https://github.com/bijithpn/standup/releases/tag/v1.4.0
+[1.3.0]: https://github.com/bijithpn/standup/releases/tag/v1.3.0
+[1.2.1]: https://github.com/bijithpn/standup/releases/tag/v1.2.1
+[1.2.0]: https://github.com/bijithpn/standup/releases/tag/v1.2.0
+[1.1.4]: https://github.com/bijithpn/standup/releases/tag/v1.1.4
+[1.1.3]: https://github.com/bijithpn/standup/releases/tag/v1.1.3
+[1.1.2]: https://github.com/bijithpn/standup/releases/tag/v1.1.2
+[1.1.1]: https://github.com/bijithpn/standup/releases/tag/v1.1.1
+[1.1.0]: https://github.com/bijithpn/standup/releases/tag/v1.1.0
+[1.0.1]: https://github.com/bijithpn/standup/releases/tag/v1.0.1
+[1.0.0]: https://github.com/bijithpn/standup/releases/tag/v1.0.0

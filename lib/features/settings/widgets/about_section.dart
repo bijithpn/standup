@@ -173,7 +173,7 @@ class _AboutSectionState extends State<AboutSection> {
             CupertinoIcons.exclamationmark_triangle,
             null,
             onTap: () => _launchUrl(
-              'https://github.com/bijithintersmart/standup/issues',
+              'https://github.com/bijithpn/standup/issues',
             ),
             trailing: Icon(
               CupertinoIcons.link,

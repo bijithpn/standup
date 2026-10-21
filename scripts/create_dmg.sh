@@ -60,7 +60,7 @@ fi
 # ── Derived paths (built from .env.release values) ───────────────────────────
 APP_NAME="${APP_NAME:-BreakMate}"
 APP_FLAVOR="${APP_FLAVOR:-prod}"
-RELEASE_GITHUB_REPO="${RELEASE_GITHUB_REPO:-bijithintersmart/standup}"
+RELEASE_GITHUB_REPO="${RELEASE_GITHUB_REPO:-bijithpn/standup}"
 APPCAST_GITHUB_REPO="${APPCAST_GITHUB_REPO:-$RELEASE_GITHUB_REPO}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
 APP_BUILD_SUBPATH="${APP_BUILD_SUBPATH:-build/macos/Build/Products/Release-${APP_FLAVOR}}"
@@ -336,85 +336,15 @@ fi
 step "Step 5 of 5 — Update appcast.xml"
 
 PUB_DATE=$(date -u +"%a, %d %b %Y %H:%M:%S +0000")
-NOTES_HTML=$(echo "$RELEASE_NOTES" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
 DOWNLOAD_URL="$GITHUB_RELEASE_URL"
 
-PATCH_SCRIPT=$(cat <<'PYEOF'
-import sys, re
-
-appcast_path = sys.argv[1]
-version      = sys.argv[2]
-build        = sys.argv[3]
-signature    = sys.argv[4]
-file_size    = sys.argv[5]
-download_url = sys.argv[6]
-pub_date     = sys.argv[7]
-notes_html   = sys.argv[8]
-dry_run      = sys.argv[9] == "true"
-
-with open(appcast_path, "r", encoding="utf-8") as f:
-    content = f.read()
-
-version_exists = bool(re.search(rf'sparkle:shortVersionString="{re.escape(version)}"', content))
-
-if version_exists:
-    print(f"[PATCH] Updating existing v{version} entry — signature + length.")
-    # Patch sig
-    content = re.sub(
-        r'(sparkle:shortVersionString="' + re.escape(version) + r'"[^>]*?)sparkle:edSignature="[^"]*"',
-        r'\g<1>' + f'sparkle:edSignature="{signature}"',
-        content, flags=re.DOTALL
-    )
-    # Patch length
-    content = re.sub(
-        r'(sparkle:shortVersionString="' + re.escape(version) + r'"[^>]*?)length="[^"]*"',
-        r'\g<1>' + f'length="{file_size}"',
-        content, flags=re.DOTALL
-    )
-    new_content = content
-else:
-    print(f"[PATCH] Inserting new v{version} entry at top of feed.")
-    new_item = f"""\
-        <item>
-            <title>Version {version}</title>
-            <pubDate>{pub_date}</pubDate>
-            <description><![CDATA[
-                <h3>BreakMate v{version}</h3>
-                <p>{notes_html}</p>
-                <h4>Installation Note (macOS)</h4>
-                <p>Since BreakMate is not notarized by Apple, macOS may show a security
-                warning on first launch. Open System Settings &gt; Privacy and Security
-                and click Allow Anyway next to BreakMate.</p>
-            ]]></description>
-            <enclosure url="{download_url}"
-                       sparkle:version="{build}"
-                       sparkle:shortVersionString="{version}"
-                       sparkle:edSignature="{signature}"
-                       length="{file_size}"
-                       type="application/octet-stream" />
-        </item>
-"""
-    m = re.search(r'<language>[^<]+</language>\s*', content)
-    if m:
-        new_content = content[:m.end()] + new_item + content[m.end():]
-    else:
-        new_content = content.replace("</channel>", new_item + "    </channel>")
-
-if dry_run:
-    print("[DRY-RUN] appcast.xml preview:")
-    print(new_content[:1500])
-else:
-    with open(appcast_path, "w", encoding="utf-8") as f:
-        f.write(new_content)
-    print("[OK] appcast.xml patched.")
-PYEOF
-)
-
-python3 - \
-  "$APPCAST" "$VERSION" "$BUILD_NUMBER" \
-  "$SIGNATURE" "$FILE_SIZE" "$DOWNLOAD_URL" \
-  "$PUB_DATE" "$NOTES_HTML" "$DRY_RUN" \
-  <<< "$PATCH_SCRIPT"
+NOTES_TMP="$(mktemp)"
+printf '%s\n' "$RELEASE_NOTES" > "$NOTES_TMP"
+PATCH_ARGS=(--appcast "$APPCAST" --version "$VERSION" --build "$BUILD_NUMBER"
+  --signature "$SIGNATURE" --size "$FILE_SIZE" --url "$DOWNLOAD_URL" --notes-file "$NOTES_TMP")
+[[ "$DRY_RUN" == true ]] && PATCH_ARGS+=(--dry-run)
+python3 "$SCRIPT_DIR/patch_appcast.py" "${PATCH_ARGS[@]}"
+rm -f "$NOTES_TMP"
 
 # Commit and push appcast.xml
 if [[ "$DRY_RUN" == false ]]; then

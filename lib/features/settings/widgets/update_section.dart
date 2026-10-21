@@ -153,6 +153,15 @@ class _UpdateSectionState extends State<UpdateSection> {
   String _formatReleaseNotes(String rawNotes) {
     if (rawNotes.isEmpty) return 'No release notes available.';
 
+    // The appcast now ships ready-made HTML; only legacy Markdown notes need
+    // converting (and unescaping would corrupt entities in HTML text).
+    if (RegExp(
+      r'<(h[1-6]|p|ul|ol)\b',
+      caseSensitive: false,
+    ).hasMatch(rawNotes)) {
+      return rawNotes;
+    }
+
     String notes = rawNotes
         .replaceAll('&amp;', '&')
         .replaceAll('&lt;', '<')
@@ -332,6 +341,16 @@ class _UpdateSectionState extends State<UpdateSection> {
                           height: 1.6,
                         ),
                         customStylesBuilder: (element) {
+                          if (element.localName == 'h4' ||
+                              element.localName == 'h5') {
+                            return {
+                              'font-weight': 'bold',
+                              'font-size': '15px',
+                              'margin-top': '12px',
+                              'margin-bottom': '8px',
+                              'color': '#ffffff',
+                            };
+                          }
                           if (element.localName == 'h3' ||
                               element.localName == 'h2') {
                             return {
