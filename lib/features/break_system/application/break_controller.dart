@@ -182,22 +182,24 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     } else if (shouldShowWarning &&
         !_hasShownPreBreakWarning &&
         !overlayService.isOverlayVisible) {
-      _hasShownPreBreakWarning = true;
-      overlayService.showOverlay(
-        type: OverlayType.preBreakWarning,
-        builder: (_) => const SizedBox.shrink(),
-        reminderType: 'breakStart',
-        overlayData: {
-          'overlayType': 'preBreakWarning',
-          'type': 'preBreakWarning',
-          'secondsRemaining': _timerEngine.countdownSeconds,
-          'remainingSeconds': _timerEngine.countdownSeconds,
-          'durationSeconds': _timerEngine.countdownSeconds,
-          'targetEndTime': DateTime.now()
-              .add(Duration(seconds: _timerEngine.countdownSeconds))
-              .millisecondsSinceEpoch,
-        },
-      );
+      if (_timerEngine.countdownSeconds <= 3) {
+        _hasShownPreBreakWarning = true;
+        overlayService.showOverlay(
+          type: OverlayType.preBreakWarning,
+          builder: (_) => const SizedBox.shrink(),
+          reminderType: 'breakStart',
+          overlayData: {
+            'overlayType': 'preBreakWarning',
+            'type': 'preBreakWarning',
+            'secondsRemaining': _timerEngine.countdownSeconds,
+            'remainingSeconds': _timerEngine.countdownSeconds,
+            'durationSeconds': _timerEngine.countdownSeconds,
+            'targetEndTime': DateTime.now()
+                .add(Duration(seconds: _timerEngine.countdownSeconds))
+                .millisecondsSinceEpoch,
+          },
+        );
+      }
     } else if (!shouldShowBreak &&
         !shouldShowWarning &&
         _lastOverlayState != null) {

@@ -39,30 +39,45 @@ class BreakStartWarningOverlay extends StatelessWidget {
               ),
             ),
             child: Container(
-              constraints: const BoxConstraints(maxWidth: 360),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              constraints: const BoxConstraints(maxWidth: 320),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.40),
-                borderRadius: BorderRadius.circular(999),
+                color: const Color(0xFF14161B).withValues(alpha: 0.88),
+                borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppTheme.accent.withValues(alpha: 0.35),
+                  color: Colors.white.withValues(alpha: 0.12),
                   width: 1.0,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
+                  ),
+                  BoxShadow(
+                    color: AppTheme.accent.withValues(alpha: 0.10),
                     blurRadius: 16,
-                    offset: const Offset(0, 4),
+                    spreadRadius: -2,
                   ),
                 ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    CupertinoIcons.timer,
-                    color: AppTheme.accent,
-                    size: 18,
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        CupertinoIcons.timer,
+                        color: AppTheme.accent,
+                        size: 15,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   ValueListenableBuilder<int>(
@@ -70,34 +85,52 @@ class BreakStartWarningOverlay extends StatelessWidget {
                         ValueNotifier<int>(durationSeconds),
                     builder: (context, remaining, _) {
                       final displaySec = remaining > 0 ? remaining : 1;
-                      return Text(
-                        'Break starting in ${displaySec}s...',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Break starting in ',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.88),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          Text(
+                            '${displaySec}s',
+                            style: TextStyle(
+                              color: AppTheme.accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
                   if (onSkip != null) ...[
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     GestureDetector(
                       onTap: onSkip,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
-                          vertical: 3,
+                          vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(100),
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            width: 0.5,
+                          ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Skip',
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: Colors.white.withValues(alpha: 0.72),
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
                           ),

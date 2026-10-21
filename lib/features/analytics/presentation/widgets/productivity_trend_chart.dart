@@ -157,7 +157,7 @@ class ProductivityTrendChart extends StatelessWidget {
             PieChartSectionData(
               value: 1,
               color: AppTheme.accentColor.withValues(alpha: 0.12),
-              radius: 32,
+              radius: 20,
               showTitle: false,
             ),
           ]
@@ -165,14 +165,14 @@ class ProductivityTrendChart extends StatelessWidget {
             PieChartSectionData(
               value: done.toDouble(),
               color: AppTheme.accentColor,
-              radius: 32,
+              radius: 20,
               showTitle: false,
             ),
             if (skipped > 0)
               PieChartSectionData(
                 value: skipped.toDouble(),
                 color: const Color(0xFFF43F5E),
-                radius: 32,
+                radius: 20,
                 showTitle: false,
               ),
           ];
@@ -180,15 +180,15 @@ class ProductivityTrendChart extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 136,
-          height: 136,
+          width: 140,
+          height: 140,
           child: Stack(
             alignment: Alignment.center,
             children: [
               PieChart(
                 PieChartData(
                   sections: sections,
-                  centerSpaceRadius: 36,
+                  centerSpaceRadius: 46,
                   sectionsSpace: total == 0 ? 0 : 3,
                   startDegreeOffset: -90,
                   pieTouchData: PieTouchData(enabled: false),
@@ -201,20 +201,21 @@ class ProductivityTrendChart extends StatelessWidget {
                     total == 0 ? '—' : '$rate%',
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 22,
+                      fontSize: 20,
                       fontWeight: FontWeight.w700,
                       color: total == 0
                           ? AppTheme.textMuted
                           : AppTheme.accentColor,
-                      height: 1,
+                      height: 1.1,
+                      letterSpacing: -0.5,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
                     total == 0 ? 'no breaks' : '$done of $total',
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      fontSize: 11,
+                      fontSize: 10.5,
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textMuted,
                     ),
@@ -224,7 +225,7 @@ class ProductivityTrendChart extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 24),
+        const SizedBox(width: 32),
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -237,7 +238,7 @@ class ProductivityTrendChart extends StatelessWidget {
                 value: '$done',
                 unit: done == 1 ? 'break' : 'breaks',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               _TodayMetricTile(
                 icon: Icons.cancel_rounded,
                 iconColor: const Color(0xFFF43F5E),
@@ -248,7 +249,7 @@ class ProductivityTrendChart extends StatelessWidget {
                 value: '$skipped',
                 unit: skipped == 1 ? 'break' : 'breaks',
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 9),
               _TodayMetricTile(
                 icon: Icons.schedule_rounded,
                 iconColor: const Color(0xFFF59E0B),
@@ -533,10 +534,10 @@ class _TodayMetricTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: iconColor.withValues(alpha: 0.15),
           width: 0.5,
@@ -545,7 +546,7 @@ class _TodayMetricTile extends StatelessWidget {
       child: Row(
         children: [
           Icon(icon, size: 14, color: iconColor),
-          const SizedBox(width: 8),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               label,

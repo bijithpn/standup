@@ -611,7 +611,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: AppTheme.cardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,7 +663,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           ),
           const SizedBox(height: 24),
           SizedBox(
-            height: 180,
+            height: 190,
             child: ProductivityTrendChart(
               weeklyData: _stats.weeklyData,
               period: chartPeriod,
@@ -849,15 +849,17 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                   letterSpacing: -0.5,
                 ),
               ),
-              const SizedBox(width: 4),
-              Text(
-                unit,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textMuted,
+              if (unit.isNotEmpty) ...[
+                SizedBox(width: unit == '%' ? 1 : 4),
+                Text(
+                  unit,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textMuted,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ],

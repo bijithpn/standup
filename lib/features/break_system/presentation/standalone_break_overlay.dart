@@ -250,9 +250,11 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       child: FadeTransition(
         opacity: _fadeController,
         child: Material(
-          color: isDimmedOverlay
-              ? Colors.black.withValues(alpha: 0.25)
-              : Colors.black,
+          color: _config.overlayType == 'preBreakWarning'
+              ? Colors.transparent
+              : (isDimmedOverlay
+                  ? Colors.black.withValues(alpha: 0.25)
+                  : Colors.black),
           child: BreakOverlayKeyboardHandler(
             canDismiss: _canDismiss,
             onSkip: _skipBreak,
