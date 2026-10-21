@@ -2,10 +2,14 @@
 ; BreakMate Windows Installer Specification
 
 #define MyAppName "BreakMate"
-#define MyAppVersion "1.8.1"
+; Overridden by CI: iscc /DMyAppVersion=<pubspec version>
+#ifndef MyAppVersion
+  #define MyAppVersion "1.8.1"
+#endif
 #define MyAppPublisher "Bijith"
 #define MyAppURL "https://github.com/bijithpn/breakmate"
-#define MyAppExeName "breakmate.exe"
+; Must match BINARY_NAME in windows/CMakeLists.txt
+#define MyAppExeName "BreakMateApp.exe"
 
 [Setup]
 AppId={{C28D7018-9F3A-4D4E-8742-5B45F169EDD3}

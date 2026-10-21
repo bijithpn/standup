@@ -11,17 +11,26 @@ on:
       - '*.md'
       - 'docs/**'
 
+concurrency:
+  group: macos-release
+  cancel-in-progress: false
+
+env:
+  # Keep in sync with cross_platform_ci.yml and desktop_release.yml.
+  FLUTTER_VERSION: '3.41.9'
+
 jobs:
   build-and-release:
     name: Build & Release macOS App
     runs-on: macos-14
+    timeout-minutes: 60
 
     permissions:
       contents: write
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -43,7 +52,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -186,7 +195,7 @@ jobs:
 
       - name: Upload Build Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: BreakMate-macOS-Installer
           path: |

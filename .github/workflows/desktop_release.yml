@@ -1,0 +1,187 @@
+name: Desktop Release (Linux & Windows)
+
+# Runs after the macOS pipeline has published the GitHub release for this
+# version, then attaches the Linux and Windows builds to that same release.
+# (macos_release.yml deletes and recreates the release on each run, so these
+# jobs must run after it, never in parallel with it.)
+on:
+  workflow_run:
+    workflows: ['macOS Release Pipeline']
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-release-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  # Keep in sync with macos_release.yml and cross_platform_ci.yml.
+  FLUTTER_VERSION: '3.41.9'
+
+jobs:
+  linux:
+    name: Build & Attach Linux
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Extract Version Info
+        id: version
+        shell: bash
+        run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          SHORT_VERSION=$(echo "$RAW_VERSION" | cut -d'+' -f1)
+          echo "short=$SHORT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${SHORT_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Install Linux Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            clang cmake ninja-build pkg-config git curl unzip xz-utils \
+            libgtk-3-dev liblzma-dev \
+            libayatana-appindicator3-dev \
+            libkeybinder-3.0-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
+            libcurl4-openssl-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Build Linux Release
+        run: |
+          flutter pub get
+          flutter build linux --release --no-pub
+
+      - name: Package tarball
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.short }}
+        run: |
+          BUNDLE="build/linux/x64/release/bundle"
+          if [ ! -x "$BUNDLE/breakmate" ]; then
+            echo "::error::Linux bundle not found at $BUNDLE/breakmate"
+            ls -la "$BUNDLE" || true
+            exit 1
+          fi
+
+          STAGE="BreakMate-${VERSION}-linux-x64"
+          mkdir -p dist "$STAGE"
+          cp -r "$BUNDLE"/. "$STAGE"/
+          cp linux/packaging/com.bijith.breakmate.desktop "$STAGE"/
+          cp assets/icons/app_icon_bg.png "$STAGE"/com.bijith.breakmate.png
+          tar -czf "dist/${STAGE}.tar.gz" "$STAGE"
+          ls -la dist
+
+      - name: Upload to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG_NAME" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" dist/* --clobber --repo "${{ github.repository }}"
+          else
+            echo "::warning::Release $TAG_NAME does not exist yet; files are only available as workflow artifacts."
+          fi
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: BreakMate-Linux
+          path: dist/*
+          if-no-files-found: ignore
+
+  windows:
+    name: Build & Attach Windows
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Extract Version Info
+        id: version
+        run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          SHORT_VERSION=$(echo "$RAW_VERSION" | cut -d'+' -f1)
+          echo "short=$SHORT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v${SHORT_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Build Windows Release
+        run: |
+          flutter pub get
+          flutter build windows --release --no-pub
+
+      - name: Verify build output
+        run: |
+          # BINARY_NAME in windows/CMakeLists.txt is BreakMateApp.
+          OUT="build/windows/x64/runner/Release"
+          if [ ! -f "$OUT/BreakMateApp.exe" ]; then
+            echo "::error::BreakMateApp.exe not found in $OUT"
+            ls -la "$OUT" || true
+            exit 1
+          fi
+
+      - name: Package zip
+        env:
+          VERSION: ${{ steps.version.outputs.short }}
+        run: |
+          mkdir -p dist
+          powershell -NoProfile -Command "Compress-Archive -Path 'build/windows/x64/runner/Release/*' -DestinationPath 'dist/BreakMate-${VERSION}-windows-x64.zip' -Force"
+
+      - name: Build installer (Inno Setup)
+        env:
+          VERSION: ${{ steps.version.outputs.short }}
+          # Git Bash would otherwise rewrite the "/D..." switch as a path.
+          MSYS_NO_PATHCONV: '1'
+        run: |
+          choco install innosetup --no-progress -y
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" "/DMyAppVersion=${VERSION}" windows/installer/breakmate.iss
+          cp "build/windows/installer/BreakMate-Setup-${VERSION}.exe" dist/
+          ls -la dist
+
+      - name: Upload to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          if gh release view "$TAG_NAME" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" dist/* --clobber --repo "${{ github.repository }}"
+          else
+            echo "::warning::Release $TAG_NAME does not exist yet; files are only available as workflow artifacts."
+          fi
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: BreakMate-Windows
+          path: dist/*
+          if-no-files-found: ignore
