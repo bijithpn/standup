@@ -1,4 +1,4 @@
-name: Desktop Release (Linux & Windows)
+name: "Release · 2 · Linux & Windows"
 
 # Runs after the macOS pipeline has published the GitHub release for this
 # version, then attaches the Linux and Windows builds to that same release.
@@ -6,7 +6,7 @@ name: Desktop Release (Linux & Windows)
 # jobs must run after it, never in parallel with it.)
 on:
   workflow_run:
-    workflows: ['macOS Release Pipeline']
+    workflows: ['Release · 1 · macOS']
     types: [completed]
   workflow_dispatch:
 
@@ -23,7 +23,7 @@ env:
 
 jobs:
   linux:
-    name: Build & Attach Linux
+    name: Build & attach Linux
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -106,7 +106,7 @@ jobs:
           if-no-files-found: ignore
 
   windows:
-    name: Build & Attach Windows
+    name: Build & attach Windows
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: windows-2022
     timeout-minutes: 60
