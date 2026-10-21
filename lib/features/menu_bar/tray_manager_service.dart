@@ -36,6 +36,23 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   TimerEngine? _timerEngine;
   BreakController? _breakController;
   MenuBarController? _menuBarController;
+  final SettingsRepository? _settingsRepository;
+
+  SettingsRepository? get _settingsRepo =>
+      _settingsRepository ??
+      (sl.isRegistered<SettingsRepository>() ? sl<SettingsRepository>() : null);
+
+  TrayManagerService({
+    TimerEngine? timerEngine,
+    BreakController? breakController,
+    MenuBarController? menuBarController,
+    SettingsRepository? settingsRepository,
+  }) : _settingsRepository = settingsRepository {
+    _menuBarController = menuBarController;
+    if (timerEngine != null && breakController != null) {
+      setDependencies(timerEngine, breakController);
+    }
+  }
 
   final Map<PetAnimationState, List<String>> _stateFramePaths = {};
   String? _defaultIconPath;
@@ -46,8 +63,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     trayManager.addListener(this);
     WidgetsBinding.instance.addObserver(this);
 
-    final settingsRepo = sl<SettingsRepository>();
-    setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
+    final settingsRepo = _settingsRepo;
+    if (settingsRepo != null) {
+      setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
+    }
 
     final supportDir = await getApplicationSupportDirectory();
     final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
@@ -145,8 +164,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       );
     }
 
-    final settingsRepo = sl<SettingsRepository>();
-    final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+    final settingsRepo = _settingsRepo;
+    final selectedThemeId = settingsRepo?.currentSettings.companionPetTheme ?? 'cat';
     final theme = PetTheme.getTheme(selectedThemeId);
 
     _stateFramePaths.clear();
@@ -357,8 +376,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     if (_iconMode != TrayIconMode.companion) return;
     if (Platform.isWindows) return; // Windows uses static .ico, no animation
 
-    final settingsRepo = sl<SettingsRepository>();
-    final selectedThemeId = settingsRepo.currentSettings.companionPetTheme;
+    final settingsRepo = _settingsRepo;
+    final selectedThemeId = settingsRepo?.currentSettings.companionPetTheme ?? 'cat';
     final theme = PetTheme.getTheme(selectedThemeId);
     final activeState = _determineActiveState();
     final config = theme.animations[activeState];
@@ -489,7 +508,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     items.add(MenuItem.separator());
 
     if (isBreakActive) {
-      final isStrict = sl<SettingsRepository>().currentSettings.strictMode;
+      final isStrict = _settingsRepo?.currentSettings.strictMode ?? false;
       items.addAll([
         MenuItem(key: 'complete_break', label: 'Complete Break'),
         MenuItem(

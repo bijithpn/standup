@@ -183,7 +183,20 @@ Future<void> initDependencies() async {
   sl.registerSingleton<CompanionOverlayController>(
     CompanionOverlayController(settingsRepo: sl()),
   );
-  sl.registerSingleton<TrayManagerService>(TrayManagerService());
+  sl.registerSingleton<BreakController>(
+    BreakController(timerEngine: sl(), settingsRepo: sl(), statsService: sl()),
+  );
+  sl.registerSingleton<MenuBarController>(
+    MenuBarController(eventBus: sl(), breakController: sl()),
+  );
+  sl.registerSingleton<TrayManagerService>(
+    TrayManagerService(
+      timerEngine: sl(),
+      breakController: sl(),
+      menuBarController: sl(),
+      settingsRepository: sl(),
+    ),
+  );
 
   sl.registerSingleton<TimerRepository>(TimerRepository(sl()));
 
@@ -212,11 +225,6 @@ Future<void> initDependencies() async {
   sl.registerSingleton<FocusModeService>(FocusModeService());
   sl.registerSingleton<FocusFilterService>(FocusFilterService(focusModeService: sl()));
   sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
-
-  sl.registerSingleton<BreakController>(
-    BreakController(timerEngine: sl(), settingsRepo: sl(), statsService: sl()),
-  );
-  sl.registerSingleton<MenuBarController>(MenuBarController());
 
   sl.registerSingleton<CompanionStateManager>(
     CompanionStateManager(eventBus: sl()),

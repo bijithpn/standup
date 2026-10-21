@@ -8,8 +8,9 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:breakmate/main_common.dart';
 
 class MenuBarController {
-  MenuBarController({EventBus? eventBus})
+  MenuBarController({EventBus? eventBus, BreakController? breakController})
     : _eventBus = eventBus ?? EventBus.instance,
+      _breakController = breakController,
       _logger = AppLogger();
 
   final EventBus _eventBus;
