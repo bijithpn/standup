@@ -26,6 +26,13 @@ class FocusSessionService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Deletes all stored focus sessions, in memory and on disk.
+  void clear() {
+    _cache.clear();
+    _persist();
+    notifyListeners();
+  }
+
   List<FocusSession> sessionsForDate(String date) =>
       List.unmodifiable(_cache[date] ?? const []);
 

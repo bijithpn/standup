@@ -137,11 +137,9 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
       if (!newVideoCallActive) {
         try {
           final activeApp =
-              (await invokeMethodProxy(
-                    'getActiveApp',
-                    null,
-                    'com.breakmate/app_tracking',
-                  ))
+              (await invokeMethodProxy('getActiveApp', {
+                    'includeUrl': true,
+                  }, 'com.breakmate/app_tracking'))
                   as Map?;
           final url = activeApp?['url'] as String?;
           newVideoCallActive = MeetingUrlMatcher.isMeetingUrl(url);

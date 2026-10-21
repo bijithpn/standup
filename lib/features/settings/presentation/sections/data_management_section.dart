@@ -20,6 +20,8 @@ import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/utils/file_permissions.dart';
+import 'package:breakmate/features/settings/local_data_wiper.dart';
 
 class DataManagementSection extends StatefulWidget {
   const DataManagementSection({super.key});
@@ -84,12 +86,14 @@ class _DataManagementSectionState extends State<DataManagementSection> {
       File file = File(p.join(dir.path, 'breakmate_backup.json'));
       try {
         await file.writeAsString(jsonEncode(backup));
+        await restrictToOwner(file.path);
       } catch (e) {
         if (isDownloads) {
           dir = await getApplicationDocumentsDirectory();
           isDownloads = false;
           file = File(p.join(dir.path, 'breakmate_backup.json'));
           await file.writeAsString(jsonEncode(backup));
+          await restrictToOwner(file.path);
         } else {
           rethrow;
         }
@@ -474,18 +478,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
   Future<void> _clearAllData() async {
     try {
-      _storage.settingsBox?.removeAll();
-      _storage.companionPreferencesBox?.removeAll();
-      _storage.globalStatsBox?.removeAll();
-      _storage.dailyStatsBox?.removeAll();
-      _storage.kvBox?.removeAll();
-
-      SimplePrefs.instance.clear();
-
-      await sl<SettingsRepository>().load();
-      if (sl.isRegistered<StatsService>()) {
-        await sl<StatsService>().initialize();
-      }
+      await wipeAllLocalData();
       await _loadStats();
 
       if (mounted) {

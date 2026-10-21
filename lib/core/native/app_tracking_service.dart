@@ -37,10 +37,17 @@ class AppTrackingService {
   static const _channel = MethodChannel('com.breakmate/app_tracking');
   final AppLogger _logger = AppLogger();
 
-  Future<ActiveAppInfo?> getActiveApp() async {
+  /// By default only the app identity is read. The window title and the
+  /// browser tab URL are privacy-sensitive, so the native side fetches them
+  /// only when a caller explicitly asks.
+  Future<ActiveAppInfo?> getActiveApp({
+    bool includeTitle = false,
+    bool includeUrl = false,
+  }) async {
     try {
       final result = await _channel.invokeMapMethod<String, dynamic>(
         'getActiveApp',
+        {'includeTitle': includeTitle, 'includeUrl': includeUrl},
       );
       if (result != null) {
         return ActiveAppInfo.fromMap(result);
@@ -51,7 +58,10 @@ class AppTrackingService {
     return null;
   }
 
-  Future<Uint8List?> getAppIcon({String? bundleId, String? executableName}) async {
+  Future<Uint8List?> getAppIcon({
+    String? bundleId,
+    String? executableName,
+  }) async {
     try {
       return await _channel.invokeMethod<Uint8List>('getAppIcon', {
         'bundleId': bundleId,

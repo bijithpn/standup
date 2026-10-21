@@ -171,6 +171,20 @@ void RegisterAppTrackingBridge(flutter::FlutterEngine* engine) {
       [](const flutter::MethodCall<flutter::EncodableValue>& call,
          std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
         if (call.method_name() == "getActiveApp") {
+          // Window title and browser URL are only read when explicitly requested.
+          bool include_title = false;
+          bool include_url = false;
+          if (const auto* req = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto t = req->find(flutter::EncodableValue("includeTitle"));
+            if (t != req->end()) {
+              if (const auto* b = std::get_if<bool>(&t->second)) include_title = *b;
+            }
+            auto u = req->find(flutter::EncodableValue("includeUrl"));
+            if (u != req->end()) {
+              if (const auto* b = std::get_if<bool>(&u->second)) include_url = *b;
+            }
+          }
+
           // Identify the current top-level focused window.
           HWND foreground = GetForegroundWindow();
           if (!foreground) {
@@ -198,7 +212,7 @@ void RegisterAppTrackingBridge(flutter::FlutterEngine* engine) {
           CloseHandle(process);
 
           std::wstring title_w;
-          int length = GetWindowTextLengthW(foreground);
+          int length = include_title ? GetWindowTextLengthW(foreground) : 0;
           if (length > 0) {
             std::vector<wchar_t> title_buffer(length + 1);
             if (GetWindowTextW(foreground, title_buffer.data(), length + 1)) {
@@ -217,10 +231,10 @@ void RegisterAppTrackingBridge(flutter::FlutterEngine* engine) {
             exe_name = exe_path;
           }
 
-          std::string url = GetBrowserUrl(foreground, exe_name);
+          std::string url = include_url ? GetBrowserUrl(foreground, exe_name) : std::string();
 
           flutter::EncodableMap map;
-          map[flutter::EncodableValue("name")] = flutter::EncodableValue(title);
+          map[flutter::EncodableValue("name")] = flutter::EncodableValue(title.empty() ? exe_name : title);
           map[flutter::EncodableValue("bundleId")] = flutter::EncodableValue(exe_path);
           map[flutter::EncodableValue("executableName")] = flutter::EncodableValue(exe_name);
           if (!url.empty()) {

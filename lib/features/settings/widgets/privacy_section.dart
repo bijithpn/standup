@@ -1,3 +1,4 @@
+import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/activity_tracking_intro.dart';
 import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
@@ -7,6 +8,7 @@ import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/category_budgets_card.dart';
+import 'package:breakmate/features/settings/local_data_wiper.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -18,7 +20,11 @@ class PrivacySection extends StatefulWidget {
   final SettingsModel settings;
   final ValueChanged<SettingsModel> onSave;
 
-  const PrivacySection({super.key, required this.settings, required this.onSave});
+  const PrivacySection({
+    super.key,
+    required this.settings,
+    required this.onSave,
+  });
 
   @override
   State<PrivacySection> createState() => _PrivacySectionState();
@@ -147,8 +153,9 @@ class _PrivacySectionState extends State<PrivacySection> {
                 if (value == null) return;
                 widget.onSave(
                   settings.copyWith(
-                    activityHistoryRetentionDays:
-                        ActivityRetention.fromLabel(value).days,
+                    activityHistoryRetentionDays: ActivityRetention.fromLabel(
+                      value,
+                    ).days,
                   ),
                 );
               },
@@ -159,7 +166,7 @@ class _PrivacySectionState extends State<PrivacySection> {
               subtitle: _segmentCount == 0
                   ? 'No activity has been recorded yet.'
                   : '$_segmentCount recorded entries make up your timeline, '
-                      'application totals and insights.',
+                        'application totals and insights.',
               buttonText: 'Clear History',
               onPressed: _segmentCount == 0 ? null : _clearActivityHistory,
               isDestructive: true,
@@ -209,7 +216,7 @@ class _PrivacySectionState extends State<PrivacySection> {
             subtitle:
                 'This will reset all settings and wipe your statistics history. This cannot be undone.',
             buttonText: 'Wipe Data',
-            onPressed: () {},
+            onPressed: _confirmWipeAllData,
             isDestructive: true,
           ),
         ]),
@@ -242,9 +249,41 @@ class _PrivacySectionState extends State<PrivacySection> {
     if (!confirmed) return;
 
     sl<ActivitySegmentRepository>().clearAll();
+    if (sl.isRegistered<AppUsageService>()) sl<AppUsageService>().clear();
+    if (sl.isRegistered<FocusSessionService>()) {
+      sl<FocusSessionService>().clear();
+    }
     if (sl.isRegistered<ProductivityRepository>()) {
       sl<ProductivityRepository>().invalidate();
     }
+    _refreshSegmentCount();
+  }
+
+  Future<void> _confirmWipeAllData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete all local data?'),
+        content: const Text(
+          'This resets all settings and permanently deletes your statistics '
+          'and activity history. Backups you exported are not affected. '
+          'This cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    await wipeAllLocalData();
     _refreshSegmentCount();
   }
 
@@ -370,7 +409,10 @@ class _DataTransparencyPanel extends StatelessWidget {
                     enabled
                         ? 'History rolls off automatically after 30 days — nothing older than that is ever kept.'
                         : 'Tracking is off, so nothing new is being recorded. Any history already on this device still ages out after 30 days.',
-                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ),
               ],

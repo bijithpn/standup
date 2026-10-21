@@ -12,7 +12,10 @@ class FakeAppTrackingService implements AppTrackingService {
   ActiveAppInfo? nextApp;
 
   @override
-  Future<ActiveAppInfo?> getActiveApp() async => nextApp;
+  Future<ActiveAppInfo?> getActiveApp({
+    bool includeTitle = false,
+    bool includeUrl = false,
+  }) async => nextApp;
 
   @override
   Future<Uint8List?> getAppIcon({String? bundleId, String? executableName}) async =>

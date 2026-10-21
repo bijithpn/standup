@@ -20,7 +20,10 @@ import 'package:window_manager/window_manager.dart';
 import 'app/app.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
 import 'app/bootstrapping/service_bootstrapper.dart';
+import 'package:path_provider/path_provider.dart';
 import 'core/core.dart';
+import 'core/ipc/single_instance_token.dart';
+import 'core/utils/file_permissions.dart';
 import 'features/features.dart';
 import 'shared/shared.dart';
 
@@ -39,7 +42,7 @@ void _setupGlobalErrors() {
       ErrorHandler().handleError(details.exception, details.stack);
       ErrorToastService.showError('Oops! An internal error occurred.');
 
-      // Unhandled layout exceptions do not immediately terminate the process; 
+      // Unhandled layout exceptions do not immediately terminate the process;
       // however, UI instability may require recovery triggers.
     }
     FlutterError.presentError(details);
@@ -169,8 +172,13 @@ void _setupGlobalErrors() {
 
 ServerSocket? _globalSingleInstanceServer;
 
-Future<void> _gracefulShutdown(ServerSocket? serverSocket, [String? reason]) async {
-  debugPrint('[Shutdown] Starting graceful shutdown (reason: $reason) from:\n${StackTrace.current}');
+Future<void> _gracefulShutdown(
+  ServerSocket? serverSocket, [
+  String? reason,
+]) async {
+  debugPrint(
+    '[Shutdown] Starting graceful shutdown (reason: $reason) from:\n${StackTrace.current}',
+  );
 
   try {
     if (sl.isRegistered<SettingsRepository>()) {
@@ -418,7 +426,10 @@ void mainCommon(FlavorConfig config) async {
                 port,
                 timeout: const Duration(milliseconds: 500),
               );
-              socket.write('shutdown\n');
+              final token = await SingleInstanceToken.read(
+                await getApplicationSupportDirectory(),
+              );
+              socket.write('${token ?? ''} shutdown\n');
               await socket.flush();
               await socket.close();
               debugPrint(
@@ -512,7 +523,9 @@ void mainCommon(FlavorConfig config) async {
                 );
                 bound = true;
               } catch (e) {
-                debugPrint('Startup: Ephemeral port bind failed in debug mode: $e');
+                debugPrint(
+                  'Startup: Ephemeral port bind failed in debug mode: $e',
+                );
               }
             } else {
               debugPrint(
@@ -525,14 +538,36 @@ void mainCommon(FlavorConfig config) async {
 
         _globalSingleInstanceServer = singleInstanceServer;
 
+        if (isMainIsolate) {
+          final supportDir = await getApplicationSupportDirectory();
+          await restrictToOwner(supportDir.path, directory: true);
+        }
+
+        String? ipcToken;
+        if (singleInstanceServer != null) {
+          try {
+            ipcToken = await SingleInstanceToken.create(
+              await getApplicationSupportDirectory(),
+            );
+          } catch (e) {
+            debugPrint('Startup: Could not create IPC token: $e');
+          }
+        }
+
         if (!Platform.isWindows) {
           ProcessSignal.sigterm.watch().listen((_) async {
             debugPrint('[Signal] SIGTERM received — shutting down.');
-            await _gracefulShutdown(_globalSingleInstanceServer, 'ProcessSignal.sigterm');
+            await _gracefulShutdown(
+              _globalSingleInstanceServer,
+              'ProcessSignal.sigterm',
+            );
           });
           ProcessSignal.sigint.watch().listen((_) async {
             debugPrint('[Signal] SIGINT received — shutting down.');
-            await _gracefulShutdown(_globalSingleInstanceServer, 'ProcessSignal.sigint');
+            await _gracefulShutdown(
+              _globalSingleInstanceServer,
+              'ProcessSignal.sigint',
+            );
           });
         }
 
@@ -548,7 +583,10 @@ void mainCommon(FlavorConfig config) async {
           ErrorHandler().handleError(e, st, type: AppErrorType.general);
           ErrorToastService.showError('Startup failed. The app will close.');
           await Future.delayed(const Duration(seconds: 3));
-          await _gracefulShutdown(_globalSingleInstanceServer, 'startup exception: $e');
+          await _gracefulShutdown(
+            _globalSingleInstanceServer,
+            'startup exception: $e',
+          );
           return;
         }
 
@@ -598,13 +636,19 @@ void mainCommon(FlavorConfig config) async {
             sl<TimerEngine>().handleSystemWake();
           } else if (call.method == 'onAvatarSaved') {
             final urlParams = call.arguments?['urlParams'] as String?;
-            if (urlParams != null && sl.isRegistered<CompanionOverlayController>()) {
-              await sl<CompanionOverlayController>().saveAvatarUrlParams(urlParams);
+            if (urlParams != null &&
+                sl.isRegistered<CompanionOverlayController>()) {
+              await sl<CompanionOverlayController>().saveAvatarUrlParams(
+                urlParams,
+              );
             }
           } else if (call.method == 'onPipBackgroundStyleChanged') {
             final style = call.arguments?['style'] as String?;
-            if (style != null && sl.isRegistered<CompanionOverlayController>()) {
-              await sl<CompanionOverlayController>().changePipBackgroundStyle(style);
+            if (style != null &&
+                sl.isRegistered<CompanionOverlayController>()) {
+              await sl<CompanionOverlayController>().changePipBackgroundStyle(
+                style,
+              );
             }
           }
         });
@@ -612,10 +656,13 @@ void mainCommon(FlavorConfig config) async {
         if (singleInstanceServer != null) {
           singleInstanceServer.listen((client) {
             utf8.decoder.bind(client).join().then((message) async {
-              final cmd = message.trim();
+              final cmd = SingleInstanceToken.authorize(message, ipcToken);
               if (cmd == 'shutdown') {
                 debugPrint('SingleInstanceServer: Received shutdown command.');
-                await _gracefulShutdown(singleInstanceServer, 'singleInstanceServer IPC: shutdown');
+                await _gracefulShutdown(
+                  singleInstanceServer,
+                  'singleInstanceServer IPC: shutdown',
+                );
               } else if (cmd == 'showDashboard') {
                 await sl<OverlayWindowService>().showDashboard(forceShow: true);
               }

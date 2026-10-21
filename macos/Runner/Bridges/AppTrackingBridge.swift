@@ -22,7 +22,11 @@ class AppTrackingBridge: NSObject {
         channel.setMethodCallHandler { [weak self] (call, result) in
             switch call.method {
             case "getActiveApp":
-                self?.handleGetActiveApp(result: result)
+                let args = call.arguments as? [String: Any]
+                self?.handleGetActiveApp(
+                    includeTitle: args?["includeTitle"] as? Bool ?? false,
+                    includeUrl: args?["includeUrl"] as? Bool ?? false,
+                    result: result)
             case "getAppIcon":
                 self?.handleGetAppIcon(call: call, result: result)
             default:
@@ -31,7 +35,7 @@ class AppTrackingBridge: NSObject {
         }
     }
     
-    private func handleGetActiveApp(result: @escaping FlutterResult) {
+    private func handleGetActiveApp(includeTitle: Bool, includeUrl: Bool, result: @escaping FlutterResult) {
         // NSWorkspace reads are cheap and expected on the main thread — do
         // those here, then hop off-thread for the slow lookups below.
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication else {
@@ -49,7 +53,7 @@ class AppTrackingBridge: NSObject {
 
             var displayName = appName
             // If accessibility permissions are available, read the active window title.
-            if let windowTitle = self.getActiveWindowTitle(pid: pid) {
+            if includeTitle, let windowTitle = self.getActiveWindowTitle(pid: pid) {
                 displayName = windowTitle
             }
 
@@ -59,7 +63,7 @@ class AppTrackingBridge: NSObject {
                 "executableName": exeName
             ]
 
-            if let url = self.getBrowserUrl(appName: appName) {
+            if includeUrl, let url = self.getBrowserUrl(appName: appName) {
                 appInfo["url"] = url
             }
 

@@ -27,6 +27,30 @@ void main() {
   group('AppUsageService', () {
     final testClock = Clock.fixed(DateTime(2026, 8, 31));
 
+    test('clear removes all usage history from memory and storage', () {
+      withClock(testClock, () {
+        final service = AppUsageService(storage: StorageService());
+        service.addUsageSeconds(
+          date: '2026-08-31',
+          appKey: 'com.google.chrome',
+          name: 'Chrome',
+          category: AppCategory.browsing,
+          seconds: 30,
+        );
+        service.clear();
+
+        expect(
+          service.topApps(UsagePeriod.today, now: DateTime(2026, 8, 31)),
+          isEmpty,
+        );
+        final reloaded = AppUsageService(storage: StorageService());
+        expect(
+          reloaded.topApps(UsagePeriod.today, now: DateTime(2026, 8, 31)),
+          isEmpty,
+        );
+      });
+    });
+
     test('accumulates seconds for the same app across multiple calls', () {
       withClock(testClock, () {
         final service = AppUsageService(storage: StorageService());
@@ -62,16 +86,25 @@ void main() {
         final dateStr = '2026-08-31';
 
         service.addUsageSeconds(
-          date: dateStr, appKey: 'a', name: 'A',
-          category: AppCategory.coding, seconds: 10,
+          date: dateStr,
+          appKey: 'a',
+          name: 'A',
+          category: AppCategory.coding,
+          seconds: 10,
         );
         service.addUsageSeconds(
-          date: dateStr, appKey: 'b', name: 'B',
-          category: AppCategory.browsing, seconds: 100,
+          date: dateStr,
+          appKey: 'b',
+          name: 'B',
+          category: AppCategory.browsing,
+          seconds: 100,
         );
         service.addUsageSeconds(
-          date: dateStr, appKey: 'c', name: 'C',
-          category: AppCategory.meeting, seconds: 50,
+          date: dateStr,
+          appKey: 'c',
+          name: 'C',
+          category: AppCategory.meeting,
+          seconds: 50,
         );
 
         final apps = service.topApps(UsagePeriod.today, limit: 2, now: today);
@@ -86,16 +119,25 @@ void main() {
         final dateStr = '2026-08-31';
 
         service.addUsageSeconds(
-          date: dateStr, appKey: 'a', name: 'A',
-          category: AppCategory.coding, seconds: 10,
+          date: dateStr,
+          appKey: 'a',
+          name: 'A',
+          category: AppCategory.coding,
+          seconds: 10,
         );
         service.addUsageSeconds(
-          date: dateStr, appKey: 'b', name: 'B',
-          category: AppCategory.coding, seconds: 20,
+          date: dateStr,
+          appKey: 'b',
+          name: 'B',
+          category: AppCategory.coding,
+          seconds: 20,
         );
         service.addUsageSeconds(
-          date: dateStr, appKey: 'c', name: 'C',
-          category: AppCategory.browsing, seconds: 5,
+          date: dateStr,
+          appKey: 'c',
+          name: 'C',
+          category: AppCategory.browsing,
+          seconds: 5,
         );
 
         final totals = service.categoryTotals(UsagePeriod.today, now: today);
@@ -111,12 +153,18 @@ void main() {
         final today = DateTime(2026, 8, 31);
 
         service.addUsageSeconds(
-          date: '2026-08-31', appKey: 'today-app', name: 'Today',
-          category: AppCategory.general, seconds: 60,
+          date: '2026-08-31',
+          appKey: 'today-app',
+          name: 'Today',
+          category: AppCategory.general,
+          seconds: 60,
         );
         service.addUsageSeconds(
-          date: '2026-07-01', appKey: 'old-app', name: 'Old',
-          category: AppCategory.general, seconds: 60,
+          date: '2026-07-01',
+          appKey: 'old-app',
+          name: 'Old',
+          category: AppCategory.general,
+          seconds: 60,
         );
 
         final apps = service.topApps(UsagePeriod.today, now: today);
@@ -129,12 +177,18 @@ void main() {
         final storage = StorageService();
         final first = AppUsageService(storage: storage);
         first.addUsageSeconds(
-          date: '2026-08-31', appKey: 'x', name: 'X',
-          category: AppCategory.general, seconds: 15,
+          date: '2026-08-31',
+          appKey: 'x',
+          name: 'X',
+          category: AppCategory.general,
+          seconds: 15,
         );
 
         final second = AppUsageService(storage: storage);
-        final apps = second.topApps(UsagePeriod.today, now: DateTime(2026, 8, 31));
+        final apps = second.topApps(
+          UsagePeriod.today,
+          now: DateTime(2026, 8, 31),
+        );
         expect(apps.first.seconds, 15);
       });
     });
@@ -149,13 +203,19 @@ void main() {
             '${staleDate.year}-${staleDate.month.toString().padLeft(2, '0')}-${staleDate.day.toString().padLeft(2, '0')}';
 
         service.addUsageSeconds(
-          date: staleDateStr, appKey: 'stale', name: 'Stale',
-          category: AppCategory.general, seconds: 60,
+          date: staleDateStr,
+          appKey: 'stale',
+          name: 'Stale',
+          category: AppCategory.general,
+          seconds: 60,
         );
         // A fresh write triggers pruning.
         service.addUsageSeconds(
-          date: '2026-08-31', appKey: 'fresh', name: 'Fresh',
-          category: AppCategory.general, seconds: 60,
+          date: '2026-08-31',
+          appKey: 'fresh',
+          name: 'Fresh',
+          category: AppCategory.general,
+          seconds: 60,
         );
 
         // Verify directly against the persisted blob, not via a period filter

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/companion/services/avatar_web_server.dart';
@@ -37,6 +38,26 @@ void main() {
       }
     });
 
+    test(
+      'does not serve files outside the asset root (path traversal)',
+      () async {
+        await server.start();
+        for (final path in [
+          '/../../../../../../etc/passwd',
+          '/%2e%2e/%2e%2e/%2e%2e/etc/passwd',
+          '/..%2f..%2f..%2fetc/passwd',
+          '/assets/../../../../../../etc/passwd',
+        ]) {
+          final socket = await Socket.connect('127.0.0.1', server.port);
+          socket.write(
+            'GET $path HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n',
+          );
+          final body = await utf8.decoder.bind(socket).join();
+          expect(body, isNot(contains('root:')), reason: 'leaked via $path');
+        }
+      },
+    );
+
     test('serves deduplicated SVG from assets/avatars on request', () async {
       await server.start();
       final client = HttpClient();
@@ -61,7 +82,10 @@ void main() {
         );
         final response = await request.close();
         expect(response.statusCode, equals(HttpStatus.ok));
-        expect(response.headers.contentType?.mimeType, equals('application/javascript'));
+        expect(
+          response.headers.contentType?.mimeType,
+          equals('application/javascript'),
+        );
       } finally {
         client.close();
       }

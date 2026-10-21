@@ -89,31 +89,31 @@ class AppUsageService extends ChangeNotifier {
       }
     }
 
-    final entries = totals.entries
-        .map(
-          (e) => AppUsageEntry(
-            appKey: e.key,
-            name: names[e.key] ?? e.key,
-            category: categories[e.key] ?? AppCategory.general,
-            seconds: e.value,
-          ),
-        )
-        .toList()
-      ..sort((a, b) => b.seconds.compareTo(a.seconds));
+    final entries =
+        totals.entries
+            .map(
+              (e) => AppUsageEntry(
+                appKey: e.key,
+                name: names[e.key] ?? e.key,
+                category: categories[e.key] ?? AppCategory.general,
+                seconds: e.value,
+              ),
+            )
+            .toList()
+          ..sort((a, b) => b.seconds.compareTo(a.seconds));
 
     return limit == null ? entries : entries.take(limit).toList();
   }
 
   Map<AppCategory, int> categoryTotals(UsagePeriod period, {DateTime? now}) {
     final today = now ?? clock.now();
-    final totals = <AppCategory, int>{
-      for (final c in AppCategory.values) c: 0,
-    };
+    final totals = <AppCategory, int>{for (final c in AppCategory.values) c: 0};
 
     for (final dateEntry in _cache.entries) {
       if (!_dateInPeriod(dateEntry.key, period, today)) continue;
       for (final record in dateEntry.value.values) {
-        totals[record.category] = (totals[record.category] ?? 0) + record.seconds;
+        totals[record.category] =
+            (totals[record.category] ?? 0) + record.seconds;
       }
     }
 
@@ -131,13 +131,26 @@ class AppUsageService extends ChangeNotifier {
 
     switch (period) {
       case UsagePeriod.today:
-        return dt.year == now.year && dt.month == now.month && dt.day == now.day;
+        return dt.year == now.year &&
+            dt.month == now.month &&
+            dt.day == now.day;
       case UsagePeriod.week:
-        final diff = DateTime(now.year, now.month, now.day).difference(dt).inDays;
+        final diff = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).difference(dt).inDays;
         return diff >= 0 && diff < 7;
       case UsagePeriod.month:
         return dt.year == now.year && dt.month == now.month;
     }
+  }
+
+  /// Deletes all stored per-app usage history, in memory and on disk.
+  void clear() {
+    _cache.clear();
+    _persist();
+    notifyListeners();
   }
 
   void _pruneOldDates() {
@@ -162,8 +175,9 @@ class AppUsageService extends ChangeNotifier {
         final dayMap = <String, _AppUsageRecord>{};
         final appsJson = dateEntry.value as Map<String, dynamic>;
         for (final appEntry in appsJson.entries) {
-          dayMap[appEntry.key] =
-              _AppUsageRecord.fromJson(appEntry.value as Map<String, dynamic>);
+          dayMap[appEntry.key] = _AppUsageRecord.fromJson(
+            appEntry.value as Map<String, dynamic>,
+          );
         }
         _cache[dateEntry.key] = dayMap;
       }
