@@ -61,46 +61,48 @@ Widget toggleRow(
   bool value,
   ValueChanged<bool> onChanged,
 ) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-    child: Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  color: AppTheme.textPrimary,
-                  fontFamily: 'Inter',
+  return MergeSemantics(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: AppTheme.textPrimary,
+                    fontFamily: 'Inter',
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                  letterSpacing: 0,
-                  fontFamily: 'Inter',
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 12,
+                    letterSpacing: 0,
+                    fontFamily: 'Inter',
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        Transform.scale(
-          scale: 0.8,
-          alignment: Alignment.centerRight,
-          child: CupertinoSwitch(
-            value: value,
-            activeTrackColor: AppTheme.accentColor,
-            onChanged: onChanged,
+          Transform.scale(
+            scale: 0.8,
+            alignment: Alignment.centerRight,
+            child: CupertinoSwitch(
+              value: value,
+              activeTrackColor: AppTheme.accentColor,
+              onChanged: onChanged,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -545,33 +547,42 @@ Widget segmentedControl(
       mainAxisSize: MainAxisSize.min,
       children: options.asMap().entries.map((entry) {
         final isSelected = entry.key == selected;
-        return GestureDetector(
-          onTap: () => onSelected(entry.key),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(
-              horizontal: isSmall ? 12 : 16,
-              vertical: isSmall ? 6 : 8,
-            ),
-            decoration: BoxDecoration(
-              color: isSelected ? AppTheme.accentColor : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: AppTheme.accentColor.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : null,
-            ),
-            child: Text(
-              entry.value,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppTheme.textSecondary,
-                fontSize: isSmall ? 11 : 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+        return Semantics(
+          button: true,
+          selected: isSelected,
+          label: entry.value,
+          excludeSemantics: true,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => onSelected(entry.key),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmall ? 12 : 16,
+                  vertical: isSmall ? 6 : 8,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.accentColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: AppTheme.accentColor.withValues(alpha: 0.2),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Text(
+                  entry.value,
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                    fontSize: isSmall ? 11 : 12,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
               ),
             ),
           ),

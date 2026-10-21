@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 class MinimalButton extends StatefulWidget {
@@ -29,6 +30,7 @@ class _MinimalButtonState extends State<MinimalButton>
     with SingleTickerProviderStateMixin {
   bool _isHovering = false;
   bool _isPressed = false;
+  bool _isFocused = false;
 
   @override
   Widget build(BuildContext context) {
@@ -60,49 +62,81 @@ class _MinimalButtonState extends State<MinimalButton>
       }
     }
 
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      cursor: isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: isDisabled ? null : (_) => setState(() => _isPressed = true),
-        onTapUp: isDisabled ? null : (_) => setState(() => _isPressed = false),
-        onTapCancel: isDisabled
-            ? null
-            : () => setState(() => _isPressed = false),
-        onTap: widget.onPressed,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeOutCubic,
-          padding: widget.padding,
-          decoration: BoxDecoration(
-            color: activeColor,
-            borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
-            border: widget.isSecondary
-                ? Border.all(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    width: 1,
-                  )
-                : null,
-            boxShadow: (!isDisabled && !widget.isSecondary && _isHovering)
-                ? [
-                    BoxShadow(
-                      color: activeColor.withValues(alpha: 0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : [],
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+    // Keyboard users reach the button with Tab and press it with Enter/Space;
+    // screen readers announce it as an enabled/disabled button.
+    return Semantics(
+      button: true,
+      enabled: !isDisabled,
+      child: FocusableActionDetector(
+        enabled: !isDisabled,
+        onShowFocusHighlight: (focused) => setState(() => _isFocused = focused),
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onPressed?.call();
+              return null;
+            },
           ),
-          child: DefaultTextStyle(
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: widget.isSecondary ? AppTheme.textPrimary : Colors.white,
-              fontFamily: 'Inter',
+        },
+        onShowHoverHighlight: (hovering) =>
+            setState(() => _isHovering = hovering),
+        mouseCursor: isDisabled
+            ? SystemMouseCursors.basic
+            : SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: isDisabled
+              ? null
+              : (_) => setState(() => _isPressed = true),
+          onTapUp: isDisabled
+              ? null
+              : (_) => setState(() => _isPressed = false),
+          onTapCancel: isDisabled
+              ? null
+              : () => setState(() => _isPressed = false),
+          onTap: widget.onPressed,
+          child: AnimatedContainer(
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 150),
+            curve: Curves.easeOutCubic,
+            padding: widget.padding,
+            decoration: BoxDecoration(
+              color: activeColor,
+              borderRadius: widget.borderRadius ?? BorderRadius.circular(8),
+              border: _isFocused
+                  ? Border.all(color: AppTheme.accentColor, width: 2)
+                  : widget.isSecondary
+                  ? Border.all(
+                      color: Colors.white.withValues(alpha: 0.1),
+                      width: 1,
+                    )
+                  : null,
+              boxShadow: (!isDisabled && !widget.isSecondary && _isHovering)
+                  ? [
+                      BoxShadow(
+                        color: activeColor.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : [],
             ),
-            child: widget.child,
+            child: DefaultTextStyle(
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: widget.isSecondary ? AppTheme.textPrimary : Colors.white,
+                fontFamily: 'Inter',
+              ),
+              child: widget.child,
+            ),
           ),
         ),
       ),

@@ -8,6 +8,8 @@ import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/category_budgets_card.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
@@ -36,6 +38,11 @@ class _PrivacySectionState extends State<PrivacySection> {
   /// How many activity entries are stored, so "clear history" can say what it
   /// would actually delete.
   int _segmentCount = 0;
+
+  bool _crashReporting = SimplePrefs.instance.getBool(
+    AppConstants.keyCrashReportingEnabled,
+    defaultValue: true,
+  );
 
   @override
   void initState() {
@@ -103,7 +110,7 @@ class _PrivacySectionState extends State<PrivacySection> {
             context,
             title: 'Calendar Access',
             subtitle:
-                'If enabled, we only read event start/end times to avoid interrupting your work. Event titles and details are never processed or saved.',
+                'If enabled, we only read event start/end times to avoid interrupting your work. Event titles and details are never saved.',
             icon: LucideIcons.calendar,
           ),
         ]),
@@ -205,6 +212,24 @@ class _PrivacySectionState extends State<PrivacySection> {
             );
           },
         ),
+
+        const SizedBox(height: 24),
+        buildCard([
+          toggleRow(
+            'Send Crash Reports',
+            'When the app crashes, send an anonymised error report (no app usage, '
+                'window titles, URLs or file paths) so the bug can be fixed. '
+                'Takes effect immediately.',
+            _crashReporting,
+            (value) {
+              SimplePrefs.instance.setBool(
+                AppConstants.keyCrashReportingEnabled,
+                value,
+              );
+              setState(() => _crashReporting = value);
+            },
+          ),
+        ]),
 
         const SizedBox(height: 24),
         _DataTransparencyPanel(enabled: settings.appUsageTrackingEnabled),
@@ -390,7 +415,20 @@ class _DataTransparencyPanel extends StatelessWidget {
           _TransparencyRow(
             icon: LucideIcons.xCircle,
             iconColor: AppTheme.error,
-            text: 'Nothing is ever sent off this device',
+            text: 'Activity data is never sent off this device',
+          ),
+          _TransparencyRow(
+            icon: LucideIcons.info,
+            iconColor: AppTheme.info,
+            text:
+                'The window title and browser tab address are read only for a '
+                'moment to recognise meetings, then discarded',
+          ),
+          _TransparencyRow(
+            icon: LucideIcons.info,
+            iconColor: AppTheme.info,
+            text:
+                'Exported backups include your activity history — keep them private',
           ),
           const SizedBox(height: 12),
           Container(

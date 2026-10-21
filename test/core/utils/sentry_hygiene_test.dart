@@ -59,6 +59,16 @@ void main() {
       expect(options.attachScreenshot, isFalse);
     });
 
+    test('filterEvent drops everything when crash reporting is turned off', () {
+      SentryHygiene.isEnabled = () => false;
+      addTearDown(() => SentryHygiene.isEnabled = null);
+
+      expect(SentryHygiene.filterEvent(SentryEvent(), Hint()), isNull);
+
+      SentryHygiene.isEnabled = () => true;
+      expect(SentryHygiene.filterEvent(SentryEvent(), Hint()), isNotNull);
+    });
+
     test('filterEvent redacts tag metadata containing app or window names', () {
       final event = SentryEvent(
         tags: {

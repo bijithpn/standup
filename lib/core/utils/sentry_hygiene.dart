@@ -8,6 +8,10 @@ class SentryHygiene {
     r'(/Users/[^/\s]+|/home/[^/\s]+|[A-Za-z]:\\Users\\[^\s\\]+)',
   );
 
+  /// Live opt-out check. When it returns false every event is dropped, so
+  /// turning crash reporting off takes effect without a restart.
+  static bool Function()? isEnabled;
+
   /// Configures Sentry options with strict privacy boundaries.
   static void configure(SentryFlutterOptions options) {
     options.sendDefaultPii = false;
@@ -21,6 +25,8 @@ class SentryHygiene {
 
   /// Sanitizes Sentry crash events before transmission.
   static SentryEvent? filterEvent(SentryEvent event, Hint hint) {
+    if (isEnabled?.call() == false) return null;
+
     // Redact local user directories from messages
     final message = event.message?.formatted;
     if (message != null && _userPathRegex.hasMatch(message)) {

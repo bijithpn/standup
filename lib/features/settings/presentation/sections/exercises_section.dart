@@ -189,7 +189,15 @@ class _ExercisesSectionState extends State<ExercisesSection> {
           );
         },
       ),
-    );
+    ).whenComplete(() {
+      // The route's future completes as the dismiss animation starts, so wait
+      // for it to finish before the fields stop being listened to.
+      Future.delayed(const Duration(milliseconds: 400), () {
+        titleController.dispose();
+        durationController.dispose();
+        instructionsController.dispose();
+      });
+    });
   }
 
   IconData _exerciseIcon(ExerciseCategory category) {

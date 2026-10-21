@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
+import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/app_icon_cache.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
@@ -67,8 +69,93 @@ void main() {
     return saved;
   }
 
-  testWidgets('switching tracking on asks for consent before recording',
-      (tester) async {
+  Future<void> pumpPrivacy(WidgetTester tester) async {
+    useDesktopViewport(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ChangeNotifierProvider<AppUsageService>.value(
+              value: AppUsageService(storage: StorageService()),
+              child: PrivacySection(settings: SettingsModel(), onSave: (_) {}),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  testWidgets('crash report toggle persists the opt-out', (tester) async {
+    SimplePrefs.instance.remove(AppConstants.keyCrashReportingEnabled);
+    addTearDown(
+      () => SimplePrefs.instance.remove(AppConstants.keyCrashReportingEnabled),
+    );
+    await pumpPrivacy(tester);
+
+    expect(
+      SimplePrefs.instance.getBool(
+        AppConstants.keyCrashReportingEnabled,
+        defaultValue: true,
+      ),
+      isTrue,
+    );
+
+    final toggle = find.descendant(
+      of: find.ancestor(
+        of: find.text('Send Crash Reports'),
+        matching: find.byType(Row),
+      ),
+      matching: find.byType(CupertinoSwitch),
+    );
+    await tester.ensureVisible(toggle.first);
+    await tester.tap(toggle.first);
+    await tester.pumpAndSettle();
+
+    expect(
+      SimplePrefs.instance.getBool(
+        AppConstants.keyCrashReportingEnabled,
+        defaultValue: true,
+      ),
+      isFalse,
+    );
+  });
+
+  testWidgets('wipe asks for confirmation and cancel changes nothing', (
+    tester,
+  ) async {
+    await pumpPrivacy(tester);
+
+    final wipe = find.text('Wipe Data');
+    await tester.ensureVisible(wipe);
+    await tester.tap(wipe);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete all local data?'), findsOneWidget);
+    expect(
+      find.textContaining('Backups you exported are not affected'),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete all local data?'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('transparency panel discloses backups and transient reads', (
+    tester,
+  ) async {
+    await pumpPrivacy(tester);
+    expect(
+      find.textContaining('Exported backups include your activity history'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('read only for a moment'), findsOneWidget);
+  });
+
+  testWidgets('switching tracking on asks for consent before recording', (
+    tester,
+  ) async {
     final saved = await tapTrackingToggle(tester, startEnabled: false);
 
     // Nothing is recorded on the strength of a toggle alone.

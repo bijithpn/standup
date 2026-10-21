@@ -49,16 +49,23 @@ class AppConstants {
   static const String keyLongestStreak = 'longest_streak';
   static const String keyWeeklyStats = 'weekly_stats';
   static const String keyAppUsageData = 'app_usage_data';
+
+  /// Whether anonymised crash reports may be sent (read from SimplePrefs so it
+  /// is available before the database opens). Defaults to on.
+  static const String keyCrashReportingEnabled = 'crash_reporting_enabled';
   static const String keyFocusSessionData = 'focus_session_data';
   static const String keyBreakHistoryData = 'break_history_data';
-  static const String keyLastWeeklyDigestWeekKey = 'last_weekly_digest_week_key';
+  static const String keyLastWeeklyDigestWeekKey =
+      'last_weekly_digest_week_key';
   static const String keyFocusInsightShown = 'focus_insight_shown';
-  static const String keyLastDailyInsightDateKey = 'last_daily_insight_date_key';
+  static const String keyLastDailyInsightDateKey =
+      'last_daily_insight_date_key';
   static const String keyTotalWorkSessions = 'total_work_sessions';
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
   static const String keyCompanionPetTheme = 'companion_pet_theme';
-  static const String keyCompanionAvatarUrlParams = 'companion_avatar_url_params';
+  static const String keyCompanionAvatarUrlParams =
+      'companion_avatar_url_params';
   static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
   static const int breaksPerDayForStreak = 5;
@@ -104,4 +111,3 @@ class AppConstants {
   /// Tray icon — points to raster PNG with alpha suitable for tray template extraction.
   static const String trayIconPath = 'assets/icons/app_icon_bg.png';
 }
-

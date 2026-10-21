@@ -25,6 +25,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
     _pendingSettings = sl<SettingsRepository>().currentSettings;
   }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _nextPage() {
     if (_currentPage < 3) {
       _pageController.nextPage(

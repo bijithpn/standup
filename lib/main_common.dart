@@ -683,7 +683,12 @@ void mainCommon(FlavorConfig config) async {
           debugPrint('Launch at startup setup failed: $e');
         }
 
+        final crashReportingEnabled = SimplePrefs.instance.getBool(
+          AppConstants.keyCrashReportingEnabled,
+          defaultValue: true,
+        );
         if (kReleaseMode &&
+            crashReportingEnabled &&
             config.sentryDsn.isNotEmpty &&
             config.sentryDsn != 'DEV_DSN_HERE') {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -703,6 +708,10 @@ void mainCommon(FlavorConfig config) async {
               options.dsn = config.sentryDsn;
               options.enableAppHangTracking = false;
               SentryHygiene.configure(options);
+              SentryHygiene.isEnabled = () => SimplePrefs.instance.getBool(
+                AppConstants.keyCrashReportingEnabled,
+                defaultValue: true,
+              );
             },
             appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
           );
