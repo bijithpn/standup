@@ -80,9 +80,14 @@ class OverlayWindowManager: NSObject {
         
         for screen in screens {
             let instance: OverlayInstance
+            var fadeDelay: TimeInterval = 0
             if let warm = warmPool.removeValue(forKey: screen) {
                 prepareReusedInstance(warm, for: screen, args: args)
                 instance = warm
+                // The reused engine still holds the previous break's frame. Stay
+                // invisible until the new data has been delivered and rebuilt,
+                // otherwise the old break/skip time flashes before the new one.
+                fadeDelay = 0.2
             } else {
                 instance = createOverlayInstance(for: screen, args: args)
             }
@@ -105,9 +110,12 @@ class OverlayWindowManager: NSObject {
                 instance.window.makeKey()
             }
             
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.5
-                instance.window.animator().alphaValue = 1.0
+            let window = instance.window
+            DispatchQueue.main.asyncAfter(deadline: .now() + fadeDelay) {
+                NSAnimationContext.runAnimationGroup { context in
+                    context.duration = 0.5
+                    window.animator().alphaValue = 1.0
+                }
             }
         }
 
@@ -131,8 +139,14 @@ class OverlayWindowManager: NSObject {
         }
     }
 
+    /// Last time a full overlay was dismissed; used to ignore the spurious
+    /// "reopen" macOS sends when the overlay panels disappear.
+    var lastHideTime: Date = .distantPast
+    var isOverlayShowing: Bool { !overlayInstances.isEmpty }
+
     func hideOverlay(restoreMainWindow: Bool = true) {
         showGeneration += 1
+        lastHideTime = Date()
         NativePowerAssertionManager.shared.releaseDisplaySleep()
         if overlayInstances.isEmpty { return }
 
@@ -158,16 +172,17 @@ class OverlayWindowManager: NSObject {
             if shouldRestore,
                let appDelegate = NSApp.delegate as? AppDelegate,
                let mainWindow = appDelegate.mainFlutterWindow {
-                if NSApp.isActive {
-                    mainWindow.makeKeyAndOrderFront(nil)
-                } else {
-                    mainWindow.orderBack(nil)
-                }
+                // Never bring it to front: an ended break must not open BreakMate.
+                mainWindow.orderBack(nil)
             }
 
             for instance in instances {
+                // Already reused by a new show during the fade-out: leave it alone.
+                if self.overlayInstances.values.contains(where: { $0.window === instance.window }) { continue }
                 instance.window.orderOut(nil)
                 instance.window.ignoresMouseEvents = false
+                let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
+                channel.invokeMethod("resetOverlay", arguments: nil)
             }
         })
 

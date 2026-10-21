@@ -177,6 +177,19 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _bridge.setMethodCallHandler((call) async {
       if (call.method == 'updateOverlayData') {
         _applyOverlayData(call.arguments as Map);
+      } else if (call.method == 'resetOverlay') {
+        // Engine is kept warm between breaks: drop the last break's state so
+        // its time/content never shows before the next data arrives.
+        if (mounted) {
+          cancelTimer();
+          targetEndTime = null;
+          _fadeController.value = 0;
+          setState(() {
+            _hasReceivedOverlayData = false;
+            _cachedBreakModel = null;
+            _cachedSettingsModel = null;
+          });
+        }
       } else if (call.method == 'setScreenInfo') {
         final args = call.arguments as Map;
         if (mounted) {

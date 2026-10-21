@@ -76,6 +76,12 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   }
 
   override func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    // A finished/skipped break dismisses the overlay panels, which macOS can
+    // report as a reopen. Don't open the app window because of that.
+    let overlay = OverlayWindowManager.shared
+    if overlay.isOverlayShowing || Date().timeIntervalSince(overlay.lastHideTime) < 2.0 {
+      return true
+    }
     if let window = mainFlutterWindow as? MainFlutterWindow {
       window.triggerReopen()
       if window.isMiniaturized { window.deminiaturize(nil) }
