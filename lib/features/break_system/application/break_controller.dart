@@ -19,7 +19,10 @@ import 'package:breakmate/features/companion/controllers/companion_overlay_contr
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/native/global_hotkey_service.dart';
+import 'package:breakmate/core/native/explain_hotkey_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/services/timer_explanation.dart';
+import 'package:breakmate/core/services/timer_explanation_overlay_service.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
@@ -41,6 +44,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   TimerState? _lastOverlayState;
   bool _hasShownPreBreakWarning = false;
+  bool _hasShownMeetingBreakNotice = false;
 
   BreakController({
     required TimerEngine timerEngine,
@@ -78,7 +82,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     _audioPlayer = AudioPlayer();
     _audioPlayer!.setReleaseMode(ReleaseMode.loop);
-    _audioPlayer!.setSource(AssetSource('music/lofi_1.mp3'));
 
     _timerEngine.addListener(_handleGlobalOverlays);
     WidgetsBinding.instance.addObserver(this);
@@ -107,6 +110,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     bool shouldShowBreak = _timerEngine.state == TimerState.breakActive;
     bool shouldShowWarning = _timerEngine.isPreBreak;
+    final isMeetingActive = _timerEngine.contextManager.isMeetingActive();
+    final isPresenting = _timerEngine.contextManager.isPresentationActive();
 
     if (!shouldShowWarning) {
       _hasShownPreBreakWarning = false;
@@ -118,14 +123,24 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
       _currentTemplate = settings.breakTemplate;
 
+      if (isMeetingActive || isPresenting) {
+        if (!_hasShownMeetingBreakNotice) {
+          _hasShownMeetingBreakNotice = true;
+          sl<NotificationService>().showMeetingBreakReminder(
+            isPresenting: isPresenting && !isMeetingActive,
+          );
+        }
+      }
+
       if (_currentTemplate == 'activities') {
         _pickRandomExercise();
       }
 
-      _classicImage =
-          AppConstants.wellnessSlideshow[Random().nextInt(
-            AppConstants.wellnessSlideshow.length,
-          )];
+      _classicImage = AppConstants.wellnessSlideshow.isNotEmpty
+          ? AppConstants.wellnessSlideshow[Random().nextInt(
+              AppConstants.wellnessSlideshow.length,
+            )]
+          : '';
 
       overlayService.showOverlay(
         type: OverlayType.breakScreen,
@@ -167,24 +182,29 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     } else if (shouldShowWarning &&
         !_hasShownPreBreakWarning &&
         !overlayService.isOverlayVisible) {
-      _hasShownPreBreakWarning = true;
-      overlayService.showOverlay(
-        type: OverlayType.preBreakWarning,
-        builder: (_) => const SizedBox.shrink(),
-        reminderType: 'breakStart',
-        overlayData: {
-          'secondsRemaining': _timerEngine.countdownSeconds,
-          'remainingSeconds': _timerEngine.countdownSeconds,
-          'durationSeconds': _timerEngine.countdownSeconds,
-          'targetEndTime': DateTime.now()
-              .add(Duration(seconds: _timerEngine.countdownSeconds))
-              .millisecondsSinceEpoch,
-        },
-      );
+      if (_timerEngine.countdownSeconds <= 3) {
+        _hasShownPreBreakWarning = true;
+        overlayService.showOverlay(
+          type: OverlayType.preBreakWarning,
+          builder: (_) => const SizedBox.shrink(),
+          reminderType: 'breakStart',
+          overlayData: {
+            'overlayType': 'preBreakWarning',
+            'type': 'preBreakWarning',
+            'secondsRemaining': _timerEngine.countdownSeconds,
+            'remainingSeconds': _timerEngine.countdownSeconds,
+            'durationSeconds': _timerEngine.countdownSeconds,
+            'targetEndTime': DateTime.now()
+                .add(Duration(seconds: _timerEngine.countdownSeconds))
+                .millisecondsSinceEpoch,
+          },
+        );
+      }
     } else if (!shouldShowBreak &&
         !shouldShowWarning &&
         _lastOverlayState != null) {
       _lastOverlayState = null;
+      _hasShownMeetingBreakNotice = false;
       overlayService.hideOverlay();
       strictModeController.disableStrictMode();
       _stopMusic();
@@ -236,12 +256,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       meetingDetection.stop();
     }
 
-    final presentationDetection = sl<PresentationDetectionService>();
-    if (settings.presentationPauseEnabled) {
-      presentationDetection.start();
-    } else {
-      presentationDetection.stop();
-    }
+    // Kept running regardless of presentationPauseEnabled: that setting only
+    // controls whether a presentation pauses the work timer, while the
+    // detector itself is also used to keep the full break overlay off a
+    // screen that's being presented/shared (see _handleGlobalOverlays).
+    sl<PresentationDetectionService>().start();
 
     final hotkeyService = sl<GlobalHotkeyService>();
     if (settings.globalHotkeyEnabled) {
@@ -257,6 +276,26 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       hotkeyService.stop();
     }
+
+    final explainHotkeyService = sl<ExplainHotkeyService>();
+    if (settings.globalHotkeyEnabled) {
+      explainHotkeyService.start(onPressed: showTimerExplanation);
+    } else {
+      explainHotkeyService.stop();
+    }
+  }
+
+  /// Phase 2's "why did BreakMate do that?" panel — opened by
+  /// `⌘⌥E`/`Ctrl+Alt+E` ([ExplainHotkeyService]), shown via
+  /// [TimerExplanationOverlayService]. Templated text over state this
+  /// controller and [TimerContextManager] already expose; no AI call.
+  void showTimerExplanation() {
+    final explanation = buildTimerExplanation(
+      timerState: _timerEngine.state,
+      contextManager: _timerEngine.contextManager,
+      settings: _settingsRepo.currentSettings,
+    );
+    TimerExplanationOverlayService.show(explanation);
   }
 
   void snooze({int? minutes}) {
@@ -356,10 +395,11 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
     _logger.info('Starting break preview for template: $activeTemplate');
 
-    _classicImage =
-        AppConstants.wellnessSlideshow[Random().nextInt(
-          AppConstants.wellnessSlideshow.length,
-        )];
+    _classicImage = AppConstants.wellnessSlideshow.isNotEmpty
+        ? AppConstants.wellnessSlideshow[Random().nextInt(
+            AppConstants.wellnessSlideshow.length,
+          )]
+        : '';
 
     overlayService.showOverlay(
       type: OverlayType.breakScreen,
@@ -504,7 +544,8 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       _audioPlayer!.setVolume(0);
       _fadeVolume(1.0);
     } catch (e) {
-      _logger.error('Failed to play music: $e');
+      _isPlayingMusic = false;
+      _logger.warning('Failed to play music: $e');
     }
   }
 

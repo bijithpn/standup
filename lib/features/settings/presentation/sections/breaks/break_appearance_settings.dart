@@ -5,7 +5,8 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -29,6 +30,24 @@ class BreakAppearanceSettings extends StatefulWidget {
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   String? _hoveredId;
   String? _selectedTemplateId;
+
+  /// Templates whose accent color can be pinned independently of the app
+  /// theme (see `BreakOverlayTheme.resolveAccent`).
+  static const _overridableTemplates = [
+    (id: 'warm_amber', name: 'Warm Amber'),
+    (id: 'iris_rest', name: 'Iris Rest'),
+    (id: 'split_view', name: 'Split View'),
+    (id: 'breathe_line', name: 'Breathe Line'),
+    (id: 'activities', name: 'Activities'),
+    (id: 'companion', name: 'Companion'),
+    (id: 'minimal', name: 'Minimal Focus'),
+    (id: 'hud', name: 'Productivity HUD'),
+    (id: 'floating', name: 'Soft Floating'),
+    (id: 'quiet_pill', name: 'Quiet Pill'),
+    (id: 'soft_arc', name: 'Soft Arc'),
+    (id: 'zen', name: 'Zen Mode'),
+  ];
+  String _accentOverrideTemplateId = 'warm_amber';
   final ScrollController _gridScrollController = ScrollController();
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -204,6 +223,12 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       id: 'paper_light',
       name: 'Paper Light',
       desc: 'Clean editorial warm cream and charcoal aesthetics.',
+      category: 'Art & Nature',
+    ),
+    (
+      id: 'night_sky',
+      name: 'Night Sky',
+      desc: 'Starlit countdown that dawns into a warm, ready-to-go finish.',
       category: 'Art & Nature',
     ),
   ];
@@ -737,6 +762,135 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             ),
           ],
         ]),
+        const SizedBox(height: 32),
+        sectionHeader(
+          'Per-Template Accent Pin',
+          subtitle:
+              'Pin a specific template to always use one accent color, regardless of the app theme.',
+        ),
+        const SizedBox(height: 16),
+        buildCard([
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _accentOverrideTemplateId,
+                    dropdownColor: AppTheme.surfaceElevated,
+                    isExpanded: true,
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                    ),
+                    items: _overridableTemplates
+                        .map(
+                          (t) => DropdownMenuItem(
+                            value: t.id,
+                            child: Text(t.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (id) {
+                      if (id == null) return;
+                      setState(() => _accentOverrideTemplateId = id);
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ...colorPresets.map((preset) {
+                      final overrideInt =
+                          widget
+                              .settings
+                              .templateAccentOverrides[_accentOverrideTemplateId];
+                      final isSelected =
+                          overrideInt == preset.color.toARGB32();
+                      return GestureDetector(
+                        onTap: () {
+                          final updated = Map<String, int>.from(
+                            widget.settings.templateAccentOverrides,
+                          )..[_accentOverrideTemplateId] = preset.color
+                              .toARGB32();
+                          widget.onSave(
+                            widget.settings.copyWith(
+                              templateAccentOverrides: updated,
+                            ),
+                          );
+                        },
+                        child: Tooltip(
+                          message: preset.name,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: preset.color,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.15),
+                                width: isSelected ? 2.2 : 1.5,
+                              ),
+                            ),
+                            child: isSelected
+                                ? Center(
+                                    child: Icon(
+                                      CupertinoIcons.checkmark,
+                                      size: 12,
+                                      color:
+                                          preset.color.computeLuminance() >
+                                              0.5
+                                          ? Colors.black87
+                                          : Colors.white,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                        ),
+                      );
+                    }),
+                    if (widget.settings.templateAccentOverrides.containsKey(
+                      _accentOverrideTemplateId,
+                    ))
+                      GestureDetector(
+                        onTap: () {
+                          final updated = Map<String, int>.from(
+                            widget.settings.templateAccentOverrides,
+                          )..remove(_accentOverrideTemplateId);
+                          widget.onSave(
+                            widget.settings.copyWith(
+                              templateAccentOverrides: updated,
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Icon(
+                            CupertinoIcons.xmark,
+                            size: 14,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ]),
       ],
     );
   }
@@ -928,7 +1082,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      _BreakTemplateIconPreview(id: id),
+                      _LiveTemplatePreview(
+                        id: id,
+                        settings: widget.settings,
+                      ),
                       Positioned(
                         top: 8,
                         left: 8,
@@ -1024,394 +1181,73 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   }
 }
 
-class _BreakTemplateIconPreview extends StatelessWidget {
+class _LiveTemplatePreview extends StatefulWidget {
   final String id;
+  final SettingsModel? settings;
 
-  const _BreakTemplateIconPreview({required this.id});
+  const _LiveTemplatePreview({required this.id, this.settings});
 
   @override
-  Widget build(BuildContext context) {
-    final config = _templateConfig(id);
+  State<_LiveTemplatePreview> createState() => _LiveTemplatePreviewState();
+}
 
-    return Container(
-      width: double.infinity,
-      height: 120,
-      decoration: BoxDecoration(
-        gradient: config.gradient,
-        borderRadius: BorderRadius.circular(11),
-      ),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(11),
-              clipBehavior: Clip.none,
-              child: CustomPaint(painter: _DotGridPainter(config.accentColor)),
-            ),
-          ),
-          Center(
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: config.accentColor.withValues(alpha: 0.1),
-                border: Border.all(
-                  color: config.accentColor.withValues(alpha: 0.25),
-                  width: 1.0,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: config.accentColor.withValues(alpha: 0.15),
-                    blurRadius: 16,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Icon(config.icon, size: 18, color: config.accentColor),
-            ),
-          ),
-        ],
-      ),
+class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _kenBurnsController;
+
+  static const _previewBreak = BreakModel(
+    type: BreakType.short,
+    durationSeconds: 60,
+    title: 'Rest Your Eyes',
+    tip: 'Look 20 feet away for 20 seconds.',
+  );
+  static const _fallbackPreviewSettings = SettingsModel(strictMode: true);
+
+  @override
+  void initState() {
+    super.initState();
+    _kenBurnsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 10),
     );
   }
 
-  static _TemplateConfig _templateConfig(String id) {
-    switch (id) {
-      case 'classic':
-        return _TemplateConfig(
-          icon: LucideIcons.image,
-          accentColor: const Color(0xFF60A5FA),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D1B2E), Color(0xFF0A0D14)],
-          ),
-          label: 'GALLERY FOCUS',
-        );
-      case 'companion':
-        return _TemplateConfig(
-          icon: LucideIcons.cat,
-          accentColor: const Color(0xFFF472B6),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A0D17), Color(0xFF0F0C14)],
-          ),
-          label: 'COMPANION DOCK',
-        );
-      case 'zen':
-        return _TemplateConfig(
-          icon: LucideIcons.wind,
-          accentColor: const Color(0xFF6EE7B7),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF071A12), Color(0xFF070B0A)],
-          ),
-          label: 'BREATH LINES',
-        );
-      case 'hud':
-        return _TemplateConfig(
-          icon: LucideIcons.layoutGrid,
-          accentColor: const Color(0xFF4ADE80),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF060F08), Color(0xFF060907)],
-          ),
-          label: 'SIGNAL HUD',
-        );
-      case 'floating':
-        return _TemplateConfig(
-          icon: LucideIcons.layers,
-          accentColor: const Color(0xFF8B5CF6),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF100E1A), Color(0xFF0B0910)],
-          ),
-          label: 'FLOATING DOCK',
-        );
-      case 'activities':
-        return _TemplateConfig(
-          icon: LucideIcons.activity,
-          accentColor: const Color(0xFFC084FC),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF130D1C), Color(0xFF0D0910)],
-          ),
-          label: 'ACTIVITY STUDIO',
-        );
-      case 'soft_arc':
-        return _TemplateConfig(
-          icon: LucideIcons.circle,
-          accentColor: const Color(0xFF7EC8E3),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080B14), Color(0xFF06080C)],
-          ),
-          label: 'SOFT ARC',
-        );
-      case 'breathe_line':
-        return _TemplateConfig(
-          icon: LucideIcons.wind,
-          accentColor: const Color(0xFF7EC8E3),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF07090D), Color(0xFF05070A)],
-          ),
-          label: 'BREATHE LINE',
-        );
-      case 'clock_face':
-        return _TemplateConfig(
-          icon: LucideIcons.clock,
-          accentColor: const Color(0xFFF9A875),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF14100A), Color(0xFF0A0807)],
-          ),
-          label: 'CLOCK FACE',
-        );
-      case 'one_word':
-        return _TemplateConfig(
-          icon: LucideIcons.type,
-          accentColor: const Color(0xFFD4D4D8),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D12), Color(0xFF08080C)],
-          ),
-          label: 'ONE WORD',
-        );
-      case 'open_field':
-        return _TemplateConfig(
-          icon: LucideIcons.image,
-          accentColor: const Color(0xFF86EFAC),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF091409), Color(0xFF060A06)],
-          ),
-          label: 'OPEN FIELD',
-        );
-      case 'haiku_card':
-        return _TemplateConfig(
-          icon: LucideIcons.scrollText,
-          accentColor: const Color(0xFFD4D4D8),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0D0F), Color(0xFF09090B)],
-          ),
-          label: 'HAIKU',
-        );
-      case 'ring_only':
-        return _TemplateConfig(
-          icon: LucideIcons.circle,
-          accentColor: const Color(0xFF818CF8),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0C0C18), Color(0xFF08080F)],
-          ),
-          label: 'RING ONLY',
-        );
-      case 'step_guide':
-        return _TemplateConfig(
-          icon: LucideIcons.listOrdered,
-          accentColor: const Color(0xFF6EE7B7),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF071410), Color(0xFF05090A)],
-          ),
-          label: 'STEP GUIDE',
-        );
-      case 'time_slice':
-        return _TemplateConfig(
-          icon: LucideIcons.minus,
-          accentColor: const Color(0xFF5BB898),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF071210), Color(0xFF05090A)],
-          ),
-          label: 'TIME SLICE',
-        );
-      case 'day_stack':
-        return _TemplateConfig(
-          icon: LucideIcons.layers2,
-          accentColor: const Color(0xFF93C5FD),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080B14), Color(0xFF060810)],
-          ),
-          label: 'DAY STACK',
-        );
-      case 'pulse_dot':
-        return _TemplateConfig(
-          icon: LucideIcons.loader,
-          accentColor: const Color(0xFF6EE7B7),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF071410), Color(0xFF05090A)],
-          ),
-          label: 'PULSE DOT',
-        );
-      case 'mono_time':
-        return _TemplateConfig(
-          icon: LucideIcons.terminal,
-          accentColor: const Color(0xFFB5CC7A),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0C0D08), Color(0xFF08090A)],
-          ),
-          label: 'MONO TIME',
-        );
-      case 'split_view':
-        return _TemplateConfig(
-          icon: LucideIcons.columns2,
-          accentColor: const Color(0xFF86EFAC),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF091409), Color(0xFF060A06)],
-          ),
-          label: 'SPLIT VIEW',
-        );
-      case 'warm_amber':
-        return _TemplateConfig(
-          icon: LucideIcons.sunset,
-          accentColor: const Color(0xFFC49A4A),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF1A1005), Color(0xFF0A0807)],
-          ),
-          label: 'WARM AMBER',
-        );
-      case 'focus_orb':
-        return _TemplateConfig(
-          icon: LucideIcons.circle,
-          accentColor: const Color(0xFF8BC9D4),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080C0D), Color(0xFF06090A)],
-          ),
-          label: 'FOCUS ORB',
-        );
-      case 'wave_calm':
-        return _TemplateConfig(
-          icon: LucideIcons.waves,
-          accentColor: const Color(0xFF93C5FD),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080B14), Color(0xFF060810)],
-          ),
-          label: 'WAVE CALM',
-        );
-      case 'iris_rest':
-        return _TemplateConfig(
-          icon: LucideIcons.eye,
-          accentColor: const Color(0xFF7EC8E3),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080B14), Color(0xFF06080C)],
-          ),
-          label: 'IRIS REST',
-        );
-      case 'quiet_pill':
-        return _TemplateConfig(
-          icon: LucideIcons.layers,
-          accentColor: const Color(0xFF7EC8E3),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080B0D), Color(0xFF060809)],
-          ),
-          label: 'QUIET PILL',
-        );
-      case 'paper_light':
-        return _TemplateConfig(
-          icon: LucideIcons.leaf,
-          accentColor: const Color(0xFF2D6A4F),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF5F3EE), Color(0xFFECE9E4)],
-          ),
-          label: 'PAPER LIGHT',
-        );
-      case 'dusk_glow':
-        return _TemplateConfig(
-          icon: LucideIcons.moon,
-          accentColor: const Color(0xFFC4B5FD),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0D0F14), Color(0xFF06070A)],
-          ),
-          label: 'DUSK GLOW',
-        );
-      case 'minimal':
-      default:
-        return _TemplateConfig(
-          icon: LucideIcons.circle,
-          accentColor: const Color(0xFF38BDF8),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF080B12), Color(0xFF06080C)],
-          ),
-          label: 'QUIET GRID',
-        );
-    }
-  }
-}
-
-class _TemplateConfig {
-  final IconData icon;
-  final Color accentColor;
-  final LinearGradient gradient;
-  final String label;
-
-  const _TemplateConfig({
-    required this.icon,
-    required this.accentColor,
-    required this.gradient,
-    required this.label,
-  });
-}
-
-class _DotGridPainter extends CustomPainter {
-  final Color color;
-  _DotGridPainter(this.color);
-
   @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.06)
-      ..strokeCap = StrokeCap.round;
-    const spacing = 14.0;
-    for (double x = spacing; x < size.width; x += spacing) {
-      for (double y = spacing; y < size.height; y += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.0, paint);
-      }
-    }
+  void dispose() {
+    _kenBurnsController.dispose();
+    super.dispose();
   }
 
   @override
-  bool shouldRepaint(_DotGridPainter oldDelegate) => oldDelegate.color != color;
+  Widget build(BuildContext context) {
+    final effectiveSettings = widget.settings ?? _fallbackPreviewSettings;
+
+    return IgnorePointer(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(11),
+        child: SizedBox(
+          width: double.infinity,
+          height: 120,
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: 800,
+              height: 500,
+              child: BreakTemplateSwitcher(
+                breakTemplate: widget.id,
+                breakInfo: _previewBreak,
+                settings: effectiveSettings,
+                remaining: 42,
+                total: 60,
+                onSkip: null,
+                currentTemplate: '',
+                kenBurnsController: _kenBurnsController,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+

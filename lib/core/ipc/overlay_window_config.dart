@@ -29,8 +29,24 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     String? reminderType,
     int? breaksCompleted,
     int? targetEndTime,
+    // Whether a quickReminder may take over the whole screen as a full
+    // poster, or must stay the small low-opacity pill. Computed on the main
+    // engine (which has SettingsRepository and the meeting/presentation
+    // detection services registered) and handed to the overlay's own,
+    // separate Flutter isolate — that isolate only registers a minimal set
+    // of services (see `overlayMain()`), so it cannot look any of this up
+    // itself.
+    @Default(false) bool allowFullPoster,
   }) = _OverlayWindowConfig;
 
-  factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) =>
-      _$OverlayWindowConfigFromJson(json);
+  factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+    if (normalized['overlayType'] == null && normalized['type'] != null) {
+      normalized['overlayType'] = normalized['type'];
+    }
+    if (normalized['breakTemplate'] == null && normalized['template'] != null) {
+      normalized['breakTemplate'] = normalized['template'];
+    }
+    return _$OverlayWindowConfigFromJson(normalized);
+  }
 }

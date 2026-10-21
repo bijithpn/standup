@@ -10,8 +10,10 @@ import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
@@ -80,6 +82,15 @@ class PetAssetLoader {
   }
 
   static Future<ui.Image> loadImage(String path) async {
+    // Skip empty paths — environment asset paths are intentionally empty after
+    // the asset migration. Attempting to load '' causes Flutter to throw.
+    if (path.isEmpty) {
+      throw AppException(
+        type: AppErrorType.assetLoadFailure,
+        message: 'loadImage called with empty path',
+      );
+    }
+
     // Return cached decoded image — avoids codec instantiation overhead every tick.
     final cached = _imageCache[path];
     if (cached != null) return cached;
@@ -156,6 +167,20 @@ class PetAssetLoader {
       return file.path;
     }
 
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      final species = theme.avatarDefinition?.species ?? AvatarSpecies.bear;
+      final thumbPath = species.thumbnailPngAssetPath;
+      try {
+        final data = await rootBundle.load(thumbPath);
+        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(data.buffer.asUint8List(), flush: true);
+        return file.path;
+      } catch (e) {
+        debugPrint('Failed to extract avatar pet icon: $e');
+        return '';
+      }
+    }
+
     try {
       ui.Image sourceImage;
       double size = theme.spriteSize.toDouble();
@@ -207,6 +232,10 @@ class PetAssetLoader {
   }
 
   static Future<void> preCache(PetProfile profile) async {
+    if (profile.theme?.isAvatar == true ||
+        profile.variant.id.startsWith('avatar_')) {
+      return;
+    }
     await loadAnimations(profile);
     final theme = PetTheme.getTheme(profile.variant.id);
     await extractPetIconPath(theme);
@@ -216,6 +245,13 @@ class PetAssetLoader {
     final issues = <String>[];
 
     try {
+      if (theme.type == PetType.avatar || theme.isAvatar) {
+        if (theme.avatarDefinition == null) {
+          issues.add('${theme.id}: missing avatarDefinition');
+        }
+        return issues;
+      }
+
       if (theme.type == PetType.composite) {
         final image = await loadImage(theme.basePath);
         final size = theme.spriteSize.toDouble();
@@ -425,6 +461,11 @@ class PetAssetLoader {
     PetProfile profile,
   ) async {
     try {
+      if (profile.variant.id.startsWith('avatar_') ||
+          profile.theme?.isAvatar == true) {
+        return {};
+      }
+
       final Map<PetAnimationState, SpriteAnimation> loaded = {};
       final validationIssues = <String>[];
       final basePath = buildAssetPath(profile);
@@ -635,6 +676,15 @@ class PetAssetLoader {
 
   /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
   static Future<void> preCacheTrayIcons(PetTheme theme) async {
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      await extractPetFramePath(
+        theme: theme,
+        state: PetAnimationState.idle,
+        frameIndex: 0,
+      );
+      return;
+    }
+
     final states = [
       PetAnimationState.idle,
       PetAnimationState.sleep,
@@ -666,7 +716,16 @@ class PetAssetLoader {
       final file = File(outputPath);
 
       if (await file.exists()) {
-        return file.path;
+        final len = await file.length();
+        if (len > 8) {
+          final header = await file.openRead(0, 8).first;
+          if (listEquals(header.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47])) {
+            return file.path;
+          }
+        }
+        try {
+          await file.delete();
+        } catch (_) {}
       }
 
       final sourceImage = await loadImage(assetPath);
@@ -772,14 +831,16 @@ class PetAssetLoader {
       }
     } catch (e) {
       debugPrint('Failed to extract whiten asset: $e');
-      try {
-        final bytes = await rootBundle.load(assetPath);
-        final file = File(outputPath);
-        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
-        file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
-        return file.path;
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
+      if (assetPath.toLowerCase().endsWith('.png')) {
+        try {
+          final bytes = await rootBundle.load(assetPath);
+          final file = File(outputPath);
+          if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+          file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
+          return file.path;
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
     }
     return '';
@@ -797,6 +858,14 @@ class PetAssetLoader {
         'bm_pframe_${theme.id}_${state.name}_${frameIndex}Template@2x.png',
       ),
     );
+
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      return extractAndWhitenAsset(
+        AppConstants.trayIconPath,
+        file.path,
+        targetSize: 44.0,
+      );
+    }
 
     if (await file.exists()) {
       return file.path;
@@ -965,17 +1034,8 @@ class PetAssetLoader {
   }
 
   static Future<void> preCacheBackgrounds() async {
-    const List<String> paths = [
-      'assets/background/forest/background.png',
-      'assets/background/autumn/background.png',
-      'assets/background/winter/background.png',
-      'assets/background/beach/background-light.png',
-      'assets/background/desert/background.png',
-      'assets/environments/sky/sky_back.png',
-      'assets/environments/background/bg_night_town.png',
-      'assets/environments/background/bg_mist_forest.png',
-      'assets/background/urban/background.png',
-    ];
+    // asset-migration: background/environment assets removed — nothing to pre-cache
+    const List<String> paths = [];
     for (final path in paths) {
       try {
         await loadImage(path);

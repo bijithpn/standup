@@ -35,7 +35,11 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
 
   late AnimationController _pulse;
 
-  static const _accent = BreakOverlayTheme.accentShort;
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'quiet_pill',
+    BreakOverlayTheme.accentShort,
+  );
   static const double _closedW = 224;
   static const double _openW = 310;
   static const double _h = 56;

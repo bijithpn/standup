@@ -12,7 +12,7 @@ class EnvironmentComponent extends PositionComponent
   String backgroundImagePath;
 
   EnvironmentComponent({
-    this.backgroundImagePath = 'assets/background/forest/background.png',
+    this.backgroundImagePath = '', // asset-migration: background assets removed
   }) : super(priority: -10);
 
   ui.Image? _skyImage;
@@ -35,9 +35,9 @@ class EnvironmentComponent extends PositionComponent
     backgroundImagePath = newPath;
     final cfg = EnvironmentThemeConfig.getByPath(newPath);
     try {
-      _skyImage = await PetAssetLoader.loadImage(cfg.skyPath);
-      _groundImage = await PetAssetLoader.loadImage(cfg.groundPath);
-      _cloudImage = await PetAssetLoader.loadImage(cfg.cloudPath);
+      _skyImage = cfg.skyPath.isNotEmpty ? await PetAssetLoader.loadImage(cfg.skyPath) : null;
+      _groundImage = cfg.groundPath.isNotEmpty ? await PetAssetLoader.loadImage(cfg.groundPath) : null;
+      _cloudImage = cfg.cloudPath.isNotEmpty ? await PetAssetLoader.loadImage(cfg.cloudPath) : null;
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }

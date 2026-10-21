@@ -28,7 +28,14 @@ class ProductivityHudTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isShort = breakInfo.type == BreakType.short;
-    final accent = isShort ? BreakOverlayTheme.accentShort : BreakOverlayTheme.accentLong;
+    final defaultAccent = isShort
+        ? BreakOverlayTheme.accentShort
+        : BreakOverlayTheme.accentLong;
+    final accent = BreakOverlayTheme.resolveAccent(
+      settings.templateAccentOverrides,
+      'hud',
+      defaultAccent,
+    );
     final progress = totalSeconds > 0
         ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
         : 0.0;

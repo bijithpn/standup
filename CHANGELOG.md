@@ -6,6 +6,9 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements |
+| `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
+| `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
 | `v1.5.0` | 1.5.0 | 34 | 2026-08-31 | Global Hotkey, Presentation Pause & Companion Streaks |
 | `v1.4.0` | 1.4.0 | 33 | 2026-06-16 | Desktop Companion Engine & Environment Builder |
 | `v1.3.0` | 1.3.0 | 32 | 2026-06-02 | Enhanced Dashboard and Settings Experience |
@@ -22,6 +25,95 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.8.0] - 2026-10-17
+
+Tags: `v1.8.0`
+
+Build: `37`
+
+Release title: Companion Customization, Productivity Charts & Break Reminder Improvements
+
+### Added
+
+- **Customizable 3D Companions:** Choose companion shapes, species, breeds, colors, and expressions, and set a custom name.
+- **Productivity Insights:** Review activity segments, inspect focus time by day, and explore productivity trends with interactive chart details and clearer day comparisons.
+- **Companion Wandering:** Let the desktop companion move around the workspace and configure its behavior.
+- **Break Experience Updates:** Added animated poster reminders, automatic posture and eye-rest prompts, a yearly break heatmap, and the Night Sky template.
+- **Companion Habit Summary:** View break and focus streaks in companion settings.
+
+### Changed
+
+- Improved Picture-in-Picture dragging, resizing, positioning, and background controls.
+- Refined companion rendering, gaze tracking, avatar appearance, and interaction behavior.
+- Improved macOS single-instance startup, app focus handling, and break overlay cleanup.
+- Updated the tray icon to use the app icon.
+- Refined break countdown warnings with a visible timer and skip action, and shortened the default pre-break warning to 20 seconds.
+- Improved reminder-to-break overlay transitions, including restoring interaction when a reminder becomes a full break.
+- Presentation detection now respects the presentation-pause setting.
+
+### Fixed
+
+- Preserved authored colors for base avatar species and breeds.
+- Improved secondary overlay window cleanup and companion interaction handling.
+
+## [1.7.0] - 2026-10-17
+
+Tags: `v1.7.0`
+
+Build: `36`
+
+Release title: Customizable Companions, Productivity Insights & PiP Improvements
+
+### Added
+
+- **3D Companion Customization:** Build and personalize 3D avatar companions with editable shapes, species and breed choices, saved names, colors, and facial expressions.
+- **Productivity Tracking:** Review activity segments and inspect how focused work is distributed throughout the day.
+- **Clock Out Reflections:** End the workday with a guided reflection and summary of the day.
+- **Companion Wandering:** Let the desktop companion move around the workspace with configurable behavior.
+- **Richer Break Reminders:** New animated poster reminders, automatic posture and eye-rest prompts, an expanded break statistics view with yearly heatmap, and the Night Sky break template.
+- **Companion Habits Summary:** See break and focus streaks alongside companion activity.
+
+### Changed
+
+- **Picture-in-Picture Controls:** Improved companion dragging, resizing constraints, background selection, and window positioning.
+- **Companion Rendering:** Refined companion architecture, gaze tracking, avatar appearance, and interaction behavior.
+- **macOS Window Handling:** Improved single-instance port binding and app focus behavior.
+- **Break Experience:** Refreshed break visuals and presentation-aware reminder behavior.
+
+### Fixed
+
+- Preserved authored colors for base avatar species and breeds.
+- Improved cleanup of secondary overlay windows and avatar interaction behavior.
+
+## [1.6.0] - 2026-09-02
+
+Tags: `v1.6.0`  
+Build: `35`  
+Release title: App Usage Analytics, Category Budgets, Focus Streaks & New Themes
+
+### Added
+
+- **App Usage Tracking & Analytics:** Local-first, opt-in tracking of foreground applications and active time. Visualized in both the Statistics screen and Privacy settings with today, week, and month filters.
+- **Native App Icon Extraction:** Native macOS and Windows bridge methods to extract and cache high-resolution application icons for tracked apps.
+- **Category Daily Budgets:** Set custom daily time limits for application categories (e.g. Browsing, Social, Entertainment) with real-time budget tracking and over-budget warnings.
+- **Focus Score & Trend Visualization:** Real-time calculation of daily focus scores based on active vs. distracting application usage, complete with interactive multi-day trend charts and focus streak tracking.
+- **Focus Insights & Break Correlation:** Intelligent correlation between regular break adherence and sustained focus sessions, providing tailored productivity insights and tips.
+- **Weekly Digest & Export:** Automated weekly summary of work habits, break compliance, top apps, and focus milestones with one-click export capability.
+- **6 New Curated Theme Presets:** Expanded theme selection with Crimson Ember, Ocean Abyss, Aurora Borealis, Desert Dusk, Lavender Mist, and Monokai Pro (12 total curated presets).
+- **Template Accent Color Customization:** Ability to customize and pin specific accent colors for individual break overlay templates in Break Appearance settings.
+- **Revamped Wellness Library & Goals UI:** Modernized wellness library featuring category filtering, detailed exercise cards with hover animations, and streamlined daily goal cards.
+- **Integrated Meeting Detection Service:** Refined native meeting detection and browser URL recognition (`MeetingUrlMatcher`) wired directly into timer orchestration.
+
+### Changed
+
+- **Package Dependencies:** Updated Flutter dependencies including `flutter_local_notifications` (22.3.0), `audioplayers` (6.7.1), `file_picker` (11.0.3), and `build_runner` (2.15.1).
+- **Settings Architecture:** Enhanced settings serialization and persistence for category budgets, app usage toggles, and template theme overrides.
+
+### Fixed
+
+- **Windows Native Build:** Added missing `shellapi.h` header for `ExtractIconExW` in the Windows app tracking bridge.
+- **Privacy Section State:** Fixed provider registration and visibility constraints in settings UI components.
 
 ## [1.5.0] - 2026-08-31
 
@@ -330,6 +422,8 @@ Release title: BreakMate Rebrand & Feature Pack
 - Fixed timer drift during sleep, wake, lock, and unlock transitions.
 - Fixed dashboard window unexpectedly forcing itself to the front after breaks.
 
+[1.8.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.8.0
+[1.7.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.7.0
 [1.4.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bijithintersmart/standup/releases/tag/v1.3.0
 [1.2.1]: https://github.com/bijithintersmart/standup/releases/tag/v1.2.1

@@ -29,7 +29,6 @@
 		33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC11122044BFA00003C045 /* MainFlutterWindow.swift */; };
 		33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0022044BFA00003C045 /* FocusModeBridge.swift */; };
 		33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */; };
-		F576A1CBDC823CDD48A22A9F /* PresentationDetectionBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = B19E047E2CF3599CA5FFB80A /* PresentationDetectionBridge.swift */; };
 		33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */; };
 		33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */; };
 		33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */; };
@@ -37,6 +36,11 @@
 		33CCB00E2044BFA00003C045 /* CalendarBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00D2044BFA00003C045 /* CalendarBridge.swift */; };
 		33CCB0102044BFA00003C045 /* BehaviorEngineBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00F2044BFA00003C045 /* BehaviorEngineBridge.swift */; };
 		33CCB0122044BFA00003C045 /* PiPWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0112044BFA00003C045 /* PiPWindowManager.swift */; };
+		33CCB0A22044BFA00003C045 /* PiPFlutterWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0A12044BFA00003C045 /* PiPFlutterWindowManager.swift */; };
+		33CCB0512044BFA00003C045 /* NativeSmartDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0502044BFA00003C045 /* NativeSmartDetector.swift */; };
+		33CCB0532044BFA00003C045 /* NativeCursorCountdownWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0522044BFA00003C045 /* NativeCursorCountdownWindow.swift */; };
+		33CCB0552044BFA00003C045 /* NativeFlashReminderWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0542044BFA00003C045 /* NativeFlashReminderWindow.swift */; };
+		33CCB0572044BFA00003C045 /* NativePowerAssertionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0562044BFA00003C045 /* NativePowerAssertionManager.swift */; };
 		4FD228EB5507191C2365CC9C /* Pods_RunnerTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A69135DD4AF97FEDD36BE63A /* Pods_RunnerTests.framework */; };
 		6B276CDF8F02F3FEA8C1E1AC /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C3722FF03BB13E607FBCA37A /* Pods_Runner.framework */; };
 /* End PBXBuildFile section */
@@ -90,7 +94,6 @@
 		33CC11122044BFA00003C045 /* MainFlutterWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainFlutterWindow.swift; sourceTree = "<group>"; };
 		33CCB0022044BFA00003C045 /* FocusModeBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusModeBridge.swift; sourceTree = "<group>"; };
 		33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetingDetectionBridge.swift; sourceTree = "<group>"; };
-		B19E047E2CF3599CA5FFB80A /* PresentationDetectionBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresentationDetectionBridge.swift; sourceTree = "<group>"; };
 		33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayWindowBridge.swift; sourceTree = "<group>"; };
 		33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionWindowManager.swift; sourceTree = "<group>"; };
 		33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IpcBridgeManager.swift; sourceTree = "<group>"; };
@@ -98,6 +101,11 @@
 		33CCB00D2044BFA00003C045 /* CalendarBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarBridge.swift; sourceTree = "<group>"; };
 		33CCB00F2044BFA00003C045 /* BehaviorEngineBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehaviorEngineBridge.swift; sourceTree = "<group>"; };
 		33CCB0112044BFA00003C045 /* PiPWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPWindowManager.swift; sourceTree = "<group>"; };
+		33CCB0A12044BFA00003C045 /* PiPFlutterWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPFlutterWindowManager.swift; sourceTree = "<group>"; };
+		33CCB0502044BFA00003C045 /* NativeSmartDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSmartDetector.swift; sourceTree = "<group>"; };
+		33CCB0522044BFA00003C045 /* NativeCursorCountdownWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCursorCountdownWindow.swift; sourceTree = "<group>"; };
+		33CCB0542044BFA00003C045 /* NativeFlashReminderWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeFlashReminderWindow.swift; sourceTree = "<group>"; };
+		33CCB0562044BFA00003C045 /* NativePowerAssertionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativePowerAssertionManager.swift; sourceTree = "<group>"; };
 		33CEB47222A05771004F2AC0 /* Flutter-Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Debug.xcconfig"; sourceTree = "<group>"; };
 		33CEB47422A05771004F2AC0 /* Flutter-Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Flutter-Release.xcconfig"; sourceTree = "<group>"; };
 		33CEB47722A0578A004F2AC0 /* Flutter-Generated.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = "Flutter-Generated.xcconfig"; path = "ephemeral/Flutter-Generated.xcconfig"; sourceTree = "<group>"; };
@@ -224,12 +232,15 @@
 			children = (
 				33CCB0022044BFA00003C045 /* FocusModeBridge.swift */,
 				33CCB0042044BFA00003C045 /* MeetingDetectionBridge.swift */,
-				B19E047E2CF3599CA5FFB80A /* PresentationDetectionBridge.swift */,
 				33CCB0062044BFA00003C045 /* OverlayWindowBridge.swift */,
 				33CCB0092044BFA00003C045 /* IpcBridgeManager.swift */,
 				33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */,
 				33CCB00D2044BFA00003C045 /* CalendarBridge.swift */,
 				33CCB00F2044BFA00003C045 /* BehaviorEngineBridge.swift */,
+				33CCB0502044BFA00003C045 /* NativeSmartDetector.swift */,
+				33CCB0522044BFA00003C045 /* NativeCursorCountdownWindow.swift */,
+				33CCB0542044BFA00003C045 /* NativeFlashReminderWindow.swift */,
+				33CCB0562044BFA00003C045 /* NativePowerAssertionManager.swift */,
 			);
 			path = Bridges;
 			sourceTree = "<group>";
@@ -252,6 +263,7 @@
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */,
 				33CCB0112044BFA00003C045 /* PiPWindowManager.swift */,
+				33CCB0A12044BFA00003C045 /* PiPFlutterWindowManager.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
 				33CC11242044D66E0003C045 /* Resources */,
@@ -505,7 +517,6 @@
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
 				33CCB0012044BFA00003C045 /* FocusModeBridge.swift in Sources */,
 				33CCB0032044BFA00003C045 /* MeetingDetectionBridge.swift in Sources */,
-				F576A1CBDC823CDD48A22A9F /* PresentationDetectionBridge.swift in Sources */,
 				33CCB0052044BFA00003C045 /* OverlayWindowBridge.swift in Sources */,
 				33CCB0082044BFA00003C045 /* CompanionWindowManager.swift in Sources */,
 				33CCB00A2044BFA00003C045 /* IpcBridgeManager.swift in Sources */,
@@ -513,6 +524,11 @@
 				33CCB00E2044BFA00003C045 /* CalendarBridge.swift in Sources */,
 				33CCB0102044BFA00003C045 /* BehaviorEngineBridge.swift in Sources */,
 				33CCB0122044BFA00003C045 /* PiPWindowManager.swift in Sources */,
+				33CCB0A22044BFA00003C045 /* PiPFlutterWindowManager.swift in Sources */,
+				33CCB0512044BFA00003C045 /* NativeSmartDetector.swift in Sources */,
+				33CCB0532044BFA00003C045 /* NativeCursorCountdownWindow.swift in Sources */,
+				33CCB0552044BFA00003C045 /* NativeFlashReminderWindow.swift in Sources */,
+				33CCB0572044BFA00003C045 /* NativePowerAssertionManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -675,7 +691,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -724,7 +740,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -833,7 +849,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -889,7 +905,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
@@ -939,7 +955,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -988,7 +1004,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.0;
+				MACOSX_DEPLOYMENT_TARGET = 12.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;

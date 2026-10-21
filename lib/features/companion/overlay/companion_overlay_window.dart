@@ -1,11 +1,15 @@
-import 'package:flame/game.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/presentation/widgets/companion_pet.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/companion/flame/companion_game.dart';
+import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 import 'package:breakmate/core/ipc/overlay_config.dart';
@@ -22,18 +26,52 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
     'com.breakmate.desktop/companion_data',
   );
 
-  CompanionGame? _game;
+  late final AvatarEngineController _avatarController;
+  final GlobalKey<CompanionPetState> _petKey = GlobalKey<CompanionPetState>();
   String _themeId = 'grey_cat';
   String _petName = 'Mochi';
   double _scale = 6.0;
+  bool _followMouse = true;
   bool _isDragging = false;
-  bool _gameInitialized = false;
+  bool _initialized = false;
+
+  String? _speechText;
+  Timer? _speechDismissTimer;
+  StreamSubscription<CompanionInteractionEvent>? _speechSubscription;
+
+  static const _speechDisplayDuration = Duration(seconds: 8);
 
   @override
   void initState() {
     super.initState();
+    _avatarController = AvatarEngineController();
     _setupMethodChannel();
     _fetchAndApplyInitialSettings();
+    _speechSubscription = EventBus.instance
+        .on<CompanionInteractionEvent>()
+        .listen((event) {
+          if (event.interactionType != 'speech') return;
+          final text = event.metadata?['text'] as String?;
+          if (text == null || text.isEmpty) return;
+          _showSpeech(text);
+        });
+  }
+
+  void _showSpeech(String text) {
+    if (!mounted) return;
+    _speechDismissTimer?.cancel();
+    setState(() {
+      _speechText = text;
+    });
+    _speechDismissTimer = Timer(_speechDisplayDuration, _dismissSpeech);
+  }
+
+  void _dismissSpeech() {
+    if (mounted) {
+      setState(() {
+        _speechText = null;
+      });
+    }
   }
 
   void _setupMethodChannel() {
@@ -69,13 +107,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
       ErrorHandler().handleError(e, st);
     }
 
-    if (mounted && !_gameInitialized) {
+    if (mounted && !_initialized) {
       setState(() {
-        _game = CompanionGame(
-          initialTheme: PetTheme.getTheme(_themeId),
-          scaleOverride: _scale,
-        );
-        _gameInitialized = true;
+        _initialized = true;
       });
       EventBus.instance.emit(
         CompanionInteractionEvent(
@@ -89,97 +123,33 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   void _applySettings(OverlayConfig config) {
     if (!mounted) return;
 
-    final newThemeId = config.themeId ?? _themeId;
-    final newScale = config.scale ?? _scale;
-    final newToyType = config.companionToyType ?? 'tennis_ball';
-    final newTreatType = config.companionTreatType ?? 'sushi';
-
-    if (!_gameInitialized) {
-      setState(() {
-        _themeId = newThemeId;
-        _scale = newScale;
-        _game = CompanionGame(
-          initialTheme: PetTheme.getTheme(newThemeId),
-          scaleOverride: newScale > 0 ? newScale : 6.0,
-          toyType: newToyType,
-          treatType: newTreatType,
-        );
-        _gameInitialized = true;
-      });
-      _applySettingsToGame(config);
-      return;
-    }
-
-    _applySettingsToGame(config);
-  }
-
-  void _applySettingsToGame(OverlayConfig config) {
-    if (!_gameInitialized || _game == null || !mounted) return;
-
     setState(() {
       if (config.themeId != null) {
-        final String newThemeId = config.themeId!;
-        if (_themeId != newThemeId) {
-          _themeId = newThemeId;
-          _game!.updateTheme(PetTheme.getTheme(newThemeId));
-        }
+        _themeId = config.themeId!;
       }
-
-      if (config.scale != null) {
-        final double newScale = config.scale!;
-        if (newScale != _scale && newScale > 0) {
-          _scale = newScale;
-          _game!.updateScale(newScale);
-        }
+      if (config.scale != null && config.scale! > 0) {
+        _scale = config.scale!;
       }
-
-      if (config.companionToyType != null) {
-        final String newToyType = config.companionToyType!;
-        _game!.updateToyType(newToyType);
+      if (config.petName != null && config.petName!.trim().isNotEmpty) {
+        _petName = config.petName!.trim();
       }
-
-      if (config.companionTreatType != null) {
-        final String newTreatType = config.companionTreatType!;
-        _game!.updateTreatType(newTreatType);
-      }
-
-      if (config.petName != null) {
-        final String newPetName = config.petName!;
-        if (newPetName.trim().isNotEmpty) {
-          _petName = newPetName.trim();
-        }
-      }
-
       if (config.followMouse != null) {
-        final bool followMouse = config.followMouse!;
-        _game!.updateMouseFollow({'enabled': followMouse});
+        _followMouse = config.followMouse!;
       }
-
-      if (config.wanderingEnabled != null) {
-        final bool enabled = config.wanderingEnabled!;
-        _game!.setWanderingEnabled(enabled);
-      }
-
       if (config.state != null) {
-        final String stateStr = config.state!;
-        final PetAnimationState? s = _parseAnimationState(stateStr);
-        if (s != null) _game!.triggerState(s);
+        final s = _parseAnimationState(config.state!);
+        if (s != null) {
+          final clip = s.toAvatarClip();
+          _avatarController.playAnimation(clip, loop: clip.isLooping);
+          // The pet is drawn natively now, so an incoming state is something
+          // it should notice rather than a clip to play.
+          _petKey.currentState?.nudge();
+        }
       }
-
-      if (config.mouseFollow != null) {
-        _game!.updateMouseFollow(config.mouseFollow!);
-      }
-
-      if (config.isOnBattery != null ||
-          config.isAppActive != null ||
-          config.isLowPowerMode != null) {
-        _game!.updateEnergyStatus(
-          isOnBattery: config.isOnBattery,
-          isAppActive: config.isAppActive,
-          isLowPowerMode: config.isLowPowerMode,
-        );
-      }
+      _initialized = true;
     });
+
+    _avatarController.setDefinition(_avatarDefinition);
   }
 
   PetAnimationState? _parseAnimationState(String stateStr) {
@@ -192,11 +162,13 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
   @override
   void dispose() {
     _channel.setMethodCallHandler(null);
+    _speechSubscription?.cancel();
+    _speechDismissTimer?.cancel();
+    _avatarController.dispose();
     super.dispose();
   }
 
   void _onPanStart(DragStartDetails details) {
-    // (window_manager.startDragging works on macOS and Windows)
     try {
       const MethodChannel(
         'com.leanflutter.plugins/window_manager',
@@ -205,7 +177,6 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
       ErrorHandler().handleError(e, st);
     }
     _isDragging = true;
-    _game?.onUserInteraction('dragStart');
     EventBus.instance.emit(
       CompanionInteractionEvent(
         interactionType: 'dragStart',
@@ -223,17 +194,34 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
 
   void _onPanEnd(DragEndDetails details) {
     _isDragging = false;
-    _game?.onUserInteraction('dragEnd');
     EventBus.instance.emit(
       CompanionInteractionEvent(interactionType: 'dragEnd'),
     );
   }
 
+  void _handlePetTap() {
+    EventBus.instance.emit(
+      CompanionInteractionEvent(
+        interactionType: 'petting',
+        metadata: {'petName': _petName, 'themeId': _themeId},
+      ),
+    );
+  }
+
+  AvatarDefinition get _avatarDefinition {
+    final theme = PetTheme.getTheme(_themeId);
+    if (theme.avatarDefinition != null) {
+      return theme.avatarDefinition!;
+    }
+    final species = AvatarSpecies.tryParse(_themeId) ?? AvatarSpecies.cat;
+    return AvatarDefinition.fromSeed(_themeId, species: species);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!_gameInitialized || _game == null) {
-      return const SizedBox.shrink();
-    }
+    final avatarDef = _avatarDefinition;
+    final avatarSize = (_scale * 28.0).clamp(110.0, 320.0);
+
     return GestureDetector(
       onPanStart: _onPanStart,
       onPanUpdate: _onPanUpdate,
@@ -241,7 +229,75 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
       behavior: HitTestBehavior.translucent,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: GameWidget(game: _game!),
+        body: Stack(
+          alignment: Alignment.center,
+          children: [
+            Center(
+              child: CompanionPet(
+                key: _petKey,
+                definition: avatarDef,
+                size: avatarSize,
+                trackCursor: _followMouse,
+                onTap: _handlePetTap,
+              ),
+            ),
+            if (_speechText != null)
+              Positioned(
+                top: 20,
+                child: _SpeechBubble(
+                  text: _speechText!,
+                  onDismiss: _dismissSpeech,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SpeechBubble extends StatelessWidget {
+  const _SpeechBubble({required this.text, required this.onDismiss});
+
+  final String text;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: 'Companion tip: $text. Double-tap to dismiss.',
+      child: GestureDetector(
+        onTap: onDismiss,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 240),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black26,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ExcludeSemantics(
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

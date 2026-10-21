@@ -1,4 +1,5 @@
 #include "companion_window_manager.h"
+#include <algorithm>
 #include <flutter/method_channel.h>
 #include <flutter/standard_method_codec.h>
 #include <dwmapi.h>
@@ -262,8 +263,8 @@ void CompanionWindowManager::ShowPiP(
 
   auto it = args.find("x");         if (it != args.end()) x         = ToDouble(it->second, 100.0);
   it = args.find("y");              if (it != args.end()) y         = ToDouble(it->second, 100.0);
-  it = args.find("width");          if (it != args.end()) pip_w     = ToDouble(it->second, 280.0);
-  it = args.find("height");         if (it != args.end()) pip_h     = ToDouble(it->second, 320.0);
+  it = args.find("width");  if (it != args.end()) pip_w = std::clamp(ToDouble(it->second, 280.0), 180.0, 360.0);
+  it = args.find("height"); if (it != args.end()) pip_h = std::clamp(ToDouble(it->second, 320.0), 210.0, 420.0);
   it = args.find("themeId");        if (it != args.end()) theme_id  = ExtractString(it->second, "grey_cat");
   it = args.find("petName");        if (it != args.end()) pet_name  = ExtractString(it->second, "Mochi");
   it = args.find("scale");          if (it != args.end()) scale     = ToDouble(it->second, 3.0);
@@ -278,6 +279,16 @@ void CompanionWindowManager::ShowPiP(
   std::string bg_style    = "dark";
   double      pip_opacity = 1.0;
   bool        wandering   = true;
+  // The companion's full appearance travels as JSON so it survives this hop
+  // without needing a field here for every part of it.
+  std::string avatar_definition;
+  std::string render_mode;
+  bool        draggable   = true;
+  bool        keep_on_screen = true;
+  // Which interactions the PiP may offer when the pointer is over it.
+  bool        petting_enabled = true;
+  bool        play_enabled    = true;
+  bool        treat_enabled   = true;
 
   it = args.find("companionToyType");   if (it != args.end()) toy_type    = ExtractString(it->second, "tennis_ball");
   it = args.find("companionTreatType"); if (it != args.end()) treat_type  = ExtractString(it->second, "sushi");
@@ -285,6 +296,13 @@ void CompanionWindowManager::ShowPiP(
   it = args.find("pipBackgroundStyle"); if (it != args.end()) bg_style    = ExtractString(it->second, "dark");
   it = args.find("pipOpacity");         if (it != args.end()) pip_opacity = ToDouble(it->second, 1.0);
   it = args.find("wanderingEnabled");   if (it != args.end()) wandering   = ExtractBool(it->second, true);
+  it = args.find("avatarDefinitionJson"); if (it != args.end()) avatar_definition = ExtractString(it->second);
+  it = args.find("renderMode");         if (it != args.end()) render_mode = ExtractString(it->second);
+  it = args.find("pipDraggableClickable"); if (it != args.end()) draggable = ExtractBool(it->second, true);
+  it = args.find("keepOnScreen");       if (it != args.end()) keep_on_screen = ExtractBool(it->second, true);
+  it = args.find("pettingEnabled");     if (it != args.end()) petting_enabled = ExtractBool(it->second, true);
+  it = args.find("playEnabled");        if (it != args.end()) play_enabled    = ExtractBool(it->second, true);
+  it = args.find("treatEnabled");       if (it != args.end()) treat_enabled   = ExtractBool(it->second, true);
 
   const int iX = static_cast<int>(x);
   const int iY = static_cast<int>(y);
@@ -294,8 +312,17 @@ void CompanionWindowManager::ShowPiP(
   if (pip_window_) {
     HWND hwnd = pip_window_->GetHandle();
     if (hwnd) {
-      SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH,
-                   SWP_NOACTIVATE | SWP_SHOWWINDOW);
+      // Settings updates reuse ShowPiP but normally carry no geometry. Keep a
+      // window the user has dragged exactly where it is unless the caller
+      // explicitly supplies a complete position or size.
+      const bool has_position = args.find("x") != args.end() &&
+                                args.find("y") != args.end();
+      const bool has_size = args.find("width") != args.end() &&
+                            args.find("height") != args.end();
+      UINT flags = SWP_NOACTIVATE | SWP_SHOWWINDOW;
+      if (!has_position) flags |= SWP_NOMOVE;
+      if (!has_size) flags |= SWP_NOSIZE;
+      SetWindowPos(hwnd, HWND_TOPMOST, iX, iY, iW, iH, flags);
     }
     UpdatePiPParams(args);
     return;
@@ -317,6 +344,13 @@ void CompanionWindowManager::ShowPiP(
   settings[flutter::EncodableValue("pipBackgroundStyle")] = flutter::EncodableValue(bg_style);
   settings[flutter::EncodableValue("pipOpacity")]         = flutter::EncodableValue(pip_opacity);
   settings[flutter::EncodableValue("wanderingEnabled")]   = flutter::EncodableValue(wandering);
+  settings[flutter::EncodableValue("avatarDefinitionJson")] = flutter::EncodableValue(avatar_definition);
+  settings[flutter::EncodableValue("renderMode")]          = flutter::EncodableValue(render_mode);
+  settings[flutter::EncodableValue("pipDraggableClickable")] = flutter::EncodableValue(draggable);
+  settings[flutter::EncodableValue("keepOnScreen")]        = flutter::EncodableValue(keep_on_screen);
+  settings[flutter::EncodableValue("pettingEnabled")]      = flutter::EncodableValue(petting_enabled);
+  settings[flutter::EncodableValue("playEnabled")]         = flutter::EncodableValue(play_enabled);
+  settings[flutter::EncodableValue("treatEnabled")]        = flutter::EncodableValue(treat_enabled);
   pip_window_->SetInitialSettings(settings);
   pip_window_->SetIsPiP(true);
 

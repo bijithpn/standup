@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:breakmate/core/storage/models/activity_segment.dart';
+import 'package:breakmate/objectbox.g.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:fake_async/fake_async.dart';
@@ -17,6 +20,7 @@ import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/core/events/app_events.dart';
 
 final sl = GetIt.instance;
 
@@ -25,6 +29,10 @@ class MockCalendarService extends Mock implements CalendarService {}
 class MockSmartDetectionService extends Mock implements SmartDetectionService {}
 
 class FakeStorageService implements StorageService {
+  /// Activity history is not part of what these tests exercise.
+  @override
+  Box<ActivitySegment>? activitySegmentBox;
+
   final Map<String, dynamic> _data = {};
 
   @override
@@ -173,6 +181,7 @@ void main() {
     sl.registerSingleton<EventBus>(eventBus);
 
     when(() => mockSmartDetectionService.isVideoCallActive).thenReturn(false);
+    when(() => mockSmartDetectionService.isVideoPlaying).thenReturn(false);
     when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(false);
     when(
       () => mockCalendarService.getUpcomingEvents(window: any(named: 'window')),
@@ -333,6 +342,218 @@ void main() {
       expect(engine.state, equals(TimerState.breakActive));
       // In strict mode, the UI (StandaloneBreakOverlay) uses the flag to hide skip.
       // TimerEngine logic itself doesn't block skipNextBreak call, but the UI does.
+    });
+
+    test('Settings sync: dynamically updates interval on running timer', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        expect(engine.shortBreakIntervalMinutes, equals(20));
+
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.workElapsed.inMinutes, equals(5));
+
+        // User updates short break interval in settings to 10 minutes
+        fakeSettingsRepository.save(
+          fakeSettingsRepository.currentSettings.copyWith(
+            shortBreakIntervalMinutes: 10,
+          ),
+        );
+
+        expect(engine.shortBreakIntervalMinutes, equals(10));
+        // Elapsed time is preserved (5 minutes)
+        expect(engine.workElapsed.inMinutes, equals(5));
+
+        // Advance 5 more minutes -> triggers break at 10 minutes total
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.state, equals(TimerState.breakActive));
+      });
+    });
+
+    test('Smart pause: auto-resumes when smart condition clears', () {
+      fakeAsync((async) {
+        fakeSettingsRepository.setSettings(
+          fakeSettingsRepository.currentSettings.copyWith(
+            respectFocusMode: true,
+          ),
+        );
+
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.state, equals(TimerState.running));
+
+        // Focus mode starts
+        when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(true);
+        async.elapse(const Duration(seconds: 1));
+        expect(engine.state, equals(TimerState.paused));
+        expect(engine.stateData.isManuallyPaused, isFalse);
+
+        // Advance during focus mode
+        async.elapse(const Duration(minutes: 15));
+        expect(engine.state, equals(TimerState.paused));
+
+        // Focus mode ends
+        when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(false);
+        async.elapse(const Duration(seconds: 1));
+        // Timer should automatically resume without manual intervention!
+        expect(engine.state, equals(TimerState.running));
+      });
+    });
+
+    test('Complete cycle: work -> pre-break warning -> break -> next work interval', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        // 20 min interval, 60s warning
+        // At 19 minutes: pre-break warning
+        async.elapse(const Duration(minutes: 19));
+        expect(engine.state, equals(TimerState.running));
+
+        // At 20 minutes: break starts
+        async.elapse(const Duration(minutes: 1));
+        expect(engine.state, equals(TimerState.breakActive));
+
+        // Complete the 20s break
+        async.elapse(const Duration(seconds: 20));
+        // Break finishes, resumes work
+        expect(engine.state, equals(TimerState.running));
+        expect(engine.workElapsed, equals(Duration.zero));
+        expect(engine.shortBreakIntervalMinutes, equals(20));
+      });
+    });
+  });
+
+  group('Health Reminders: automatic, no manual interval', () {
+    test(
+      'posture reminder follows the ~30min ergonomic baseline (not the '
+      'break interval), with randomized jitter — not instantly and not '
+      'stuck forever',
+      () {
+        fakeAsync((async) {
+          // A long break interval (60min) so it never interrupts the
+          // running state during this test — activityRatio clamps at 1.2x,
+          // giving a target window of 30 * 1.2 * [0.85, 1.15] ≈
+          // [30.6, 41.4] minutes.
+          fakeSettingsRepository.setSettings(
+            const SettingsModel(
+              shortBreakIntervalMinutes: 60,
+              postureReminderEnabled: true,
+            ),
+          );
+
+          final fired = <HealthReminderEvent>[];
+          final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
+          addTearDown(sub.cancel);
+
+          final engine = TimerEngine(
+            settingsRepository: fakeSettingsRepository,
+            smartDetectionService: mockSmartDetectionService,
+            calendarService: mockCalendarService,
+            eventBus: eventBus,
+          );
+          engine.startTimers();
+
+          // Below the lower bound (30.6min) with margin — nothing yet.
+          async.elapse(const Duration(minutes: 28));
+          expect(fired, isEmpty);
+
+          // Past the upper bound (41.4min) with margin — must have fired.
+          // (Each cycle re-randomizes independently, so a short first cycle
+          // followed by another short one can legitimately produce more
+          // than one event here — that's the intended "randomly, not on a
+          // fixed schedule" behavior, not a bug, so this only checks that
+          // at least one fired and that it's the right reminder.)
+          async.elapse(const Duration(minutes: 15));
+          expect(fired, isNotEmpty);
+          expect(fired.first.reminderType, equals('posture'));
+        });
+      },
+    );
+
+    test(
+      'eye-rest reminder follows the 20-20-20 rule baseline (~20min), '
+      'with randomized jitter',
+      () {
+        fakeAsync((async) {
+          // A long break interval (60min) so it never interrupts the
+          // running state during this test — activityRatio clamps at 1.2x,
+          // giving a target window of 20 * 1.2 * [0.85, 1.15] ≈
+          // [20.4, 27.6] minutes.
+          fakeSettingsRepository.setSettings(
+            const SettingsModel(
+              shortBreakIntervalMinutes: 60,
+              eyeBlinkReminderEnabled: true,
+            ),
+          );
+
+          final fired = <HealthReminderEvent>[];
+          final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
+          addTearDown(sub.cancel);
+
+          final engine = TimerEngine(
+            settingsRepository: fakeSettingsRepository,
+            smartDetectionService: mockSmartDetectionService,
+            calendarService: mockCalendarService,
+            eventBus: eventBus,
+          );
+          engine.startTimers();
+
+          // Below the lower bound (20.4min) with margin.
+          async.elapse(const Duration(minutes: 18));
+          expect(fired, isEmpty);
+
+          // Past the upper bound (27.6min) with margin.
+          async.elapse(const Duration(minutes: 12));
+          expect(fired, isNotEmpty);
+          expect(fired.first.reminderType, equals('eyeblink'));
+        });
+      },
+    );
+
+    test('never fires while disabled, even across several intervals', () {
+      fakeAsync((async) {
+        fakeSettingsRepository.setSettings(
+          const SettingsModel(
+            shortBreakIntervalMinutes: 20,
+            postureReminderEnabled: false,
+            eyeBlinkReminderEnabled: false,
+          ),
+        );
+
+        final fired = <HealthReminderEvent>[];
+        final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
+        addTearDown(sub.cancel);
+
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+        engine.startTimers();
+
+        async.elapse(const Duration(minutes: 65));
+        expect(fired, isEmpty);
+      });
     });
   });
 }

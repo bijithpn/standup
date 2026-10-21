@@ -44,6 +44,10 @@ class CompanionComponent
   PetAnimationState? _previousState;
   final Random _rng = Random();
 
+  double _currentYaw = 0.0;
+  double get currentYaw => _currentYaw;
+  double get direction => _direction;
+
   bool get isFlipped => scale.x < 0;
 
   _CrossFadeState? _crossFadeState;
@@ -69,16 +73,16 @@ class CompanionComponent
   final List<_FireParticle> _particles = [];
 
   CompanionComponent({
-    required Map<PetAnimationState, SpriteAnimation> animations,
+    Map<PetAnimationState, SpriteAnimation>? animations,
     PetAnimationState initialState = PetAnimationState.idle,
   }) : super(
-         animations: animations,
+         animations: animations ?? const {},
          current: initialState,
          anchor: Anchor.bottomCenter,
        );
 
   double get _strideFrequency =>
-      game.currentTheme.species.defaultProfile.strideFrequency;
+      isMounted ? game.currentTheme.species.defaultProfile.strideFrequency : 1.0;
 
   @override
   void onMount() {
@@ -91,38 +95,52 @@ class CompanionComponent
     }
   }
 
+  void updateMovementHeading(Offset vel, {double dt = 0.016}) {
+    if (vel.dx.abs() > 0.5 || vel.dy.abs() > 0.5) {
+      _direction = vel.dx >= 0 ? 1.0 : -1.0;
+      _updateFlip();
+
+      final double targetYaw = atan2(vel.dx, vel.dy);
+      final double diff = (targetYaw - _currentYaw + pi) % (2 * pi) - pi;
+      _currentYaw += diff * (12.0 * dt).clamp(0.0, 1.0);
+    }
+  }
+
   void changeState(PetAnimationState newState, {bool force = false}) {
     var target = newState;
 
-    if (target == PetAnimationState.walkUp ||
-        target == PetAnimationState.walkDown) {
-      if (animations?.containsKey(target) != true) {
+    if (animations != null && animations!.isNotEmpty) {
+      if (target == PetAnimationState.walkUp ||
+          target == PetAnimationState.walkDown) {
+        if (animations?.containsKey(target) != true) {
+          target = PetAnimationState.walkSide;
+        }
+      }
+
+      if (target == PetAnimationState.chasing &&
+          animations?.containsKey(target) != true) {
+        target = PetAnimationState.run;
+      }
+      if (target == PetAnimationState.fetching &&
+          animations?.containsKey(target) != true) {
         target = PetAnimationState.walkSide;
+      }
+      if (target == PetAnimationState.falling &&
+          animations?.containsKey(target) != true) {
+        target = PetAnimationState.run;
+      }
+      if (target == PetAnimationState.reacting &&
+          animations?.containsKey(target) != true) {
+        target = PetAnimationState.notification;
+      }
+
+      if (animations?.containsKey(target) != true) {
+        target = PetAnimationState.idle;
       }
     }
 
-    if (target == PetAnimationState.chasing &&
-        animations?.containsKey(target) != true) {
-      target = PetAnimationState.run;
-    }
-    if (target == PetAnimationState.fetching &&
-        animations?.containsKey(target) != true) {
-      target = PetAnimationState.walkSide;
-    }
-    if (target == PetAnimationState.falling &&
-        animations?.containsKey(target) != true) {
-      target = PetAnimationState.run;
-    }
-    if (target == PetAnimationState.reacting &&
-        animations?.containsKey(target) != true) {
-      target = PetAnimationState.notification;
-    }
-
-    if (animations?.containsKey(target) != true) {
-      target = PetAnimationState.idle;
-    }
-
-    final bool isSameAnimation = animations?[current] == animations?[target];
+    final bool isSameAnimation =
+        animations != null && animations?[current] == animations?[target];
 
     if (current == target && !force) {
       final anim = animations?[target];
@@ -165,7 +183,9 @@ class CompanionComponent
   }
 
   void setWanderingEnabled(bool enabled) {
-    game.petService.navigation.setWanderingEnabled(enabled);
+    if (isMounted) {
+      game.petService.navigation.setWanderingEnabled(enabled);
+    }
   }
 
   void _updateFlip() {
@@ -196,6 +216,8 @@ class CompanionComponent
 
   @override
   void update(double dt) {
+    if (!isMounted) return;
+
     final nav = game.petService.navigation;
     final speed = nav.speed;
     final vel = nav.velocity;
@@ -204,10 +226,7 @@ class CompanionComponent
     final servicePos = nav.currentPosition;
     position.setValues(servicePos.dx, servicePos.dy);
 
-    if (vel.dx.abs() > 0.5) {
-      _direction = vel.dx > 0 ? 1.0 : -1.0;
-      _updateFlip();
-    }
+    updateMovementHeading(vel, dt: dt);
 
     double scaledDt = dt;
     if (current == PetAnimationState.walkSide ||
@@ -476,13 +495,15 @@ class CompanionComponent
       return;
     }
 
-    super.render(canvas);
+    if (animationTicker != null && animations != null && animations!.isNotEmpty) {
+      super.render(canvas);
+    }
     _renderOverlays(canvas);
     canvas.restore();
   }
 
   void _renderOverlays(Canvas canvas) {
-    if (game.petService.context.isMeetingDetected) {
+    if (isMounted && game.petService.context.isMeetingDetected) {
       final double spriteSize = game.currentTheme.spriteSize.toDouble();
       final Offset badgePos = Offset(spriteSize * 0.3, -spriteSize * 0.4);
 
@@ -525,7 +546,7 @@ class CompanionComponent
     if (_lastTapTime != null &&
         now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
       _lastTapTime = null;
-      game.onUserInteraction('doubleTap');
+      if (isMounted) game.onUserInteraction('doubleTap');
     } else {
       _lastTapTime = now;
     }
@@ -533,13 +554,16 @@ class CompanionComponent
 
   @override
   void onTapUp(TapUpEvent event) {
-    if (_lastTapTime != null) game.onUserInteraction('tap');
+    if (_lastTapTime != null && isMounted) game.onUserInteraction('tap');
   }
 
   @override
-  void onHoverEnter() => game.onUserInteraction('hover');
+  void onHoverEnter() {
+    if (isMounted) game.onUserInteraction('hover');
+  }
 
   void updateMouseFollow(Map<dynamic, dynamic> data) {
+    if (!isMounted) return;
     final bool enabled = data['enabled'] as bool? ?? false;
     game.petService.setCursorFollowing(enabled);
 

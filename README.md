@@ -6,7 +6,7 @@
 
 BreakMate is a sophisticated wellness platform that integrates deeply with your desktop environment. By utilizing multiple Flutter engines, a custom behavior AI for ambient feedback, and native platform hooks, BreakMate ensures that your work-life balance is actively managed without disrupting your creative flow.
 
-![Version](https://img.shields.io/badge/version-1.5.0-blue)
+![Version](https://img.shields.io/badge/version-1.7.0-blue)
 ![Platform](https://img.shields.io/badge/platform-macos%20|%20windows-lightgrey)
 ![Flutter](https://img.shields.io/badge/Flutter-3.10.4-blue)
 
@@ -65,6 +65,7 @@ The desktop pet (cat/dog) isn't just a static animation; it's driven by `PetBeha
 - **Wellness Library**: A curated collection of articles and exercises designed by ergonomic experts.
 
 ---
+
 ## 🖥️ Platform Bridges
 
 ### macOS (Swift)
@@ -109,17 +110,27 @@ To run BreakMate locally for development, follow these steps. BreakMate targets 
    ```
 
 3. **Run the Application**:
-   BreakMate supports build flavors (`prod` and `dev`). Run with your target flavor:
+   BreakMate supports `prod` and `dev` configurations. The macOS runner uses
+   Xcode flavors, while the Windows runner receives the configuration through
+   `FLUTTER_FLAVOR` because Flutter does not support `--flavor` for Windows
+   desktop builds:
 
    ```bash
-   # Run with Dev configuration
-   flutter run -t lib/main_dev.dart --flavor dev
+   # Windows — Dev configuration
+   flutter run -d windows -t lib/main_dev.dart --dart-define=FLUTTER_FLAVOR=dev
 
-   # Run with Production configuration
-   flutter run -t lib/main_prod.dart --flavor prod
+   # Windows — Production configuration
+   flutter run -d windows -t lib/main_prod.dart --dart-define=FLUTTER_FLAVOR=prod
+
+   # macOS — Dev configuration
+   flutter run -d macos -t lib/main_dev.dart --flavor dev
+
+   # macOS — Production configuration
+   flutter run -d macos -t lib/main_prod.dart --flavor prod
    ```
 
-   On Windows, flavors are handled the same way — Flutter selects the desktop target automatically based on the host OS, so no extra `-d` flag is needed unless you have multiple devices attached.
+   Equivalent platform-specific launch configurations are included in
+   `.vscode/launch.json`.
 
 4. **Run the Test Suite**:
 
@@ -133,8 +144,8 @@ To run BreakMate locally for development, follow these steps. BreakMate targets 
    `flutter analyze` does **not** compile Swift or C++ — it only checks Dart. Native-side changes need a real build to catch registration/linker errors:
 
    ```bash
-   flutter build macos --debug --flavor dev     # macOS
-   flutter build windows --debug --flavor dev   # Windows
+   flutter build macos --debug --flavor dev -t lib/main_dev.dart
+   flutter build windows --debug -t lib/main_dev.dart --dart-define=FLUTTER_FLAVOR=dev
    ```
 
 ---
@@ -188,7 +199,7 @@ Adjust the variables inside:
 All four release-tooling files live in `scripts/`. They're macOS-only (Sparkle + DMG distribution is a macOS-specific update mechanism) — Windows builds are distributed separately and don't use this pipeline.
 
 | Script | Purpose | Run it when... |
-|---|---|---|
+| --- | --- | --- |
 | [`generate_sparkle_keys.sh`](#-sparkle-key-management-generate_sparkle_keyssh) | One-time Ed25519 keypair setup | Setting up Sparkle auto-updates for the first time |
 | [`create_dmg.sh`](#-build--release-create_dmgsh) | Full release pipeline (build → DMG → sign → GitHub release → appcast) | Cutting a new release from a clean local build |
 | [`publish_release.sh`](#-standalone-signing-publish_releasesh) | Signs an **already-built** DMG and patches `appcast.xml` | You already have a DMG (e.g. from CI) and just need to sign + publish it |
@@ -236,7 +247,7 @@ The main entry point for creating a new release. One command runs the entire pip
 #### Useful Flags
 
 | Flag | Effect |
-|---|---|
+| --- | --- |
 | `--skip-build` | Skip the `flutter build` step and reuse the existing build output — useful for retrying a failed publish step without rebuilding. |
 | `--skip-github` | Sign the DMG and update `appcast.xml`, but don't create a GitHub release — useful for a dry run of the signing/appcast steps. |
 | `--dry-run` | Preview the entire pipeline without touching any local or remote assets. |

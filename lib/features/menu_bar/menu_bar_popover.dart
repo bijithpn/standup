@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:breakmate/features/clock_out/clock_out_dialog.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:window_manager/window_manager.dart';
@@ -316,6 +317,21 @@ class MenuBarPopover extends StatelessWidget {
                         controller.snooze(minutes: 15);
                         _showFeedback(context, 'Snoozed for 15 minutes');
                       },
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _ActionButton(
+                icon: LucideIcons.sunset,
+                label: 'Clock Out (Reflection)',
+                color: const Color(0xFFF59E0B),
+                onTap: () {
+                  ClockOutDialog.show(context);
+                },
               ),
             ),
           ],

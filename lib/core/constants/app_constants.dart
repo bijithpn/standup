@@ -4,22 +4,26 @@ class AppConstants {
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
-  static const List<String> wellnessSlideshow = [
-    'assets/slideshow/slide_1.webp',
-    'assets/slideshow/slide_2.webp',
-    'assets/slideshow/slide_3.webp',
-    'assets/slideshow/slide_4.webp',
-    'assets/slideshow/slide_5.webp',
-  ];
+  /// Wellness slideshow images — removed in avatar-main asset migration.
+  /// Reserved for future content; currently unused.
+  static const List<String> wellnessSlideshow = [];
 
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
-  static const int defaultPreBreakWarningSeconds = 60;
+  static const int defaultPreBreakWarningSeconds = 3;
 
   static const int defaultLongBreakIntervalMinutes = 60;
   static const int defaultLongBreakDurationMinutes = 5;
 
   static const int idleThresholdMinutes = 3;
+
+  /// How long a quick health-reminder overlay (posture/eye-rest nudge) stays
+  /// on screen before auto-dismissing. Deliberately its own constant,
+  /// separate from break-timer durations — a health reminder is a brief
+  /// nudge, not a countdown, and must never share a clock with the real
+  /// break overlay's `BreakTimerManager` countdown or with the pre-break
+  /// warning's own dismiss delay.
+  static const Duration healthReminderDismissDuration = Duration(seconds: 4);
 
   static const int maxRetries = 3;
   static const int initialRetryDelayMs = 500;
@@ -44,10 +48,17 @@ class AppConstants {
   static const String keyCurrentStreak = 'current_streak';
   static const String keyLongestStreak = 'longest_streak';
   static const String keyWeeklyStats = 'weekly_stats';
+  static const String keyAppUsageData = 'app_usage_data';
+  static const String keyFocusSessionData = 'focus_session_data';
+  static const String keyBreakHistoryData = 'break_history_data';
+  static const String keyLastWeeklyDigestWeekKey = 'last_weekly_digest_week_key';
+  static const String keyFocusInsightShown = 'focus_insight_shown';
+  static const String keyLastDailyInsightDateKey = 'last_daily_insight_date_key';
   static const String keyTotalWorkSessions = 'total_work_sessions';
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
   static const String keyCompanionPetTheme = 'companion_pet_theme';
+  static const String keyCompanionAvatarUrlParams = 'companion_avatar_url_params';
   static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
   static const int breaksPerDayForStreak = 5;
@@ -90,5 +101,7 @@ class AppConstants {
     'Sometimes the most productive thing you can do is relax.',
   ];
 
+  /// Tray icon — points to raster PNG with alpha suitable for tray template extraction.
   static const String trayIconPath = 'assets/icons/app_icon_bg.png';
 }
+

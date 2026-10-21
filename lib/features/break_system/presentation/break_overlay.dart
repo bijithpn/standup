@@ -5,39 +5,9 @@ import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
-import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
+import 'package:breakmate/features/break_system/presentation/standalone_overlay/overlay_chrome.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_overlay_transition_wrapper.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_template_selector.dart';
-
-const _kTemplatesWithChrome = {
-  'minimal',
-  'activities',
-  'companion',
-  'zen',
-  'hud',
-  'floating',
-  'classic',
-  'soft_arc',
-  'breathe_line',
-  'clock_face',
-  'one_word',
-  'open_field',
-  'haiku_card',
-  'ring_only',
-  'step_guide',
-  'time_slice',
-  'day_stack',
-  'pulse_dot',
-  'mono_time',
-  'split_view',
-  'warm_amber',
-  'focus_orb',
-  'wave_calm',
-  'iris_rest',
-  'quiet_pill',
-  'paper_light',
-  'dusk_glow',
-};
+import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
 
 class BreakOverlay extends StatelessWidget {
   const BreakOverlay({super.key});
@@ -125,83 +95,37 @@ class _BreakOverlayContent extends StatelessWidget {
 
     final templateOwnsChrome =
         breakInfo.type == BreakType.windDown ||
-        _kTemplatesWithChrome.contains(settings.breakTemplate);
+        settings.breakTemplate == 'wind_down';
 
     void onSkip() => controller.skipCurrentBreak();
 
-    return Stack(
-      clipBehavior: Clip.none,
-      fit: StackFit.expand,
-      children: [
-        RepaintBoundary(
-          child: ValueListenableBuilder<int>(
-            valueListenable: countdownNotifier,
-            builder: (_, remaining, _) => BreakTemplateSelector(
-              settings: settings,
-              breakInfo: breakInfo,
-              remainingSeconds: remaining,
-              totalSeconds: total,
-              onSkip: onSkip,
-              pageController: pageController,
-              kenBurnsController: kenBurnsController,
-              exerciseTitle: controller.currentExerciseTitle,
-              exerciseInstructions: controller.currentExerciseInstructions,
-            ),
+    return OverlayChrome(
+      templateOwnsChrome: templateOwnsChrome,
+      isInternalPreview: false,
+      canDismiss: !settings.strictMode,
+      breakInfo: breakInfo,
+      exerciseTitle: settings.showExercisesInBreak
+          ? controller.currentExerciseTitle
+          : null,
+      intensityLevel: settings.intensityLevel,
+      onSkip: onSkip,
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<int>(
+          valueListenable: countdownNotifier,
+          builder: (_, remaining, _) => BreakTemplateSwitcher(
+            breakTemplate: settings.breakTemplate,
+            breakInfo: breakInfo,
+            settings: settings,
+            remaining: remaining,
+            total: total,
+            onSkip: null, // OverlayChrome provides authoritative skip affordance
+            pageController: pageController,
+            kenBurnsController: kenBurnsController,
+            exerciseTitle: controller.currentExerciseTitle,
+            exerciseInstructions: controller.currentExerciseInstructions,
           ),
         ),
-        if (!templateOwnsChrome)
-          Positioned(
-            top: 28,
-            left: 28,
-            child: SafeArea(
-              child: BreakContextPill(
-                breakInfo: breakInfo,
-                exerciseTitle: settings.showExercisesInBreak
-                    ? controller.currentExerciseTitle
-                    : null,
-              ),
-            ),
-          ),
-        if (!settings.strictMode)
-          Positioned(
-            top: 28,
-            right: 28,
-            child: SafeArea(
-              child: IconButton(
-                tooltip: 'Skip break',
-                onPressed: onSkip,
-                icon: const Icon(CupertinoIcons.xmark),
-                color: Colors.white.withValues(alpha: 0.78),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.24),
-                  fixedSize: const Size.square(42),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.12),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        if (!settings.strictMode)
-          Positioned(
-            bottom: 24,
-            left: 0,
-            right: 0,
-            child: const IgnorePointer(child: SwipeToDismissHint()),
-          ),
-        if (settings.strictMode)
-          Positioned(
-            bottom: 24,
-            left: 24,
-            right: 24,
-            child: IgnorePointer(
-              child: StrictModeNote(intensityLevel: settings.intensityLevel),
-            ),
-          ),
-      ],
+      ),
     );
   }
 }

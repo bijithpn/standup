@@ -9,11 +9,17 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
+import 'package:breakmate/core/config/productivity_config.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
+import 'package:breakmate/features/analytics/presentation/segment_inspector_page.dart';
 import 'package:breakmate/features/wellness/presentation/wellness_library_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
+import 'package:provider/provider.dart';
+import 'package:breakmate/features/themes/application/theme_controller.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
+import 'package:breakmate/shared/widgets/themed_app_icon.dart';
 
 class _NavItem {
   final String label;
@@ -84,11 +90,25 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.paw,
       section: 'Companion',
     ),
+    if (ProductivityConfig.current.enabled)
+      _NavItem(
+        label: 'Productivity',
+        icon: CupertinoIcons.chart_bar,
+        section: 'Productivity',
+      ),
     _NavItem(
       label: AppStrings.navStatistics,
-      icon: CupertinoIcons.chart_bar,
+      icon: CupertinoIcons.graph_square,
       section: 'Statistics',
     ),
+    // Development only: the raw rows every productivity number is derived
+    // from, so the data can be read back before screens are built on it.
+    if (ProductivityConfig.current.diagnosticsVisible)
+      _NavItem(
+        label: 'Activity Segments',
+        icon: CupertinoIcons.list_bullet_indent,
+        section: 'Segments',
+      ),
     _NavItem(
       label: 'Personal Goals',
       icon: CupertinoIcons.forward_fill,
@@ -103,6 +123,11 @@ class _MainLayoutState extends State<MainLayout> {
       label: 'Themes & Styling',
       icon: CupertinoIcons.paintbrush,
       section: 'Themes',
+    ),
+    _NavItem(
+      label: 'Privacy',
+      icon: CupertinoIcons.lock_shield,
+      section: 'Privacy',
     ),
     _NavItem(
       label: AppStrings.navGeneralSettings,
@@ -141,6 +166,11 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _navigationService = sl<AppNavigationService>();
+    final currentSection = _navigationService.selectedSection.value;
+    final initialIndex = _allItems.indexWhere((item) => item.section == currentSection);
+    if (initialIndex != -1) {
+      _pageIndex = initialIndex;
+    }
     _navigationService.selectedSection.addListener(_handleExternalNavigation);
   }
 
@@ -162,6 +192,7 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
+    context.watch<ThemeController>();
     return Shortcuts(
       shortcuts: <LogicalKeySet, Intent>{
         LogicalKeySet(LogicalKeyboardKey.meta, LogicalKeyboardKey.keyP):
@@ -398,8 +429,12 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Notifications');
       case 'Companion':
         return const SettingsPage(section: 'Companion');
+      case 'Productivity':
+        return const ProductivityPage();
       case 'Statistics':
         return const SettingsPage(section: 'Statistics');
+      case 'Segments':
+        return const SegmentInspectorPage();
       case 'Goals':
         return const SettingsPage(section: 'Goals');
       case 'Wellness Library':
@@ -407,6 +442,8 @@ class _MainLayoutState extends State<MainLayout> {
       case 'Themes':
       case 'Themes & Styling':
         return const SettingsPage(section: 'Themes');
+      case 'Privacy':
+        return const SettingsPage(section: 'Privacy');
       case 'General':
         return const SettingsPage(section: 'General');
       case 'Data & Backup':
@@ -498,31 +535,7 @@ class _SidebarContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentColor.withValues(alpha: 0.25),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(2.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: Image.asset(
-                FlavorConfig.instance.isDev
-                    ? 'assets/icons/app_icon_dev.png'
-                    : 'assets/icons/app_icon.jpeg',
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-              ),
-            ),
+          const ThemedAppIcon.badge(size: 72, showDevBadge: true,
           ),
           const SizedBox(height: 14),
           RichText(

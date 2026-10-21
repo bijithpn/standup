@@ -29,7 +29,11 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   late Animation<double> _scaleAnim;
   String _phaseText = 'Breathe in';
 
-  static const _accent = BreakOverlayTheme.accentShort;
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'zen',
+    BreakOverlayTheme.accentShort,
+  );
 
   @override
   void initState() {

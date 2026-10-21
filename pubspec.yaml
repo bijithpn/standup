@@ -1,7 +1,7 @@
 name: breakmate
 description: "BreakMate — a macOS menu bar break reminder app for healthy work habits."
 publish_to: "none"
-version: 1.5.0+34
+version: 1.8.1+38
 #BreakMate
 environment:
   sdk: ^3.10.4
@@ -13,7 +13,7 @@ dependencies:
   macos_ui: ^2.0.9
   tray_manager: ^0.5.2
   window_manager: ^0.5.1
-  flutter_local_notifications: ^21.0.0
+  flutter_local_notifications: ^22.3.0
   launch_at_startup: ^0.5.1
   package_info_plus: ^9.0.1
   get_it: ^9.2.1
@@ -24,7 +24,7 @@ dependencies:
   flutter_acrylic: ^1.0.4
   flutter_markdown: ^0.7.7+1
   path_provider: ^2.1.2
-  audioplayers: ^6.1.0
+  audioplayers: ^6.7.1
   flame: ^1.37.0
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.14+1
@@ -34,12 +34,16 @@ dependencies:
   path: ^1.9.1
   objectbox: ^5.3.2
   objectbox_flutter_libs: ^5.3.2
-  file_picker: ^11.0.2
+  file_picker: ^11.0.3
   flutter_flavor: ^3.1.4
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   clock: ^1.1.2
   hotkey_manager: ^0.2.3
+  flutter_svg: ^2.0.17
+  vector_graphics: ^1.1.11
+  vector_graphics_compiler: ^1.1.11
+  blobatar_flutter: ^0.1.0
 
 dev_dependencies:
   flutter_test:
@@ -47,7 +51,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   change_app_package_name: ^1.5.0
-  build_runner: ^2.15.0
+  build_runner: ^2.15.1
   objectbox_generator: ^5.3.2
   glados: ^1.1.7
   freezed: ^3.2.5
@@ -59,52 +63,19 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    # OneWorks Avatar — Species Snapshots (alpaca, bear, cat, dog, etc.)
+    - assets/avatars/species/
+    # OneWorks Avatar — Breed Snapshots (bear--brown-bear, cat--black-cat, etc.)
+    - assets/avatars/breeds/
+    # OneWorks Avatar — Pixel Style Snapshots
+    - assets/avatars/pixel/
+    # OneWorks Avatar — authored 3D scenes (primitives, face, camera, light)
+    - assets/avatars/scenes/
+    # OneWorks Avatar — Animation Cover SVGs (idle, happy, celebrate, etc.)
+    - assets/avatars/web/
+    - assets/avatars/web/assets/
+    - assets/avatars/animation_covers/
     - assets/icons/
-    - assets/slideshow/
-    - assets/animations/throw_particles/
-    # Original 4 cats
-    - assets/animations/cats/grey_cat/sprite_sheet.png
-    - assets/animations/cats/orange_cat/sprite_sheet.png
-    - assets/animations/cats/black_cat/sprite_sheet.png
-    - assets/animations/cats/cat_1/
-    - assets/animations/cats/cat_2/
-    - assets/animations/cats/cat_3/
-    - assets/animations/cats/cat_4/
-    - assets/animations/cats/cat_5/
-    - assets/animations/cats/cat_6/
-    # Dog sprite sheets
-    - assets/animations/dogs/collie.png
-    - assets/animations/dogs/corgi.png
-    - assets/animations/dogs/dalmatian.png
-    - assets/animations/dogs/husky.png
-    - assets/animations/dogs/labrador.png
-    # Flamingo sprite sheet and gifs
-    - assets/animations/flamingo/
-    # Modular pets framework
-    - assets/animations/pets/pets.json
-    - assets/animations/pets/
-    # Backgrounds
-    - assets/background/autumn/
-    - assets/background/beach/
-    - assets/background/forest/
-    - assets/background/winter/
-    - assets/background/desert/
-    - assets/background/urban/
-    # Lofi musics
-    - assets/music/lofi_1.mp3
-
-    # New pet assets folders
-    - assets/animations/
-    - assets/animations/birds/
-    - assets/animations/food/
-    - assets/animations/pet_decoration/
-    - assets/animations/rabbit/
-    - assets/environments/background/
-    - assets/environments/base/
-    - assets/environments/rocks/
-    - assets/environments/sky/
-    - assets/environments/throwable/
-    - assets/environments/trees/
 
   fonts:
     - family: Inter

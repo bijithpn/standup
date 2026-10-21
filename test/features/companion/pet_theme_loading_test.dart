@@ -1,94 +1,51 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
-import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/flame/companion_game.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('all registered pet themes exist and have correct paths', () {
-    for (final theme in PetTheme.themes) {
-      if (theme.type == PetType.composite) {
-        final file = File(theme.basePath);
-        expect(
-          file.existsSync(),
-          isTrue,
-          reason:
-              'Theme "${theme.id}" references non-existent composite sheet: ${theme.basePath}',
-        );
-      } else {
-        final dir = Directory(theme.basePath);
-        expect(
-          dir.existsSync(),
-          isTrue,
-          reason:
-              'Theme "${theme.id}" references non-existent separate directory: ${theme.basePath}',
-        );
-      }
-    }
-  });
+  test('all registered 3D pet themes have valid avatar definitions and runtime paths', () {
+    expect(PetTheme.themes, isNotEmpty);
+    expect(PetTheme.themes.length, greaterThanOrEqualTo(30));
 
-  test('all pet themes can load animations without throwing', () async {
     for (final theme in PetTheme.themes) {
-      final profile = CompanionGame.getProfileFromTheme(theme);
-
-      // We will check that we can load the animations map (which will read assets via rootBundle)
-      try {
-        final animations = await PetAssetLoader.loadAnimations(profile);
-        expect(
-          animations,
-          isNotEmpty,
-          reason: 'Animations map should not be empty for theme "${theme.id}"',
-        );
-      } catch (e) {
-        fail('Failed to load animations for theme "${theme.id}": $e');
-      }
-    }
-  });
-
-  test('all configured pet animation frames are valid', () async {
-    for (final theme in PetTheme.themes) {
-      final issues = await PetAssetLoader.validateTheme(theme);
+      expect(theme.isAvatar, isTrue);
+      expect(theme.avatarDefinition, isNotNull);
+      expect(theme.avatarDefinition!.schemaVersion, equals(1));
+      
+      final runtimeFile = File(theme.basePath);
       expect(
-        issues,
-        isEmpty,
-        reason:
-            'Theme "${theme.id}" has invalid sprite frames:\n${issues.join('\n')}',
+        runtimeFile.existsSync(),
+        isTrue,
+        reason: 'Theme "${theme.id}" references runtime asset: ${theme.basePath}',
       );
     }
   });
 
-  test(
-    'loaded pet animations never reference clipped source rectangles',
-    () async {
-      for (final theme in PetTheme.themes) {
-        final profile = CompanionGame.getProfileFromTheme(theme);
-        final animations = await PetAssetLoader.loadAnimations(profile);
+  test('all 3D OneWorks species are represented in PetTheme.themes', () {
+    final themeSpecies = PetTheme.themes
+        .map((t) => t.avatarDefinition?.species)
+        .whereType<AvatarSpecies>()
+        .toSet();
 
-        for (final entry in animations.entries) {
-          for (final frame in entry.value.frames) {
-            final image = frame.sprite.image;
-            final src = frame.sprite.src;
-            expect(src.left, greaterThanOrEqualTo(0));
-            expect(src.top, greaterThanOrEqualTo(0));
-            expect(src.width, greaterThan(0));
-            expect(src.height, greaterThan(0));
-            expect(
-              src.right,
-              lessThanOrEqualTo(image.width),
-              reason:
-                  '${theme.id}.${entry.key.name} frame overflows sheet width',
-            );
-            expect(
-              src.bottom,
-              lessThanOrEqualTo(image.height),
-              reason:
-                  '${theme.id}.${entry.key.name} frame overflows sheet height',
-            );
-          }
-        }
-      }
-    },
-  );
+    for (final species in AvatarSpecies.values) {
+      expect(
+        themeSpecies.contains(species),
+        isTrue,
+        reason: 'Species ${species.name} missing from PetTheme.themes',
+      );
+    }
+  });
+
+  test('PetTheme.getProfileFromTheme generates valid 3D profile for all themes', () {
+    for (final theme in PetTheme.themes) {
+      final profile = CompanionGame.getProfileFromTheme(theme);
+      expect(profile.id, equals(theme.id));
+      expect(profile.name, equals(theme.name));
+      expect(profile.avatarDefinition, isNotNull);
+    }
+  });
 }

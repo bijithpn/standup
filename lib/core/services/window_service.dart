@@ -17,9 +17,23 @@ class WindowService {
     }
   }
 
-  Future<void> setWindowPosition({required double x, required double y}) async {
+  /// Moves the window this engine owns.
+  ///
+  /// [animate] lets the platform ease the move, which is what a one-off
+  /// reposition wants. Anything driving its own motion frame by frame — the
+  /// companion walking across the desktop — must pass false, or macOS runs a
+  /// blocking animation per call and every frame fights the last one.
+  Future<void> setWindowPosition({
+    required double x,
+    required double y,
+    bool animate = true,
+  }) async {
     try {
-      await _channel.invokeMethod('setWindowPosition', {'x': x, 'y': y});
+      await _channel.invokeMethod('setWindowPosition', {
+        'x': x,
+        'y': y,
+        'animate': animate,
+      });
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/services/storage_service.dart';
+import '../../../core/services/simple_prefs.dart';
 import '../../../app/dependency_injection.dart';
 import '../../../core/utils/logger.dart';
 import '../../../features/settings/settings_repository.dart';
@@ -15,27 +16,49 @@ class PetNeeds {
     this.playfulness = 0.5,
     this.energy = 0.5,
     this.restfulness = 0.5,
+    this.hunger = 0.0,
+    this.boredom = 0.0,
+    this.happiness = 50.0,
+    this.focusMode = false,
+    this.breakMode = false,
   });
 
   final double affection;
-
   final double playfulness;
-
   final double energy;
-
   final double restfulness;
+  final double hunger;
+  final double boredom;
+  final double happiness;
+  final bool focusMode;
+  final bool breakMode;
+
+  double get energyLevel => energy <= 1.0 ? energy * 100.0 : energy;
+  double get hungerNormalized => (hunger / 100.0).clamp(0.0, 1.0);
+  double get boredomNormalized => (boredom / 100.0).clamp(0.0, 100.0);
+  double get happinessNormalized => (happiness / 100.0).clamp(0.0, 1.0);
 
   PetNeeds copyWith({
     double? affection,
     double? playfulness,
     double? energy,
     double? restfulness,
+    double? hunger,
+    double? boredom,
+    double? happiness,
+    bool? focusMode,
+    bool? breakMode,
   }) {
     return PetNeeds(
       affection: (affection ?? this.affection).clamp(0.0, 1.0),
       playfulness: (playfulness ?? this.playfulness).clamp(0.0, 1.0),
       energy: (energy ?? this.energy).clamp(0.0, 1.0),
       restfulness: (restfulness ?? this.restfulness).clamp(0.0, 1.0),
+      hunger: (hunger ?? this.hunger).clamp(0.0, 100.0),
+      boredom: (boredom ?? this.boredom).clamp(0.0, 100.0),
+      happiness: (happiness ?? this.happiness).clamp(0.0, 100.0),
+      focusMode: focusMode ?? this.focusMode,
+      breakMode: breakMode ?? this.breakMode,
     );
   }
 
@@ -44,12 +67,22 @@ class PetNeeds {
     double playfulnessDelta = 0.0,
     double energyDelta = 0.0,
     double restfulnessDelta = 0.0,
+    double hungerDelta = 0.0,
+    double boredomDelta = 0.0,
+    double happinessDelta = 0.0,
+    bool? focusMode,
+    bool? breakMode,
   }) {
     return PetNeeds(
       affection: (affection + affectionDelta).clamp(0.0, 1.0),
       playfulness: (playfulness + playfulnessDelta).clamp(0.0, 1.0),
       energy: (energy + energyDelta).clamp(0.0, 1.0),
       restfulness: (restfulness + restfulnessDelta).clamp(0.0, 1.0),
+      hunger: (hunger + hungerDelta).clamp(0.0, 100.0),
+      boredom: (boredom + boredomDelta).clamp(0.0, 100.0),
+      happiness: (happiness + happinessDelta).clamp(0.0, 100.0),
+      focusMode: focusMode ?? this.focusMode,
+      breakMode: breakMode ?? this.breakMode,
     );
   }
 
@@ -59,6 +92,11 @@ class PetNeeds {
       'playfulness': playfulness,
       'energy': energy,
       'restfulness': restfulness,
+      'hunger': hunger,
+      'boredom': boredom,
+      'happiness': happiness,
+      'focusMode': focusMode,
+      'breakMode': breakMode,
     };
   }
 
@@ -70,6 +108,12 @@ class PetNeeds {
       energy: (json['energy'] as num?)?.toDouble().clamp(0.0, 1.0) ?? 0.5,
       restfulness:
           (json['restfulness'] as num?)?.toDouble().clamp(0.0, 1.0) ?? 0.5,
+      hunger: (json['hunger'] as num?)?.toDouble().clamp(0.0, 100.0) ?? 0.0,
+      boredom: (json['boredom'] as num?)?.toDouble().clamp(0.0, 100.0) ?? 0.0,
+      happiness:
+          (json['happiness'] as num?)?.toDouble().clamp(0.0, 100.0) ?? 50.0,
+      focusMode: json['focusMode'] as bool? ?? false,
+      breakMode: json['breakMode'] as bool? ?? false,
     );
   }
 
@@ -80,16 +124,32 @@ class PetNeeds {
         other.affection == affection &&
         other.playfulness == playfulness &&
         other.energy == energy &&
-        other.restfulness == restfulness;
+        other.restfulness == restfulness &&
+        other.hunger == hunger &&
+        other.boredom == boredom &&
+        other.happiness == happiness &&
+        other.focusMode == focusMode &&
+        other.breakMode == breakMode;
   }
 
   @override
-  int get hashCode => Object.hash(affection, playfulness, energy, restfulness);
+  int get hashCode => Object.hash(
+    affection,
+    playfulness,
+    energy,
+    restfulness,
+    hunger,
+    boredom,
+    happiness,
+    focusMode,
+    breakMode,
+  );
 
   @override
   String toString() =>
       'PetNeeds(affection: $affection, playfulness: $playfulness, '
-      'energy: $energy, restfulness: $restfulness)';
+      'energy: $energy, restfulness: $restfulness, hunger: $hunger, '
+      'boredom: $boredom, happiness: $happiness, focusMode: $focusMode, breakMode: $breakMode)';
 }
 
 class NeedsEngine {
@@ -131,6 +191,26 @@ class NeedsEngine {
 
   static const double _idleDecayPerSecond = 0.001;
 
+  void setHunger(double value) {
+    _needs = _needs.copyWith(hunger: value);
+  }
+
+  void setBoredom(double value) {
+    _needs = _needs.copyWith(boredom: value);
+  }
+
+  void setHappiness(double value) {
+    _needs = _needs.copyWith(happiness: value);
+  }
+
+  void setFocusMode(bool active) {
+    _needs = _needs.copyWith(focusMode: active);
+  }
+
+  void setBreakMode(bool active) {
+    _needs = _needs.copyWith(breakMode: active);
+  }
+
   void tick(
     double dt,
     PetState currentState,
@@ -143,6 +223,9 @@ class NeedsEngine {
     double playfulnessDelta = 0.0;
     double energyDelta = 0.0;
     double restfulnessDelta = 0.0;
+    double hungerDelta = 0.0;
+    double boredomDelta = 0.0;
+    double happinessDelta = 0.0;
 
     final isActiveMovement = _activeMovementStates.contains(currentState);
     final isResting = _restStates.contains(currentState);
@@ -160,6 +243,26 @@ class NeedsEngine {
       playfulnessDelta += _decayDelta(_needs.playfulness, decayAmount);
       energyDelta += _decayDelta(_needs.energy, decayAmount);
       restfulnessDelta += _decayDelta(_needs.restfulness, decayAmount);
+    }
+
+    // Passive hunger and boredom tick
+    if (currentState != PetState.eating) {
+      hungerDelta += 0.15 * dt;
+    }
+
+    if (currentState == PetState.idle || currentState == PetState.resting) {
+      boredomDelta += 0.25 * dt;
+    } else if (currentState == PetState.playing ||
+        currentState == PetState.chasing ||
+        currentState == PetState.celebrating) {
+      boredomDelta -= 0.5 * dt;
+    }
+
+    // Happiness decays slowly towards 50
+    if (_needs.happiness > 50.0) {
+      happinessDelta -= (0.1 * dt).clamp(0.0, _needs.happiness - 50.0);
+    } else if (_needs.happiness < 50.0) {
+      happinessDelta += (0.1 * dt).clamp(0.0, 50.0 - _needs.happiness);
     }
 
     if (isActiveMovement) {
@@ -192,27 +295,74 @@ class NeedsEngine {
       playfulnessDelta: playfulnessDelta,
       energyDelta: energyDelta,
       restfulnessDelta: restfulnessDelta,
+      hungerDelta: hungerDelta,
+      boredomDelta: boredomDelta,
+      happinessDelta: happinessDelta,
     );
   }
 
   void onPetted() {
-    _needs = _needs.applyDelta(affectionDelta: 0.1);
-    _logger.info('NeedsEngine.onPetted(): affection=${_needs.affection}');
+    onPetting();
+  }
+
+  void onPetting() {
+    _needs = _needs.applyDelta(
+      affectionDelta: 0.1,
+      happinessDelta: 15.0,
+      boredomDelta: -10.0,
+    );
+    _logger.info(
+      'NeedsEngine.onPetting(): affection=${_needs.affection} happiness=${_needs.happiness}',
+    );
   }
 
   void onBallFetched() {
-    _needs = _needs.applyDelta(playfulnessDelta: 0.15);
+    onPlayToy();
+  }
+
+  void onPlayToy() {
+    _needs = _needs.applyDelta(
+      playfulnessDelta: 0.15,
+      happinessDelta: 20.0,
+      boredomDelta: -25.0,
+      hungerDelta: 5.0,
+    );
     _logger.info(
-      'NeedsEngine.onBallFetched(): playfulness=${_needs.playfulness}',
+      'NeedsEngine.onPlayToy(): playfulness=${_needs.playfulness} boredom=${_needs.boredom}',
     );
   }
 
   void onTreatEaten() {
-    _needs = _needs.applyDelta(energyDelta: 0.15, affectionDelta: 0.1);
-    _logger.info(
-      'NeedsEngine.onTreatEaten(): '
-      'energy=${_needs.energy} affection=${_needs.affection}',
+    onFedTreat();
+  }
+
+  void onFedTreat() {
+    _needs = _needs.applyDelta(
+      energyDelta: 0.15,
+      affectionDelta: 0.1,
+      hungerDelta: -30.0,
+      happinessDelta: 15.0,
     );
+    _logger.info(
+      'NeedsEngine.onFedTreat(): '
+      'energy=${_needs.energy} affection=${_needs.affection} hunger=${_needs.hunger}',
+    );
+  }
+
+  void onBreakStarted() {
+    _needs = _needs.copyWith(breakMode: true).applyDelta(
+      restfulnessDelta: 0.1,
+      happinessDelta: 10.0,
+    );
+    _logger.info('NeedsEngine.onBreakStarted()');
+  }
+
+  void onBreakCompleted() {
+    _needs = _needs.copyWith(breakMode: false).applyDelta(
+      happinessDelta: 20.0,
+      affectionDelta: 0.1,
+    );
+    _logger.info('NeedsEngine.onBreakCompleted(): happiness=${_needs.happiness}');
   }
 
   void onWorkBlockLong({double minutesBeyondThreshold = 1.0}) {
@@ -227,7 +377,11 @@ class NeedsEngine {
   void persist() {
     try {
       final json = jsonEncode(_needs.toJson());
-      sl<StorageService>().setString(_persistKey, json);
+      if (sl.isRegistered<StorageService>()) {
+        sl<StorageService>().setString(_persistKey, json);
+      } else {
+        SimplePrefs.instance.setString(_persistKey, json);
+      }
       _logger.info('NeedsEngine.persist(): $json');
     } catch (e, st) {
       _logger.error('NeedsEngine.persist() failed: $e', stackTrace: st);
@@ -236,7 +390,12 @@ class NeedsEngine {
 
   void restore() {
     try {
-      final raw = sl<StorageService>().getString(_persistKey);
+      final String raw;
+      if (sl.isRegistered<StorageService>()) {
+        raw = sl<StorageService>().getString(_persistKey);
+      } else {
+        raw = SimplePrefs.instance.getString(_persistKey, defaultValue: '');
+      }
       if (raw.isEmpty) {
         _logger.info(
           'NeedsEngine.restore(): no persisted data, using defaults',

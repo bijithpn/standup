@@ -36,32 +36,35 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   late SettingsModel _settings;
-  Timer? _saveDebounceTimer;
+  late SettingsRepository _repo;
+  late BreakController _breakController;
 
   @override
   void initState() {
     super.initState();
-    final repo = Provider.of<SettingsRepository>(context, listen: false);
-    _settings = repo.currentSettings;
+    _repo = Provider.of<SettingsRepository>(context, listen: false);
+    _breakController = Provider.of<BreakController>(context, listen: false);
+    _settings = _repo.currentSettings;
   }
 
   @override
-  void dispose() {
-    _saveDebounceTimer?.cancel();
-    super.dispose();
-  }
+  void dispose() => super.dispose();
 
   void _save(SettingsModel updated) {
     try {
       setState(() => _settings = updated);
+      unawaited(_persistSettings(updated));
+    } catch (e) {
+      if (mounted) {
+        Toast.showError(context, 'Failed to save settings: ${e.toString()}');
+      }
+    }
+  }
 
-      _saveDebounceTimer?.cancel();
-      _saveDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-        if (!mounted) return;
-        final repo = Provider.of<SettingsRepository>(context, listen: false);
-        repo.save(updated);
-        Provider.of<BreakController>(context, listen: false).refreshSettings();
-      });
+  Future<void> _persistSettings(SettingsModel updated) async {
+    try {
+      await _repo.save(updated);
+      _breakController.refreshSettings();
     } catch (e) {
       if (mounted) {
         Toast.showError(context, 'Failed to save settings: ${e.toString()}');
@@ -170,7 +173,11 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Statistics':
         return Consumer<StatsService>(
           builder: (context, statsService, _) {
-            return AnalyticsSettingsSection(stats: statsService.load());
+            return AnalyticsSettingsSection(
+              stats: statsService.load(),
+              settings: _settings,
+              onSave: _save,
+            );
           },
         );
       case 'Companion':
@@ -180,7 +187,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Goals':
         return const GoalsSection();
       case 'Privacy':
-        return const PrivacySection();
+        return PrivacySection(settings: _settings, onSave: _save);
       case 'Themes':
       case 'Themes & Styling':
         return const ThemeSettingsSection();

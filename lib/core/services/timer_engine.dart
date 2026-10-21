@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 
 import 'dart:async';
+import 'dart:math';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:flutter/foundation.dart';
@@ -10,11 +11,14 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 import 'package:breakmate/core/services/timer_state.dart';
+import 'package:breakmate/core/services/break_determination_strategy.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -49,6 +53,22 @@ class TimerEngine extends ChangeNotifier {
   int _longBreakDurationMinutes = AppConstants.defaultLongBreakDurationMinutes;
   int _pauseTimerAfterMinutes = 5;
   int _resetTimerAfterMinutes = 15;
+  BreakDeterminationStrategy _breakDeterminationStrategy =
+      const IdleTimeBreakStrategy(innerStrategy: RepeatCycleBreakStrategy());
+
+  // Health reminders (posture/eye rest) no longer run on a fixed,
+  // user-set countdown — each fires once at a randomized point within the
+  // current work cycle (see `_checkHealthReminders`). These hold that
+  // cycle's chosen target in seconds; null means "not yet picked for this
+  // cycle". Not part of TimerStateData because they're never persisted —
+  // a fresh random target is fine after every app restart.
+  final Random _healthReminderRandom = Random();
+  int? _postureTargetSeconds;
+  int? _eyeBlinkTargetSeconds;
+
+  // Evidence-based baseline cadences — see `_checkHealthReminders`.
+  static const int _eyeRestBaselineMinutes = 20; // the 20-20-20 rule
+  static const int _postureBaselineMinutes = 30; // common ergonomic guidance
 
   final ValueNotifier<int> countdownNotifier = ValueNotifier<int>(0);
   final ValueNotifier<Duration> workElapsedNotifier = ValueNotifier<Duration>(
@@ -62,6 +82,8 @@ class TimerEngine extends ChangeNotifier {
     SmartDetectionService? smartDetectionService,
     CalendarService? calendarService,
     PresentationDetectionService? presentationDetectionService,
+    MeetingDetectionService? meetingDetectionService,
+    ContextSwitchTracker? contextSwitchTracker,
     EventBus? eventBus,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
@@ -71,8 +93,11 @@ class TimerEngine extends ChangeNotifier {
       smartDetectionService: _smartDetectionService,
       calendarService: calendarService,
       presentationDetectionService: presentationDetectionService,
+      meetingDetectionService: meetingDetectionService,
+      contextSwitchTracker: contextSwitchTracker,
     );
     _syncSettingsFromRepo();
+    _settingsRepository.addListener(_onSettingsChanged);
 
     countdownNotifier.value = _stateData.countdownSeconds;
     workElapsedNotifier.value = _stateData.workElapsed;
@@ -92,6 +117,22 @@ class TimerEngine extends ChangeNotifier {
     _longBreakDurationMinutes = s.longBreakDurationMinutes;
     _pauseTimerAfterMinutes = s.pauseTimerAfterMinutes;
     _resetTimerAfterMinutes = s.resetTimerAfterMinutes;
+  }
+
+  void _onSettingsChanged() {
+    _syncSettingsFromRepo();
+    if (state == TimerState.running) {
+      _stateData.workEndTime = clock.now().add(timeUntilNextShortBreak);
+      final remaining = timeUntilNextShortBreak.inSeconds;
+      _stateData.countdownSeconds = remaining;
+      countdownNotifier.value = remaining;
+      notifyListeners();
+    } else if (state == TimerState.paused && !_stateData.isManuallyPaused) {
+      final remaining = timeUntilNextShortBreak.inSeconds;
+      _stateData.countdownSeconds = remaining;
+      countdownNotifier.value = remaining;
+      notifyListeners();
+    }
   }
 
   TimerStateData get stateData => _stateData;
@@ -150,6 +191,23 @@ class TimerEngine extends ChangeNotifier {
     _resetTimerAfterMinutes = val;
     notifyListeners();
   }
+
+  BreakDeterminationStrategy get breakDeterminationStrategy =>
+      _breakDeterminationStrategy;
+  set breakDeterminationStrategy(BreakDeterminationStrategy strategy) {
+    _breakDeterminationStrategy = strategy;
+    notifyListeners();
+  }
+
+  int get completedShortBreaksInCycle => _stateData.completedShortBreaksInCycle;
+  set completedShortBreaksInCycle(int val) {
+    _stateData.completedShortBreaksInCycle = val;
+    notifyListeners();
+  }
+
+  int get repeatCycle => (_shortBreakIntervalMinutes > 0)
+      ? max(1, (_longBreakIntervalMinutes / _shortBreakIntervalMinutes).round())
+      : 4;
 
   TimerState get state => _stateData.state;
   WorkMode get mode => _stateData.mode;
@@ -252,7 +310,15 @@ class TimerEngine extends ChangeNotifier {
         return;
       }
 
-      if (state == TimerState.paused || state == TimerState.idle) {
+      if (state == TimerState.paused) {
+        if (!_stateData.isManuallyPaused && _contextManager.shouldRunWorkTimer()) {
+          _logger.info('Auto-resuming work timer: smart pause condition cleared');
+          resumeTimers();
+        }
+        return;
+      }
+
+      if (state == TimerState.idle) {
         return;
       }
 
@@ -414,28 +480,69 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
-    int postureInterval = settings.postureReminderIntervalMinutes;
-    int eyeblinkInterval = settings.eyeBlinkReminderIntervalMinutes;
+    // Health reminders are enable/disable only now — no manual interval —
+    // and are timed off evidence-based cadences, not an arbitrary fraction
+    // of whatever the (adaptive, sometimes very long) break interval
+    // happens to be:
+    //  - Eye rest follows the well-known 20-20-20 rule: roughly every 20
+    //    minutes, look at something 20 feet away for 20 seconds.
+    //  - Posture checks follow common ergonomic guidance: change position
+    //    and sit up straight roughly every 30 minutes.
+    // Tying these directly to `shortBreakIntervalMinutes` (which
+    // AdaptiveBreakService can stretch up to 90 minutes on a
+    // light-activity day) would let eye strain build for over an hour —
+    // the opposite of "helpful for a healthy body". Instead, that same
+    // adaptive signal only nudges the baseline by up to ±20% (busier/more
+    // active right now → nudged more frequent, matching the same
+    // usage-driven signal the break timer itself responds to), and a
+    // little jitter keeps the cadence from feeling mechanically fixed
+    // while staying inside a sensible range. This piggybacks on the tick
+    // this method is already called from every second — no extra timers,
+    // no added CPU cost.
+    final activityRatio = (_shortBreakIntervalMinutes /
+            AppConstants.defaultShortBreakIntervalMinutes)
+        .clamp(0.8, 1.2);
+    final slowdown =
+        settings.quietModeEnabled && settings.quietModePreset == 'low_battery'
+        ? 2
+        : 1;
 
-    if (settings.quietModeEnabled &&
-        settings.quietModePreset == 'low_battery') {
-      postureInterval *= 2;
-      eyeblinkInterval *= 2;
-    }
-
-    if (settings.postureReminderEnabled && postureInterval > 0) {
-      if (_stateData.postureElapsedSeconds >= postureInterval * 60) {
+    if (settings.postureReminderEnabled) {
+      _postureTargetSeconds ??= _healthReminderTargetSeconds(
+        baselineMinutes: _postureBaselineMinutes,
+        activityRatio: activityRatio,
+        slowdown: slowdown,
+      );
+      if (_stateData.postureElapsedSeconds >= _postureTargetSeconds!) {
         _stateData.postureElapsedSeconds = 0;
-        _triggerHealthReminder('posture', settings.postureReminderType);
+        _postureTargetSeconds = null;
+        _triggerHealthReminder('posture', 'overlay');
       }
     }
 
-    if (settings.eyeBlinkReminderEnabled && eyeblinkInterval > 0) {
-      if (_stateData.eyeBlinkElapsedSeconds >= eyeblinkInterval * 60) {
+    if (settings.eyeBlinkReminderEnabled) {
+      _eyeBlinkTargetSeconds ??= _healthReminderTargetSeconds(
+        baselineMinutes: _eyeRestBaselineMinutes,
+        activityRatio: activityRatio,
+        slowdown: slowdown,
+      );
+      if (_stateData.eyeBlinkElapsedSeconds >= _eyeBlinkTargetSeconds!) {
         _stateData.eyeBlinkElapsedSeconds = 0;
-        _triggerHealthReminder('eyeblink', settings.eyeBlinkReminderType);
+        _eyeBlinkTargetSeconds = null;
+        _triggerHealthReminder('eyeblink', 'overlay');
       }
     }
+  }
+
+  int _healthReminderTargetSeconds({
+    required int baselineMinutes,
+    required double activityRatio,
+    required int slowdown,
+  }) {
+    // ±15% jitter around the (activity-adjusted) baseline.
+    final jitter = 0.85 + _healthReminderRandom.nextDouble() * 0.3;
+    final minutes = baselineMinutes * activityRatio * jitter * slowdown;
+    return (minutes * 60).round().clamp(60, 24 * 60 * 60);
   }
 
   void _triggerHealthReminder(String reminderType, String displayType) {
@@ -486,26 +593,34 @@ class TimerEngine extends ChangeNotifier {
 
     final isLongBreak = isLongBreakDue();
 
+    final durationSeconds =
+        _breakDeterminationStrategy.determineBreakDurationSeconds(
+      isLongBreak: isLongBreak,
+      shortBreakDurationSeconds: _shortBreakDurationSeconds,
+      longBreakDurationMinutes: _longBreakDurationMinutes,
+    );
+    _stateData.countdownSeconds = durationSeconds;
+
     if (isLongBreak) {
-      _stateData.countdownSeconds = _longBreakDurationMinutes * 60;
       _stateData.activeBreak = BreakModel(
         type: BreakType.long,
         durationSeconds: countdownSeconds,
         title: 'LONG BREAK',
         tip:
             'Time to stand, stretch, and mentally reset. Step away from your desk.',
-        triggerReason: 'Long focus session completed',
+        triggerReason: 'Long focus session completed (cycle reached)',
       );
       _stateData.longBreakWindowStartedAt = clock.now();
+      _stateData.completedShortBreaksInCycle = 0;
     } else {
-      _stateData.countdownSeconds = _shortBreakDurationSeconds;
       _stateData.activeBreak = BreakModel(
         type: BreakType.short,
         durationSeconds: countdownSeconds,
         title: 'Eye Rest',
         tip: _randomTip(AppConstants.shortBreakTips),
-        triggerReason: '20-minute interval reached',
+        triggerReason: 'Short break interval reached',
       );
+      _stateData.completedShortBreaksInCycle++;
     }
 
     _stateData.breakEndTime = clock.now().add(
@@ -582,7 +697,21 @@ class TimerEngine extends ChangeNotifier {
     final elapsedSinceLong = now.difference(
       _stateData.longBreakWindowStartedAt!,
     );
-    return elapsedSinceLong >= Duration(minutes: _longBreakIntervalMinutes);
+    return _breakDeterminationStrategy.isLongBreakDue(
+      completedShortBreaksInCycle: _stateData.completedShortBreaksInCycle,
+      workElapsed: _stateData.workElapsed,
+      elapsedSinceLastLongBreak: elapsedSinceLong,
+      repeatCycle: repeatCycle,
+      longBreakIntervalMinutes: _longBreakIntervalMinutes,
+    );
+  }
+
+  void resetCycleOnIdle() {
+    _stateData.workElapsed = Duration.zero;
+    _stateData.completedShortBreaksInCycle = 0;
+    _stateData.longBreakWindowStartedAt = clock.now();
+    _logger.info('Reset break cycle after user idle timeout');
+    notifyListeners();
   }
 
   void updateSettings({
@@ -667,7 +796,11 @@ class TimerEngine extends ChangeNotifier {
     _stateData.workElapsed = Duration.zero;
     _stateData.postureElapsedSeconds = 0;
     _stateData.eyeBlinkElapsedSeconds = 0;
+    _postureTargetSeconds = null;
+    _eyeBlinkTargetSeconds = null;
     _stateData.state = TimerState.idle;
+    _stateData.completedShortBreaksInCycle = 0;
+    _stateData.longBreakWindowStartedAt = clock.now();
     _stateData.isManuallyPaused = false;
     _stateData.manualOverride = false;
     _stateData.clockOutTriggered = false;
@@ -792,6 +925,7 @@ class TimerEngine extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _tickTimer?.cancel();
+    _settingsRepository.removeListener(_onSettingsChanged);
     super.dispose();
   }
 

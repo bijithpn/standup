@@ -1,16 +1,22 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/ai/pet_behavior_brain.dart';
 import 'package:breakmate/features/companion/domain/pet_behavior_context.dart';
 import 'package:breakmate/features/companion/domain/pet_mood.dart';
+import 'package:breakmate/features/companion/domain/pet_needs.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
+import 'package:breakmate/features/companion/services/throwable_object_manager.dart';
 
 class PetCompanionService extends ChangeNotifier {
   final PetStateMachine _stateMachine;
   final PetBehaviorBrain _brain;
   final PetNavigationService _navigation;
+  final NeedsEngine _needsEngine;
+  ThrowableObjectManager? _throwableManager;
+  StreamSubscription<Offset?>? _toyPositionSubscription;
   PetProfile _profile;
 
   PetMoodState _mood;
@@ -38,10 +44,14 @@ class PetCompanionService extends ChangeNotifier {
     required PetBehaviorBrain brain,
     required PetNavigationService navigation,
     required PetProfile profile,
+    NeedsEngine? needsEngine,
+    ThrowableObjectManager? throwableManager,
   }) : _stateMachine = stateMachine,
        _brain = brain,
        _navigation = navigation,
        _profile = profile,
+       _needsEngine = needsEngine ?? NeedsEngine(),
+       _throwableManager = throwableManager,
        _mood = PetMoodState(
          mood: profile.initialMood ?? PetMood.relaxed,
          since: DateTime.now(),
@@ -59,15 +69,81 @@ class PetCompanionService extends ChangeNotifier {
          boredom: 0.0,
        ) {
     _navigation.setSpecies(profile.species);
+    if (throwableManager != null) {
+      attachThrowableManager(throwableManager);
+    }
   }
 
   PetStateMachine get stateMachine => _stateMachine;
   PetNavigationService get navigation => _navigation;
+  NeedsEngine get needsEngine => _needsEngine;
+  ThrowableObjectManager? get throwableManager => _throwableManager;
   PetState get currentState => _stateMachine.currentState;
   PetMoodState get mood => _mood;
   PetBehaviorContext get context => _context;
   PetProfile get profile => _profile;
   Offset get position => _navigation.currentPosition;
+
+  void attachThrowableManager(ThrowableObjectManager manager) {
+    _throwableManager = manager;
+    _toyPositionSubscription?.cancel();
+    _toyPositionSubscription = manager.toyPositionStream.listen((toyPos) {
+      if (toyPos != null) {
+        trackToy(toyPos);
+      }
+    });
+  }
+
+  void trackToy(Offset toyPos) {
+    // Tracking is handled by overlay viewport gaze tracking
+  }
+
+  void onPetting() {
+    _needsEngine.onPetting();
+    _stateMachine.onPetting();
+    _mood = PetMoodState.fromNeeds(_needsEngine.current);
+    _stateMachine.setMood(_mood);
+    notifyListeners();
+  }
+
+  void onFedTreat() {
+    _needsEngine.onFedTreat();
+    _stateMachine.onFedTreat();
+    _mood = PetMoodState.fromNeeds(_needsEngine.current);
+    _stateMachine.setMood(_mood);
+    notifyListeners();
+  }
+
+  void onPlayToy([Offset? toyPos]) {
+    _needsEngine.onPlayToy();
+    _stateMachine.onPlayToy();
+    _mood = PetMoodState.fromNeeds(_needsEngine.current);
+    _stateMachine.setMood(_mood);
+    if (toyPos != null) {
+      trackToy(toyPos);
+    }
+    notifyListeners();
+  }
+
+  void onBreakStarted() {
+    _isBreakActive = true;
+    _needsEngine.onBreakStarted();
+    _stateMachine.onBreakStarted();
+    _mood = PetMoodState.fromNeeds(_needsEngine.current);
+    _stateMachine.setMood(_mood);
+    _context = _context.copyWith(isBreakActive: true);
+    notifyListeners();
+  }
+
+  void onBreakCompleted() {
+    _isBreakActive = false;
+    _needsEngine.onBreakCompleted();
+    _stateMachine.onBreakCompleted();
+    _mood = PetMoodState.fromNeeds(_needsEngine.current);
+    _stateMachine.setMood(_mood);
+    _context = _context.copyWith(isBreakActive: false);
+    notifyListeners();
+  }
 
   void updateProfile(PetProfile newProfile) {
     _profile = newProfile;
@@ -77,7 +153,7 @@ class PetCompanionService extends ChangeNotifier {
     );
     _navigation.setSpecies(newProfile.species);
     _context = _context.copyWith(profile: newProfile, currentMood: _mood);
-    notifyListeners(); // Profile change is a real UI event — notify is correct here
+    notifyListeners();
   }
 
   void initialize({required Size screenSize, Offset? startPosition}) {
@@ -118,13 +194,10 @@ class PetCompanionService extends ChangeNotifier {
   void update(double dt) {
     final now = DateTime.now();
 
+    _needsEngine.tick(dt, _stateMachine.currentState, false, _totalWorkToday);
+
     if (!_mood.isActive(now)) {
-      _mood = PetMoodState(
-        mood: PetMood.relaxed,
-        intensity: 0.5,
-        since: now,
-        decayDuration: const Duration(minutes: 5),
-      );
+      _mood = PetMoodState.fromNeeds(_needsEngine.current, now);
       _stateMachine.setMood(_mood);
     }
 
@@ -281,5 +354,11 @@ class PetCompanionService extends ChangeNotifier {
         _navigation.updateConfig(wanderSpeed: 0.0);
         break;
     }
+  }
+
+  @override
+  void dispose() {
+    _toyPositionSubscription?.cancel();
+    super.dispose();
   }
 }

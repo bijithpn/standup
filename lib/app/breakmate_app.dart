@@ -9,6 +9,11 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
+import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:breakmate/app/main_layout.dart';
@@ -74,38 +79,41 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<BreakController>()),
         ChangeNotifierProvider.value(value: sl<SettingsRepository>()),
         ChangeNotifierProvider.value(value: sl<StatsService>()),
+        ChangeNotifierProvider.value(value: sl<AppUsageService>()),
+        ChangeNotifierProvider.value(value: sl<FocusSessionService>()),
+        ChangeNotifierProvider.value(value: sl<BreakHistoryService>()),
+        ChangeNotifierProvider.value(value: sl<ContextSwitchTracker>()),
+        ChangeNotifierProvider.value(value: sl<FocusStreakService>()),
         ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
       child: Consumer<ThemeController>(
-        builder: (context, themeController, _) {
-          return ScaffoldMessenger(
-            child: MacosApp(
-              navigatorKey: ErrorToastService.navigatorKey,
-              title: 'BreakMate',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.macosTheme,
-              routes: {'/main': (context) => const MainLayout()},
-              home: Builder(
-                builder: (context) {
-                  return Consumer<SettingsRepository>(
-                    builder: (context, settingsRepo, _) {
-                      final settings = settingsRepo.currentSettings;
-
-                      if (!settings.hasCompletedOnboarding) {
-                        return const OnboardingPage();
-                      }
-
-                      return const Material(
-                        type: MaterialType.transparency,
-                        child: MainLayout(),
-                      );
-                    },
-                  );
-                },
-              ),
+        builder: (context, themeController, child) {
+          return MacosApp(
+            navigatorKey: ErrorToastService.navigatorKey,
+            title: 'BreakMate',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.macosTheme,
+            routes: {'/main': (context) => const MainLayout()},
+            builder: (context, widget) => ScaffoldMessenger(
+              child: widget ?? const SizedBox.shrink(),
             ),
+            home: child,
           );
         },
+        child: Consumer<SettingsRepository>(
+          builder: (context, settingsRepo, _) {
+            final settings = settingsRepo.currentSettings;
+
+            if (!settings.hasCompletedOnboarding) {
+              return const OnboardingPage();
+            }
+
+            return const Material(
+              type: MaterialType.transparency,
+              child: MainLayout(),
+            );
+          },
+        ),
       ),
     );
   }
@@ -120,7 +128,7 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
     // `preventClose` is true by default (menu-bar app – closing hides it).
     final prevent = await windowManager.isPreventClose();
     if (!prevent) {
-      await gracefulShutdown();
+      await gracefulShutdown('onWindowClose (prevent=false)');
       return;
     }
 

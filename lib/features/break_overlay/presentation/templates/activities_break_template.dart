@@ -36,7 +36,11 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
   late AnimationController _underlineController;
   late Animation<double> _underlineWidth;
 
-  static const _accent = BreakOverlayTheme.accentShort;
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'activities',
+    BreakOverlayTheme.accentShort,
+  );
 
   @override
   void initState() {

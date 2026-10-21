@@ -225,9 +225,15 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
         result(idle)
     }
 
-    func handleFocusApp(result: FlutterResult) {
-        NSApp.activate(ignoringOtherApps: true)
-        result(nil)
+    func handleFocusApp(result: @escaping FlutterResult) {
+        DispatchQueue.main.async {
+            NSApp.activate(ignoringOtherApps: true)
+            if let window = MainFlutterWindow.shared ?? (NSApp.delegate as? AppDelegate)?.mainFlutterWindow {
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            }
+            result(nil)
+        }
     }
 
     // MARK: - Private helpers

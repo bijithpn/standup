@@ -37,9 +37,14 @@ class MinimalFocusTemplate extends StatelessWidget {
     final defaultAccent = isShort
         ? BreakOverlayTheme.accentShort
         : BreakOverlayTheme.accentLong;
-    final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
+    final baseAccent = settings.clockFaceTextColorHex != 0xFFFFFFFF
         ? Color(settings.clockFaceTextColorHex)
         : defaultAccent;
+    final accent = BreakOverlayTheme.resolveAccent(
+      settings.templateAccentOverrides,
+      'minimal',
+      baseAccent,
+    );
 
     return ColoredBox(
       color: BreakOverlayTheme.background,

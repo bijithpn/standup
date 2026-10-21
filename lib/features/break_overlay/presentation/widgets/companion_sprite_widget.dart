@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -7,6 +8,10 @@ import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
+import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
+import 'package:breakmate/features/companion/presentation/widgets/companion_pet.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
@@ -18,6 +23,8 @@ class CompanionSpriteWidget extends StatefulWidget {
   final Size? size;
   final double petYOffset;
   final double petXOffset;
+  final AvatarDefinition? avatarDefinition;
+  final bool use3dAvatar;
 
   static void clearCache() {}
 
@@ -40,6 +47,8 @@ class CompanionSpriteWidget extends StatefulWidget {
     this.size,
     this.petYOffset = 0.0,
     this.petXOffset = 0.0,
+    this.avatarDefinition,
+    this.use3dAvatar = false,
   });
 
   @override
@@ -96,20 +105,26 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   Future<void> _loadAndSetup() async {
+    if (widget.petTheme.isAvatar || widget.use3dAvatar || widget.avatarDefinition != null) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+      return;
+    }
+
     final path = _getAssetPath();
     if (path.isEmpty) return;
 
     if (path == _currentLoadedPath &&
         widget.backgroundImagePath == _currentBackgroundPath &&
-        _loadedImage != null &&
-        _groundImage != null &&
-        _cloudImage != null) {
+        _loadedImage != null) {
+      // Fast path: sprite already loaded. Ground/cloud images are optional after asset migration.
       _setupTicker();
       return;
     }
 
     final String bgPath =
-        widget.backgroundImagePath ?? 'assets/background/forest/background.png';
+        widget.backgroundImagePath ?? '';
     final config = EnvironmentThemeConfig.getByPath(bgPath);
 
     final cachedSprite = PetAssetLoader.getImageSync(path);
@@ -147,27 +162,40 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
     }
 
     try {
-      final results = await Future.wait([
-        PetAssetLoader.loadImage(path),
-        if (widget.backgroundImagePath != null)
-          PetAssetLoader.loadImage(config.skyPath)
-        else
-          Future.value(null),
-        PetAssetLoader.loadImage(config.groundPath),
-        PetAssetLoader.loadImage(config.cloudPath),
-      ]);
-
-      final loadedSprite = results[0] as ui.Image;
+      // asset-migration: background/ground/cloud assets removed.
+      // Only load the sprite itself; treat missing env assets as null (no background).
+      final loadedSprite = await PetAssetLoader.loadImage(path);
       final double computedPadding = await _calculateImagePadding(loadedSprite);
+
+      // Only attempt sky/ground/cloud if paths are non-empty and backgroundImagePath is set.
+      final hasBg = widget.backgroundImagePath != null &&
+          widget.backgroundImagePath!.isNotEmpty;
+      final skyPath = hasBg ? config.skyPath : '';
+      final groundPath = config.groundPath;
+      final cloudPath = config.cloudPath;
+
+      ui.Image? bgImage;
+      ui.Image? groundImage;
+      ui.Image? cloudImage;
+
+      if (hasBg && skyPath.isNotEmpty) {
+        try { bgImage = await PetAssetLoader.loadImage(skyPath); } catch (_) {}
+      }
+      if (groundPath.isNotEmpty) {
+        try { groundImage = await PetAssetLoader.loadImage(groundPath); } catch (_) {}
+      }
+      if (cloudPath.isNotEmpty) {
+        try { cloudImage = await PetAssetLoader.loadImage(cloudPath); } catch (_) {}
+      }
 
       if (mounted) {
         setState(() {
           _loadedImage = loadedSprite;
           _currentLoadedPath = path;
-          _backgroundImage = results[1];
+          _backgroundImage = bgImage;
           _currentBackgroundPath = widget.backgroundImagePath;
-          _groundImage = results[2] as ui.Image;
-          _cloudImage = results[3] as ui.Image;
+          _groundImage = groundImage;
+          _cloudImage = cloudImage;
           _calculatedBottomPadding = computedPadding;
           _isLoading = false;
         });
@@ -182,6 +210,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       }
     }
   }
+
 
   Future<double> _calculateImagePadding(ui.Image image) async {
     final dynamic anim =
@@ -230,6 +259,10 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   String _getAssetPath() {
+    if (widget.petTheme.isAvatar || widget.petTheme.animations.isEmpty) {
+      return '';
+    }
+
     final dynamic anim =
         widget.petTheme.animations[widget.animationState] ??
         widget.petTheme.animations[PetAnimationState.idle] ??
@@ -246,13 +279,17 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   void _setupTicker() {
+    if (widget.petTheme.isAvatar || widget.petTheme.animations.isEmpty) {
+      return;
+    }
+
     final dynamic anim =
         widget.petTheme.animations[widget.animationState] ??
         widget.petTheme.animations[PetAnimationState.idle] ??
         widget.petTheme.animations.values.first;
 
     int frameCount = 1;
-    double stepTime = 0.15;
+    double stepTime = 0.1;
     bool loop = true;
 
     if (widget.petTheme.type == PetType.composite) {
@@ -294,6 +331,43 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   Widget build(BuildContext context) {
     final double effectiveScale =
         widget.scale * (32.0 / widget.petTheme.spriteSize);
+
+    if (widget.petTheme.isBlobatar) {
+      final effectiveW =
+          widget.size?.width ?? (widget.petTheme.spriteSize * effectiveScale);
+      final effectiveH =
+          widget.size?.height ?? (widget.petTheme.spriteSize * effectiveScale);
+      final size = math.min(effectiveW, effectiveH);
+      return SizedBox(
+        width: effectiveW,
+        height: effectiveH,
+        child: Center(
+          child: BlobatarCompanionWidget(
+            name: widget.petTheme.name,
+            size: size,
+            isInteractive: true,
+          ),
+        ),
+      );
+    }
+
+    if (widget.petTheme.isAvatar || widget.use3dAvatar || widget.avatarDefinition != null) {
+      final species = AvatarSpecies.tryParse(widget.petTheme.id) ?? AvatarSpecies.cat;
+      final def = widget.avatarDefinition ??
+          widget.petTheme.avatarDefinition ??
+          AvatarDefinition.fromSpecies(species);
+      final effectiveW = widget.size?.width ?? (widget.petTheme.spriteSize * effectiveScale);
+      final effectiveH = widget.size?.height ?? (widget.petTheme.spriteSize * effectiveScale);
+      return SizedBox(
+        width: effectiveW,
+        height: effectiveH,
+        child: CompanionPet(
+          definition: def,
+          size: math.min(effectiveW, effectiveH),
+          isStatic: widget.isStatic,
+        ),
+      );
+    }
 
     final bool loading = _isLoading;
     if (_loadedImage == null || (loading && _backgroundImage == null)) {

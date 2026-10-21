@@ -123,8 +123,12 @@ class _CompanionInteractiveTemplateState
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: const BoxDecoration(
-                            color: BreakOverlayTheme.accentShort,
+                          decoration: BoxDecoration(
+                            color: BreakOverlayTheme.resolveAccent(
+                              widget.settings.templateAccentOverrides,
+                              'companion',
+                              BreakOverlayTheme.accentShort,
+                            ),
                             shape: BoxShape.circle,
                           ),
                         ),

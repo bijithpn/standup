@@ -3,6 +3,8 @@ import 'package:clock/clock.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 class TimerContextManager {
@@ -10,16 +12,40 @@ class TimerContextManager {
   final SmartDetectionService? _smartDetectionService;
   final CalendarService? _calendarService;
   final PresentationDetectionService? _presentationDetectionService;
+  final MeetingDetectionService? _meetingDetectionService;
+  final ContextSwitchTracker? _contextSwitchTracker;
 
   TimerContextManager({
     required SettingsRepository settingsRepository,
     SmartDetectionService? smartDetectionService,
     CalendarService? calendarService,
     PresentationDetectionService? presentationDetectionService,
+    MeetingDetectionService? meetingDetectionService,
+    ContextSwitchTracker? contextSwitchTracker,
   }) : _settingsRepository = settingsRepository,
        _smartDetectionService = smartDetectionService,
        _calendarService = calendarService,
-       _presentationDetectionService = presentationDetectionService;
+       _presentationDetectionService = presentationDetectionService,
+       _meetingDetectionService = meetingDetectionService,
+       _contextSwitchTracker = contextSwitchTracker;
+
+  /// Number of app switches observed in the last hour — a soft fragmented-
+  /// attention signal, purely informational (see [isHighContextSwitchRate]).
+  int recentContextSwitchCount({DateTime? now}) {
+    final tracker = _contextSwitchTracker;
+    if (tracker == null) return 0;
+    return tracker.switchesInWindow(now ?? clock.now());
+  }
+
+  /// Whether app-switching has been frequent enough recently to suggest
+  /// fragmented focus. Deliberately never consulted by [shouldRunWorkTimer]
+  /// or any break-timing decision — it's surfaced to the user (dashboard
+  /// nudge), never used to silently change scheduling.
+  bool isHighContextSwitchRate({DateTime? now}) {
+    final tracker = _contextSwitchTracker;
+    if (tracker == null) return false;
+    return tracker.isHighSwitchRate(now ?? clock.now());
+  }
 
   bool isWithinWorkingHours() {
     final settings = _settingsRepository.currentSettings;
@@ -47,19 +73,50 @@ class TimerContextManager {
     return nowMinutes >= startMinutes && nowMinutes < endMinutes;
   }
 
+  /// Whether the work timer should be auto-paused right now. Deliberately
+  /// limited to reasons the user can see and control directly — being in a
+  /// meeting or video call is never one of them; see [isMeetingActive],
+  /// which only affects how break reminders are displayed.
   bool isSmartPauseActive() {
     final settings = _settingsRepository.currentSettings;
-    final smartDetection = _smartDetectionService;
-    if (smartDetection == null) return false;
-
-    final pauseForVideoCall =
-        settings.detectVideoCalls && smartDetection.isVideoCallActive;
     final pauseForFocus =
-        settings.respectFocusMode && smartDetection.isFocusModeActive;
+        settings.respectFocusMode &&
+        (_smartDetectionService?.isFocusModeActive ?? false);
     final pauseForPresentation =
         settings.presentationPauseEnabled &&
         (_presentationDetectionService?.isPresenting ?? false);
-    return pauseForVideoCall || pauseForFocus || pauseForPresentation;
+    final pauseForVideo =
+        settings.detectVideoCalls &&
+        (_smartDetectionService?.isVideoPlaying ?? false);
+    return pauseForFocus || pauseForPresentation || pauseForVideo;
+  }
+
+  /// Whether the user currently appears to be in a meeting or video call —
+  /// covers both calendar-synced meeting detection, hardware microphone/camera,
+  /// and intelligent video playback detection.
+  bool isMeetingActive() {
+    final settings = _settingsRepository.currentSettings;
+    final inCalendarMeeting =
+        settings.detectMeetings &&
+        (_meetingDetectionService?.isMeetingActive ?? false);
+    final inVideoCall =
+        settings.detectVideoCalls &&
+        (_smartDetectionService?.isVideoCallActive ?? false);
+    return inCalendarMeeting || inVideoCall;
+  }
+
+  /// Whether a fullscreen presentation/screen-share appears to be up right
+  /// now (see [PresentationDetectionService]). Independent of
+  /// [isSmartPauseActive]/[shouldRunWorkTimer] and of
+  /// `settings.presentationPauseEnabled` — that setting only controls
+  /// whether presentations *pause the work timer*. This is consulted purely
+  /// to decide how a break is presented: a full break overlay would cover
+  /// (or show up in) whatever is being presented, so break UI should stay
+  /// out of the way, the same as [isMeetingActive].
+  bool isPresentationActive() {
+    final settings = _settingsRepository.currentSettings;
+    if (!settings.presentationPauseEnabled) return false;
+    return _presentationDetectionService?.isPresenting ?? false;
   }
 
   bool shouldRunWorkTimer() {
@@ -116,9 +173,8 @@ class TimerContextManager {
       return null;
     }
 
-    final busy =
-        events.where((e) => !e.isAllDay && e.end.isAfter(now)).toList()
-          ..sort((a, b) => a.start.compareTo(b.start));
+    final busy = events.where((e) => !e.isAllDay && e.end.isAfter(now)).toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
 
     var cursor = now;
     for (final event in busy) {

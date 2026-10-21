@@ -70,7 +70,7 @@ class CustomIntervalsEditor extends StatelessWidget {
               showPicker(
                 context: context,
                 title: 'Heads-up Notification',
-                options: ['0', '10', '15', '20', '30', '45', '60'],
+                options: ['0', '2', '3', '5', '10', '15', '20', '30'],
                 suffix: ' sec',
                 onSelected: (v) => onSave(
                   settings.copyWith(preBreakWarningSeconds: int.parse(v)),

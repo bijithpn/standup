@@ -7,6 +7,8 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/features/analytics/break_focus_correlation.dart';
+import 'package:breakmate/features/analytics/weekly_digest.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -128,6 +130,27 @@ class NotificationService {
     );
   }
 
+  Future<void> showWeeklyDigest(WeeklyDigest digest) async {
+    await _show(id: 30, title: 'Your Week in Review', body: digest.toMessage());
+  }
+
+  Future<void> showFocusCorrelationInsight(
+    BreakFocusCorrelation correlation,
+  ) async {
+    await _show(
+      id: 31,
+      title: 'A pattern in your data',
+      body: correlation.describe(),
+    );
+  }
+
+  /// The daily proactive insight (plan doc §7.5) — the single
+  /// highest-priority [OverviewInsight] of the day, delivered once so it
+  /// reaches the user without a Statistics-screen visit.
+  Future<void> showDailyInsight(String text) async {
+    await _show(id: 32, title: 'Something worth noticing', body: text);
+  }
+
   Future<void> showReminder({required String message}) async {
     await _show(id: 0, title: 'BreakMate', body: message);
   }
@@ -139,6 +162,16 @@ class NotificationService {
       body: isLong
           ? 'Long break starts in 1 minute'
           : 'Short break starts in 30 seconds',
+    );
+  }
+
+  Future<void> showMeetingBreakReminder({bool isPresenting = false}) async {
+    await _show(
+      id: 12,
+      title: 'Break ready',
+      body: isPresenting
+          ? 'You are presenting. BreakMate will keep this reminder quiet.'
+          : 'You are in a meeting. BreakMate will keep this reminder quiet.',
     );
   }
 

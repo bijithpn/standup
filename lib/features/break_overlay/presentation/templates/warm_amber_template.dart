@@ -30,7 +30,11 @@ class WarmAmberTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = BreakOverlayTheme.accentAmber;
+    final accent = BreakOverlayTheme.resolveAccent(
+      settings.templateAccentOverrides,
+      'warm_amber',
+      BreakOverlayTheme.accentAmber,
+    );
 
     return ColoredBox(
       color: BreakOverlayTheme.background,

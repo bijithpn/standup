@@ -1,5 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:breakmate/core/storage/models/activity_segment.dart';
+import 'package:breakmate/objectbox.g.dart';
 import 'package:get_it/get_it.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:breakmate/core/storage/models/settings_snapshot.dart';
@@ -14,6 +17,7 @@ import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/notification_service.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     hide DailyStats;
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
@@ -29,6 +33,10 @@ import 'package:breakmate/core/native/app_tracking_service.dart';
 final sl = GetIt.instance;
 
 class FakeStorageService implements StorageService {
+  /// Activity history is not part of what these tests exercise.
+  @override
+  Box<ActivitySegment>? activitySegmentBox;
+
   final Map<String, dynamic> _data = {};
 
   @override
@@ -275,6 +283,11 @@ class FakeNotificationService extends NotificationService {
   }
 
   @override
+  Future<void> showBreakStarted({required String breakTitle}) async {
+    showBreakReminderCalled = true;
+  }
+
+  @override
   Future<void> showClockOutReminder() async {
     showClockOutReminderCalled = true;
   }
@@ -367,6 +380,9 @@ void main() {
     sl.registerSingleton<WellnessEngine>(
       WellnessEngine(appTracking: sl<AppTrackingService>()),
     );
+    sl.registerSingleton<BreakHistoryService>(
+      BreakHistoryService(storage: fakeStorageService),
+    );
 
     fakeAdaptiveBreakService = FakeAdaptiveBreakService();
 
@@ -458,5 +474,26 @@ void main() {
       fakeActivityMonitor.callback?.call(true);
       expect(timerEngine.state, equals(TimerState.running));
     });
+
+    test(
+      'a stuck systemSleepPaused flag self-heals on the next detected activity',
+      () {
+        timerEngine.startTimers();
+        expect(timerEngine.state, equals(TimerState.running));
+
+        // A sleep notification arrived but its matching wake notification
+        // was missed (e.g. dropped by the OS) — the tick loop would
+        // otherwise stay silently frozen forever with no visible state
+        // change.
+        timerEngine.handleSystemSleep();
+        expect(timerEngine.systemSleepPaused, isTrue);
+
+        // Real activity is unambiguous proof the system is awake.
+        fakeActivityMonitor.callback?.call(true);
+
+        expect(timerEngine.systemSleepPaused, isFalse);
+        expect(timerEngine.state, equals(TimerState.running));
+      },
+    );
   });
 }

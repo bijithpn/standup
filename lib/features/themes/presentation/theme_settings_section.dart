@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/core/utils/toast.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import '../application/theme_controller.dart';
@@ -68,11 +67,8 @@ class _ThemeSettingsSectionState extends State<ThemeSettingsSection> {
             return ThemePresetCard(
               preset: p,
               isSelected: isSelected,
-              onTap: () async {
-                await _controller.setPreset(p.id);
-                if (context.mounted) {
-                  Toast.showSuccess(context, 'Theme changed to ${p.name}');
-                }
+              onTap: () {
+                _controller.setPreset(p.id);
               },
             );
           },

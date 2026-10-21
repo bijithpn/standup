@@ -17,7 +17,10 @@ import window_manager
 func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
     // Register only the critical plugins required for secondary isolates (overlays and companion)
     // to keep memory and CPU footprint low on lower-end macOS devices.
-    WindowManagerPlugin.register(with: registry.registrar(forPlugin: "WindowManagerPlugin"))
+    //
+    // NOTE: WindowManagerPlugin is intentionally excluded here. Secondary engines are headless
+    // (no NSWindow/view), so WindowManagerPlugin.mainWindow force-unwraps a nil view and
+    // crashes the process the moment any window_manager Dart call reaches the secondary isolate.
     ScreenRetrieverMacosPlugin.register(with: registry.registrar(forPlugin: "ScreenRetrieverMacosPlugin"))
     AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
     FlutterLocalNotificationsPlugin.register(with: registry.registrar(forPlugin: "FlutterLocalNotificationsPlugin"))
@@ -30,7 +33,6 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 @main
 class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   var meetingBridge: MeetingDetectionBridge?
-  var presentationBridge: PresentationDetectionBridge?
   var focusBridge: FocusModeBridge?
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
@@ -43,8 +45,6 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     let currentApp = NSRunningApplication.current
     let runningApps = NSWorkspace.shared.runningApplications
     let currentBundleId = currentApp.bundleIdentifier
-    let currentLocalizedName = currentApp.localizedName
-    let currentBundleName = currentApp.bundleURL?.lastPathComponent
     let currentProcessId = currentApp.processIdentifier
     
     var terminatedAny = false
@@ -53,15 +53,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
       if app.processIdentifier == currentProcessId { continue }
       
       let isSameBundle = currentBundleId != nil && app.bundleIdentifier == currentBundleId
-      let isSameName = currentLocalizedName != nil && app.localizedName == currentLocalizedName
-      let isSameBundleName = currentBundleName != nil && app.bundleURL?.lastPathComponent == currentBundleName
-      
-      // Specifically target "com.bijith.breakmate" or "BreakMate" as additional safety fallbacks
-      let isTargetBundle = app.bundleIdentifier == "com.bijith.breakmate"
-      let isTargetName = app.localizedName?.lowercased().contains("breakmate") == true || app.localizedName?.lowercased().contains("break-mate") == true
-      let isTargetBundleName = app.bundleURL?.lastPathComponent.lowercased().contains("breakmate") == true || app.bundleURL?.lastPathComponent.lowercased().contains("break-mate") == true
-      
-      if isSameBundle || isSameName || isSameBundleName || isTargetBundle || isTargetName || isTargetBundleName {
+      if isSameBundle {
         NSLog("Terminating stale running instance of BreakMate (PID: \(app.processIdentifier), Name: \(app.localizedName ?? "unknown")) to release database lock")
         app.forceTerminate()
         terminatedAny = true
@@ -94,8 +86,11 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   }
 
   override func applicationWillTerminate(_ notification: Notification) {
-    OverlayWindowManager.shared.hideOverlay()
+    OverlayWindowManager.shared.destroyAllInstances()
     CompanionWindowManager.shared.hideCompanion()
+    PiPFlutterWindowManager.shared.hidePipWindow()
+    // The WebView build of this window is no longer routed to, but tear it down
+    // too in case an older session left one on screen.
     PiPWindowManager.shared.hidePipWindow()
     super.applicationWillTerminate(notification)
   }
@@ -119,7 +114,40 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     NSLog("Sparkle: Configured with Public Key: \(publicKey)")
 
     meetingBridge = MeetingDetectionBridge(registrar: registrar)
-    presentationBridge = PresentationDetectionBridge(registrar: registrar)
+      NativeSmartDetector.shared.register(with: registrar.messenger)
+
+      let enhancementChannel = FlutterMethodChannel(name: "com.breakmate/native_enhancements", binaryMessenger: registrar.messenger)
+      enhancementChannel.setMethodCallHandler { call, result in
+          switch call.method {
+          case "showCursorCountdown":
+              let seconds = (call.arguments as? [String: Any])?["seconds"] as? Int ?? 15
+              NativeCursorCountdownWindow.shared.startCountdown(seconds: seconds)
+              result(nil)
+          case "hideCursorCountdown":
+              NativeCursorCountdownWindow.shared.dismissCountdown()
+              result(nil)
+          case "triggerFlashReminder":
+              guard let args = call.arguments as? [String: Any],
+                    let text = args["text"] as? String else {
+                  result(FlutterError(code: "INVALID_ARGS", message: "text required", details: nil))
+                  return
+              }
+              let duration = args["durationMs"] as? Int ?? 250
+              let opacity = CGFloat(args["opacity"] as? Double ?? 0.35)
+              let colorHex = args["colorHex"] as? String ?? "#000000"
+              NativeFlashReminderWindow.shared.triggerFlash(text: text, durationMs: duration, opacity: opacity, colorHex: colorHex)
+              result(nil)
+          case "preventDisplaySleep":
+              let reason = (call.arguments as? [String: Any])?["reason"] as? String ?? "BreakMate Break Active"
+              NativePowerAssertionManager.shared.preventDisplaySleep(reason: reason)
+              result(nil)
+          case "releaseDisplaySleep":
+              NativePowerAssertionManager.shared.releaseDisplaySleep()
+              result(nil)
+          default:
+              result(FlutterMethodNotImplemented)
+          }
+      }
 
       focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)
@@ -131,6 +159,14 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     
     super.applicationDidFinishLaunching(notification)
     NSLog("Sparkle: applicationDidFinishLaunching completed")
+    
+    DispatchQueue.main.async { [weak self] in
+      if let window = self?.mainFlutterWindow {
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
+      }
+    }
     
     if let appMenu = NSApp.mainMenu?.item(at: 0)?.submenu {
       let checkForUpdatesItem = NSMenuItem(
@@ -181,6 +217,12 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     func updater(_ updater: SPUUpdater, didFinishLoading appcast: SUAppcast) {
         NSLog("Sparkle: Finished loading appcast with \(appcast.items.count) items")
     }
+
+    func updater(_ updater: SPUUpdater, didFinishUpdateCycleFor updateCheck: SPUUpdateCheck, error: Error?) {
+        guard let error = error else { return }
+        NSLog("Sparkle: Update check cycle failed: \(error.localizedDescription)")
+        sparkleBridge?.updater(updater, didAbortWithError: error)
+    }
 }
 
 // MARK: - WindowBridge
@@ -189,13 +231,22 @@ class WindowBridge: NSObject, FlutterPlugin {
     private let channel: FlutterMethodChannel
     private weak var registrar: FlutterPluginRegistrar?
     
+    /// Whether this bridge may act on the app's main window when its own
+    /// engine has no window attached.
+    ///
+    /// True for the main engine, where "the window" and "the app's window" are
+    /// the same thing. False for every secondary engine — see `window`.
+    private let allowsAppWindowFallback: Bool
+
+    /// Secondary engines (companion, PiP, overlays) register through here.
     static func register(with registrar: FlutterPluginRegistrar) {
-        let bridge = WindowBridge(registrar: registrar)
+        let bridge = WindowBridge(registrar: registrar, allowsAppWindowFallback: false)
         registrar.addMethodCallDelegate(bridge, channel: bridge.channel)
     }
-    
-    init(registrar: FlutterPluginRegistrar) {
+
+    init(registrar: FlutterPluginRegistrar, allowsAppWindowFallback: Bool = true) {
         self.registrar = registrar
+        self.allowsAppWindowFallback = allowsAppWindowFallback
         channel = FlutterMethodChannel(
             name: "com.breakmate/window",
             binaryMessenger: registrar.messenger
@@ -203,10 +254,31 @@ class WindowBridge: NSObject, FlutterPlugin {
         super.init()
         registrar.addMethodCallDelegate(self, channel: channel)
     }
-    
+
+    /// The window this bridge is allowed to touch.
+    ///
+    /// A secondary engine owns exactly one window, and if that window is not
+    /// attached yet there is simply nothing to act on. Falling back to the
+    /// app's main window here would be actively harmful now that the companion
+    /// moves its own window around the screen: a failed lookup in the PiP
+    /// engine would send the user's main BreakMate window wandering off
+    /// instead of the pet.
     private var window: NSWindow? {
-        return registrar?.view?.window ?? NSApp.mainWindow ?? NSApp.keyWindow
+        if let own = registrar?.view?.window { return own }
+        guard allowsAppWindowFallback else {
+            // Logged once rather than per call: the companion asks to be moved
+            // twenty-five times a second while it walks, and this is the one
+            // thing that would make that silently do nothing.
+            if !hasWarnedAboutMissingWindow {
+                hasWarnedAboutMissingWindow = true
+                NSLog("WindowBridge: secondary engine has no window attached; window calls are being ignored")
+            }
+            return nil
+        }
+        return NSApp.mainWindow ?? NSApp.keyWindow
     }
+
+    private var hasWarnedAboutMissingWindow = false
     
     func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         let args = call.arguments as? [String: Any]
@@ -275,7 +347,14 @@ class WindowBridge: NSObject, FlutterPlugin {
         var frame = window.frame
         frame.origin.x = x
         frame.origin.y = y
-        window.setFrame(frame, display: true, animate: true)
+        // `animate: true` runs a nested run loop until AppKit's animation
+        // finishes. That is right for a one-off move and ruinous for the
+        // companion's wandering, which sets a new position twenty-five times a
+        // second: every call would block the main thread, and each animation
+        // would be fighting the one before it. Callers driving their own
+        // motion pass false and get an immediate move.
+        let animate = args?["animate"] as? Bool ?? true
+        window.setFrame(frame, display: true, animate: animate)
         result(nil)
     }
     
@@ -438,8 +517,19 @@ class SparkleBridge: NSObject {
             NSLog("SparkleBridge: Received method call: \(call.method)")
             switch call.method {
             case "checkForUpdates":
-                NSLog("SparkleBridge: Triggering checkForUpdatesInBackground")
-                self?.updater.checkForUpdatesInBackground()
+                // This app action needs a fresh check with a result in our own UI.
+                // An informational probe bypasses the background scheduler and
+                // does not open Sparkle's separate update window.
+                guard let self = self else {
+                    result(FlutterError(code: "UPDATER_UNAVAILABLE", message: "The updater is unavailable.", details: nil))
+                    return
+                }
+                guard self.updater.canCheckForUpdates else {
+                    result(FlutterError(code: "UPDATE_CHECK_UNAVAILABLE", message: "An update check cannot be started right now.", details: nil))
+                    return
+                }
+                NSLog("SparkleBridge: Triggering checkForUpdateInformation")
+                self.updater.checkForUpdateInformation()
                 result(nil)
             case "startUpdate":
                 NSLog("SparkleBridge: Triggering checkForUpdates (User-facing)")

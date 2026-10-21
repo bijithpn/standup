@@ -74,6 +74,6 @@ class MenuBarController {
   }
 
   Future<void> _quitApp() async {
-    await gracefulShutdown();
+    await gracefulShutdown('MenuBarController._quitApp (menu action)');
   }
 }

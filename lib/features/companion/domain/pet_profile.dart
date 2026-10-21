@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
+import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'pet_type.dart';
 import 'pet_personality.dart';
 import 'pet_mood.dart';
@@ -15,6 +17,8 @@ class PetProfile {
   final double baseScale;
   final double movementSpeed;
   final bool isEnabled;
+  final PetTheme? theme;
+  final AvatarDefinition? avatarDefinition;
 
   const PetProfile({
     required this.id,
@@ -28,6 +32,8 @@ class PetProfile {
     this.baseScale = 1.0,
     this.movementSpeed = 1.0,
     this.isEnabled = true,
+    this.theme,
+    this.avatarDefinition,
   });
 
   static const orangeCat = PetProfile(
@@ -57,6 +63,8 @@ class PetProfile {
     double? baseScale,
     double? movementSpeed,
     bool? isEnabled,
+    PetTheme? theme,
+    AvatarDefinition? avatarDefinition,
   }) {
     return PetProfile(
       id: id ?? this.id,
@@ -70,6 +78,8 @@ class PetProfile {
       baseScale: baseScale ?? this.baseScale,
       movementSpeed: movementSpeed ?? this.movementSpeed,
       isEnabled: isEnabled ?? this.isEnabled,
+      theme: theme ?? this.theme,
+      avatarDefinition: avatarDefinition ?? this.avatarDefinition,
     );
   }
 

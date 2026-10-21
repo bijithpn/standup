@@ -43,6 +43,7 @@ class CompanionSettingsSlice {
   final double scale;
   final bool clickThrough;
   final bool followMouse;
+  final bool wanderingEnabled;
   final String previewBackground;
   final List<String> unlockedPets;
   final double windowWidth;
@@ -68,6 +69,7 @@ class CompanionSettingsSlice {
     required this.scale,
     required this.clickThrough,
     required this.followMouse,
+    required this.wanderingEnabled,
     required this.previewBackground,
     required this.unlockedPets,
     required this.windowWidth,
@@ -94,6 +96,7 @@ class CompanionSettingsSlice {
     scale: s.companionScale,
     clickThrough: s.companionClickThrough,
     followMouse: s.companionFollowMouse,
+    wanderingEnabled: s.companionWanderingEnabled,
     previewBackground: s.companionPreviewBackground,
     unlockedPets: s.unlockedPets,
     windowWidth: s.companionWindowWidth,
@@ -127,6 +130,7 @@ class CompanionSettingsSlice {
           scale == other.scale &&
           clickThrough == other.clickThrough &&
           followMouse == other.followMouse &&
+          wanderingEnabled == other.wanderingEnabled &&
           previewBackground == other.previewBackground &&
           listEquals(unlockedPets, other.unlockedPets) &&
           windowWidth == other.windowWidth &&
@@ -153,6 +157,7 @@ class CompanionSettingsSlice {
     scale,
     clickThrough,
     followMouse,
+    wanderingEnabled,
     previewBackground,
     Object.hashAll(unlockedPets),
     windowWidth,

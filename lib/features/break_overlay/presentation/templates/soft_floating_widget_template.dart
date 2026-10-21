@@ -39,7 +39,11 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
   static const double _closedWidth = 224.0;
   static const double _openWidth = 310.0;
   static const double _height = 56.0;
-  static const _accent = BreakOverlayTheme.accentShort;
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'floating',
+    BreakOverlayTheme.accentShort,
+  );
 
   @override
   void initState() {

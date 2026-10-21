@@ -18,6 +18,32 @@ class SettingsRepository extends ChangeNotifier {
 
   SettingsRepository({required StorageService storage}) : _storage = storage;
 
+  static Map<String, int> _decodeTemplateAccentOverrides(String raw) {
+    if (raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k as String, v as int));
+      }
+    } catch (_) {
+      // Corrupt/legacy value — fall back to no overrides.
+    }
+    return const {};
+  }
+
+  static Map<String, int> _decodeCategoryDailyBudgetMinutes(String raw) {
+    if (raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.map((k, v) => MapEntry(k as String, v as int));
+      }
+    } catch (_) {
+      // Corrupt/legacy value — fall back to no budgets set.
+    }
+    return const {};
+  }
+
   SettingsModel get currentSettings => _current;
 
   Future<void> load() async {
@@ -127,7 +153,8 @@ class SettingsRepository extends ChangeNotifier {
         try {
           final decoded = jsonDecode(snapshot.exercisesJson);
           if (decoded is List) {
-            return decoded.map((e) => ExerciseModel.fromMap(e)).toList();
+            final saved = decoded.map((e) => ExerciseModel.fromMap(e)).toList();
+            return _withNewDefaults(saved);
           }
         } catch (e, st) {
           ErrorHandler().handleError(e, st);
@@ -135,6 +162,17 @@ class SettingsRepository extends ChangeNotifier {
       }
     }
     return _loadExercises();
+  }
+
+  /// Appends any built-in exercise that isn't already in [saved] by id, so
+  /// new default activities show up for existing users too, not just fresh
+  /// installs. Existing entries (and any favorite/hidden state) are untouched.
+  List<ExerciseModel> _withNewDefaults(List<ExerciseModel> saved) {
+    final savedIds = saved.map((e) => e.id).toSet();
+    final missing = ExerciseModel.defaults.where(
+      (e) => !savedIds.contains(e.id),
+    );
+    return [...saved, ...missing];
   }
 
   SettingsModel _fromSnapshot(SettingsSnapshot s, CompanionPreferences? cp) {
@@ -183,6 +221,14 @@ class SettingsRepository extends ChangeNotifier {
       detectVideoCalls: s.detectVideoCalls,
       detectMeetings: s.detectMeetings,
       respectFocusMode: s.respectFocusMode,
+      globalHotkeyEnabled: _storage.getBool(
+        'global_hotkey_enabled',
+        defaultValue: true,
+      ),
+      presentationPauseEnabled: _storage.getBool(
+        'presentation_pause_enabled',
+        defaultValue: false,
+      ),
       enableClockOut: s.enableClockOut,
       clockOutTime: s.clockOutTime,
       exercises: _decodeExercises(s.exercisesJson),
@@ -201,7 +247,7 @@ class SettingsRepository extends ChangeNotifier {
       calendarEnabled: s.calendarEnabled,
       enableSessionResume: s.enableSessionResume,
       companionEnabled: cp?.companionEnabled ?? false,
-      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: true),
       companionPetTheme: cp?.companionPetTheme ?? 'grey_cat',
       companionPetName: cp?.companionPetName ?? 'Mochi',
       companionScale: cp?.companionScale ?? 1.5,
@@ -230,19 +276,33 @@ class SettingsRepository extends ChangeNotifier {
         'companion_treat_type',
         defaultValue: 'sushi',
       ),
+      templateAccentOverrides: _decodeTemplateAccentOverrides(
+        _storage.getString('template_accent_overrides', defaultValue: ''),
+      ),
+      categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
+        _storage.getString('category_daily_budget_minutes', defaultValue: ''),
+      ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
-        defaultValue: 'assets/background/forest/background.png',
+        defaultValue: '',
       ),
       pipBackgroundStyle: _storage.getString(
         'pip_background_style',
-        defaultValue: 'dark',
+        defaultValue: 'transparent',
       ),
       pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
       pipDraggableClickable: _storage.getBool(
         'pip_draggable_clickable',
         defaultValue: true,
       ),
+      companionAvatarUrlParams: _storage
+              .getString(
+                AppConstants.keyCompanionAvatarUrlParams,
+                defaultValue: '',
+              )
+              .isNotEmpty
+          ? _storage.getString(AppConstants.keyCompanionAvatarUrlParams)
+          : null,
     );
   }
 
@@ -360,6 +420,14 @@ class SettingsRepository extends ChangeNotifier {
         'respect_focus_mode',
         defaultValue: true,
       ),
+      globalHotkeyEnabled: _storage.getBool(
+        'global_hotkey_enabled',
+        defaultValue: true,
+      ),
+      presentationPauseEnabled: _storage.getBool(
+        'presentation_pause_enabled',
+        defaultValue: false,
+      ),
       enableClockOut: _storage.getBool('enable_clock_out', defaultValue: false),
       clockOutTime: _storage.getString('clock_out_time', defaultValue: '17:00'),
       exercises: _loadExercises(),
@@ -389,13 +457,16 @@ class SettingsRepository extends ChangeNotifier {
         'companion_enabled',
         defaultValue: true,
       ),
-      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: false),
+      pipModeEnabled: _storage.getBool('pip_mode_enabled', defaultValue: true),
       companionPetTheme: _storage.getString(
         AppConstants.keyCompanionPetTheme,
         defaultValue: _storage.getString(
           AppConstants.legacyKeyCompanionCatTheme,
           defaultValue: 'grey_cat',
         ),
+      ),
+      companionAvatarUrlParams: _storage.getString(
+        AppConstants.keyCompanionAvatarUrlParams,
       ),
       companionPetName: _storage.getString(
         'companion_pet_name',
@@ -440,13 +511,19 @@ class SettingsRepository extends ChangeNotifier {
         'companion_treat_type',
         defaultValue: 'sushi',
       ),
+      templateAccentOverrides: _decodeTemplateAccentOverrides(
+        _storage.getString('template_accent_overrides', defaultValue: ''),
+      ),
+      categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
+        _storage.getString('category_daily_budget_minutes', defaultValue: ''),
+      ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
-        defaultValue: 'assets/background/forest/background.png',
+        defaultValue: '',
       ),
       pipBackgroundStyle: _storage.getString(
         'pip_background_style',
-        defaultValue: 'dark',
+        defaultValue: 'transparent',
       ),
       pipOpacity: _storage.getDouble('pip_opacity', defaultValue: 1.0),
       pipDraggableClickable: _storage.getBool(
@@ -630,6 +707,14 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
     await _storage.setBool('detect_meetings', settings.detectMeetings);
     await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
+    await _storage.setBool(
+      'global_hotkey_enabled',
+      settings.globalHotkeyEnabled,
+    );
+    await _storage.setBool(
+      'presentation_pause_enabled',
+      settings.presentationPauseEnabled,
+    );
     await _storage.setBool('calendar_enabled', settings.calendarEnabled);
     await _storage.setBool(
       'enable_session_resume',
@@ -647,6 +732,10 @@ class SettingsRepository extends ChangeNotifier {
       AppConstants.keyCompanionPetTheme,
       settings.companionPetTheme,
     );
+    await _storage.setString(
+      AppConstants.keyCompanionAvatarUrlParams,
+      settings.companionAvatarUrlParams ?? '',
+    );
     await _storage.setDouble('companion_scale', settings.companionScale);
     await _storage.setBool('petting_enabled', settings.pettingEnabled);
     await _storage.setBool('ball_throw_enabled', settings.ballThrowEnabled);
@@ -661,6 +750,14 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'companion_treat_type',
       settings.companionTreatType,
+    );
+    await _storage.setString(
+      'template_accent_overrides',
+      jsonEncode(settings.templateAccentOverrides),
+    );
+    await _storage.setString(
+      'category_daily_budget_minutes',
+      jsonEncode(settings.categoryDailyBudgetMinutes),
     );
     await _storage.setString(
       'companion_preview_background',
@@ -719,7 +816,9 @@ class SettingsRepository extends ChangeNotifier {
           .whereType<Map<String, dynamic>>()
           .map(ExerciseModel.fromMap)
           .toList();
-      return exercises.isEmpty ? ExerciseModel.defaults : exercises;
+      return exercises.isEmpty
+          ? ExerciseModel.defaults
+          : _withNewDefaults(exercises);
     } catch (_) {
       return ExerciseModel.defaults;
     }

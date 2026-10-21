@@ -14,6 +14,7 @@ import 'package:objectbox/internal.dart'
 import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
+import 'core/storage/models/activity_segment.dart';
 import 'core/storage/models/companion_preferences.dart';
 import 'core/storage/models/daily_stats.dart';
 import 'core/storage/models/key_value_record.dart';
@@ -631,6 +632,67 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(7, 537064604335033517),
+    name: 'ActivitySegment',
+    lastPropertyId: const obx_int.IdUid(8, 2843990949922797347),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 5761885397096391198),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 7631194357066868919),
+        name: 'appKey',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(3, 84343739199658972),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 1545699696017888443),
+        name: 'appName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 7211244865454768595),
+        name: 'categoryName',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 1847961433553697099),
+        name: 'date',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(4, 3707179754135151729),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 2697912620488482165),
+        name: 'startedAtMs',
+        type: 6,
+        flags: 8,
+        indexId: const obx_int.IdUid(5, 7525673880042292067),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 3839654574193682400),
+        name: 'endedAtMs',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 2843990949922797347),
+        name: 'kind',
+        type: 6,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -676,8 +738,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(6, 5630062560298269937),
-    lastIndexId: const obx_int.IdUid(2, 2404533075128465752),
+    lastEntityId: const obx_int.IdUid(7, 537064604335033517),
+    lastIndexId: const obx_int.IdUid(5, 7525673880042292067),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -1495,6 +1557,84 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    ActivitySegment: obx_int.EntityDefinition<ActivitySegment>(
+      model: _entities[6],
+      toOneRelations: (ActivitySegment object) => [],
+      toManyRelations: (ActivitySegment object) => {},
+      getId: (ActivitySegment object) => object.id,
+      setId: (ActivitySegment object, int id) {
+        object.id = id;
+      },
+      objectToFB: (ActivitySegment object, fb.Builder fbb) {
+        final appKeyOffset = fbb.writeString(object.appKey);
+        final appNameOffset = fbb.writeString(object.appName);
+        final categoryNameOffset = fbb.writeString(object.categoryName);
+        final dateOffset = fbb.writeString(object.date);
+        fbb.startTable(9);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, appKeyOffset);
+        fbb.addOffset(2, appNameOffset);
+        fbb.addOffset(3, categoryNameOffset);
+        fbb.addOffset(4, dateOffset);
+        fbb.addInt64(5, object.startedAtMs);
+        fbb.addInt64(6, object.endedAtMs);
+        fbb.addInt64(7, object.kind);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final appKeyParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final appNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final categoryNameParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 10, '');
+        final dateParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 12, '');
+        final startedAtMsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          14,
+          0,
+        );
+        final endedAtMsParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          0,
+        );
+        final kindParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          18,
+          0,
+        );
+        final object = ActivitySegment(
+          id: idParam,
+          appKey: appKeyParam,
+          appName: appNameParam,
+          categoryName: categoryNameParam,
+          date: dateParam,
+          startedAtMs: startedAtMsParam,
+          endedAtMs: endedAtMsParam,
+          kind: kindParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -1949,5 +2089,48 @@ class SessionState_ {
   /// See [SessionState.longBreakWindowStartedAt].
   static final longBreakWindowStartedAt = obx.QueryDateProperty<SessionState>(
     _entities[5].properties[8],
+  );
+}
+
+/// [ActivitySegment] entity fields to define ObjectBox queries.
+class ActivitySegment_ {
+  /// See [ActivitySegment.id].
+  static final id = obx.QueryIntegerProperty<ActivitySegment>(
+    _entities[6].properties[0],
+  );
+
+  /// See [ActivitySegment.appKey].
+  static final appKey = obx.QueryStringProperty<ActivitySegment>(
+    _entities[6].properties[1],
+  );
+
+  /// See [ActivitySegment.appName].
+  static final appName = obx.QueryStringProperty<ActivitySegment>(
+    _entities[6].properties[2],
+  );
+
+  /// See [ActivitySegment.categoryName].
+  static final categoryName = obx.QueryStringProperty<ActivitySegment>(
+    _entities[6].properties[3],
+  );
+
+  /// See [ActivitySegment.date].
+  static final date = obx.QueryStringProperty<ActivitySegment>(
+    _entities[6].properties[4],
+  );
+
+  /// See [ActivitySegment.startedAtMs].
+  static final startedAtMs = obx.QueryIntegerProperty<ActivitySegment>(
+    _entities[6].properties[5],
+  );
+
+  /// See [ActivitySegment.endedAtMs].
+  static final endedAtMs = obx.QueryIntegerProperty<ActivitySegment>(
+    _entities[6].properties[6],
+  );
+
+  /// See [ActivitySegment.kind].
+  static final kind = obx.QueryIntegerProperty<ActivitySegment>(
+    _entities[6].properties[7],
   );
 }

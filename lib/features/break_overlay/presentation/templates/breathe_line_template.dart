@@ -67,9 +67,14 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   Widget build(BuildContext context) {
     final isShort = widget.breakInfo.type == BreakType.short;
     final breakName = isShort ? 'Eye rest' : 'Long break';
-    final accent = widget.settings.clockFaceTextColorHex != 0xFFFFFFFF
+    final baseAccent = widget.settings.clockFaceTextColorHex != 0xFFFFFFFF
         ? Color(widget.settings.clockFaceTextColorHex)
         : BreakOverlayTheme.accentShort;
+    final accent = BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'breathe_line',
+      baseAccent,
+    );
 
     return ColoredBox(
       color: BreakOverlayTheme.background,

@@ -19,6 +19,7 @@ abstract final class BreakOverlayTheme {
   static const Color accentLong = Color(0xFF86EFAC); // long / recovery break
   static const Color accentAmber = Color(0xFFC49A4A); // warm-amber / wind-down
   static const Color accentZen = Color(0xFF7EC8E3); // zen / breathe
+  static const Color accentNature = Color(0xFF74C69D); // eye-break nature backdrop
 
   // Borders / surfaces
   static const Color borderSubtle = Color(0x0DFFFFFF); // 5 % white
@@ -30,6 +31,18 @@ abstract final class BreakOverlayTheme {
   static const double skipRight = 40.0;
 
   // Typography
+  /// Resolves the accent color for [templateId], honoring a user-pinned
+  /// override from `SettingsModel.templateAccentOverrides` when present and
+  /// falling back to the template's built-in [fallback] accent otherwise.
+  static Color resolveAccent(
+    Map<String, int> overrides,
+    String templateId,
+    Color fallback,
+  ) {
+    final override = overrides[templateId];
+    return override != null ? Color(override) : fallback;
+  }
+
   static const String fontFamily = 'Inter';
   static const double timerFontSizeLg = 64.0;
   static const double timerFontSizeMd = 54.0;

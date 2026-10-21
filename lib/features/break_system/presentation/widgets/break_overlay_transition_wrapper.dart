@@ -85,12 +85,16 @@ class _BreakOverlayTransitionWrapperState
       }
     }
 
-    if (event is KeyDownEvent &&
-        event.logicalKey == LogicalKeyboardKey.escape) {
+    // Any key dismisses the break (unless strict mode is on) — matches the
+    // ESC/any-key behavior of the native overlay window; don't force the
+    // user to sit through the full timer or hunt for one specific key.
+    if (event is KeyDownEvent && !_isModifierKey(event.logicalKey)) {
       try {
         final controller = context.read<BreakController>();
-        controller.skipCurrentBreak();
-        return true;
+        if (!widget.settings.strictMode) {
+          controller.skipCurrentBreak();
+          return true;
+        }
       } catch (e, st) {
         ErrorHandler().handleError(e, st);
       }
@@ -98,8 +102,25 @@ class _BreakOverlayTransitionWrapperState
     return false;
   }
 
+  static bool _isModifierKey(LogicalKeyboardKey key) {
+    return key == LogicalKeyboardKey.shift ||
+        key == LogicalKeyboardKey.shiftLeft ||
+        key == LogicalKeyboardKey.shiftRight ||
+        key == LogicalKeyboardKey.control ||
+        key == LogicalKeyboardKey.controlLeft ||
+        key == LogicalKeyboardKey.controlRight ||
+        key == LogicalKeyboardKey.alt ||
+        key == LogicalKeyboardKey.altLeft ||
+        key == LogicalKeyboardKey.altRight ||
+        key == LogicalKeyboardKey.meta ||
+        key == LogicalKeyboardKey.metaLeft ||
+        key == LogicalKeyboardKey.metaRight ||
+        key == LogicalKeyboardKey.capsLock ||
+        key == LogicalKeyboardKey.fn;
+  }
+
   void _startSlideshow() {
-    if (_slideshowTimer != null) return;
+    if (_slideshowTimer != null || AppConstants.wellnessSlideshow.isEmpty) return;
     _slideshowTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (!mounted) return;
       setState(() {

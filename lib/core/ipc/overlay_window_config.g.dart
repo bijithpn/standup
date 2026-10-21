@@ -32,6 +32,7 @@ _OverlayWindowConfig _$OverlayWindowConfigFromJson(Map<String, dynamic> json) =>
       reminderType: json['reminderType'] as String?,
       breaksCompleted: (json['breaksCompleted'] as num?)?.toInt(),
       targetEndTime: (json['targetEndTime'] as num?)?.toInt(),
+      allowFullPoster: json['allowFullPoster'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$OverlayWindowConfigToJson(
@@ -60,4 +61,5 @@ Map<String, dynamic> _$OverlayWindowConfigToJson(
   'reminderType': instance.reminderType,
   'breaksCompleted': instance.breaksCompleted,
   'targetEndTime': instance.targetEndTime,
+  'allowFullPoster': instance.allowFullPoster,
 };

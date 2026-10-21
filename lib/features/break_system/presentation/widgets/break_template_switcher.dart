@@ -14,6 +14,7 @@ import 'package:breakmate/features/break_overlay/presentation/templates/haiku_ca
 import 'package:breakmate/features/break_overlay/presentation/templates/iris_rest_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/mono_time_template.dart';
+import 'package:breakmate/features/break_overlay/presentation/templates/night_sky_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/one_word_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/open_field_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/paper_light_template.dart';
@@ -42,6 +43,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
 
   // Slide details for 'classic' slideshow mode
   final String currentTemplate;
+  final String? classicImage;
+  final PageController? pageController;
   final AnimationController kenBurnsController;
   final String? exerciseTitle;
   final String? exerciseInstructions;
@@ -54,7 +57,9 @@ class BreakTemplateSwitcher extends StatelessWidget {
     required this.remaining,
     required this.total,
     required this.onSkip,
-    required this.currentTemplate,
+    this.currentTemplate = '',
+    this.classicImage,
+    this.pageController,
     required this.kenBurnsController,
     this.exerciseTitle,
     this.exerciseInstructions,
@@ -74,7 +79,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
-          singleImage: currentTemplate,
+          singleImage: classicImage ?? currentTemplate,
+          pageController: pageController,
           kenBurnsController: kenBurnsController,
           exerciseTitle: exerciseTitle,
           exerciseInstructions: exerciseInstructions,
@@ -273,6 +279,14 @@ class BreakTemplateSwitcher extends StatelessWidget {
         );
       case 'paper_light':
         return PaperLightTemplate(
+          breakInfo: breakInfo,
+          settings: settings,
+          remainingSeconds: remaining,
+          totalSeconds: total,
+          onSkip: onSkip,
+        );
+      case 'night_sky':
+        return NightSkyTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,

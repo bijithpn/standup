@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,15 +25,6 @@ import 'features/features.dart';
 import 'shared/shared.dart';
 
 void _setupGlobalErrors() {
-  void handleFatalError(Object error, StackTrace? stack) {
-    ErrorHandler().handleError(error, stack, type: AppErrorType.general);
-    // Gracefully terminate the background server and release ports before exiting.
-    Future.delayed(const Duration(seconds: 2), () async {
-      await _gracefulShutdown(_globalSingleInstanceServer);
-      exit(1);
-    });
-  }
-
   FlutterError.onError = (FlutterErrorDetails details) {
     debugPrint('=== FLUTTER ERROR ===');
     debugPrint(details.exceptionAsString());
@@ -54,16 +46,11 @@ void _setupGlobalErrors() {
   };
 
   PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('=== ASYNC DART ERROR (FATAL) ===');
+    debugPrint('=== ASYNC DART ERROR ===');
     debugPrint(error.toString());
     debugPrint(stack.toString());
 
-    // Unhandled asynchronous exceptions are escalated to fatal process termination.
-    handleFatalError(error, stack);
-
-    ErrorToastService.showError(
-      'A critical error occurred. App will close shortly.',
-    );
+    ErrorHandler().handleError(error, stack, type: AppErrorType.general);
     return true;
   };
 
@@ -182,8 +169,8 @@ void _setupGlobalErrors() {
 
 ServerSocket? _globalSingleInstanceServer;
 
-Future<void> _gracefulShutdown(ServerSocket? serverSocket) async {
-  debugPrint('[Shutdown] Starting graceful shutdown...');
+Future<void> _gracefulShutdown(ServerSocket? serverSocket, [String? reason]) async {
+  debugPrint('[Shutdown] Starting graceful shutdown (reason: $reason) from:\n${StackTrace.current}');
 
   try {
     if (sl.isRegistered<SettingsRepository>()) {
@@ -333,8 +320,8 @@ Future<List<int>> _getPidsListeningOnPort(int port) async {
   return pids;
 }
 
-Future<void> gracefulShutdown() async {
-  await _gracefulShutdown(_globalSingleInstanceServer);
+Future<void> gracefulShutdown([String? reason]) async {
+  await _gracefulShutdown(_globalSingleInstanceServer, reason);
 }
 
 void mainCommon(FlavorConfig config) async {
@@ -481,7 +468,10 @@ void mainCommon(FlavorConfig config) async {
                   );
                   for (final targetPid in pids) {
                     try {
-                      final success = Process.killPid(targetPid);
+                      final success = Process.killPid(
+                        targetPid,
+                        ProcessSignal.sigkill,
+                      );
                       debugPrint(
                         'Startup: Terminated stale PID $targetPid (success=$success)',
                       );
@@ -510,11 +500,26 @@ void mainCommon(FlavorConfig config) async {
             }
           }
 
-          if (!bound && !kDebugMode) {
-            debugPrint(
-              'Startup: Could not bind any single-instance port. Exiting.',
-            );
-            exit(1);
+          if (!bound) {
+            if (kDebugMode) {
+              try {
+                singleInstanceServer = await ServerSocket.bind(
+                  InternetAddress.loopbackIPv4,
+                  0,
+                );
+                debugPrint(
+                  'Startup: Bound ephemeral port ${singleInstanceServer.port} in debug mode',
+                );
+                bound = true;
+              } catch (e) {
+                debugPrint('Startup: Ephemeral port bind failed in debug mode: $e');
+              }
+            } else {
+              debugPrint(
+                'Startup: Could not bind any single-instance port. Exiting.',
+              );
+              exit(1);
+            }
           }
         }
 
@@ -523,11 +528,11 @@ void mainCommon(FlavorConfig config) async {
         if (!Platform.isWindows) {
           ProcessSignal.sigterm.watch().listen((_) async {
             debugPrint('[Signal] SIGTERM received — shutting down.');
-            await _gracefulShutdown(_globalSingleInstanceServer);
+            await _gracefulShutdown(_globalSingleInstanceServer, 'ProcessSignal.sigterm');
           });
           ProcessSignal.sigint.watch().listen((_) async {
             debugPrint('[Signal] SIGINT received — shutting down.');
-            await _gracefulShutdown(_globalSingleInstanceServer);
+            await _gracefulShutdown(_globalSingleInstanceServer, 'ProcessSignal.sigint');
           });
         }
 
@@ -543,7 +548,7 @@ void mainCommon(FlavorConfig config) async {
           ErrorHandler().handleError(e, st, type: AppErrorType.general);
           ErrorToastService.showError('Startup failed. The app will close.');
           await Future.delayed(const Duration(seconds: 3));
-          await _gracefulShutdown(_globalSingleInstanceServer);
+          await _gracefulShutdown(_globalSingleInstanceServer, 'startup exception: $e');
           return;
         }
 
@@ -569,6 +574,9 @@ void mainCommon(FlavorConfig config) async {
           await windowManager.setResizable(false);
           await windowManager.show();
           await windowManager.focus();
+          if (Platform.isMacOS) {
+            await NativeBridge.focusApp();
+          }
         });
 
         MethodChannel('com.breakmate.desktop/bridge').setMethodCallHandler((
@@ -588,6 +596,16 @@ void mainCommon(FlavorConfig config) async {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
             sl<TimerEngine>().handleSystemWake();
+          } else if (call.method == 'onAvatarSaved') {
+            final urlParams = call.arguments?['urlParams'] as String?;
+            if (urlParams != null && sl.isRegistered<CompanionOverlayController>()) {
+              await sl<CompanionOverlayController>().saveAvatarUrlParams(urlParams);
+            }
+          } else if (call.method == 'onPipBackgroundStyleChanged') {
+            final style = call.arguments?['style'] as String?;
+            if (style != null && sl.isRegistered<CompanionOverlayController>()) {
+              await sl<CompanionOverlayController>().changePipBackgroundStyle(style);
+            }
           }
         });
 
@@ -597,7 +615,7 @@ void mainCommon(FlavorConfig config) async {
               final cmd = message.trim();
               if (cmd == 'shutdown') {
                 debugPrint('SingleInstanceServer: Received shutdown command.');
-                await _gracefulShutdown(singleInstanceServer);
+                await _gracefulShutdown(singleInstanceServer, 'singleInstanceServer IPC: shutdown');
               } else if (cmd == 'showDashboard') {
                 await sl<OverlayWindowService>().showDashboard(forceShow: true);
               }
@@ -621,16 +639,38 @@ void mainCommon(FlavorConfig config) async {
         if (kReleaseMode &&
             config.sentryDsn.isNotEmpty &&
             config.sentryDsn != 'DEV_DSN_HERE') {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            logStartup('first dashboard frame rendered');
+            if (Platform.isMacOS) {
+              try {
+                await windowManager.show();
+                await windowManager.focus();
+                await NativeBridge.focusApp();
+              } catch (e) {
+                debugPrint('PostFrame window focus failed: $e');
+              }
+            }
+          });
           await SentryFlutter.init(
             (options) {
               options.dsn = config.sentryDsn;
               options.enableAppHangTracking = false;
+              SentryHygiene.configure(options);
             },
             appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
           );
         } else {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             logStartup('first dashboard frame rendered');
+            if (Platform.isMacOS) {
+              try {
+                await windowManager.show();
+                await windowManager.focus();
+                await NativeBridge.focusApp();
+              } catch (e) {
+                debugPrint('PostFrame window focus failed: $e');
+              }
+            }
           });
           runApp(const BreakMateApp());
         }
@@ -643,7 +683,7 @@ void mainCommon(FlavorConfig config) async {
     (error, stack) {
       debugPrint('ZONED ERROR: $error');
       debugPrint(stack.toString());
-      gracefulShutdown();
+      ErrorHandler().handleError(error, stack, type: AppErrorType.general);
     },
   );
 }
@@ -754,12 +794,12 @@ Future<void> companionMain() async {
     }
   }
 
+  // The companion is the first thing these windows draw, so have its scenes
+  // parsed before the first frame rather than a beat after it.
+  unawaited(AvatarSceneCatalog.instance.load());
+
   try {
     CustomEnvironmentRepository().loadSync();
-    final defaultTheme = PetTheme.getTheme('grey_cat');
-    await PetAssetLoader.loadAnimations(
-      CompanionGame.getProfileFromTheme(defaultTheme),
-    );
   } catch (e, st) {
     ErrorHandler().handleError(e, st);
   }
@@ -791,12 +831,12 @@ Future<void> pipMain() async {
     }
   }
 
+  // The companion is the first thing these windows draw, so have its scenes
+  // parsed before the first frame rather than a beat after it.
+  unawaited(AvatarSceneCatalog.instance.load());
+
   try {
     CustomEnvironmentRepository().loadSync();
-    final defaultTheme = PetTheme.getTheme('grey_cat');
-    await PetAssetLoader.loadAnimations(
-      CompanionGame.getProfileFromTheme(defaultTheme),
-    );
   } catch (e, st) {
     ErrorHandler().handleError(e, st);
   }

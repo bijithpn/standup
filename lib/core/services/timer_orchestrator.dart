@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -13,11 +14,17 @@ import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 
+import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/core/native/meeting_detection_service.dart';
+import 'package:breakmate/core/native/presentation_detection_service.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/native_enhancements_service.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
 /// Coordinates cross-service actions driven by the state updates of TimerEngine.
 /// It bridges the core timer system with activity tracking, user alerts, stats logging,
@@ -82,7 +89,7 @@ class TimerOrchestrator {
 
     _eventSubscription = eventBus.stream.listen(_handleEvent);
 
-    timerEngine.countdownNotifier.addListener(_updateTray);
+    timerEngine.countdownNotifier.addListener(_onCountdownTick);
     timerEngine.workElapsedNotifier.addListener(_updateTray);
 
     timerEngine.addListener(_onTimerEngineChanged);
@@ -99,6 +106,16 @@ class TimerOrchestrator {
         saveState();
       }
     });
+  }
+
+  void _onCountdownTick() {
+    _updateTray();
+    final remaining = timerEngine.countdownNotifier.value;
+    if (timerEngine.state == TimerState.running && remaining == 15) {
+      NativeEnhancementsService.instance.showCursorCountdown(seconds: 15);
+    } else if (remaining <= 0 || timerEngine.state != TimerState.running) {
+      NativeEnhancementsService.instance.hideCursorCountdown();
+    }
   }
 
   void _onTimerEngineChanged() {
@@ -138,6 +155,11 @@ class TimerOrchestrator {
   }
 
   void _handleBreakStarted(BreakStartedEvent event) {
+    NativeEnhancementsService.instance.hideCursorCountdown();
+    NativeEnhancementsService.instance.preventDisplaySleep(
+      reason: event.isLongBreak ? 'Long Break Active' : 'Short Break Active',
+    );
+
     IpcBridge.instance.dispatch(
       BreakStartedIpcEvent(
         isLongBreak: event.isLongBreak,
@@ -151,16 +173,22 @@ class TimerOrchestrator {
     if (event.isLongBreak) {
       notificationService.showClockOutReminder();
     } else {
-      notificationService.showBreakReminder(isLong: event.isLongBreak);
+      notificationService.showBreakStarted(breakTitle: event.title);
     }
 
     saveState();
   }
 
   Future<void> _handleBreakEnded(BreakEndedEvent event) async {
+    NativeEnhancementsService.instance.releaseDisplaySleep();
     IpcBridge.instance.dispatch(BreakEndedIpcEvent(skipped: event.skipped));
 
     trayManagerService.setBreakActive(false);
+
+    sl<BreakHistoryService>().recordBreak(
+      time: DateTime.now(),
+      completed: !event.skipped,
+    );
 
     if (event.skipped) {
       statsService.recordSkippedBreak();
@@ -225,29 +253,60 @@ class TimerOrchestrator {
       return;
     }
 
-    if (event.displayType == 'native') {
-      if (event.reminderType == 'posture') {
-        notificationService.showPostureReminder();
-      } else {
-        notificationService.showEyeRestReminder();
-      }
-    } else {
-      sl<OverlayWindowService>().showOverlay(
-        type: OverlayType.quickReminder,
-        builder: (_) => const SizedBox.shrink(),
-        reminderType: event.reminderType,
-      );
+    // Native system-notification reminders were unreliable in practice, so
+    // health reminders always show the (dismissable, low-opacity) overlay
+    // now, regardless of `event.displayType`.
+    //
+    // `type` below only picks the native window's behavior — the Dart
+    // overlay itself reads `overlayType` from the JSON payload, and
+    // defaults to the full break-timer template ('breakScreen') when that
+    // key is missing. Without it, health reminders rendered the wrong
+    // overlay.
+    NativeEnhancementsService.instance.triggerFlashReminder(
+      text: event.reminderType == 'posture'
+          ? 'Straighten posture & relax shoulders'
+          : 'Blink eyes & look into distance',
+    );
 
-      Future.delayed(const Duration(seconds: 2), () {
-        if (sl<OverlayWindowService>().currentOverlayType ==
-            OverlayType.quickReminder) {
-          sl<OverlayWindowService>().hideOverlay();
-        }
-      });
-    }
+    sl<OverlayWindowService>().showOverlay(
+      type: OverlayType.quickReminder,
+      builder: (_) => const SizedBox.shrink(),
+      reminderType: event.reminderType,
+      // A brief reminder only needs the active display — one Flutter
+      // engine per connected monitor for a 2-second poster is wasted CPU.
+      showOnAllDisplays: false,
+      overlayData: {
+        'overlayType': 'quickReminder',
+        'reminderType': event.reminderType,
+        'durationSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
+        'remainingSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
+        // Computed here (main engine) because the overlay's own Flutter
+        // isolate doesn't have SettingsRepository or the detection
+        // services registered — see `OverlayWindowConfig.allowFullPoster`.
+        'allowFullPoster': allowFullPosterReminder(
+          detectMeetings: settings.detectMeetings,
+          calendarMeetingActive: sl<MeetingDetectionService>().isMeetingActive,
+          detectVideoCalls: settings.detectVideoCalls,
+          videoCallActive: sl<SmartDetectionService>().isVideoCallActive,
+          presenting: sl<PresentationDetectionService>().isPresenting,
+        ),
+      },
+    );
+
+    // Fallback safety-net hide, independent of the overlay's own dismiss
+    // timer — must use the same duration so it never clips the reminder
+    // early or lingers past it.
+    Future.delayed(AppConstants.healthReminderDismissDuration, () {
+      if (sl<OverlayWindowService>().currentOverlayType ==
+          OverlayType.quickReminder) {
+        sl<OverlayWindowService>().hideOverlay();
+      }
+    });
   }
 
   void _handleBreakPostponed(BreakPostponedEvent event) {
+    NativeEnhancementsService.instance.hideCursorCountdown();
+    NativeEnhancementsService.instance.releaseDisplaySleep();
     final settings = settingsRepository.currentSettings;
     if (settings.companionEnabled) {
       eventBus.emit(CompanionInteractionEvent(interactionType: 'meow'));
@@ -281,7 +340,7 @@ class TimerOrchestrator {
     final status = state == TimerState.breakActive
         ? 'Break active'
         : timerEngine.contextManager.isSmartPauseActive()
-        ? 'Paused for meeting or Focus'
+        ? 'Paused for Focus or presentation'
         : !timerEngine.contextManager.isWithinWorkingHours()
         ? 'Paused outside working hours'
         : state == TimerState.paused
@@ -303,6 +362,23 @@ class TimerOrchestrator {
     activityMonitor.setIdleThreshold(timerEngine.pauseTimerAfterMinutes);
     activityMonitor.setActivityCallback((isActive) {
       final state = timerEngine.state;
+
+      // Safety net for a stuck sleep flag: handleSystemSleep()/
+      // handleSystemWake() are driven purely by native OS notifications
+      // (NSWorkspace willSleep/didWake). If a wake notification is ever
+      // missed — a false-positive sleep event, a race during a fast
+      // sleep/wake cycle, etc. — the tick loop's `systemSleepPaused` guard
+      // stays true forever and the timer silently freezes with no state
+      // change visible to the user. Real, unambiguous user activity is
+      // proof the system is awake, so use it to self-heal.
+      if (isActive && timerEngine.systemSleepPaused) {
+        _logger.warning(
+          'Activity detected while systemSleepPaused was stuck true — '
+          'forcing timer wake recovery.',
+        );
+        timerEngine.handleSystemWake();
+      }
+
       if (isActive &&
           state == TimerState.paused &&
           !timerEngine.stateData.isManuallyPaused) {
@@ -314,9 +390,9 @@ class TimerOrchestrator {
           Duration(minutes: timerEngine.resetTimerAfterMinutes),
           () {
             if (timerEngine.state == TimerState.paused) {
-              timerEngine.stateData.workElapsed = Duration.zero;
+              timerEngine.resetCycleOnIdle();
               _logger.info(
-                'Timer reset after ${timerEngine.resetTimerAfterMinutes} min idle',
+                'Timer & break cycle reset after ${timerEngine.resetTimerAfterMinutes} min idle',
               );
             }
           },

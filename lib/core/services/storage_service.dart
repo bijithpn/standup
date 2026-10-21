@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:breakmate/core/storage/models/settings_snapshot.dart';
+import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/core/storage/models/daily_stats.dart';
 import 'package:breakmate/core/storage/models/companion_preferences.dart';
 import 'package:breakmate/core/storage/models/key_value_record.dart';
@@ -54,6 +55,7 @@ class StorageService {
   Box<GlobalStats>? globalStatsBox;
   Box<CompanionPreferences>? companionPreferencesBox;
   Box<KeyValueRecord>? kvBox;
+  Box<ActivitySegment>? activitySegmentBox;
 
   int get migrationDurationMs =>
       SimplePrefs.instance.getInt('database_migration_ms', defaultValue: 0);
@@ -361,6 +363,7 @@ class StorageService {
         globalStatsBox = _store!.box<GlobalStats>();
         companionPreferencesBox = _store!.box<CompanionPreferences>();
         kvBox = _store!.box<KeyValueRecord>();
+        activitySegmentBox = _store!.box<ActivitySegment>();
       } else {
         _failed = true;
         diagnoseAndLogFailure(activeStoreDir);

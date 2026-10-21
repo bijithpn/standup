@@ -1,0 +1,231 @@
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
+
+class AvatarBreed {
+  final String id;
+  final String displayName;
+  final String entityName;
+  final AvatarSpecies species;
+  final String svgAssetPath;
+
+  const AvatarBreed({
+    required this.id,
+    required this.displayName,
+    required this.entityName,
+    required this.species,
+    required this.svgAssetPath,
+  });
+
+  static List<AvatarBreed> forSpecies(AvatarSpecies species) {
+    return _breedsBySpecies[species] ?? const [];
+  }
+
+  static AvatarBreed? find(AvatarSpecies species, String breedId) {
+    final list = forSpecies(species);
+    for (final b in list) {
+      if (b.id == breedId) return b;
+    }
+    return list.isNotEmpty ? list.first : null;
+  }
+
+  static const Map<AvatarSpecies, List<AvatarBreed>> _breedsBySpecies = {
+    AvatarSpecies.alpaca: [
+      AvatarBreed(id: 'cream-alpaca', displayName: 'Cream Alpaca', entityName: 'alpaca', species: AvatarSpecies.alpaca, svgAssetPath: 'assets/avatars/breeds/alpaca--cream-alpaca.svg'),
+      AvatarBreed(id: 'alpaca-cria', displayName: 'Alpaca Cria', entityName: 'alpaca', species: AvatarSpecies.alpaca, svgAssetPath: 'assets/avatars/breeds/alpaca--alpaca-cria.svg'),
+      AvatarBreed(id: 'caramel-alpaca', displayName: 'Caramel Alpaca', entityName: 'alpaca', species: AvatarSpecies.alpaca, svgAssetPath: 'assets/avatars/breeds/alpaca--caramel-alpaca.svg'),
+      AvatarBreed(id: 'gray-alpaca', displayName: 'Gray Alpaca', entityName: 'alpaca', species: AvatarSpecies.alpaca, svgAssetPath: 'assets/avatars/breeds/alpaca--gray-alpaca.svg'),
+    ],
+    AvatarSpecies.bear: [
+      AvatarBreed(id: 'brown-bear', displayName: 'Brown Bear', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--brown-bear.svg'),
+      AvatarBreed(id: 'giant-panda', displayName: 'Giant Panda', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--giant-panda.svg'),
+      AvatarBreed(id: 'polar-bear', displayName: 'Polar Bear', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--polar-bear.svg'),
+      AvatarBreed(id: 'red-panda', displayName: 'Red Panda', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--red-panda.svg'),
+      AvatarBreed(id: 'asian-black-bear', displayName: 'Asian Black Bear', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--asian-black-bear.svg'),
+      AvatarBreed(id: 'koala', displayName: 'Koala', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--koala.svg'),
+      AvatarBreed(id: 'raccoon', displayName: 'Raccoon', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--raccoon.svg'),
+      AvatarBreed(id: 'spectacled-bear', displayName: 'Spectacled Bear', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--spectacled-bear.svg'),
+      AvatarBreed(id: 'sun-bear', displayName: 'Sun Bear', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--sun-bear.svg'),
+      AvatarBreed(id: 'teddy-bear', displayName: 'Teddy Bear', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--teddy-bear.svg'),
+      AvatarBreed(id: 'wombat', displayName: 'Wombat', entityName: 'bear', species: AvatarSpecies.bear, svgAssetPath: 'assets/avatars/breeds/bear--wombat.svg'),
+    ],
+    AvatarSpecies.beaver: [
+      AvatarBreed(id: 'north-american-beaver', displayName: 'North American', entityName: 'beaver', species: AvatarSpecies.beaver, svgAssetPath: 'assets/avatars/breeds/beaver--north-american-beaver.svg'),
+      AvatarBreed(id: 'beaver-kit', displayName: 'Beaver Kit', entityName: 'beaver', species: AvatarSpecies.beaver, svgAssetPath: 'assets/avatars/breeds/beaver--beaver-kit.svg'),
+      AvatarBreed(id: 'dark-beaver', displayName: 'Dark Beaver', entityName: 'beaver', species: AvatarSpecies.beaver, svgAssetPath: 'assets/avatars/breeds/beaver--dark-beaver.svg'),
+      AvatarBreed(id: 'eurasian-beaver', displayName: 'Eurasian Beaver', entityName: 'beaver', species: AvatarSpecies.beaver, svgAssetPath: 'assets/avatars/breeds/beaver--eurasian-beaver.svg'),
+    ],
+    AvatarSpecies.capybara: [
+      AvatarBreed(id: 'capybara', displayName: 'Capybara', entityName: 'capybara', species: AvatarSpecies.capybara, svgAssetPath: 'assets/avatars/breeds/capybara--capybara.svg'),
+      AvatarBreed(id: 'capybara-pup', displayName: 'Capybara Pup', entityName: 'capybara', species: AvatarSpecies.capybara, svgAssetPath: 'assets/avatars/breeds/capybara--capybara-pup.svg'),
+      AvatarBreed(id: 'dark-capybara', displayName: 'Dark Capybara', entityName: 'capybara', species: AvatarSpecies.capybara, svgAssetPath: 'assets/avatars/breeds/capybara--dark-capybara.svg'),
+      AvatarBreed(id: 'sandy-capybara', displayName: 'Sandy Capybara', entityName: 'capybara', species: AvatarSpecies.capybara, svgAssetPath: 'assets/avatars/breeds/capybara--sandy-capybara.svg'),
+    ],
+    AvatarSpecies.cat: [
+      AvatarBreed(id: 'british-shorthair', displayName: 'British Shorthair', entityName: 'cat', species: AvatarSpecies.cat, svgAssetPath: 'assets/avatars/breeds/cat--british-shorthair.svg'),
+      AvatarBreed(id: 'black-cat', displayName: 'Black Cat', entityName: 'cat', species: AvatarSpecies.cat, svgAssetPath: 'assets/avatars/breeds/cat--black-cat.svg'),
+      AvatarBreed(id: 'cow-cat', displayName: 'Cow Cat', entityName: 'cat', species: AvatarSpecies.cat, svgAssetPath: 'assets/avatars/breeds/cat--cow-cat.svg'),
+      AvatarBreed(id: 'orange-tabby', displayName: 'Orange Tabby', entityName: 'cat', species: AvatarSpecies.cat, svgAssetPath: 'assets/avatars/breeds/cat--orange-tabby.svg'),
+      AvatarBreed(id: 'russian-blue', displayName: 'Russian Blue', entityName: 'cat', species: AvatarSpecies.cat, svgAssetPath: 'assets/avatars/breeds/cat--russian-blue.svg'),
+      AvatarBreed(id: 'siamese', displayName: 'Siamese', entityName: 'cat', species: AvatarSpecies.cat, svgAssetPath: 'assets/avatars/breeds/cat--siamese.svg'),
+    ],
+    AvatarSpecies.chick: [
+      AvatarBreed(id: 'yellow-chick', displayName: 'Yellow Chick', entityName: 'chick', species: AvatarSpecies.chick, svgAssetPath: 'assets/avatars/breeds/chick--yellow-chick.svg'),
+      AvatarBreed(id: 'barred-rock-chick', displayName: 'Barred Rock', entityName: 'chick', species: AvatarSpecies.chick, svgAssetPath: 'assets/avatars/breeds/chick--barred-rock-chick.svg'),
+      AvatarBreed(id: 'buff-orpington-chick', displayName: 'Buff Orpington', entityName: 'chick', species: AvatarSpecies.chick, svgAssetPath: 'assets/avatars/breeds/chick--buff-orpington-chick.svg'),
+      AvatarBreed(id: 'silkie-chick', displayName: 'Silkie Chick', entityName: 'chick', species: AvatarSpecies.chick, svgAssetPath: 'assets/avatars/breeds/chick--silkie-chick.svg'),
+    ],
+    AvatarSpecies.chinchilla: [
+      AvatarBreed(id: 'gray-chinchilla', displayName: 'Gray Chinchilla', entityName: 'chinchilla', species: AvatarSpecies.chinchilla, svgAssetPath: 'assets/avatars/breeds/chinchilla--gray-chinchilla.svg'),
+      AvatarBreed(id: 'beige-chinchilla', displayName: 'Beige Chinchilla', entityName: 'chinchilla', species: AvatarSpecies.chinchilla, svgAssetPath: 'assets/avatars/breeds/chinchilla--beige-chinchilla.svg'),
+      AvatarBreed(id: 'black-velvet-chinchilla', displayName: 'Black Velvet', entityName: 'chinchilla', species: AvatarSpecies.chinchilla, svgAssetPath: 'assets/avatars/breeds/chinchilla--black-velvet-chinchilla.svg'),
+      AvatarBreed(id: 'white-chinchilla', displayName: 'White Chinchilla', entityName: 'chinchilla', species: AvatarSpecies.chinchilla, svgAssetPath: 'assets/avatars/breeds/chinchilla--white-chinchilla.svg'),
+    ],
+    AvatarSpecies.cow: [
+      AvatarBreed(id: 'dairy-cow', displayName: 'Dairy Cow', entityName: 'cow', species: AvatarSpecies.cow, svgAssetPath: 'assets/avatars/breeds/cow--dairy-cow.svg'),
+      AvatarBreed(id: 'cow-calf', displayName: 'Cow Calf', entityName: 'cow', species: AvatarSpecies.cow, svgAssetPath: 'assets/avatars/breeds/cow--cow-calf.svg'),
+      AvatarBreed(id: 'highland-cow', displayName: 'Highland Cow', entityName: 'cow', species: AvatarSpecies.cow, svgAssetPath: 'assets/avatars/breeds/cow--highland-cow.svg'),
+      AvatarBreed(id: 'jersey-cow', displayName: 'Jersey Cow', entityName: 'cow', species: AvatarSpecies.cow, svgAssetPath: 'assets/avatars/breeds/cow--jersey-cow.svg'),
+    ],
+    AvatarSpecies.deer: [
+      AvatarBreed(id: 'sika-deer', displayName: 'Sika Deer', entityName: 'deer', species: AvatarSpecies.deer, svgAssetPath: 'assets/avatars/breeds/deer--sika-deer.svg'),
+      AvatarBreed(id: 'deer-fawn', displayName: 'Deer Fawn', entityName: 'deer', species: AvatarSpecies.deer, svgAssetPath: 'assets/avatars/breeds/deer--deer-fawn.svg'),
+      AvatarBreed(id: 'reindeer', displayName: 'Reindeer', entityName: 'deer', species: AvatarSpecies.deer, svgAssetPath: 'assets/avatars/breeds/deer--reindeer.svg'),
+      AvatarBreed(id: 'white-deer', displayName: 'White Deer', entityName: 'deer', species: AvatarSpecies.deer, svgAssetPath: 'assets/avatars/breeds/deer--white-deer.svg'),
+    ],
+    AvatarSpecies.dog: [
+      AvatarBreed(id: 'shiba-inu', displayName: 'Shiba Inu', entityName: 'dog', species: AvatarSpecies.dog, svgAssetPath: 'assets/avatars/breeds/dog--shiba-inu.svg'),
+      AvatarBreed(id: 'border-collie', displayName: 'Border Collie', entityName: 'dog', species: AvatarSpecies.dog, svgAssetPath: 'assets/avatars/breeds/dog--border-collie.svg'),
+      AvatarBreed(id: 'corgi', displayName: 'Corgi', entityName: 'dog', species: AvatarSpecies.dog, svgAssetPath: 'assets/avatars/breeds/dog--corgi.svg'),
+      AvatarBreed(id: 'dalmatian', displayName: 'Dalmatian', entityName: 'dog', species: AvatarSpecies.dog, svgAssetPath: 'assets/avatars/breeds/dog--dalmatian.svg'),
+      AvatarBreed(id: 'golden-retriever', displayName: 'Golden Retriever', entityName: 'dog', species: AvatarSpecies.dog, svgAssetPath: 'assets/avatars/breeds/dog--golden-retriever.svg'),
+      AvatarBreed(id: 'husky', displayName: 'Husky', entityName: 'dog', species: AvatarSpecies.dog, svgAssetPath: 'assets/avatars/breeds/dog--husky.svg'),
+    ],
+    AvatarSpecies.duck: [
+      AvatarBreed(id: 'mallard-duck', displayName: 'Mallard Duck', entityName: 'duck', species: AvatarSpecies.duck, svgAssetPath: 'assets/avatars/breeds/duck--mallard-duck.svg'),
+      AvatarBreed(id: 'muscovy-duck', displayName: 'Muscovy Duck', entityName: 'duck', species: AvatarSpecies.duck, svgAssetPath: 'assets/avatars/breeds/duck--muscovy-duck.svg'),
+      AvatarBreed(id: 'pekin-duck', displayName: 'Pekin Duck', entityName: 'duck', species: AvatarSpecies.duck, svgAssetPath: 'assets/avatars/breeds/duck--pekin-duck.svg'),
+      AvatarBreed(id: 'yellow-duckling', displayName: 'Yellow Duckling', entityName: 'duck', species: AvatarSpecies.duck, svgAssetPath: 'assets/avatars/breeds/duck--yellow-duckling.svg'),
+    ],
+    AvatarSpecies.ferret: [
+      AvatarBreed(id: 'sable-ferret', displayName: 'Sable Ferret', entityName: 'ferret', species: AvatarSpecies.ferret, svgAssetPath: 'assets/avatars/breeds/ferret--sable-ferret.svg'),
+      AvatarBreed(id: 'albino-ferret', displayName: 'Albino Ferret', entityName: 'ferret', species: AvatarSpecies.ferret, svgAssetPath: 'assets/avatars/breeds/ferret--albino-ferret.svg'),
+      AvatarBreed(id: 'cinnamon-ferret', displayName: 'Cinnamon Ferret', entityName: 'ferret', species: AvatarSpecies.ferret, svgAssetPath: 'assets/avatars/breeds/ferret--cinnamon-ferret.svg'),
+      AvatarBreed(id: 'panda-ferret', displayName: 'Panda Ferret', entityName: 'ferret', species: AvatarSpecies.ferret, svgAssetPath: 'assets/avatars/breeds/ferret--panda-ferret.svg'),
+    ],
+    AvatarSpecies.fox: [
+      AvatarBreed(id: 'red-fox', displayName: 'Red Fox', entityName: 'fox', species: AvatarSpecies.fox, svgAssetPath: 'assets/avatars/breeds/fox--red-fox.svg'),
+      AvatarBreed(id: 'arctic-fox', displayName: 'Arctic Fox', entityName: 'fox', species: AvatarSpecies.fox, svgAssetPath: 'assets/avatars/breeds/fox--arctic-fox.svg'),
+      AvatarBreed(id: 'fennec-fox', displayName: 'Fennec Fox', entityName: 'fox', species: AvatarSpecies.fox, svgAssetPath: 'assets/avatars/breeds/fox--fennec-fox.svg'),
+      AvatarBreed(id: 'silver-fox', displayName: 'Silver Fox', entityName: 'fox', species: AvatarSpecies.fox, svgAssetPath: 'assets/avatars/breeds/fox--silver-fox.svg'),
+    ],
+    AvatarSpecies.goose: [
+      AvatarBreed(id: 'greylag-goose', displayName: 'Greylag Goose', entityName: 'goose', species: AvatarSpecies.goose, svgAssetPath: 'assets/avatars/breeds/goose--greylag-goose.svg'),
+      AvatarBreed(id: 'canada-goose', displayName: 'Canada Goose', entityName: 'goose', species: AvatarSpecies.goose, svgAssetPath: 'assets/avatars/breeds/goose--canada-goose.svg'),
+      AvatarBreed(id: 'snow-goose', displayName: 'Snow Goose', entityName: 'goose', species: AvatarSpecies.goose, svgAssetPath: 'assets/avatars/breeds/goose--snow-goose.svg'),
+      AvatarBreed(id: 'white-gosling', displayName: 'White Gosling', entityName: 'goose', species: AvatarSpecies.goose, svgAssetPath: 'assets/avatars/breeds/goose--white-gosling.svg'),
+    ],
+    AvatarSpecies.guineaPig: [
+      AvatarBreed(id: 'american-guinea-pig', displayName: 'American', entityName: 'guinea-pig', species: AvatarSpecies.guineaPig, svgAssetPath: 'assets/avatars/breeds/guinea-pig--american-guinea-pig.svg'),
+      AvatarBreed(id: 'abyssinian-guinea-pig', displayName: 'Abyssinian', entityName: 'guinea-pig', species: AvatarSpecies.guineaPig, svgAssetPath: 'assets/avatars/breeds/guinea-pig--abyssinian-guinea-pig.svg'),
+      AvatarBreed(id: 'guinea-pig-pup', displayName: 'Guinea Pig Pup', entityName: 'guinea-pig', species: AvatarSpecies.guineaPig, svgAssetPath: 'assets/avatars/breeds/guinea-pig--guinea-pig-pup.svg'),
+      AvatarBreed(id: 'teddy-guinea-pig', displayName: 'Teddy Guinea Pig', entityName: 'guinea-pig', species: AvatarSpecies.guineaPig, svgAssetPath: 'assets/avatars/breeds/guinea-pig--teddy-guinea-pig.svg'),
+    ],
+    AvatarSpecies.hamster: [
+      AvatarBreed(id: 'syrian-hamster', displayName: 'Syrian Hamster', entityName: 'hamster', species: AvatarSpecies.hamster, svgAssetPath: 'assets/avatars/breeds/hamster--syrian-hamster.svg'),
+      AvatarBreed(id: 'pudding-hamster', displayName: 'Pudding Hamster', entityName: 'hamster', species: AvatarSpecies.hamster, svgAssetPath: 'assets/avatars/breeds/hamster--pudding-hamster.svg'),
+      AvatarBreed(id: 'sapphire-hamster', displayName: 'Sapphire Hamster', entityName: 'hamster', species: AvatarSpecies.hamster, svgAssetPath: 'assets/avatars/breeds/hamster--sapphire-hamster.svg'),
+      AvatarBreed(id: 'silver-fox-hamster', displayName: 'Silver Fox Hamster', entityName: 'hamster', species: AvatarSpecies.hamster, svgAssetPath: 'assets/avatars/breeds/hamster--silver-fox-hamster.svg'),
+    ],
+    AvatarSpecies.hedgehog: [
+      AvatarBreed(id: 'european-hedgehog', displayName: 'European', entityName: 'hedgehog', species: AvatarSpecies.hedgehog, svgAssetPath: 'assets/avatars/breeds/hedgehog--european-hedgehog.svg'),
+      AvatarBreed(id: 'albino-hedgehog', displayName: 'Albino Hedgehog', entityName: 'hedgehog', species: AvatarSpecies.hedgehog, svgAssetPath: 'assets/avatars/breeds/hedgehog--albino-hedgehog.svg'),
+      AvatarBreed(id: 'cinnamon-hedgehog', displayName: 'Cinnamon Hedgehog', entityName: 'hedgehog', species: AvatarSpecies.hedgehog, svgAssetPath: 'assets/avatars/breeds/hedgehog--cinnamon-hedgehog.svg'),
+      AvatarBreed(id: 'cream-hedgehog', displayName: 'Cream Hedgehog', entityName: 'hedgehog', species: AvatarSpecies.hedgehog, svgAssetPath: 'assets/avatars/breeds/hedgehog--cream-hedgehog.svg'),
+    ],
+    AvatarSpecies.lion: [
+      AvatarBreed(id: 'african-lion', displayName: 'African Lion', entityName: 'lion', species: AvatarSpecies.lion, svgAssetPath: 'assets/avatars/breeds/lion--african-lion.svg'),
+      AvatarBreed(id: 'lion-cub', displayName: 'Lion Cub', entityName: 'lion', species: AvatarSpecies.lion, svgAssetPath: 'assets/avatars/breeds/lion--lion-cub.svg'),
+      AvatarBreed(id: 'lioness', displayName: 'Lioness', entityName: 'lion', species: AvatarSpecies.lion, svgAssetPath: 'assets/avatars/breeds/lion--lioness.svg'),
+      AvatarBreed(id: 'white-lion', displayName: 'White Lion', entityName: 'lion', species: AvatarSpecies.lion, svgAssetPath: 'assets/avatars/breeds/lion--white-lion.svg'),
+    ],
+    AvatarSpecies.monkey: [
+      AvatarBreed(id: 'macaque', displayName: 'Macaque', entityName: 'monkey', species: AvatarSpecies.monkey, svgAssetPath: 'assets/avatars/breeds/monkey--macaque.svg'),
+      AvatarBreed(id: 'baby-monkey', displayName: 'Baby Monkey', entityName: 'monkey', species: AvatarSpecies.monkey, svgAssetPath: 'assets/avatars/breeds/monkey--baby-monkey.svg'),
+      AvatarBreed(id: 'capuchin-monkey', displayName: 'Capuchin Monkey', entityName: 'monkey', species: AvatarSpecies.monkey, svgAssetPath: 'assets/avatars/breeds/monkey--capuchin-monkey.svg'),
+      AvatarBreed(id: 'golden-monkey', displayName: 'Golden Monkey', entityName: 'monkey', species: AvatarSpecies.monkey, svgAssetPath: 'assets/avatars/breeds/monkey--golden-monkey.svg'),
+    ],
+    AvatarSpecies.otter: [
+      AvatarBreed(id: 'sea-otter', displayName: 'Sea Otter', entityName: 'otter', species: AvatarSpecies.otter, svgAssetPath: 'assets/avatars/breeds/otter--sea-otter.svg'),
+      AvatarBreed(id: 'asian-small-clawed-otter', displayName: 'Asian Small-Clawed', entityName: 'otter', species: AvatarSpecies.otter, svgAssetPath: 'assets/avatars/breeds/otter--asian-small-clawed-otter.svg'),
+      AvatarBreed(id: 'river-otter', displayName: 'River Otter', entityName: 'otter', species: AvatarSpecies.otter, svgAssetPath: 'assets/avatars/breeds/otter--river-otter.svg'),
+    ],
+    AvatarSpecies.owl: [
+      AvatarBreed(id: 'barn-owl', displayName: 'Barn Owl', entityName: 'owl', species: AvatarSpecies.owl, svgAssetPath: 'assets/avatars/breeds/owl--barn-owl.svg'),
+      AvatarBreed(id: 'great-horned-owl', displayName: 'Great Horned Owl', entityName: 'owl', species: AvatarSpecies.owl, svgAssetPath: 'assets/avatars/breeds/owl--great-horned-owl.svg'),
+      AvatarBreed(id: 'little-owl', displayName: 'Little Owl', entityName: 'owl', species: AvatarSpecies.owl, svgAssetPath: 'assets/avatars/breeds/owl--little-owl.svg'),
+      AvatarBreed(id: 'snowy-owl', displayName: 'Snowy Owl', entityName: 'owl', species: AvatarSpecies.owl, svgAssetPath: 'assets/avatars/breeds/owl--snowy-owl.svg'),
+    ],
+    AvatarSpecies.panda: [
+      AvatarBreed(id: 'giant-panda', displayName: 'Giant Panda', entityName: 'bear', species: AvatarSpecies.panda, svgAssetPath: 'assets/avatars/breeds/bear--giant-panda.svg'),
+    ],
+    AvatarSpecies.parrot: [
+      AvatarBreed(id: 'scarlet-macaw', displayName: 'Scarlet Macaw', entityName: 'parrot', species: AvatarSpecies.parrot, svgAssetPath: 'assets/avatars/breeds/parrot--scarlet-macaw.svg'),
+      AvatarBreed(id: 'african-grey-parrot', displayName: 'African Grey', entityName: 'parrot', species: AvatarSpecies.parrot, svgAssetPath: 'assets/avatars/breeds/parrot--african-grey-parrot.svg'),
+      AvatarBreed(id: 'blue-yellow-macaw', displayName: 'Blue-Yellow Macaw', entityName: 'parrot', species: AvatarSpecies.parrot, svgAssetPath: 'assets/avatars/breeds/parrot--blue-yellow-macaw.svg'),
+      AvatarBreed(id: 'cockatiel', displayName: 'Cockatiel', entityName: 'parrot', species: AvatarSpecies.parrot, svgAssetPath: 'assets/avatars/breeds/parrot--cockatiel.svg'),
+    ],
+    AvatarSpecies.penguin: [
+      AvatarBreed(id: 'emperor-penguin', displayName: 'Emperor Penguin', entityName: 'penguin', species: AvatarSpecies.penguin, svgAssetPath: 'assets/avatars/breeds/penguin--emperor-penguin.svg'),
+      AvatarBreed(id: 'adelie-penguin', displayName: 'Adélie Penguin', entityName: 'penguin', species: AvatarSpecies.penguin, svgAssetPath: 'assets/avatars/breeds/penguin--adelie-penguin.svg'),
+      AvatarBreed(id: 'gentoo-penguin', displayName: 'Gentoo Penguin', entityName: 'penguin', species: AvatarSpecies.penguin, svgAssetPath: 'assets/avatars/breeds/penguin--gentoo-penguin.svg'),
+      AvatarBreed(id: 'penguin-chick', displayName: 'Penguin Chick', entityName: 'penguin', species: AvatarSpecies.penguin, svgAssetPath: 'assets/avatars/breeds/penguin--penguin-chick.svg'),
+    ],
+    AvatarSpecies.pig: [
+      AvatarBreed(id: 'pink-pig', displayName: 'Pink Pig', entityName: 'pig', species: AvatarSpecies.pig, svgAssetPath: 'assets/avatars/breeds/pig--pink-pig.svg'),
+      AvatarBreed(id: 'black-pig', displayName: 'Black Pig', entityName: 'pig', species: AvatarSpecies.pig, svgAssetPath: 'assets/avatars/breeds/pig--black-pig.svg'),
+      AvatarBreed(id: 'spotted-pig', displayName: 'Spotted Pig', entityName: 'pig', species: AvatarSpecies.pig, svgAssetPath: 'assets/avatars/breeds/pig--spotted-pig.svg'),
+      AvatarBreed(id: 'wild-boar', displayName: 'Wild Boar', entityName: 'pig', species: AvatarSpecies.pig, svgAssetPath: 'assets/avatars/breeds/pig--wild-boar.svg'),
+    ],
+    AvatarSpecies.rabbit: [
+      AvatarBreed(id: 'holland-lop', displayName: 'Holland Lop', entityName: 'rabbit', species: AvatarSpecies.rabbit, svgAssetPath: 'assets/avatars/breeds/rabbit--holland-lop.svg'),
+      AvatarBreed(id: 'dutch-rabbit', displayName: 'Dutch Rabbit', entityName: 'rabbit', species: AvatarSpecies.rabbit, svgAssetPath: 'assets/avatars/breeds/rabbit--dutch-rabbit.svg'),
+      AvatarBreed(id: 'english-spot', displayName: 'English Spot', entityName: 'rabbit', species: AvatarSpecies.rabbit, svgAssetPath: 'assets/avatars/breeds/rabbit--english-spot.svg'),
+      AvatarBreed(id: 'himalayan-rabbit', displayName: 'Himalayan Rabbit', entityName: 'rabbit', species: AvatarSpecies.rabbit, svgAssetPath: 'assets/avatars/breeds/rabbit--himalayan-rabbit.svg'),
+      AvatarBreed(id: 'lionhead-rabbit', displayName: 'Lionhead Rabbit', entityName: 'rabbit', species: AvatarSpecies.rabbit, svgAssetPath: 'assets/avatars/breeds/rabbit--lionhead-rabbit.svg'),
+      AvatarBreed(id: 'netherland-dwarf', displayName: 'Netherland Dwarf', entityName: 'rabbit', species: AvatarSpecies.rabbit, svgAssetPath: 'assets/avatars/breeds/rabbit--netherland-dwarf.svg'),
+    ],
+    AvatarSpecies.raccoon: [
+      AvatarBreed(id: 'raccoon', displayName: 'Raccoon', entityName: 'bear', species: AvatarSpecies.raccoon, svgAssetPath: 'assets/avatars/breeds/bear--raccoon.svg'),
+    ],
+    AvatarSpecies.redPanda: [
+      AvatarBreed(id: 'red-panda', displayName: 'Red Panda', entityName: 'bear', species: AvatarSpecies.redPanda, svgAssetPath: 'assets/avatars/breeds/bear--red-panda.svg'),
+    ],
+    AvatarSpecies.seal: [
+      AvatarBreed(id: 'harbor-seal', displayName: 'Harbor Seal', entityName: 'seal', species: AvatarSpecies.seal, svgAssetPath: 'assets/avatars/breeds/seal--harbor-seal.svg'),
+      AvatarBreed(id: 'gray-seal', displayName: 'Gray Seal', entityName: 'seal', species: AvatarSpecies.seal, svgAssetPath: 'assets/avatars/breeds/seal--gray-seal.svg'),
+      AvatarBreed(id: 'harp-seal', displayName: 'Harp Seal', entityName: 'seal', species: AvatarSpecies.seal, svgAssetPath: 'assets/avatars/breeds/seal--harp-seal.svg'),
+      AvatarBreed(id: 'seal-pup', displayName: 'Seal Pup', entityName: 'seal', species: AvatarSpecies.seal, svgAssetPath: 'assets/avatars/breeds/seal--seal-pup.svg'),
+    ],
+    AvatarSpecies.sheep: [
+      AvatarBreed(id: 'white-sheep', displayName: 'White Sheep', entityName: 'sheep', species: AvatarSpecies.sheep, svgAssetPath: 'assets/avatars/breeds/sheep--white-sheep.svg'),
+      AvatarBreed(id: 'black-faced-sheep', displayName: 'Black-Faced Sheep', entityName: 'sheep', species: AvatarSpecies.sheep, svgAssetPath: 'assets/avatars/breeds/sheep--black-faced-sheep.svg'),
+      AvatarBreed(id: 'horned-ram', displayName: 'Horned Ram', entityName: 'sheep', species: AvatarSpecies.sheep, svgAssetPath: 'assets/avatars/breeds/sheep--horned-ram.svg'),
+      AvatarBreed(id: 'lamb', displayName: 'Lamb', entityName: 'sheep', species: AvatarSpecies.sheep, svgAssetPath: 'assets/avatars/breeds/sheep--lamb.svg'),
+      AvatarBreed(id: 'mountain-goat', displayName: 'Mountain Goat', entityName: 'sheep', species: AvatarSpecies.sheep, svgAssetPath: 'assets/avatars/breeds/sheep--mountain-goat.svg'),
+    ],
+    AvatarSpecies.squirrel: [
+      AvatarBreed(id: 'red-squirrel', displayName: 'Red Squirrel', entityName: 'squirrel', species: AvatarSpecies.squirrel, svgAssetPath: 'assets/avatars/breeds/squirrel--red-squirrel.svg'),
+      AvatarBreed(id: 'black-squirrel', displayName: 'Black Squirrel', entityName: 'squirrel', species: AvatarSpecies.squirrel, svgAssetPath: 'assets/avatars/breeds/squirrel--black-squirrel.svg'),
+      AvatarBreed(id: 'chipmunk', displayName: 'Chipmunk', entityName: 'squirrel', species: AvatarSpecies.squirrel, svgAssetPath: 'assets/avatars/breeds/squirrel--chipmunk.svg'),
+      AvatarBreed(id: 'gray-squirrel', displayName: 'Gray Squirrel', entityName: 'squirrel', species: AvatarSpecies.squirrel, svgAssetPath: 'assets/avatars/breeds/squirrel--gray-squirrel.svg'),
+    ],
+    AvatarSpecies.tiger: [
+      AvatarBreed(id: 'bengal-tiger', displayName: 'Bengal Tiger', entityName: 'tiger', species: AvatarSpecies.tiger, svgAssetPath: 'assets/avatars/breeds/tiger--bengal-tiger.svg'),
+      AvatarBreed(id: 'golden-tiger', displayName: 'Golden Tiger', entityName: 'tiger', species: AvatarSpecies.tiger, svgAssetPath: 'assets/avatars/breeds/tiger--golden-tiger.svg'),
+      AvatarBreed(id: 'tiger-cub', displayName: 'Tiger Cub', entityName: 'tiger', species: AvatarSpecies.tiger, svgAssetPath: 'assets/avatars/breeds/tiger--tiger-cub.svg'),
+      AvatarBreed(id: 'white-tiger', displayName: 'White Tiger', entityName: 'tiger', species: AvatarSpecies.tiger, svgAssetPath: 'assets/avatars/breeds/tiger--white-tiger.svg'),
+    ],
+    AvatarSpecies.wolf: [
+      AvatarBreed(id: 'husky', displayName: 'Husky Wolf', entityName: 'dog', species: AvatarSpecies.wolf, svgAssetPath: 'assets/avatars/breeds/dog--husky.svg'),
+    ],
+  };
+}

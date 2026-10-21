@@ -12,9 +12,15 @@ class OverlayWindowManager: NSObject {
     static let shared = OverlayWindowManager()
     
     private var overlayInstances: [NSScreen: OverlayInstance] = [:]
+    // Hidden-but-alive instances kept ready for instant reuse. Spinning up a
+    // fresh FlutterEngine per show (cold engine start) is the dominant cost
+    // of "why does Preview take ~3s" — after the first show, later shows
+    // reuse an already-warm engine instead of paying that cost again.
+    private var warmPool: [NSScreen: OverlayInstance] = [:]
     var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
     private var wasMainWindowVisible: Bool = false
     private var lastScreensHash: Int = 0
+    private var showGeneration: Int = 0
     
     struct OverlayInstance {
         let window: OverlayPanel
@@ -25,16 +31,37 @@ class OverlayWindowManager: NSObject {
     func showOverlay(args: [String: Any]? = nil) {
         self.lastShowArgs = args
         
+        let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
+        let isReminder = type == "quickReminder" || type == "preBreakWarning"
+        let isPreview = args?["isPreview"] as? Bool ?? false
+        
         if !overlayInstances.isEmpty {
+            // Cancel any pending reminder auto-dismiss timer
+            showGeneration += 1
+            
+            // If transitioning from a reminder/pre-break warning to a full break screen, promote the window
+            if !isReminder {
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow,
+                   !isPreview {
+                    wasMainWindowVisible = mainWindow.isVisible
+                    mainWindow.orderOut(nil)
+                    NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
+                }
+                
+                for instance in overlayInstances.values {
+                    instance.window.isReminder = false
+                    instance.window.ignoresMouseEvents = false
+                    instance.window.orderFrontRegardless()
+                    instance.window.makeKey()
+                }
+            }
+            
             if let args = args {
                 updateData(args)
             }
             return
         }
-        
-        let type = args?["type"] as? String ?? "breakScreen"
-        let isReminder = type == "quickReminder" || type == "preBreakWarning"
-        let isPreview = args?["isPreview"] as? Bool ?? false
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,
               let mainWindow = appDelegate.mainFlutterWindow else {
@@ -45,24 +72,37 @@ class OverlayWindowManager: NSObject {
         if !isReminder && !isPreview {
             wasMainWindowVisible = mainWindow.isVisible
             mainWindow.orderOut(nil)
+            NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
         }
         
         let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
         let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
         
         for screen in screens {
-            let instance = createOverlayInstance(for: screen, args: args)
+            let instance: OverlayInstance
+            if let warm = warmPool.removeValue(forKey: screen) {
+                prepareReusedInstance(warm, for: screen, args: args)
+                instance = warm
+            } else {
+                instance = createOverlayInstance(for: screen, args: args)
+            }
             instance.window.isReminder = isReminder
             overlayInstances[screen] = instance
-            
+
             instance.window.alphaValue = 0.0
             
             // For reminders, use orderFront to avoid stealing focus from other apps
-            // For full screens, use orderFrontRegardless to ensure visibility over fullscreen apps
+            // For full screens, make the (non-activating) panel key so it actually
+            // receives keyboard events (Escape / any-key dismiss) — a panel that is
+            // merely ordered front never becomes key and silently swallows no input,
+            // it just never gets any. `.nonactivatingPanel` means this does not
+            // steal focus from the owning app or other apps, so it's still safe to
+            // do over fullscreen apps.
             if isReminder {
                 instance.window.orderFront(nil)
             } else {
                 instance.window.orderFrontRegardless()
+                instance.window.makeKey()
             }
             
             NSAnimationContext.runAnimationGroup { context in
@@ -70,17 +110,38 @@ class OverlayWindowManager: NSObject {
                 instance.window.animator().alphaValue = 1.0
             }
         }
-        
+
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+
+        // Reminders can't become key windows (by design, so they don't steal
+        // focus), so they can only be dismissed by the Dart side's own timer.
+        // If that Flutter engine ever hangs or drops a message, the overlay
+        // would otherwise sit there forever with no way for the user to
+        // close it. This is a hard backstop, independent of Dart, so a
+        // reminder always goes away on its own.
+        // Only quick health reminders (which last 4s) have a hard 6s backstop.
+        // Pre-break warnings must run their full countdown (e.g. 20s).
+        if type == "quickReminder" {
+            showGeneration += 1
+            let generation = showGeneration
+            DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+                guard let self = self, self.showGeneration == generation else { return }
+                self.hideOverlay()
+            }
+        }
     }
-    
+
     func hideOverlay(restoreMainWindow: Bool = true) {
+        showGeneration += 1
+        NativePowerAssertionManager.shared.releaseDisplaySleep()
         if overlayInstances.isEmpty { return }
-        
-        let instances = Array(overlayInstances.values)
+
+        let entries = overlayInstances
         overlayInstances.removeAll()
-        
+        let instances = Array(entries.values)
+
         let shouldRestore = restoreMainWindow && wasMainWindowVisible
+        wasMainWindowVisible = false
         
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
@@ -94,21 +155,46 @@ class OverlayWindowManager: NSObject {
                let mainWindow = appDelegate.mainFlutterWindow {
                 mainWindow.makeKeyAndOrderFront(nil)
             }
-            
+
             for instance in instances {
                 instance.window.orderOut(nil)
-                instance.window.contentViewController = nil
-                instance.window.contentView = nil
-                
-                let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
-                channel.setMethodCallHandler(nil)
-                
-                IpcBridgeManager.shared.unregister(engine: instance.engine)
-                instance.engine.shutDownEngine()
+                instance.window.ignoresMouseEvents = false
             }
         })
-        
+
+        // Keep the engines alive, hidden, for instant reuse next time —
+        // see `warmPool`. They're only ever actually torn down when the
+        // screen configuration changes (their window frames would be
+        // stale) or the app is quitting.
+        for (screen, instance) in entries {
+            warmPool[screen] = instance
+        }
+
         NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+    }
+
+    private func destroyInstance(_ instance: OverlayInstance) {
+        instance.window.orderOut(nil)
+        instance.window.contentViewController = nil
+        instance.window.contentView = nil
+
+        let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
+        channel.setMethodCallHandler(nil)
+
+        IpcBridgeManager.shared.unregister(engine: instance.engine)
+        instance.engine.shutDownEngine()
+    }
+
+    /// Fully tears down every warm/active engine — call only when their
+    /// window frames are stale (screen configuration changed) or the app
+    /// is quitting. Everyday hide/show should never reach this; that's the
+    /// whole point of `warmPool`.
+    func destroyAllInstances() {
+        NativePowerAssertionManager.shared.releaseDisplaySleep()
+        for instance in overlayInstances.values { destroyInstance(instance) }
+        for instance in warmPool.values { destroyInstance(instance) }
+        overlayInstances.removeAll()
+        warmPool.removeAll()
     }
     
     func setClickThrough(_ enabled: Bool) {
@@ -118,6 +204,16 @@ class OverlayWindowManager: NSObject {
     }
     
     func updateData(_ data: [String: Any]) {
+        let type = data["type"] as? String ?? data["overlayType"] as? String ?? ""
+        if !type.isEmpty {
+            let isReminder = type == "quickReminder" || type == "preBreakWarning"
+            for instance in overlayInstances.values {
+                instance.window.isReminder = isReminder
+                if !isReminder {
+                    instance.window.ignoresMouseEvents = false
+                }
+            }
+        }
         for instance in overlayInstances.values {
             let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
             channel.invokeMethod("updateOverlayData", arguments: data)
@@ -147,8 +243,11 @@ class OverlayWindowManager: NSObject {
         }
         lastScreensHash = screensHash
         
+        // A real display change means every window frame (active or
+        // pooled) is stale — unlike a normal hide, these can't be kept
+        // warm for reuse, they have to be rebuilt against the new screens.
         let savedArgs = self.lastShowArgs
-        hideOverlay()
+        destroyAllInstances()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.showOverlay(args: savedArgs)
         }
@@ -253,16 +352,51 @@ class OverlayWindowManager: NSObject {
         
         return OverlayInstance(window: window, engine: engine, controller: controller)
     }
+
+    /// Reuses an already-warm instance pulled from `warmPool` for a new
+    /// show — same idea as `createOverlayInstance`'s setup, minus creating
+    /// a new window/engine (that's the whole point: no cold engine start,
+    /// no waiting on a fresh Dart isolate to boot). Its method channel
+    /// handler is already registered from when it was first created, so a
+    /// single `updateOverlayData` call is enough — no need for the
+    /// redundant delayed broadcast `createOverlayInstance` sends to catch
+    /// a still-warming-up engine.
+    private func prepareReusedInstance(_ instance: OverlayInstance, for screen: NSScreen, args: [String: Any]?) {
+        let isTransparent = args?["isTransparent"] as? Bool ?? false
+        instance.window.backgroundColor = isTransparent ? NSColor.clear : NSColor.black
+        instance.window.isOpaque = !isTransparent
+        instance.window.ignoresMouseEvents = args?["ignoreMouseEvents"] as? Bool ?? false
+        instance.controller.backgroundColor = isTransparent ? NSColor.clear : NSColor.black
+        instance.window.setFrame(screen.frame, display: true)
+
+        var initialArgs = args ?? [:]
+        var displayId = "Display_unknown"
+        if #available(macOS 10.15, *) {
+            displayId = screen.localizedName
+        }
+        initialArgs["displayId"] = displayId
+        initialArgs["boundsWidth"] = screen.frame.width
+        initialArgs["boundsHeight"] = screen.frame.height
+
+        let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
+        channel.invokeMethod("updateOverlayData", arguments: initialArgs)
+    }
 }
 
 class MainFlutterWindow: NSWindow {
+  static weak var shared: MainFlutterWindow?
   fileprivate var bridgeChannel: FlutterMethodChannel?
 
   // Dedicated bridge for all EventKit / calendar operations.
   // Declared as a lazy var so it is created after the window is fully set up.
   private lazy var calendarBridge = CalendarBridge()
 
+  func notifyPipBackgroundStyleChanged(_ style: String) {
+    bridgeChannel?.invokeMethod("onPipBackgroundStyleChanged", arguments: ["style": style])
+  }
+
   override func awakeFromNib() {
+    MainFlutterWindow.shared = self
     let flutterViewController = FlutterViewController()
     flutterViewController.backgroundColor = .clear
     flutterViewController.view.wantsLayer = true
@@ -374,6 +508,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionTheme":
         if let args = call.arguments as? [String: Any], let themeId = args["themeId"] as? String {
           CompanionWindowManager.shared.updateTheme(themeId)
+          PiPFlutterWindowManager.shared.updateTheme(themeId: themeId, extra: args)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing themeId", details: nil))
@@ -382,6 +517,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionName":
         if let args = call.arguments as? [String: Any], let petName = args["petName"] as? String {
           CompanionWindowManager.shared.updatePetName(petName)
+          PiPFlutterWindowManager.shared.updatePetName(petName)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing petName", details: nil))
@@ -406,17 +542,42 @@ class MainFlutterWindow: NSWindow {
       case "setCompanionFollowMouse":
         if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
           CompanionWindowManager.shared.setFollowMouseEnabled(enabled)
+          PiPFlutterWindowManager.shared.syncSettings(["followMouse": enabled])
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
         }
 
       case "showPipWindow":
-        PiPWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
+        PiPFlutterWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
         result(nil)
 
       case "hidePipWindow":
-        PiPWindowManager.shared.hidePipWindow()
+        PiPFlutterWindowManager.shared.hidePipWindow()
+        result(nil)
+
+      case "openAvatarEditor":
+        if let args = call.arguments as? [String: Any], let editorUrl = args["editorUrl"] as? String {
+          AvatarEditorWindowManager.shared.openEditor(editorUrl: editorUrl, parentWindow: self) { [weak self] query in
+            self?.bridgeChannel?.invokeMethod("onAvatarSaved", arguments: ["urlParams": query])
+          }
+          result(nil)
+        } else {
+          result(FlutterError(code: "INVALID_ARGS", message: "Missing editorUrl", details: nil))
+        }
+
+      case "showCustomizerViewport":
+        CustomizerViewportManager.shared.showViewport(args: call.arguments as? [String: Any]) { [weak self] query in
+          self?.bridgeChannel?.invokeMethod("onAvatarSaved", arguments: ["urlParams": query])
+        }
+        result(nil)
+
+      case "updateCustomizerViewport":
+        CustomizerViewportManager.shared.updateViewport(args: call.arguments as? [String: Any])
+        result(nil)
+
+      case "hideCustomizerViewport":
+        CustomizerViewportManager.shared.hideViewport()
         result(nil)
 
       // ── Behavior Engine PAL methods ───────────────────────────────────────
@@ -424,6 +585,19 @@ class MainFlutterWindow: NSWindow {
       case "enumerateDisplays", "getCursorPosition", "getVisibleWindows",
            "showConstraintWindow", "hideConstraintWindow", "getIdleTime", "focusApp":
         BehaviorEngineBridge.shared.handle(call, result: result)
+
+      case "getFrontmostApp":
+        // Cheap AppKit read — safe and fast on the main thread. Polled every
+        // ~10s by the smart-detection background isolate.
+        result(NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+
+      case "isFocusModeActive":
+        // No public, stable API exists for reading macOS Focus/DND status
+        // across OS versions — reporting "not active" here is honest about
+        // that gap and (unlike leaving this unimplemented) avoids throwing
+        // a MissingPluginException on every ~10s poll for every user, since
+        // `respectFocusMode` defaults on.
+        result(false)
 
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],

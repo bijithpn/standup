@@ -76,6 +76,28 @@ class PipWindowArgs {
   final String? companionToyType;
   final String? companionTreatType;
   final String? previewBackground;
+  final String? avatarUrl;
+  final String? urlParams;
+
+  /// The companion's full appearance as JSON, so the overlay engine can render
+  /// the exact breed, palette, and seed the user picked rather than falling
+  /// back to the stock species behind [themeId].
+  final String? avatarDefinitionJson;
+
+  /// Which renderer the overlay should use: `blob` or `artwork`.
+  final String? renderMode;
+
+  /// Whether the companion stays on screen outside of breaks.
+  final bool? keepOnScreen;
+
+  /// Which interactions the overlay may offer when the pointer is over it.
+  ///
+  /// The overlay runs in its own engine and cannot read settings, so the only
+  /// way it knows a user has switched one of these off is for it to travel in
+  /// the payload.
+  final bool? pettingEnabled;
+  final bool? playEnabled;
+  final bool? treatEnabled;
 
   const PipWindowArgs({
     this.x,
@@ -95,6 +117,14 @@ class PipWindowArgs {
     this.companionToyType,
     this.companionTreatType,
     this.previewBackground,
+    this.avatarUrl,
+    this.urlParams,
+    this.avatarDefinitionJson,
+    this.renderMode,
+    this.keepOnScreen,
+    this.pettingEnabled,
+    this.playEnabled,
+    this.treatEnabled,
   });
 
   Map<String, dynamic> toMap() {
@@ -127,6 +157,16 @@ class PipWindowArgs {
       map['companionTreatType'] = companionTreatType;
     }
     if (previewBackground != null) map['previewBackground'] = previewBackground;
+    if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
+    if (urlParams != null) map['urlParams'] = urlParams;
+    if (avatarDefinitionJson != null) {
+      map['avatarDefinitionJson'] = avatarDefinitionJson;
+    }
+    if (renderMode != null) map['renderMode'] = renderMode;
+    if (keepOnScreen != null) map['keepOnScreen'] = keepOnScreen;
+    if (pettingEnabled != null) map['pettingEnabled'] = pettingEnabled;
+    if (playEnabled != null) map['playEnabled'] = playEnabled;
+    if (treatEnabled != null) map['treatEnabled'] = treatEnabled;
     return map;
   }
 
@@ -149,6 +189,14 @@ class PipWindowArgs {
       companionToyType: map['companionToyType'] as String?,
       companionTreatType: map['companionTreatType'] as String?,
       previewBackground: map['previewBackground'] as String?,
+      avatarUrl: map['avatarUrl'] as String?,
+      urlParams: map['urlParams'] as String?,
+      avatarDefinitionJson: map['avatarDefinitionJson'] as String?,
+      renderMode: map['renderMode'] as String?,
+      keepOnScreen: map['keepOnScreen'] as bool?,
+      pettingEnabled: map['pettingEnabled'] as bool?,
+      playEnabled: map['playEnabled'] as bool?,
+      treatEnabled: map['treatEnabled'] as bool?,
     );
   }
 }
@@ -302,6 +350,14 @@ abstract class NativeBridgePlatform {
   Future<void> showPipWindow(PipWindowArgs args);
 
   Future<void> hidePipWindow();
+
+  Future<void> openAvatarEditor(String editorUrl);
+
+  Future<void> showCustomizerViewport(Map<String, dynamic> args);
+
+  Future<void> updateCustomizerViewport(Map<String, dynamic> args);
+
+  Future<void> hideCustomizerViewport();
 }
 
 class FallbackBridge implements NativeBridgePlatform {
@@ -427,6 +483,18 @@ class FallbackBridge implements NativeBridgePlatform {
 
   @override
   Future<void> hidePipWindow() async {}
+
+  @override
+  Future<void> openAvatarEditor(String editorUrl) async {}
+
+  @override
+  Future<void> showCustomizerViewport(Map<String, dynamic> args) async {}
+
+  @override
+  Future<void> updateCustomizerViewport(Map<String, dynamic> args) async {}
+
+  @override
+  Future<void> hideCustomizerViewport() async {}
 }
 
 class NativeBridge {
@@ -582,4 +650,17 @@ class NativeBridge {
       _platform.showPipWindow(args);
 
   static Future<void> hidePipWindow() => _platform.hidePipWindow();
+
+  static Future<void> openAvatarEditor(String editorUrl) =>
+      _platform.openAvatarEditor(editorUrl);
+
+  static Future<void> showCustomizerViewport(Map<String, dynamic> args) =>
+      _platform.showCustomizerViewport(args);
+
+  static Future<void> updateCustomizerViewport(Map<String, dynamic> args) =>
+      _platform.updateCustomizerViewport(args);
+
+  static Future<void> hideCustomizerViewport() =>
+      _platform.hideCustomizerViewport();
 }
+
