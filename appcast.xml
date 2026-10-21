@@ -27,35 +27,19 @@
             <pubDate>Sat, 17 Oct 2026 12:47:39 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.8.0</h3>
-                <p># BreakMate 1.8.0 — Companion Customization, Productivity Charts &amp; Break Reminder Improvements
-
-BreakMate 1.8.0 brings deeper companion customization, clearer productivity charts, and more useful break reminders.
-
-## What's New
-
-- **Build a 3D companion:** Customize its shape, species, breed, colors, and expression, then give it a name.
-- **Understand your workday:** Explore activity segments, focus time, and productivity trends with interactive chart details and clearer day comparisons.
-- **Let your companion wander:** Enable movement around the workspace and adjust its behavior.
-- **See your habits:** Review break and focus streaks in the companion settings.
-- **More ways to take a break:** Try animated poster reminders, automatic posture and eye-rest prompts, a yearly break heatmap, and the Night Sky template.
-
-## Improvements
-
-- Improved Picture-in-Picture dragging, sizing, positioning, and background controls.
-- Refined companion rendering, gaze tracking, and interactions.
-- Improved macOS single-instance startup and app focus handling.
-- Improved secondary overlay cleanup and companion interactions.
-- Updated the menu bar tray icon.
-- Break countdown warnings now show the remaining time and offer a skip action. The default warning is 20 seconds.
-- Reminder windows now transition more reliably into full break screens, and presentation detection follows its setting.
-
-Build 37 · 17 October 2026</p>
+                <h4>BreakMate 1.8.0 — Companion Customization, Productivity Charts &amp; Break Reminder Improvements</h4>
+                <p>BreakMate 1.8.0 brings deeper companion customization, clearer productivity charts, and more useful break reminders.</p>
+                <h4>What's New</h4>
+                <ul><li><strong>Build a 3D companion:</strong> Customize its shape, species, breed, colors, and expression, then give it a name.</li><li><strong>Understand your workday:</strong> Explore activity segments, focus time, and productivity trends with interactive chart details and clearer day comparisons.</li><li><strong>Let your companion wander:</strong> Enable movement around the workspace and adjust its behavior.</li><li><strong>See your habits:</strong> Review break and focus streaks in the companion settings.</li><li><strong>More ways to take a break:</strong> Try animated poster reminders, automatic posture and eye-rest prompts, a yearly break heatmap, and the Night Sky template.</li></ul>
+                <h4>Improvements</h4>
+                <ul><li>Improved Picture-in-Picture dragging, sizing, positioning, and background controls.</li><li>Refined companion rendering, gaze tracking, and interactions.</li><li>Improved macOS single-instance startup and app focus handling.</li><li>Improved secondary overlay cleanup and companion interactions.</li><li>Updated the menu bar tray icon.</li><li>Break countdown warnings now show the remaining time and offer a skip action. The default warning is 20 seconds.</li><li>Reminder windows now transition more reliably into full break screens, and presentation detection follows its setting.</li></ul>
+                <p>Build 37 · 17 October 2026</p>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.8.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.8.0/BreakMate-Installer.dmg"
                        sparkle:version="37"
                        sparkle:shortVersionString="1.8.0"
                        sparkle:edSignature="shFsIL3y2cABhowzPvDIy+Y7xUzOw1DJ3IIFWRDLJ1/nxL8VEzcWN++YN/pVTD4DxvLHUJk+2I1lfrrWIlbTBA=="
@@ -67,33 +51,19 @@ Build 37 · 17 October 2026</p>
             <pubDate>Sat, 17 Oct 2026 06:09:23 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.7.0</h3>
-                <p># BreakMate 1.7.0 — Customizable Companions, Productivity Insights &amp; PiP Improvements
-
-BreakMate 1.7.0 brings a more personal desktop companion, clearer productivity insights, and a smoother break experience.
-
-## What's New
-
-- **Build a 3D companion:** Customize your companion's shape, species, breed, colors, and expression, then give it a name of your own.
-- **Track your workday:** Explore activity segments and inspect how your time is distributed across focused work.
-- **Clock out with a reflection:** Wrap up the day with a guided end-of-day reflection.
-- **Let your companion wander:** Enable companion movement around the workspace and adjust its behavior.
-- **See your habits:** Companion settings now include a summary of break and focus streaks.
-- **More ways to take a break:** Try animated poster reminders, automatic posture and eye-rest prompts, a yearly break statistics heatmap, and the Night Sky break template.
-
-## Improvements
-
-- Improved Picture-in-Picture dragging, sizing, positioning, and background controls.
-- Refined companion rendering, gaze tracking, and interactions.
-- Improved macOS single-instance startup and application focus handling.
-- Improved cleanup for secondary overlay windows.
-
-Build 36 · 17 October 2026</p>
+                <h4>BreakMate 1.7.0 — Customizable Companions, Productivity Insights &amp; PiP Improvements</h4>
+                <p>BreakMate 1.7.0 brings a more personal desktop companion, clearer productivity insights, and a smoother break experience.</p>
+                <h4>What's New</h4>
+                <ul><li><strong>Build a 3D companion:</strong> Customize your companion's shape, species, breed, colors, and expression, then give it a name of your own.</li><li><strong>Track your workday:</strong> Explore activity segments and inspect how your time is distributed across focused work.</li><li><strong>Clock out with a reflection:</strong> Wrap up the day with a guided end-of-day reflection.</li><li><strong>Let your companion wander:</strong> Enable companion movement around the workspace and adjust its behavior.</li><li><strong>See your habits:</strong> Companion settings now include a summary of break and focus streaks.</li><li><strong>More ways to take a break:</strong> Try animated poster reminders, automatic posture and eye-rest prompts, a yearly break statistics heatmap, and the Night Sky break template.</li></ul>
+                <h4>Improvements</h4>
+                <ul><li>Improved Picture-in-Picture dragging, sizing, positioning, and background controls.</li><li>Refined companion rendering, gaze tracking, and interactions.</li><li>Improved macOS single-instance startup and application focus handling.</li><li>Improved cleanup for secondary overlay windows.</li></ul>
+                <p>Build 36 · 17 October 2026</p>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.7.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.7.0/BreakMate-Installer.dmg"
                        sparkle:version="36"
                        sparkle:shortVersionString="1.7.0"
                        sparkle:edSignature="Ns30it6QKos6EXqlUVgQKlsCuSjbGGYqaCuqL8I2/Xncya9PlyMNJh/ozXzhKL6iIZjR2QTK21wcasN+HiB9DQ=="
@@ -105,34 +75,19 @@ Build 36 · 17 October 2026</p>
             <pubDate>Wed, 02 Sep 2026 06:28:53 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.6.0</h3>
-                <p># BreakMate 1.6.0
-
-**New:**
-
-- **App Usage Analytics** — Local, privacy-first tracking of active foreground apps, giving you clear visibility into where your desktop time goes. View it on the Statistics screen and in Settings → Privacy.
-- **Category Daily Budgets** — Set daily time goals for specific application categories (e.g. Browsing, Social, Entertainment) and track your limits throughout the day.
-- **Focus Score &amp; Trend Charts** — Measure your daily focus score, track multi-day focus trends, and celebrate sustained focus streaks as you build healthier working habits.
-- **Weekly Digest &amp; Export** — Receive an automated weekly breakdown of your productivity habits, break compliance, and top apps with one-click export support.
-- **6 New Curated Themes** — Expand your visual experience with Crimson Ember, Ocean Abyss, Aurora Borealis, Desert Dusk, Lavender Mist, and Monokai Pro (12 curated themes in total).
-- **Template Accent Customization** — Personalize and pin custom accent colors directly to individual break overlay templates in Settings → Break Appearance.
-- **Revamped Wellness Library** — Browse and filter wellness exercises by category with interactive preview cards and updated daily goals.
-- **Smarter Meeting Detection** — Improved native detection and video conference URL recognition to seamlessly defer scheduled breaks during active meetings.
-
-**Improved:**
-
-- Updated core dependencies for enhanced performance, smoother animations, and platform stability.
-- Native app icon caching on macOS and Windows for fast, crisp icon rendering.
-
-**Under the hood:**
-
-- Added Windows app tracking native bridge support.
-- Strengthened automated test coverage for analytics, timer orchestration, and privacy features.</p>
+                <h4>BreakMate 1.6.0</h4>
+                <p><strong>New:</strong></p>
+                <ul><li><strong>App Usage Analytics</strong> — Local, privacy-first tracking of active foreground apps, giving you clear visibility into where your desktop time goes. View it on the Statistics screen and in Settings → Privacy.</li><li><strong>Category Daily Budgets</strong> — Set daily time goals for specific application categories (e.g. Browsing, Social, Entertainment) and track your limits throughout the day.</li><li><strong>Focus Score &amp; Trend Charts</strong> — Measure your daily focus score, track multi-day focus trends, and celebrate sustained focus streaks as you build healthier working habits.</li><li><strong>Weekly Digest &amp; Export</strong> — Receive an automated weekly breakdown of your productivity habits, break compliance, and top apps with one-click export support.</li><li><strong>6 New Curated Themes</strong> — Expand your visual experience with Crimson Ember, Ocean Abyss, Aurora Borealis, Desert Dusk, Lavender Mist, and Monokai Pro (12 curated themes in total).</li><li><strong>Template Accent Customization</strong> — Personalize and pin custom accent colors directly to individual break overlay templates in Settings → Break Appearance.</li><li><strong>Revamped Wellness Library</strong> — Browse and filter wellness exercises by category with interactive preview cards and updated daily goals.</li><li><strong>Smarter Meeting Detection</strong> — Improved native detection and video conference URL recognition to seamlessly defer scheduled breaks during active meetings.</li></ul>
+                <p><strong>Improved:</strong></p>
+                <ul><li>Updated core dependencies for enhanced performance, smoother animations, and platform stability.</li><li>Native app icon caching on macOS and Windows for fast, crisp icon rendering.</li></ul>
+                <p><strong>Under the hood:</strong></p>
+                <ul><li>Added Windows app tracking native bridge support.</li><li>Strengthened automated test coverage for analytics, timer orchestration, and privacy features.</li></ul>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.6.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.6.0/BreakMate-Installer.dmg"
                        sparkle:version="35"
                        sparkle:shortVersionString="1.6.0"
                        sparkle:edSignature="y5U1lpr0UapZQXKjpJbSU7CcDSVb8x1Agszbsl5PZShxvxWzC0srdWkJszM5EBvTHnGtCE6eUKEfbD16hK7PDw=="
@@ -144,28 +99,19 @@ Build 36 · 17 October 2026</p>
             <pubDate>Mon, 31 Aug 2026 08:54:55 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.5.0</h3>
-                <p># BreakMate 1.5.0
-
-**New:**
-
-- **Global Hotkey** — press ⌘⌥B (Ctrl+Alt+B on Windows) anywhere to start a break instantly, or skip the one you're in. Toggle it in Settings → General.
-- **Presentation Pause** — BreakMate now notices when you're in a fullscreen presentation or video call and holds off on breaks until you're done. Toggle it in Settings → Smart Detection. (macOS only for now — Windows support is on the way.)
-- **Companion Streaks** — your desktop companion now celebrates real milestones (3, 7, 14, 30, 60, 100 days) as you build a consistent break habit. Check your progress in Settings → Companion.
-- **Smarter Meeting-Aware Scheduling** — when a break would land during a meeting, BreakMate now looks ahead across your calendar to find the next real gap, instead of just waiting 5 minutes and trying again.
-
-**Improved:**
-
-- Smaller install size — break-screen slideshow images were re-optimized (~13 MB → ~2.3 MB) with no visible quality loss.
-
-**Under the hood:**
-
-- Internal settings-code cleanup and documentation fixes — no visible changes, just a healthier codebase going forward.</p>
+                <h4>BreakMate 1.5.0</h4>
+                <p><strong>New:</strong></p>
+                <ul><li><strong>Global Hotkey</strong> — press ⌘⌥B (Ctrl+Alt+B on Windows) anywhere to start a break instantly, or skip the one you're in. Toggle it in Settings → General.</li><li><strong>Presentation Pause</strong> — BreakMate now notices when you're in a fullscreen presentation or video call and holds off on breaks until you're done. Toggle it in Settings → Smart Detection. (macOS only for now — Windows support is on the way.)</li><li><strong>Companion Streaks</strong> — your desktop companion now celebrates real milestones (3, 7, 14, 30, 60, 100 days) as you build a consistent break habit. Check your progress in Settings → Companion.</li><li><strong>Smarter Meeting-Aware Scheduling</strong> — when a break would land during a meeting, BreakMate now looks ahead across your calendar to find the next real gap, instead of just waiting 5 minutes and trying again.</li></ul>
+                <p><strong>Improved:</strong></p>
+                <ul><li>Smaller install size — break-screen slideshow images were re-optimized (~13 MB → ~2.3 MB) with no visible quality loss.</li></ul>
+                <p><strong>Under the hood:</strong></p>
+                <ul><li>Internal settings-code cleanup and documentation fixes — no visible changes, just a healthier codebase going forward.</li></ul>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.5.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.5.0/BreakMate-Installer.dmg"
                        sparkle:version="34"
                        sparkle:shortVersionString="1.5.0"
                        sparkle:edSignature="einGGZqstgvsDhPPpt/H40gVf9ZMpeyf5FKthXJKLd56iNJwtAGcsRJThFMjkrh7vE3oyDeR8DmTyvfuXIYdAg=="
@@ -177,79 +123,39 @@ Build 36 · 17 October 2026</p>
             <pubDate>Tue, 16 Jun 2026 10:45:38 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.4.0</h3>
-                <p># BreakMate Release Notes — v1.4.0 (Build 33)
-
-**Date:** June 16, 2026  
-**Release Title:** Desktop Companion Engine &amp; Environment Builder
-
-## Summary
-
-This major update introduces a completely overhauled Desktop Companion experience. We've built a custom sprite animation engine, a flexible environment builder, and an interactive Picture-in-Picture (PiP) overlay to ensure your companion stays with you across all your workspaces.
-
----
-
-## 🚀 What's New
-
-### 🐾 Desktop Companion Engine
-
-A new animation and behavior system that makes your desktop pets feel more alive.
-
-- **Sprite Rendering Engine:** Optimized for low CPU usage while supporting complex animations.
-- **Advanced State Machines:** Pets now have more fluid transitions between idling, moving, and resting.
-- **Ground-Padding Detection:** Dynamic stabilization ensures pets stay perfectly aligned with their environment.
-
-### 🌎 Environment Builder
-
-Customize your companion's world exactly how you like it.
-
-- **Live Preview:** See changes in real-time as you build your environment.
-- **Theme Configuration:** New repository-backed themes for consistent world-building.
-- **Interactive Decorations:** Added background birds and environment-aware props.
-
-### 🖼️ Interactive PiP Overlay
-
-Keep your companion visible without it getting in the way.
-
-- **Cross-Workspace Visibility:** High-performance overlay window that floats above other apps.
-- **Smart Initialization:** Updated persistence for PiP settings.
-
----
-
-## 🛠️ Improvements &amp; Refinements
-
-### 📦 Centralized Storage System
-
-- Migrated to a unified `StorageService`.
-- Built-in data migration logic for seamless updates.
-- Multi-process access management for improved stability.
-
-### ⚙️ Infrastructure &amp; Architecture
-
-- **Service Bootstrapping:** Modernized startup sequence for faster app launches.
-- **Dependency Injection:** Refined DI configuration using a modular pattern.
-- **NPC Unification:** Consolidated movement and component logic for better performance.
-
----
-
-## 🐞 Bug Fixes
-
-- **Painting Errors:** Fixed occasional zero-size rendering issues on window resize.
-- **High-DPI Support:** Improved crispness and scaling on 4K Windows displays.
-- **UI Cleanup:** Removed intrusive scrollbars from settings and dashboard pages.
-
----
-
-## 📊 Build Details
-
-- **Version:** 1.4.0
-- **Build Number:** 33
-- **Commit Range:** v1.3.0...HEAD</p>
+                <h4>BreakMate Release Notes — v1.4.0 (Build 33)</h4>
+                <p><strong>Date:</strong> June 16, 2026<br><strong>Release Title:</strong> Desktop Companion Engine &amp; Environment Builder</p>
+                <h4>Summary</h4>
+                <p>This major update introduces a completely overhauled Desktop Companion experience. We've built a custom sprite animation engine, a flexible environment builder, and an interactive Picture-in-Picture (PiP) overlay to ensure your companion stays with you across all your workspaces.</p>
+                <hr>
+                <h4>🚀 What's New</h4>
+                <h5>🐾 Desktop Companion Engine</h5>
+                <p>A new animation and behavior system that makes your desktop pets feel more alive.</p>
+                <ul><li><strong>Sprite Rendering Engine:</strong> Optimized for low CPU usage while supporting complex animations.</li><li><strong>Advanced State Machines:</strong> Pets now have more fluid transitions between idling, moving, and resting.</li><li><strong>Ground-Padding Detection:</strong> Dynamic stabilization ensures pets stay perfectly aligned with their environment.</li></ul>
+                <h5>🌎 Environment Builder</h5>
+                <p>Customize your companion's world exactly how you like it.</p>
+                <ul><li><strong>Live Preview:</strong> See changes in real-time as you build your environment.</li><li><strong>Theme Configuration:</strong> New repository-backed themes for consistent world-building.</li><li><strong>Interactive Decorations:</strong> Added background birds and environment-aware props.</li></ul>
+                <h5>🖼️ Interactive PiP Overlay</h5>
+                <p>Keep your companion visible without it getting in the way.</p>
+                <ul><li><strong>Cross-Workspace Visibility:</strong> High-performance overlay window that floats above other apps.</li><li><strong>Smart Initialization:</strong> Updated persistence for PiP settings.</li></ul>
+                <hr>
+                <h4>🛠️ Improvements &amp; Refinements</h4>
+                <h5>📦 Centralized Storage System</h5>
+                <ul><li>Migrated to a unified <code>StorageService</code>.</li><li>Built-in data migration logic for seamless updates.</li><li>Multi-process access management for improved stability.</li></ul>
+                <h5>⚙️ Infrastructure &amp; Architecture</h5>
+                <ul><li><strong>Service Bootstrapping:</strong> Modernized startup sequence for faster app launches.</li><li><strong>Dependency Injection:</strong> Refined DI configuration using a modular pattern.</li><li><strong>NPC Unification:</strong> Consolidated movement and component logic for better performance.</li></ul>
+                <hr>
+                <h4>🐞 Bug Fixes</h4>
+                <ul><li><strong>Painting Errors:</strong> Fixed occasional zero-size rendering issues on window resize.</li><li><strong>High-DPI Support:</strong> Improved crispness and scaling on 4K Windows displays.</li><li><strong>UI Cleanup:</strong> Removed intrusive scrollbars from settings and dashboard pages.</li></ul>
+                <hr>
+                <h4>📊 Build Details</h4>
+                <ul><li><strong>Version:</strong> 1.4.0</li><li><strong>Build Number:</strong> 33</li><li><strong>Commit Range:</strong> v1.3.0...HEAD</li></ul>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.4.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.4.0/BreakMate-Installer.dmg"
                        sparkle:version="33"
                        sparkle:shortVersionString="1.4.0"
                        sparkle:edSignature="/BxglF4HouU/zUBXE380YiNz0jFL3oRJG1d5aRhHHXbfpHOn4p53KcH24FPi2GOgeQ4yUDjAYo/jID4MkHXpCQ=="
@@ -270,7 +176,7 @@ Keep your companion visible without it getting in the way.
                     <li>Break Overlay Context: Explanations for why breaks start and what's expected.</li>
                 </ul>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.3.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.3.0/BreakMate-Installer.dmg"
                        sparkle:version="32"
                        sparkle:shortVersionString="1.3.0"
                        sparkle:edSignature="m2OvakDDWzvaZxwA0bRJ/r1D8ZoV0FazxYtaJ9M8jqm3ulR9QvRAns/Pf/sDWeLnqctAZVqC6HiPfU/X07wTDQ=="
@@ -291,7 +197,7 @@ Keep your companion visible without it getting in the way.
                     <li>Stability Fixes: Resolved startup crashes and improved meeting detection precision.</li>
                 </ul>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.2.1/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.2.1/BreakMate-Installer.dmg"
                        sparkle:version="31"
                        sparkle:shortVersionString="1.2.1"
                        sparkle:edSignature="744wTs7U9cK+4Kb/mhAeYYKWe+kKD0bWFn0G2egbjeKZ0Hw7i6sJWYnNtQ19GIHzpIaag+smpHvARnkXLBFTCw=="
@@ -314,7 +220,7 @@ Keep your companion visible without it getting in the way.
                     <li>Privacy Report: Clear details on how your data stays local on your machine.</li>
                 </ul>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.2.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.2.0/BreakMate-Installer.dmg"
                        sparkle:version="30"
                        sparkle:shortVersionString="1.2.0"
                        sparkle:edSignature="gyG4k+71jzAmAAfSCg8w0egNXcqPazr9aO061NAqOVU9Qg9lu8K33SPqJjaLY3zpVvSzKUrp26zFJh/mmNulCA=="
@@ -326,52 +232,26 @@ Keep your companion visible without it getting in the way.
             <pubDate>Sun, 31 May 2026 10:34:42 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.1.4</h3>
-                <p>## BreakMate v1.1.4 — Onboarding Persistence &amp; Storage Stability
-
-This update addresses a long-standing issue where user onboarding data was not persisting correctly across application restarts. I've overhauled the storage architecture to ensure a more reliable experience on macOS.
-
-### 🛠️ Core Fixes &amp; Enhancements
-
-- **Onboarding Persistence Fix:**
-  - Resolved the "Onboarding Loop" where users were repeatedly prompted to complete onboarding after each app restart.
-  - Implemented a **Dual-Sync** mechanism: Critical flags (onboarding, interval, strict mode) are now mirrored to a separate, high-stability Key-Value store. If the main settings snapshot is ever stale or fails to load, the app automatically recovers state from this mirror.
-
-- **Storage Architecture Overhaul (macOS):**
-  - **Path Relocation:** Moved the internal database from `~/Documents/breakmate_db` to `~/Library/Application Support/breakmate_db`. This aligns with macOS best practices and prevents data loss from manual user file management.
-  - **Automatic Migration:** Added logic to detect legacy databases in the Documents folder and seamlessly move them to the new Application Support location on the first run of v1.1.4.
-  - **Lock File Self-Healing:** Implemented automatic cleanup of stale `lock.mdb` files. This prevents the app from failing to start if a previous instance crashed or didn't release the database lock properly.
-
-- **Resilient Data Loading:**
-  - Added robust `try-catch` blocks to the `SettingsRepository` load sequence.
-  - Enhanced JSON decoding for complex fields (Exercises, Activity Patterns) to handle nulls or malformed strings without crashing the entire settings load.
-  - Added explicit debug logging across the storage lifecycle for better traceability.
-
-- **Developer Experience:**
-  - Fixed a compilation error regarding `unawaited` futures by properly importing `dart:async`.
-  - Incremented build version to `29` for Sparkle update compatibility.
-
-### 📄 Documentation Updates
-- Updated `README.md` with a new **Storage &amp; Persistence Architecture** section.
-- Added project credits: "Built with Flutter by Bijith P N".
-
-### 📦 Version Information
-- **Version:** 1.1.4
-- **Build:** 29
-- **Release Date:** May 31, 2026
-
-### Installation Note (macOS)
-
-Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
-
-1. Double-click the `BreakMate-Installer.dmg` and drag BreakMate to your Applications folder.
-2. Right-click (or Control-click) the BreakMate app and select Open.
-3. If it still blocks, go to **System Settings &gt; Privacy &amp; Security** and click **Allow Anyway** next to BreakMate.</p>
+                <h4>BreakMate v1.1.4 — Onboarding Persistence &amp; Storage Stability</h4>
+                <p>This update addresses a long-standing issue where user onboarding data was not persisting correctly across application restarts. I've overhauled the storage architecture to ensure a more reliable experience on macOS.</p>
+                <h5>🛠️ Core Fixes &amp; Enhancements</h5>
+                <ul><li><strong>Onboarding Persistence Fix:</strong></li><li>Resolved the "Onboarding Loop" where users were repeatedly prompted to complete onboarding after each app restart.</li><li>Implemented a <strong>Dual-Sync</strong> mechanism: Critical flags (onboarding, interval, strict mode) are now mirrored to a separate, high-stability Key-Value store. If the main settings snapshot is ever stale or fails to load, the app automatically recovers state from this mirror.</li></ul>
+                <ul><li><strong>Storage Architecture Overhaul (macOS):</strong></li><li><strong>Path Relocation:</strong> Moved the internal database from <code>~/Documents/breakmate_db</code> to <code>~/Library/Application Support/breakmate_db</code>. This aligns with macOS best practices and prevents data loss from manual user file management.</li><li><strong>Automatic Migration:</strong> Added logic to detect legacy databases in the Documents folder and seamlessly move them to the new Application Support location on the first run of v1.1.4.</li><li><strong>Lock File Self-Healing:</strong> Implemented automatic cleanup of stale <code>lock.mdb</code> files. This prevents the app from failing to start if a previous instance crashed or didn't release the database lock properly.</li></ul>
+                <ul><li><strong>Resilient Data Loading:</strong></li><li>Added robust <code>try-catch</code> blocks to the <code>SettingsRepository</code> load sequence.</li><li>Enhanced JSON decoding for complex fields (Exercises, Activity Patterns) to handle nulls or malformed strings without crashing the entire settings load.</li><li>Added explicit debug logging across the storage lifecycle for better traceability.</li></ul>
+                <ul><li><strong>Developer Experience:</strong></li><li>Fixed a compilation error regarding <code>unawaited</code> futures by properly importing <code>dart:async</code>.</li><li>Incremented build version to <code>29</code> for Sparkle update compatibility.</li></ul>
+                <h5>📄 Documentation Updates</h5>
+                <ul><li>Updated <code>README.md</code> with a new <strong>Storage &amp; Persistence Architecture</strong> section.</li><li>Added project credits: "Built with Flutter by Bijith P N".</li></ul>
+                <h5>📦 Version Information</h5>
+                <ul><li><strong>Version:</strong> 1.1.4</li><li><strong>Build:</strong> 29</li><li><strong>Release Date:</strong> May 31, 2026</li></ul>
+                <h5>Installation Note (macOS)</h5>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.</p>
+                <ol><li>Double-click the <code>BreakMate-Installer.dmg</code> and drag BreakMate to your Applications folder.</li><li>Right-click (or Control-click) the BreakMate app and select Open.</li><li>If it still blocks, go to <strong>System Settings &gt; Privacy &amp; Security</strong> and click <strong>Allow Anyway</strong> next to BreakMate.</li></ol>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
                 and click Allow Anyway next to BreakMate.</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.1.4/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.1.4/BreakMate-Installer.dmg"
                        sparkle:version="29"
                        sparkle:shortVersionString="1.1.4"
                        sparkle:edSignature="yScG//d4G0ogreKNcvYSLdm+vlwM9qpZnfKypuDpwIsSN1eoXVjb0GFY+duQNh7Sk+NpzZ/1N5nhrt/3xc9gDQ=="
@@ -382,23 +262,13 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
             <title>Version 1.1.3</title>
             <pubDate>Wed, 27 May 2026 16:30:00 +0000</pubDate>
             <description><![CDATA[
-# BreakMate v1.1.3 — Stability, Dev Isolation & Version Alignment
-
-This update introduces critical fixes to resolve a startup crash and optimizes the developer experience by isolating telemetry in development environments.
-
-### What's Changed
-
-* **Startup Crash Fix:** Resolved a critical runtime exception (`Tried to use Provider with a subtype of Listenable/Stream`) by shifting the injection of `StatsService` inside `MultiProvider` to `ChangeNotifierProvider.value`. Subscribed widgets can now dynamically listen to background metrics calculations safely.
-* **Sentry Dev Mode Isolation:** Bypassed Sentry telemetry initialization in debug/profile builds using the `kReleaseMode` check. This completely silences verbose connection warnings and native SDK exceptions when developing locally.
-* **Sparkle Version Alignment:** Aligned all build metadata to version `1.1.3+28` to ensure that macOS users receive updates correctly without redundant update dialog prompts.
-
-### Installation Note (macOS)
-
-Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
-
-1. Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.
-2. Right-click (or Control-click) the BreakMate app and select Open.
-3. If it still blocks, go to **System Settings > Privacy & Security** and click **Allow Anyway** next to BreakMate.
+                <h4>BreakMate v1.1.3 — Stability, Dev Isolation &amp; Version Alignment</h4>
+                <p>This update introduces critical fixes to resolve a startup crash and optimizes the developer experience by isolating telemetry in development environments.</p>
+                <h5>What's Changed</h5>
+                <ul><li><strong>Startup Crash Fix:</strong> Resolved a critical runtime exception (<code>Tried to use Provider with a subtype of Listenable/Stream</code>) by shifting the injection of <code>StatsService</code> inside <code>MultiProvider</code> to <code>ChangeNotifierProvider.value</code>. Subscribed widgets can now dynamically listen to background metrics calculations safely.</li><li><strong>Sentry Dev Mode Isolation:</strong> Bypassed Sentry telemetry initialization in debug/profile builds using the <code>kReleaseMode</code> check. This completely silences verbose connection warnings and native SDK exceptions when developing locally.</li><li><strong>Sparkle Version Alignment:</strong> Aligned all build metadata to version <code>1.1.3+28</code> to ensure that macOS users receive updates correctly without redundant update dialog prompts.</li></ul>
+                <h5>Installation Note (macOS)</h5>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.</p>
+                <ol><li>Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.</li><li>Right-click (or Control-click) the BreakMate app and select Open.</li><li>If it still blocks, go to <strong>System Settings &gt; Privacy &amp; Security</strong> and click <strong>Allow Anyway</strong> next to BreakMate.</li></ol>
             ]]></description>
             <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/BreakMate-Installer.dmg"
                        sparkle:version="28"
@@ -410,23 +280,13 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
             <title>Version 1.1.2</title>
             <pubDate>Wed, 27 May 2026 07:00:00 +0000</pubDate>
             <description><![CDATA[
-# BreakMate v1.1.2 — User Experience Polish & Smart Notifications
-
-This update focuses on improving the break transition experience and enhancing visual feedback for smart detection features.
-
-### What's Changed
-
-* **Audio Transitions:** Added gentle lofi music fade-in/out during pre-break warnings for a smoother user experience.
-* **Meeting Detection Visuals:** Added real-time visual indicators to the companion (On-Air badge) and tray menu when meetings are detected.
-* **Micro-Break Integration:** Mapped posture and eye-blink tracking reminders directly to companion animations (stretching and blinking) for less intrusive healthy habits.
-
-### Installation Note (macOS)
-
-Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
-
-1. Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.
-2. Right-click (or Control-click) the BreakMate app and select Open.
-3. If it still blocks, go to **System Settings > Privacy & Security** and click **Allow Anyway** next to BreakMate.
+                <h4>BreakMate v1.1.2 — User Experience Polish &amp; Smart Notifications</h4>
+                <p>This update focuses on improving the break transition experience and enhancing visual feedback for smart detection features.</p>
+                <h5>What's Changed</h5>
+                <ul><li><strong>Audio Transitions:</strong> Added gentle lofi music fade-in/out during pre-break warnings for a smoother user experience.</li><li><strong>Meeting Detection Visuals:</strong> Added real-time visual indicators to the companion (On-Air badge) and tray menu when meetings are detected.</li><li><strong>Micro-Break Integration:</strong> Mapped posture and eye-blink tracking reminders directly to companion animations (stretching and blinking) for less intrusive healthy habits.</li></ul>
+                <h5>Installation Note (macOS)</h5>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.</p>
+                <ol><li>Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.</li><li>Right-click (or Control-click) the BreakMate app and select Open.</li><li>If it still blocks, go to <strong>System Settings &gt; Privacy &amp; Security</strong> and click <strong>Allow Anyway</strong> next to BreakMate.</li></ol>
             ]]></description>
             <enclosure url="https://raw.githubusercontent.com/bijithintersmart/break-mate-update/main/release_dmg/BreakMate-Installer.dmg"
                        sparkle:version="27"
@@ -440,25 +300,15 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
             <pubDate>Wed, 27 May 2026 06:02:32 +0000</pubDate>
             <description><![CDATA[
                 <h3>BreakMate v1.1.1</h3>
-                <p>## BreakMate v1.1.1 — Minor Fixes &amp; Improvements
-
-This is a small maintenance release with a few polish improvements and under-the-hood fixes.
-
-### What's Changed
-
-* **Stability:** Fixed a minor edge case that could cause the break timer to reset unexpectedly when switching between apps rapidly.
-
-* **Performance:** Reduced memory footprint of the desktop companion window during long idle sessions.
-
-* **Pet behavior:** Smoothed out occasional animation stutter when the pet transitions between idle and sleeping states.
-
-### Installation Note (macOS)
-
-Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.
-
-1. Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.
-2. Right-click (or Control-click) the BreakMate app and select Open.
-3. If it still blocks, go to System Settings &gt; Privacy &amp; Security and click Allow Anyway next to BreakMate.</p>
+                <h4>BreakMate v1.1.1 — Minor Fixes &amp; Improvements</h4>
+                <p>This is a small maintenance release with a few polish improvements and under-the-hood fixes.</p>
+                <h5>What's Changed</h5>
+                <ul><li><strong>Stability:</strong> Fixed a minor edge case that could cause the break timer to reset unexpectedly when switching between apps rapidly.</li></ul>
+                <ul><li><strong>Performance:</strong> Reduced memory footprint of the desktop companion window during long idle sessions.</li></ul>
+                <ul><li><strong>Pet behavior:</strong> Smoothed out occasional animation stutter when the pet transitions between idle and sleeping states.</li></ul>
+                <h5>Installation Note (macOS)</h5>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security warning on first launch.</p>
+                <ol><li>Double-click the BreakMate-Installer.dmg and drag BreakMate to your Applications folder.</li><li>Right-click (or Control-click) the BreakMate app and select Open.</li><li>If it still blocks, go to System Settings &gt; Privacy &amp; Security and click Allow Anyway next to BreakMate.</li></ol>
                 <h4>Installation Note (macOS)</h4>
                 <p>Since BreakMate is not notarized by Apple, macOS may show a security
                 warning on first launch. Open System Settings &gt; Privacy and Security
@@ -514,7 +364,7 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
                     <li>If it still blocks launch, go to <b>System Settings &gt; Privacy &amp; Security</b>, scroll down to the Security section, and click <b>Allow Anyway</b> next to the BreakMate notice to authorize it.</li>
                 </ol>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.1.0/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.1.0/BreakMate-Installer.dmg"
                        sparkle:version="25"
                        sparkle:shortVersionString="1.1.0"
                        sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
@@ -535,7 +385,7 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
                 </ul>
                 <p>Update now for a smoother, faster BreakMate experience!</p>
             ]]></description>
-            <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.0.1/BreakMate-Installer.dmg"
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.0.1/BreakMate-Installer.dmg"
                        sparkle:version="24"
                        sparkle:shortVersionString="1.0.1"
                        sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
@@ -553,7 +403,7 @@ Since BreakMate is not notarized by Apple, macOS may show a security warning on 
                        <li>🎵 <b>Lofi Beats:</b> Built-in lofi music player to help you stay focused during work sessions.</li>
                        <li>📊 <b>Analytics & Stats:</b> Detailed charts to track your productivity and break trends over time.</li>
                        <li>🛑 <b>Smart Detection:</b> Automatically detects meetings and respects your Focus Mode settings.</li><li>⚡️ <b>Hardened Runtime:</b> Optimized for macOS performance with full securitysandboxing.</li></ul><p>Enjoying BreakMate? Follow us on GitHub for more updates!</p>]]></description>
-               <enclosure url="https://github.com/bijithintersmart/standup/releases/download/v1.0.0/BreakMate-Installer.dmg"
+               <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.0.0/BreakMate-Installer.dmg"
                           sparkle:version="1"
                           sparkle:shortVersionString="1.0.0"
                           sparkle:edSignature="DYNAMIC_SIGNATURE_WILL_BE_INSERTED_BY_CI"
