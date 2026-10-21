@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -82,61 +83,67 @@ void main() {
 
   test('does nothing when the gap is negligible', () {
     final t = DateTime(2026, 9, 6, 9, 0);
-    breakHistoryService.recordBreak(time: t, completed: true);
-    breakHistoryService.recordBreak(
-      time: t.add(const Duration(hours: 2)),
-      completed: false,
-    );
-    // Same focus coverage after both -> ~0 point gap.
-    focusSessionService.recordSession(
-      FocusSession(category: AppCategory.coding, start: t, durationSeconds: 1800),
-    );
-    focusSessionService.recordSession(
-      FocusSession(
-        category: AppCategory.coding,
-        start: t.add(const Duration(hours: 2)),
-        durationSeconds: 1800,
-      ),
-    );
+    withClock(Clock.fixed(t), () {
+      breakHistoryService.recordBreak(time: t, completed: true);
+      breakHistoryService.recordBreak(
+        time: t.add(const Duration(hours: 2)),
+        completed: false,
+      );
+      // Same focus coverage after both -> ~0 point gap.
+      focusSessionService.recordSession(
+        FocusSession(category: AppCategory.coding, start: t, durationSeconds: 1800),
+      );
+      focusSessionService.recordSession(
+        FocusSession(
+          category: AppCategory.coding,
+          start: t.add(const Duration(hours: 2)),
+          durationSeconds: 1800,
+        ),
+      );
 
-    insightService.checkAndMaybeShow(now: t.add(const Duration(hours: 3)));
+      insightService.checkAndMaybeShow(now: t.add(const Duration(hours: 3)));
 
-    expect(notificationService.shown, isEmpty);
+      expect(notificationService.shown, isEmpty);
+    });
   });
 
   test('shows once there is enough data and a meaningful gap', () {
     final t = DateTime(2026, 9, 6, 9, 0);
-    breakHistoryService.recordBreak(time: t, completed: true);
-    breakHistoryService.recordBreak(
-      time: t.add(const Duration(hours: 2)),
-      completed: false,
-    );
-    // Full focus coverage after the completed break, none after the skipped one.
-    focusSessionService.recordSession(
-      FocusSession(category: AppCategory.coding, start: t, durationSeconds: 3600),
-    );
+    withClock(Clock.fixed(t), () {
+      breakHistoryService.recordBreak(time: t, completed: true);
+      breakHistoryService.recordBreak(
+        time: t.add(const Duration(hours: 2)),
+        completed: false,
+      );
+      // Full focus coverage after the completed break, none after the skipped one.
+      focusSessionService.recordSession(
+        FocusSession(category: AppCategory.coding, start: t, durationSeconds: 3600),
+      );
 
-    insightService.checkAndMaybeShow(now: t.add(const Duration(hours: 3)));
+      insightService.checkAndMaybeShow(now: t.add(const Duration(hours: 3)));
 
-    expect(notificationService.shown, hasLength(1));
-    expect(storage.getBool(AppConstants.keyFocusInsightShown), isTrue);
+      expect(notificationService.shown, hasLength(1));
+      expect(storage.getBool(AppConstants.keyFocusInsightShown), isTrue);
+    });
   });
 
   test('never shows twice, even if checked again later', () {
     final t = DateTime(2026, 9, 6, 9, 0);
-    breakHistoryService.recordBreak(time: t, completed: true);
-    breakHistoryService.recordBreak(
-      time: t.add(const Duration(hours: 2)),
-      completed: false,
-    );
-    focusSessionService.recordSession(
-      FocusSession(category: AppCategory.coding, start: t, durationSeconds: 3600),
-    );
+    withClock(Clock.fixed(t), () {
+      breakHistoryService.recordBreak(time: t, completed: true);
+      breakHistoryService.recordBreak(
+        time: t.add(const Duration(hours: 2)),
+        completed: false,
+      );
+      focusSessionService.recordSession(
+        FocusSession(category: AppCategory.coding, start: t, durationSeconds: 3600),
+      );
 
-    final now = t.add(const Duration(hours: 3));
-    insightService.checkAndMaybeShow(now: now);
-    insightService.checkAndMaybeShow(now: now);
+      final now = t.add(const Duration(hours: 3));
+      insightService.checkAndMaybeShow(now: now);
+      insightService.checkAndMaybeShow(now: now);
 
-    expect(notificationService.shown, hasLength(1));
+      expect(notificationService.shown, hasLength(1));
+    });
   });
 }

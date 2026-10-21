@@ -2,6 +2,7 @@
 // highest-priority OverviewInsight, delivered once/day via a local
 // notification, gated the same way FocusInsightService gates its one-shot
 // correlation notification.
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -123,30 +124,8 @@ void main() {
 
   test('shows the top insight once there is one', () {
     final now = DateTime(2026, 9, 6);
-    // 4 of 6 breaks skipped this week — crosses the skip-rate threshold.
-    for (var i = 0; i < 4; i++) {
-      breakHistoryService.recordBreak(
-        time: now.subtract(Duration(days: i)),
-        completed: false,
-      );
-    }
-    for (var i = 4; i < 6; i++) {
-      breakHistoryService.recordBreak(
-        time: now.subtract(Duration(days: i)),
-        completed: true,
-      );
-    }
-
-    service.checkAndMaybeShow(now: now);
-
-    expect(notificationService.shown, hasLength(1));
-    expect(notificationService.shown.single, contains('skipped'));
-  });
-
-  test(
-    'also relays the top insight to the companion window over IPC',
-    () async {
-      final now = DateTime(2026, 9, 6);
+    withClock(Clock.fixed(now), () {
+      // 4 of 6 breaks skipped this week — crosses the skip-rate threshold.
       for (var i = 0; i < 4; i++) {
         breakHistoryService.recordBreak(
           time: now.subtract(Duration(days: i)),
@@ -161,57 +140,87 @@ void main() {
       }
 
       service.checkAndMaybeShow(now: now);
-      await Future<void>.delayed(Duration.zero);
 
-      expect(ipcCalls, hasLength(1));
-      expect(ipcCalls.single.method, 'sendEvent');
-      final args = ipcCalls.single.arguments as Map;
-      expect(args['event'], 'companion.interaction');
-      final data = args['data'] as Map;
-      expect(data['interactionType'], 'speech');
-      expect((data['metadata'] as Map)['text'], contains('skipped'));
+      expect(notificationService.shown, hasLength(1));
+      expect(notificationService.shown.single, contains('skipped'));
+    });
+  });
+
+  test(
+    'also relays the top insight to the companion window over IPC',
+    () async {
+      final now = DateTime(2026, 9, 6);
+      await withClock(Clock.fixed(now), () async {
+        for (var i = 0; i < 4; i++) {
+          breakHistoryService.recordBreak(
+            time: now.subtract(Duration(days: i)),
+            completed: false,
+          );
+        }
+        for (var i = 4; i < 6; i++) {
+          breakHistoryService.recordBreak(
+            time: now.subtract(Duration(days: i)),
+            completed: true,
+          );
+        }
+
+        service.checkAndMaybeShow(now: now);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(ipcCalls, hasLength(1));
+        expect(ipcCalls.single.method, 'sendEvent');
+        final args = ipcCalls.single.arguments as Map;
+        expect(args['event'], 'companion.interaction');
+        final data = args['data'] as Map;
+        expect(data['interactionType'], 'speech');
+        expect((data['metadata'] as Map)['text'], contains('skipped'));
+      });
     },
   );
 
   test('does not show twice on the same day', () {
     final now = DateTime(2026, 9, 6);
-    for (var i = 0; i < 4; i++) {
-      breakHistoryService.recordBreak(
-        time: now.subtract(Duration(days: i)),
-        completed: false,
-      );
-    }
-    for (var i = 4; i < 6; i++) {
-      breakHistoryService.recordBreak(
-        time: now.subtract(Duration(days: i)),
-        completed: true,
-      );
-    }
+    withClock(Clock.fixed(now), () {
+      for (var i = 0; i < 4; i++) {
+        breakHistoryService.recordBreak(
+          time: now.subtract(Duration(days: i)),
+          completed: false,
+        );
+      }
+      for (var i = 4; i < 6; i++) {
+        breakHistoryService.recordBreak(
+          time: now.subtract(Duration(days: i)),
+          completed: true,
+        );
+      }
 
-    service.checkAndMaybeShow(now: now);
-    service.checkAndMaybeShow(now: now.add(const Duration(hours: 2)));
+      service.checkAndMaybeShow(now: now);
+      service.checkAndMaybeShow(now: now.add(const Duration(hours: 2)));
 
-    expect(notificationService.shown, hasLength(1));
+      expect(notificationService.shown, hasLength(1));
+    });
   });
 
   test('shows again the following day', () {
     final day1 = DateTime(2026, 9, 6);
-    for (var i = 0; i < 4; i++) {
-      breakHistoryService.recordBreak(
-        time: day1.subtract(Duration(days: i)),
-        completed: false,
-      );
-    }
-    for (var i = 4; i < 6; i++) {
-      breakHistoryService.recordBreak(
-        time: day1.subtract(Duration(days: i)),
-        completed: true,
-      );
-    }
+    withClock(Clock.fixed(day1), () {
+      for (var i = 0; i < 4; i++) {
+        breakHistoryService.recordBreak(
+          time: day1.subtract(Duration(days: i)),
+          completed: false,
+        );
+      }
+      for (var i = 4; i < 6; i++) {
+        breakHistoryService.recordBreak(
+          time: day1.subtract(Duration(days: i)),
+          completed: true,
+        );
+      }
 
-    service.checkAndMaybeShow(now: day1);
-    service.checkAndMaybeShow(now: day1.add(const Duration(days: 1)));
+      service.checkAndMaybeShow(now: day1);
+      service.checkAndMaybeShow(now: day1.add(const Duration(days: 1)));
 
-    expect(notificationService.shown, hasLength(2));
+      expect(notificationService.shown, hasLength(2));
+    });
   });
 }

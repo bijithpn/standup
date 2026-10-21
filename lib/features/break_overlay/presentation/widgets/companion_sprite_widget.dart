@@ -10,8 +10,8 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/features/companion/domain/environment_theme_config.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
-import 'package:breakmate/features/companion/presentation/widgets/avatar_view.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
+import 'package:breakmate/features/companion/presentation/widgets/companion_pet.dart';
 
 class CompanionSpriteWidget extends StatefulWidget {
   final PetTheme petTheme;
@@ -361,12 +361,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       return SizedBox(
         width: effectiveW,
         height: effectiveH,
-        child: AvatarView(
+        child: CompanionPet(
           definition: def,
-          width: effectiveW,
-          height: effectiveH,
-          autoTrackCursor: true,
-          isInteractive: true,
+          size: math.min(effectiveW, effectiveH),
           isStatic: widget.isStatic,
         ),
       );

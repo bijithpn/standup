@@ -4,14 +4,14 @@ import FlutterMacOS
 class MeetingDetectionBridge: NSObject, FlutterStreamHandler {
     private var eventSink: FlutterEventSink?
     
-    // Known meeting app bundle IDs
+    // Known meeting app bundle IDs (Slack and browser-based meetings like Google Meet are handled via mic/cam hardware detection)
     private let knownMeetingApps = [
         "us.zoom.xos",
         "com.microsoft.teams",
         "com.microsoft.teams2",
-        "com.google.Chrome.app.Default", // Fallback for browser-based (Meet, etc)
-        "com.tinyspeck.slackmacgap",
-        "com.cisco.webexmeetingsapp"
+        "com.cisco.webexmeetingsapp",
+        "com.cisco.webex",
+        "com.apple.FaceTime"
     ]
 
     init(registrar: FlutterPluginRegistrar) {

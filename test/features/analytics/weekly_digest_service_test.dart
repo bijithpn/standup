@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -146,56 +147,60 @@ void main() {
 
   test('buildDigest composes break adherence, top focus category, and streak', () {
     final now = DateTime(2026, 9, 6, 18, 0);
-    statsService.setWeeklyData([
-      DailyStats(date: '2026-09-01', breaksCompleted: 4, breaksSkipped: 1, usageMinutes: 0),
-      DailyStats(date: '2026-09-02', breaksCompleted: 3, breaksSkipped: 2, usageMinutes: 0),
-    ]);
-    focusSessionService.recordSession(
-      FocusSession(
-        category: AppCategory.coding,
-        start: DateTime(2026, 9, 1, 9, 0),
-        durationSeconds: 3600,
-      ),
-    );
+    withClock(Clock.fixed(now), () {
+      statsService.setWeeklyData([
+        DailyStats(date: '2026-09-01', breaksCompleted: 4, breaksSkipped: 1, usageMinutes: 0),
+        DailyStats(date: '2026-09-02', breaksCompleted: 3, breaksSkipped: 2, usageMinutes: 0),
+      ]);
+      focusSessionService.recordSession(
+        FocusSession(
+          category: AppCategory.coding,
+          start: DateTime(2026, 9, 1, 9, 0),
+          durationSeconds: 3600,
+        ),
+      );
 
-    final digest = digestService.buildDigest(now: now);
+      final digest = digestService.buildDigest(now: now);
 
-    expect(digest.breaksCompleted, 7);
-    expect(digest.breaksSkipped, 3);
-    expect(digest.breakAdherenceRate, closeTo(0.7, 0.001));
-    expect(digest.topFocusCategory, AppCategory.coding);
-    expect(digest.longestDeepWorkSessionSeconds, 3600);
-    expect(digest.companionMilestoneLabel, isNull);
+      expect(digest.breaksCompleted, 7);
+      expect(digest.breaksSkipped, 3);
+      expect(digest.breakAdherenceRate, closeTo(0.7, 0.001));
+      expect(digest.topFocusCategory, AppCategory.coding);
+      expect(digest.longestDeepWorkSessionSeconds, 3600);
+      expect(digest.companionMilestoneLabel, isNull);
+    });
   });
 
   test('buildDigest includes days-over-budget when a category exceeds its budget', () {
     final now = DateTime(2026, 9, 6, 18, 0);
-    final budgetedSettings = FakeSettingsRepository(
-      storage,
-      const SettingsModel(categoryDailyBudgetMinutes: {'browsing': 60}),
-    );
-    final digestWithBudget = WeeklyDigestService(
-      storage: storage,
-      statsService: statsService,
-      focusSessionService: focusSessionService,
-      streakService: streakService,
-      notificationService: notificationService,
-      usageService: usageService,
-      settingsRepository: budgetedSettings,
-    );
-    final dateKey =
-        '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-    usageService.addUsageSeconds(
-      date: dateKey,
-      appKey: 'com.apple.safari',
-      name: 'Safari',
-      category: AppCategory.browsing,
-      seconds: 90 * 60, // 90 min, over the 60-min budget
-    );
+    withClock(Clock.fixed(now), () {
+      final budgetedSettings = FakeSettingsRepository(
+        storage,
+        const SettingsModel(categoryDailyBudgetMinutes: {'browsing': 60}),
+      );
+      final digestWithBudget = WeeklyDigestService(
+        storage: storage,
+        statsService: statsService,
+        focusSessionService: focusSessionService,
+        streakService: streakService,
+        notificationService: notificationService,
+        usageService: usageService,
+        settingsRepository: budgetedSettings,
+      );
+      final dateKey =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      usageService.addUsageSeconds(
+        date: dateKey,
+        appKey: 'com.apple.safari',
+        name: 'Safari',
+        category: AppCategory.browsing,
+        seconds: 90 * 60, // 90 min, over the 60-min budget
+      );
 
-    final digest = digestWithBudget.buildDigest(now: now);
+      final digest = digestWithBudget.buildDigest(now: now);
 
-    expect(digest.daysOverBudgetByCategory[AppCategory.browsing], 1);
+      expect(digest.daysOverBudgetByCategory[AppCategory.browsing], 1);
+    });
   });
 
   group('trailingAverageAdherenceRate (§7.3)', () {

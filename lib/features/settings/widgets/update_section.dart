@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,6 +33,7 @@ class _UpdateSectionState extends State<UpdateSection> {
   String _updateVersion = '';
   String _updateNotes = '';
   String _errorMessage = '';
+  Timer? _checkTimeout;
 
   @override
   void initState() {
@@ -38,6 +41,7 @@ class _UpdateSectionState extends State<UpdateSection> {
     _channel.setMethodCallHandler((call) async {
       debugPrint('UpdateSection: Received method channel call: ${call.method}');
       if (call.method == 'onUpdateResult') {
+        _checkTimeout?.cancel();
         final args = Map<String, dynamic>.from(call.arguments);
         final hasUpdate = args['hasUpdate'] as bool? ?? false;
         final version = args['version'] as String? ?? '';
@@ -56,6 +60,7 @@ class _UpdateSectionState extends State<UpdateSection> {
           });
         }
       } else if (call.method == 'onUpdateError') {
+        _checkTimeout?.cancel();
         final args = Map<String, dynamic>.from(call.arguments);
         final error = args['error'] as String? ?? 'Failed to check for updates';
         debugPrint('UpdateSection: onUpdateError: $error');
@@ -88,10 +93,6 @@ class _UpdateSectionState extends State<UpdateSection> {
         }
       }
     });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkForUpdates();
-    });
   }
 
   Future<void> _checkForUpdates() async {
@@ -106,19 +107,38 @@ class _UpdateSectionState extends State<UpdateSection> {
       _hasUpdate = false;
       _errorMessage = '';
     });
+    _checkTimeout?.cancel();
+    _checkTimeout = Timer(const Duration(seconds: 30), () {
+      if (!mounted || !_isChecking) return;
+      setState(() {
+        _isChecking = false;
+        _checked = true;
+        _errorMessage =
+            'The update server did not respond. Check your connection and try again.';
+      });
+    });
     try {
       debugPrint('UpdateSection: Invoking checkForUpdates method channel');
       await _channel.invokeMethod('checkForUpdates');
     } catch (e) {
+      _checkTimeout?.cancel();
       debugPrint('UpdateSection: Error invoking checkForUpdates: $e');
       if (mounted) {
         setState(() {
           _isChecking = false;
           _checked = true;
-          _errorMessage = 'Failed to check for updates';
+          _errorMessage = e is PlatformException && e.message != null
+              ? e.message!
+              : 'Failed to check for updates';
         });
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _checkTimeout?.cancel();
+    super.dispose();
   }
 
   Future<void> _startUpdate() async {

@@ -31,16 +31,37 @@ class OverlayWindowManager: NSObject {
     func showOverlay(args: [String: Any]? = nil) {
         self.lastShowArgs = args
         
+        let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
+        let isReminder = type == "quickReminder" || type == "preBreakWarning"
+        let isPreview = args?["isPreview"] as? Bool ?? false
+        
         if !overlayInstances.isEmpty {
+            // Cancel any pending reminder auto-dismiss timer
+            showGeneration += 1
+            
+            // If transitioning from a reminder/pre-break warning to a full break screen, promote the window
+            if !isReminder {
+                if let appDelegate = NSApp.delegate as? AppDelegate,
+                   let mainWindow = appDelegate.mainFlutterWindow,
+                   !isPreview {
+                    wasMainWindowVisible = mainWindow.isVisible
+                    mainWindow.orderOut(nil)
+                    NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
+                }
+                
+                for instance in overlayInstances.values {
+                    instance.window.isReminder = false
+                    instance.window.ignoresMouseEvents = false
+                    instance.window.orderFrontRegardless()
+                    instance.window.makeKey()
+                }
+            }
+            
             if let args = args {
                 updateData(args)
             }
             return
         }
-        
-        let type = args?["type"] as? String ?? "breakScreen"
-        let isReminder = type == "quickReminder" || type == "preBreakWarning"
-        let isPreview = args?["isPreview"] as? Bool ?? false
         
         guard let appDelegate = NSApp.delegate as? AppDelegate,
               let mainWindow = appDelegate.mainFlutterWindow else {
@@ -51,6 +72,7 @@ class OverlayWindowManager: NSObject {
         if !isReminder && !isPreview {
             wasMainWindowVisible = mainWindow.isVisible
             mainWindow.orderOut(nil)
+            NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
         }
         
         let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
@@ -97,7 +119,9 @@ class OverlayWindowManager: NSObject {
         // would otherwise sit there forever with no way for the user to
         // close it. This is a hard backstop, independent of Dart, so a
         // reminder always goes away on its own.
-        if isReminder {
+        // Only quick health reminders (which last 4s) have a hard 6s backstop.
+        // Pre-break warnings must run their full countdown (e.g. 20s).
+        if type == "quickReminder" {
             showGeneration += 1
             let generation = showGeneration
             DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
@@ -109,6 +133,7 @@ class OverlayWindowManager: NSObject {
 
     func hideOverlay(restoreMainWindow: Bool = true) {
         showGeneration += 1
+        NativePowerAssertionManager.shared.releaseDisplaySleep()
         if overlayInstances.isEmpty { return }
 
         let entries = overlayInstances
@@ -116,6 +141,7 @@ class OverlayWindowManager: NSObject {
         let instances = Array(entries.values)
 
         let shouldRestore = restoreMainWindow && wasMainWindowVisible
+        wasMainWindowVisible = false
         
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.3
@@ -164,6 +190,7 @@ class OverlayWindowManager: NSObject {
     /// is quitting. Everyday hide/show should never reach this; that's the
     /// whole point of `warmPool`.
     func destroyAllInstances() {
+        NativePowerAssertionManager.shared.releaseDisplaySleep()
         for instance in overlayInstances.values { destroyInstance(instance) }
         for instance in warmPool.values { destroyInstance(instance) }
         overlayInstances.removeAll()
@@ -177,6 +204,16 @@ class OverlayWindowManager: NSObject {
     }
     
     func updateData(_ data: [String: Any]) {
+        let type = data["type"] as? String ?? data["overlayType"] as? String ?? ""
+        if !type.isEmpty {
+            let isReminder = type == "quickReminder" || type == "preBreakWarning"
+            for instance in overlayInstances.values {
+                instance.window.isReminder = isReminder
+                if !isReminder {
+                    instance.window.ignoresMouseEvents = false
+                }
+            }
+        }
         for instance in overlayInstances.values {
             let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
             channel.invokeMethod("updateOverlayData", arguments: data)
@@ -471,7 +508,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionTheme":
         if let args = call.arguments as? [String: Any], let themeId = args["themeId"] as? String {
           CompanionWindowManager.shared.updateTheme(themeId)
-          PiPWindowManager.shared.syncSettings(["themeId": themeId])
+          PiPFlutterWindowManager.shared.updateTheme(themeId: themeId, extra: args)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing themeId", details: nil))
@@ -480,7 +517,7 @@ class MainFlutterWindow: NSWindow {
       case "updateCompanionName":
         if let args = call.arguments as? [String: Any], let petName = args["petName"] as? String {
           CompanionWindowManager.shared.updatePetName(petName)
-          PiPWindowManager.shared.syncSettings(["petName": petName])
+          PiPFlutterWindowManager.shared.updatePetName(petName)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing petName", details: nil))
@@ -505,18 +542,18 @@ class MainFlutterWindow: NSWindow {
       case "setCompanionFollowMouse":
         if let args = call.arguments as? [String: Any], let enabled = args["enabled"] as? Bool {
           CompanionWindowManager.shared.setFollowMouseEnabled(enabled)
-          PiPWindowManager.shared.syncSettings(["followMouse": enabled])
+          PiPFlutterWindowManager.shared.syncSettings(["followMouse": enabled])
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing enabled", details: nil))
         }
 
       case "showPipWindow":
-        PiPWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
+        PiPFlutterWindowManager.shared.showPipWindow(args: call.arguments as? [String: Any])
         result(nil)
 
       case "hidePipWindow":
-        PiPWindowManager.shared.hidePipWindow()
+        PiPFlutterWindowManager.shared.hidePipWindow()
         result(nil)
 
       case "openAvatarEditor":

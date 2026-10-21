@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
@@ -73,7 +74,7 @@ class AppUsageService extends ChangeNotifier {
     int? limit = 8,
     DateTime? now,
   }) {
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final totals = <String, int>{};
     final names = <String, String>{};
     final categories = <String, AppCategory>{};
@@ -104,7 +105,7 @@ class AppUsageService extends ChangeNotifier {
   }
 
   Map<AppCategory, int> categoryTotals(UsagePeriod period, {DateTime? now}) {
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final totals = <AppCategory, int>{
       for (final c in AppCategory.values) c: 0,
     };
@@ -140,7 +141,7 @@ class AppUsageService extends ChangeNotifier {
   }
 
   void _pruneOldDates() {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final cutoff = clock.now().subtract(const Duration(days: 30));
     _cache.removeWhere((date, _) {
       final parts = date.split('-');
       if (parts.length != 3) return true;

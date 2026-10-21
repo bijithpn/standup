@@ -515,10 +515,65 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "7:537064604335033517",
+      "lastPropertyId": "8:2843990949922797347",
+      "name": "ActivitySegment",
+      "properties": [
+        {
+          "id": "1:5761885397096391198",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7631194357066868919",
+          "name": "appKey",
+          "indexId": "3:84343739199658972",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:1545699696017888443",
+          "name": "appName",
+          "type": 9
+        },
+        {
+          "id": "4:7211244865454768595",
+          "name": "categoryName",
+          "type": 9
+        },
+        {
+          "id": "5:1847961433553697099",
+          "name": "date",
+          "indexId": "4:3707179754135151729",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "6:2697912620488482165",
+          "name": "startedAtMs",
+          "indexId": "5:7525673880042292067",
+          "type": 6,
+          "flags": 8
+        },
+        {
+          "id": "7:3839654574193682400",
+          "name": "endedAtMs",
+          "type": 6
+        },
+        {
+          "id": "8:2843990949922797347",
+          "name": "kind",
+          "type": 6
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "6:5630062560298269937",
-  "lastIndexId": "2:2404533075128465752",
+  "lastEntityId": "7:537064604335033517",
+  "lastIndexId": "5:7525673880042292067",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

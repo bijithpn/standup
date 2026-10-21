@@ -1,11 +1,14 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
@@ -20,9 +23,31 @@ import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/services/pet_registry_service.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/core/services/overlay_window_service.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
 
 class CompanionOverlayController extends ChangeNotifier {
   final SettingsRepository _settingsRepo;
+
+  /// Increments whenever an external surface (such as the PiP window) requests
+  /// opening the Blobatar rename dialog in the main app.
+  final ValueNotifier<int> openBlobatarNameDialogNotifier = ValueNotifier<int>(
+    0,
+  );
+  bool _pendingBlobatarNameDialogRequest = false;
+
+  void requestOpenBlobatarNameDialog() {
+    _pendingBlobatarNameDialogRequest = true;
+    openBlobatarNameDialogNotifier.value++;
+  }
+
+  bool consumePendingBlobatarNameDialogRequest() {
+    if (_pendingBlobatarNameDialogRequest) {
+      _pendingBlobatarNameDialogRequest = false;
+      return true;
+    }
+    return false;
+  }
 
   List<PetProfile> get availablePets =>
       sl<PetRegistryService>().getEnabledProfiles();
@@ -47,6 +72,13 @@ class CompanionOverlayController extends ChangeNotifier {
   bool _pipDraggableClickable = true;
   String _companionToyType = 'tennis_ball';
   String _companionTreatType = 'sushi';
+
+  /// The companion's saved appearance, as JSON-encoded `AvatarDefinition`.
+  /// Null until the customizer has produced one.
+  String? _companionAvatarDefinition;
+
+  /// Whether the companion stays out all the time, or only during breaks.
+  bool _companionKeepOnScreen = true;
 
   static const List<String> catNames = [
     'Mochi',
@@ -132,9 +164,6 @@ class CompanionOverlayController extends ChangeNotifier {
     : _settingsRepo = settingsRepo {
     _settingsRepo.addListener(_handleSettingsChanged);
     _listenToEvents();
-    try {
-      sl<AvatarWebServer>().start();
-    } catch (_) {}
   }
 
   bool _isBreakActive = false;
@@ -144,22 +173,84 @@ class CompanionOverlayController extends ChangeNotifier {
     _eventSub = sl<EventBus>().stream.listen((event) {
       if (event is TimerStateChangedEvent) {
         _handleTimerStateChanged(event);
+      } else if (event is CompanionInteractionEvent) {
+        _handleCompanionInteraction(event);
       }
     });
+  }
+
+  /// Interactions relayed from the overlay window, which runs in its own
+  /// engine and cannot write settings itself.
+  void _handleCompanionInteraction(CompanionInteractionEvent event) {
+    switch (event.interactionType) {
+      case 'openBlobatarEditor':
+        if (sl.isRegistered<OverlayWindowService>()) {
+          unawaited(sl<OverlayWindowService>().showDashboard(forceShow: true));
+        }
+        if (sl.isRegistered<AppNavigationService>()) {
+          sl<AppNavigationService>().openSection('Companion');
+        }
+        requestOpenBlobatarNameDialog();
+      case 'rename':
+        final name = event.metadata?['petName']?.toString().trim();
+        if (name == null || name.isEmpty) return;
+        unawaited(changePetName(name));
+      case 'keepOnScreen':
+        final value = event.metadata?['value'];
+        if (value is bool) unawaited(changeKeepOnScreen(value));
+      case 'takeBreak':
+        // The companion asks for this when it has watched the user work for a
+        // long unbroken stretch. It is the one interaction that is not really
+        // about the pet.
+        if (sl.isRegistered<TimerEngine>()) {
+          sl<TimerEngine>().triggerBreakNow();
+        }
+    }
+  }
+
+  /// Chooses whether the companion stays out all the time, or only shows up
+  /// while a break is running.
+  Future<void> changeKeepOnScreen(bool keepOnScreen) async {
+    if (_companionKeepOnScreen == keepOnScreen) return;
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        companionKeepOnScreen: keepOnScreen,
+      ),
+    );
   }
 
   void _handleTimerStateChanged(TimerStateChangedEvent event) {
     final isBreak = event.state == TimerStateEvent.breakActive;
     if (_isBreakActive == isBreak) return;
     _isBreakActive = isBreak;
-    // We do not show the companion automatically on timer/break transitions
-    // if the user has explicitly closed it.
+    _applyBreakVisibility();
+  }
+
+  /// Shows or hides the companion around a break when it is not pinned.
+  ///
+  /// A pinned companion is left exactly where the user put it — including
+  /// closed, which is a deliberate choice we do not undo on the next break.
+  void _applyBreakVisibility() {
+    if (_companionKeepOnScreen) return;
+    if (!_companionEnabled) return;
+    if (_isPreviewMode) return;
+    if (!_settingsRepo.currentSettings.hasCompletedOnboarding) return;
+
+    if (_isBreakActive && !_isCompanionShown) {
+      unawaited(_showNativeCompanion());
+    } else if (!_isBreakActive && _isCompanionShown) {
+      _isCompanionShown = false;
+      unawaited(NativeBridge.hideCompanion());
+      unawaited(NativeBridge.hidePipWindow());
+    }
   }
 
   bool get isTransitioning => _isTransitioning;
   bool get companionEnabled => _companionEnabled;
   bool get pipModeEnabled => _pipModeEnabled;
   String get companionPetTheme => _companionPetTheme;
+  String? get companionAvatarDefinition => _companionAvatarDefinition;
+  bool get companionKeepOnScreen => _companionKeepOnScreen;
   String get companionPetName => _companionPetName;
   double get companionScale => _companionScale;
   bool get companionClickThrough => _companionClickThrough;
@@ -169,6 +260,15 @@ class CompanionOverlayController extends ChangeNotifier {
   bool get pipDraggableClickable => _pipDraggableClickable;
   String get companionToyType => _companionToyType;
   String get companionTreatType => _companionTreatType;
+  bool get companionWanderingEnabled =>
+      _settingsRepo.currentSettings.companionWanderingEnabled;
+
+  /// The interaction toggles rolled into one comparable value.
+  static String _interactionSignature(SettingsModel settings) =>
+      '${settings.companionWanderingEnabled}/${settings.pettingEnabled}'
+      '/${settings.ballThrowEnabled}/${settings.treatEnabled}';
+
+  String? _lastInteractionSignature;
   bool get pettingEnabled => _settingsRepo.currentSettings.pettingEnabled;
   bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
   bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
@@ -177,7 +277,10 @@ class CompanionOverlayController extends ChangeNotifier {
   bool get quietModeAutoActivate =>
       _settingsRepo.currentSettings.quietModeAutoActivate;
   bool get isLowDistractionMode =>
-      _companionClickThrough && !_companionFollowMouse && !_enableAnimations;
+      _companionClickThrough &&
+      !_companionFollowMouse &&
+      !_enableAnimations &&
+      !companionWanderingEnabled;
   String get companionStateExplanation {
     if (!_companionEnabled) {
       return 'Companion is disabled in settings.';
@@ -205,14 +308,14 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    await _ensureServerStarted();
-
     final settings = _settingsRepo.currentSettings;
 
     _companionEnabled = settings.companionEnabled;
     _pipModeEnabled = settings.pipModeEnabled;
     _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
+    _companionAvatarDefinition = settings.companionAvatarDefinition;
+    _companionKeepOnScreen = settings.companionKeepOnScreen;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
@@ -258,6 +361,19 @@ class CompanionOverlayController extends ChangeNotifier {
         _pipDraggableClickable != settings.pipDraggableClickable;
     final toyTypeChanged = _companionToyType != settings.companionToyType;
     final treatTypeChanged = _companionTreatType != settings.companionTreatType;
+    // Re-colouring or re-breeding the same species leaves the theme id alone,
+    // so without this the customizer's changes never reach the overlay.
+    final definitionChanged =
+        _companionAvatarDefinition != settings.companionAvatarDefinition;
+    final keepOnScreenChanged =
+        _companionKeepOnScreen != settings.companionKeepOnScreen;
+
+    // The overlay decides what to offer on hover from these, so a toggle the
+    // user flips in settings has to reach it. They are compared as a group
+    // because none of them is worth a field of its own.
+    final interactions = _interactionSignature(settings);
+    final interactionsChanged = _lastInteractionSignature != interactions;
+    _lastInteractionSignature = interactions;
 
     if (!enabledChanged &&
         !pipModeChanged &&
@@ -272,7 +388,10 @@ class CompanionOverlayController extends ChangeNotifier {
         !pipOpacityChanged &&
         !pipDraggableClickableChanged &&
         !toyTypeChanged &&
-        !treatTypeChanged) {
+        !treatTypeChanged &&
+        !definitionChanged &&
+        !keepOnScreenChanged &&
+        !interactionsChanged) {
       return; // Exit early if no companion settings have changed
     }
 
@@ -280,6 +399,8 @@ class CompanionOverlayController extends ChangeNotifier {
     _pipModeEnabled = settings.pipModeEnabled;
     _companionPetTheme = settings.companionPetTheme;
     _companionPetName = settings.companionPetName;
+    _companionAvatarDefinition = settings.companionAvatarDefinition;
+    _companionKeepOnScreen = settings.companionKeepOnScreen;
     _companionScale = settings.companionScale;
     _companionClickThrough = settings.companionClickThrough;
     _companionFollowMouse = settings.companionFollowMouse;
@@ -291,8 +412,7 @@ class CompanionOverlayController extends ChangeNotifier {
     _companionToyType = settings.companionToyType;
     _companionTreatType = settings.companionTreatType;
 
-    final shouldShow =
-        _companionEnabled && settings.hasCompletedOnboarding;
+    final shouldShow = _companionEnabled && settings.hasCompletedOnboarding;
 
     final needsShowOrToggle =
         shouldShow && (!_isCompanionShown || pipModeChanged);
@@ -375,6 +495,11 @@ class CompanionOverlayController extends ChangeNotifier {
         }
         if (scaleChanged) {
           NativeBridge.updateCompanionScale(_companionScale);
+          if (_pipModeEnabled) {
+            NativeBridge.showPipWindow(
+              PipWindowArgs.fromMap(_companionPayload()),
+            );
+          }
         }
         if (clickChanged) {
           NativeBridge.setCompanionClickThrough(_companionClickThrough);
@@ -382,13 +507,24 @@ class CompanionOverlayController extends ChangeNotifier {
         if (followChanged) {
           NativeBridge.setCompanionFollowMouse(_companionFollowMouse);
         }
-        if (animationsChanged ||
+        if (keepOnScreenChanged) {
+          // Un-pinning while no break is running should tidy the pet away now,
+          // not at the end of the next break.
+          _applyBreakVisibility();
+        }
+        if (definitionChanged ||
+            keepOnScreenChanged ||
+            animationsChanged ||
             backgroundChanged ||
             pipBackgroundStyleChanged ||
             pipOpacityChanged ||
             pipDraggableClickableChanged ||
             toyTypeChanged ||
-            treatTypeChanged) {
+            treatTypeChanged ||
+            // Wandering and the hover interactions live only in the payload,
+            // so without this a user unticking one of them would see no
+            // change until something else happened to trigger a push.
+            interactionsChanged) {
           if (_pipModeEnabled) {
             NativeBridge.showPipWindow(
               PipWindowArgs.fromMap(_companionPayload()),
@@ -404,12 +540,9 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   Future<void> _showNativeCompanion() async {
-    await _ensureServerStarted();
     _isCompanionShown = true;
-    final payload = _companionPayload();
-    debugPrint('[CompanionOverlayController] _showNativeCompanion URL: ${payload['avatarUrl']}');
     await NativeBridge.showPipWindow(
-      PipWindowArgs.fromMap(payload),
+      PipWindowArgs.fromMap(_companionPayload()),
     );
   }
 
@@ -420,7 +553,8 @@ class CompanionOverlayController extends ChangeNotifier {
     }
 
     final theme = PetTheme.getTheme(_companionPetTheme);
-    final species = theme.avatarDefinition?.species ??
+    final species =
+        theme.avatarDefinition?.species ??
         AvatarSpecies.tryParse(_companionPetTheme) ??
         AvatarSpecies.cat;
 
@@ -549,43 +683,118 @@ class CompanionOverlayController extends ChangeNotifier {
 
     if (breedName == null || breedName.isEmpty) {
       switch (species) {
-        case AvatarSpecies.alpaca: breedName = 'cream-alpaca'; break;
-        case AvatarSpecies.beaver: breedName = 'north-american-beaver'; break;
-        case AvatarSpecies.capybara: breedName = 'capybara'; break;
-        case AvatarSpecies.cat: breedName = 'british-shorthair'; break;
-        case AvatarSpecies.chinchilla: breedName = 'gray-chinchilla'; break;
-        case AvatarSpecies.chick: breedName = 'yellow-chick'; break;
-        case AvatarSpecies.cow: breedName = 'dairy-cow'; break;
-        case AvatarSpecies.dog: breedName = 'shiba-inu'; break;
-        case AvatarSpecies.duck: breedName = 'mallard-duck'; break;
-        case AvatarSpecies.deer: breedName = 'sika-deer'; break;
-        case AvatarSpecies.fox: breedName = 'red-fox'; break;
-        case AvatarSpecies.ferret: breedName = 'sable-ferret'; break;
-        case AvatarSpecies.guineaPig: entityName = 'guinea-pig'; breedName = 'american-guinea-pig'; break;
-        case AvatarSpecies.hamster: breedName = 'syrian-hamster'; break;
-        case AvatarSpecies.hedgehog: breedName = 'european-hedgehog'; break;
-        case AvatarSpecies.lion: breedName = 'african-lion'; break;
-        case AvatarSpecies.monkey: breedName = 'macaque'; break;
-        case AvatarSpecies.otter: breedName = 'sea-otter'; break;
-        case AvatarSpecies.owl: breedName = 'barn-owl'; break;
-        case AvatarSpecies.panda: entityName = 'bear'; breedName = 'giant-panda'; break;
-        case AvatarSpecies.parrot: breedName = 'scarlet-macaw'; break;
-        case AvatarSpecies.penguin: breedName = 'emperor-penguin'; break;
-        case AvatarSpecies.pig: breedName = 'pink-pig'; break;
-        case AvatarSpecies.rabbit: breedName = 'holland-lop'; break;
-        case AvatarSpecies.raccoon: entityName = 'bear'; breedName = 'raccoon'; break;
-        case AvatarSpecies.redPanda: entityName = 'bear'; breedName = 'red-panda'; break;
-        case AvatarSpecies.sheep: breedName = 'white-sheep'; break;
-        case AvatarSpecies.seal: breedName = 'harbor-seal'; break;
-        case AvatarSpecies.squirrel: breedName = 'red-squirrel'; break;
-        case AvatarSpecies.tiger: breedName = 'bengal-tiger'; break;
-        case AvatarSpecies.wolf: entityName = 'dog'; breedName = 'husky'; break;
-        case AvatarSpecies.bear: breedName = 'brown-bear'; break;
-        case AvatarSpecies.goose: breedName = 'greylag-goose'; break;
+        case AvatarSpecies.alpaca:
+          breedName = 'cream-alpaca';
+          break;
+        case AvatarSpecies.beaver:
+          breedName = 'north-american-beaver';
+          break;
+        case AvatarSpecies.capybara:
+          breedName = 'capybara';
+          break;
+        case AvatarSpecies.cat:
+          breedName = 'british-shorthair';
+          break;
+        case AvatarSpecies.chinchilla:
+          breedName = 'gray-chinchilla';
+          break;
+        case AvatarSpecies.chick:
+          breedName = 'yellow-chick';
+          break;
+        case AvatarSpecies.cow:
+          breedName = 'dairy-cow';
+          break;
+        case AvatarSpecies.dog:
+          breedName = 'shiba-inu';
+          break;
+        case AvatarSpecies.duck:
+          breedName = 'mallard-duck';
+          break;
+        case AvatarSpecies.deer:
+          breedName = 'sika-deer';
+          break;
+        case AvatarSpecies.fox:
+          breedName = 'red-fox';
+          break;
+        case AvatarSpecies.ferret:
+          breedName = 'sable-ferret';
+          break;
+        case AvatarSpecies.guineaPig:
+          entityName = 'guinea-pig';
+          breedName = 'american-guinea-pig';
+          break;
+        case AvatarSpecies.hamster:
+          breedName = 'syrian-hamster';
+          break;
+        case AvatarSpecies.hedgehog:
+          breedName = 'european-hedgehog';
+          break;
+        case AvatarSpecies.lion:
+          breedName = 'african-lion';
+          break;
+        case AvatarSpecies.monkey:
+          breedName = 'macaque';
+          break;
+        case AvatarSpecies.otter:
+          breedName = 'sea-otter';
+          break;
+        case AvatarSpecies.owl:
+          breedName = 'barn-owl';
+          break;
+        case AvatarSpecies.panda:
+          entityName = 'bear';
+          breedName = 'giant-panda';
+          break;
+        case AvatarSpecies.parrot:
+          breedName = 'scarlet-macaw';
+          break;
+        case AvatarSpecies.penguin:
+          breedName = 'emperor-penguin';
+          break;
+        case AvatarSpecies.pig:
+          breedName = 'pink-pig';
+          break;
+        case AvatarSpecies.rabbit:
+          breedName = 'holland-lop';
+          break;
+        case AvatarSpecies.raccoon:
+          entityName = 'bear';
+          breedName = 'raccoon';
+          break;
+        case AvatarSpecies.redPanda:
+          entityName = 'bear';
+          breedName = 'red-panda';
+          break;
+        case AvatarSpecies.sheep:
+          breedName = 'white-sheep';
+          break;
+        case AvatarSpecies.seal:
+          breedName = 'harbor-seal';
+          break;
+        case AvatarSpecies.squirrel:
+          breedName = 'red-squirrel';
+          break;
+        case AvatarSpecies.tiger:
+          breedName = 'bengal-tiger';
+          break;
+        case AvatarSpecies.wolf:
+          entityName = 'dog';
+          breedName = 'husky';
+          break;
+        case AvatarSpecies.bear:
+          breedName = 'brown-bear';
+          break;
+        case AvatarSpecies.goose:
+          breedName = 'greylag-goose';
+          break;
       }
     } else {
       if (species == AvatarSpecies.guineaPig) entityName = 'guinea-pig';
-      if (species == AvatarSpecies.panda || species == AvatarSpecies.raccoon || species == AvatarSpecies.redPanda) entityName = 'bear';
+      if (species == AvatarSpecies.panda ||
+          species == AvatarSpecies.raccoon ||
+          species == AvatarSpecies.redPanda) {
+        entityName = 'bear';
+      }
       if (species == AvatarSpecies.wolf) entityName = 'dog';
     }
 
@@ -602,9 +811,7 @@ class CompanionOverlayController extends ChangeNotifier {
     );
     await _settingsRepo.save(updated);
     if (_pipModeEnabled) {
-      NativeBridge.showPipWindow(
-        PipWindowArgs.fromMap(_companionPayload()),
-      );
+      NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
     }
     notifyListeners();
   }
@@ -613,13 +820,51 @@ class CompanionOverlayController extends ChangeNotifier {
     await _ensureServerStarted();
     final webServer = sl<AvatarWebServer>();
     final query = _getAvatarQueryParams();
-    final editorUrl =
-        webServer.buildEditorUrl(queryParams: '$query&animationPanel=0').toString();
+    final editorUrl = webServer
+        .buildEditorUrl(queryParams: '$query&animationPanel=0')
+        .toString();
     await NativeBridge.openAvatarEditor(editorUrl);
   }
 
+  /// Which renderer the overlay should use for the current theme.
+  String get _renderMode =>
+      PetTheme.getTheme(_companionPetTheme).isBlobatar ? 'blob' : 'artwork';
+
+  /// The appearance to send to the overlay windows.
+  ///
+  /// Prefers what the customizer saved. When nothing has been customized yet,
+  /// the theme's own definition is encoded instead, so the overlay always has
+  /// a complete description rather than having to guess from an id.
+  String? _resolvedAvatarDefinitionJson() {
+    final saved = _companionAvatarDefinition;
+    if (saved != null && saved.isNotEmpty) return saved;
+
+    final theme = PetTheme.getTheme(_companionPetTheme);
+    final definition = theme.avatarDefinition;
+    if (definition == null) return null;
+
+    try {
+      return jsonEncode(definition.toJson());
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+      return null;
+    }
+  }
+
+  /// Persists the appearance the customizer produced and pushes it to the
+  /// overlay windows.
+  Future<void> saveAvatarDefinition(AvatarDefinition definition) async {
+    final encoded = jsonEncode(definition.toJson());
+    if (_companionAvatarDefinition == encoded) return;
+
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        companionAvatarDefinition: encoded,
+      ),
+    );
+  }
+
   Map<String, dynamic> _companionPayload() {
-    final webServer = sl<AvatarWebServer>();
     final query = _getAvatarQueryParams();
     return {
       'themeId': _companionPetTheme,
@@ -627,17 +872,26 @@ class CompanionOverlayController extends ChangeNotifier {
       'scale': _companionScale,
       'clickThrough': _companionClickThrough,
       'followMouse': _companionFollowMouse,
-      'wanderingEnabled': _enableAnimations,
+      // Two switches have to agree: the user's own choice, and whether motion
+      // is allowed at all. A companion that walks about while animations are
+      // off would be the most conspicuous thing on the screen.
+      'wanderingEnabled': companionWanderingEnabled && _enableAnimations,
       'isLowPowerMode': !_enableAnimations,
+      'pettingEnabled': pettingEnabled,
+      'playEnabled': ballThrowEnabled,
+      'treatEnabled': treatEnabled,
       'pipBackgroundStyle': _pipBackgroundStyle,
       'pipOpacity': _pipOpacity,
       'pipDraggableClickable': _pipDraggableClickable,
       'companionToyType': _companionToyType,
       'companionTreatType': _companionTreatType,
       'previewBackground': _companionPreviewBackground,
-      'avatarUrl': webServer.buildCompanionUrl(queryParams: query).toString(),
-      'avatarEditorUrl': webServer.buildEditorUrl(queryParams: query).toString(),
       'urlParams': query,
+      // The overlay runs in its own engine and cannot read settings, so its
+      // whole appearance has to travel with the payload.
+      'avatarDefinitionJson': _resolvedAvatarDefinitionJson(),
+      'renderMode': _renderMode,
+      'keepOnScreen': _companionKeepOnScreen,
     };
   }
 
@@ -775,11 +1029,25 @@ class CompanionOverlayController extends ChangeNotifier {
     await _settingsRepo.save(updated);
   }
 
+  Future<void> changeWandering(bool enabled) async {
+    if (companionWanderingEnabled == enabled || _isTransitioning) return;
+
+    final updated = _settingsRepo.currentSettings.copyWith(
+      companionWanderingEnabled: enabled,
+    );
+    await _settingsRepo.save(updated);
+  }
+
   Future<void> setLowDistractionMode(bool enabled) async {
     final current = _settingsRepo.currentSettings;
     final updated = current.copyWith(
       companionClickThrough: enabled ? true : current.companionClickThrough,
       companionFollowMouse: enabled ? false : current.companionFollowMouse,
+      // Wandering is the single most distracting thing the companion does, so
+      // low-distraction mode has to stop it as well.
+      companionWanderingEnabled: enabled
+          ? false
+          : current.companionWanderingEnabled,
       enableAnimations: enabled ? false : true,
     );
     await _settingsRepo.save(updated);
@@ -907,6 +1175,7 @@ class CompanionOverlayController extends ChangeNotifier {
 
   @override
   void dispose() {
+    openBlobatarNameDialogNotifier.dispose();
     _settingsRepo.removeListener(_handleSettingsChanged);
     _eventSub?.cancel();
     if (_companionEnabled) {

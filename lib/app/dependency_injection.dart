@@ -6,6 +6,7 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
+import 'package:breakmate/core/services/focus_filter_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_orchestrator.dart';
@@ -21,11 +22,14 @@ import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
 import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
+import 'package:breakmate/features/clock_out/clock_out_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
+import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
+import 'package:breakmate/features/analytics/segments/productivity_repository.dart';
 import 'package:breakmate/features/analytics/app_icon_cache.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/features/analytics/break_history_service.dart';
@@ -89,12 +93,19 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
+  sl.registerSingleton<ClockOutService>(ClockOutService(sl()));
   sl.registerSingleton<AppUsageService>(AppUsageService(storage: sl()));
   sl.registerSingleton<FocusSessionService>(FocusSessionService(storage: sl()));
   sl.registerSingleton<BreakHistoryService>(BreakHistoryService(storage: sl()));
   sl.registerSingleton<ContextSwitchTracker>(ContextSwitchTracker());
   sl.registerLazySingleton<AppIconCache>(
     () => AppIconCache(appTracking: sl()),
+  );
+  sl.registerSingleton<ActivitySegmentRepository>(
+    ActivitySegmentRepository(storage: sl()),
+  );
+  sl.registerSingleton<ProductivityRepository>(
+    ProductivityRepository(segments: sl<ActivitySegmentRepository>()),
   );
   sl.registerSingleton<AppUsageTracker>(
     AppUsageTracker(
@@ -104,6 +115,8 @@ Future<void> initDependencies() async {
       activityMonitor: sl(),
       focusSessionService: sl(),
       contextSwitchTracker: sl(),
+      segmentRepository: sl(),
+      eventBus: sl(),
     ),
   );
   sl.registerSingleton<CompanionStreakService>(
@@ -197,6 +210,7 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<FocusModeService>(FocusModeService());
+  sl.registerSingleton<FocusFilterService>(FocusFilterService(focusModeService: sl()));
   sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
 
   sl.registerSingleton<BreakController>(

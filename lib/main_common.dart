@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -499,11 +500,26 @@ void mainCommon(FlavorConfig config) async {
             }
           }
 
-          if (!bound && !kDebugMode) {
-            debugPrint(
-              'Startup: Could not bind any single-instance port. Exiting.',
-            );
-            exit(1);
+          if (!bound) {
+            if (kDebugMode) {
+              try {
+                singleInstanceServer = await ServerSocket.bind(
+                  InternetAddress.loopbackIPv4,
+                  0,
+                );
+                debugPrint(
+                  'Startup: Bound ephemeral port ${singleInstanceServer.port} in debug mode',
+                );
+                bound = true;
+              } catch (e) {
+                debugPrint('Startup: Ephemeral port bind failed in debug mode: $e');
+              }
+            } else {
+              debugPrint(
+                'Startup: Could not bind any single-instance port. Exiting.',
+              );
+              exit(1);
+            }
           }
         }
 
@@ -558,6 +574,9 @@ void mainCommon(FlavorConfig config) async {
           await windowManager.setResizable(false);
           await windowManager.show();
           await windowManager.focus();
+          if (Platform.isMacOS) {
+            await NativeBridge.focusApp();
+          }
         });
 
         MethodChannel('com.breakmate.desktop/bridge').setMethodCallHandler((
@@ -620,16 +639,38 @@ void mainCommon(FlavorConfig config) async {
         if (kReleaseMode &&
             config.sentryDsn.isNotEmpty &&
             config.sentryDsn != 'DEV_DSN_HERE') {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            logStartup('first dashboard frame rendered');
+            if (Platform.isMacOS) {
+              try {
+                await windowManager.show();
+                await windowManager.focus();
+                await NativeBridge.focusApp();
+              } catch (e) {
+                debugPrint('PostFrame window focus failed: $e');
+              }
+            }
+          });
           await SentryFlutter.init(
             (options) {
               options.dsn = config.sentryDsn;
               options.enableAppHangTracking = false;
+              SentryHygiene.configure(options);
             },
             appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
           );
         } else {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
             logStartup('first dashboard frame rendered');
+            if (Platform.isMacOS) {
+              try {
+                await windowManager.show();
+                await windowManager.focus();
+                await NativeBridge.focusApp();
+              } catch (e) {
+                debugPrint('PostFrame window focus failed: $e');
+              }
+            }
           });
           runApp(const BreakMateApp());
         }
@@ -753,6 +794,10 @@ Future<void> companionMain() async {
     }
   }
 
+  // The companion is the first thing these windows draw, so have its scenes
+  // parsed before the first frame rather than a beat after it.
+  unawaited(AvatarSceneCatalog.instance.load());
+
   try {
     CustomEnvironmentRepository().loadSync();
   } catch (e, st) {
@@ -785,6 +830,10 @@ Future<void> pipMain() async {
       debugPrint('Window.setEffect failed: $e');
     }
   }
+
+  // The companion is the first thing these windows draw, so have its scenes
+  // parsed before the first frame rather than a beat after it.
+  unawaited(AvatarSceneCatalog.instance.load());
 
   try {
     CustomEnvironmentRepository().loadSync();

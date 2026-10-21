@@ -64,10 +64,10 @@ void IpcBridgeManager::SendEvent(const std::string& event_name, const flutter::E
   
   for (const auto& [engine, channel] : engines_map_) {
     if (engine != sender_engine) {
-      auto temp_channel = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
-          engine->messenger(), "com.breakmate/ipc",
-          &flutter::StandardMethodCodec::GetInstance());
-      temp_channel->InvokeMethod(event_name, std::make_unique<flutter::EncodableValue>(data));
+      // Reuse the channel registered with the engine. Creating a fresh channel
+      // for every pet tap added allocation and messenger churn on the UI thread.
+      channel->InvokeMethod(
+          event_name, std::make_unique<flutter::EncodableValue>(data));
     }
   }
 }

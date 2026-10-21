@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:breakmate/core/storage/models/activity_segment.dart';
+import 'package:breakmate/objectbox.g.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:fake_async/fake_async.dart';
@@ -20,6 +23,10 @@ class MockCalendarService extends Mock implements CalendarService {}
 class MockSmartDetectionService extends Mock implements SmartDetectionService {}
 
 class FakeStorageService implements StorageService {
+  /// Activity history is not part of what these tests exercise.
+  @override
+  Box<ActivitySegment>? activitySegmentBox;
+
   final Map<String, dynamic> _data = {};
 
   @override
@@ -127,6 +134,7 @@ void main() {
 
     when(() => mockCalendar.isMeetingActive()).thenAnswer((_) async => false);
     when(() => mockDetection.isVideoCallActive).thenReturn(false);
+    when(() => mockDetection.isVideoPlaying).thenReturn(false);
     when(() => mockDetection.isFocusModeActive).thenReturn(false);
   });
 

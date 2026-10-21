@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:breakmate/core/storage/models/activity_segment.dart';
+import 'package:breakmate/objectbox.g.dart';
 import 'package:get_it/get_it.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:breakmate/core/storage/models/settings_snapshot.dart';
@@ -16,6 +19,10 @@ import 'package:breakmate/core/services/storage_service.dart';
 final sl = GetIt.instance;
 
 class FakeStorageService implements StorageService {
+  /// Activity history is not part of what these tests exercise.
+  @override
+  Box<ActivitySegment>? activitySegmentBox;
+
   @override
   bool get isReady => true;
   @override

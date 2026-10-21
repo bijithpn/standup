@@ -81,32 +81,43 @@ class ProductivityWellnessChart extends StatelessWidget {
                 maxY: maxValue,
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
-                    getTooltipColor: (_) =>
-                        Colors.black.withValues(alpha: 0.85),
+                    getTooltipColor: (_) => const Color(0xFF1E293B),
+                    tooltipPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tooltipBorderRadius: BorderRadius.circular(10),
+                    tooltipBorder: BorderSide(
+                      color: AppTheme.accentColor.withValues(alpha: 0.25),
+                      width: 1,
+                    ),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       final slot = slots[groupIndex];
                       return BarTooltipItem(
                         '${slot.label}\n',
                         const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                          color: Color(0xFF94A3B8),
+                          fontWeight: FontWeight.w500,
+                          fontSize: 11,
+                          fontFamily: 'Inter',
                         ),
                         children: [
                           TextSpan(
                             text: 'Breaks: ${slot.breaksCompleted}\n',
                             style: TextStyle(
                               color: AppTheme.accentColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              fontFamily: 'Inter',
                             ),
                           ),
                           TextSpan(
                             text: 'Wellness: ${slot.wellnessActions}',
                             style: const TextStyle(
                               color: Color(0xFF10B981),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                              fontFamily: 'Inter',
                             ),
                           ),
                         ],
@@ -145,8 +156,29 @@ class ProductivityWellnessChart extends StatelessWidget {
                       },
                     ),
                   ),
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 24,
+                      interval: maxValue > 10 ? 5 : 2,
+                      getTitlesWidget: (value, meta) {
+                        if (value <= 0 || value > maxValue) {
+                          return const SizedBox.shrink();
+                        }
+                        return SideTitleWidget(
+                          meta: meta,
+                          space: 4,
+                          child: Text(
+                            value.toInt().toString(),
+                            style: TextStyle(
+                              fontSize: 9.5,
+                              color: AppTheme.textMuted.withValues(alpha: 0.7),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                   topTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
@@ -162,6 +194,7 @@ class ProductivityWellnessChart extends StatelessWidget {
                   getDrawingHorizontalLine: (_) => FlLine(
                     color: AppTheme.textMuted.withValues(alpha: 0.08),
                     strokeWidth: 1,
+                    dashArray: [4, 4],
                   ),
                 ),
                 borderData: FlBorderData(show: false),

@@ -43,6 +43,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
 
   // Slide details for 'classic' slideshow mode
   final String currentTemplate;
+  final String? classicImage;
+  final PageController? pageController;
   final AnimationController kenBurnsController;
   final String? exerciseTitle;
   final String? exerciseInstructions;
@@ -55,7 +57,9 @@ class BreakTemplateSwitcher extends StatelessWidget {
     required this.remaining,
     required this.total,
     required this.onSkip,
-    required this.currentTemplate,
+    this.currentTemplate = '',
+    this.classicImage,
+    this.pageController,
     required this.kenBurnsController,
     this.exerciseTitle,
     this.exerciseInstructions,
@@ -75,7 +79,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
           remainingSeconds: remaining,
           totalSeconds: total,
           onSkip: onSkip,
-          singleImage: currentTemplate,
+          singleImage: classicImage ?? currentTemplate,
+          pageController: pageController,
           kenBurnsController: kenBurnsController,
           exerciseTitle: exerciseTitle,
           exerciseInstructions: exerciseInstructions,

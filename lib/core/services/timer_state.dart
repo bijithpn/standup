@@ -18,6 +18,7 @@ class TimerStateData {
   bool clockOutTriggered = false;
   DateTime? longBreakWindowStartedAt;
   DateTime? lastBreakFinishedAt;
+  int completedShortBreaksInCycle = 0;
   DateTime? breakEndTime;
   DateTime? workEndTime;
   bool isManuallyPaused = false;

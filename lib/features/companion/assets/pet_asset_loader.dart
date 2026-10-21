@@ -10,8 +10,10 @@ import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/pet_profile.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
@@ -156,10 +158,6 @@ class PetAssetLoader {
   }
 
   static Future<String> extractPetIconPath(PetTheme theme) async {
-    if (theme.type == PetType.avatar || theme.isAvatar) {
-      return '';
-    }
-
     final supportDir = await getApplicationSupportDirectory();
     final file = File(
       p.join(supportDir.path, 'bm_selected_pet_${theme.id}.png'),
@@ -167,6 +165,20 @@ class PetAssetLoader {
 
     if (await file.exists()) {
       return file.path;
+    }
+
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      final species = theme.avatarDefinition?.species ?? AvatarSpecies.bear;
+      final thumbPath = species.thumbnailPngAssetPath;
+      try {
+        final data = await rootBundle.load(thumbPath);
+        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(data.buffer.asUint8List(), flush: true);
+        return file.path;
+      } catch (e) {
+        debugPrint('Failed to extract avatar pet icon: $e');
+        return '';
+      }
     }
 
     try {
@@ -665,6 +677,11 @@ class PetAssetLoader {
   /// Pre-caches all tray icon frames for the selected theme to avoid runtime lag.
   static Future<void> preCacheTrayIcons(PetTheme theme) async {
     if (theme.type == PetType.avatar || theme.isAvatar) {
+      await extractPetFramePath(
+        theme: theme,
+        state: PetAnimationState.idle,
+        frameIndex: 0,
+      );
       return;
     }
 
@@ -699,7 +716,16 @@ class PetAssetLoader {
       final file = File(outputPath);
 
       if (await file.exists()) {
-        return file.path;
+        final len = await file.length();
+        if (len > 8) {
+          final header = await file.openRead(0, 8).first;
+          if (listEquals(header.sublist(0, 4), [0x89, 0x50, 0x4E, 0x47])) {
+            return file.path;
+          }
+        }
+        try {
+          await file.delete();
+        } catch (_) {}
       }
 
       final sourceImage = await loadImage(assetPath);
@@ -805,14 +831,16 @@ class PetAssetLoader {
       }
     } catch (e) {
       debugPrint('Failed to extract whiten asset: $e');
-      try {
-        final bytes = await rootBundle.load(assetPath);
-        final file = File(outputPath);
-        if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
-        file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
-        return file.path;
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
+      if (assetPath.toLowerCase().endsWith('.png')) {
+        try {
+          final bytes = await rootBundle.load(assetPath);
+          final file = File(outputPath);
+          if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+          file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
+          return file.path;
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
       }
     }
     return '';
@@ -823,10 +851,6 @@ class PetAssetLoader {
     required PetAnimationState state,
     required int frameIndex,
   }) async {
-    if (theme.type == PetType.avatar || theme.isAvatar) {
-      return '';
-    }
-
     final supportDir = await getApplicationSupportDirectory();
     final file = File(
       p.join(
@@ -834,6 +858,14 @@ class PetAssetLoader {
         'bm_pframe_${theme.id}_${state.name}_${frameIndex}Template@2x.png',
       ),
     );
+
+    if (theme.type == PetType.avatar || theme.isAvatar) {
+      return extractAndWhitenAsset(
+        AppConstants.trayIconPath,
+        file.path,
+        targetSize: 44.0,
+      );
+    }
 
     if (await file.exists()) {
       return file.path;

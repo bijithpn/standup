@@ -232,4 +232,19 @@ enum AvatarSpecies {
         return 'assets/avatars/species/$name.svg';
     }
   }
+
+  String get thumbnailPngAssetPath {
+    switch (this) {
+      case AvatarSpecies.guineaPig:
+        return 'assets/avatars/species/guinea-pig.thumbnail.png';
+      case AvatarSpecies.panda:
+      case AvatarSpecies.redPanda:
+      case AvatarSpecies.raccoon:
+        return 'assets/avatars/species/bear.thumbnail.png';
+      case AvatarSpecies.wolf:
+        return 'assets/avatars/species/dog.thumbnail.png';
+      default:
+        return 'assets/avatars/species/$name.thumbnail.png';
+    }
+  }
 }

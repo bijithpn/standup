@@ -68,9 +68,29 @@ class SettingsModel {
   final double companionScale;
   final bool companionClickThrough;
   final bool companionFollowMouse;
+
+  /// Whether the companion may move its own window around the screen.
+  ///
+  /// On by default: a pet that only ever sits where it was dropped reads as a
+  /// widget. Off is for anyone who wants the window exactly where they put it
+  /// and nowhere else.
+  final bool companionWanderingEnabled;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
   final String? companionAvatarUrlParams;
+
+  /// The companion's full appearance as JSON-encoded `AvatarDefinition`.
+  ///
+  /// Held alongside [companionPetTheme] because a theme id only names a
+  /// species: the breed, palette, and seed the customizer produced have
+  /// nowhere else to live, and the overlay windows need all of it.
+  final String? companionAvatarDefinition;
+
+  /// Whether the floating companion stays on screen all the time.
+  ///
+  /// When false it appears when a break starts and hides when the break ends,
+  /// so the desktop stays clear during focused work.
+  final bool companionKeepOnScreen;
 
   final double companionWindowWidth;
   final double companionWindowHeight;
@@ -111,6 +131,12 @@ class SettingsModel {
 
   final bool appUsageTrackingEnabled;
 
+  /// How many days of activity history to keep, or 0 for no limit.
+  ///
+  /// Matches the 30-day window app usage has always pruned to, so upgrading
+  /// does not silently change how much history a user has.
+  final int activityHistoryRetentionDays;
+
   /// Opt-in, local-only daily time budgets per [AppCategory] name (e.g.
   /// `{'browsing': 120}` for a 2h/day soft cap). A category absent from the
   /// map has no budget. Purely a UI nudge threshold — never enforced by
@@ -129,7 +155,7 @@ class SettingsModel {
     this.focusModeEnabled = false,
     this.shortBreakIntervalMinutes = 20,
     this.shortBreakDurationSeconds = 20,
-    this.preBreakWarningSeconds = 60,
+    this.preBreakWarningSeconds = 3,
     this.longBreakIntervalMinutes = 60,
     this.longBreakDurationMinutes = 5,
 
@@ -176,14 +202,17 @@ class SettingsModel {
     this.companionScale = 6.0,
     this.companionClickThrough = false,
     this.companionFollowMouse = false,
+    this.companionWanderingEnabled = true,
     this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
     this.companionAvatarUrlParams,
+    this.companionAvatarDefinition,
+    this.companionKeepOnScreen = true,
     this.companionWindowWidth = 280.0,
     this.companionWindowHeight = 320.0,
     this.companionWindowX,
     this.companionWindowY,
-    this.pipBackgroundStyle = 'transparent',
+    this.pipBackgroundStyle = 'scene',
     this.pipOpacity = 1.0,
     this.pipDraggableClickable = true,
     this.companionToyType = 'tennis_ball',
@@ -206,6 +235,7 @@ class SettingsModel {
     this.calendarEnabled = false,
     this.enableSessionResume = true,
     this.appUsageTrackingEnabled = false,
+    this.activityHistoryRetentionDays = 30,
     this.categoryDailyBudgetMinutes = const {},
   });
 
@@ -268,9 +298,12 @@ class SettingsModel {
     double? companionScale,
     bool? companionClickThrough,
     bool? companionFollowMouse,
+    bool? companionWanderingEnabled,
     String? companionPreviewBackground,
     List<String>? unlockedPets,
     String? companionAvatarUrlParams,
+    String? companionAvatarDefinition,
+    bool? companionKeepOnScreen,
     double? companionWindowWidth,
     double? companionWindowHeight,
     double? companionWindowX,
@@ -291,6 +324,7 @@ class SettingsModel {
     bool? calendarEnabled,
     bool? enableSessionResume,
     bool? appUsageTrackingEnabled,
+    int? activityHistoryRetentionDays,
     Map<String, int>? categoryDailyBudgetMinutes,
     String? pipBackgroundStyle,
     double? pipOpacity,
@@ -376,11 +410,17 @@ class SettingsModel {
       companionClickThrough:
           companionClickThrough ?? this.companionClickThrough,
       companionFollowMouse: companionFollowMouse ?? this.companionFollowMouse,
+      companionWanderingEnabled:
+          companionWanderingEnabled ?? this.companionWanderingEnabled,
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
       unlockedPets: unlockedPets ?? this.unlockedPets,
       companionAvatarUrlParams:
           companionAvatarUrlParams ?? this.companionAvatarUrlParams,
+      companionAvatarDefinition:
+          companionAvatarDefinition ?? this.companionAvatarDefinition,
+      companionKeepOnScreen:
+          companionKeepOnScreen ?? this.companionKeepOnScreen,
       companionWindowWidth: companionWindowWidth ?? this.companionWindowWidth,
       companionWindowHeight:
           companionWindowHeight ?? this.companionWindowHeight,
@@ -408,6 +448,8 @@ class SettingsModel {
       enableSessionResume: enableSessionResume ?? this.enableSessionResume,
       appUsageTrackingEnabled:
           appUsageTrackingEnabled ?? this.appUsageTrackingEnabled,
+      activityHistoryRetentionDays:
+          activityHistoryRetentionDays ?? this.activityHistoryRetentionDays,
       categoryDailyBudgetMinutes:
           categoryDailyBudgetMinutes ?? this.categoryDailyBudgetMinutes,
       pipBackgroundStyle: pipBackgroundStyle ?? this.pipBackgroundStyle,
@@ -480,9 +522,12 @@ class SettingsModel {
     'companionScale': companionScale,
     'companionClickThrough': companionClickThrough,
     'companionFollowMouse': companionFollowMouse,
+    'companionWanderingEnabled': companionWanderingEnabled,
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
     'companionAvatarUrlParams': companionAvatarUrlParams,
+    'companionAvatarDefinition': companionAvatarDefinition,
+    'companionKeepOnScreen': companionKeepOnScreen,
     'pettingEnabled': pettingEnabled,
     'ballThrowEnabled': ballThrowEnabled,
     'treatEnabled': treatEnabled,
@@ -499,6 +544,7 @@ class SettingsModel {
     'calendarEnabled': calendarEnabled,
     'enableSessionResume': enableSessionResume,
     'appUsageTrackingEnabled': appUsageTrackingEnabled,
+    'activityHistoryRetentionDays': activityHistoryRetentionDays,
     'categoryDailyBudgetMinutes': categoryDailyBudgetMinutes,
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
@@ -530,7 +576,7 @@ class SettingsModel {
       focusModeEnabled: map['focusModeEnabled'] as bool? ?? false,
       shortBreakIntervalMinutes: map['shortBreakIntervalMinutes'] as int? ?? 20,
       shortBreakDurationSeconds: map['shortBreakDurationSeconds'] as int? ?? 20,
-      preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 60,
+      preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 3,
       longBreakIntervalMinutes: map['longBreakIntervalMinutes'] as int? ?? 60,
       longBreakDurationMinutes: map['longBreakDurationMinutes'] as int? ?? 5,
 
@@ -592,6 +638,8 @@ class SettingsModel {
       companionScale: (map['companionScale'] as num?)?.toDouble() ?? 6.0,
       companionClickThrough: map['companionClickThrough'] as bool? ?? false,
       companionFollowMouse: map['companionFollowMouse'] as bool? ?? false,
+      companionWanderingEnabled:
+          map['companionWanderingEnabled'] as bool? ?? true,
       companionPreviewBackground:
           map['companionPreviewBackground'] as String? ??
           '',
@@ -601,6 +649,10 @@ class SettingsModel {
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
       companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
+      companionAvatarDefinition:
+          map['companionAvatarDefinition'] as String?,
+      companionKeepOnScreen:
+          map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
       ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
       treatEnabled: map['treatEnabled'] as bool? ?? true,
@@ -619,6 +671,8 @@ class SettingsModel {
       calendarEnabled: map['calendarEnabled'] as bool? ?? false,
       enableSessionResume: map['enableSessionResume'] as bool? ?? true,
       appUsageTrackingEnabled: map['appUsageTrackingEnabled'] as bool? ?? false,
+      activityHistoryRetentionDays:
+          (map['activityHistoryRetentionDays'] as num?)?.toInt() ?? 30,
       categoryDailyBudgetMinutes:
           (map['categoryDailyBudgetMinutes'] as Map?)?.map(
             (k, v) => MapEntry(k as String, v as int),

@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+
+import 'package:breakmate/core/storage/models/activity_segment.dart';
+import 'package:breakmate/objectbox.g.dart';
 import 'package:get_it/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:fake_async/fake_async.dart';
@@ -26,6 +29,10 @@ class MockCalendarService extends Mock implements CalendarService {}
 class MockSmartDetectionService extends Mock implements SmartDetectionService {}
 
 class FakeStorageService implements StorageService {
+  /// Activity history is not part of what these tests exercise.
+  @override
+  Box<ActivitySegment>? activitySegmentBox;
+
   final Map<String, dynamic> _data = {};
 
   @override
@@ -174,6 +181,7 @@ void main() {
     sl.registerSingleton<EventBus>(eventBus);
 
     when(() => mockSmartDetectionService.isVideoCallActive).thenReturn(false);
+    when(() => mockSmartDetectionService.isVideoPlaying).thenReturn(false);
     when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(false);
     when(
       () => mockCalendarService.getUpcomingEvents(window: any(named: 'window')),
@@ -334,6 +342,103 @@ void main() {
       expect(engine.state, equals(TimerState.breakActive));
       // In strict mode, the UI (StandaloneBreakOverlay) uses the flag to hide skip.
       // TimerEngine logic itself doesn't block skipNextBreak call, but the UI does.
+    });
+
+    test('Settings sync: dynamically updates interval on running timer', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        expect(engine.shortBreakIntervalMinutes, equals(20));
+
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.workElapsed.inMinutes, equals(5));
+
+        // User updates short break interval in settings to 10 minutes
+        fakeSettingsRepository.save(
+          fakeSettingsRepository.currentSettings.copyWith(
+            shortBreakIntervalMinutes: 10,
+          ),
+        );
+
+        expect(engine.shortBreakIntervalMinutes, equals(10));
+        // Elapsed time is preserved (5 minutes)
+        expect(engine.workElapsed.inMinutes, equals(5));
+
+        // Advance 5 more minutes -> triggers break at 10 minutes total
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.state, equals(TimerState.breakActive));
+      });
+    });
+
+    test('Smart pause: auto-resumes when smart condition clears', () {
+      fakeAsync((async) {
+        fakeSettingsRepository.setSettings(
+          fakeSettingsRepository.currentSettings.copyWith(
+            respectFocusMode: true,
+          ),
+        );
+
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        async.elapse(const Duration(minutes: 5));
+        expect(engine.state, equals(TimerState.running));
+
+        // Focus mode starts
+        when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(true);
+        async.elapse(const Duration(seconds: 1));
+        expect(engine.state, equals(TimerState.paused));
+        expect(engine.stateData.isManuallyPaused, isFalse);
+
+        // Advance during focus mode
+        async.elapse(const Duration(minutes: 15));
+        expect(engine.state, equals(TimerState.paused));
+
+        // Focus mode ends
+        when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(false);
+        async.elapse(const Duration(seconds: 1));
+        // Timer should automatically resume without manual intervention!
+        expect(engine.state, equals(TimerState.running));
+      });
+    });
+
+    test('Complete cycle: work -> pre-break warning -> break -> next work interval', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        // 20 min interval, 60s warning
+        // At 19 minutes: pre-break warning
+        async.elapse(const Duration(minutes: 19));
+        expect(engine.state, equals(TimerState.running));
+
+        // At 20 minutes: break starts
+        async.elapse(const Duration(minutes: 1));
+        expect(engine.state, equals(TimerState.breakActive));
+
+        // Complete the 20s break
+        async.elapse(const Duration(seconds: 20));
+        // Break finishes, resumes work
+        expect(engine.state, equals(TimerState.running));
+        expect(engine.workElapsed, equals(Duration.zero));
+        expect(engine.shortBreakIntervalMinutes, equals(20));
+      });
     });
   });
 

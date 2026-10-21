@@ -48,8 +48,8 @@ class CompanionWindowManager {
   DisplayManager? get displayManager => _displayManager;
 
   static const Size defaultSize = Size(280, 320);
-  static const Size minSize = Size(160, 180);
-  static const Size maxSize = Size(560, 640);
+  static const Size minSize = Size(180, 210);
+  static const Size maxSize = Size(360, 420);
   static const double handleHeight = 24.0;
   static const double minIntersection = 20.0;
 
@@ -171,6 +171,58 @@ class CompanionWindowManager {
     await _windowController.setPosition(resolved.dx, targetY);
     _persistPosition(_currentPosition);
   }
+
+  /// Moves the window without the off-screen recovery pass or a preference
+  /// write.
+  ///
+  /// [setPosition] enumerates displays and writes two preferences on every
+  /// call. That is right for a one-off move and far too heavy for an animation
+  /// running twenty-five times a second, which is what the companion's
+  /// wandering is — so a caller that has already clamped its own path to a
+  /// display takes this instead, and calls [persistPosition] once it arrives.
+  Future<void> moveTo(Offset position) async {
+    _currentPosition = position;
+
+    double targetY = position.dy;
+    if (Platform.isMacOS) {
+      targetY =
+          await _primaryScreenHeight() - position.dy - _currentSize.height;
+    }
+
+    // Never animated: the caller is already drawing the motion frame by frame,
+    // and on macOS an animated move blocks the main thread until it finishes.
+    await _windowController.setPosition(position.dx, targetY, animate: false);
+  }
+
+  /// Writes the current position to preferences. Pairs with [moveTo].
+  void persistPosition() => _persistPosition(_currentPosition);
+
+  /// The primary screen's height, cached.
+  ///
+  /// Flipping into AppKit's bottom-left origin needs this on every frame of a
+  /// move, and enumerating displays that often would undo the point of
+  /// [moveTo]. The cache expires because monitors get swapped and resolutions
+  /// change, and a stale height would put the companion at the wrong height on
+  /// screen rather than merely being slow.
+  Future<double> _primaryScreenHeight() async {
+    final cached = _cachedPrimaryHeight;
+    final measuredAt = _primaryHeightMeasuredAt;
+    if (cached != null &&
+        measuredAt != null &&
+        DateTime.now().difference(measuredAt) < _primaryHeightTtl) {
+      return cached;
+    }
+
+    final height = await _getPrimaryScreenHeight();
+    _cachedPrimaryHeight = height;
+    _primaryHeightMeasuredAt = DateTime.now();
+    return height;
+  }
+
+  static const Duration _primaryHeightTtl = Duration(seconds: 30);
+
+  double? _cachedPrimaryHeight;
+  DateTime? _primaryHeightMeasuredAt;
 
   Future<void> setOpacity(double opacity) async {
     await _windowController.setOpacity(opacity);

@@ -9,6 +9,9 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
+import 'package:breakmate/core/config/productivity_config.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
+import 'package:breakmate/features/analytics/presentation/segment_inspector_page.dart';
 import 'package:breakmate/features/wellness/presentation/wellness_library_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
@@ -87,11 +90,25 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.paw,
       section: 'Companion',
     ),
+    if (ProductivityConfig.current.enabled)
+      _NavItem(
+        label: 'Productivity',
+        icon: CupertinoIcons.chart_bar,
+        section: 'Productivity',
+      ),
     _NavItem(
       label: AppStrings.navStatistics,
-      icon: CupertinoIcons.chart_bar,
+      icon: CupertinoIcons.graph_square,
       section: 'Statistics',
     ),
+    // Development only: the raw rows every productivity number is derived
+    // from, so the data can be read back before screens are built on it.
+    if (ProductivityConfig.current.diagnosticsVisible)
+      _NavItem(
+        label: 'Activity Segments',
+        icon: CupertinoIcons.list_bullet_indent,
+        section: 'Segments',
+      ),
     _NavItem(
       label: 'Personal Goals',
       icon: CupertinoIcons.forward_fill,
@@ -412,8 +429,12 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Notifications');
       case 'Companion':
         return const SettingsPage(section: 'Companion');
+      case 'Productivity':
+        return const ProductivityPage();
       case 'Statistics':
         return const SettingsPage(section: 'Statistics');
+      case 'Segments':
+        return const SegmentInspectorPage();
       case 'Goals':
         return const SettingsPage(section: 'Goals');
       case 'Wellness Library':

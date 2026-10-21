@@ -7,6 +7,8 @@ class BreakStartWarningOverlay extends StatelessWidget {
   final String title;
   final int durationSeconds;
   final bool isPreBreak;
+  final ValueNotifier<int>? remainingSecondsNotifier;
+  final VoidCallback? onSkip;
 
   const BreakStartWarningOverlay({
     super.key,
@@ -14,59 +16,130 @@ class BreakStartWarningOverlay extends StatelessWidget {
     required this.title,
     required this.durationSeconds,
     this.isPreBreak = false,
+    this.remainingSecondsNotifier,
+    this.onSkip,
   });
 
   @override
   Widget build(BuildContext context) {
     if (isPreBreak) {
       return Center(
-        child: ScaleTransition(
-          scale: Tween<double>(begin: 0.9, end: 1.0).animate(
-            CurvedAnimation(
-              parent: fadeAnimation,
-              curve: Curves.easeOutBack,
-              reverseCurve: Curves.easeIn,
-            ),
+        child: FadeTransition(
+          opacity: CurvedAnimation(
+            parent: fadeAnimation,
+            curve: Curves.easeOut,
+            reverseCurve: Curves.easeIn,
           ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppTheme.surfaceCard.withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(
-                color: AppTheme.accent.withValues(alpha: 0.2),
-                width: 1.0,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.95, end: 1.0).animate(
+              CurvedAnimation(
+                parent: fadeAnimation,
+                curve: Curves.easeOutBack,
+                reverseCurve: Curves.easeIn,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accent),
-                  ),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 320),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFF14161B).withValues(alpha: 0.88),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  width: 1.0,
                 ),
-                SizedBox(width: 14),
-                Text(
-                  'Break starting soon...',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Inter',
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    blurRadius: 24,
+                    offset: const Offset(0, 6),
                   ),
-                ),
-              ],
+                  BoxShadow(
+                    color: AppTheme.accent.withValues(alpha: 0.10),
+                    blurRadius: 16,
+                    spreadRadius: -2,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accent.withValues(alpha: 0.16),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        CupertinoIcons.timer,
+                        color: AppTheme.accent,
+                        size: 15,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  ValueListenableBuilder<int>(
+                    valueListenable: remainingSecondsNotifier ??
+                        ValueNotifier<int>(durationSeconds),
+                    builder: (context, remaining, _) {
+                      final displaySec = remaining > 0 ? remaining : 1;
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Break starting in ',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.88),
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                          Text(
+                            '${displaySec}s',
+                            style: TextStyle(
+                              color: AppTheme.accent,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                  if (onSkip != null) ...[
+                    const SizedBox(width: 10),
+                    GestureDetector(
+                      onTap: onSkip,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                            width: 0.5,
+                          ),
+                        ),
+                        child: Text(
+                          'Skip',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.72),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ),
         ),

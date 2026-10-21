@@ -91,5 +91,39 @@ void main() {
 
       expect(savedName, equals('Bubbles'));
     });
+
+    testWidgets(
+        'renders gracefully inside vertically constrained box without overflowing',
+        (tester) async {
+      tester.view.physicalSize = const Size(800, 300);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () {
+                  showBlobatarNameDialog(
+                    context,
+                    currentName: 'OldName',
+                    onSaved: (_) {},
+                  );
+                },
+                child: const Text('Open Dialog'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open Dialog'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Name your Blobatar'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

@@ -1082,7 +1082,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      _LiveTemplatePreview(id: id),
+                      _LiveTemplatePreview(
+                        id: id,
+                        settings: widget.settings,
+                      ),
                       Positioned(
                         top: 8,
                         left: 8,
@@ -1180,8 +1183,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
 
 class _LiveTemplatePreview extends StatefulWidget {
   final String id;
+  final SettingsModel? settings;
 
-  const _LiveTemplatePreview({required this.id});
+  const _LiveTemplatePreview({required this.id, this.settings});
 
   @override
   State<_LiveTemplatePreview> createState() => _LiveTemplatePreviewState();
@@ -1197,7 +1201,7 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
     title: 'Rest Your Eyes',
     tip: 'Look 20 feet away for 20 seconds.',
   );
-  static const _previewSettings = SettingsModel(strictMode: true);
+  static const _fallbackPreviewSettings = SettingsModel(strictMode: true);
 
   @override
   void initState() {
@@ -1216,6 +1220,8 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
 
   @override
   Widget build(BuildContext context) {
+    final effectiveSettings = widget.settings ?? _fallbackPreviewSettings;
+
     return IgnorePointer(
       child: ClipRRect(
         borderRadius: BorderRadius.circular(11),
@@ -1230,7 +1236,7 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
               child: BreakTemplateSwitcher(
                 breakTemplate: widget.id,
                 breakInfo: _previewBreak,
-                settings: _previewSettings,
+                settings: effectiveSettings,
                 remaining: 42,
                 total: 60,
                 onSkip: null,

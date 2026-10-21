@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
@@ -43,7 +44,7 @@ class FocusSessionService extends ChangeNotifier {
   /// today/week/month semantics as [AppUsageService.topApps], so a Statistics
   /// screen filter applies to both consistently.
   List<FocusSession> sessionsForPeriod(UsagePeriod period, {DateTime? now}) {
-    final today = now ?? DateTime.now();
+    final today = now ?? clock.now();
     final result = <FocusSession>[];
     for (final dateEntry in _cache.entries) {
       if (!_dateInPeriod(dateEntry.key, period, today)) continue;
@@ -98,7 +99,7 @@ class FocusSessionService extends ChangeNotifier {
   }
 
   void _pruneOldDates() {
-    final cutoff = DateTime.now().subtract(const Duration(days: 30));
+    final cutoff = clock.now().subtract(const Duration(days: 30));
     _cache.removeWhere((date, _) {
       final parsed = _parseDateKey(date);
       return parsed == null || parsed.isBefore(cutoff);

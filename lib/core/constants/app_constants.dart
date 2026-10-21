@@ -10,7 +10,7 @@ class AppConstants {
 
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
-  static const int defaultPreBreakWarningSeconds = 60;
+  static const int defaultPreBreakWarningSeconds = 3;
 
   static const int defaultLongBreakIntervalMinutes = 60;
   static const int defaultLongBreakDurationMinutes = 5;
@@ -101,8 +101,7 @@ class AppConstants {
     'Sometimes the most productive thing you can do is relax.',
   ];
 
-  /// Tray icon — updated to use the avatar bear snapshot.
-  /// Previously pointed to assets/icons/app_icon_bg.png (removed in avatar-main migration).
-  static const String trayIconPath = 'assets/avatars/species/bear.svg';
+  /// Tray icon — points to raster PNG with alpha suitable for tray template extraction.
+  static const String trayIconPath = 'assets/icons/app_icon_bg.png';
 }
 

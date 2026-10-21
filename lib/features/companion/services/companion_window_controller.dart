@@ -53,10 +53,10 @@ class CompanionWindowController {
     }
   }
 
-  Future<void> setPosition(double x, double y) async {
+  Future<void> setPosition(double x, double y, {bool animate = true}) async {
     _x = x;
     _y = y;
-    await _windowService.setWindowPosition(x: x, y: y);
+    await _windowService.setWindowPosition(x: x, y: y, animate: animate);
     _eventBus.emit(CompanionPositionChangedEvent(x: x, y: y));
   }
 
