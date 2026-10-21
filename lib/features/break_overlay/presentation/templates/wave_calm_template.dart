@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -34,7 +35,8 @@ class _WaveCalmTemplateState extends State<WaveCalmTemplate>
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 6),
-    )..repeat();
+    );
+    _controller.repeatUnlessReducedMotion();
   }
 
   @override

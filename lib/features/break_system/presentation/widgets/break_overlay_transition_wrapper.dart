@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -142,7 +143,7 @@ class _BreakOverlayTransitionWrapperState
     _classicEffectsRunning = enabled;
     if (enabled) {
       _startSlideshow();
-      _kenBurnsController.repeat(reverse: true);
+      _kenBurnsController.repeatUnlessReducedMotion(reverse: true, staticValue: 0);
     } else {
       _slideshowTimer?.cancel();
       _slideshowTimer = null;

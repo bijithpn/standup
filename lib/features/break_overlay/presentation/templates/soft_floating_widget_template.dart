@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -51,7 +52,7 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    )..repeatUnlessReducedMotion(reverse: true);
   }
 
   @override

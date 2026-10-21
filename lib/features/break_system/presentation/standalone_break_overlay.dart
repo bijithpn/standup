@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -189,7 +190,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     if (_classicEffectsRunning == enabled) return;
     _classicEffectsRunning = enabled;
     if (enabled) {
-      _kenBurnsController.repeat(reverse: true);
+      _kenBurnsController.repeatUnlessReducedMotion(reverse: true, staticValue: 0);
     } else {
       _kenBurnsController.stop();
     }

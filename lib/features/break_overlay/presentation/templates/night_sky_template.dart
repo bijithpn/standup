@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -48,7 +49,8 @@ class _NightSkyTemplateState extends State<NightSkyTemplate>
     _twinkleController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
-    )..repeat();
+    );
+    _twinkleController.repeatUnlessReducedMotion();
     final rand = math.Random(7);
     _stars = List.generate(
       100,
@@ -229,9 +231,7 @@ class _NightSkyPill extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
           decoration: BoxDecoration(
-            color: filled
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.08),
+            color: filled ? Colors.white : Colors.white.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(999),
             border: filled
                 ? null

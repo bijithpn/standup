@@ -56,4 +56,62 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'MinimalSlider responds to arrow keys and exposes slider semantics',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      var value = 0.5;
+      double? committed;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) => SizedBox(
+                width: 300,
+                child: MinimalSlider(
+                  value: value,
+                  onChanged: (v) => setState(() => value = v),
+                  onChangeEnd: (v) => committed = v,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(value, closeTo(0.55, 1e-9));
+      expect(committed, closeTo(0.55, 1e-9));
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.end);
+      await tester.pump();
+      expect(value, 1.0);
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+      await tester.pump();
+      expect(value, 1.0); // clamped
+
+      expect(
+        tester.getSemantics(
+          find
+              .descendant(
+                of: find.byType(MinimalSlider),
+                matching: find.byType(Semantics),
+              )
+              .first,
+        ),
+        isSemantics(
+          isSlider: true,
+          hasIncreaseAction: true,
+          hasDecreaseAction: true,
+          value: '100%',
+          increasedValue: '100%',
+          decreasedValue: '95%',
+        ),
+      );
+      handle.dispose();
+    },
+  );
 }

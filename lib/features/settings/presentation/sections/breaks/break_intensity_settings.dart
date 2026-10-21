@@ -166,13 +166,61 @@ class BreakIntensitySettings extends StatelessWidget {
             }
             return buildCard(
               displays.map((display) {
-                return actionRow(
-                  label: display.id,
-                  subtitle:
-                      'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
-                  buttonText: 'Active',
-                  buttonColor: AppTheme.accentColor,
-                  onPressed: () {},
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              display.id,
+                              style: TextStyle(
+                                color: AppTheme.textPrimary,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Resolution: ${display.width.toInt()}x${display.height.toInt()} • Primary: ${display.isPrimary}',
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                                fontSize: 12,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // A status label, not a control: it used to be a button
+                      // with an empty callback.
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Active',
+                          style: TextStyle(
+                            color: AppTheme.accentColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 );
               }).toList(),
             );

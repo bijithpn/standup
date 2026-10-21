@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -20,8 +21,7 @@ class AnimatedNatureBackdrop extends StatefulWidget {
   });
 
   @override
-  State<AnimatedNatureBackdrop> createState() =>
-      _AnimatedNatureBackdropState();
+  State<AnimatedNatureBackdrop> createState() => _AnimatedNatureBackdropState();
 }
 
 class _AnimatedNatureBackdropState extends State<AnimatedNatureBackdrop>
@@ -35,7 +35,7 @@ class _AnimatedNatureBackdropState extends State<AnimatedNatureBackdrop>
       return AnimationController(
         vsync: this,
         duration: Duration(seconds: 14 + i * 3),
-      )..repeat();
+      )..repeatUnlessReducedMotion();
     });
   }
 

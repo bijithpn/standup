@@ -169,6 +169,7 @@ class MinimalSlider extends StatefulWidget {
 class _MinimalSliderState extends State<MinimalSlider> {
   bool _isHovering = false;
   bool _isDragging = false;
+  bool _isFocused = false;
   double? _interactionValue;
 
   void _updateValue(Offset localPosition, double width) {
@@ -184,6 +185,40 @@ class _MinimalSliderState extends State<MinimalSlider> {
     _interactionValue = null;
   }
 
+  /// Moves the value by [fraction] of the range and commits it, so arrow keys
+  /// and screen-reader increase/decrease behave like a finished drag.
+  void _nudge(double fraction) {
+    final next = (widget.value + (widget.max - widget.min) * fraction).clamp(
+      widget.min,
+      widget.max,
+    );
+    widget.onChanged(next);
+    widget.onChangeEnd?.call(next);
+  }
+
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is KeyUpEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.arrowRight ||
+        key == LogicalKeyboardKey.arrowUp) {
+      _nudge(0.05);
+    } else if (key == LogicalKeyboardKey.arrowLeft ||
+        key == LogicalKeyboardKey.arrowDown) {
+      _nudge(-0.05);
+    } else if (key == LogicalKeyboardKey.pageUp) {
+      _nudge(0.2);
+    } else if (key == LogicalKeyboardKey.pageDown) {
+      _nudge(-0.2);
+    } else if (key == LogicalKeyboardKey.home) {
+      _nudge(-1);
+    } else if (key == LogicalKeyboardKey.end) {
+      _nudge(1);
+    } else {
+      return KeyEventResult.ignored;
+    }
+    return KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context) {
     final activeColor = widget.activeColor ?? AppTheme.primary;
@@ -193,80 +228,99 @@ class _MinimalSliderState extends State<MinimalSlider> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
-        return MouseRegion(
-          onEnter: (_) => setState(() => _isHovering = true),
-          onExit: (_) => setState(() => _isHovering = false),
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onPanStart: (details) {
-              setState(() => _isDragging = true);
-              _updateValue(details.localPosition, width);
-            },
-            onPanUpdate: (details) =>
-                _updateValue(details.localPosition, width),
-            onPanEnd: (_) {
-              setState(() => _isDragging = false);
-              _finishInteraction();
-            },
-            onPanCancel: () {
-              setState(() => _isDragging = false);
-              _finishInteraction();
-            },
-            onTapDown: (details) => _updateValue(details.localPosition, width),
-            onTapUp: (_) => _finishInteraction(),
-            child: Container(
-              height: 24, // Touch target size
-              color: Colors.transparent,
-              child: Center(
-                child: SizedBox(
-                  height: 4,
-                  child: Stack(
-                    alignment: Alignment.centerLeft,
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      FractionallySizedBox(
-                        widthFactor: percent,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: activeColor,
-                            borderRadius: BorderRadius.circular(2),
+        return Semantics(
+          slider: true,
+          value: '${(percent * 100).round()}%',
+          increasedValue:
+              '${((percent + 0.05).clamp(0.0, 1.0) * 100).round()}%',
+          decreasedValue:
+              '${((percent - 0.05).clamp(0.0, 1.0) * 100).round()}%',
+          onIncrease: () => _nudge(0.05),
+          onDecrease: () => _nudge(-0.05),
+          child: Focus(
+            onKeyEvent: _onKey,
+            onFocusChange: (focused) => setState(() => _isFocused = focused),
+            child: MouseRegion(
+              onEnter: (_) => setState(() => _isHovering = true),
+              onExit: (_) => setState(() => _isHovering = false),
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanStart: (details) {
+                  setState(() => _isDragging = true);
+                  _updateValue(details.localPosition, width);
+                },
+                onPanUpdate: (details) =>
+                    _updateValue(details.localPosition, width),
+                onPanEnd: (_) {
+                  setState(() => _isDragging = false);
+                  _finishInteraction();
+                },
+                onPanCancel: () {
+                  setState(() => _isDragging = false);
+                  _finishInteraction();
+                },
+                onTapDown: (details) =>
+                    _updateValue(details.localPosition, width),
+                onTapUp: (_) => _finishInteraction(),
+                child: Container(
+                  height: 24, // Touch target size
+                  color: Colors.transparent,
+                  child: Center(
+                    child: SizedBox(
+                      height: 4,
+                      child: Stack(
+                        alignment: Alignment.centerLeft,
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
                           ),
-                        ),
-                      ),
-                      Positioned(
-                        left: (width * percent) - 6,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          curve: Curves.easeOutCubic,
-                          width: _isHovering || _isDragging ? 14 : 12,
-                          height: _isHovering || _isDragging ? 14 : 12,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
+                          FractionallySizedBox(
+                            widthFactor: percent,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: activeColor,
+                                borderRadius: BorderRadius.circular(2),
                               ),
-                              if (_isHovering || _isDragging)
-                                BoxShadow(
-                                  color: activeColor.withValues(alpha: 0.3),
-                                  blurRadius: 8,
-                                  spreadRadius: 2,
-                                ),
-                            ],
+                            ),
                           ),
-                        ),
+                          Positioned(
+                            left: (width * percent) - 6,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              curve: Curves.easeOutCubic,
+                              width: _isHovering || _isDragging || _isFocused
+                                  ? 14
+                                  : 12,
+                              height: _isHovering || _isDragging || _isFocused
+                                  ? 14
+                                  : 12,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                  if (_isHovering || _isDragging || _isFocused)
+                                    BoxShadow(
+                                      color: activeColor.withValues(alpha: 0.3),
+                                      blurRadius: 8,
+                                      spreadRadius: 2,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
