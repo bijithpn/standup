@@ -66,3 +66,6 @@ RULEBOOK_REPORT.md
 graphify-out/
 .superpowers/
 docs/
+# raw screen recordings
+*.mp4
+!screenshots/walkthrough.mp4

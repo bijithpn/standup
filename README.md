@@ -11,7 +11,7 @@
 
 [Download](https://github.com/bijithpn/standup/releases) · [Features](#features) · [Getting Started](#development-setup) · [Architecture](#architecture) · [Changelog](CHANGELOG.md)
 
-<img src="screenshots/overlay_1.png" alt="BreakMate full-screen break overlay with countdown and guided exercise" width="820">
+<a href="screenshots/walkthrough.mp4"><img src="screenshots/tour.gif" alt="BreakMate product tour — click to watch the full walkthrough" width="860"></a>
 
 </div>
 
@@ -50,12 +50,17 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 
 ## Screenshots
 
-| Settings | Break overlay |
-| --- | --- |
-| <img src="screenshots/1.png" width="420" alt="General settings"> | <img src="screenshots/overlay_2.png" width="420" alt="Break overlay template"> |
-| <img src="screenshots/3.png" width="420" alt="Dashboard / statistics"> | <img src="screenshots/overlay_3.png" width="420" alt="Break overlay template"> |
+<p align="center">
+  <a href="screenshots/walkthrough.mp4"><img src="screenshots/tour.gif" alt="Watch the 46-second walkthrough" width="640"></a><br>
+  <sub>▶ <a href="screenshots/walkthrough.mp4"><b>Watch the 46-second walkthrough</b></a> (MP4)</sub>
+</p>
 
-More images live in [`screenshots/`](screenshots/).
+| | |
+| --- | --- |
+| <img src="screenshots/today.jpg" alt="Today dashboard"><br>**Today** — live countdown, next-break reasoning, quiet mode | <img src="screenshots/break-templates.jpg" alt="Break template gallery"><br>**Break templates** — searchable gallery with accent colors |
+| <img src="screenshots/focus-mode.jpg" alt="Smart detection settings"><br>**Smart detection** — meetings, Focus mode, presentation pause | <img src="screenshots/companion-gallery.jpg" alt="Companion gallery"><br>**Companion** — 3D species, breeds, and streaks |
+| <img src="screenshots/statistics.jpg" alt="Statistics dashboard"><br>**Statistics** — productivity and wellness scores | <img src="screenshots/themes.jpg" alt="Theme presets"><br>**Themes** — 12 curated presets plus auto light/dark |
+| <img src="screenshots/overlay_6.jpg" alt="Zen Mode breathing break"><br>**Zen Mode break** — paced breathing circle | <img src="screenshots/overlay_5.jpg" alt="Quiet pill reminder"><br>**Quiet Pill** — subtle reminder during meetings |
 
 ---
 
