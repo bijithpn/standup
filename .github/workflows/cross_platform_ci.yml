@@ -1,9 +1,10 @@
-name: Cross-Platform CI Verification
+name: CI · Verify
+run-name: "CI · ${{ github.event.pull_request.title || github.event.head_commit.message || github.ref_name }}"
 
 on:
+  # main is verified by the release pipeline, so CI only runs on dev pushes and PRs.
   push:
     branches:
-      - main
       - dev
     paths-ignore:
       - '*.md'
@@ -28,7 +29,7 @@ env:
 
 jobs:
   static-analysis-and-tests:
-    name: Analyzer & Unit Tests
+    name: Analyze & Test
     runs-on: macos-14
     timeout-minutes: 30
     steps:
@@ -61,7 +62,7 @@ jobs:
         run: flutter test
 
   build-macos:
-    name: macOS Build Check
+    name: Build macOS
     needs: static-analysis-and-tests
     runs-on: macos-14
     timeout-minutes: 45
@@ -86,7 +87,7 @@ jobs:
         run: flutter build macos --debug --flavor dev --no-pub
 
   build-linux:
-    name: Linux Build Check
+    name: Build Linux
     needs: static-analysis-and-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -127,7 +128,7 @@ jobs:
         run: flutter build linux --debug --no-pub
 
   build-windows:
-    name: Windows Build Check
+    name: Build Windows
     needs: static-analysis-and-tests
     runs-on: windows-2022
     timeout-minutes: 45

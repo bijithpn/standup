@@ -1,4 +1,5 @@
-name: macOS Release Pipeline
+name: "Release · 1 · macOS"
+run-name: "Release · macOS · ${{ github.event.head_commit.message || github.ref_name }}"
 
 on:
   workflow_dispatch:
@@ -21,7 +22,7 @@ env:
 
 jobs:
   build-and-release:
-    name: Build & Release macOS App
+    name: Build, publish & update appcast
     runs-on: macos-14
     timeout-minutes: 60
 
@@ -126,6 +127,41 @@ jobs:
 
           echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
 
+      - name: Generate Release Notes
+        env:
+          TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
+          VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Previous release tag, ignoring the one we are (re)creating.
+          PREV_TAG=$(git tag --list 'v*' --sort=-v:refname | grep -vx "$TAG_NAME" | head -n1 || true)
+          if [ -n "$PREV_TAG" ]; then RANGE="$PREV_TAG..HEAD"; else RANGE="HEAD"; fi
+
+          LOG=$(git log "$RANGE" --no-merges --pretty='%s' \
+            | grep -viE '^chore: update appcast|update BreakMate installer DMG|\[skip ci\]' | head -n 100 || true)
+
+          section() { # $1 = heading, $2 = commit-type regex
+            local items
+            items=$(echo "$LOG" | grep -E "^($2)(\([^)]*\))?!?: " | sed -E 's/^[a-z]+(\([^)]*\))?!?: /- /' || true)
+            if [ -n "$items" ]; then printf '### %s\n%s\n\n' "$1" "$items"; fi
+          }
+
+          {
+            echo "## BreakMate v${VERSION}"
+            echo
+            section "✨ New Features" "feat"
+            section "🐛 Bug Fixes" "fix"
+            section "⚡ Improvements" "perf|refactor|style"
+            section "🔧 Build & Maintenance" "chore|ci|build|docs|test"
+            OTHER=$(echo "$LOG" | grep -vE '^(feat|fix|perf|refactor|style|chore|ci|build|docs|test)(\([^)]*\))?!?: ' | sed 's/^/- /' || true)
+            if [ -n "$OTHER" ]; then printf '### Other Changes\n%s\n\n' "$OTHER"; fi
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Full changelog:** https://github.com/${REPO}/compare/${PREV_TAG}...${TAG_NAME}"
+            fi
+          } > release_notes.md
+
+          cat release_notes.md
+
       - name: Update Appcast
         env:
           VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
@@ -175,18 +211,21 @@ jobs:
           # Delete existing release/tag if it exists to allow safe re-runs (matching create_dmg.sh)
           if gh release view "$TAG_NAME" &>/dev/null; then
             echo "Release $TAG_NAME already exists — deleting and recreating..."
-            gh release delete "$TAG_NAME" --yes
-            git push origin ":refs/tags/$TAG_NAME" 2>/dev/null || true
+            gh release delete "$TAG_NAME" --yes --cleanup-tag
           fi
+          # The checkout may hold a local copy of the tag that no longer exists on the remote.
+          git tag -d "$TAG_NAME" 2>/dev/null || true
 
           if [ -f release_notes.md ] && [ -s release_notes.md ]; then
             gh release create "$TAG_NAME" \
               "$DMG_PATH" \
+              --target "$GITHUB_SHA" \
               --title "BreakMate v${VERSION}" \
               --notes-file release_notes.md
           else
             gh release create "$TAG_NAME" \
               "$DMG_PATH" \
+              --target "$GITHUB_SHA" \
               --title "BreakMate v${VERSION}" \
               --generate-notes
           fi
