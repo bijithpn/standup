@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
@@ -54,22 +55,24 @@ void main() {
   /// Populates one day with enough tracked time and a focus session hitting
   /// [scoreFraction] of it (e.g. 0.5 = half the day was deep work).
   void seedDay(DateTime day, double scoreFraction) {
-    usageService.addUsageSeconds(
-      date: dateKey(day),
-      appKey: 'com.test.app',
-      name: 'TestApp',
-      category: AppCategory.general,
-      seconds: 3600,
-    );
-    if (scoreFraction > 0) {
-      focusSessionService.recordSession(
-        FocusSession(
-          category: AppCategory.coding,
-          start: DateTime(day.year, day.month, day.day, 9),
-          durationSeconds: (3600 * scoreFraction).round(),
-        ),
+    withClock(Clock.fixed(day), () {
+      usageService.addUsageSeconds(
+        date: dateKey(day),
+        appKey: 'com.test.app',
+        name: 'TestApp',
+        category: AppCategory.general,
+        seconds: 3600,
       );
-    }
+      if (scoreFraction > 0) {
+        focusSessionService.recordSession(
+          FocusSession(
+            category: AppCategory.coding,
+            start: DateTime(day.year, day.month, day.day, 9),
+            durationSeconds: (3600 * scoreFraction).round(),
+          ),
+        );
+      }
+    });
   }
 
   setUp(() {

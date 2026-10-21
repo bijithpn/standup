@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
@@ -56,7 +57,7 @@ class BreakHistoryService extends ChangeNotifier {
   }
 
   void _prune() {
-    final cutoff = DateTime.now().subtract(const Duration(days: _maxAgeDays));
+    final cutoff = clock.now().subtract(const Duration(days: _maxAgeDays));
     _events.removeWhere((e) => e.time.isBefore(cutoff));
   }
 

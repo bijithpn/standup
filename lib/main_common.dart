@@ -655,6 +655,7 @@ void mainCommon(FlavorConfig config) async {
             (options) {
               options.dsn = config.sentryDsn;
               options.enableAppHangTracking = false;
+              SentryHygiene.configure(options);
             },
             appRunner: () => runApp(SentryWidget(child: const BreakMateApp())),
           );

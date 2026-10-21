@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
@@ -52,33 +53,35 @@ void main() {
   });
 
   test('computes the correct share of tracked time spent focused', () {
-    final usageService = AppUsageService(storage: StorageService());
-    final focusSessionService = FocusSessionService(storage: StorageService());
-    final today = DateTime(2026, 9, 6);
-    final dateKey = '2026-09-06';
+    withClock(Clock.fixed(DateTime(2026, 9, 6)), () {
+      final usageService = AppUsageService(storage: StorageService());
+      final focusSessionService = FocusSessionService(storage: StorageService());
+      final today = DateTime(2026, 9, 6);
+      final dateKey = '2026-09-06';
 
-    usageService.addUsageSeconds(
-      date: dateKey,
-      appKey: 'com.test.app',
-      name: 'TestApp',
-      category: AppCategory.general,
-      seconds: 3600, // 1 hour tracked
-    );
-    focusSessionService.recordSession(
-      FocusSession(
-        category: AppCategory.coding,
-        start: DateTime(2026, 9, 6, 9),
-        durationSeconds: 1800, // 30 min focused
-      ),
-    );
+      usageService.addUsageSeconds(
+        date: dateKey,
+        appKey: 'com.test.app',
+        name: 'TestApp',
+        category: AppCategory.general,
+        seconds: 3600, // 1 hour tracked
+      );
+      focusSessionService.recordSession(
+        FocusSession(
+          category: AppCategory.coding,
+          start: DateTime(2026, 9, 6, 9),
+          durationSeconds: 1800, // 30 min focused
+        ),
+      );
 
-    final points = computeFocusTrend(
-      focusSessionService: focusSessionService,
-      usageService: usageService,
-      days: 1,
-      now: today,
-    );
+      final points = computeFocusTrend(
+        focusSessionService: focusSessionService,
+        usageService: usageService,
+        days: 1,
+        now: today,
+      );
 
-    expect(points.single.focusScore, closeTo(0.5, 0.001));
+      expect(points.single.focusScore, closeTo(0.5, 0.001));
+    });
   });
 }
