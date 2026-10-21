@@ -55,7 +55,8 @@ class MeetingDetectionService {
 
     if (defaultTargetPlatform == TargetPlatform.macOS) {
       _startNative();
-    } else if (defaultTargetPlatform == TargetPlatform.windows) {
+    } else if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux) {
       _startPolling();
     }
 
@@ -111,7 +112,8 @@ class MeetingDetectionService {
     final bundle = app.bundleId.toLowerCase();
     final name = app.name.toLowerCase();
     return kKnownMeetingApps.any(
-      (known) => exe.contains(known) || bundle.contains(known) || name.contains(known),
+      (known) =>
+          exe.contains(known) || bundle.contains(known) || name.contains(known),
     );
   }
 

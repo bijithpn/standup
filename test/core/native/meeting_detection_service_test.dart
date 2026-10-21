@@ -108,6 +108,25 @@ void main() {
       expect(events, contains(true));
     });
 
+    test('emits polled results while running on Linux', () async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+      final events = <bool>[];
+      final sub = service.isMeetingActiveStream.listen(events.add);
+
+      fakeTracking.nextApp = ActiveAppInfo(
+        name: 'Zoom',
+        bundleId: 'zoom',
+        executableName: 'zoom',
+      );
+      service.start();
+      addTearDown(service.stop);
+      addTearDown(sub.cancel);
+
+      // start() fires an immediate unawaited poll.
+      await Future<void>.delayed(Duration.zero);
+      expect(events, contains(true));
+    });
+
     test('stop() clears isMeetingActive without emitting through the stream', () {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
       service.start();

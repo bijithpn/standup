@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=BreakMate
+GenericName=Break & Wellness Companion
+Comment=Advanced multi-engine desktop productivity, eye rest, and deep work companion
+Exec=breakmate %u
+Icon=com.bijith.breakmate
+Terminal=false
+Categories=Utility;Clock;Health;
+StartupWMClass=breakmate
+Keywords=break;posture;timer;wellness;companion;productivity;
