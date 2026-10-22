@@ -51,7 +51,9 @@ class FakeNotificationService extends NotificationService {
   Future<void> init() async {}
 
   @override
-  Future<void> showFocusCorrelationInsight(BreakFocusCorrelation correlation) async {
+  Future<void> showFocusCorrelationInsight(
+    BreakFocusCorrelation correlation,
+  ) async {
     shown.add(correlation);
   }
 }
@@ -91,7 +93,11 @@ void main() {
       );
       // Same focus coverage after both -> ~0 point gap.
       focusSessionService.recordSession(
-        FocusSession(category: AppCategory.coding, start: t, durationSeconds: 1800),
+        FocusSession(
+          category: AppCategory.coding,
+          start: t,
+          durationSeconds: 1800,
+        ),
       );
       focusSessionService.recordSession(
         FocusSession(
@@ -117,7 +123,11 @@ void main() {
       );
       // Full focus coverage after the completed break, none after the skipped one.
       focusSessionService.recordSession(
-        FocusSession(category: AppCategory.coding, start: t, durationSeconds: 3600),
+        FocusSession(
+          category: AppCategory.coding,
+          start: t,
+          durationSeconds: 3600,
+        ),
       );
 
       insightService.checkAndMaybeShow(now: t.add(const Duration(hours: 3)));
@@ -136,7 +146,11 @@ void main() {
         completed: false,
       );
       focusSessionService.recordSession(
-        FocusSession(category: AppCategory.coding, start: t, durationSeconds: 3600),
+        FocusSession(
+          category: AppCategory.coding,
+          start: t,
+          durationSeconds: 3600,
+        ),
       );
 
       final now = t.add(const Duration(hours: 3));

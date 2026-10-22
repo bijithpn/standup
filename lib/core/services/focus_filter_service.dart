@@ -23,9 +23,9 @@ class FocusFilterService {
   FocusFilterService({
     FocusModeService? focusModeService,
     SmartDetectionCoordinator? smartCoordinator,
-  })  : _focusModeService = focusModeService ?? FocusModeService(),
-        _smartCoordinator =
-            smartCoordinator ?? SmartDetectionCoordinator.instance {
+  }) : _focusModeService = focusModeService ?? FocusModeService(),
+       _smartCoordinator =
+           smartCoordinator ?? SmartDetectionCoordinator.instance {
     _init();
   }
 
@@ -54,7 +54,9 @@ class FocusFilterService {
   void _updateFocusState(bool active) {
     if (_isFocusActive == active) return;
     _isFocusActive = active;
-    _logger.info('FocusFilterService: Focus status changed -> isFocused: $active');
+    _logger.info(
+      'FocusFilterService: Focus status changed -> isFocused: $active',
+    );
     _focusStatusController.add(active);
   }
 

@@ -49,7 +49,9 @@ void main() {
       controller.dispose();
     });
 
-    testWidgets('renders transparent viewport with specified size', (tester) async {
+    testWidgets('renders transparent viewport with specified size', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -74,7 +76,9 @@ void main() {
       expect(size.height, equals(180));
     });
 
-    testWidgets('dispatches tap event to AvatarEventChannel when tapped', (tester) async {
+    testWidgets('dispatches tap event to AvatarEventChannel when tapped', (
+      tester,
+    ) async {
       final tapEvents = <AvatarTapEvent>[];
       controller.eventChannel.onTap.listen(tapEvents.add);
 
@@ -102,37 +106,42 @@ void main() {
       expect(tapEvents.length, equals(1));
     });
 
-    testWidgets('dispatches double tap event to AvatarEventChannel when double tapped', (tester) async {
-      final doubleTapEvents = <AvatarDoubleTapEvent>[];
-      controller.eventChannel.onDoubleTap.listen(doubleTapEvents.add);
+    testWidgets(
+      'dispatches double tap event to AvatarEventChannel when double tapped',
+      (tester) async {
+        final doubleTapEvents = <AvatarDoubleTapEvent>[];
+        controller.eventChannel.onDoubleTap.listen(doubleTapEvents.add);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Center(
-              child: AvatarView(
-                definition: testDefinition,
-                controller: controller,
-                width: 200,
-                height: 200,
-                isInteractive: true,
-                isStatic: true,
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: AvatarView(
+                  definition: testDefinition,
+                  controller: controller,
+                  width: 200,
+                  height: 200,
+                  isInteractive: true,
+                  isStatic: true,
+                ),
               ),
             ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      await tester.tap(find.byType(AvatarView));
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.byType(AvatarView));
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(find.byType(AvatarView));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.byType(AvatarView));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(doubleTapEvents.length, equals(1));
-    });
+        expect(doubleTapEvents.length, equals(1));
+      },
+    );
 
-    testWidgets('updates gaze lookAt on pointer hover inside widget', (tester) async {
+    testWidgets('updates gaze lookAt on pointer hover inside widget', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -165,7 +174,9 @@ void main() {
       expect(controller.currentLookAt.dx, greaterThan(0.0));
     });
 
-    testWidgets('updates definition when widget definition property changes', (tester) async {
+    testWidgets('updates definition when widget definition property changes', (
+      tester,
+    ) async {
       final updatedDefinition = AvatarDefinition.fromSpecies(
         AvatarSpecies.fox,
         palette: AvatarPalette.warmOrange,
@@ -208,11 +219,16 @@ void main() {
       await tester.pump();
 
       expect(controller.currentDefinition, equals(updatedDefinition));
-      expect(executedScripts.last, contains('window.AvatarBridge.setDefinition('));
+      expect(
+        executedScripts.last,
+        contains('window.AvatarBridge.setDefinition('),
+      );
       expect(executedScripts.last, contains('"fox"'));
     });
 
-    testWidgets('supports screen-wide cursor tracking via CursorTracker', (tester) async {
+    testWidgets('supports screen-wide cursor tracking via CursorTracker', (
+      tester,
+    ) async {
       final mockBridge = MockNativeBridge();
       final cursorTracker = CursorTracker(bridge: mockBridge);
 
@@ -244,33 +260,38 @@ void main() {
       cursorTracker.dispose();
     });
 
-    testWidgets('renders fallback vector avatar for all supported species without errors', (tester) async {
-      for (final species in AvatarSpecies.values) {
-        final def = AvatarDefinition.fromSpecies(
-          species,
-          palette: AvatarPalette.pastel,
-        );
+    testWidgets(
+      'renders fallback vector avatar for all supported species without errors',
+      (tester) async {
+        for (final species in AvatarSpecies.values) {
+          final def = AvatarDefinition.fromSpecies(
+            species,
+            palette: AvatarPalette.pastel,
+          );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Center(
-                child: AvatarView(
-                  definition: def,
-                  width: 150,
-                  height: 150,
-                  isStatic: true,
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: Center(
+                  child: AvatarView(
+                    definition: def,
+                    width: 150,
+                    height: 150,
+                    isStatic: true,
+                  ),
                 ),
               ),
             ),
-          ),
-        );
-        await tester.pump();
-        expect(find.byType(AvatarView), findsOneWidget);
-      }
-    });
+          );
+          await tester.pump();
+          expect(find.byType(AvatarView), findsOneWidget);
+        }
+      },
+    );
 
-    testWidgets('plays animation on controller and triggers visual update', (tester) async {
+    testWidgets('plays animation on controller and triggers visual update', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -292,7 +313,10 @@ void main() {
       await tester.pump();
 
       expect(controller.currentClip, equals(AvatarAnimationClip.celebrate));
-      expect(executedScripts.last, contains("window.AvatarBridge.playAnimation('celebrate'"));
+      expect(
+        executedScripts.last,
+        contains("window.AvatarBridge.playAnimation('celebrate'"),
+      );
     });
   });
 }

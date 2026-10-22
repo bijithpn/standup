@@ -19,19 +19,25 @@ void main() {
       expect(face.isVisible, isTrue);
       expect(face.leftEyePoints.isNotEmpty, isTrue);
       expect(face.rightEyePoints.isNotEmpty, isTrue);
-      expect(face.leftEyePoints.first.dx, lessThan(face.rightEyePoints.first.dx));
-    });
-
-    test('occludes face when avatar rotates toward the back (> 90 degrees)', () {
-      final backFace = AvatarFaceProjector.projectFace(
-        shape: AvatarBodyShape.sphere,
-        yaw: math.pi, // 180 degrees (looking away)
-        pitch: 0.0,
-        roll: 0.0,
+      expect(
+        face.leftEyePoints.first.dx,
+        lessThan(face.rightEyePoints.first.dx),
       );
-
-      expect(backFace.isVisible, isFalse);
     });
+
+    test(
+      'occludes face when avatar rotates toward the back (> 90 degrees)',
+      () {
+        final backFace = AvatarFaceProjector.projectFace(
+          shape: AvatarBodyShape.sphere,
+          yaw: math.pi, // 180 degrees (looking away)
+          pitch: 0.0,
+          roll: 0.0,
+        );
+
+        expect(backFace.isVisible, isFalse);
+      },
+    );
 
     test('projects mouth and nose when enabled', () {
       final faceWithMouthNose = AvatarFaceProjector.projectFace(

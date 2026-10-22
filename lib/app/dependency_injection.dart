@@ -9,6 +9,8 @@ import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/focus_filter_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
+import 'package:breakmate/core/services/daily_reset_service.dart';
 import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
@@ -93,6 +95,13 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
+  sl.registerLazySingleton<CalendarSyncController>(
+    () => CalendarSyncController(
+      settingsRepository: sl(),
+      permissionService: sl(),
+      calendarService: sl(),
+    ),
+  );
   sl.registerSingleton<ClockOutService>(ClockOutService(sl()));
   sl.registerSingleton<AppUsageService>(AppUsageService(storage: sl()));
   sl.registerSingleton<FocusSessionService>(FocusSessionService(storage: sl()));
@@ -215,11 +224,24 @@ Future<void> initDependencies() async {
     ),
   );
 
+  sl.registerSingleton<DailyResetService>(
+    DailyResetService(
+      storage: sl(),
+      timerEngine: sl(),
+      statsService: sl(),
+      sessionStateRepository: sl(),
+    ),
+  );
+
   sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
   sl.registerSingleton<ExplainHotkeyService>(ExplainHotkeyService());
 
   sl.registerLazySingleton<WellnessLibraryRepository>(
-    () => WellnessLibraryRepository(settingsRepo: sl()),
+    () => WellnessLibraryRepository(
+      settingsRepo: sl(),
+      storage: sl(),
+      onCompleted: () => sl<StatsService>().recordWellnessAction(),
+    ),
   );
 
   sl.registerSingleton<FocusModeService>(FocusModeService());

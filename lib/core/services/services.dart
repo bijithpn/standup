@@ -10,4 +10,3 @@ export 'smart_detection_coordinator.dart';
 export 'smart_detection_service.dart';
 export 'storage_service.dart';
 export 'timer_engine.dart';
-

@@ -27,10 +27,11 @@ void main() {
   final outputDir = Platform.environment['AVATAR_PREVIEW_DIR'];
 
   Map<String, dynamic> readCatalog() => Map<String, dynamic>.from(
-        jsonDecode(
+    jsonDecode(
           File('assets/avatars/scenes/avatar_scenes.json').readAsStringSync(),
-        ) as Map,
-      );
+        )
+        as Map,
+  );
 
   Future<void> renderSheet({
     required String name,
@@ -123,21 +124,25 @@ void main() {
         canvas.save();
         canvas.translate(column * cell, row * cell);
         canvas.clipRect(const Rect.fromLTWH(0, 0, cell, cell));
-        AvatarScenePainter(geometry: geometry, scene: scene)
-            .paint(canvas, const Size(cell, cell));
+        AvatarScenePainter(
+          geometry: geometry,
+          scene: scene,
+        ).paint(canvas, const Size(cell, cell));
         canvas.restore();
       }
     }
 
     final image = await recorder.endRecording().toImage(
-          (cell * emotions.length).round(),
-          (cell * species.length).round(),
-        );
+      (cell * emotions.length).round(),
+      (cell * species.length).round(),
+    );
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     if (bytes == null) return;
 
     Directory(outputDir).createSync(recursive: true);
-    File('$outputDir/emotions.png').writeAsBytesSync(bytes.buffer.asUint8List());
+    File(
+      '$outputDir/emotions.png',
+    ).writeAsBytesSync(bytes.buffer.asUint8List());
   });
 
   test('renders the same species under several palettes', () async {
@@ -169,30 +174,31 @@ void main() {
       if (base == null) continue;
 
       for (var column = 0; column < palettes.length; column++) {
-        final scene = applyPalette(
-          base,
-          column == 0 ? null : palettes[column],
-        );
+        final scene = applyPalette(base, column == 0 ? null : palettes[column]);
         final geometry = buildAvatarGeometry(scene);
 
         canvas.save();
         canvas.translate(column * cell, row * cell);
         canvas.clipRect(const Rect.fromLTWH(0, 0, cell, cell));
-        AvatarScenePainter(geometry: geometry, scene: scene)
-            .paint(canvas, const Size(cell, cell));
+        AvatarScenePainter(
+          geometry: geometry,
+          scene: scene,
+        ).paint(canvas, const Size(cell, cell));
         canvas.restore();
       }
     }
 
     final image = await recorder.endRecording().toImage(
-          (cell * palettes.length).round(),
-          (cell * species.length).round(),
-        );
+      (cell * palettes.length).round(),
+      (cell * species.length).round(),
+    );
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     if (bytes == null) return;
 
     Directory(outputDir).createSync(recursive: true);
-    File('$outputDir/palettes.png').writeAsBytesSync(bytes.buffer.asUint8List());
+    File(
+      '$outputDir/palettes.png',
+    ).writeAsBytesSync(bytes.buffer.asUint8List());
   });
 
   test('renders each style control at both ends of its range', () async {
@@ -271,16 +277,18 @@ void main() {
         canvas.save();
         canvas.translate(column * cell, row * cell);
         canvas.clipRect(const Rect.fromLTWH(0, 0, cell, cell));
-        AvatarScenePainter(geometry: geometry, scene: scene)
-            .paint(canvas, const Size(cell, cell));
+        AvatarScenePainter(
+          geometry: geometry,
+          scene: scene,
+        ).paint(canvas, const Size(cell, cell));
         canvas.restore();
       }
     }
 
     final image = await recorder.endRecording().toImage(
-          (cell * 5).round(),
-          (cell * rows.length).round(),
-        );
+      (cell * 5).round(),
+      (cell * rows.length).round(),
+    );
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     if (bytes == null) return;
 

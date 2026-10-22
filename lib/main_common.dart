@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 
+import 'package:breakmate/core/services/daily_reset_service.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -634,6 +635,7 @@ void mainCommon(FlavorConfig config) async {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
             sl<TimerEngine>().handleSystemWake();
+            sl<DailyResetService>().onSystemWake();
           } else if (call.method == 'onAvatarSaved') {
             final urlParams = call.arguments?['urlParams'] as String?;
             if (urlParams != null &&

@@ -55,7 +55,9 @@ void main() {
   test('computes the correct share of tracked time spent focused', () {
     withClock(Clock.fixed(DateTime(2026, 9, 6)), () {
       final usageService = AppUsageService(storage: StorageService());
-      final focusSessionService = FocusSessionService(storage: StorageService());
+      final focusSessionService = FocusSessionService(
+        storage: StorageService(),
+      );
       final today = DateTime(2026, 9, 6);
       final dateKey = '2026-09-06';
 

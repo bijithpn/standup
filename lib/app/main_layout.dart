@@ -76,9 +76,9 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Intelligent Detection',
     ),
     _NavItem(
-      label: AppStrings.navExercises,
-      icon: CupertinoIcons.person_crop_circle,
-      section: 'Exercises',
+      label: 'Calendar Sync',
+      icon: CupertinoIcons.calendar,
+      section: 'Calendar Sync',
     ),
     _NavItem(
       label: AppStrings.navNotifications,
@@ -162,11 +162,22 @@ class _MainLayoutState extends State<MainLayout> {
 
   List<_NavItem> get _allItems => [..._mainNavItems, ..._bottomNavItems];
 
+  /// Sections that were merged into another screen; saved or deep-linked
+  /// names keep working.
+  static const Map<String, String> _legacySections = {
+    'Exercises': 'Wellness Library',
+  };
+
+  String _canonicalSection(String section) =>
+      _legacySections[section] ?? section;
+
   @override
   void initState() {
     super.initState();
     _navigationService = sl<AppNavigationService>();
-    final currentSection = _navigationService.selectedSection.value;
+    final currentSection = _canonicalSection(
+      _navigationService.selectedSection.value,
+    );
     final initialIndex = _allItems.indexWhere((item) => item.section == currentSection);
     if (initialIndex != -1) {
       _pageIndex = initialIndex;
@@ -183,7 +194,9 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _handleExternalNavigation() {
-    final section = _navigationService.selectedSection.value;
+    final section = _canonicalSection(
+      _navigationService.selectedSection.value,
+    );
     final index = _allItems.indexWhere((item) => item.section == section);
     if (index != -1 && index != _pageIndex && mounted) {
       setState(() => _pageIndex = index);
@@ -423,8 +436,8 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Breaks & Profiles');
       case 'Intelligent Detection':
         return const SettingsPage(section: 'Intelligent Detection');
-      case 'Exercises':
-        return const SettingsPage(section: 'Exercises');
+      case 'Calendar Sync':
+        return const SettingsPage(section: 'Calendar Sync');
       case 'Notifications':
         return const SettingsPage(section: 'Notifications');
       case 'Companion':

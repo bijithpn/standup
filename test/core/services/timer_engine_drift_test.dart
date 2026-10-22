@@ -20,6 +20,7 @@ import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 class MockCalendarService extends Mock implements CalendarService {}
+
 class MockSmartDetectionService extends Mock implements SmartDetectionService {}
 
 class FakeStorageService implements StorageService {
@@ -71,6 +72,7 @@ class FakeStorageService implements StorageService {
     _data[key] = value;
     return true;
   }
+
   @override
   int getInt(String key, {int defaultValue = 0}) =>
       _data[key] as int? ?? defaultValue;
@@ -79,6 +81,7 @@ class FakeStorageService implements StorageService {
     _data[key] = value;
     return true;
   }
+
   @override
   bool getBool(String key, {bool defaultValue = false}) =>
       _data[key] as bool? ?? defaultValue;
@@ -87,6 +90,7 @@ class FakeStorageService implements StorageService {
     _data[key] = value;
     return true;
   }
+
   @override
   String getString(String key, {String defaultValue = ''}) =>
       _data[key] as String? ?? defaultValue;
@@ -95,6 +99,7 @@ class FakeStorageService implements StorageService {
     _data[key] = value;
     return true;
   }
+
   @override
   double getDouble(String key, {double defaultValue = 0.0}) =>
       _data[key] as double? ?? defaultValue;
@@ -103,6 +108,7 @@ class FakeStorageService implements StorageService {
     _data.remove(key);
     return true;
   }
+
   Future<bool> clear() async {
     _data.clear();
     return true;
@@ -139,54 +145,66 @@ void main() {
   });
 
   group('TimerEngine OS Drift / Sleep Delta tests', () {
-    test('TimerEngine handles long system clock sleep drift by resetting to idle', () {
-      fakeAsync((async) {
-        final engine = TimerEngine(
-          settingsRepository: settingsRepo,
-          smartDetectionService: mockDetection,
-          calendarService: mockCalendar,
-          eventBus: eventBus,
-        );
+    test(
+      'TimerEngine handles long system clock sleep drift by resetting to idle',
+      () {
+        fakeAsync((async) {
+          final engine = TimerEngine(
+            settingsRepository: settingsRepo,
+            smartDetectionService: mockDetection,
+            calendarService: mockCalendar,
+            eventBus: eventBus,
+          );
 
-        engine.startTimers();
-        expect(engine.state, equals(TimerState.running));
-
-        async.elapse(const Duration(minutes: 5));
-        expect(engine.workElapsed.inMinutes, equals(5));
-
-        engine.handleSystemSleep();
-        
-        withClock(Clock.fixed(clock.now().add(const Duration(minutes: 30))), () {
-          engine.handleSystemWake();
-          expect(engine.state, equals(TimerState.idle));
-          expect(engine.workElapsed, equals(Duration.zero));
-        });
-      });
-    });
-
-    test('TimerEngine handles short system clock sleep drift by resuming to running', () {
-      fakeAsync((async) {
-        final engine = TimerEngine(
-          settingsRepository: settingsRepo,
-          smartDetectionService: mockDetection,
-          calendarService: mockCalendar,
-          eventBus: eventBus,
-        );
-
-        engine.startTimers();
-        expect(engine.state, equals(TimerState.running));
-
-        async.elapse(const Duration(minutes: 5));
-        expect(engine.workElapsed.inMinutes, equals(5));
-
-        engine.handleSystemSleep();
-        
-        withClock(Clock.fixed(clock.now().add(const Duration(minutes: 10))), () {
-          engine.handleSystemWake();
+          engine.startTimers();
           expect(engine.state, equals(TimerState.running));
+
+          async.elapse(const Duration(minutes: 5));
           expect(engine.workElapsed.inMinutes, equals(5));
+
+          engine.handleSystemSleep();
+
+          withClock(
+            Clock.fixed(clock.now().add(const Duration(minutes: 30))),
+            () {
+              engine.handleSystemWake();
+              expect(engine.state, equals(TimerState.idle));
+              expect(engine.workElapsed, equals(Duration.zero));
+            },
+          );
         });
-      });
-    });
+      },
+    );
+
+    test(
+      'TimerEngine handles short system clock sleep drift by resuming to running',
+      () {
+        fakeAsync((async) {
+          final engine = TimerEngine(
+            settingsRepository: settingsRepo,
+            smartDetectionService: mockDetection,
+            calendarService: mockCalendar,
+            eventBus: eventBus,
+          );
+
+          engine.startTimers();
+          expect(engine.state, equals(TimerState.running));
+
+          async.elapse(const Duration(minutes: 5));
+          expect(engine.workElapsed.inMinutes, equals(5));
+
+          engine.handleSystemSleep();
+
+          withClock(
+            Clock.fixed(clock.now().add(const Duration(minutes: 10))),
+            () {
+              engine.handleSystemWake();
+              expect(engine.state, equals(TimerState.running));
+              expect(engine.workElapsed.inMinutes, equals(5));
+            },
+          );
+        });
+      },
+    );
   });
 }

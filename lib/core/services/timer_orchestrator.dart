@@ -279,7 +279,8 @@ class TimerOrchestrator {
         'overlayType': 'quickReminder',
         'reminderType': event.reminderType,
         'durationSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
-        'remainingSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
+        'remainingSeconds':
+            AppConstants.healthReminderDismissDuration.inSeconds,
         // Computed here (main engine) because the overlay's own Flutter
         // isolate doesn't have SettingsRepository or the detection
         // services registered — see `OverlayWindowConfig.allowFullPoster`.

@@ -17,7 +17,10 @@ void main() {
     });
 
     test('coding tip mentions posture', () {
-      expect(usageTip(AppCategory.coding, 120).toLowerCase(), contains('posture'));
+      expect(
+        usageTip(AppCategory.coding, 120).toLowerCase(),
+        contains('posture'),
+      );
     });
   });
 

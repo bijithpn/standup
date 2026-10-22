@@ -83,41 +83,47 @@ void main() {
   });
 
   group('Blobatar Rename Redirection', () {
-    test('requestOpenBlobatarNameDialog sets pending flag and increments notifier', () {
-      int count = 0;
-      controller.openBlobatarNameDialogNotifier.addListener(() {
-        count++;
-      });
+    test(
+      'requestOpenBlobatarNameDialog sets pending flag and increments notifier',
+      () {
+        int count = 0;
+        controller.openBlobatarNameDialogNotifier.addListener(() {
+          count++;
+        });
 
-      expect(controller.consumePendingBlobatarNameDialogRequest(), isFalse);
+        expect(controller.consumePendingBlobatarNameDialogRequest(), isFalse);
 
-      controller.requestOpenBlobatarNameDialog();
+        controller.requestOpenBlobatarNameDialog();
 
-      expect(count, equals(1));
-      expect(controller.consumePendingBlobatarNameDialogRequest(), isTrue);
-      // Second call returns false since it was already consumed
-      expect(controller.consumePendingBlobatarNameDialogRequest(), isFalse);
-    });
+        expect(count, equals(1));
+        expect(controller.consumePendingBlobatarNameDialogRequest(), isTrue);
+        // Second call returns false since it was already consumed
+        expect(controller.consumePendingBlobatarNameDialogRequest(), isFalse);
+      },
+    );
 
-    test('receiving openBlobatarEditor CompanionInteractionEvent requests dialog open', () async {
-      int count = 0;
-      controller.openBlobatarNameDialogNotifier.addListener(() {
-        count++;
-      });
+    test(
+      'receiving openBlobatarEditor CompanionInteractionEvent requests dialog open',
+      () async {
+        int count = 0;
+        controller.openBlobatarNameDialogNotifier.addListener(() {
+          count++;
+        });
 
-      eventBus.emit(
-        CompanionInteractionEvent(
-          interactionType: 'openBlobatarEditor',
-          metadata: {'petName': 'Blobby'},
-        ),
-      );
+        eventBus.emit(
+          CompanionInteractionEvent(
+            interactionType: 'openBlobatarEditor',
+            metadata: {'petName': 'Blobby'},
+          ),
+        );
 
-      // Wait a microtask for stream event processing
-      await Future.delayed(Duration.zero);
+        // Wait a microtask for stream event processing
+        await Future.delayed(Duration.zero);
 
-      expect(count, equals(1));
-      expect(controller.consumePendingBlobatarNameDialogRequest(), isTrue);
-      expect(controller.consumePendingBlobatarNameDialogRequest(), isFalse);
-    });
+        expect(count, equals(1));
+        expect(controller.consumePendingBlobatarNameDialogRequest(), isTrue);
+        expect(controller.consumePendingBlobatarNameDialogRequest(), isFalse);
+      },
+    );
   });
 }

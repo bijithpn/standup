@@ -99,7 +99,9 @@ void main() {
       expect(explanation.stateSummary, contains('smart-detection rule'));
       expect(
         explanation.reasons,
-        contains('A presentation or screen share is active, so the timer is paused.'),
+        contains(
+          'A presentation or screen share is active, so the timer is paused.',
+        ),
       );
     });
 

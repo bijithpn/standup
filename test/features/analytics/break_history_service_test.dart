@@ -36,9 +36,15 @@ void main() {
       final service = BreakHistoryService(storage: StorageService());
       final base = DateTime(2026, 8, 31, 9, 0);
 
-      service.recordBreak(time: base.add(const Duration(hours: 2)), completed: true);
+      service.recordBreak(
+        time: base.add(const Duration(hours: 2)),
+        completed: true,
+      );
       service.recordBreak(time: base, completed: false);
-      service.recordBreak(time: base.add(const Duration(days: 5)), completed: true);
+      service.recordBreak(
+        time: base.add(const Duration(days: 5)),
+        completed: true,
+      );
 
       final result = service.eventsBetween(
         base,
@@ -53,10 +59,9 @@ void main() {
   test('persists events across a fresh service instance', () {
     withClock(testClock, () {
       final storage = StorageService();
-      BreakHistoryService(storage: storage).recordBreak(
-        time: DateTime(2026, 8, 31, 9, 0),
-        completed: true,
-      );
+      BreakHistoryService(
+        storage: storage,
+      ).recordBreak(time: DateTime(2026, 8, 31, 9, 0), completed: true);
 
       final reloaded = BreakHistoryService(storage: storage);
       expect(reloaded.events, hasLength(1));

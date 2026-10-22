@@ -12,6 +12,7 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/services/pet_registry_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/core/services/daily_reset_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/analytics/app_usage_tracker.dart';
 import 'package:breakmate/features/analytics/weekly_digest_service.dart';
@@ -69,6 +70,7 @@ class ServiceBootstrapper {
     await Future.wait([trayManager.init(), companionOverlayController.init()]);
 
     sl<TimerOrchestrator>().initialize();
+    sl<DailyResetService>().start();
     sl<BreakController>().initialize();
 
     // Pre-cache tray animation frames on startup to avoid frame drops on macOS Menubar updates.

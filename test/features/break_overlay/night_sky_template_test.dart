@@ -35,51 +35,53 @@ void main() {
     expect(find.text('Skip'), findsNothing); // onSkip is null
   });
 
-  testWidgets('crossfades to the ending-state copy and Complete Session button', (
-    tester,
-  ) async {
-    var completed = false;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: NightSkyTemplate(
-            breakInfo: testBreakInfo,
-            settings: testSettings,
-            remainingSeconds: 0,
-            totalSeconds: 300,
-            onSkip: () => completed = true,
+  testWidgets(
+    'crossfades to the ending-state copy and Complete Session button',
+    (tester) async {
+      var completed = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NightSkyTemplate(
+              breakInfo: testBreakInfo,
+              settings: testSettings,
+              remainingSeconds: 0,
+              totalSeconds: 300,
+              onSkip: () => completed = true,
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 500));
+      );
+      await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Recharged & Ready'), findsOneWidget);
-    expect(find.text('Time to Switch Off'), findsNothing);
-    expect(find.text('Complete Session'), findsOneWidget);
+      expect(find.text('Recharged & Ready'), findsOneWidget);
+      expect(find.text('Time to Switch Off'), findsNothing);
+      expect(find.text('Complete Session'), findsOneWidget);
 
-    await tester.tap(find.text('Complete Session'));
-    expect(completed, isTrue);
-  });
+      await tester.tap(find.text('Complete Session'));
+      expect(completed, isTrue);
+    },
+  );
 
-  testWidgets('shows a Skip pill mid-break when onSkip is provided and not strict', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: NightSkyTemplate(
-            breakInfo: testBreakInfo,
-            settings: testSettings,
-            remainingSeconds: 200,
-            totalSeconds: 300,
-            onSkip: () {},
+  testWidgets(
+    'shows a Skip pill mid-break when onSkip is provided and not strict',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: NightSkyTemplate(
+              breakInfo: testBreakInfo,
+              settings: testSettings,
+              remainingSeconds: 200,
+              totalSeconds: 300,
+              onSkip: () {},
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 100));
+      );
+      await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Skip'), findsOneWidget);
-  });
+      expect(find.text('Skip'), findsOneWidget);
+    },
+  );
 }

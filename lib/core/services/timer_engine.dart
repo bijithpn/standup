@@ -839,6 +839,50 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Starts a fresh logical day: clears the day's accumulated work, the clock-out
+  /// latch and the in-progress focus cycle so no countdown from the previous
+  /// day survives. The timer's mode is preserved (a manual pause stays paused;
+  /// a running timer keeps running with a freshly computed deadline).
+  ///
+  /// An active break is never touched — the caller defers the reset until the
+  /// break ends so it cannot be completed twice or restarted.
+  /// Returns false when the reset was deferred.
+  bool resetForNewDay() {
+    if (state == TimerState.breakActive) return false;
+    _stateData.totalWorkToday = Duration.zero;
+    _stateData.workElapsed = Duration.zero;
+    _stateData.postureElapsedSeconds = 0;
+    _stateData.eyeBlinkElapsedSeconds = 0;
+    _postureTargetSeconds = null;
+    _eyeBlinkTargetSeconds = null;
+    _stateData.isPreBreak = false;
+    _stateData.completedShortBreaksInCycle = 0;
+    _stateData.clockOutTriggered = false;
+    _stateData.longBreakWindowStartedAt = clock.now();
+    _stateData.lastTickTime = clock.now();
+    if (state == TimerState.running) {
+      _stateData.workEndTime = clock.now().add(timeUntilNextShortBreak);
+    } else {
+      _stateData.workEndTime = null;
+    }
+    _stateData.countdownSeconds = timeUntilNextShortBreak.inSeconds;
+    syncNotifiersFromState();
+    _emit(
+      TimerStateChangedEvent(
+        state: state == TimerState.running
+            ? TimerStateEvent.running
+            : state == TimerState.idle
+            ? TimerStateEvent.idle
+            : TimerStateEvent.paused,
+        countdownSeconds: _stateData.countdownSeconds,
+        workElapsedSeconds: 0,
+        targetEndTime: targetEndTime,
+      ),
+    );
+    notifyListeners();
+    return true;
+  }
+
   void triggerBreakNow({bool isLong = false}) {
     if (isLong) {
       _stateData.longBreakWindowStartedAt = clock.now().subtract(

@@ -79,34 +79,50 @@ void main() {
     });
   });
 
-  test('sessionsForPeriod filters by today/week/month like AppUsageService', () {
-    withClock(testClock, () {
-      final service = FocusSessionService(storage: StorageService());
-      final now = DateTime(2026, 8, 31, 12, 0);
+  test(
+    'sessionsForPeriod filters by today/week/month like AppUsageService',
+    () {
+      withClock(testClock, () {
+        final service = FocusSessionService(storage: StorageService());
+        final now = DateTime(2026, 8, 31, 12, 0);
 
-      service.recordSession(
-        FocusSession(category: AppCategory.coding, start: now, durationSeconds: 900),
-      );
-      service.recordSession(
-        FocusSession(
-          category: AppCategory.writing,
-          start: now.subtract(const Duration(days: 3)),
-          durationSeconds: 900,
-        ),
-      );
-      service.recordSession(
-        FocusSession(
-          category: AppCategory.design,
-          start: now.subtract(const Duration(days: 40)),
-          durationSeconds: 900,
-        ),
-      );
+        service.recordSession(
+          FocusSession(
+            category: AppCategory.coding,
+            start: now,
+            durationSeconds: 900,
+          ),
+        );
+        service.recordSession(
+          FocusSession(
+            category: AppCategory.writing,
+            start: now.subtract(const Duration(days: 3)),
+            durationSeconds: 900,
+          ),
+        );
+        service.recordSession(
+          FocusSession(
+            category: AppCategory.design,
+            start: now.subtract(const Duration(days: 40)),
+            durationSeconds: 900,
+          ),
+        );
 
-      expect(service.sessionsForPeriod(UsagePeriod.today, now: now), hasLength(1));
-      expect(service.sessionsForPeriod(UsagePeriod.week, now: now), hasLength(2));
-      expect(service.sessionsForPeriod(UsagePeriod.month, now: now), hasLength(2));
-    });
-  });
+        expect(
+          service.sessionsForPeriod(UsagePeriod.today, now: now),
+          hasLength(1),
+        );
+        expect(
+          service.sessionsForPeriod(UsagePeriod.week, now: now),
+          hasLength(2),
+        );
+        expect(
+          service.sessionsForPeriod(UsagePeriod.month, now: now),
+          hasLength(2),
+        );
+      });
+    },
+  );
 
   test('sessionsBetween returns sessions overlapping a window, sorted', () {
     withClock(testClock, () {
@@ -114,7 +130,11 @@ void main() {
       final start = DateTime(2026, 8, 31, 9, 0);
 
       service.recordSession(
-        FocusSession(category: AppCategory.coding, start: start, durationSeconds: 600),
+        FocusSession(
+          category: AppCategory.coding,
+          start: start,
+          durationSeconds: 600,
+        ),
       );
       service.recordSession(
         FocusSession(

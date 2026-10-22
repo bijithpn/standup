@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 
 import 'package:breakmate/core/events/app_events.dart';
@@ -211,15 +212,16 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  void _pickRandomExercise() {
-    final exercises = _settingsRepo
-        .getExercises()
-        .where((e) => e.enabled)
-        .toList();
-    if (exercises.isEmpty) return;
+  String? _currentExerciseId;
 
-    final random = Random();
-    final exercise = exercises[random.nextInt(exercises.length)];
+  void _pickRandomExercise() {
+    final exercise = ExerciseModel.pickForBreak(
+      _settingsRepo.getExercises(),
+      Random(),
+      avoidId: _currentExerciseId,
+    );
+    if (exercise == null) return;
+    _currentExerciseId = exercise.id;
     _currentExerciseTitle = exercise.title;
     _currentExerciseInstructions = exercise.instructions;
   }
