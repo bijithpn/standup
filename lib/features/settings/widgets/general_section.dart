@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/app_dropdown.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -28,9 +29,7 @@ class GeneralSection extends StatelessWidget {
         buildCard([
           _buildLaunchAtStartup(context),
           divider(),
-          _buildMenuStyle(),
-          divider(),
-          _buildMenuBarIcon(),
+          _buildMenuBarDisplay(),
           // divider(),
           // _buildStrictMode(),
           divider(),
@@ -95,44 +94,60 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuStyle() {
+  static const _menuBarModes = {
+    'companion': 'Companion (animated pet)',
+    'progress': 'Progress ring',
+    'focusdot': 'Focus dot',
+    'countdown': 'Countdown timer',
+    'minimal': 'Icon only',
+  };
+
+  String get _currentMenuBarMode {
+    if (settings.trayIconStyle == 'companion' ||
+        settings.trayIconStyle == 'cat') {
+      return 'companion';
+    }
+    return switch (settings.menuBarStyle) {
+      'progress' => 'progress',
+      'focusdot' => 'focusdot',
+      'countdown' => 'countdown',
+      _ => 'minimal',
+    };
+  }
+
+  Widget _buildMenuBarDisplay() {
     return buildListRow(
-      'Menu Style',
-      'Countdown display in the menu bar',
+      'Menu Bar Display',
+      'What the menu bar shows while your next break approaches',
       null,
       CupertinoIcons.macwindow,
       null,
-      trailing: inlineDropdown(
-        settings.menuBarStyle,
-        ['countdown', 'progress', 'icon', 'focusdot'],
-        (v) {
-          final style = v ?? 'countdown';
-          onSave(settings.copyWith(menuBarStyle: style));
-          sl<TimerEngine>().updateMenuStyle(style);
+      trailing: AppDropdown<String>(
+        value: _currentMenuBarMode,
+        onChanged: (v) {
+          final mode = v ?? 'companion';
+          final iconStyle = mode == 'companion' ? 'companion' : 'default';
+          final menuStyle = switch (mode) {
+            'companion' => 'companion',
+            'minimal' => 'icon',
+            _ => mode,
+          };
+          onSave(
+            settings.copyWith(
+              trayIconStyle: iconStyle,
+              menuBarStyle: menuStyle,
+            ),
+          );
+          sl<TrayManagerService>()
+            ..setIconModeFromStyle(iconStyle)
+            ..setMenuStyle(menuStyle)
+            ..triggerActionAnimation();
+          sl<TimerEngine>().updateMenuStyle(menuStyle);
         },
-      ),
-    );
-  }
-
-  Widget _buildMenuBarIcon() {
-    final currentStyle = settings.trayIconStyle == 'cat'
-        ? 'companion'
-        : settings.trayIconStyle;
-    return buildListRow(
-      'Menu Bar Icon',
-      'Choose default, companion, minimal, or countdown-only',
-      null,
-      CupertinoIcons.circle_grid_hex,
-      null,
-      trailing: inlineDropdown(
-        currentStyle,
-        ['default', 'companion', 'minimal', 'countdown'],
-        (v) {
-          final style = v ?? 'companion';
-          onSave(settings.copyWith(trayIconStyle: style));
-          sl<TimerEngine>().updateMenuStyle(settings.menuBarStyle);
-          sl<TrayManagerService>().triggerActionAnimation();
-        },
+        items: [
+          for (final e in _menuBarModes.entries)
+            AppDropdownItem<String>(value: e.key, label: e.value),
+        ],
       ),
     );
   }

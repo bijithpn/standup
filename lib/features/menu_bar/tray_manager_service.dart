@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -18,7 +20,9 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/companion/domain/animation_row_config.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
+import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'controllers/menu_bar_controller.dart';
+import 'tray_avatar_renderer.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
 
 enum TrayIconMode { defaultIcon, companion, minimal, countdownOnly }
@@ -54,7 +58,27 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
   }
 
+  // Menu bar style ('countdown', 'progress', 'icon', 'focusdot') and the
+  // animated, drawn icon used by 'progress' / 'focusdot'.
+  String _menuStyle = 'countdown';
+  double _progress = 0;
+  double _shownProgress = 0;
+  double _pulse = 0;
+  Timer? _progressAnimTimer;
+  Timer? _pulseTimer;
+  bool _onBreak = false;
+  String? _lastDrawnKey;
+  final Map<String, Uint8List> _drawnCache = {};
+
+  bool get _usesDrawnIcon =>
+      !Platform.isWindows &&
+      (_menuStyle == 'progress' ||
+          _menuStyle == 'focusdot' ||
+          (_menuStyle == 'icon' && _iconMode != TrayIconMode.companion));
+
   final Map<PetAnimationState, List<String>> _stateFramePaths = {};
+  Map<PetAnimationState, List<Uint8List>>? _avatarFrames;
+  String? _lastAvatarKey;
   String? _defaultIconPath;
   String? _lastAppliedIconPath;
   String _currentTitle = '';
@@ -66,6 +90,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final settingsRepo = _settingsRepo;
     if (settingsRepo != null) {
       setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
+      _menuStyle = settingsRepo.currentSettings.menuBarStyle;
     }
 
     final supportDir = await getApplicationSupportDirectory();
@@ -144,6 +169,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   Future<void> _extractIcons() async {
     final supportDir = await getApplicationSupportDirectory();
 
+    _baseIcon = null;
     final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
     try {
       _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
@@ -170,6 +196,22 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     final theme = PetTheme.getTheme(selectedThemeId);
 
     _stateFramePaths.clear();
+    _avatarFrames = null;
+    _lastAvatarKey = null;
+    if (theme.isAvatar) {
+      try {
+        AvatarDefinition? def = theme.avatarDefinition;
+        final raw = settingsRepo?.currentSettings.companionAvatarDefinition;
+        if (raw != null && raw.isNotEmpty) {
+          def = AvatarDefinition.fromJson(
+            jsonDecode(raw) as Map<String, dynamic>,
+          );
+        }
+        if (def != null) _avatarFrames = await TrayAvatarRenderer.render(def);
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
+    }
 
     for (final state in [
       PetAnimationState.idle,
@@ -264,11 +306,28 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       await _applyWindowsIcon();
       return;
     }
+    if (_usesDrawnIcon) {
+      await _applyDrawnIcon();
+      return;
+    }
     try {
       String? path;
       switch (_iconMode) {
         case TrayIconMode.companion:
           final activeState = _determineActiveState();
+          final avatar = _avatarFrames?[activeState];
+          if (avatar != null && avatar.isNotEmpty) {
+            final idx = _currentFrameIndex % avatar.length;
+            final key = '${activeState.name}:$idx';
+            if (key != _lastAvatarKey) {
+              _lastAvatarKey = key;
+              await _setTrayIconBytes(avatar[idx]);
+              if (_currentTitle.isNotEmpty && Platform.isMacOS) {
+                await trayManager.setTitle(_currentTitle);
+              }
+            }
+            return;
+          }
           final paths = _stateFramePaths[activeState] ?? [];
           if (paths.isNotEmpty) {
             final safeIndex = _currentFrameIndex % paths.length;
@@ -391,7 +450,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
 
     // Clamp to a safe minimum of 120ms to protect macOS system tray resource consumption
-    final ms = (stepTime * 1000).toInt().clamp(120, 1000);
+    final ms = _avatarFrames != null
+        ? switch (_determineActiveState()) {
+            PetAnimationState.sleep => 300,
+            PetAnimationState.excited => 110,
+            _ => 150,
+          }
+        : (stepTime * 1000).toInt().clamp(120, 1000);
     _animTimer = Timer.periodic(Duration(milliseconds: ms), (_) {
       _advanceFrame();
     });
@@ -399,12 +464,15 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   void _advanceFrame() {
     final activeState = _determineActiveState();
-    final paths = _stateFramePaths[activeState] ?? [];
-    if (paths.isEmpty) {
+    final count =
+        _avatarFrames?[activeState]?.length ??
+        _stateFramePaths[activeState]?.length ??
+        0;
+    if (count == 0) {
       _applyIcon();
       return;
     }
-    _currentFrameIndex = (_currentFrameIndex + 1) % paths.length;
+    _currentFrameIndex = (_currentFrameIndex + 1) % count;
     _applyIcon();
   }
 
@@ -433,8 +501,284 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     });
   }
 
+  /// Switches the menu bar style and plays a short sweep-in so the change is
+  /// visible immediately.
+  void setMenuStyle(String style) {
+    if (_menuStyle == style) return;
+    _menuStyle = style;
+    if (style != 'countdown') unawaited(setTrayTitle(''));
+    _lastDrawnKey = null;
+    _lastAvatarKey = null;
+    _lastAppliedIconPath = null;
+    _progressAnimTimer?.cancel();
+    _pulseTimer?.cancel();
+    if (!_usesDrawnIcon) {
+      _applyIcon();
+      return;
+    }
+    // Slow breathing pulse keeps the icon alive between progress updates.
+    _pulseTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
+      _pulse = (_pulse + 1 / 24) % 1.0;
+      if (_progressAnimTimer?.isActive ?? false) return;
+      _applyIcon();
+    });
+    _shownProgress = 0;
+    _animateProgressTo(_progress, const Duration(milliseconds: 1800));
+  }
+
+  /// [fraction] is 0..1 of the current work interval (or break) elapsed.
+  void updateProgress(double fraction, {bool onBreak = false}) {
+    _progress = fraction.clamp(0.0, 1.0);
+    if (_onBreak != onBreak) {
+      _onBreak = onBreak;
+      _lastDrawnKey = null;
+    }
+    if (!_usesDrawnIcon) return;
+    if (_progressAnimTimer?.isActive ?? false) return;
+    _animateProgressTo(_progress, const Duration(milliseconds: 900));
+  }
+
+  void _animateProgressTo(double target, Duration duration) {
+    _progressAnimTimer?.cancel();
+    final from = _shownProgress;
+    if ((target - from).abs() < 0.005 && _menuStyle == 'progress') {
+      _shownProgress = target;
+      _applyIcon();
+      return;
+    }
+    const tick = Duration(milliseconds: 60);
+    final steps = math.max(1, duration.inMilliseconds ~/ tick.inMilliseconds);
+    var i = 0;
+    _progressAnimTimer = Timer.periodic(tick, (t) {
+      i++;
+      final eased = Curves.easeInOutCubic.transform(
+        (i / steps).clamp(0.0, 1.0),
+      );
+      _shownProgress = from + (target - from) * eased;
+      _applyIcon();
+      if (i >= steps) t.cancel();
+    });
+  }
+
+  /// Calm green early on, amber as the break nears, red when it is due.
+  /// While a break is running the icon turns blue.
+  Color _accent(double progress) {
+    if (_onBreak) return const Color(0xFF4DA3FF);
+    if (progress < 0.5) {
+      return Color.lerp(
+        const Color(0xFF34C759),
+        const Color(0xFFFFCC00),
+        progress / 0.5,
+      )!;
+    }
+    return Color.lerp(
+      const Color(0xFFFFCC00),
+      const Color(0xFFFF453A),
+      (progress - 0.5) / 0.5,
+    )!;
+  }
+
+  Future<void> _applyDrawnIcon() async {
+    final q = (_shownProgress * 120).round();
+    final pulseStep = (_pulse * 24).floor();
+    final key = '$_menuStyle:$q:$pulseStep:$_onBreak';
+    if (key == _lastDrawnKey) return;
+    _lastDrawnKey = key;
+    try {
+      final bytes = _drawnCache[key] ??= await _renderIcon(
+        q / 120,
+        pulseStep / 24,
+      );
+      if (_drawnCache.length > 600) _drawnCache.clear();
+      await _setTrayIconBytes(bytes);
+      if (_currentTitle.isNotEmpty && Platform.isMacOS) {
+        await trayManager.setTitle(_currentTitle);
+      }
+    } catch (e) {
+      _logger.error('Failed to draw tray icon: $e');
+    }
+  }
+
+  ui.Image? _baseIcon;
+
+  Future<ui.Image?> _loadBaseIcon() async {
+    if (_baseIcon != null) return _baseIcon;
+    final path = _defaultIconPath;
+    if (path == null) return null;
+    try {
+      final bytes = path.startsWith('assets/')
+          ? (await rootBundle.load(path)).buffer.asUint8List()
+          : await File(path).readAsBytes();
+      final codec = await ui.instantiateImageCodec(bytes);
+      return _baseIcon = (await codec.getNextFrame()).image;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Uint8List> _renderIcon(double progress, double pulse) async {
+    const size = 36.0;
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, const Rect.fromLTWH(0, 0, size, size));
+    const center = Offset(size / 2, size / 2);
+    const white = Color(0xFFFFFFFF);
+    final color = _accent(progress);
+    // Smooth breathing factor 0..1..0 over one pulse cycle.
+    final breathe = (1 - math.cos(pulse * math.pi * 2)) / 2;
+    final urgent = _onBreak || progress > 0.9;
+
+    if (_menuStyle == 'icon') {
+      // Status-coloured badge with the app mark inside. Works on light and
+      // dark menu bars alike because the mark sits on a solid colour.
+      final badge = 30.0 + breathe * 2.5;
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromCenter(center: center, width: badge, height: badge),
+        const Radius.circular(9),
+      );
+      canvas.drawRRect(
+        rect.inflate(2),
+        Paint()
+          ..color = color.withValues(alpha: 0.25 + 0.2 * breathe)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+      );
+      canvas.drawRRect(
+        rect,
+        Paint()
+          ..shader = ui.Gradient.linear(
+            rect.outerRect.topLeft,
+            rect.outerRect.bottomRight,
+            [Color.lerp(color, white, 0.25)!, color],
+          ),
+      );
+      final base = await _loadBaseIcon();
+      if (base != null) {
+        final mark = badge * 0.64;
+        canvas.drawImageRect(
+          base,
+          Rect.fromLTWH(0, 0, base.width.toDouble(), base.height.toDouble()),
+          Rect.fromCenter(center: center, width: mark, height: mark),
+          Paint()
+            ..filterQuality = FilterQuality.high
+            ..colorFilter = const ColorFilter.mode(white, BlendMode.srcIn),
+        );
+      }
+    } else if (_menuStyle == 'progress') {
+      const stroke = 5.0;
+      const radius = 13.0;
+      final rect = Rect.fromCircle(center: center, radius: radius);
+      // Neutral track reads on both light and dark menu bars.
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke
+          ..color = const Color(0xFF8E8E93).withValues(alpha: 0.55),
+      );
+      final sweep = math.pi * 2 * math.max(progress, 0.02);
+      canvas.drawArc(
+        rect,
+        -math.pi / 2,
+        sweep,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke + 5
+          ..strokeCap = StrokeCap.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3)
+          ..color = color.withValues(alpha: 0.25 + 0.2 * breathe),
+      );
+      canvas.drawArc(
+        rect,
+        -math.pi / 2,
+        sweep,
+        false,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = stroke
+          ..strokeCap = StrokeCap.round
+          ..color = color,
+      );
+      // Centre dot, kept well inside the ring.
+      canvas.drawCircle(
+        center,
+        3 + breathe * (urgent ? 1.5 : 0.8),
+        Paint()..color = color,
+      );
+    } else {
+      // focusdot: a core, a clear gap, then ripples that fade outward.
+      final core = 5.0 + 3.0 * progress + breathe * (urgent ? 1.2 : 0.6);
+      const outer = 16.5;
+      // Faint resting ring at the edge so the gap is always visible.
+      canvas.drawCircle(
+        center,
+        outer,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.6
+          ..color = color.withValues(alpha: 0.35),
+      );
+      // One ripple travelling from just outside the core to the edge ring.
+      final t = Curves.easeOut.transform(pulse);
+      final rippleR = core + 4 + t * (outer - core - 6);
+      canvas.drawCircle(
+        center,
+        rippleR,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2
+          ..color = color.withValues(alpha: 0.7 * (1 - t)),
+      );
+      canvas.drawCircle(
+        center,
+        core + 1.5,
+        Paint()
+          ..color = color.withValues(alpha: 0.3)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
+      );
+      canvas.drawCircle(
+        center,
+        core,
+        Paint()
+          ..shader = ui.Gradient.radial(
+            center.translate(-core / 3, -core / 3),
+            core * 1.5,
+            [Color.lerp(color, white, 0.45)!, color],
+          ),
+      );
+    }
+
+    final image = await recorder.endRecording().toImage(
+      size.toInt(),
+      size.toInt(),
+    );
+    final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  }
+
+  Future<void> _setTrayIconBytes(Uint8List bytes) async {
+    if (Platform.isMacOS) {
+      await const MethodChannel('tray_manager').invokeMethod('setIcon', {
+        'id': 'bm_tray_${DateTime.now().millisecondsSinceEpoch}',
+        'iconPath': '',
+        'base64Icon': base64Encode(bytes),
+        'isTemplate': false,
+        'iconPosition': 'left',
+        'iconSize': 18,
+      });
+    } else {
+      final dir = await getApplicationSupportDirectory();
+      final file = File(p.join(dir.path, 'bm_tray_drawn.png'));
+      await file.writeAsBytes(bytes, flush: true);
+      await trayManager.setIcon(file.path, isTemplate: false);
+    }
+  }
+
   void setIconMode(TrayIconMode mode) {
     _iconMode = mode;
+    _lastAvatarKey = null;
+    _lastDrawnKey = null;
+    _lastAppliedIconPath = null;
     _animTimer?.cancel();
     if (mode == TrayIconMode.companion) {
       _currentFrameIndex = 0;
@@ -600,6 +944,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> setTrayTitle(String title) async {
+    // Only the countdown style shows text; focus dot / progress are icon-only.
+    if (_menuStyle != 'countdown') title = '';
     _currentTitle = title;
     try {
       if (Platform.isMacOS) {
@@ -657,6 +1003,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   @override
   void didChangePlatformBrightness() {
     _logger.info('Platform brightness changed, regenerating tray icons...');
+    _drawnCache.clear();
+    _lastDrawnKey = null;
     _extractIcons().then((_) {
       _applyIcon();
     });
@@ -675,6 +1023,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   void dispose() {
     _animTimer?.cancel();
+    _progressAnimTimer?.cancel();
+    _pulseTimer?.cancel();
     _timerEngine?.removeListener(_onTimerChanged);
     _breakController?.removeListener(_onTimerChanged);
     trayManager.removeListener(this);

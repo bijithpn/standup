@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:async';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
@@ -348,6 +349,16 @@ class TimerOrchestrator {
         ? 'Paused'
         : 'Next break';
     final tooltip = '$status in $mins:$secs';
+
+    final totalSecs = state == TimerState.breakActive
+        ? math.max(1, timerEngine.shortBreakDurationSeconds)
+        : math.max(1, timerEngine.shortBreakIntervalMinutes * 60);
+    trayManagerService.updateProgress(
+      state == TimerState.breakActive
+          ? 1 - (countdown / totalSecs)
+          : timerEngine.workElapsed.inSeconds / totalSecs,
+      onBreak: state == TimerState.breakActive,
+    );
 
     if (title != _lastTrayTitle) {
       _lastTrayTitle = title;

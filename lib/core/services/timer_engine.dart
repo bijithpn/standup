@@ -737,7 +737,7 @@ class TimerEngine extends ChangeNotifier {
   void updateMenuStyle(String style) {
     try {
       final tray = sl<TrayManagerService>();
-      tray.setIconModeFromStyle(style);
+      tray.setMenuStyle(style);
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }
