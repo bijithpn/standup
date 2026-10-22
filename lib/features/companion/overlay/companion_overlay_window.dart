@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:breakmate/core/ipc/ipc_maps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -81,9 +82,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
           final Map<dynamic, dynamic>? args =
               call.arguments as Map<dynamic, dynamic>?;
           if (args != null) {
-            _applySettings(
-              OverlayConfig.fromJson(Map<String, dynamic>.from(args)),
-            );
+            _applySettings(OverlayConfig.fromJson(stringKeyedMap(args)));
           }
           break;
       }
@@ -96,9 +95,7 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(
-          OverlayConfig.fromJson(Map<String, dynamic>.from(result)),
-        );
+        _applySettings(OverlayConfig.fromJson(stringKeyedMap(result)));
         EventBus.instance.emit(
           CompanionInteractionEvent(
             interactionType: 'init',

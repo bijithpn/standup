@@ -196,6 +196,9 @@ class CompanionOverlayController extends ChangeNotifier {
         final name = event.metadata?['petName']?.toString().trim();
         if (name == null || name.isEmpty) return;
         unawaited(changePetName(name));
+      case 'pipReady':
+        final ready = _pipReady;
+        if (ready != null && !ready.isCompleted) ready.complete();
       case 'keepOnScreen':
         final value = event.metadata?['value'];
         if (value is bool) unawaited(changeKeepOnScreen(value));
@@ -453,6 +456,9 @@ class CompanionOverlayController extends ChangeNotifier {
       debugPrint(
         '[CompanionOverlayController] Starting transition... needsShowOrToggle: $needsShowOrToggle, needsHide: $needsHide',
       );
+      // The transition owns the loader from here, including one the toggle
+      // raised before saving.
+      _loaderFromToggle = false;
       _isTransitioning = true;
       notifyListeners();
 
@@ -572,10 +578,22 @@ class CompanionOverlayController extends ChangeNotifier {
 
   Future<void> _showNativeCompanion() async {
     _isCompanionShown = true;
+    final ready = Completer<void>();
+    _pipReady = ready;
     await NativeBridge.showPipWindow(
       PipWindowArgs.fromMap(_companionPayload()),
     );
+    // The call returns once the window exists, but its engine is still
+    // starting. Hold the caller (and so the loader) until the companion has
+    // drawn its first frame, with a cap in case it never reports.
+    await ready.future.timeout(
+      const Duration(milliseconds: 2500),
+      onTimeout: () {},
+    );
+    if (identical(_pipReady, ready)) _pipReady = null;
   }
+
+  Completer<void>? _pipReady;
 
   String _getAvatarQueryParams() {
     final customParams = _settingsRepo.currentSettings.companionAvatarUrlParams;
@@ -956,12 +974,36 @@ class CompanionOverlayController extends ChangeNotifier {
   Future<void> toggleCompanion(bool enabled) async {
     if (_companionEnabled == enabled || _isTransitioning) return;
 
+    // Show the loader now. Saving settings and starting the companion's own
+    // engine both take a moment, and a switch that appears to do nothing for a
+    // second is worse than one that visibly works.
+    final showLoader = enabled && !_isTransitioning;
+    if (showLoader) {
+      _isTransitioning = true;
+      _loaderFromToggle = true;
+      notifyListeners();
+    }
+
     final updated = _settingsRepo.currentSettings.copyWith(
       companionEnabled: enabled,
       pipModeEnabled: true,
     );
-    await _settingsRepo.save(updated);
+    try {
+      await _settingsRepo.save(updated);
+    } finally {
+      // If the change did not lead to a transition of its own (nothing needed
+      // starting), nobody else will clear the loader.
+      if (_loaderFromToggle) {
+        _loaderFromToggle = false;
+        _isTransitioning = false;
+        notifyListeners();
+      }
+    }
   }
+
+  /// True while the loader was raised by [toggleCompanion] and no transition
+  /// has taken it over yet.
+  bool _loaderFromToggle = false;
 
   Future<void> changeTheme(String themeId) async {
     if (_companionPetTheme == themeId || _isTransitioning) return;

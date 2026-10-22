@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:breakmate/core/ipc/ipc_maps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -167,6 +168,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       unawaited(
         _channel.invokeMethod<void>('pipReady').catchError((Object _) {}),
       );
+      // And the app, so its loader can end when the companion is really there.
+      _report('pipReady');
     });
   }
 
@@ -195,7 +198,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     final args = call.arguments;
-    final map = args is Map ? Map<String, dynamic>.from(args) : null;
+    final map = args is Map ? stringKeyedMap(args) : null;
 
     switch (call.method) {
       case 'syncPiPSettings':
@@ -250,9 +253,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(
-          OverlayConfig.fromJson(Map<String, dynamic>.from(result)),
-        );
+        _applySettings(OverlayConfig.fromJson(stringKeyedMap(result)));
       }
     } catch (e, st) {
       ErrorHandler().handleError(e, st);

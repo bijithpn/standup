@@ -437,43 +437,49 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 child: AbsorbPointer(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.15),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceElevated.withValues(
-                            alpha: 0.9,
+                    // Near the top, where the switch that was just pressed is,
+                    // rather than the middle of a page that may be scrolled.
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 120),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.border),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceElevated.withValues(
+                              alpha: 0.9,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CupertinoActivityIndicator(
-                              color: AppTheme.accentColor,
-                              radius: 10,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Configuring Companion...',
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.border),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CupertinoActivityIndicator(
+                                color: AppTheme.accentColor,
+                                radius: 10,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Starting your companion...',
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -487,8 +493,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   Widget _buildHeroHeader() {
-    final currentTheme = PetTheme.getTheme(_displayedThemeId);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -502,37 +506,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   Row(
                     children: [
                       Text(
-                        widget.controller.companionEnabled
-                            ? widget.controller.companionPetName
-                            : 'Companion',
+                        // The name the user gave their companion, as chosen.
+                        widget.controller.companionPetName.trim().isEmpty
+                            ? 'Companion'
+                            : widget.controller.companionPetName,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textPrimary,
                           letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppTheme.accentColor.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Text(
-                          currentTheme.species.name.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.accentColor,
-                            letterSpacing: 1.0,
-                          ),
                         ),
                       ),
                     ],
