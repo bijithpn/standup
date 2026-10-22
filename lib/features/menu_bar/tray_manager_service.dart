@@ -91,6 +91,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     if (settingsRepo != null) {
       setIconModeFromStyle(settingsRepo.currentSettings.trayIconStyle);
       _menuStyle = settingsRepo.currentSettings.menuBarStyle;
+      // Older builds saved companion + 'icon'; companion owns the icon then.
+      if (_iconMode == TrayIconMode.companion && _menuStyle == 'icon') {
+        _menuStyle = 'companion';
+      }
     }
 
     final supportDir = await getApplicationSupportDirectory();
@@ -128,6 +132,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _initializeFramesInBackground() async {
+    // Rendering pet frames is CPU heavy; let the first dashboard frame land.
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(const Duration(seconds: 2));
     try {
       final supportDir = await getApplicationSupportDirectory();
       if (supportDir.existsSync()) {
@@ -517,11 +524,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       return;
     }
     // Slow breathing pulse keeps the icon alive between progress updates.
-    _pulseTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
-      _pulse = (_pulse + 1 / 24) % 1.0;
-      if (_progressAnimTimer?.isActive ?? false) return;
-      _applyIcon();
-    });
+    _startPulse();
     _shownProgress = 0;
     _animateProgressTo(_progress, const Duration(milliseconds: 1800));
   }
@@ -536,6 +539,20 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     if (!_usesDrawnIcon) return;
     if (_progressAnimTimer?.isActive ?? false) return;
     _animateProgressTo(_progress, const Duration(milliseconds: 900));
+  }
+
+  void _startPulse() {
+    _pulseTimer?.cancel();
+    if (!_usesDrawnIcon) return;
+    var tick = 0;
+    _pulseTimer = Timer.periodic(const Duration(milliseconds: 120), (_) {
+      // Far from a break the pulse is purely decorative: redraw at half rate.
+      tick++;
+      if (!_onBreak && _progress < 0.7 && tick.isOdd) return;
+      _pulse = (_pulse + 1 / 24) % 1.0;
+      if (_progressAnimTimer?.isActive ?? false) return;
+      _applyIcon();
+    });
   }
 
   void _animateProgressTo(double target, Duration duration) {
@@ -924,6 +941,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       if (timerEngine.systemSleepPaused) {
         _animTimer?.cancel();
         _actionAnimTimer?.cancel();
+        _pulseTimer?.cancel();
         _lastState = null; // Reset to force rebuild on wake
         return;
       }
@@ -932,6 +950,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         _lastState = state;
         _currentFrameIndex = 0;
         _updateTimerSpeed();
+        if (!(_pulseTimer?.isActive ?? false)) _startPulse();
         _applyIcon();
         _scheduleMenuRebuild();
       }
@@ -1016,8 +1035,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         state == AppLifecycleState.paused) {
       _animTimer?.cancel();
       _actionAnimTimer?.cancel();
+      _pulseTimer?.cancel();
     } else if (state == AppLifecycleState.resumed) {
       _updateTimerSpeed();
+      _startPulse();
     }
   }
 

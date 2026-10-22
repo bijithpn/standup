@@ -55,11 +55,20 @@ class ServiceBootstrapper {
 
     await sl<StatsService>().initialize();
 
-    sl<AppUsageTracker>().start();
-    sl<WeeklyDigestService>().start();
-    sl<FocusInsightService>().start();
-    sl<FocusStreakService>().start();
-    sl<DailyInsightNotifierService>().start();
+    // Analytics and insight trackers are not needed for the first frame.
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 2), () {
+        try {
+          sl<AppUsageTracker>().start();
+          sl<WeeklyDigestService>().start();
+          sl<FocusInsightService>().start();
+          sl<FocusStreakService>().start();
+          sl<DailyInsightNotifierService>().start();
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
+      }),
+    );
 
     final petRegistry = sl<PetRegistryService>();
     unawaited(petRegistry.discoverFromLegacyAssets());

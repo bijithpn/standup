@@ -19,6 +19,7 @@ import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app/app.dart';
+import 'app/startup_splash.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
 import 'app/bootstrapping/service_bootstrapper.dart';
 import 'package:path_provider/path_provider.dart';
@@ -352,26 +353,42 @@ void mainCommon(FlavorConfig config) async {
     () async {
       try {
         final startupT0 = DateTime.now();
+        final startupMarks = <MapEntry<String, int>>[];
         void logStartup(String label) {
           if (kDebugMode) {
             final ms = DateTime.now().difference(startupT0).inMilliseconds;
+            startupMarks.add(MapEntry(label, ms));
             debugPrint('[Startup] +${ms}ms — $label');
+            if (label == 'first dashboard frame rendered') {
+              // Slowest steps = largest gap to the previous checkpoint.
+              final gaps = <MapEntry<String, int>>[
+                for (var i = 1; i < startupMarks.length; i++)
+                  MapEntry(
+                    startupMarks[i].key,
+                    startupMarks[i].value - startupMarks[i - 1].value,
+                  ),
+              ]..sort((a, b) => b.value.compareTo(a.value));
+              debugPrint('[Startup] Slowest steps:');
+              for (final g in gaps.take(5)) {
+                debugPrint('[Startup]   ${g.value}ms — ${g.key}');
+              }
+            }
           }
         }
 
         WidgetsFlutterBinding.ensureInitialized();
         logStartup('WidgetsFlutterBinding.ensureInitialized');
 
-        if (Platform.isMacOS) {
-          try {
-            final Map<dynamic, dynamic>? debugResult =
-                await const MethodChannel(
-                  'com.breakmate.desktop/bridge',
-                ).invokeMethod<Map<dynamic, dynamic>>('debugCalendarState');
-            debugPrint('Startup debugCalendarState result: $debugResult');
-          } catch (e) {
-            debugPrint('Startup debugCalendarState failed: $e');
-          }
+        if (kDebugMode && Platform.isMacOS) {
+          // Diagnostic only; must never delay startup.
+          unawaited(
+            const MethodChannel('com.breakmate.desktop/bridge')
+                .invokeMethod<Map<dynamic, dynamic>>('debugCalendarState')
+                .then((r) => debugPrint('Startup debugCalendarState: $r'))
+                .catchError((Object e) {
+                  debugPrint('Startup debugCalendarState failed: $e');
+                }),
+          );
         }
 
         bool isActualMain = true;
@@ -399,9 +416,16 @@ void mainCommon(FlavorConfig config) async {
         MemoryCheckpoints.instance.logCheckpoint('startup');
         _setupGlobalErrors();
 
-        if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
-          await Window.initialize();
-        }
+        // Window plugins are independent of the services below, so start them
+        // now and join once the dependencies are ready.
+        final Future<void> windowInit =
+            (Platform.isMacOS || Platform.isWindows || Platform.isLinux)
+            ? Window.initialize()
+            : Future<void>.value();
+        windowInit.ignore();
+        final Future<void> windowManagerInit = windowManager
+            .ensureInitialized();
+        windowManagerInit.ignore();
 
         ServerSocket? singleInstanceServer;
 
@@ -440,11 +464,8 @@ void mainCommon(FlavorConfig config) async {
               );
 
               int elapsed = 0;
-              const int checkIntervalMs = 200;
+              const int checkIntervalMs = 100;
               const int maxWaitMs = 3000;
-
-              await Future.delayed(const Duration(milliseconds: 500));
-              elapsed += 500;
 
               while (elapsed < maxWaitMs) {
                 try {
@@ -574,6 +595,45 @@ void mainCommon(FlavorConfig config) async {
           });
         }
 
+        await Future.wait([windowInit, windowManagerInit]);
+        logStartup('window plugins ready');
+
+        WindowOptions windowOptions = WindowOptions(
+          size: const Size(1100, 750),
+          minimumSize: const Size(1100, 750),
+          maximumSize: const Size(1100, 750),
+          center: true,
+          backgroundColor: Platform.isWindows
+              ? AppTheme.sidebarBackground
+              : Colors.transparent,
+          skipTaskbar: false,
+          titleBarStyle: Platform.isWindows
+              ? TitleBarStyle.normal
+              : TitleBarStyle.hidden,
+        );
+
+        try {
+          await windowManager
+              .waitUntilReadyToShow(windowOptions, () async {
+                await windowManager.setPreventClose(true);
+                await windowManager.setResizable(false);
+                await windowManager.show();
+                await windowManager.focus();
+                if (Platform.isMacOS) {
+                  await NativeBridge.focusApp();
+                }
+              })
+              .timeout(const Duration(seconds: 5));
+        } on TimeoutException {
+          // A stuck native call used to leave the app without a widget tree.
+          debugPrint('[Startup] Window setup timed out; continuing to runApp.');
+        }
+        logStartup('window ready');
+
+        // Paint something immediately; the real app replaces it once ready.
+        runApp(const StartupSplash());
+        logStartup('splash shown');
+
         try {
           await SimplePrefs.instance.init();
           logStartup('SimplePrefs.init');
@@ -592,33 +652,6 @@ void mainCommon(FlavorConfig config) async {
           );
           return;
         }
-
-        await windowManager.ensureInitialized();
-        logStartup('windowManager.ensureInitialized');
-
-        WindowOptions windowOptions = WindowOptions(
-          size: const Size(1100, 750),
-          minimumSize: const Size(1100, 750),
-          maximumSize: const Size(1100, 750),
-          center: true,
-          backgroundColor: Platform.isWindows
-              ? AppTheme.sidebarBackground
-              : Colors.transparent,
-          skipTaskbar: false,
-          titleBarStyle: Platform.isWindows
-              ? TitleBarStyle.normal
-              : TitleBarStyle.hidden,
-        );
-
-        await windowManager.waitUntilReadyToShow(windowOptions, () async {
-          await windowManager.setPreventClose(true);
-          await windowManager.setResizable(false);
-          await windowManager.show();
-          await windowManager.focus();
-          if (Platform.isMacOS) {
-            await NativeBridge.focusApp();
-          }
-        });
 
         MethodChannel('com.breakmate.desktop/bridge').setMethodCallHandler((
           call,

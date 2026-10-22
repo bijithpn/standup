@@ -1,4 +1,4 @@
-import 'package:breakmate/shared/widgets/app_dropdown.dart';
+import 'package:breakmate/features/settings/widgets/menu_bar_mode_picker.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
@@ -94,61 +94,54 @@ class GeneralSection extends StatelessWidget {
     );
   }
 
-  static const _menuBarModes = {
-    'companion': 'Companion (animated pet)',
-    'progress': 'Progress ring',
-    'focusdot': 'Focus dot',
-    'countdown': 'Countdown timer',
-    'minimal': 'Icon only',
-  };
+  // Windows tray uses a static .ico, so only the modes that work there show.
+  static final _menuBarModes = Platform.isWindows
+      ? const {'companion': 'Companion', 'countdown': 'Countdown timer'}
+      : const {
+          'companion': 'Companion',
+          'progress': 'Progress ring',
+          'focusdot': 'Focus dot',
+          'countdown': 'Countdown timer',
+          'minimal': 'Icon only',
+        };
 
   String get _currentMenuBarMode {
-    if (settings.trayIconStyle == 'companion' ||
-        settings.trayIconStyle == 'cat') {
-      return 'companion';
-    }
-    return switch (settings.menuBarStyle) {
-      'progress' => 'progress',
-      'focusdot' => 'focusdot',
-      'countdown' => 'countdown',
-      _ => 'minimal',
-    };
+    final mode = menuBarModeFromStyles(
+      settings.trayIconStyle,
+      settings.menuBarStyle,
+    );
+    return _menuBarModes.containsKey(mode) ? mode : 'countdown';
+  }
+
+  void _selectMenuBarMode(String mode) {
+    final (:iconStyle, :menuStyle) = menuBarModeToStyles(mode);
+    onSave(
+      settings.copyWith(trayIconStyle: iconStyle, menuBarStyle: menuStyle),
+    );
+    sl<TrayManagerService>()
+      ..setIconModeFromStyle(iconStyle)
+      ..setMenuStyle(menuStyle)
+      ..triggerActionAnimation();
+    sl<TimerEngine>().updateMenuStyle(menuStyle);
   }
 
   Widget _buildMenuBarDisplay() {
-    return buildListRow(
-      'Menu Bar Display',
-      'What the menu bar shows while your next break approaches',
-      null,
-      CupertinoIcons.macwindow,
-      null,
-      trailing: AppDropdown<String>(
-        value: _currentMenuBarMode,
-        onChanged: (v) {
-          final mode = v ?? 'companion';
-          final iconStyle = mode == 'companion' ? 'companion' : 'default';
-          final menuStyle = switch (mode) {
-            'companion' => 'companion',
-            'minimal' => 'icon',
-            _ => mode,
-          };
-          onSave(
-            settings.copyWith(
-              trayIconStyle: iconStyle,
-              menuBarStyle: menuStyle,
-            ),
-          );
-          sl<TrayManagerService>()
-            ..setIconModeFromStyle(iconStyle)
-            ..setMenuStyle(menuStyle)
-            ..triggerActionAnimation();
-          sl<TimerEngine>().updateMenuStyle(menuStyle);
-        },
-        items: [
-          for (final e in _menuBarModes.entries)
-            AppDropdownItem<String>(value: e.key, label: e.value),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        buildListRow(
+          'Menu Bar Display',
+          'What the menu bar shows while your next break approaches',
+          null,
+          CupertinoIcons.macwindow,
+          null,
+        ),
+        MenuBarModePicker(
+          modes: _menuBarModes,
+          selected: _currentMenuBarMode,
+          onSelected: _selectMenuBarMode,
+        ),
+      ],
     );
   }
 

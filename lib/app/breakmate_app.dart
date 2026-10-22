@@ -17,6 +17,7 @@ import 'package:breakmate/features/analytics/focus_streak_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:breakmate/app/main_layout.dart';
+import 'package:breakmate/app/startup_splash.dart';
 import 'package:breakmate/main_common.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
@@ -74,6 +75,16 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    return Stack(
+      textDirection: TextDirection.ltr,
+      children: [
+        Positioned.fill(child: _buildApp()),
+        const Positioned.fill(child: StartupSplashCover()),
+      ],
+    );
+  }
+
+  Widget _buildApp() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: sl<ThemeController>()),

@@ -64,6 +64,8 @@ class TrayAvatarRenderer {
       final frames = <Uint8List>[];
       for (var i = 0; i < frameCount; i++) {
         frames.add(await _frame(scene, rest, fit, state, i / frameCount));
+        // Yield so the UI thread keeps drawing between frames.
+        await Future<void>.delayed(const Duration(milliseconds: 16));
       }
       out[state] = frames;
     }
