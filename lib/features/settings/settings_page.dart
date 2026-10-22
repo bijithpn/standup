@@ -225,9 +225,6 @@ class _SettingsPageState extends State<SettingsPage> {
         'Long break interval should be greater than the short break interval.',
       );
     }
-    if (_settings.intensityLevel == 'locked' && !_settings.strictMode) {
-      warnings.add('Locked intensity works best with strict mode enabled.');
-    }
     if (_settings.calendarEnabled &&
         (!_settings.detectMeetings && !_settings.detectVideoCalls)) {
       warnings.add(

@@ -265,6 +265,9 @@ class _ProductivityPageState extends State<ProductivityPage> {
             ? day.contextSwitches
             : summary?.contextSwitches ?? 0,
         switchesPerHour: showingToday ? day.switchesPerActiveHour : null,
+        focusGoalSeconds: showingToday && _settings != null
+            ? _settings!.currentSettings.dailyWorkGoalHours * 3600
+            : null,
         caption: showingToday
             ? null
             : 'across ${summary?.activeDayCount ?? 0} '
@@ -291,7 +294,12 @@ class _ProductivityPageState extends State<ProductivityPage> {
         ProductivitySection(
           title: 'Daily activity',
           subtitle: 'Active time per day',
-          child: DailyActivityBars(days: summary.days),
+          child: DailyActivityBars(
+            days: summary.days,
+            goalSeconds: _settings == null
+                ? null
+                : _settings!.currentSettings.dailyWorkGoalHours * 3600,
+          ),
         ),
         const SizedBox(height: 26),
       ],

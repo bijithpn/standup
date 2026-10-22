@@ -35,12 +35,12 @@ class _BreaksSettingsSectionState extends State<BreaksSettingsSection> {
             sectionHeader(
               'Break Configuration',
               subtitle:
-                  'Customize your rhythm, focus intensity, and break aesthetics.',
+                  'Pick a rhythm, fine-tune the timings, choose what a break shows, and style it.',
             ),
             const SizedBox(height: 12),
 
             segmentedControl(
-              ['Profiles', 'Custom', 'Intensity', 'Themes'],
+              ['Profiles', 'Intervals', 'Options', 'Themes'],
               _breaksSubTab,
               (i) => setState(() => _breaksSubTab = i),
               isSmall: isSmallScreen,

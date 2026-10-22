@@ -111,8 +111,13 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
               },
             ),
           ),
+          const SizedBox(height: 10),
+          const _TimelineLegend(),
           const SizedBox(height: 8),
-          _Readout(entry: _hovered),
+          _Readout(
+            entry: _hovered,
+            idleHint: busiestHourCaption(widget.entries),
+          ),
         ],
       ),
     );
@@ -144,16 +149,21 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
 
 /// What the pointer is over, or the day's shape when it is over nothing.
 class _Readout extends StatelessWidget {
-  const _Readout({this.entry});
+  const _Readout({this.entry, this.idleHint});
 
   final TimelineEntry? entry;
+
+  /// Shown when the pointer is not over a stretch of the day.
+  final String? idleHint;
 
   @override
   Widget build(BuildContext context) {
     final current = entry;
     if (current == null) {
       return Text(
-        'Hover the timeline for detail',
+        idleHint == null
+            ? 'Hover the timeline for detail'
+            : '$idleHint · hover the timeline for detail',
         style: TextStyle(
           fontFamily: 'Inter',
           fontSize: 11,
@@ -360,5 +370,74 @@ class _TimelinePainter extends CustomPainter {
         oldDelegate.startHour != startHour ||
         oldDelegate.endHour != endHour ||
         !identical(oldDelegate.highlighted, highlighted);
+  }
+}
+
+/// "Most active around 11am (1h 20m)" — the hour of the day with the most
+/// time spent actively working, or null when there is no active time.
+String? busiestHourCaption(List<TimelineEntry> entries) {
+  final perHour = <int, int>{};
+  for (final entry in entries) {
+    if (entry.kind != ActivityKind.active) continue;
+    var cursor = entry.startedAt;
+    while (cursor.isBefore(entry.endedAt)) {
+      final hourEnd = DateTime(
+        cursor.year,
+        cursor.month,
+        cursor.day,
+        cursor.hour,
+      ).add(const Duration(hours: 1));
+      final sliceEnd = hourEnd.isBefore(entry.endedAt)
+          ? hourEnd
+          : entry.endedAt;
+      perHour[cursor.hour] =
+          (perHour[cursor.hour] ?? 0) + sliceEnd.difference(cursor).inSeconds;
+      cursor = sliceEnd;
+    }
+  }
+  if (perHour.isEmpty) return null;
+  final best = perHour.entries.reduce((a, b) => b.value > a.value ? b : a);
+  if (best.value < 60) return null;
+  return 'Most active around ${formatHour(best.key)} '
+      '(${formatDuration(best.value)})';
+}
+
+class _TimelineLegend extends StatelessWidget {
+  const _TimelineLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget dot(Color color, String label) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 10.5,
+            color: AppTheme.textMuted,
+          ),
+        ),
+      ],
+    );
+
+    return Wrap(
+      spacing: 14,
+      runSpacing: 4,
+      children: <Widget>[
+        dot(activityColor(ActivityKind.active, 'coding'), 'Working in an app'),
+        dot(activityColor(ActivityKind.onBreak, ''), 'On a break'),
+        dot(activityColor(ActivityKind.idle, ''), 'Away'),
+      ],
+    );
   }
 }
