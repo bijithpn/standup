@@ -193,6 +193,7 @@ class _SegmentInspectorPageState extends State<SegmentInspectorPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           _header(summary, segments.length),
+          const _PurposeBanner(),
           Expanded(
             child: segments.isEmpty
                 ? _empty()
@@ -465,6 +466,40 @@ class _SegmentRow extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Says in plain words what this screen is for, since it is a developer tool
+/// that sits outside the normal navigation of a release build.
+class _PurposeBanner extends StatelessWidget {
+  const _PurposeBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppTheme.info.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        border: Border.all(color: AppTheme.info.withValues(alpha: 0.2)),
+      ),
+      child: Text(
+        'What is this? Activity tracking records your day as short stretches '
+        'of time — "active in an app", "idle" or "on a break". Those stretches '
+        'are the raw data behind every Productivity number: the timeline, '
+        'per-app time and the insights. This developer view lists them so '
+        'the numbers can be checked against what really happened, and is only '
+        'shown in development builds.',
+        style: TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          height: 1.45,
+          color: AppTheme.textSecondary,
+        ),
       ),
     );
   }

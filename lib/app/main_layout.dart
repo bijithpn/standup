@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
@@ -88,6 +89,12 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.paw,
       section: 'Companion',
     ),
+    if (ProductivityConfig.current.enabled)
+      _NavItem(
+        label: 'Productivity',
+        icon: CupertinoIcons.chart_bar,
+        section: 'Productivity',
+      ),
     _NavItem(
       label: AppStrings.navStatistics,
       icon: CupertinoIcons.graph_square,
@@ -153,7 +160,6 @@ class _MainLayoutState extends State<MainLayout> {
   /// names keep working.
   static const Map<String, String> _legacySections = {
     'Exercises': 'Breaks & Profiles',
-    'Productivity': 'Statistics', // merged into the one Statistics screen
     'Wellness Library': 'Breaks & Profiles',
   };
 
@@ -431,6 +437,8 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Notifications');
       case 'Companion':
         return const SettingsPage(section: 'Companion');
+      case 'Productivity':
+        return const ProductivityPage();
       case 'Statistics':
         return const SettingsPage(section: 'Statistics');
       case 'Segments':

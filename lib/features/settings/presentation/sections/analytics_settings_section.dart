@@ -1,9 +1,7 @@
 import 'package:breakmate/core/config/productivity_config.dart';
-import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart'
-    show CircularProgressIndicator, LinearProgressIndicator;
+import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:breakmate/features/analytics/presentation/widgets/break_statistics_section.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -16,7 +14,6 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
-import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/analytics/break_focus_correlation.dart';
@@ -58,6 +55,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
+  bool _focusExpanded = false;
 
   /// How many days back the calendar-vs-focus comparison (§7.4) looks —
   /// computed once per widget lifetime via [_loadCalendarComparison], not
@@ -106,21 +104,29 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         _buildOverviewTab(),
         const SizedBox(height: 32),
 
-        _groupHeader(
-          CupertinoIcons.time,
-          'Where your time goes',
-          'Your timeline, apps and what the activity shows.',
-        ),
-        _buildTimeAndAppsSection(),
-        _buildBudgetsCard(),
-        const SizedBox(height: 32),
+        // Time spent per app lives on the Productivity screen; only when that
+        // screen is switched off do we fall back to a short summary here.
+        if (!ProductivityConfig.current.enabled) ...[
+          _groupHeader(
+            CupertinoIcons.time,
+            'Where your time goes',
+            'Your apps and what the activity shows.',
+          ),
+          _buildAppUsageTab(),
+          const SizedBox(height: 32),
+        ],
 
+        // Focus is the longest block, so it starts folded.
         _groupHeader(
           CupertinoIcons.scope,
           'Focus',
           'Uninterrupted deep-work sessions $_periodLabel.',
+          trailing: _foldButton(
+            expanded: _focusExpanded,
+            onTap: () => setState(() => _focusExpanded = !_focusExpanded),
+          ),
         ),
-        _buildFocusTab(),
+        if (_focusExpanded) _buildFocusTab(),
         const SizedBox(height: 32),
 
         _groupHeader(
@@ -245,7 +251,12 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   }
 
   /// A clear heading for each part of the one-page view.
-  Widget _groupHeader(IconData icon, String title, String subtitle) {
+  Widget _groupHeader(
+    IconData icon,
+    String title,
+    String subtitle, {
+    Widget? trailing,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Row(
@@ -283,7 +294,42 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
               ],
             ),
           ),
+          ?trailing,
         ],
+      ),
+    );
+  }
+
+  Widget _foldButton({required bool expanded, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                expanded ? 'Hide' : 'Show',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.accentColor,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                expanded
+                    ? CupertinoIcons.chevron_up
+                    : CupertinoIcons.chevron_down,
+                size: 12,
+                color: AppTheme.accentColor,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -305,122 +351,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         ),
       ],
     );
-  }
-
-  /// Today's progress against the soft daily budgets set in Personal Goals.
-  /// Hidden until tracking is on and at least one budget exists.
-  Widget _buildBudgetsCard() {
-    final budgets = {
-      for (final e in widget.settings.categoryDailyBudgetMinutes.entries)
-        if (e.value > 0) e.key: e.value,
-    };
-    if (!widget.settings.appUsageTrackingEnabled || budgets.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    return Padding(
-      padding: const EdgeInsets.only(top: 20),
-      child: Consumer<AppUsageService>(
-        builder: (context, usage, _) {
-          final today = usage.categoryTotals(UsagePeriod.today);
-          return Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(18),
-            decoration: AppTheme.cardDecoration(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Daily budgets',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  "Today's time against your soft limits (set in Personal "
-                  'Goals). Nothing is ever blocked.',
-                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-                ),
-                const SizedBox(height: 14),
-                for (final category in AppCategory.values)
-                  if (budgets.containsKey(category.name))
-                    _budgetRow(
-                      category,
-                      today[category] ?? 0,
-                      budgets[category.name]! * 60,
-                    ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _budgetRow(AppCategory category, int usedSeconds, int budgetSeconds) {
-    final ratio = usedSeconds / budgetSeconds;
-    final over = ratio >= 1;
-    final color = over ? AppTheme.warning : category.color;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(category.icon, size: 15, color: category.color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  category.label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ),
-              Text(
-                '${formatUsageDuration(usedSeconds)} of '
-                '${formatUsageDuration(budgetSeconds)}'
-                '${over ? '  ·  over' : ''}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: over ? AppTheme.warning : AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: ratio.clamp(0.0, 1.0),
-              minHeight: 5,
-              color: color,
-              backgroundColor: AppTheme.border,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// The detailed activity view (timeline, applications, insights) when the
-  /// activity pipeline is available; the simpler app-usage summary otherwise.
-  Widget _buildTimeAndAppsSection() {
-    if (ProductivityConfig.current.enabled) {
-      final range = switch (_selectedFilter) {
-        1 => ProductivityRange.week,
-        2 => ProductivityRange.month,
-        _ => ProductivityRange.today,
-      };
-      return ProductivityPage(embedded: true, range: range);
-    }
-    return _buildAppUsageTab();
   }
 
   Widget _buildOverviewTab() {

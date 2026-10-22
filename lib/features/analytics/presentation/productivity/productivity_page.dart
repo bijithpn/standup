@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/daily_budgets_card.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/application_usage_section.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/activity_timeline_view.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_cards.dart';
@@ -306,6 +309,18 @@ class _ProductivityPageState extends State<ProductivityPage> {
         ),
       ),
       const SizedBox(height: 26),
+
+      if (showingToday &&
+          sl.isRegistered<AppUsageService>() &&
+          _settings != null) ...<Widget>[
+        DailyBudgetsCard(
+          usedSecondsByCategory: sl<AppUsageService>().categoryTotals(
+            UsagePeriod.today,
+          ),
+          budgetMinutes: _settings!.currentSettings.categoryDailyBudgetMinutes,
+        ),
+        const SizedBox(height: 26),
+      ],
 
       ProductivitySection(
         title: 'Insights',

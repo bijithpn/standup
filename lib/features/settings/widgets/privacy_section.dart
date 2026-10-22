@@ -158,9 +158,9 @@ class _PrivacySectionState extends State<PrivacySection> {
               label: 'See exactly what was recorded',
               subtitle:
                   'Every tracked app and the time spent, by day, week or month.',
-              buttonText: 'Open Statistics',
+              buttonText: 'Open Productivity',
               onPressed: () =>
-                  sl<AppNavigationService>().openSection('Statistics'),
+                  sl<AppNavigationService>().openSection('Productivity'),
             ),
           ]),
         ],
