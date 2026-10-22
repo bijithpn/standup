@@ -391,6 +391,7 @@ void mainCommon(FlavorConfig config) async {
           );
         }
 
+        logStartup('debug calendar call dispatched');
         bool isActualMain = true;
         if (Platform.isMacOS) {
           try {
@@ -561,22 +562,23 @@ void mainCommon(FlavorConfig config) async {
         }
 
         _globalSingleInstanceServer = singleInstanceServer;
+        logStartup('single-instance port ready');
 
-        if (isMainIsolate) {
-          final supportDir = await getApplicationSupportDirectory();
-          await restrictToOwner(supportDir.path, directory: true);
-        }
-
+        // The permissions fix and the IPC token only share the support
+        // directory, so run them side by side.
+        final supportDir = await getApplicationSupportDirectory();
         String? ipcToken;
-        if (singleInstanceServer != null) {
-          try {
-            ipcToken = await SingleInstanceToken.create(
-              await getApplicationSupportDirectory(),
-            );
-          } catch (e) {
-            debugPrint('Startup: Could not create IPC token: $e');
-          }
-        }
+        await Future.wait([
+          if (isMainIsolate) restrictToOwner(supportDir.path, directory: true),
+          if (singleInstanceServer != null)
+            SingleInstanceToken.create(
+              supportDir,
+            ).then<void>((t) => ipcToken = t).catchError((Object e) {
+              debugPrint('Startup: Could not create IPC token: $e');
+            }),
+        ]);
+
+        logStartup('ipc token ready');
 
         if (!Platform.isWindows) {
           ProcessSignal.sigterm.watch().listen((_) async {
@@ -597,6 +599,10 @@ void mainCommon(FlavorConfig config) async {
 
         await Future.wait([windowInit, windowManagerInit]);
         logStartup('window plugins ready');
+
+        // Prefs only need the file system; read them while the window opens.
+        final Future<void> prefsInit = SimplePrefs.instance.init();
+        prefsInit.ignore();
 
         WindowOptions windowOptions = WindowOptions(
           size: const Size(1100, 750),
@@ -635,7 +641,7 @@ void mainCommon(FlavorConfig config) async {
         logStartup('splash shown');
 
         try {
-          await SimplePrefs.instance.init();
+          await prefsInit;
           logStartup('SimplePrefs.init');
 
           await initDependencies();

@@ -69,7 +69,9 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     super.applicationWillFinishLaunching(notification)
   }
   
-  lazy var updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
+  // The updater is started a couple of seconds after launch (see applicationDidFinishLaunching) so
+  // Sparkle's setup does not sit on the main thread while the first window is being created.
+  lazy var updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
 
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return false
@@ -165,6 +167,10 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     
     super.applicationDidFinishLaunching(notification)
     NSLog("Sparkle: applicationDidFinishLaunching completed")
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+      self?.updaterController.startUpdater()
+    }
     
     DispatchQueue.main.async { [weak self] in
       if let window = self?.mainFlutterWindow {
