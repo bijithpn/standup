@@ -29,7 +29,7 @@ bool shouldWindowAcceptMouse({
 
   if (!windowRect.deflate(4).contains(cursor)) return false;
 
-  final overPet = !stageRect.isEmpty && stageRect.inflate(6).contains(cursor);
+  final overPet = !stageRect.isEmpty && stageRect.inflate(28).contains(cursor);
   if (clickThrough) return hovered || overPet;
   if (hasBackdrop) return true;
   return hovered || overPet;

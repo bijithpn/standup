@@ -321,6 +321,58 @@ class AvatarFaceStyle {
     return copyWith(height: height * openness.clamp(0.02, 1.0));
   }
 
+  /// A copy with any of the face's own proportions replaced. Used to give each
+  /// species eyes, nose and mouth that suit its body instead of the one shared
+  /// default.
+  AvatarFaceStyle tuned({
+    double? gap,
+    double? width,
+    double? height,
+    double? eyeRoundness,
+    double? leftEyeRotation,
+    double? rightEyeRotation,
+    bool? noseEnabled,
+    double? noseWidth,
+    double? noseHeight,
+    double? noseY,
+    bool? mouthEnabled,
+    double? mouthWidth,
+    double? mouthHeight,
+    double? mouthY,
+    double? mouthCurve,
+    bool? highlightEnabled,
+  }) {
+    return AvatarFaceStyle(
+      gap: gap ?? this.gap,
+      width: width ?? this.width,
+      height: height ?? this.height,
+      rotation: rotation,
+      leftEyeRotation: leftEyeRotation ?? this.leftEyeRotation,
+      rightEyeRotation: rightEyeRotation ?? this.rightEyeRotation,
+      eyeShape: eyeShape,
+      eyeRoundness: eyeRoundness ?? this.eyeRoundness,
+      noseEnabled: noseEnabled ?? this.noseEnabled,
+      noseShape: noseShape,
+      noseWidth: noseWidth ?? this.noseWidth,
+      noseHeight: noseHeight ?? this.noseHeight,
+      noseY: noseY ?? this.noseY,
+      noseRotation: noseRotation,
+      mouthEnabled: mouthEnabled ?? this.mouthEnabled,
+      mouthShape: mouthShape,
+      mouthWidth: mouthWidth ?? this.mouthWidth,
+      mouthHeight: mouthHeight ?? this.mouthHeight,
+      mouthY: mouthY ?? this.mouthY,
+      mouthCurve: mouthCurve ?? this.mouthCurve,
+      mouthRotation: mouthRotation,
+      highlightEnabled: highlightEnabled ?? this.highlightEnabled,
+      highlightColor: highlightColor,
+      highlightOffsetX: highlightOffsetX,
+      highlightOffsetY: highlightOffsetY,
+      highlightOpacity: highlightOpacity,
+      highlightSize: highlightSize,
+    );
+  }
+
   /// A copy with the channels an expression is allowed to move.
   ///
   /// Deliberately narrow: an expression may reshape the eyes and mouth, but it
@@ -493,6 +545,72 @@ class AvatarFaceStyle {
   }
 }
 
+/// A flat colour mark painted on one part: stripes, inner ears, a muzzle patch.
+///
+/// Position and size are percentages of the target part's silhouette, measured
+/// from its centre, so a marking follows the part however it is posed.
+class AvatarMarking {
+  const AvatarMarking({
+    required this.shape,
+    required this.color,
+    required this.targetPartId,
+    required this.x,
+    required this.y,
+    required this.width,
+    required this.height,
+    this.rotation = 0,
+    this.opacity = 1,
+    this.onFace = true,
+  });
+
+  /// `ellipse` or `rounded-triangle`.
+  final String shape;
+  final Color color;
+  final String targetPartId;
+  final double x;
+  final double y;
+  final double width;
+  final double height;
+
+  /// Degrees.
+  final double rotation;
+  final double opacity;
+
+  /// True for marks on the head that should drift with the face as it turns.
+  final bool onFace;
+
+  AvatarMarking withColor(Color color) => AvatarMarking(
+    shape: shape,
+    color: color,
+    targetPartId: targetPartId,
+    x: x,
+    y: y,
+    width: width,
+    height: height,
+    rotation: rotation,
+    opacity: opacity,
+    onFace: onFace,
+  );
+
+  static AvatarMarking? fromJson(Map<String, dynamic> json) {
+    final color = _parseColor(json['color']);
+    final target = json['targetPartId'];
+    if (color == null || target is! String) return null;
+    return AvatarMarking(
+      shape: json['shape'] as String? ?? 'ellipse',
+      color: color,
+      targetPartId: target,
+      x: _toDouble(json['x'], 0),
+      y: _toDouble(json['y'], 0),
+      width: _toDouble(json['width'], 20),
+      height: _toDouble(json['height'], 20),
+      rotation: _toDouble(json['rotation'], 0),
+      opacity: (_toDouble(json['opacity'], 100) / 100).clamp(0.0, 1.0),
+      onFace: json['side'] != 'front',
+    );
+  }
+}
+
 /// A complete companion: its parts, its face, its camera and its light.
 class AvatarScene {
   const AvatarScene({
@@ -509,6 +627,7 @@ class AvatarScene {
     this.lightDistance = 0,
     this.showOutline = true,
     this.showAvatarShadow = true,
+    this.markings = const <AvatarMarking>[],
   });
 
   final String preset;
@@ -529,6 +648,9 @@ class AvatarScene {
   final bool showOutline;
   final bool showAvatarShadow;
 
+  /// Colour marks that tell species apart beyond their silhouette.
+  final List<AvatarMarking> markings;
+
   /// The part the face is drawn on, or the first part if none claims it.
   AvatarPart? get facePart {
     for (final part in parts) {
@@ -541,6 +663,7 @@ class AvatarScene {
   AvatarScene copyWithParts(
     List<AvatarPart> parts, {
     AvatarOutlineStyle? outlineStyle,
+    List<AvatarMarking>? markings,
   }) {
     return AvatarScene(
       preset: preset,
@@ -556,6 +679,7 @@ class AvatarScene {
       lightDistance: lightDistance,
       showOutline: showOutline,
       showAvatarShadow: showAvatarShadow,
+      markings: markings ?? this.markings,
     );
   }
 
@@ -583,6 +707,7 @@ class AvatarScene {
       lightDistance: lightDistance,
       showOutline: showOutline ?? this.showOutline,
       showAvatarShadow: showAvatarShadow ?? this.showAvatarShadow,
+      markings: markings,
     );
   }
 
@@ -630,6 +755,11 @@ class AvatarScene {
       lightDistance: _toDouble(sceneMap?['lightDistance'], 0),
       showOutline: sceneMap?['showOutline'] != false,
       showAvatarShadow: sceneMap?['showAvatarShadow'] != false,
+      markings: <AvatarMarking>[
+        for (final raw in json['markings'] as List? ?? const <Object>[])
+          if (raw is Map)
+            ?AvatarMarking.fromJson(Map<String, dynamic>.from(raw)),
+      ],
     );
   }
 }

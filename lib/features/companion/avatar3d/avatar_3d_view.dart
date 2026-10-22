@@ -8,6 +8,7 @@ import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_painter.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
+import 'package:breakmate/features/companion/avatar3d/species_face.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_palette_mapper.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
@@ -135,8 +136,11 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   /// doing. Only the pose and the expression change frame to frame.
   AvatarScene? _tinted(AvatarScene? scene) {
     if (scene == null) return null;
+    final suited = scene.copyWith(
+      faceStyle: tuneFaceForSpecies(widget.preset, scene.faceStyle),
+    );
     return widget.style.applyTo(
-      applyPalette(scene, widget.palette, strength: widget.paletteStrength),
+      applyPalette(suited, widget.palette, strength: widget.paletteStrength),
     );
   }
 
@@ -247,6 +251,7 @@ class _Avatar3DViewState extends State<Avatar3DView> {
       painter: AvatarScenePainter(
         geometry: geometry,
         fitBounds: _fitBoundsFor(posed),
+        blush: blushFor(snapshot.emotion),
         scene: posed,
         background: background,
         showOutline: widget.showOutline,

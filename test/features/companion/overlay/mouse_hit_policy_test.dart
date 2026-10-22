@@ -35,7 +35,7 @@ void main() {
     test('lets clicks through in the transparent margins', () {
       // Inside the window, outside the pet's square.
       expect(_accepts(cursor: const Offset(-1495, -895)), isFalse);
-      expect(_accepts(cursor: const Offset(-1225, -590)), isFalse);
+      expect(_accepts(cursor: const Offset(-1225, -885)), isFalse);
     });
 
     test('keeps the whole window once the pointer is interacting', () {
