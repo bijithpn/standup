@@ -4,7 +4,27 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                                                        <item>
+                                                                <item>
+            <title>Version 1.8.2</title>
+            <pubDate>Thu, 22 Oct 2026 09:12:59 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.8.2</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>update CI workflows to remove unnecessary dependencies and enhance macOS release caching</li><li>implement release readiness checks and ad-hoc signing for macOS builds</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.8.1...v1.8.2">https://github.com/bijithpn/standup/compare/v1.8.1...v1.8.2</a></p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.8.2/BreakMate-Installer.dmg"
+                       sparkle:version="39"
+                       sparkle:shortVersionString="1.8.2"
+                       sparkle:edSignature="NEqoSb40Sw93hDIqcs5jWIP+K2EdD131R98Yhq46pPllZLhbH6CLsQ3MvFB3aUFTUUSwx/LiyaQ/R7VkXy1WBQ=="
+                       length="35966456"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.8.1</title>
             <pubDate>Wed, 21 Oct 2026 08:54:34 +0000</pubDate>
             <description><![CDATA[
