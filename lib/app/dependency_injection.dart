@@ -23,7 +23,6 @@ import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
-import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
 import 'package:breakmate/features/clock_out/clock_out_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -235,14 +234,6 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
   sl.registerSingleton<ExplainHotkeyService>(ExplainHotkeyService());
-
-  sl.registerLazySingleton<WellnessLibraryRepository>(
-    () => WellnessLibraryRepository(
-      settingsRepo: sl(),
-      storage: sl(),
-      onCompleted: () => sl<StatsService>().recordWellnessAction(),
-    ),
-  );
 
   sl.registerSingleton<FocusModeService>(FocusModeService());
   sl.registerSingleton<FocusFilterService>(FocusFilterService(focusModeService: sl()));

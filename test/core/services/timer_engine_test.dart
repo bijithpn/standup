@@ -302,9 +302,7 @@ void main() {
 
         // Mock an upcoming meeting
         when(
-          () => mockCalendarService.getUpcomingEvents(
-            window: any(named: 'window'),
-          ),
+          () => mockCalendarService.getUpcomingEvents(window: any(named: 'window')),
         ).thenAnswer(
           (_) async => [
             CalendarEvent(
@@ -319,7 +317,7 @@ void main() {
 
         // Elapse until 20 minutes (when break would normally trigger)
         async.elapse(const Duration(minutes: 20));
-
+        
         // Let the async isMeetingUpcoming() check complete
         async.flushMicrotasks();
 
@@ -330,17 +328,17 @@ void main() {
         expect(engine.workElapsed.inMinutes, equals(15));
       });
     });
-
+    
     test('Strict Mode: prevents skip (indirectly verified via logic)', () {
       final engine = TimerEngine(
         settingsRepository: fakeSettingsRepository,
         eventBus: eventBus,
       );
-
+      
       fakeSettingsRepository.setSettings(const SettingsModel(strictMode: true));
       engine.startTimers();
       engine.triggerBreakNow();
-
+      
       expect(engine.state, equals(TimerState.breakActive));
       // In strict mode, the UI (StandaloneBreakOverlay) uses the flag to hide skip.
       // TimerEngine logic itself doesn't block skipNextBreak call, but the UI does.
@@ -398,9 +396,7 @@ void main() {
         expect(engine.state, equals(TimerState.running));
 
         // Focus mode starts
-        when(
-          () => mockSmartDetectionService.isFocusModeActive,
-        ).thenReturn(true);
+        when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(true);
         async.elapse(const Duration(seconds: 1));
         expect(engine.state, equals(TimerState.paused));
         expect(engine.stateData.isManuallyPaused, isFalse);
@@ -410,127 +406,128 @@ void main() {
         expect(engine.state, equals(TimerState.paused));
 
         // Focus mode ends
-        when(
-          () => mockSmartDetectionService.isFocusModeActive,
-        ).thenReturn(false);
+        when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(false);
         async.elapse(const Duration(seconds: 1));
         // Timer should automatically resume without manual intervention!
         expect(engine.state, equals(TimerState.running));
       });
     });
 
+    test('Complete cycle: work -> pre-break warning -> break -> next work interval', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: fakeSettingsRepository,
+          smartDetectionService: mockSmartDetectionService,
+          calendarService: mockCalendarService,
+          eventBus: eventBus,
+        );
+
+        engine.startTimers();
+        // 20 min interval, 60s warning
+        // At 19 minutes: pre-break warning
+        async.elapse(const Duration(minutes: 19));
+        expect(engine.state, equals(TimerState.running));
+
+        // At 20 minutes: break starts
+        async.elapse(const Duration(minutes: 1));
+        expect(engine.state, equals(TimerState.breakActive));
+
+        // Complete the 20s break
+        async.elapse(const Duration(seconds: 20));
+        // Break finishes, resumes work
+        expect(engine.state, equals(TimerState.running));
+        expect(engine.workElapsed, equals(Duration.zero));
+        expect(engine.shortBreakIntervalMinutes, equals(20));
+      });
+    });
+  });
+
+  group('Health Reminders: automatic, no manual interval', () {
     test(
-      'Complete cycle: work -> pre-break warning -> break -> next work interval',
+      'posture reminder follows the ~30min ergonomic baseline (not the '
+      'break interval), with randomized jitter — not instantly and not '
+      'stuck forever',
       () {
         fakeAsync((async) {
+          // A long break interval (60min) so it never interrupts the
+          // running state during this test — activityRatio clamps at 1.2x,
+          // giving a target window of 30 * 1.2 * [0.85, 1.15] ≈
+          // [30.6, 41.4] minutes.
+          fakeSettingsRepository.setSettings(
+            const SettingsModel(
+              shortBreakIntervalMinutes: 60,
+              postureReminderEnabled: true,
+            ),
+          );
+
+          final fired = <HealthReminderEvent>[];
+          final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
+          addTearDown(sub.cancel);
+
           final engine = TimerEngine(
             settingsRepository: fakeSettingsRepository,
             smartDetectionService: mockSmartDetectionService,
             calendarService: mockCalendarService,
             eventBus: eventBus,
           );
-
           engine.startTimers();
-          // 20 min interval, 60s warning
-          // At 19 minutes: pre-break warning
-          async.elapse(const Duration(minutes: 19));
-          expect(engine.state, equals(TimerState.running));
 
-          // At 20 minutes: break starts
-          async.elapse(const Duration(minutes: 1));
-          expect(engine.state, equals(TimerState.breakActive));
+          // Below the lower bound (30.6min) with margin — nothing yet.
+          async.elapse(const Duration(minutes: 28));
+          expect(fired, isEmpty);
 
-          // Complete the 20s break
-          async.elapse(const Duration(seconds: 20));
-          // Break finishes, resumes work
-          expect(engine.state, equals(TimerState.running));
-          expect(engine.workElapsed, equals(Duration.zero));
-          expect(engine.shortBreakIntervalMinutes, equals(20));
+          // Past the upper bound (41.4min) with margin — must have fired.
+          // (Each cycle re-randomizes independently, so a short first cycle
+          // followed by another short one can legitimately produce more
+          // than one event here — that's the intended "randomly, not on a
+          // fixed schedule" behavior, not a bug, so this only checks that
+          // at least one fired and that it's the right reminder.)
+          async.elapse(const Duration(minutes: 15));
+          expect(fired, isNotEmpty);
+          expect(fired.first.reminderType, equals('posture'));
         });
       },
     );
-  });
 
-  group('Health Reminders: automatic, no manual interval', () {
-    test('posture reminder follows the ~30min ergonomic baseline (not the '
-        'break interval), with randomized jitter — not instantly and not '
-        'stuck forever', () {
-      fakeAsync((async) {
-        // A long break interval (60min) so it never interrupts the
-        // running state during this test — activityRatio clamps at 1.2x,
-        // giving a target window of 30 * 1.2 * [0.85, 1.15] ≈
-        // [30.6, 41.4] minutes.
-        fakeSettingsRepository.setSettings(
-          const SettingsModel(
-            shortBreakIntervalMinutes: 60,
-            postureReminderEnabled: true,
-          ),
-        );
+    test(
+      'eye-rest reminder follows the 20-20-20 rule baseline (~20min), '
+      'with randomized jitter',
+      () {
+        fakeAsync((async) {
+          // A long break interval (60min) so it never interrupts the
+          // running state during this test — activityRatio clamps at 1.2x,
+          // giving a target window of 20 * 1.2 * [0.85, 1.15] ≈
+          // [20.4, 27.6] minutes.
+          fakeSettingsRepository.setSettings(
+            const SettingsModel(
+              shortBreakIntervalMinutes: 60,
+              eyeBlinkReminderEnabled: true,
+            ),
+          );
 
-        final fired = <HealthReminderEvent>[];
-        final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
-        addTearDown(sub.cancel);
+          final fired = <HealthReminderEvent>[];
+          final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
+          addTearDown(sub.cancel);
 
-        final engine = TimerEngine(
-          settingsRepository: fakeSettingsRepository,
-          smartDetectionService: mockSmartDetectionService,
-          calendarService: mockCalendarService,
-          eventBus: eventBus,
-        );
-        engine.startTimers();
+          final engine = TimerEngine(
+            settingsRepository: fakeSettingsRepository,
+            smartDetectionService: mockSmartDetectionService,
+            calendarService: mockCalendarService,
+            eventBus: eventBus,
+          );
+          engine.startTimers();
 
-        // Below the lower bound (30.6min) with margin — nothing yet.
-        async.elapse(const Duration(minutes: 28));
-        expect(fired, isEmpty);
+          // Below the lower bound (20.4min) with margin.
+          async.elapse(const Duration(minutes: 18));
+          expect(fired, isEmpty);
 
-        // Past the upper bound (41.4min) with margin — must have fired.
-        // (Each cycle re-randomizes independently, so a short first cycle
-        // followed by another short one can legitimately produce more
-        // than one event here — that's the intended "randomly, not on a
-        // fixed schedule" behavior, not a bug, so this only checks that
-        // at least one fired and that it's the right reminder.)
-        async.elapse(const Duration(minutes: 15));
-        expect(fired, isNotEmpty);
-        expect(fired.first.reminderType, equals('posture'));
-      });
-    });
-
-    test('eye-rest reminder follows the 20-20-20 rule baseline (~20min), '
-        'with randomized jitter', () {
-      fakeAsync((async) {
-        // A long break interval (60min) so it never interrupts the
-        // running state during this test — activityRatio clamps at 1.2x,
-        // giving a target window of 20 * 1.2 * [0.85, 1.15] ≈
-        // [20.4, 27.6] minutes.
-        fakeSettingsRepository.setSettings(
-          const SettingsModel(
-            shortBreakIntervalMinutes: 60,
-            eyeBlinkReminderEnabled: true,
-          ),
-        );
-
-        final fired = <HealthReminderEvent>[];
-        final sub = eventBus.on<HealthReminderEvent>().listen(fired.add);
-        addTearDown(sub.cancel);
-
-        final engine = TimerEngine(
-          settingsRepository: fakeSettingsRepository,
-          smartDetectionService: mockSmartDetectionService,
-          calendarService: mockCalendarService,
-          eventBus: eventBus,
-        );
-        engine.startTimers();
-
-        // Below the lower bound (20.4min) with margin.
-        async.elapse(const Duration(minutes: 18));
-        expect(fired, isEmpty);
-
-        // Past the upper bound (27.6min) with margin.
-        async.elapse(const Duration(minutes: 12));
-        expect(fired, isNotEmpty);
-        expect(fired.first.reminderType, equals('eyeblink'));
-      });
-    });
+          // Past the upper bound (27.6min) with margin.
+          async.elapse(const Duration(minutes: 12));
+          expect(fired, isNotEmpty);
+          expect(fired.first.reminderType, equals('eyeblink'));
+        });
+      },
+    );
 
     test('never fires while disabled, even across several intervals', () {
       fakeAsync((async) {

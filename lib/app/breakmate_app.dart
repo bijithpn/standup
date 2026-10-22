@@ -21,7 +21,6 @@ import 'package:breakmate/main_common.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/onboarding/presentation/onboarding_page.dart';
-import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
 
 class BreakMateApp extends StatefulWidget {
@@ -86,7 +85,6 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
         ChangeNotifierProvider.value(value: sl<BreakHistoryService>()),
         ChangeNotifierProvider.value(value: sl<ContextSwitchTracker>()),
         ChangeNotifierProvider.value(value: sl<FocusStreakService>()),
-        ChangeNotifierProvider.value(value: sl<WellnessLibraryRepository>()),
       ],
       child: Consumer<ThemeController>(
         builder: (context, themeController, child) {

@@ -20,24 +20,21 @@ void main() {
   });
 
   group('dispatch retry/recovery', () {
-    test(
-      'gives up gracefully after repeated failures, without throwing',
-      () async {
-        var attempts = 0;
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (call) async {
-              attempts++;
-              throw PlatformException(code: 'UNAVAILABLE');
-            });
+    test('gives up gracefully after repeated failures, without throwing', () async {
+      var attempts = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            attempts++;
+            throw PlatformException(code: 'UNAVAILABLE');
+          });
 
-        await IpcBridge.instance.dispatch(
-          IpcEvent.trayAction(action: 'stress-fail'),
-        );
+      await IpcBridge.instance.dispatch(
+        IpcEvent.trayAction(action: 'stress-fail'),
+      );
 
-        expect(attempts, 3);
-        expect(IpcBridge.instance.lastSuccessfulEvent('tray.action'), isNull);
-      },
-    );
+      expect(attempts, 3);
+      expect(IpcBridge.instance.lastSuccessfulEvent('tray.action'), isNull);
+    });
 
     test('recovers and records success once the channel comes back', () async {
       var attempts = 0;
@@ -53,26 +50,26 @@ void main() {
       );
 
       expect(attempts, 2);
-      expect(IpcBridge.instance.lastSuccessfulEvent('tray.action'), isNotNull);
+      expect(
+        IpcBridge.instance.lastSuccessfulEvent('tray.action'),
+        isNotNull,
+      );
     });
 
-    test(
-      'succeeds immediately on the first try when the channel is healthy',
-      () async {
-        var attempts = 0;
-        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-            .setMockMethodCallHandler(channel, (call) async {
-              attempts++;
-              return null;
-            });
+    test('succeeds immediately on the first try when the channel is healthy', () async {
+      var attempts = 0;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+            attempts++;
+            return null;
+          });
 
-        await IpcBridge.instance.dispatch(
-          IpcEvent.companionInteraction(interactionType: 'stress-ok'),
-        );
+      await IpcBridge.instance.dispatch(
+        IpcEvent.companionInteraction(interactionType: 'stress-ok'),
+      );
 
-        expect(attempts, 1);
-      },
-    );
+      expect(attempts, 1);
+    });
   });
 
   group('typed event handler resilience', () {

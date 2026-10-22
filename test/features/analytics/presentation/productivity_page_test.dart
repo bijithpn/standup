@@ -26,9 +26,9 @@ void main() {
     required bool trackingEnabled,
     ProductivityRepository? repository,
   }) async {
-    when(
-      () => settings.currentSettings,
-    ).thenReturn(SettingsModel(appUsageTrackingEnabled: trackingEnabled));
+    when(() => settings.currentSettings).thenReturn(
+      SettingsModel(appUsageTrackingEnabled: trackingEnabled),
+    );
 
     tester.view.physicalSize = const Size(1200, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -58,9 +58,8 @@ void main() {
       );
     });
 
-    testWidgets('says it is still learning when tracking is on but new', (
-      tester,
-    ) async {
+    testWidgets('says it is still learning when tracking is on but new',
+        (tester) async {
       await pumpPage(tester, trackingEnabled: true);
 
       expect(find.text('Building your productivity picture'), findsOneWidget);
@@ -72,9 +71,8 @@ void main() {
       expect(find.byType(ApplicationUsageList), findsNothing);
     });
 
-    testWidgets('never shows invented numbers before there is data', (
-      tester,
-    ) async {
+    testWidgets('never shows invented numbers before there is data',
+        (tester) async {
       await pumpPage(tester, trackingEnabled: true);
 
       expect(find.byType(ProductivityOverviewCard), findsNothing);
@@ -95,8 +93,8 @@ void main() {
 
   group('insight cards', () {
     Widget wrapCard(ProductivityInsight insight) => MaterialApp(
-      home: Scaffold(body: InsightCard(insight: insight)),
-    );
+          home: Scaffold(body: InsightCard(insight: insight)),
+        );
 
     testWidgets('a confident finding is stated plainly', (tester) async {
       await tester.pumpWidget(
@@ -116,9 +114,8 @@ void main() {
       expect(find.textContaining('Based on'), findsNothing);
     });
 
-    testWidgets('a thin finding announces itself as a possibility', (
-      tester,
-    ) async {
+    testWidgets('a thin finding announces itself as a possibility',
+        (tester) async {
       await tester.pumpWidget(
         wrapCard(
           const ProductivityInsight(

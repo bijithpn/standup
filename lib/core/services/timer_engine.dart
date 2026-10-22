@@ -15,8 +15,10 @@ import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
+import 'package:breakmate/core/services/health_reminder_scheduler.dart';
 import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/core/services/break_determination_strategy.dart';
 import 'package:breakmate/core/services/timer_context_manager.dart';
@@ -62,13 +64,45 @@ class TimerEngine extends ChangeNotifier {
   // cycle's chosen target in seconds; null means "not yet picked for this
   // cycle". Not part of TimerStateData because they're never persisted —
   // a fresh random target is fine after every app restart.
-  final Random _healthReminderRandom = Random();
-  int? _postureTargetSeconds;
-  int? _eyeBlinkTargetSeconds;
+  final HealthReminderScheduler _healthScheduler;
 
-  // Evidence-based baseline cadences — see `_checkHealthReminders`.
-  static const int _eyeRestBaselineMinutes = 20; // the 20-20-20 rule
-  static const int _postureBaselineMinutes = 30; // common ergonomic guidance
+  // Active-work seconds since each newer reminder was last satisfied. Eye rest
+  // and posture keep their persisted counters in [TimerStateData]; these are
+  // in-memory only (a fresh count after a restart is fine for them).
+  final Map<HealthReminderKind, int> _reminderElapsed = {};
+
+  int _elapsedFor(HealthReminderKind kind) => switch (kind) {
+    HealthReminderKind.eyeRest => _stateData.eyeBlinkElapsedSeconds,
+    HealthReminderKind.posture => _stateData.postureElapsedSeconds,
+    _ => _reminderElapsed[kind] ?? 0,
+  };
+
+  void _resetElapsed(HealthReminderKind kind) {
+    switch (kind) {
+      case HealthReminderKind.eyeRest:
+        _stateData.eyeBlinkElapsedSeconds = 0;
+      case HealthReminderKind.posture:
+        _stateData.postureElapsedSeconds = 0;
+      default:
+        _reminderElapsed[kind] = 0;
+    }
+  }
+
+  bool _reminderEnabled(HealthReminderKind kind, SettingsModel s) =>
+      switch (kind) {
+        HealthReminderKind.eyeRest => s.eyeBlinkReminderEnabled,
+        HealthReminderKind.posture => s.postureReminderEnabled,
+        HealthReminderKind.hydration => s.hydrationReminderEnabled,
+        HealthReminderKind.stretch => s.stretchReminderEnabled,
+        HealthReminderKind.standUp => s.standUpReminderEnabled,
+      };
+
+  void _resetAllReminderCounters() {
+    for (final kind in HealthReminderKind.values) {
+      _resetElapsed(kind);
+      _healthScheduler.clearTarget(kind);
+    }
+  }
 
   final ValueNotifier<int> countdownNotifier = ValueNotifier<int>(0);
   final ValueNotifier<Duration> workElapsedNotifier = ValueNotifier<Duration>(
@@ -85,7 +119,9 @@ class TimerEngine extends ChangeNotifier {
     MeetingDetectionService? meetingDetectionService,
     ContextSwitchTracker? contextSwitchTracker,
     EventBus? eventBus,
+    HealthReminderScheduler? healthScheduler,
   }) : _settingsRepository = settingsRepository,
+       _healthScheduler = healthScheduler ?? HealthReminderScheduler(),
        _smartDetectionService = smartDetectionService,
        _eventBus = eventBus ?? EventBus.instance {
     _contextManager = TimerContextManager(
@@ -361,6 +397,14 @@ class TimerEngine extends ChangeNotifier {
         _stateData.totalWorkToday += delta;
         _stateData.postureElapsedSeconds += delta.inSeconds;
         _stateData.eyeBlinkElapsedSeconds += delta.inSeconds;
+        for (final kind in const [
+          HealthReminderKind.hydration,
+          HealthReminderKind.stretch,
+          HealthReminderKind.standUp,
+        ]) {
+          _reminderElapsed[kind] =
+              (_reminderElapsed[kind] ?? 0) + delta.inSeconds;
+        }
 
         final wasPreBreak = isPreBreak;
         _checkBreakConditions();
@@ -498,70 +542,52 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
-    // Health reminders are enable/disable only now — no manual interval —
-    // and are timed off evidence-based cadences, not an arbitrary fraction
-    // of whatever the (adaptive, sometimes very long) break interval
-    // happens to be:
-    //  - Eye rest follows the well-known 20-20-20 rule: roughly every 20
-    //    minutes, look at something 20 feet away for 20 seconds.
-    //  - Posture checks follow common ergonomic guidance: change position
-    //    and sit up straight roughly every 30 minutes.
-    // Tying these directly to `shortBreakIntervalMinutes` (which
-    // AdaptiveBreakService can stretch up to 90 minutes on a
-    // light-activity day) would let eye strain build for over an hour —
-    // the opposite of "helpful for a healthy body". Instead, that same
-    // adaptive signal only nudges the baseline by up to ±20% (busier/more
-    // active right now → nudged more frequent, matching the same
-    // usage-driven signal the break timer itself responds to), and a
-    // little jitter keeps the cadence from feeling mechanically fixed
-    // while staying inside a sensible range. This piggybacks on the tick
-    // this method is already called from every second — no extra timers,
-    // no added CPU cost.
+    // Cadence follows evidence-based baselines (eye rest: the 20-20-20 rule,
+    // posture: roughly every 30 minutes); the break interval only nudges it by
+    // up to ±20%. All timing decisions — real relief from idle time, holding
+    // off when a break is imminent, deferring during meetings, spacing,
+    // backing off when ignored — live in HealthReminderScheduler.
     final activityRatio =
-        (_shortBreakIntervalMinutes /
-                AppConstants.defaultShortBreakIntervalMinutes)
-            .clamp(0.8, 1.2);
-    final slowdown =
-        settings.quietModeEnabled && settings.quietModePreset == 'low_battery'
-        ? 2
-        : 1;
+        _shortBreakIntervalMinutes /
+        AppConstants.defaultShortBreakIntervalMinutes;
+    final lowBattery =
+        settings.quietModeEnabled && settings.quietModePreset == 'low_battery';
 
-    if (settings.postureReminderEnabled) {
-      _postureTargetSeconds ??= _healthReminderTargetSeconds(
-        baselineMinutes: _postureBaselineMinutes,
-        activityRatio: activityRatio,
-        slowdown: slowdown,
-      );
-      if (_stateData.postureElapsedSeconds >= _postureTargetSeconds!) {
-        _stateData.postureElapsedSeconds = 0;
-        _postureTargetSeconds = null;
-        _triggerHealthReminder('posture', 'overlay');
-      }
-    }
+    final elapsed = <HealthReminderKind, int>{
+      for (final kind in HealthReminderKind.values)
+        if (_reminderEnabled(kind, settings)) kind: _elapsedFor(kind),
+    };
+    if (elapsed.isEmpty) return;
 
-    if (settings.eyeBlinkReminderEnabled) {
-      _eyeBlinkTargetSeconds ??= _healthReminderTargetSeconds(
-        baselineMinutes: _eyeRestBaselineMinutes,
-        activityRatio: activityRatio,
-        slowdown: slowdown,
-      );
-      if (_stateData.eyeBlinkElapsedSeconds >= _eyeBlinkTargetSeconds!) {
-        _stateData.eyeBlinkElapsedSeconds = 0;
-        _eyeBlinkTargetSeconds = null;
-        _triggerHealthReminder('eyeblink', 'overlay');
-      }
-    }
+    final now = clock.now();
+    final due = _healthScheduler.nextDue(
+      now: now,
+      elapsedSeconds: elapsed,
+      untilNextBreak: timeUntilNextShortBreak,
+      blockedByContext:
+          _contextManager.isMeetingActive() ||
+          _contextManager.isPresentationActive(),
+      activityRatio: activityRatio,
+      cadenceMultiplier: lowBattery ? 2.0 : 1.0,
+      workloadFactor: WorkloadEstimator.factor(
+        workedToday: _stateData.totalWorkToday,
+        highContextSwitching: _contextManager.isHighContextSwitchRate(),
+      ),
+    );
+    if (due == null) return;
+
+    final covered = _healthScheduler.markFired(due, now);
+    _resetElapsed(due);
+    covered.forEach(_resetElapsed);
+    _triggerHealthReminder(due.typeName, 'overlay');
   }
 
-  int _healthReminderTargetSeconds({
-    required int baselineMinutes,
-    required double activityRatio,
-    required int slowdown,
-  }) {
-    // ±15% jitter around the (activity-adjusted) baseline.
-    final jitter = 0.85 + _healthReminderRandom.nextDouble() * 0.3;
-    final minutes = baselineMinutes * activityRatio * jitter * slowdown;
-    return (minutes * 60).round().clamp(60, 24 * 60 * 60);
+  /// Feed of how long the user has been without keyboard/mouse input
+  /// (seconds), sampled every few seconds. Stepping away is real relief: it
+  /// resets the matching reminder instead of nagging right after.
+  void reportIdleSeconds(double idleSeconds) {
+    final relieved = _healthScheduler.onIdleSample(idleSeconds, clock.now());
+    relieved.forEach(_resetElapsed);
   }
 
   void _triggerHealthReminder(String reminderType, String displayType) {
@@ -681,6 +707,18 @@ class TimerEngine extends ChangeNotifier {
     }
 
     _emit(BreakEndedEvent(skipped: skipped));
+
+    if (!skipped) {
+      // A completed break rests the eyes and changes position, so those
+      // reminders are not due right after it (a long one also covers a drink);
+      // a skipped break does none of that.
+      final isLong = activeBreak?.type == BreakType.long;
+      for (final kind in HealthReminderKind.values) {
+        if (kind == HealthReminderKind.hydration && !isLong) continue;
+        _resetElapsed(kind);
+      }
+      _healthScheduler.onBreakCompleted(clock.now(), long: isLong);
+    }
 
     _stateData.activeBreak = null;
     _stateData.isCompletionState = false;
@@ -816,10 +854,7 @@ class TimerEngine extends ChangeNotifier {
 
   void resetTimers() {
     _stateData.workElapsed = Duration.zero;
-    _stateData.postureElapsedSeconds = 0;
-    _stateData.eyeBlinkElapsedSeconds = 0;
-    _postureTargetSeconds = null;
-    _eyeBlinkTargetSeconds = null;
+    _resetAllReminderCounters();
     _stateData.state = TimerState.idle;
     _stateData.completedShortBreaksInCycle = 0;
     _stateData.longBreakWindowStartedAt = clock.now();
@@ -851,10 +886,7 @@ class TimerEngine extends ChangeNotifier {
     if (state == TimerState.breakActive) return false;
     _stateData.totalWorkToday = Duration.zero;
     _stateData.workElapsed = Duration.zero;
-    _stateData.postureElapsedSeconds = 0;
-    _stateData.eyeBlinkElapsedSeconds = 0;
-    _postureTargetSeconds = null;
-    _eyeBlinkTargetSeconds = null;
+    _resetAllReminderCounters();
     _stateData.isPreBreak = false;
     _stateData.completedShortBreaksInCycle = 0;
     _stateData.clockOutTriggered = false;

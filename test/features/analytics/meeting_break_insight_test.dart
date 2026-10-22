@@ -9,18 +9,15 @@ BreakEvent _event(DateTime time, bool completed) =>
 
 void main() {
   group('MeetingBreakCorrelation.compute', () {
-    test(
-      'buckets a break as near-meeting when a meeting starts soon after',
-      () {
-        final breakTime = DateTime(2026, 1, 1, 10, 0);
-        final correlation = MeetingBreakCorrelation.compute(
-          breakEvents: [_event(breakTime, false)],
-          meetingStartTimes: [breakTime.add(const Duration(minutes: 10))],
-        );
-        expect(correlation.nearMeetingCount, 1);
-        expect(correlation.otherCount, 0);
-      },
-    );
+    test('buckets a break as near-meeting when a meeting starts soon after', () {
+      final breakTime = DateTime(2026, 1, 1, 10, 0);
+      final correlation = MeetingBreakCorrelation.compute(
+        breakEvents: [_event(breakTime, false)],
+        meetingStartTimes: [breakTime.add(const Duration(minutes: 10))],
+      );
+      expect(correlation.nearMeetingCount, 1);
+      expect(correlation.otherCount, 0);
+    });
 
     test('does not bucket a break as near-meeting outside the window', () {
       final breakTime = DateTime(2026, 1, 1, 10, 0);

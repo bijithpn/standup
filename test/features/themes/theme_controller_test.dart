@@ -99,10 +99,7 @@ void main() {
 
     test('initializes with default nordic slate', () {
       expect(controller.currentPreset, equals(AppThemePreset.nordicSlate));
-      expect(
-        controller.activeAccent,
-        equals(AppThemePreset.nordicSlate.accent),
-      );
+      expect(controller.activeAccent, equals(AppThemePreset.nordicSlate.accent));
       expect(controller.customAccent, isNull);
     });
 
@@ -139,10 +136,7 @@ void main() {
 
       expect(controller.currentPreset, equals(AppThemePreset.nordicSlate));
       expect(controller.customAccent, isNull);
-      expect(
-        controller.activeAccent,
-        equals(AppThemePreset.nordicSlate.accent),
-      );
+      expect(controller.activeAccent, equals(AppThemePreset.nordicSlate.accent));
     });
   });
 }

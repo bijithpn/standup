@@ -37,21 +37,20 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'falls back to the single color when pointColors length mismatches',
-    (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: BreakActivityGraph(
-              dataPoints: [1, 4, 2],
-              pointColors: [Color(0xFFEF4444)],
-              color: Color(0xFF32D74B),
-            ),
+  testWidgets('falls back to the single color when pointColors length mismatches', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: BreakActivityGraph(
+            dataPoints: [1, 4, 2],
+            pointColors: [Color(0xFFEF4444)],
+            color: Color(0xFF32D74B),
           ),
         ),
-      );
-      expect(tester.takeException(), isNull);
-    },
-  );
+      ),
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

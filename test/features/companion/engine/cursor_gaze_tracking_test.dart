@@ -34,85 +34,56 @@ void main() {
       );
     });
 
-    test(
-      'setLookAt formats correct JS script and clamps within [-1.0, 1.0]',
-      () async {
-        await controller.setLookAt(0.5, -0.3);
-        expect(
-          executedScripts.last,
-          equals('window.AvatarBridge.setLookAt(0.5, -0.3);'),
-        );
-        expect(controller.currentLookAt, equals(const ui.Offset(0.5, -0.3)));
+    test('setLookAt formats correct JS script and clamps within [-1.0, 1.0]', () async {
+      await controller.setLookAt(0.5, -0.3);
+      expect(executedScripts.last, equals('window.AvatarBridge.setLookAt(0.5, -0.3);'));
+      expect(controller.currentLookAt, equals(const ui.Offset(0.5, -0.3)));
 
-        // Clamping test
-        await controller.setLookAt(2.5, -1.8);
-        expect(
-          executedScripts.last,
-          equals('window.AvatarBridge.setLookAt(1.0, -1.0);'),
-        );
-        expect(controller.currentLookAt, equals(const ui.Offset(1.0, -1.0)));
-      },
-    );
+      // Clamping test
+      await controller.setLookAt(2.5, -1.8);
+      expect(executedScripts.last, equals('window.AvatarBridge.setLookAt(1.0, -1.0);'));
+      expect(controller.currentLookAt, equals(const ui.Offset(1.0, -1.0)));
+    });
 
     test('setYaw formats correct JS script', () async {
       await controller.setYaw(0.785);
-      expect(
-        executedScripts.last,
-        equals('window.AvatarBridge.setYaw(0.785);'),
-      );
+      expect(executedScripts.last, equals('window.AvatarBridge.setYaw(0.785);'));
       expect(controller.currentYaw, closeTo(0.785, 0.001));
     });
 
-    test(
-      'playAnimation formats correct JS script with options and records state',
-      () async {
-        await controller.playAnimation(
-          AvatarAnimationClip.nod,
-          loop: false,
-          speed: 1.5,
-        );
-        expect(
-          executedScripts.last,
-          equals(
-            "window.AvatarBridge.playAnimation('nod', { loop: false, speed: 1.5 });",
-          ),
-        );
-        expect(controller.currentClip, equals(AvatarAnimationClip.nod));
-      },
-    );
+    test('playAnimation formats correct JS script with options and records state', () async {
+      await controller.playAnimation(
+        AvatarAnimationClip.nod,
+        loop: false,
+        speed: 1.5,
+      );
+      expect(
+        executedScripts.last,
+        equals("window.AvatarBridge.playAnimation('nod', { loop: false, speed: 1.5 });"),
+      );
+      expect(controller.currentClip, equals(AvatarAnimationClip.nod));
+    });
 
-    test(
-      'setDefinition formats correct JS script containing definition JSON',
-      () async {
-        final definition = AvatarDefinition.fromSpecies(
-          AvatarSpecies.fox,
-          palette: AvatarPalette.warmOrange,
-          seed: 'test-seed-123',
-        );
-        await controller.setDefinition(definition);
-        expect(
-          executedScripts.last,
-          startsWith('window.AvatarBridge.setDefinition('),
-        );
-        expect(executedScripts.last, contains('"species":"fox"'));
-        expect(executedScripts.last, contains('"warmOrange"'));
-        expect(controller.currentDefinition, equals(definition));
-      },
-    );
+    test('setDefinition formats correct JS script containing definition JSON', () async {
+      final definition = AvatarDefinition.fromSpecies(
+        AvatarSpecies.fox,
+        palette: AvatarPalette.warmOrange,
+        seed: 'test-seed-123',
+      );
+      await controller.setDefinition(definition);
+      expect(executedScripts.last, startsWith('window.AvatarBridge.setDefinition('));
+      expect(executedScripts.last, contains('"species":"fox"'));
+      expect(executedScripts.last, contains('"warmOrange"'));
+      expect(controller.currentDefinition, equals(definition));
+    });
 
-    test(
-      'setPalette formats correct JS script containing palette JSON',
-      () async {
-        final palette = AvatarPalette.cyberpunk;
-        await controller.setPalette(palette);
-        expect(
-          executedScripts.last,
-          startsWith('window.AvatarBridge.setPalette('),
-        );
-        expect(executedScripts.last, contains('"name":"cyberpunk"'));
-        expect(controller.currentPalette, equals(palette));
-      },
-    );
+    test('setPalette formats correct JS script containing palette JSON', () async {
+      final palette = AvatarPalette.cyberpunk;
+      await controller.setPalette(palette);
+      expect(executedScripts.last, startsWith('window.AvatarBridge.setPalette('));
+      expect(executedScripts.last, contains('"name":"cyberpunk"'));
+      expect(controller.currentPalette, equals(palette));
+    });
   });
 
   group('AvatarEngineController Gaze Calculation & LookAt Math', () {
@@ -148,21 +119,18 @@ void main() {
       expect(gaze.dy, closeTo(0.0, 0.001));
     });
 
-    test(
-      'calculateGaze clamps values exceeding maxDistance to [-1.0, 1.0]',
-      () {
-        final gaze = controller.calculateGaze(
-          petScreenPosition: const ui.Offset(100, 100),
-          cursorScreenPosition: const ui.Offset(1000, -500),
-          maxDistance: 400.0,
-          enableSmoothing: false,
-          enableSaccades: false,
-        );
+    test('calculateGaze clamps values exceeding maxDistance to [-1.0, 1.0]', () {
+      final gaze = controller.calculateGaze(
+        petScreenPosition: const ui.Offset(100, 100),
+        cursorScreenPosition: const ui.Offset(1000, -500),
+        maxDistance: 400.0,
+        enableSmoothing: false,
+        enableSaccades: false,
+      );
 
-        expect(gaze.dx, equals(1.0));
-        expect(gaze.dy, equals(-1.0));
-      },
-    );
+      expect(gaze.dx, equals(1.0));
+      expect(gaze.dy, equals(-1.0));
+    });
 
     test('calculateGaze applies smooth exponential moving average damping', () {
       final petPos = const ui.Offset(200, 200);
@@ -245,12 +213,8 @@ void main() {
         finishedClips.add(event.clip);
       });
 
-      eventChannel.emit(
-        AvatarAnimationStartedEvent(AvatarAnimationClip.celebrate),
-      );
-      eventChannel.emit(
-        AvatarAnimationFinishedEvent(AvatarAnimationClip.celebrate),
-      );
+      eventChannel.emit(AvatarAnimationStartedEvent(AvatarAnimationClip.celebrate));
+      eventChannel.emit(AvatarAnimationFinishedEvent(AvatarAnimationClip.celebrate));
       await pumpEventQueue();
 
       expect(startedClips, equals([AvatarAnimationClip.celebrate]));
@@ -286,20 +250,17 @@ void main() {
       expect(proximityEvents.last.isInside, isFalse);
     });
 
-    test(
-      'handles raw JSON / string bridge events from WebGL runtime',
-      () async {
-        final startedClips = <AvatarAnimationClip>[];
-        eventChannel.onAnimationStarted.listen((event) {
-          startedClips.add(event.clip);
-        });
+    test('handles raw JSON / string bridge events from WebGL runtime', () async {
+      final startedClips = <AvatarAnimationClip>[];
+      eventChannel.onAnimationStarted.listen((event) {
+        startedClips.add(event.clip);
+      });
 
-        eventChannel.handleRawEvent('animation_started', {'clip': 'bounce'});
-        await pumpEventQueue();
+      eventChannel.handleRawEvent('animation_started', {'clip': 'bounce'});
+      await pumpEventQueue();
 
-        expect(startedClips, equals([AvatarAnimationClip.bounce]));
-      },
-    );
+      expect(startedClips, equals([AvatarAnimationClip.bounce]));
+    });
   });
 
   group('CursorTracker to AvatarEngineController Integration', () {
@@ -320,52 +281,46 @@ void main() {
       );
     });
 
-    test(
-      'cursorTracker provides stream and feeds updateGaze to controller',
-      () async {
-        final petCenter = const ui.Offset(200, 200);
-        fakeBridge.cursorPos = const ui.Offset(500, 200);
+    test('cursorTracker provides stream and feeds updateGaze to controller', () async {
+      final petCenter = const ui.Offset(200, 200);
+      fakeBridge.cursorPos = const ui.Offset(500, 200);
 
-        final positions = <ui.Offset>[];
-        cursorTracker.positionStream.listen(positions.add);
+      final positions = <ui.Offset>[];
+      cursorTracker.positionStream.listen(positions.add);
 
-        await cursorTracker.sample(0.016, petCenter);
-        await pumpEventQueue();
+      await cursorTracker.sample(0.016, petCenter);
+      await pumpEventQueue();
 
-        expect(cursorTracker.lastPosition, equals(const ui.Offset(500, 200)));
-        expect(positions, contains(const ui.Offset(500, 200)));
+      expect(cursorTracker.lastPosition, equals(const ui.Offset(500, 200)));
+      expect(positions, contains(const ui.Offset(500, 200)));
 
-        // Feed into controller updateGaze
-        await controller.updateGaze(
-          petScreenPosition: petCenter,
-          cursorScreenPosition: cursorTracker.lastPosition,
-          enableSmoothing: false,
-          enableSaccades: false,
-        );
+      // Feed into controller updateGaze
+      await controller.updateGaze(
+        petScreenPosition: petCenter,
+        cursorScreenPosition: cursorTracker.lastPosition,
+        enableSmoothing: false,
+        enableSaccades: false,
+      );
 
-        expect(scripts.isNotEmpty, isTrue);
-        expect(scripts.last, startsWith('window.AvatarBridge.setLookAt('));
-        expect(controller.currentLookAt.dx, closeTo(0.5, 0.05));
-      },
-    );
+      expect(scripts.isNotEmpty, isTrue);
+      expect(scripts.last, startsWith('window.AvatarBridge.setLookAt('));
+      expect(controller.currentLookAt.dx, closeTo(0.5, 0.05));
+    });
 
-    test(
-      'attachCursorTracker automatically updates gaze on cursorTracker samples',
-      () async {
-        final petCenter = const ui.Offset(200, 200);
-        fakeBridge.cursorPos = const ui.Offset(500, 200);
+    test('attachCursorTracker automatically updates gaze on cursorTracker samples', () async {
+      final petCenter = const ui.Offset(200, 200);
+      fakeBridge.cursorPos = const ui.Offset(500, 200);
 
-        controller.attachCursorTracker(
-          cursorTracker,
-          getPetPosition: () => petCenter,
-        );
+      controller.attachCursorTracker(
+        cursorTracker,
+        getPetPosition: () => petCenter,
+      );
 
-        await cursorTracker.sample(0.016, petCenter);
-        await pumpEventQueue();
+      await cursorTracker.sample(0.016, petCenter);
+      await pumpEventQueue();
 
-        expect(scripts.isNotEmpty, isTrue);
-        expect(scripts.last, startsWith('window.AvatarBridge.setLookAt('));
-      },
-    );
+      expect(scripts.isNotEmpty, isTrue);
+      expect(scripts.last, startsWith('window.AvatarBridge.setLookAt('));
+    });
   });
 }

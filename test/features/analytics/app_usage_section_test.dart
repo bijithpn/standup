@@ -13,9 +13,7 @@ void main() {
     for (final c in AppCategory.values) c: 0,
   };
 
-  testWidgets('disabled state shows an Enable button that calls onEnable', (
-    tester,
-  ) async {
+  testWidgets('disabled state shows an Enable button that calls onEnable', (tester) async {
     var enabled = false;
 
     await tester.pumpWidget(

@@ -100,6 +100,9 @@ class SettingsModel {
   final String pipBackgroundStyle;
   final double pipOpacity;
   final bool pipDraggableClickable;
+  final bool hydrationReminderEnabled;
+  final bool stretchReminderEnabled;
+  final bool standUpReminderEnabled;
 
   final String companionToyType;
   final String companionTreatType;
@@ -215,6 +218,9 @@ class SettingsModel {
     this.pipBackgroundStyle = 'scene',
     this.pipOpacity = 1.0,
     this.pipDraggableClickable = true,
+    this.hydrationReminderEnabled = false,
+    this.stretchReminderEnabled = false,
+    this.standUpReminderEnabled = false,
     this.companionToyType = 'tennis_ball',
     this.companionTreatType = 'sushi',
     this.templateAccentOverrides = const {},
@@ -329,6 +335,9 @@ class SettingsModel {
     String? pipBackgroundStyle,
     double? pipOpacity,
     bool? pipDraggableClickable,
+    bool? hydrationReminderEnabled,
+    bool? stretchReminderEnabled,
+    bool? standUpReminderEnabled,
     String? companionToyType,
     String? companionTreatType,
     Map<String, int>? templateAccentOverrides,
@@ -456,6 +465,9 @@ class SettingsModel {
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
           pipDraggableClickable ?? this.pipDraggableClickable,
+      hydrationReminderEnabled: hydrationReminderEnabled ?? this.hydrationReminderEnabled,
+      stretchReminderEnabled: stretchReminderEnabled ?? this.stretchReminderEnabled,
+      standUpReminderEnabled: standUpReminderEnabled ?? this.standUpReminderEnabled,
       companionToyType: companionToyType ?? this.companionToyType,
       companionTreatType: companionTreatType ?? this.companionTreatType,
       templateAccentOverrides:
@@ -549,6 +561,9 @@ class SettingsModel {
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
     'pipDraggableClickable': pipDraggableClickable,
+    'hydrationReminderEnabled': hydrationReminderEnabled,
+    'stretchReminderEnabled': stretchReminderEnabled,
+    'standUpReminderEnabled': standUpReminderEnabled,
     'companionToyType': companionToyType,
     'companionTreatType': companionTreatType,
     'templateAccentOverrides': templateAccentOverrides,
@@ -681,6 +696,9 @@ class SettingsModel {
       pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'transparent',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
+      hydrationReminderEnabled: map['hydrationReminderEnabled'] as bool? ?? false,
+      stretchReminderEnabled: map['stretchReminderEnabled'] as bool? ?? false,
+      standUpReminderEnabled: map['standUpReminderEnabled'] as bool? ?? false,
       companionToyType: map['companionToyType'] as String? ?? 'tennis_ball',
       companionTreatType: map['companionTreatType'] as String? ?? 'sushi',
       templateAccentOverrides:

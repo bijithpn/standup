@@ -8,8 +8,7 @@ import 'package:breakmate/features/companion/render/avatar_svg_preparer.dart';
 
 /// A miniature of how the OneWorks snapshots are actually exported: a
 /// full-bleed plate, a drop-shadow filter, an empty clip path, then the pet.
-const String _snapshot =
-    '<svg xmlns="http://www.w3.org/2000/svg" '
+const String _snapshot = '<svg xmlns="http://www.w3.org/2000/svg" '
     'viewBox="0 0 420 420">'
     '<rect width="420" height="420" rx="34" fill="#111315"></rect>'
     '<defs>'
@@ -56,13 +55,13 @@ void main() {
     });
 
     test('leaves a clip path that actually clips something alone', () {
-      const withRealClip =
-          '<svg viewBox="0 0 10 10">'
+      const withRealClip = '<svg viewBox="0 0 10 10">'
           '<defs><clipPath id="keep"><path d="M0 0h5v5z"></path></clipPath></defs>'
           '<g clip-path="url(#keep)"><path d="M0 0h9v9z" fill="#abcdef"></path></g>'
           '</svg>';
 
-      final result = stripAvatarChrome(withRealClip, transparentBackdrop: true);
+      final result =
+          stripAvatarChrome(withRealClip, transparentBackdrop: true);
 
       expect(result, contains('<clipPath id="keep">'));
       expect(result, contains('clip-path="url(#keep)"'));
@@ -71,7 +70,8 @@ void main() {
 
   group('buildPaletteSubstitutions', () {
     test('maps the most-used colour onto the palette primary', () {
-      final prepared = stripAvatarChrome(_snapshot, transparentBackdrop: true);
+      final prepared =
+          stripAvatarChrome(_snapshot, transparentBackdrop: true);
       final substitutions = buildPaletteSubstitutions(
         prepared,
         AvatarPalette.coolBlue,
@@ -90,7 +90,8 @@ void main() {
     });
 
     test('ignores the drop shadow colour once the filter is gone', () {
-      final prepared = stripAvatarChrome(_snapshot, transparentBackdrop: true);
+      final prepared =
+          stripAvatarChrome(_snapshot, transparentBackdrop: true);
       final substitutions = buildPaletteSubstitutions(
         prepared,
         AvatarPalette.coolBlue,
@@ -127,7 +128,8 @@ void main() {
     }
 
     test('measures where the artwork really sits, not where the box is', () {
-      final prepared = stripAvatarChrome(_snapshot, transparentBackdrop: true);
+      final prepared =
+          stripAvatarChrome(_snapshot, transparentBackdrop: true);
       final bounds = measureContent(prepared, 'snapshot');
 
       expect(bounds, isNotNull);
@@ -138,7 +140,8 @@ void main() {
     });
 
     test('re-frames the viewBox so the artwork lands in the middle', () {
-      final prepared = stripAvatarChrome(_snapshot, transparentBackdrop: true);
+      final prepared =
+          stripAvatarChrome(_snapshot, transparentBackdrop: true);
       final bounds = measureContent(prepared, 'snapshot')!;
       final framed = recenterViewBox(prepared, bounds);
       final box = viewBoxOf(framed);
@@ -148,7 +151,8 @@ void main() {
     });
 
     test('the new frame is square, so species come out the same size', () {
-      final prepared = stripAvatarChrome(_snapshot, transparentBackdrop: true);
+      final prepared =
+          stripAvatarChrome(_snapshot, transparentBackdrop: true);
       final bounds = measureContent(prepared, 'snapshot')!;
       final box = viewBoxOf(recenterViewBox(prepared, bounds));
 
@@ -188,7 +192,10 @@ void main() {
 
     test('leaves the framing alone when the backdrop plate is kept', () {
       final withPlate = compileAvatarArtwork(
-        const AvatarArtworkRecipe(assetKey: 'test', transparentBackdrop: false),
+        const AvatarArtworkRecipe(
+          assetKey: 'test',
+          transparentBackdrop: false,
+        ),
         _snapshot,
       );
 

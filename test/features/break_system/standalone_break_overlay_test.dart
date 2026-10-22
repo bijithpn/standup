@@ -210,56 +210,55 @@ void main() {
 
       await tester.tap(skipBtnFinder);
       await tester.pump(); // Start animation
-      await tester.pump(
-        const Duration(milliseconds: 900),
-      ); // Wait for timer / animation
+      await tester.pump(const Duration(milliseconds: 900)); // Wait for timer / animation
 
       // Skip action invokes native bridge skipBreak
       expect(skipInvoked, isTrue);
     });
 
-    testWidgets('a quickReminder with allowFullPoster never touches GetIt for '
-        'services this isolate does not register (SettingsRepository, '
-        'meeting/presentation detection) — regression for the black-screen '
-        'crash where the poster reminder tried to look those up itself', (
-      WidgetTester tester,
-    ) async {
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(desktopBridgeChannel, (
-            MethodCall methodCall,
-          ) async {
-            if (methodCall.method == 'getOverlayData') {
-              return {
-                'overlayType': 'quickReminder',
-                'reminderType': 'posture',
-                'allowFullPoster': true,
-                'durationSeconds': 2,
-                'remainingSeconds': 2,
-              };
-            }
-            return null;
-          });
+    testWidgets(
+      'a quickReminder with allowFullPoster never touches GetIt for '
+      'services this isolate does not register (SettingsRepository, '
+      'meeting/presentation detection) — regression for the black-screen '
+      'crash where the poster reminder tried to look those up itself',
+      (WidgetTester tester) async {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(desktopBridgeChannel, (
+              MethodCall methodCall,
+            ) async {
+              if (methodCall.method == 'getOverlayData') {
+                return {
+                  'overlayType': 'quickReminder',
+                  'reminderType': 'posture',
+                  'allowFullPoster': true,
+                  'durationSeconds': 2,
+                  'remainingSeconds': 2,
+                };
+              }
+              return null;
+            });
 
-      // Only StatsService is registered (setUp above) — exactly the
-      // minimal set the real overlay isolate provides via `overlayMain()`.
-      // SettingsRepository and the detection services are deliberately
-      // left unregistered so any code path that reaches for them here
-      // throws immediately, the same way it did in production.
-      await tester.pumpWidget(
-        const MaterialApp(home: StandaloneBreakOverlay()),
-      );
+        // Only StatsService is registered (setUp above) — exactly the
+        // minimal set the real overlay isolate provides via `overlayMain()`.
+        // SettingsRepository and the detection services are deliberately
+        // left unregistered so any code path that reaches for them here
+        // throws immediately, the same way it did in production.
+        await tester.pumpWidget(
+          const MaterialApp(home: StandaloneBreakOverlay()),
+        );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      expect(tester.takeException(), isNull);
-      expect(find.text('Watch your posture!'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        expect(find.text('Watch your posture!'), findsOneWidget);
 
-      // Let the reminder's own auto-dismiss timer
-      // (AppConstants.healthReminderDismissDuration) run out so it
-      // doesn't leak past the end of the test.
-      await tester.pump(const Duration(seconds: 5));
-    });
+        // Let the reminder's own auto-dismiss timer
+        // (AppConstants.healthReminderDismissDuration) run out so it
+        // doesn't leak past the end of the test.
+        await tester.pump(const Duration(seconds: 5));
+      },
+    );
 
     testWidgets(
       'fades back in when reused for a new session after fading out — '
@@ -273,8 +272,7 @@ void main() {
           final codedCall = const StandardMethodCodec().encodeMethodCall(
             MethodCall('updateOverlayData', data),
           );
-          await TestDefaultBinaryMessengerBinding
-              .instance
+          await TestDefaultBinaryMessengerBinding.instance
               .defaultBinaryMessenger
               .handlePlatformMessage(
                 'com.breakmate.desktop/bridge',
@@ -433,31 +431,32 @@ void main() {
       },
     );
 
-    testWidgets('tearing down the overlay mid-break (dispose) does not throw', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: StandaloneBreakOverlay(
-            title: 'Initial Title',
-            message: 'Initial Message',
-            initialDurationSeconds: 120,
+    testWidgets(
+      'tearing down the overlay mid-break (dispose) does not throw',
+      (WidgetTester tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: StandaloneBreakOverlay(
+              title: 'Initial Title',
+              message: 'Initial Message',
+              initialDurationSeconds: 120,
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      // Let the countdown/animation controllers actually tick before the
-      // widget (and its TickerProviderStateMixin controllers) get torn
-      // down mid-flight — the regression this guards is a controller
-      // disposed while still animating throwing on removal.
-      await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        // Let the countdown/animation controllers actually tick before the
+        // widget (and its TickerProviderStateMixin controllers) get torn
+        // down mid-flight — the regression this guards is a controller
+        // disposed while still animating throwing on removal.
+        await tester.pump(const Duration(seconds: 1));
 
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.pump();
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

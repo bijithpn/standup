@@ -167,12 +167,12 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
 
-    final kinds = segments.recorded.map((s) => s.activityKind).toList();
+    final kinds =
+        segments.recorded.map((s) => s.activityKind).toList();
     expect(kinds, contains(ActivityKind.onBreak));
 
-    final onBreak = segments.recorded.firstWhere(
-      (s) => s.activityKind == ActivityKind.onBreak,
-    );
+    final onBreak = segments.recorded
+        .firstWhere((s) => s.activityKind == ActivityKind.onBreak);
     expect(onBreak.seconds, 60);
   });
 

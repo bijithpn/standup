@@ -93,24 +93,21 @@ void main() {
     });
   });
 
-  test(
-    'returns minutes to wait when a meeting is happening right now',
-    () async {
-      final now = DateTime(2026, 1, 1, 10, 0);
-      calendarService.events = [
-        CalendarEvent(
-          title: 'Standup',
-          start: now.subtract(const Duration(minutes: 5)),
-          end: now.add(const Duration(minutes: 10)),
-        ),
-      ];
+  test('returns minutes to wait when a meeting is happening right now', () async {
+    final now = DateTime(2026, 1, 1, 10, 0);
+    calendarService.events = [
+      CalendarEvent(
+        title: 'Standup',
+        start: now.subtract(const Duration(minutes: 5)),
+        end: now.add(const Duration(minutes: 10)),
+      ),
+    ];
 
-      await withClock(Clock.fixed(now), () async {
-        final result = await contextManager.minutesUntilNextFreeGap();
-        expect(result, equals(10));
-      });
-    },
-  );
+    await withClock(Clock.fixed(now), () async {
+      final result = await contextManager.minutesUntilNextFreeGap();
+      expect(result, equals(10));
+    });
+  });
 
   test('skips a short gap that is smaller than the break duration', () async {
     final now = DateTime(2026, 1, 1, 10, 0);

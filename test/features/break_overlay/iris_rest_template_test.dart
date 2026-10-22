@@ -37,9 +37,7 @@ class FakeStorageService implements StorageService {
 void main() {
   setUpAll(() {
     sl.allowReassignment = true;
-    sl.registerSingleton<StatsService>(
-      StatsService(storage: FakeStorageService()),
-    );
+    sl.registerSingleton<StatsService>(StatsService(storage: FakeStorageService()));
   });
 
   const testBreakInfo = BreakModel(

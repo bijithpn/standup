@@ -56,31 +56,28 @@ void main() {
   int breakEnds() => events.whereType<BreakEndedEvent>().length;
 
   group('break countdown across sleep', () {
-    test(
-      'short sleep: remaining time reflects wall clock, not stale counter',
-      () {
-        fakeAsync((async) {
-          final engine = newEngine()..startTimers();
-          engine.triggerBreakNow();
-          final total = engine.countdownSeconds;
-          expect(engine.state, TimerState.breakActive);
+    test('short sleep: remaining time reflects wall clock, not stale counter', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        engine.triggerBreakNow();
+        final total = engine.countdownSeconds;
+        expect(engine.state, TimerState.breakActive);
 
-          async.elapse(const Duration(seconds: 5));
-          engine.handleSystemSleep();
-          async.elapse(const Duration(seconds: 10));
-          engine.handleSystemWake();
+        async.elapse(const Duration(seconds: 5));
+        engine.handleSystemSleep();
+        async.elapse(const Duration(seconds: 10));
+        engine.handleSystemWake();
 
-          expect(engine.state, TimerState.breakActive);
-          expect(engine.countdownSeconds, total - 15);
-          expect(engine.countdownNotifier.value, total - 15);
-          expect(
-            engine.targetEndTime!.difference(clock.now()).inSeconds,
-            engine.countdownSeconds,
-          );
-          engine.dispose();
-        });
-      },
-    );
+        expect(engine.state, TimerState.breakActive);
+        expect(engine.countdownSeconds, total - 15);
+        expect(engine.countdownNotifier.value, total - 15);
+        expect(
+          engine.targetEndTime!.difference(clock.now()).inSeconds,
+          engine.countdownSeconds,
+        );
+        engine.dispose();
+      });
+    });
 
     test('sleep longer than remaining: completes once, never restarts', () {
       fakeAsync((async) {

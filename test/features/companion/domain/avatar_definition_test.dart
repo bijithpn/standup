@@ -10,39 +10,11 @@ void main() {
   group('AvatarSpecies', () {
     test('contains all 33 OneWorks species', () {
       const expectedSpeciesNames = [
-        'alpaca',
-        'beaver',
-        'capybara',
-        'cat',
-        'chinchilla',
-        'chick',
-        'cow',
-        'dog',
-        'duck',
-        'deer',
-        'fox',
-        'ferret',
-        'guineaPig',
-        'goose',
-        'hamster',
-        'hedgehog',
-        'lion',
-        'monkey',
-        'otter',
-        'owl',
-        'parrot',
-        'pig',
-        'panda',
-        'penguin',
-        'rabbit',
-        'redPanda',
-        'raccoon',
-        'sheep',
-        'seal',
-        'squirrel',
-        'tiger',
-        'wolf',
-        'bear',
+        'alpaca', 'beaver', 'capybara', 'cat', 'chinchilla', 'chick', 'cow',
+        'dog', 'duck', 'deer', 'fox', 'ferret', 'guineaPig', 'goose',
+        'hamster', 'hedgehog', 'lion', 'monkey', 'otter', 'owl', 'parrot',
+        'pig', 'panda', 'penguin', 'rabbit', 'redPanda', 'raccoon', 'sheep',
+        'seal', 'squirrel', 'tiger', 'wolf', 'bear',
       ];
 
       expect(AvatarSpecies.values.length, 33);
@@ -58,10 +30,7 @@ void main() {
 
     test('tryParse handles valid and invalid inputs gracefully', () {
       expect(AvatarSpecies.tryParse('cat'), equals(AvatarSpecies.cat));
-      expect(
-        AvatarSpecies.tryParse('redPanda'),
-        equals(AvatarSpecies.redPanda),
-      );
+      expect(AvatarSpecies.tryParse('redPanda'), equals(AvatarSpecies.redPanda));
       expect(AvatarSpecies.tryParse('invalid_name'), isNull);
       expect(AvatarSpecies.tryParse(null), isNull);
     });
@@ -70,10 +39,7 @@ void main() {
       expect(AvatarSpecies.cat.category, equals(AvatarSpeciesCategory.feline));
       expect(AvatarSpecies.dog.category, equals(AvatarSpeciesCategory.canine));
       expect(AvatarSpecies.duck.category, equals(AvatarSpeciesCategory.avian));
-      expect(
-        AvatarSpecies.hamster.category,
-        equals(AvatarSpeciesCategory.rodent),
-      );
+      expect(AvatarSpecies.hamster.category, equals(AvatarSpeciesCategory.rodent));
       expect(AvatarSpecies.sheep.category, equals(AvatarSpeciesCategory.farm));
     });
   });
@@ -118,36 +84,21 @@ void main() {
   });
 
   group('AvatarAnimationClip', () {
-    test(
-      'contains all 15 core OneWorks animation clips with proper metadata',
-      () {
-        const expectedClips = [
-          'idle',
-          'nod',
-          'glance',
-          'lookAround',
-          'walk',
-          'run',
-          'sleep',
-          'blink',
-          'stretch',
-          'celebrate',
-          'bounce',
-          'wiggle',
-          'jump',
-          'anger',
-          'happiness',
-        ];
+    test('contains all 15 core OneWorks animation clips with proper metadata', () {
+      const expectedClips = [
+        'idle', 'nod', 'glance', 'lookAround', 'walk', 'run', 'sleep',
+        'blink', 'stretch', 'celebrate', 'bounce', 'wiggle', 'jump',
+        'anger', 'happiness',
+      ];
 
-        expect(AvatarAnimationClip.values.length, 15);
-        for (final clipName in expectedClips) {
-          final clip = AvatarAnimationClip.fromName(clipName);
-          expect(clip.name, equals(clipName));
-          expect(clip.duration.inMilliseconds, greaterThan(0));
-          expect(clip.displayName.isNotEmpty, isTrue);
-        }
-      },
-    );
+      expect(AvatarAnimationClip.values.length, 15);
+      for (final clipName in expectedClips) {
+        final clip = AvatarAnimationClip.fromName(clipName);
+        expect(clip.name, equals(clipName));
+        expect(clip.duration.inMilliseconds, greaterThan(0));
+        expect(clip.displayName.isNotEmpty, isTrue);
+      }
+    });
 
     test('looping behavior aligns with engine spec', () {
       expect(AvatarAnimationClip.idle.isLooping, isTrue);
@@ -169,21 +120,18 @@ void main() {
       expect(def.seed.isNotEmpty, isTrue);
     });
 
-    test(
-      'deterministic generation from seed produces consistent attributes',
-      () {
-        final def1 = AvatarDefinition.fromSeed('standup-companion-seed-42');
-        final def2 = AvatarDefinition.fromSeed('standup-companion-seed-42');
-        final defDiff = AvatarDefinition.fromSeed('different-seed-99');
+    test('deterministic generation from seed produces consistent attributes', () {
+      final def1 = AvatarDefinition.fromSeed('standup-companion-seed-42');
+      final def2 = AvatarDefinition.fromSeed('standup-companion-seed-42');
+      final defDiff = AvatarDefinition.fromSeed('different-seed-99');
 
-        expect(def1.species, equals(def2.species));
-        expect(def1.palette, equals(def2.palette));
-        expect(def1.pattern, equals(def2.pattern));
-        expect(def1, equals(def2));
+      expect(def1.species, equals(def2.species));
+      expect(def1.palette, equals(def2.palette));
+      expect(def1.pattern, equals(def2.pattern));
+      expect(def1, equals(def2));
 
-        expect(def1.seed, isNot(equals(defDiff.seed)));
-      },
-    );
+      expect(def1.seed, isNot(equals(defDiff.seed)));
+    });
 
     test('JSON serialization round-trip preserves all fields', () {
       final def = AvatarDefinition(
@@ -202,10 +150,7 @@ void main() {
 
       expect(restored.schemaVersion, equals(1));
       expect(restored.species, equals(AvatarSpecies.redPanda));
-      expect(
-        restored.palette.primary,
-        equals(AvatarPalette.warmOrange.primary),
-      );
+      expect(restored.palette.primary, equals(AvatarPalette.warmOrange.primary));
       expect(restored.pattern, equals('stripes'));
       expect(restored.seed, equals('test-seed-123'));
       expect(restored.scale, equals(1.25));
@@ -230,49 +175,22 @@ void main() {
   });
 
   group('PetAnimationState toAvatarClip extension', () {
-    test(
-      'maps all PetAnimationState values to appropriate AvatarAnimationClip',
-      () {
-        for (final state in PetAnimationState.values) {
-          final clip = state.toAvatarClip();
-          expect(clip, isNotNull);
-          expect(clip, isA<AvatarAnimationClip>());
-        }
+    test('maps all PetAnimationState values to appropriate AvatarAnimationClip', () {
+      for (final state in PetAnimationState.values) {
+        final clip = state.toAvatarClip();
+        expect(clip, isNotNull);
+        expect(clip, isA<AvatarAnimationClip>());
+      }
 
-        expect(
-          PetAnimationState.idle.toAvatarClip(),
-          equals(AvatarAnimationClip.idle),
-        );
-        expect(
-          PetAnimationState.walkSide.toAvatarClip(),
-          equals(AvatarAnimationClip.walk),
-        );
-        expect(
-          PetAnimationState.run.toAvatarClip(),
-          equals(AvatarAnimationClip.run),
-        );
-        expect(
-          PetAnimationState.sleep.toAvatarClip(),
-          equals(AvatarAnimationClip.sleep),
-        );
-        expect(
-          PetAnimationState.angry.toAvatarClip(),
-          equals(AvatarAnimationClip.anger),
-        );
-        expect(
-          PetAnimationState.excited.toAvatarClip(),
-          equals(AvatarAnimationClip.celebrate),
-        );
-        expect(
-          PetAnimationState.stretch.toAvatarClip(),
-          equals(AvatarAnimationClip.stretch),
-        );
-        expect(
-          PetAnimationState.blink.toAvatarClip(),
-          equals(AvatarAnimationClip.blink),
-        );
-      },
-    );
+      expect(PetAnimationState.idle.toAvatarClip(), equals(AvatarAnimationClip.idle));
+      expect(PetAnimationState.walkSide.toAvatarClip(), equals(AvatarAnimationClip.walk));
+      expect(PetAnimationState.run.toAvatarClip(), equals(AvatarAnimationClip.run));
+      expect(PetAnimationState.sleep.toAvatarClip(), equals(AvatarAnimationClip.sleep));
+      expect(PetAnimationState.angry.toAvatarClip(), equals(AvatarAnimationClip.anger));
+      expect(PetAnimationState.excited.toAvatarClip(), equals(AvatarAnimationClip.celebrate));
+      expect(PetAnimationState.stretch.toAvatarClip(), equals(AvatarAnimationClip.stretch));
+      expect(PetAnimationState.blink.toAvatarClip(), equals(AvatarAnimationClip.blink));
+    });
   });
 
   group('PetTheme avatar integration', () {

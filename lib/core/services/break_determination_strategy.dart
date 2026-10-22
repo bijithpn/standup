@@ -21,7 +21,9 @@ abstract class BreakDeterminationStrategy {
   });
 
   /// Determines the active focus duration before the next break.
-  Duration determineFocusInterval({required int shortBreakIntervalMinutes});
+  Duration determineFocusInterval({
+    required int shortBreakIntervalMinutes,
+  });
 
   /// Evaluates whether user inactivity / idle time should reset the break cycle
   /// counter (so returning users start fresh with short breaks).
@@ -50,8 +52,8 @@ class RepeatCycleBreakStrategy implements BreakDeterminationStrategy {
     final effectiveCycle = repeatCycle > 0
         ? repeatCycle
         : (longBreakIntervalMinutes > 0
-              ? max(1, (longBreakIntervalMinutes / 20).round())
-              : defaultRepeatCycle);
+            ? max(1, (longBreakIntervalMinutes / 20).round())
+            : defaultRepeatCycle);
 
     // 1. Cycle count check: If user completed enough short breaks in this cycle
     if (completedShortBreaksInCycle >= effectiveCycle) {
@@ -81,7 +83,9 @@ class RepeatCycleBreakStrategy implements BreakDeterminationStrategy {
   }
 
   @override
-  Duration determineFocusInterval({required int shortBreakIntervalMinutes}) {
+  Duration determineFocusInterval({
+    required int shortBreakIntervalMinutes,
+  }) {
     return Duration(minutes: max(1, shortBreakIntervalMinutes));
   }
 
@@ -136,7 +140,9 @@ class IdleTimeBreakStrategy implements BreakDeterminationStrategy {
   }
 
   @override
-  Duration determineFocusInterval({required int shortBreakIntervalMinutes}) {
+  Duration determineFocusInterval({
+    required int shortBreakIntervalMinutes,
+  }) {
     return innerStrategy.determineFocusInterval(
       shortBreakIntervalMinutes: shortBreakIntervalMinutes,
     );

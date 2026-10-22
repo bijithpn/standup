@@ -51,79 +51,16 @@ class TestAssetBundle extends CachingAssetBundle {
   @override
   Future<ByteData> load(String key) async {
     if (key == 'AssetManifest.bin') {
-      final ByteData? data = const StandardMessageCodec().encodeMessage(
-        <String, Object>{},
-      );
+      final ByteData? data = const StandardMessageCodec().encodeMessage(<String, Object>{});
       return data ?? ByteData(0);
     }
     final Uint8List transparentPng = Uint8List.fromList([
-      0x89,
-      0x50,
-      0x4E,
-      0x47,
-      0x0D,
-      0x0A,
-      0x1A,
-      0x0A,
-      0x00,
-      0x00,
-      0x00,
-      0x0D,
-      0x49,
-      0x48,
-      0x44,
-      0x52,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
-      0x00,
-      0x00,
-      0x00,
-      0x01,
-      0x08,
-      0x06,
-      0x00,
-      0x00,
-      0x00,
-      0x1F,
-      0x15,
-      0xC4,
-      0x89,
-      0x00,
-      0x00,
-      0x00,
-      0x0A,
-      0x49,
-      0x44,
-      0x41,
-      0x54,
-      0x78,
-      0x9C,
-      0x63,
-      0x00,
-      0x01,
-      0x00,
-      0x00,
-      0x05,
-      0x00,
-      0x01,
-      0x0D,
-      0x0A,
-      0x2D,
-      0xB4,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x49,
-      0x45,
-      0x4E,
-      0x44,
-      0xAE,
-      0x42,
-      0x60,
-      0x82,
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+      0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
     ]);
     return ByteData.sublistView(transparentPng);
   }
@@ -146,36 +83,35 @@ void main() {
     sl.registerSingleton<BreakController>(FakeBreakController());
   });
 
-  testWidgets(
-    'renders a live preview tile for every template without throwing',
-    (tester) async {
-      await tester.pumpWidget(
-        DefaultAssetBundle(
-          bundle: TestAssetBundle(),
-          child: MaterialApp(
-            home: Scaffold(
-              body: SingleChildScrollView(
-                child: BreakAppearanceSettings(
-                  settings: const SettingsModel(),
-                  onSave: (_) {},
-                ),
+  testWidgets('renders a live preview tile for every template without throwing', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: TestAssetBundle(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: BreakAppearanceSettings(
+                settings: const SettingsModel(),
+                onSave: (_) {},
               ),
             ),
           ),
         ),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(BreakAppearanceSettings), findsOneWidget);
+    expect(find.byType(BreakAppearanceSettings), findsOneWidget);
 
-      await tester.scrollUntilVisible(
-        find.text('Night Sky'),
-        100.0,
-        scrollable: find.byType(Scrollable).last,
-      );
+    await tester.scrollUntilVisible(
+      find.text('Night Sky'),
+      100.0,
+      scrollable: find.byType(Scrollable).last,
+    );
 
-      expect(find.text('Night Sky'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(find.text('Night Sky'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

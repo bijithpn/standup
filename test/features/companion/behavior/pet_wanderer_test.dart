@@ -12,8 +12,8 @@ class _FakeTarget implements WanderTarget {
     this.size = const Size(280, 320),
     Offset start = const Offset(600, 400),
     List<Rect>? screens,
-  }) : position = start,
-       _screens = screens ?? <Rect>[const Rect.fromLTWH(0, 0, 1920, 1080)];
+  })  : position = start,
+        _screens = screens ?? <Rect>[const Rect.fromLTWH(0, 0, 1920, 1080)];
 
   @override
   final Size size;
@@ -103,11 +103,8 @@ void main() {
       const size = Size(280, 320);
       final random = math.Random(7);
       final target = _FakeTarget(size: size, screens: <Rect>[screen]);
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: random,
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: random);
       addTearDown(wanderer.dispose);
 
       // Corners included, because that is where clamping either works or
@@ -130,28 +127,22 @@ void main() {
       }
     });
 
-    test(
-      'stays on the second monitor when that is where the window is',
-      () async {
-        const left = Rect.fromLTWH(0, 0, 1920, 1080);
-        const right = Rect.fromLTWH(1920, 0, 1920, 1080);
-        final target = _FakeTarget(
-          start: const Offset(2400, 500),
-          screens: <Rect>[left, right],
-        );
-        final wanderer = PetWanderer(
-          target: target,
-          engine: engine,
-          random: math.Random(3),
-        );
-        addTearDown(wanderer.dispose);
+    test('stays on the second monitor when that is where the window is', () async {
+      const left = Rect.fromLTWH(0, 0, 1920, 1080);
+      const right = Rect.fromLTWH(1920, 0, 1920, 1080);
+      final target = _FakeTarget(
+        start: const Offset(2400, 500),
+        screens: <Rect>[left, right],
+      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(3));
+      addTearDown(wanderer.dispose);
 
-        await wanderer.beginJourney();
+      await wanderer.beginJourney();
 
-        expect(wanderer.destination, isNotNull);
-        expect(right.contains(wanderer.destination!), isTrue);
-      },
-    );
+      expect(wanderer.destination, isNotNull);
+      expect(right.contains(wanderer.destination!), isTrue);
+    });
 
     test('drifts toward the edge it is already nearest', () {
       const screen = Rect.fromLTWH(0, 0, 1600, 900);
@@ -179,11 +170,8 @@ void main() {
   group('walking', () {
     test('arrives at the spot it chose, and persists once', () async {
       final target = _FakeTarget();
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: math.Random(5),
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
       addTearDown(wanderer.dispose);
 
       await wanderer.beginJourney();
@@ -200,49 +188,38 @@ void main() {
       expect(target.moves.length, greaterThan(5));
     });
 
-    test(
-      'tells the pet which way it is going, and that it has stopped',
-      () async {
-        final target = _FakeTarget();
-        final wanderer = PetWanderer(
-          target: target,
-          engine: engine,
-          random: math.Random(5),
-        );
-        addTearDown(wanderer.dispose);
+    test('tells the pet which way it is going, and that it has stopped',
+        () async {
+      final target = _FakeTarget();
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
+      addTearDown(wanderer.dispose);
 
-        await wanderer.beginJourney();
+      await wanderer.beginJourney();
 
-        // Part way through, the body should be leaning into the travel.
-        for (var i = 0; i < 12; i++) {
-          wanderer.tick();
-          await Future<void>.delayed(Duration.zero);
-        }
-        // A tick shorter than one simulation step publishes nothing, so time
-        // has to be handed over in slices the engine will actually run.
-        engine.tick(const Duration(milliseconds: 100));
-        final travelling = engine.snapshot.bodyLean;
+      // Part way through, the body should be leaning into the travel.
+      for (var i = 0; i < 12; i++) {
+        wanderer.tick();
+        await Future<void>.delayed(Duration.zero);
+      }
+      // A tick shorter than one simulation step publishes nothing, so time
+      // has to be handed over in slices the engine will actually run.
+      engine.tick(const Duration(milliseconds: 100));
+      final travelling = engine.snapshot.bodyLean;
 
-        await walk(wanderer);
-        engine.tick(const Duration(milliseconds: 200));
+      await walk(wanderer);
+      engine.tick(const Duration(milliseconds: 200));
 
-        expect(travelling.distance, greaterThan(0.0));
-        // Lean unwinds through a spring, so the check is that the travel
-        // contribution is gone rather than that the body is exactly at rest.
-        expect(
-          engine.snapshot.bodyLean.distance,
-          lessThan(travelling.distance),
-        );
-      },
-    );
+      expect(travelling.distance, greaterThan(0.0));
+      // Lean unwinds through a spring, so the check is that the travel
+      // contribution is gone rather than that the body is exactly at rest.
+      expect(engine.snapshot.bodyLean.distance, lessThan(travelling.distance));
+    });
 
     test('suspending mid-walk stops it where it stands', () async {
       final target = _FakeTarget();
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: math.Random(5),
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
       addTearDown(wanderer.dispose);
 
       await wanderer.beginJourney();
@@ -264,11 +241,8 @@ void main() {
 
     test('a suspended wanderer starts nothing new', () async {
       final target = _FakeTarget();
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: math.Random(5),
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
       addTearDown(wanderer.dispose);
 
       wanderer.suspend();
@@ -280,11 +254,8 @@ void main() {
 
     test('turning wandering off abandons the walk in progress', () async {
       final target = _FakeTarget();
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: math.Random(5),
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
       addTearDown(wanderer.dispose);
 
       await wanderer.beginJourney();
@@ -316,11 +287,8 @@ void main() {
   group('cost', () {
     test('does not ask the platform for displays on every tick', () async {
       final target = _FakeTarget();
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: math.Random(5),
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
       addTearDown(wanderer.dispose);
 
       await wanderer.beginJourney();
@@ -334,11 +302,8 @@ void main() {
 
     test('never has two window moves in flight at once', () async {
       final target = _FakeTarget();
-      final wanderer = PetWanderer(
-        target: target,
-        engine: engine,
-        random: math.Random(5),
-      );
+      final wanderer =
+          PetWanderer(target: target, engine: engine, random: math.Random(5));
       addTearDown(wanderer.dispose);
 
       await wanderer.beginJourney();

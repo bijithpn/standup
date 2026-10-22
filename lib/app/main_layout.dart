@@ -12,7 +12,6 @@ import 'package:breakmate/features/settings/settings_page.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/analytics/presentation/segment_inspector_page.dart';
-import 'package:breakmate/features/wellness/presentation/wellness_library_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:provider/provider.dart';
@@ -115,11 +114,6 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Goals',
     ),
     _NavItem(
-      label: 'Wellness Library',
-      icon: CupertinoIcons.book,
-      section: 'Wellness Library',
-    ),
-    _NavItem(
       label: 'Themes & Styling',
       icon: CupertinoIcons.paintbrush,
       section: 'Themes',
@@ -165,7 +159,8 @@ class _MainLayoutState extends State<MainLayout> {
   /// Sections that were merged into another screen; saved or deep-linked
   /// names keep working.
   static const Map<String, String> _legacySections = {
-    'Exercises': 'Wellness Library',
+    'Exercises': 'Breaks & Profiles',
+    'Wellness Library': 'Breaks & Profiles',
   };
 
   String _canonicalSection(String section) =>
@@ -450,8 +445,6 @@ class _MainLayoutState extends State<MainLayout> {
         return const SegmentInspectorPage();
       case 'Goals':
         return const SettingsPage(section: 'Goals');
-      case 'Wellness Library':
-        return const WellnessLibraryPage();
       case 'Themes':
       case 'Themes & Styling':
         return const SettingsPage(section: 'Themes');

@@ -19,8 +19,7 @@ ActivitySegment seg(
     appKey: active ? app : '',
     appName: active ? app : '',
     categoryName: active ? category : '',
-    date:
-        '${day.year}-${day.month.toString().padLeft(2, '0')}'
+    date: '${day.year}-${day.month.toString().padLeft(2, '0')}'
         '-${day.day.toString().padLeft(2, '0')}',
     startedAtMs: day.add(Duration(minutes: fromMinute)).millisecondsSinceEpoch,
     endedAtMs: day.add(Duration(minutes: toMinute)).millisecondsSinceEpoch,
@@ -86,27 +85,19 @@ DailyProductivitySummary splitDay(
 
   var cursor = 540; // 09:00
   for (var i = 0; i < morningBlocks; i++) {
-    segments.add(
-      seg(
-        day,
+    segments.add(seg(day,
         fromMinute: cursor,
         toMinute: cursor + blockMinutes,
-        app: i.isEven ? 'code' : 'chrome',
-      ),
-    );
+        app: i.isEven ? 'code' : 'chrome'));
     cursor += blockMinutes;
   }
 
   cursor = 840; // 14:00
   for (var i = 0; i < afternoonBlocks; i++) {
-    segments.add(
-      seg(
-        day,
+    segments.add(seg(day,
         fromMinute: cursor,
         toMinute: cursor + blockMinutes,
-        app: i.isEven ? 'code' : 'chrome',
-      ),
-    );
+        app: i.isEven ? 'code' : 'chrome'));
     cursor += blockMinutes;
   }
 
@@ -152,24 +143,18 @@ RangeProductivitySummary rangeOf(
 void main() {
   group('evidence gate', () {
     test('no history produces no insights at all', () {
-      final insights = generateInsights(
-        range: RangeProductivitySummary.empty(),
-      );
+      final insights = generateInsights(range: RangeProductivitySummary.empty());
 
       expect(insights, isEmpty);
-      expect(
-        hasEnoughDataForInsights(RangeProductivitySummary.empty()),
-        isFalse,
-      );
+      expect(hasEnoughDataForInsights(RangeProductivitySummary.empty()), isFalse);
     });
 
     test('one day is not enough to claim a pattern', () {
       final range = rangeOf(1);
 
       expect(hasEnoughDataForInsights(range), isFalse);
-      final patterns = generateInsights(
-        range: range,
-      ).where((i) => i.type == InsightType.focusWindow);
+      final patterns = generateInsights(range: range)
+          .where((i) => i.type == InsightType.focusWindow);
       expect(patterns, isEmpty);
     });
 
@@ -243,13 +228,19 @@ void main() {
     test('scattered minutes produce no window', () {
       final scattered = aggregateRange(<DailyProductivitySummary>[
         for (var i = 0; i < 5; i++)
-          aggregateDay('2026-09-0${i + 1}', <ActivitySegment>[
-            seg(DateTime(2026, 9, 1 + i), fromMinute: 540, toMinute: 545),
-          ]),
+          aggregateDay(
+            '2026-09-0${i + 1}',
+            <ActivitySegment>[
+              seg(DateTime(2026, 9, 1 + i), fromMinute: 540, toMinute: 545),
+            ],
+          ),
       ]);
 
       final insights = generateInsights(range: scattered);
-      expect(insights.where((i) => i.type == InsightType.focusWindow), isEmpty);
+      expect(
+        insights.where((i) => i.type == InsightType.focusWindow),
+        isEmpty,
+      );
     });
   });
 
@@ -259,27 +250,25 @@ void main() {
       // between far more often after lunch.
       final range = aggregateRange(<DailyProductivitySummary>[
         for (var i = 0; i < 7; i++)
-          aggregateDay('2026-09-0${i + 1}', <ActivitySegment>[
-            for (var block = 0; block < 4; block++)
-              seg(
-                DateTime(2026, 9, 1 + i),
-                fromMinute: 540 + block * 30,
-                toMinute: 570 + block * 30,
-                app: block.isEven ? 'code' : 'chrome',
-              ),
-            for (var block = 0; block < 24; block++)
-              seg(
-                DateTime(2026, 9, 1 + i),
-                fromMinute: 840 + block * 5,
-                toMinute: 845 + block * 5,
-                app: block.isEven ? 'code' : 'chrome',
-              ),
-          ]),
+          aggregateDay(
+            '2026-09-0${i + 1}',
+            <ActivitySegment>[
+              for (var block = 0; block < 4; block++)
+                seg(DateTime(2026, 9, 1 + i),
+                    fromMinute: 540 + block * 30,
+                    toMinute: 570 + block * 30,
+                    app: block.isEven ? 'code' : 'chrome'),
+              for (var block = 0; block < 24; block++)
+                seg(DateTime(2026, 9, 1 + i),
+                    fromMinute: 840 + block * 5,
+                    toMinute: 845 + block * 5,
+                    app: block.isEven ? 'code' : 'chrome'),
+            ],
+          ),
       ]);
 
-      final shift = generateInsights(
-        range: range,
-      ).firstWhere((i) => i.id == 'afternoon-switching');
+      final shift =
+          generateInsights(range: range).firstWhere((i) => i.id == 'afternoon-switching');
 
       final change = shift.supportingData['change']! as double;
       expect(change, greaterThan(0));
@@ -292,21 +281,21 @@ void main() {
       // and the finding still has to be expressible.
       final range = aggregateRange(<DailyProductivitySummary>[
         for (var i = 0; i < 7; i++)
-          aggregateDay('2026-09-0${i + 1}', <ActivitySegment>[
-            seg(DateTime(2026, 9, 1 + i), fromMinute: 540, toMinute: 720),
-            for (var block = 0; block < 24; block++)
-              seg(
-                DateTime(2026, 9, 1 + i),
-                fromMinute: 840 + block * 5,
-                toMinute: 845 + block * 5,
-                app: block.isEven ? 'chrome' : 'slack',
-              ),
-          ]),
+          aggregateDay(
+            '2026-09-0${i + 1}',
+            <ActivitySegment>[
+              seg(DateTime(2026, 9, 1 + i), fromMinute: 540, toMinute: 720),
+              for (var block = 0; block < 24; block++)
+                seg(DateTime(2026, 9, 1 + i),
+                    fromMinute: 840 + block * 5,
+                    toMinute: 845 + block * 5,
+                    app: block.isEven ? 'chrome' : 'slack'),
+            ],
+          ),
       ]);
 
-      final shift = generateInsights(
-        range: range,
-      ).firstWhere((i) => i.id == 'afternoon-switching');
+      final shift =
+          generateInsights(range: range).firstWhere((i) => i.id == 'afternoon-switching');
 
       expect(shift.supportingData['morningPerHour'], 0);
       expect(shift.description, contains('without switching'));
@@ -329,9 +318,12 @@ void main() {
       // Mornings only — nothing to compare the afternoon against.
       final morningsOnly = aggregateRange(<DailyProductivitySummary>[
         for (var i = 0; i < 7; i++)
-          aggregateDay('2026-09-0${i + 1}', <ActivitySegment>[
-            seg(DateTime(2026, 9, 1 + i), fromMinute: 540, toMinute: 720),
-          ]),
+          aggregateDay(
+            '2026-09-0${i + 1}',
+            <ActivitySegment>[
+              seg(DateTime(2026, 9, 1 + i), fromMinute: 540, toMinute: 720),
+            ],
+          ),
       ]);
 
       final insights = generateInsights(range: morningsOnly);
@@ -426,7 +418,8 @@ void main() {
 
   group('break rhythm', () {
     test('reports the balance of breaks against work', () {
-      final insights = generateInsights(range: rangeOf(7, breakMinutes: 15));
+      final insights =
+          generateInsights(range: rangeOf(7, breakMinutes: 15));
       final breaks = insights.firstWhere(
         (i) => i.type == InsightType.breakPattern,
       );
@@ -468,9 +461,8 @@ void main() {
     });
 
     test('every finding carries the evidence behind it', () {
-      final insights = generateInsights(
-        range: rangeOf(7, switchesAfternoon: 8),
-      );
+      final insights =
+          generateInsights(range: rangeOf(7, switchesAfternoon: 8));
 
       for (final insight in insights) {
         expect(insight.evidenceDayCount, greaterThan(0));

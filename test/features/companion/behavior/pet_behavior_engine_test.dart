@@ -226,7 +226,9 @@ void main() {
         var now = Duration.zero;
         for (var i = 0; i < hz * 2; i++) {
           now += frame;
-          engine.pointerMoved(_center + Offset(240, i.isEven ? 6 : -6));
+          engine.pointerMoved(
+            _center + Offset(240, i.isEven ? 6 : -6),
+          );
           engine.tick(now);
         }
         final result = engine.snapshot.gaze;
@@ -262,11 +264,7 @@ void main() {
       final engine = PetBehaviorEngine(random: math.Random(7))..startLocal();
       addTearDown(engine.dispose);
 
-      _advance(
-        engine,
-        2.0,
-        each: (_) => engine.pointerMoved(const Offset(10, 10)),
-      );
+      _advance(engine, 2.0, each: (_) => engine.pointerMoved(const Offset(10, 10)));
 
       expect(engine.snapshot.gaze.dx.isFinite, isTrue);
       expect(engine.snapshot.gaze.dy.isFinite, isTrue);
@@ -326,8 +324,9 @@ void main() {
       _advance(
         engine,
         0.4,
-        each: (_) =>
-            engine.pointerMoved(_center + Offset(step++ * 90.0 - 400, 0)),
+        each: (_) => engine.pointerMoved(
+          _center + Offset(step++ * 90.0 - 400, 0),
+        ),
       );
 
       // Either it was startled, or it stayed excited — but it must not have
@@ -350,18 +349,15 @@ void main() {
       expect(engine.wish, PetWish.none);
     });
 
-    test(
-      'a pet that has just been played with asks for a scratch, not another game',
-      () {
-        final engine = _engine();
-        addTearDown(engine.dispose);
+    test('a pet that has just been played with asks for a scratch, not another game', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
 
-        engine.play();
-        _advance(engine, 1.0);
+      engine.play();
+      _advance(engine, 1.0);
 
-        expect(engine.wish, PetWish.petting);
-      },
-    );
+      expect(engine.wish, PetWish.petting);
+    });
 
     test('a pet ignored while its owner works asks for attention', () {
       final engine = _engine();

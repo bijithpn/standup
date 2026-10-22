@@ -10,16 +10,10 @@ import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/features/analytics/app_icon_cache.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
-import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
 import 'package:breakmate/features/settings/widgets/privacy_section.dart';
-import '../../helpers/fake_calendar_sync_controller.dart';
 
 void main() {
-  late FakeCalendarSyncController calendar;
-
   setUp(() {
-    calendar = FakeCalendarSyncController();
-    sl.registerSingleton<CalendarSyncController>(calendar);
     if (!sl.isRegistered<AppTrackingService>()) {
       sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
     }
@@ -108,7 +102,7 @@ void main() {
 
     final toggle = find.descendant(
       of: find.ancestor(
-        of: find.text('Send crash reports'),
+        of: find.text('Send Crash Reports'),
         matching: find.byType(Row),
       ),
       matching: find.byType(CupertinoSwitch),
@@ -131,7 +125,7 @@ void main() {
   ) async {
     await pumpPrivacy(tester);
 
-    final wipe = find.text('Delete…');
+    final wipe = find.text('Wipe Data');
     await tester.ensureVisible(wipe);
     await tester.tap(wipe);
     await tester.pumpAndSettle();

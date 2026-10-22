@@ -12,11 +12,7 @@ void main() {
           body: AnimatedNatureBackdrop(
             baseColorTop: Color(0xFF0D1F16),
             baseColorBottom: Color(0xFF060B08),
-            blobColors: [
-              Color(0xFF2D6A4F),
-              Color(0xFF74C69D),
-              Color(0xFF1B4332),
-            ],
+            blobColors: [Color(0xFF2D6A4F), Color(0xFF74C69D), Color(0xFF1B4332)],
           ),
         ),
       ),

@@ -32,7 +32,8 @@ void main() {
   }
 
   group('Companion studio', () {
-    testWidgets('shows one surface with every control section', (tester) async {
+    testWidgets('shows one surface with every control section',
+        (tester) async {
       await pumpStudio(tester);
 
       expect(find.text('Companion Studio'), findsOneWidget);
@@ -44,7 +45,8 @@ void main() {
       expect(find.byType(PetStage), findsOneWidget);
     });
 
-    testWidgets('has no 3D view mode or orbit camera controls', (tester) async {
+    testWidgets('has no 3D view mode or orbit camera controls',
+        (tester) async {
       await pumpStudio(tester);
 
       // The 3D view was removed in favour of a single studio surface.
@@ -55,9 +57,8 @@ void main() {
       expect(find.textContaining('Zoom In'), findsNothing);
     });
 
-    testWidgets('selecting a species updates the preview subtitle', (
-      tester,
-    ) async {
+    testWidgets('selecting a species updates the preview subtitle',
+        (tester) async {
       await pumpStudio(tester);
 
       expect(find.textContaining('Cat'), findsWidgets);
@@ -68,9 +69,8 @@ void main() {
       expect(find.textContaining('Fox'), findsWidgets);
     });
 
-    testWidgets('switching species resets the breed to one that exists', (
-      tester,
-    ) async {
+    testWidgets('switching species resets the breed to one that exists',
+        (tester) async {
       AvatarDefinition? saved;
       await pumpStudio(
         tester,
@@ -98,9 +98,8 @@ void main() {
       );
     });
 
-    testWidgets('choosing a palette carries into the saved definition', (
-      tester,
-    ) async {
+    testWidgets('choosing a palette carries into the saved definition',
+        (tester) async {
       AvatarDefinition? saved;
       await pumpStudio(tester, onSaved: (definition) => saved = definition);
 
@@ -136,9 +135,8 @@ void main() {
       expect(find.text('Nose'), findsOneWidget);
     });
 
-    testWidgets('a style change carries into the saved definition', (
-      tester,
-    ) async {
+    testWidgets('a style change carries into the saved definition',
+        (tester) async {
       AvatarDefinition? saved;
       await pumpStudio(tester, onSaved: (definition) => saved = definition);
 
@@ -157,9 +155,8 @@ void main() {
       expect(avatarStyleFrom(saved!.parts).isAuthored, isFalse);
     });
 
-    testWidgets('an untouched companion carries no style at all', (
-      tester,
-    ) async {
+    testWidgets('an untouched companion carries no style at all',
+        (tester) async {
       AvatarDefinition? saved;
       await pumpStudio(tester, onSaved: (definition) => saved = definition);
 

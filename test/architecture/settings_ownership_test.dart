@@ -84,6 +84,7 @@ void main() {
     expect("section: 'Calendar Sync',".allMatches(layout).length, 1);
     expect("section: 'Exercises'".allMatches(layout).length, 0);
     // Old deep links still resolve.
-    expect(layout, contains("'Exercises': 'Wellness Library'"));
+    expect(layout, contains("'Exercises': 'Breaks & Profiles'"));
+    expect(layout, isNot(contains("section: 'Wellness Library'")));
   });
 }

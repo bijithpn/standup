@@ -18,10 +18,8 @@ class FakeAppTrackingService implements AppTrackingService {
   }) async => nextApp;
 
   @override
-  Future<Uint8List?> getAppIcon({
-    String? bundleId,
-    String? executableName,
-  }) async => null;
+  Future<Uint8List?> getAppIcon({String? bundleId, String? executableName}) async =>
+      null;
 }
 
 void main() {
@@ -132,14 +130,11 @@ void main() {
       expect(events, contains(true));
     });
 
-    test(
-      'stop() clears isMeetingActive without emitting through the stream',
-      () {
-        debugDefaultTargetPlatformOverride = TargetPlatform.windows;
-        service.start();
-        service.stop();
-        expect(service.isMeetingActive, isFalse);
-      },
-    );
+    test('stop() clears isMeetingActive without emitting through the stream', () {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      service.start();
+      service.stop();
+      expect(service.isMeetingActive, isFalse);
+    });
   });
 }

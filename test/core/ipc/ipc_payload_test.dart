@@ -47,7 +47,8 @@ void main() {
       expect(payload['title'], equals('Lunch Break'));
 
       final parsed =
-          IpcEvent.parse(original.eventName, payload) as BreakStartedIpcEvent;
+          IpcEvent.parse(original.eventName, payload)
+              as BreakStartedIpcEvent;
 
       expect(parsed.isLongBreak, isTrue);
       expect(parsed.durationSeconds, equals(900));
@@ -63,7 +64,8 @@ void main() {
       expect(payload['skipped'], isTrue);
 
       final parsed =
-          IpcEvent.parse(original.eventName, payload) as BreakEndedIpcEvent;
+          IpcEvent.parse(original.eventName, payload)
+              as BreakEndedIpcEvent;
 
       expect(parsed.skipped, isTrue);
     });
@@ -117,7 +119,8 @@ void main() {
       expect(payload['isActive'], isTrue);
 
       final parsed =
-          IpcEvent.parse(original.eventName, payload) as FocusModeIpcEvent;
+          IpcEvent.parse(original.eventName, payload)
+              as FocusModeIpcEvent;
 
       expect(parsed.isActive, isTrue);
     });
@@ -131,7 +134,8 @@ void main() {
       expect(payload['action'], equals('click'));
 
       final parsed =
-          IpcEvent.parse(original.eventName, payload) as TrayActionIpcEvent;
+          IpcEvent.parse(original.eventName, payload)
+              as TrayActionIpcEvent;
 
       expect(parsed.action, equals('click'));
     });
@@ -142,7 +146,8 @@ void main() {
       expect(original.eventName, equals(IpcEventNames.companionClose));
 
       final parsed =
-          IpcEvent.parse(original.eventName, {}) as CompanionCloseIpcEvent;
+          IpcEvent.parse(original.eventName, {})
+              as CompanionCloseIpcEvent;
 
       expect(parsed, isNotNull);
     });

@@ -126,6 +126,4 @@ export 'settings/widgets/privacy_section.dart';
 export 'settings/widgets/settings_widgets.dart';
 export 'settings/widgets/update_section.dart';
 export 'themes/themes.dart';
-export 'wellness/data/wellness_library_repository.dart';
 export 'wellness/domain/wellness_engine.dart';
-export 'wellness/presentation/wellness_library_page.dart';

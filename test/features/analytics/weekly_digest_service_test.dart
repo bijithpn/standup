@@ -20,8 +20,8 @@ class FakeSettingsRepository extends SettingsRepository {
   final SettingsModel _fakeSettings;
 
   FakeSettingsRepository(StorageService storage, [SettingsModel? settings])
-    : _fakeSettings = settings ?? const SettingsModel(),
-      super(storage: storage);
+      : _fakeSettings = settings ?? const SettingsModel(),
+        super(storage: storage);
 
   @override
   SettingsModel get currentSettings => _fakeSettings;
@@ -145,90 +145,69 @@ void main() {
     expect(notificationService.shown, hasLength(2));
   });
 
-  test(
-    'buildDigest composes break adherence, top focus category, and streak',
-    () {
-      final now = DateTime(2026, 9, 6, 18, 0);
-      withClock(Clock.fixed(now), () {
-        statsService.setWeeklyData([
-          DailyStats(
-            date: '2026-09-01',
-            breaksCompleted: 4,
-            breaksSkipped: 1,
-            usageMinutes: 0,
-          ),
-          DailyStats(
-            date: '2026-09-02',
-            breaksCompleted: 3,
-            breaksSkipped: 2,
-            usageMinutes: 0,
-          ),
-        ]);
-        focusSessionService.recordSession(
-          FocusSession(
-            category: AppCategory.coding,
-            start: DateTime(2026, 9, 1, 9, 0),
-            durationSeconds: 3600,
-          ),
-        );
+  test('buildDigest composes break adherence, top focus category, and streak', () {
+    final now = DateTime(2026, 9, 6, 18, 0);
+    withClock(Clock.fixed(now), () {
+      statsService.setWeeklyData([
+        DailyStats(date: '2026-09-01', breaksCompleted: 4, breaksSkipped: 1, usageMinutes: 0),
+        DailyStats(date: '2026-09-02', breaksCompleted: 3, breaksSkipped: 2, usageMinutes: 0),
+      ]);
+      focusSessionService.recordSession(
+        FocusSession(
+          category: AppCategory.coding,
+          start: DateTime(2026, 9, 1, 9, 0),
+          durationSeconds: 3600,
+        ),
+      );
 
-        final digest = digestService.buildDigest(now: now);
+      final digest = digestService.buildDigest(now: now);
 
-        expect(digest.breaksCompleted, 7);
-        expect(digest.breaksSkipped, 3);
-        expect(digest.breakAdherenceRate, closeTo(0.7, 0.001));
-        expect(digest.topFocusCategory, AppCategory.coding);
-        expect(digest.longestDeepWorkSessionSeconds, 3600);
-        expect(digest.companionMilestoneLabel, isNull);
-      });
-    },
-  );
+      expect(digest.breaksCompleted, 7);
+      expect(digest.breaksSkipped, 3);
+      expect(digest.breakAdherenceRate, closeTo(0.7, 0.001));
+      expect(digest.topFocusCategory, AppCategory.coding);
+      expect(digest.longestDeepWorkSessionSeconds, 3600);
+      expect(digest.companionMilestoneLabel, isNull);
+    });
+  });
 
-  test(
-    'buildDigest includes days-over-budget when a category exceeds its budget',
-    () {
-      final now = DateTime(2026, 9, 6, 18, 0);
-      withClock(Clock.fixed(now), () {
-        final budgetedSettings = FakeSettingsRepository(
-          storage,
-          const SettingsModel(categoryDailyBudgetMinutes: {'browsing': 60}),
-        );
-        final digestWithBudget = WeeklyDigestService(
-          storage: storage,
-          statsService: statsService,
-          focusSessionService: focusSessionService,
-          streakService: streakService,
-          notificationService: notificationService,
-          usageService: usageService,
-          settingsRepository: budgetedSettings,
-        );
-        final dateKey =
-            '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-        usageService.addUsageSeconds(
-          date: dateKey,
-          appKey: 'com.apple.safari',
-          name: 'Safari',
-          category: AppCategory.browsing,
-          seconds: 90 * 60, // 90 min, over the 60-min budget
-        );
+  test('buildDigest includes days-over-budget when a category exceeds its budget', () {
+    final now = DateTime(2026, 9, 6, 18, 0);
+    withClock(Clock.fixed(now), () {
+      final budgetedSettings = FakeSettingsRepository(
+        storage,
+        const SettingsModel(categoryDailyBudgetMinutes: {'browsing': 60}),
+      );
+      final digestWithBudget = WeeklyDigestService(
+        storage: storage,
+        statsService: statsService,
+        focusSessionService: focusSessionService,
+        streakService: streakService,
+        notificationService: notificationService,
+        usageService: usageService,
+        settingsRepository: budgetedSettings,
+      );
+      final dateKey =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      usageService.addUsageSeconds(
+        date: dateKey,
+        appKey: 'com.apple.safari',
+        name: 'Safari',
+        category: AppCategory.browsing,
+        seconds: 90 * 60, // 90 min, over the 60-min budget
+      );
 
-        final digest = digestWithBudget.buildDigest(now: now);
+      final digest = digestWithBudget.buildDigest(now: now);
 
-        expect(digest.daysOverBudgetByCategory[AppCategory.browsing], 1);
-      });
-    },
-  );
+      expect(digest.daysOverBudgetByCategory[AppCategory.browsing], 1);
+    });
+  });
 
   group('trailingAverageAdherenceRate (§7.3)', () {
     test('is null with fewer than 7 days of prior history', () {
       final now = DateTime(2026, 9, 6, 18, 0);
       statsService.setWeeklyData([
-        DailyStats(
-          date: '2026-08-25',
-          breaksCompleted: 3,
-          breaksSkipped: 1,
-          usageMinutes: 0,
-        ),
+        DailyStats(date: '2026-08-25', breaksCompleted: 3, breaksSkipped: 1, usageMinutes: 0),
       ]);
       final digest = digestService.buildDigest(now: now);
       expect(digest.trailingAverageAdherenceRate, isNull);
@@ -238,12 +217,7 @@ void main() {
       final now = DateTime(2026, 9, 6, 18, 0);
       statsService.setWeeklyData([
         // This week (days 0-6 back) — must not be included in the average.
-        DailyStats(
-          date: '2026-09-06',
-          breaksCompleted: 10,
-          breaksSkipped: 0,
-          usageMinutes: 0,
-        ),
+        DailyStats(date: '2026-09-06', breaksCompleted: 10, breaksSkipped: 0, usageMinutes: 0),
         // Trailing window (days 7-34 back): 7 days, 70% adherence.
         for (var i = 8; i < 15; i++)
           DailyStats(
@@ -265,21 +239,18 @@ void main() {
     expect(digest.daysOverBudgetByCategory, isEmpty);
   });
 
-  test(
-    'start() fires the digest once its periodic check crosses into the window',
-    () {
-      fakeAsync((async) {
-        digestService.start();
-        // Immediate check at construction time (Saturday) — too early.
-        expect(notificationService.shown, isEmpty);
+  test('start() fires the digest once its periodic check crosses into the window', () {
+    fakeAsync((async) {
+      digestService.start();
+      // Immediate check at construction time (Saturday) — too early.
+      expect(notificationService.shown, isEmpty);
 
-        // Advance past midnight Saturday->Sunday and up to 18:00 Sunday; the
-        // 15-minute periodic check picks up the threshold once it's crossed.
-        async.elapse(const Duration(hours: 30));
+      // Advance past midnight Saturday->Sunday and up to 18:00 Sunday; the
+      // 15-minute periodic check picks up the threshold once it's crossed.
+      async.elapse(const Duration(hours: 30));
 
-        expect(notificationService.shown, hasLength(1));
-        digestService.stop();
-      }, initialTime: DateTime(2026, 9, 5, 12, 0));
-    },
-  );
+      expect(notificationService.shown, hasLength(1));
+      digestService.stop();
+    }, initialTime: DateTime(2026, 9, 5, 12, 0));
+  });
 }

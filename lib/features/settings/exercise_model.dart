@@ -25,7 +25,7 @@ class ExerciseModel {
   });
 
   /// Whether this exercise can be offered during a break. `enabled` (the
-  /// original switch) and `isHidden` (set from the Wellness Library) are two
+  /// original switch) and `isHidden` (kept for exercises hidden in earlier versions) are two
   /// flags for one idea, so an exercise is in rotation only when both agree.
   bool get isActive => enabled && !isHidden;
 

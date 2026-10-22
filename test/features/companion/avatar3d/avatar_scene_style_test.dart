@@ -8,11 +8,9 @@ import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
 
 AvatarScene _scene(String preset) {
-  final catalog =
-      jsonDecode(
-            File('assets/avatars/scenes/avatar_scenes.json').readAsStringSync(),
-          )
-          as Map;
+  final catalog = jsonDecode(
+    File('assets/avatars/scenes/avatar_scenes.json').readAsStringSync(),
+  ) as Map;
   final scene = AvatarScene.fromJson(
     preset,
     Map<String, dynamic>.from(catalog[preset] as Map),
@@ -24,9 +22,10 @@ AvatarScene _scene(String preset) {
 void main() {
   group('storage', () {
     test('an untouched style stores nothing at all', () {
-      final parts = withAvatarStyle(<String, dynamic>{
-        'ears': 2,
-      }, AvatarSceneStyle.authored);
+      final parts = withAvatarStyle(
+        <String, dynamic>{'ears': 2},
+        AvatarSceneStyle.authored,
+      );
 
       // Nothing overridden means nothing written, so a companion saved before
       // styling existed and one saved after it are the same bytes.
@@ -93,10 +92,7 @@ void main() {
   group('applying', () {
     test('an untouched style returns the very same scene', () {
       final scene = _scene('cat');
-      expect(
-        identical(AvatarSceneStyle.authored.applyTo(scene), scene),
-        isTrue,
-      );
+      expect(identical(AvatarSceneStyle.authored.applyTo(scene), scene), isTrue);
     });
 
     test('light direction and height reach the scene', () {
@@ -110,16 +106,16 @@ void main() {
     });
 
     test('an out-of-range elevation is clamped, not passed through', () {
-      final styled = const AvatarSceneStyle(
-        lightElevation: 400,
-      ).applyTo(_scene('cat'));
+      final styled =
+          const AvatarSceneStyle(lightElevation: 400).applyTo(_scene('cat'));
 
       expect(styled.lightElevation, AvatarSceneStyle.maxElevation);
     });
 
     test('outline weight scales the authored stroke', () {
       final scene = _scene('cat');
-      final styled = const AvatarSceneStyle(outlineWidth: 2.0).applyTo(scene);
+      final styled =
+          const AvatarSceneStyle(outlineWidth: 2.0).applyTo(scene);
 
       expect(styled.outlineStyle.width, scene.outlineStyle.width * 2.0);
       // The colour is the illustrator's choice, not the user's.
@@ -135,7 +131,8 @@ void main() {
         ),
       );
 
-      final styled = const AvatarSceneStyle(outlineWidth: 1.0).applyTo(bare);
+      final styled =
+          const AvatarSceneStyle(outlineWidth: 1.0).applyTo(bare);
 
       // Scaling zero gives zero, so asking for an outline on a scene drawn
       // without one has to start from a real weight or the control does
@@ -147,14 +144,8 @@ void main() {
       final scene = _scene('cat');
       final styled = const AvatarSceneStyle(faceScale: 1.3).applyTo(scene);
 
-      expect(
-        styled.faceStyle.height,
-        closeTo(scene.faceStyle.height * 1.3, 1e-9),
-      );
-      expect(
-        styled.faceStyle.width,
-        closeTo(scene.faceStyle.width * 1.3, 1e-9),
-      );
+      expect(styled.faceStyle.height, closeTo(scene.faceStyle.height * 1.3, 1e-9));
+      expect(styled.faceStyle.width, closeTo(scene.faceStyle.width * 1.3, 1e-9));
       expect(styled.faceStyle.gap, closeTo(scene.faceStyle.gap * 1.3, 1e-9));
       expect(
         styled.faceStyle.mouthWidth,
@@ -162,10 +153,7 @@ void main() {
       );
       // The mouth travels with the eyes; left where it was, a bigger face
       // would end up with its mouth on its chin.
-      expect(
-        styled.faceStyle.mouthY,
-        closeTo(scene.faceStyle.mouthY * 1.3, 1e-9),
-      );
+      expect(styled.faceStyle.mouthY, closeTo(scene.faceStyle.mouthY * 1.3, 1e-9));
     });
 
     test('eye spacing moves the eyes without resizing them', () {

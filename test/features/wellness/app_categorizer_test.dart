@@ -5,17 +5,11 @@ void main() {
   group('AppCategorizer', () {
     test('categorizes coding apps', () {
       expect(
-        AppCategorizer.categorize(
-          name: 'Visual Studio Code',
-          bundleId: 'com.microsoft.vscode',
-        ),
+        AppCategorizer.categorize(name: 'Visual Studio Code', bundleId: 'com.microsoft.vscode'),
         AppCategory.coding,
       );
       expect(
-        AppCategorizer.categorize(
-          name: 'Xcode',
-          bundleId: 'com.apple.dt.xcode',
-        ),
+        AppCategorizer.categorize(name: 'Xcode', bundleId: 'com.apple.dt.xcode'),
         AppCategory.coding,
       );
     });
@@ -29,10 +23,7 @@ void main() {
 
     test('categorizes browsers', () {
       expect(
-        AppCategorizer.categorize(
-          name: 'Google Chrome',
-          bundleId: 'com.google.chrome',
-        ),
+        AppCategorizer.categorize(name: 'Google Chrome', bundleId: 'com.google.chrome'),
         AppCategory.browsing,
       );
     });
@@ -53,10 +44,7 @@ void main() {
 
     test('falls back to general for unmatched apps', () {
       expect(
-        AppCategorizer.categorize(
-          name: 'Calculator',
-          bundleId: 'com.apple.calculator',
-        ),
+        AppCategorizer.categorize(name: 'Calculator', bundleId: 'com.apple.calculator'),
         AppCategory.general,
       );
     });

@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -33,7 +34,46 @@ class NotificationsSection extends StatelessWidget {
           _buildPostureReminder(),
           divider(),
           _buildEyeBlinkReminder(),
+          divider(),
+          _buildSimpleReminder(
+            'Hydration',
+            'Roughly hourly. A long break counts as a drink.',
+            settings.hydrationReminderEnabled,
+            (v) => onSave(settings.copyWith(hydrationReminderEnabled: v)),
+            'hydration',
+          ),
+          divider(),
+          _buildSimpleReminder(
+            'Stretch',
+            'Neck, shoulders and wrists, about every 40 minutes of work.',
+            settings.stretchReminderEnabled,
+            (v) => onSave(settings.copyWith(stretchReminderEnabled: v)),
+            'stretch',
+          ),
+          divider(),
+          _buildSimpleReminder(
+            'Stand up & move',
+            'After about an hour of sitting. Also covers posture and stretch.',
+            settings.standUpReminderEnabled,
+            (v) => onSave(settings.copyWith(standUpReminderEnabled: v)),
+            'standup',
+          ),
         ]),
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Text(
+            'Timing is slightly random and adapts to you: the more you work '
+            'today, the more often reminders come; light days get fewer. '
+            'They hold back during meetings, right around breaks, and after '
+            'you step away. At most 4 per hour (5 on very busy days), and '
+            'ones you keep ignoring are spaced further apart.',
+            style: TextStyle(
+              fontSize: 12,
+              height: 1.4,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -100,12 +140,30 @@ class NotificationsSection extends StatelessWidget {
     });
   }
 
+  Widget _buildSimpleReminder(
+    String title,
+    String subtitle,
+    bool enabled,
+    ValueChanged<bool> onChanged,
+    String previewType,
+  ) {
+    return Column(
+      children: [
+        toggleRow(title, subtitle, enabled, onChanged),
+        if (enabled) ...[
+          divider(),
+          _buildReminderPreviewRow(onPreview: () => _showPreview(previewType)),
+        ],
+      ],
+    );
+  }
+
   Widget _buildPostureReminder() {
     return Column(
       children: [
         toggleRow(
           'Posture Correction',
-          'Remind you to sit up straight and check your posture',
+          'About every 30 minutes of work. Skipped if you just took a break or stood up, and held back during meetings.',
           settings.postureReminderEnabled,
           (v) => onSave(settings.copyWith(postureReminderEnabled: v)),
         ),
@@ -122,7 +180,7 @@ class NotificationsSection extends StatelessWidget {
       children: [
         toggleRow(
           'Eye Rest & Blinking',
-          'Remind you to look away and blink your eyes',
+          'About every 20 minutes of work (20-20-20 rule). Skipped if you just looked away or a break is about to start.',
           settings.eyeBlinkReminderEnabled,
           (v) => onSave(settings.copyWith(eyeBlinkReminderEnabled: v)),
         ),

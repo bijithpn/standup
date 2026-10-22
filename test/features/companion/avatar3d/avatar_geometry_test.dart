@@ -10,7 +10,9 @@ import 'package:breakmate/features/companion/avatar3d/avatar_shape.dart';
 
 Map<String, dynamic> _readCatalog() {
   final file = File('assets/avatars/scenes/avatar_scenes.json');
-  return Map<String, dynamic>.from(jsonDecode(file.readAsStringSync()) as Map);
+  return Map<String, dynamic>.from(
+    jsonDecode(file.readAsStringSync()) as Map,
+  );
 }
 
 AvatarScene _scene(String preset) {
@@ -37,11 +39,8 @@ void main() {
         expect(scene, isNotNull, reason: '${entry.key} failed to parse');
         expect(scene!.parts, isNotEmpty);
         for (final part in scene.parts) {
-          expect(
-            kShapeSpecs.containsKey(part.shape),
-            isTrue,
-            reason: '${entry.key}/${part.id} uses an unknown primitive',
-          );
+          expect(kShapeSpecs.containsKey(part.shape), isTrue,
+              reason: '${entry.key}/${part.id} uses an unknown primitive');
         }
       }
     });
@@ -65,21 +64,15 @@ void main() {
 
       expect(geometry.parts.length, 3);
       for (final part in geometry.parts) {
-        expect(
-          part.cells,
-          isNotEmpty,
-          reason: '${part.part.id} has no surface',
-        );
+        expect(part.cells, isNotEmpty, reason: '${part.part.id} has no surface');
         // Only the hemisphere facing the camera is generated.
         for (final cell in part.cells) {
           expect(cell.shade, inInclusiveRange(-1.0, 1.0));
         }
         // Nearer cells paint last.
         for (var i = 1; i < part.cells.length; i++) {
-          expect(
-            part.cells[i].depth,
-            greaterThanOrEqualTo(part.cells[i - 1].depth),
-          );
+          expect(part.cells[i].depth,
+              greaterThanOrEqualTo(part.cells[i - 1].depth));
         }
       }
     });
@@ -87,10 +80,8 @@ void main() {
     test('parts are ordered back to front', () {
       final geometry = buildAvatarGeometry(_scene('hedgehog'));
       for (var i = 1; i < geometry.parts.length; i++) {
-        expect(
-          geometry.parts[i].depth,
-          greaterThanOrEqualTo(geometry.parts[i - 1].depth),
-        );
+        expect(geometry.parts[i].depth,
+            greaterThanOrEqualTo(geometry.parts[i - 1].depth));
       }
     });
 
@@ -121,9 +112,7 @@ void main() {
           geometry.parts.firstWhere((part) => part.part.id.contains(id));
 
       final leftward = buildAvatarGeometry(
-        scene.copyWith(
-          viewState: scene.viewState.copyWith(yaw: -0.9, pitch: 0),
-        ),
+        scene.copyWith(viewState: scene.viewState.copyWith(yaw: -0.9, pitch: 0)),
       );
       final rightward = buildAvatarGeometry(
         scene.copyWith(viewState: scene.viewState.copyWith(yaw: 0.9, pitch: 0)),
@@ -192,14 +181,10 @@ void main() {
       final full = buildAvatarGeometry(scene);
       final light = buildAvatarGeometry(scene, densityScale: 0.5);
 
-      final fullCells = full.parts.fold<int>(
-        0,
-        (sum, part) => sum + part.cells.length,
-      );
-      final lightCells = light.parts.fold<int>(
-        0,
-        (sum, part) => sum + part.cells.length,
-      );
+      final fullCells =
+          full.parts.fold<int>(0, (sum, part) => sum + part.cells.length);
+      final lightCells =
+          light.parts.fold<int>(0, (sum, part) => sum + part.cells.length);
 
       expect(lightCells, lessThan(fullCells));
       expect(light.bounds.width, closeTo(full.bounds.width, 4));
@@ -216,7 +201,9 @@ void main() {
       for (var i = 0; i < iterations; i++) {
         final stopwatch = Stopwatch()..start();
         buildAvatarGeometry(
-          scene.copyWith(viewState: scene.viewState.copyWith(yaw: i * 0.01)),
+          scene.copyWith(
+            viewState: scene.viewState.copyWith(yaw: i * 0.01),
+          ),
         );
         stopwatch.stop();
         timings.add(stopwatch.elapsedMicroseconds / 1000);
@@ -233,11 +220,8 @@ void main() {
       // demand" — not "is this machine fast today". A real regression here,
       // like the tessellation density escaping, costs hundreds of
       // milliseconds rather than tens.
-      expect(
-        median,
-        lessThan(30.0),
-        reason: 'median rebuild took ${median.toStringAsFixed(2)} ms',
-      );
+      expect(median, lessThan(30.0),
+          reason: 'median rebuild took ${median.toStringAsFixed(2)} ms');
     });
   });
 }

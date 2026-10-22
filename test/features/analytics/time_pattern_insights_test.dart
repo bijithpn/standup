@@ -71,7 +71,11 @@ void main() {
     });
 
     test('finds the hour with the most total focus time', () {
-      final sessions = [_session(9, 900), _session(9, 900), _session(14, 300)];
+      final sessions = [
+        _session(9, 900),
+        _session(9, 900),
+        _session(14, 300),
+      ];
       expect(goldenFocusHour(sessions), 9);
     });
 

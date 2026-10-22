@@ -65,41 +65,33 @@ void main() {
       expect(game.targetFps, equals(60.0));
     });
 
-    test(
-      'BatteryStateChangedEvent triggers energy status and quiet mode bit updates',
-      () {
-        EventBus.instance.emit(
-          BatteryStateChangedEvent(
-            isOnBattery: true,
-            batteryLevel: 0.15,
-            isLowPowerMode: true,
-          ),
-        );
-
-        // Verify game properties are updated via event handling
-        game.updateEnergyStatus(
+    test('BatteryStateChangedEvent triggers energy status and quiet mode bit updates', () {
+      EventBus.instance.emit(
+        BatteryStateChangedEvent(
           isOnBattery: true,
           batteryLevel: 0.15,
           isLowPowerMode: true,
-        );
+        ),
+      );
 
-        expect(game.currentPowerTier, equals(CompanionPowerTier.lowPower));
-        expect(game.targetFps, equals(20.0));
-      },
-    );
-
-    test('update skips sub-interval frames when throttled', () {
+      // Verify game properties are updated via event handling
       game.updateEnergyStatus(
         isOnBattery: true,
-        batteryLevel: 0.50,
-      ); // 30 FPS, delta ~0.0333s
+        batteryLevel: 0.15,
+        isLowPowerMode: true,
+      );
+
+      expect(game.currentPowerTier, equals(CompanionPowerTier.lowPower));
+      expect(game.targetFps, equals(20.0));
+    });
+
+    test('update skips sub-interval frames when throttled', () {
+      game.updateEnergyStatus(isOnBattery: true, batteryLevel: 0.50); // 30 FPS, delta ~0.0333s
 
       // A single small frame delta (e.g. 0.008s for 120Hz) should be buffered without throwing
       game.update(0.008);
       game.update(0.008);
-      game.update(
-        0.020,
-      ); // Total now 0.036s >= minFrameDelta 0.0333s, frame triggers
+      game.update(0.020); // Total now 0.036s >= minFrameDelta 0.0333s, frame triggers
 
       expect(game.isThrottled, isTrue);
     });

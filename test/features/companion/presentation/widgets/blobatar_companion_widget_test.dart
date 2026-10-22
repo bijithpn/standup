@@ -9,7 +9,10 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: BlobatarCompanionWidget(name: 'Cosmo', size: 140),
+            body: BlobatarCompanionWidget(
+              name: 'Cosmo',
+              size: 140,
+            ),
           ),
         ),
       );
