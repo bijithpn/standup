@@ -61,6 +61,47 @@ jobs:
       - name: Run Test Suite
         run: flutter test
 
+  release-readiness:
+    name: Release readiness (secrets & files)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Check release files
+        run: |
+          fail=0
+          for f in scripts/appdmg.json scripts/patch_appcast.py appcast.xml \
+                   macos/Runner/Release.entitlements macos/Runner/Info.plist \
+                   .github/workflows/macos_release.yml .github/workflows/desktop_release.yml; do
+            if [ ! -f "$f" ]; then echo "::error::Missing required release file: $f"; fail=1; fi
+          done
+          if ! grep -q "<key>SUPublicEDKey</key>" macos/Runner/Info.plist; then
+            echo "::error::SUPublicEDKey missing from macos/Runner/Info.plist"; fail=1
+          fi
+          exit $fail
+
+      # Secrets are not exposed to PRs from forks, so skip the check there.
+      - name: Check release secrets
+        if: github.event.pull_request.head.repo.fork != true
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: |
+          fail=0
+          # Required: Sparkle update signing.
+          if [ -z "$SPARKLE_PRIVATE_KEY" ]; then
+            echo "::error::Secret SPARKLE_PRIVATE_KEY is not set - releases would ship without an update signature."
+            fail=1
+          elif ! echo "$SPARKLE_PRIVATE_KEY" | tr -d '[:space:]' | grep -Eq '^[A-Za-z0-9+/]{43}=$'; then
+            echo "::error::SPARKLE_PRIVATE_KEY does not look like a Sparkle Ed25519 key (expected 44-char base64)."
+            fail=1
+          else
+            echo "SPARKLE_PRIVATE_KEY: OK"
+          fi
+
+          exit $fail
+
   build-macos:
     name: Build macOS
     needs: static-analysis-and-tests

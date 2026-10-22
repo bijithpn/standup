@@ -159,7 +159,7 @@ fi
 # ── Print plan ─────────────────────────────────────────────────────────────────
 echo ""
 echo -e "${GREEN}${BOLD}╔════════════════════════════════════════════════════╗${RESET}"
-echo -e "${GREEN}${BOLD}║   BreakMate Release Pipeline v${VERSION}${RESET}"  ║
+echo -e "${GREEN}${BOLD}║   BreakMate Release Pipeline v${VERSION}${RESET}"
 echo -e "${GREEN}${BOLD}╚════════════════════════════════════════════════════╝${RESET}"
 echo ""
 echo -e "  Version:     ${BOLD}${VERSION}${RESET}  (build ${BUILD_NUMBER})"
