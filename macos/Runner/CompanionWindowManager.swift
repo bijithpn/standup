@@ -21,6 +21,7 @@ class CompanionWindowManager: NSObject {
     private var userClickThrough = false
     private var followMouseEnabled = false
     private var followMouseTimer: Timer?
+    private var lastSentMouse: NSPoint?
     
     // Flutter pulls these after its method handler registers, avoiding a lost
     // first settings update on slower engine startups.
@@ -62,7 +63,11 @@ class CompanionWindowManager: NSObject {
             }
         }
         
-        guard let screen = NSScreen.main else { return }
+        guard let screen = NSScreen.main else {
+            // Leaving this set would make every later show a silent no-op.
+            isSettingUp = false
+            return
+        }
         let screenFrame = screen.visibleFrame
         
         // The native panel stays fullscreen; Flutter handles the pet's visual
@@ -166,9 +171,12 @@ class CompanionWindowManager: NSObject {
             updateCompanionParams(args: args)
         }
         
+        // The panel is non-activating and click-through. Ordering it front
+        // without making it key or activating BreakMate keeps focus with
+        // whatever the user was doing; activating here pulled the main window
+        // forward over their work every time the companion appeared.
         window.alphaValue = 0.0
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        window.orderFrontRegardless()
         
         // Fades in the window after a brief delay (150ms) to ensure the Flutter engine
         // has finished warm-up and drawn its initial transparent state.
@@ -339,9 +347,15 @@ class CompanionWindowManager: NSObject {
             instance?.window.ignoresMouseEvents = true
             
             followMouseTimer?.invalidate()
-            followMouseTimer = Timer.scheduledTimer(withTimeInterval: 0.016, repeats: true) { [weak self] _ in
+            lastSentMouse = nil
+            // ~30 Hz is plenty for a sprite that eases toward the pointer, and
+            // updateMouseFollowing sends nothing at all while it holds still.
+            let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
                 self?.updateMouseFollowing()
             }
+            timer.tolerance = 0.01
+            RunLoop.main.add(timer, forMode: .common)
+            followMouseTimer = timer
         } else {
             followMouseTimer?.invalidate()
             followMouseTimer = nil
@@ -370,6 +384,13 @@ class CompanionWindowManager: NSObject {
         guard let inst = instance else { return }
         
         let mousePos = NSEvent.mouseLocation
+
+        // A pointer that has not moved has nothing new to tell Flutter.
+        if let last = lastSentMouse,
+           abs(last.x - mousePos.x) < 0.5, abs(last.y - mousePos.y) < 0.5 {
+            return
+        }
+        lastSentMouse = mousePos
         
         // Find screen that currently holds the mouse cursor
         var targetScreen: NSScreen?

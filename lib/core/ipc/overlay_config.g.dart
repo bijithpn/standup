@@ -28,6 +28,12 @@ _OverlayConfig _$OverlayConfigFromJson(Map<String, dynamic> json) =>
       pettingEnabled: json['pettingEnabled'] as bool?,
       playEnabled: json['playEnabled'] as bool?,
       treatEnabled: json['treatEnabled'] as bool?,
+      gazeEnabled: json['gazeEnabled'] as bool?,
+      gazeSensitivity: (json['gazeSensitivity'] as num?)?.toDouble(),
+      idleAnimation: json['idleAnimation'] as bool?,
+      reactionsEnabled: json['reactionsEnabled'] as bool?,
+      reducedMotion: json['reducedMotion'] as bool?,
+      animationsEnabled: json['animationsEnabled'] as bool?,
     );
 
 Map<String, dynamic> _$OverlayConfigToJson(_OverlayConfig instance) =>
@@ -52,4 +58,10 @@ Map<String, dynamic> _$OverlayConfigToJson(_OverlayConfig instance) =>
       'pettingEnabled': instance.pettingEnabled,
       'playEnabled': instance.playEnabled,
       'treatEnabled': instance.treatEnabled,
+      'gazeEnabled': instance.gazeEnabled,
+      'gazeSensitivity': instance.gazeSensitivity,
+      'idleAnimation': instance.idleAnimation,
+      'reactionsEnabled': instance.reactionsEnabled,
+      'reducedMotion': instance.reducedMotion,
+      'animationsEnabled': instance.animationsEnabled,
     };

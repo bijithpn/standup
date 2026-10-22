@@ -4,7 +4,9 @@ import 'dart:ui' show Offset, Rect;
 
 import 'package:flutter/foundation.dart';
 
+import 'package:breakmate/features/companion/behavior/companion_mood_machine.dart';
 import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
+import 'package:breakmate/features/companion/behavior/gaze_sector.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 
@@ -23,16 +25,190 @@ class PetBehaviorEngine extends ChangeNotifier {
   PetBehaviorEngine({
     CursorFeed? cursorFeed,
     math.Random? random,
-    this.reducedMotion = false,
+    bool reducedMotion = false,
+    GazeSettings gaze = const GazeSettings(),
   }) : _cursorFeed = cursorFeed ?? CursorFeed.instance,
-       _random = random ?? math.Random();
+       _random = random ?? math.Random(),
+       _reducedMotion = reducedMotion,
+       _gazeSettings = gaze {
+    _sectors.deadZone = gaze.deadZone;
+    _machine = CompanionMoodMachine(config: _moodConfig());
+  }
 
   final CursorFeed _cursorFeed;
   final math.Random _random;
 
   /// Honours the platform's reduce-motion setting: the pet still reacts, but
-  /// without bounce, recoil, or shake.
-  final bool reducedMotion;
+  /// without bounce, recoil, shake, breathing or wandering glances.
+  bool get reducedMotion => _reducedMotion;
+  bool _reducedMotion;
+
+  GazeSettings _gazeSettings;
+  bool _idleAnimation = true;
+  bool _reactions = true;
+  bool _animations = true;
+  bool _interactions = true;
+  bool _suspended = false;
+
+  final GazeSectorTracker _sectors = GazeSectorTracker();
+  late CompanionMoodMachine _machine;
+  Duration _clock = Duration.zero;
+  bool _pointerNear = false;
+  bool _quietAnnounced = false;
+
+  /// Called when something outside the simulation changed state and a host
+  /// that stopped its ticker while the pet was [isSettled] should start again.
+  VoidCallback? onNeedsFrames;
+
+  /// Which of the nine sectors the pet is currently looking toward.
+  GazeDirection get gazeDirection => _sectors.direction;
+
+  /// The explicit mood the face is wearing, before drive-based baselines.
+  CompanionMood get mood => _machine.mood;
+
+  /// Whether reactions may move the body at all.
+  bool get _motionAllowed => !_reducedMotion && _animations;
+
+  /// Whether motion is permitted to run on its own (breathing, glances).
+  bool get _idleMotion =>
+      _idleAnimation &&
+      !_reducedMotion &&
+      _animations &&
+      _machine.mood != CompanionMood.resting;
+
+  CompanionMoodConfig _moodConfig() => CompanionMoodConfig(
+    animationsEnabled: _animations,
+    reactionsEnabled: _reactions,
+    interactionsEnabled: _interactions,
+  );
+
+  /// Applies the user's companion preferences. Only the fields passed change.
+  ///
+  /// Safe to call repeatedly with the same values; nothing is restarted unless
+  /// something actually changed.
+  void configure({
+    GazeSettings? gaze,
+    bool? idleAnimation,
+    bool? reactions,
+    bool? animations,
+    bool? interactions,
+    bool? reducedMotion,
+  }) {
+    var moodChanged = false;
+    if (gaze != null && gaze != _gazeSettings) {
+      _gazeSettings = gaze;
+      _sectors.deadZone = gaze.deadZone;
+      if (!gaze.enabled) _sectors.reset();
+      _syncCursorSubscription();
+    }
+    if (idleAnimation != null) _idleAnimation = idleAnimation;
+    if (reactions != null && reactions != _reactions) {
+      _reactions = reactions;
+      moodChanged = true;
+    }
+    if (animations != null && animations != _animations) {
+      _animations = animations;
+      moodChanged = true;
+    }
+    if (interactions != null && interactions != _interactions) {
+      _interactions = interactions;
+      moodChanged = true;
+    }
+    if (reducedMotion != null) _reducedMotion = reducedMotion;
+    if (moodChanged) _machine.configure(_moodConfig());
+    if (_running) {
+      _emotion = _resolveEmotion();
+      _publish();
+    }
+    onNeedsFrames?.call();
+  }
+
+  /// Pauses or resumes the simulation and its claim on the cursor feed, for a
+  /// window that is hidden, occluded, or whose host is asleep.
+  void setSuspended(bool suspended) {
+    if (_suspended == suspended) return;
+    _suspended = suspended;
+    _syncCursorSubscription();
+    if (!suspended) reconcile();
+  }
+
+  /// Brings state back into line after the host was suspended or the displays
+  /// changed. Animation callbacks may not have run during that time, so
+  /// nothing is assumed about them.
+  void reconcile() {
+    _lastTick = Duration.zero;
+    _accumulator = 0.0;
+    _sinceCursorSample = 0.0;
+    _hasCursor = false;
+    _pointerNear = false;
+    _sectors.reset();
+    _quietAnnounced = false;
+    _machine.reconcile(_clock);
+    onNeedsFrames?.call();
+  }
+
+  /// The pointer is over the pet's own window, as reported by the window
+  /// system rather than the global cursor feed, so it works with cursor
+  /// following switched off.
+  void hover(bool inside) {
+    _post(
+      inside ? CompanionEvent.pointerEntered : CompanionEvent.pointerExited,
+    );
+  }
+
+  /// How long a host should wait between ticks right now.
+  ///
+  /// A calm pet only breathes, which is invisible at 15 frames a second, so
+  /// drawing it any faster burns battery on nothing. Anything with real motion
+  /// gets 30.
+  Duration get frameInterval => _isCalm
+      ? const Duration(milliseconds: 66)
+      : const Duration(milliseconds: 33);
+
+  bool get _isCalm =>
+      _attention < 0.1 &&
+      _saccadeT >= 1.0 &&
+      _blinkProgress < 0 &&
+      _startle == 0.0 &&
+      _delight == 0.0 &&
+      _playing == 0.0 &&
+      _bounce == 0.0 &&
+      _travel == Offset.zero &&
+      (_gaze - _gazeTarget).distance < 0.02 &&
+      _headVelocity.distance < 0.05;
+
+  /// The pet's break was completed.
+  void onBreakCompleted() {
+    onBreakTaken();
+    _post(CompanionEvent.breakCompleted);
+  }
+
+  /// A break is starting or being suggested.
+  void onBreakReminder() => _post(CompanionEvent.breakReminder);
+
+  void _post(CompanionEvent event) {
+    if (_machine.post(event, _clock) && _running) {
+      _emotion = _resolveEmotion();
+      _publish();
+    }
+    onNeedsFrames?.call();
+  }
+
+  /// Where the pet's eyes are, in the same space as the viewport.
+  ///
+  /// Gaze is measured from here, not from the middle of the window: the head
+  /// sits above the body, and looking from the wrong point makes a pet whose
+  /// cursor is level with its face appear to look down.
+  Offset get _eye {
+    if (_eyeOverride != null) return _eyeOverride!;
+    return Offset(
+      _viewport.center.dx,
+      _viewport.top + _viewport.height * _defaultEyeFraction,
+    );
+  }
+
+  Offset? _eyeOverride;
+  static const double _defaultEyeFraction = 0.46;
 
   // ── Tuning ────────────────────────────────────────────────────────────────
 
@@ -41,7 +217,7 @@ class PetBehaviorEngine extends ChangeNotifier {
   static const double _step = 1 / 60.0;
 
   /// Distance in logical pixels at which the cursor stops being interesting.
-  static const double _interestRadius = 620.0;
+  double get _interestRadius => _gazeSettings.interestRadius;
 
   /// Within this distance the cursor is "in its face" and gets full attention.
   static const double _intimateRadius = 150.0;
@@ -140,28 +316,79 @@ class PetBehaviorEngine extends ChangeNotifier {
   /// Whether the simulation is attached to the cursor feed.
   bool get isRunning => _running;
 
+  /// True when nothing on the pet is moving and nothing will start moving by
+  /// itself, so a host can drop from a frame ticker to an occasional tick.
+  ///
+  /// Time still has to pass for the slow parts of the pet (it dozes off, gets
+  /// lonely), which is why a settled pet is ticked rarely rather than never.
+  /// Any outside input calls [onNeedsFrames] so the host can speed up again.
+  bool get isSettled {
+    if (_suspended) return true;
+    if (_idleMotion) return false;
+    const eps = 0.004;
+    return _saccadeT >= 1.0 &&
+        (_gaze - _gazeTarget).distance < eps &&
+        (_head - _gaze * (0.55 + _attention * 0.3)).distance < eps &&
+        _headVelocity.distance < 0.01 &&
+        _bodyVelocity.distance < 0.01 &&
+        _blinkProgress < 0 &&
+        _bounce == 0.0 &&
+        _bounceVelocity == 0.0 &&
+        _startle == 0.0 &&
+        _delight == 0.0 &&
+        _playing == 0.0 &&
+        _travel == Offset.zero;
+  }
+
   /// Begins tracking. Safe to call repeatedly.
   void start() {
     if (_running) return;
     _running = true;
+    _useGlobalCursor = true;
     _lastTick = Duration.zero;
-    _cursorSub = _cursorFeed.subscribe(_onCursor);
+    _syncCursorSubscription();
   }
 
   /// Stops tracking and releases the pet's claim on the cursor feed.
   void stop() {
     if (!_running) return;
     _running = false;
-    _cursorSub?.cancel();
-    _cursorSub = null;
+    _useGlobalCursor = false;
+    _syncCursorSubscription();
+  }
+
+  bool _useGlobalCursor = false;
+
+  /// Holds a subscription to the shared cursor feed exactly when one is
+  /// useful: running, looking at the pointer, and not suspended. Without the
+  /// subscription the feed stops polling the platform altogether.
+  void _syncCursorSubscription() {
+    final wanted =
+        _running && _useGlobalCursor && _gazeSettings.enabled && !_suspended;
+    if (wanted && _cursorSub == null) {
+      _cursorSub = _cursorFeed.subscribe(_onCursor);
+    } else if (!wanted && _cursorSub != null) {
+      _cursorSub!.cancel();
+      _cursorSub = null;
+      _hasCursor = false;
+    }
   }
 
   /// Tells the engine where the pet currently sits on screen.
   ///
   /// Everything about attention is relative to this rectangle, so it has to be
   /// kept current as the window moves.
-  void setViewport(Rect viewport) {
+  ///
+  /// [eye] is where the eyes are in that space, when the host knows; otherwise
+  /// they are assumed to sit a little above the middle of the rectangle.
+  void setViewport(Rect viewport, {Offset? eye}) {
+    if (viewport != _viewport) {
+      // A different place on screen (dragged, wandered, new display) means
+      // the old sector no longer describes where the pointer is.
+      _sectors.reset();
+    }
     _viewport = viewport;
+    _eyeOverride = eye;
   }
 
   /// Advances the simulation. Drive this from a [Ticker].
@@ -173,11 +400,15 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     // A hitch, a resumed window, or the first frame. Skipping keeps the pet
     // from teleporting through a hundred steps at once.
-    if (delta <= 0 || delta > 0.25) delta = _step;
+    // A settled pet is ticked a few times a second, so a longer gap is normal
+    // there and is simulated in full.
+    final settled = isSettled;
+    if (delta <= 0 || delta > (settled ? 1.0 : 0.25)) delta = _step;
 
     _accumulator += delta;
     var steps = 0;
-    while (_accumulator >= _step && steps < 6) {
+    final maxSteps = settled ? 60 : 6;
+    while (_accumulator >= _step && steps < maxSteps) {
       _advance(_step);
       _accumulator -= _step;
       steps++;
@@ -189,6 +420,7 @@ class PetBehaviorEngine extends ChangeNotifier {
 
   /// The user touched the pet.
   void pet() {
+    _post(CompanionEvent.clicked);
     _delight = 1.0;
     _attention = 1.0;
     _arousal = math.min(1.0, _arousal + 0.45);
@@ -199,7 +431,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     _affection = math.min(1.0, _affection + 0.35);
     _loneliness = math.max(0.0, _loneliness - 0.5);
     _sinceInteraction = 0.0;
-    if (!reducedMotion) _bounceVelocity = -150.0;
+    if (!_reducedMotion && _animations) _bounceVelocity = -150.0;
     _wake();
   }
 
@@ -216,7 +448,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     _affection = math.min(1.0, _affection + 0.2);
     _loneliness = math.max(0.0, _loneliness - 0.6);
     _sinceInteraction = 0.0;
-    if (!reducedMotion) _bounceVelocity = -260.0;
+    if (!_reducedMotion && _animations) _bounceVelocity = -260.0;
     _wake();
   }
 
@@ -232,7 +464,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     _affection = math.min(1.0, _affection + 0.5);
     _loneliness = 0.0;
     _sinceInteraction = 0.0;
-    if (!reducedMotion) _bounceVelocity = -110.0;
+    if (!_reducedMotion && _animations) _bounceVelocity = -110.0;
     _wake();
   }
 
@@ -272,7 +504,7 @@ class PetBehaviorEngine extends ChangeNotifier {
   /// goes, and without that it reads as a window sliding rather than an
   /// animal walking. Pass [Offset.zero] when it stops.
   void setTravel(Offset velocity) {
-    if (reducedMotion) {
+    if (_reducedMotion || !_animations) {
       _travel = Offset.zero;
       return;
     }
@@ -297,6 +529,7 @@ class PetBehaviorEngine extends ChangeNotifier {
 
   /// The user did something the pet should notice, without touching it.
   void nudge() {
+    onNeedsFrames?.call();
     _attention = math.max(_attention, 0.8);
     _arousal = math.min(1.0, _arousal + 0.2);
     _quietSeconds = 0.0;
@@ -342,10 +575,12 @@ class PetBehaviorEngine extends ChangeNotifier {
   /// Runs the simulation without the global cursor feed, for local previews.
   void startLocal() {
     _running = true;
+    _useGlobalCursor = false;
     _lastTick = Duration.zero;
   }
 
   void _onCursor(CursorSample sample) {
+    if (!_gazeSettings.enabled || _suspended) return;
     final wasResting = _cursorResting;
     _cursor = sample.position;
     _cursorSpeed = sample.speed;
@@ -355,17 +590,18 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     if (_viewport.isEmpty) return;
 
-    final center = _viewport.center;
-    final distance = (sample.position - center).distance;
+    final distance = (sample.position - _eye).distance;
 
     // Sudden movement close by is a fright, not an invitation. The pet startles
     // first and works out it was only the cursor afterwards.
-    if (!reducedMotion &&
+    if (!_reducedMotion &&
+        _animations &&
         distance < _intimateRadius * 1.6 &&
         sample.speed > 1900 &&
         _startle < 0.3) {
       _startle = 1.0;
       _arousal = math.min(1.0, _arousal + 0.5);
+      _post(CompanionEvent.suddenMotion);
     }
 
     if (!sample.isResting) {
@@ -382,13 +618,16 @@ class PetBehaviorEngine extends ChangeNotifier {
 
   void _advance(double dt) {
     _sinceCursorSample += dt;
-    final center = _viewport.center;
+    _clock += Duration(microseconds: (dt * 1e6).round());
     final reach = math.max(_viewport.longestSide, 1.0);
 
-    final toCursor = _hasCursor && !_viewport.isEmpty
-        ? _cursor - center
-        : Offset.zero;
+    final tracking = _hasCursor && !_viewport.isEmpty && _gazeSettings.enabled;
+    final toCursor = tracking ? _cursor - _eye : Offset.zero;
     final distance = toCursor.distance;
+
+    _updatePointerProximity(tracking);
+    _updateQuietPeriod();
+    if (_machine.advance(_clock)) _emotion = _resolveEmotion();
 
     _updateAttention(dt, distance);
     _updateArousal(dt);
@@ -399,8 +638,48 @@ class PetBehaviorEngine extends ChangeNotifier {
     _updateImpulses(dt);
     _updateDrives(dt);
 
-    _breathPhase += dt * _breathRate();
-    if (_breathPhase > math.pi * 2) _breathPhase -= math.pi * 2;
+    if (_idleMotion) {
+      _breathPhase += dt * _breathRate();
+      if (_breathPhase > math.pi * 2) _breathPhase -= math.pi * 2;
+    }
+  }
+
+  /// Tells the mood machine when the pointer enters or leaves the pet.
+  ///
+  /// The enter and exit areas differ in size so a pointer resting on the edge
+  /// does not fire an event every frame.
+  void _updatePointerProximity(bool tracking) {
+    if (!tracking) {
+      if (_pointerNear) {
+        _pointerNear = false;
+        _machine.post(CompanionEvent.pointerExited, _clock);
+      }
+      return;
+    }
+    final inside = _pointerNear
+        ? _viewport.inflate(36).contains(_cursor)
+        : _viewport.inflate(10).contains(_cursor);
+    if (inside == _pointerNear) return;
+    _pointerNear = inside;
+    // Only a pointer that is actually moving is interesting. One that was
+    // parked on the pet before it appeared should not make it start.
+    if (inside && !_cursorIsStill) {
+      _machine.post(CompanionEvent.pointerEntered, _clock);
+    } else if (!inside) {
+      _machine.post(CompanionEvent.pointerExited, _clock);
+    }
+  }
+
+  void _updateQuietPeriod() {
+    final quiet = _quietSeconds > _drowsyAfter;
+    if (quiet == _quietAnnounced) return;
+    _quietAnnounced = quiet;
+    _machine.post(
+      quiet
+          ? CompanionEvent.quietPeriodStarted
+          : CompanionEvent.quietPeriodEnded,
+      _clock,
+    );
   }
 
   /// Whether the cursor should be treated as holding still right now.
@@ -408,7 +687,7 @@ class PetBehaviorEngine extends ChangeNotifier {
       _cursorResting || _sinceCursorSample > _staleSampleSeconds;
 
   void _updateAttention(double dt, double distance) {
-    if (_viewport.isEmpty || !_hasCursor) {
+    if (_viewport.isEmpty || !_hasCursor || !_gazeSettings.enabled) {
       _attention = _decay(_attention, 0.5, dt);
       _quietSeconds += dt;
       return;
@@ -460,33 +739,47 @@ class PetBehaviorEngine extends ChangeNotifier {
     double reach,
     double distance,
   ) {
-    if (_quietSeconds > _sleepAfter) {
+    if (_quietSeconds > _sleepAfter || _machine.mood == CompanionMood.resting) {
       _setGazeTarget(Offset.zero, snap: false);
       return;
     }
 
-    if (_attention > 0.28 && _hasCursor && !_viewport.isEmpty) {
-      // Map the cursor into eye space. Dividing by more than the window's own
-      // size keeps the eyes from pinning to the corners the moment the cursor
-      // leaves the pet.
-      final span = reach * 1.25;
-      var target = Offset(
-        (toCursor.dx / span).clamp(-1.0, 1.0),
-        (toCursor.dy / span).clamp(-1.0, 1.0),
-      );
+    if (_attention > 0.28 &&
+        _hasCursor &&
+        !_viewport.isEmpty &&
+        _gazeSettings.enabled) {
+      final sector = _sectors.update(toCursor);
+      if (sector == GazeDirection.center) {
+        // Inside the dead zone the pointer is "right here". Looking straight
+        // ahead reads as relaxed; chasing it around a few pixels does not.
+        _setGazeTarget(Offset.zero, snap: false);
+      } else {
+        // Direction is snapped to the sector so the head does not jitter on a
+        // boundary; how far the eyes travel still follows the distance.
+        final dead = _gazeSettings.deadZone;
+        final span = math.max(reach * 1.25 - dead, 1.0);
+        final pull = ((distance - dead) / span).clamp(0.0, 1.0);
+        var strength = 0.35 + 0.65 * pull;
 
-      // Close up, the pet looks *at* the cursor rather than toward it.
-      if (distance < _intimateRadius) {
-        target = target * 1.35;
-        target = Offset(target.dx.clamp(-1.0, 1.0), target.dy.clamp(-1.0, 1.0));
+        // Close up, the pet looks *at* the cursor rather than toward it.
+        if (distance < _intimateRadius) {
+          strength = math.min(1.0, strength * 1.2);
+        }
+
+        _setGazeTarget(sector.unit * strength, snap: false);
       }
-
-      _setGazeTarget(target, snap: false);
       _idleGazeTimer = 0.9 + _random.nextDouble() * 1.4;
       return;
     }
 
-    // Disengaged: look around on its own schedule.
+    // Disengaged. A pointer that has gone quiet is no longer worth following.
+    _sectors.reset();
+    if (!_idleMotion) {
+      _setGazeTarget(Offset.zero, snap: false);
+      return;
+    }
+
+    // Look around on its own schedule.
     _idleGazeTimer -= dt;
     if (_idleGazeTimer <= 0) {
       _idleGazeTimer = 1.4 + _random.nextDouble() * 3.0;
@@ -516,7 +809,7 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     // Big jumps are made with a saccade; small corrections are tracked
     // smoothly. Doing both is what separates a living eye from a lerp.
-    if (error > _saccadeThreshold && _saccadeT >= 1.0) {
+    if (error > _saccadeThreshold && _saccadeT >= 1.0 && !_reducedMotion) {
       _saccadeFrom = _gaze;
       _saccadeT = 0.0;
       // Eyes and lids are wired together — a large saccade often carries a
@@ -578,13 +871,19 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     // A curious head cocks to one side. Tie it to how far the pet is reaching
     // sideways, plus a little of its own drift.
+    final drift = _idleMotion ? 1.0 : 0.0;
     final tiltTarget = _attention > 0.5
-        ? _head.dx * 0.16 + math.sin(_breathPhase * 0.37) * 0.02
-        : math.sin(_breathPhase * 0.31) * 0.03;
+        ? _head.dx * 0.16 + math.sin(_breathPhase * 0.37) * 0.02 * drift
+        : math.sin(_breathPhase * 0.31) * 0.03 * drift;
     _tilt += (tiltTarget - _tilt) * math.min(1.0, 3.0 * dt);
   }
 
   void _updateBlink(double dt) {
+    if (_machine.mood == CompanionMood.resting) {
+      _blink = 0.0;
+      _blinkProgress = -1.0;
+      return;
+    }
     if (_quietSeconds > _sleepAfter) {
       _blink += (1.0 - _blink) * math.min(1.0, 2.5 * dt);
       return;
@@ -623,6 +922,8 @@ class PetBehaviorEngine extends ChangeNotifier {
       return;
     }
 
+    // With idle animation off the lids stay still unless an event asks.
+    if (!_idleMotion) return;
     _blinkTimer -= dt;
     if (_blinkTimer <= 0) _blinkProgress = 0.0;
   }
@@ -648,7 +949,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     // dead when it is not.
     _travelPhase += dt * (5.5 + 7.0 * _travel.distance);
 
-    if (reducedMotion) {
+    if (_reducedMotion || !_animations) {
       _bounce = 0.0;
       _bounceVelocity = 0.0;
       return;
@@ -708,10 +1009,23 @@ class PetBehaviorEngine extends ChangeNotifier {
           fatigue: _fatigue,
         );
 
-    if (_startle > 0.25) return state(PetEmotion.startled, _startle);
+    // The mood machine owns every event-driven feeling. The ladder below only
+    // fills in the slow, drive-based baseline when no reaction is showing.
+    final mood = _machine.mood;
+    if (mood == CompanionMood.resting) {
+      return state(mood.emotion, mood.intensity);
+    }
+    if (mood == CompanionMood.surprised) {
+      return state(PetEmotion.startled, math.max(_startle, mood.intensity));
+    }
     // A game outranks everything except a fright, and outlasts it too.
     if (_playing > 0.2) {
       return state(PetEmotion.excited, 0.55 + _playing * 0.45);
+    }
+    if (mood == CompanionMood.happy ||
+        mood == CompanionMood.encouraging ||
+        mood == CompanionMood.attentive) {
+      return state(mood.emotion, mood.intensity);
     }
     if (_quietSeconds > _sleepAfter) return state(PetEmotion.sleepy, 1.0);
     if (_delight > 0.25) {
@@ -727,6 +1041,9 @@ class PetBehaviorEngine extends ChangeNotifier {
     }
     if (_affection > 0.35) {
       return state(PetEmotion.happy, 0.45 + _affection * 0.55);
+    }
+    if (mood == CompanionMood.curious) {
+      return state(PetEmotion.curious, math.max(_attention, mood.intensity));
     }
     if (_attention > 0.45) return state(PetEmotion.curious, _attention);
     return state(PetEmotion.content, 0.35 + _affection * 0.3);
@@ -754,8 +1071,8 @@ class PetBehaviorEngine extends ChangeNotifier {
 
   void _publish() {
     final breath = math.sin(_breathPhase);
-    final startleRecoil = reducedMotion ? 0.0 : _startle * 8.0;
-    final delightLift = reducedMotion ? 0.0 : _delight * 6.0;
+    final startleRecoil = _motionAllowed ? _startle * 8.0 : 0.0;
+    final delightLift = _motionAllowed ? _delight * 6.0 : 0.0;
 
     // Travel rides on top of the cursor-driven posture rather than replacing
     // it, so a pet crossing the screen can still glance at where the pointer
@@ -765,6 +1082,7 @@ class PetBehaviorEngine extends ChangeNotifier {
         ? 0.0
         : math.sin(_travelPhase) * 3.4 * travelVigour;
 
+    final previous = _snapshot;
     _snapshot = PetBehaviorSnapshot(
       gaze: _gaze,
       headTurn: _head,
@@ -775,16 +1093,39 @@ class PetBehaviorEngine extends ChangeNotifier {
       blink: _blink.clamp(0.0, 1.0),
       breath: breath,
       bounce: _bounce - delightLift + startleRecoil - trot.abs(),
-      squash: reducedMotion
+      squash: !_motionAllowed
           ? 1.0
-          : 1.0 + breath * 0.012 + _delight * 0.05 - _startle * 0.03,
+          : 1.0 +
+                (_idleMotion ? breath * 0.012 : 0.0) +
+                _delight * 0.05 -
+                _startle * 0.03,
       tilt: _tilt + _travel.dx * 0.11,
       arousal: _arousal.clamp(0.0, 1.0),
       attention: _attention.clamp(0.0, 1.0),
       activity: _activity(),
       emotion: _emotion,
+      gazeDirection: _sectors.direction,
+      mood: _machine.mood,
     );
+    // A pet that has settled produces identical frames. Telling listeners
+    // anyway would rebuild and repaint the avatar for nothing.
+    if (_visiblySame(previous, _snapshot)) return;
     notifyListeners();
+  }
+
+  static bool _visiblySame(PetBehaviorSnapshot a, PetBehaviorSnapshot b) {
+    const eps = 0.0005;
+    return (a.gaze - b.gaze).distance < eps &&
+        (a.headTurn - b.headTurn).distance < eps &&
+        (a.bodyLean - b.bodyLean).distance < eps &&
+        (a.blink - b.blink).abs() < eps &&
+        (a.breath - b.breath).abs() < eps &&
+        (a.bounce - b.bounce).abs() < 0.01 &&
+        (a.squash - b.squash).abs() < eps &&
+        (a.tilt - b.tilt).abs() < eps &&
+        a.activity == b.activity &&
+        a.emotion.emotion == b.emotion.emotion &&
+        (a.emotion.intensity - b.emotion.intensity).abs() < 0.01;
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────

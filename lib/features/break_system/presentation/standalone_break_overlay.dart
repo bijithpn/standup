@@ -1,5 +1,6 @@
 import 'package:breakmate/shared/utils/reduced_motion.dart';
 import 'dart:math';
+import 'package:breakmate/core/ipc/ipc_maps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -27,7 +28,7 @@ class StandaloneBreakOverlay extends StatefulWidget {
     super.key,
     this.title = "Time for a Break",
     this.message = "Take a moment to stretch and breathe",
-    this.initialDurationSeconds = 300,
+    this.initialDurationSeconds = 60,
   });
 
   @override
@@ -115,9 +116,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
 
-    final config = OverlayWindowConfig.fromJson(
-      Map<String, dynamic>.from(args),
-    );
+    final config = OverlayWindowConfig.fromJson(stringKeyedMap(args));
     BreakOverlayConfigLoader.updateStatsIfNeeded(config);
 
     final targetEndMs = config.targetEndTime;
@@ -137,10 +136,16 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     setState(() {
       _config = config;
       durationSeconds = config.durationSeconds;
-      if (targetEndMs == null) {
-        remainingSeconds = config.remainingSeconds;
-        remainingSecondsNotifier.value = remainingSeconds;
-      }
+      // Show the right time on this very frame. Waiting for the timer's first
+      // tick left the previous break's countdown on screen for a second or two.
+      final end = targetEndTime;
+      remainingSeconds = end == null
+          ? config.remainingSeconds
+          : end
+                .difference(DateTime.now())
+                .inSeconds
+                .clamp(0, config.durationSeconds);
+      remainingSecondsNotifier.value = remainingSeconds;
       if (config.theme != null) {
         _currentTheme = BreakTheme.values.firstWhere(
           (e) => e.name == config.theme,

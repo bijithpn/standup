@@ -205,6 +205,9 @@ class PetStage extends StatelessWidget {
         ..scaleByDouble(snapshot.squash, 2.0 - snapshot.squash, 1.0, 1.0),
       alignment: Alignment.center,
       child: Blobatar(
+        // Keyed by name so a rename rebuilds the blob straight away instead of
+        // waiting for the window to be recreated.
+        key: ValueKey<String>(blobName!),
         name: blobName!,
         size: size * 0.86,
         // The engine already runs at frame rate, so the package's own ticker

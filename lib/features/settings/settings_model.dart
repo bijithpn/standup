@@ -122,6 +122,22 @@ class SettingsModel {
   final Map<String, int> templateAccentOverrides;
 
   final bool pettingEnabled;
+
+  /// Whether the companion's eyes follow the pointer.
+  final bool companionGazeEnabled;
+
+  /// 0..1. How readily the companion notices the pointer: higher means a
+  /// smaller relaxed zone around it and a wider area of interest.
+  final double companionGazeSensitivity;
+
+  /// Whether the companion breathes, blinks and glances about on its own.
+  final bool companionIdleAnimation;
+
+  /// Whether the companion reacts to events such as a finished break.
+  final bool companionReactions;
+
+  /// Forces a calm, low-motion companion regardless of the system setting.
+  final bool companionReducedMotion;
   final bool ballThrowEnabled;
   final bool treatEnabled;
   final bool developerReactions;
@@ -232,6 +248,11 @@ class SettingsModel {
     this.companionTreatType = 'sushi',
     this.templateAccentOverrides = const {},
     this.pettingEnabled = true,
+    this.companionGazeEnabled = true,
+    this.companionGazeSensitivity = 0.5,
+    this.companionIdleAnimation = true,
+    this.companionReactions = true,
+    this.companionReducedMotion = false,
     this.ballThrowEnabled = true,
     this.treatEnabled = true,
     this.developerReactions = true,
@@ -320,6 +341,11 @@ class SettingsModel {
     double? companionWindowX,
     double? companionWindowY,
     bool? pettingEnabled,
+    bool? companionGazeEnabled,
+    double? companionGazeSensitivity,
+    bool? companionIdleAnimation,
+    bool? companionReactions,
+    bool? companionReducedMotion,
     bool? ballThrowEnabled,
     bool? treatEnabled,
     bool? developerReactions,
@@ -441,6 +467,14 @@ class SettingsModel {
       companionWindowX: companionWindowX ?? this.companionWindowX,
       companionWindowY: companionWindowY ?? this.companionWindowY,
       pettingEnabled: pettingEnabled ?? this.pettingEnabled,
+      companionGazeEnabled: companionGazeEnabled ?? this.companionGazeEnabled,
+      companionGazeSensitivity:
+          companionGazeSensitivity ?? this.companionGazeSensitivity,
+      companionIdleAnimation:
+          companionIdleAnimation ?? this.companionIdleAnimation,
+      companionReactions: companionReactions ?? this.companionReactions,
+      companionReducedMotion:
+          companionReducedMotion ?? this.companionReducedMotion,
       ballThrowEnabled: ballThrowEnabled ?? this.ballThrowEnabled,
       treatEnabled: treatEnabled ?? this.treatEnabled,
       developerReactions: developerReactions ?? this.developerReactions,
@@ -553,6 +587,11 @@ class SettingsModel {
     'companionAvatarDefinition': companionAvatarDefinition,
     'companionKeepOnScreen': companionKeepOnScreen,
     'pettingEnabled': pettingEnabled,
+    'companionGazeEnabled': companionGazeEnabled,
+    'companionGazeSensitivity': companionGazeSensitivity,
+    'companionIdleAnimation': companionIdleAnimation,
+    'companionReactions': companionReactions,
+    'companionReducedMotion': companionReducedMotion,
     'ballThrowEnabled': ballThrowEnabled,
     'treatEnabled': treatEnabled,
     'developerReactions': developerReactions,
@@ -674,6 +713,12 @@ class SettingsModel {
       companionAvatarDefinition: map['companionAvatarDefinition'] as String?,
       companionKeepOnScreen: map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
+      companionGazeEnabled: map['companionGazeEnabled'] as bool? ?? true,
+      companionGazeSensitivity:
+          (map['companionGazeSensitivity'] as num?)?.toDouble() ?? 0.5,
+      companionIdleAnimation: map['companionIdleAnimation'] as bool? ?? true,
+      companionReactions: map['companionReactions'] as bool? ?? true,
+      companionReducedMotion: map['companionReducedMotion'] as bool? ?? false,
       ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
       treatEnabled: map['treatEnabled'] as bool? ?? true,
       developerReactions: map['developerReactions'] as bool? ?? true,

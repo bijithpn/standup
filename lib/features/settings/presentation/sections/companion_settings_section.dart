@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
@@ -35,6 +36,7 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   bool _isApplyingTheme = false;
   String? _previewThemeId;
   double? _previewScale;
+  double? _previewSensitivity;
 
   String get _displayedThemeId =>
       _previewThemeId ?? widget.controller.companionPetTheme;
@@ -66,6 +68,24 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
       await widget.controller.changeScale(snapped);
     } finally {
       if (mounted) setState(() => _previewScale = null);
+    }
+  }
+
+  double get _displayedSensitivity =>
+      _previewSensitivity ?? widget.controller.gazeSensitivity;
+
+  /// A word for the slider position, so the number never has to be decoded.
+  String _sensitivityLabel(double value) {
+    if (value < 0.34) return 'Relaxed';
+    if (value > 0.66) return 'Keen';
+    return 'Balanced';
+  }
+
+  Future<void> _commitSensitivity(double value) async {
+    try {
+      await widget.controller.changeGazeSensitivity(value);
+    } finally {
+      if (mounted) setState(() => _previewSensitivity = null);
     }
   }
 
@@ -221,9 +241,11 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   _buildPetGallery(),
                   const SizedBox(height: 32),
 
-                  sectionHeader('Streak Recognition'),
-                  _buildStreakCard(),
-                  const SizedBox(height: 32),
+                  if (!FlavorConfig.instance.isDev) ...[
+                    sectionHeader('Streak Recognition'),
+                    _buildStreakCard(),
+                    const SizedBox(height: 32),
+                  ],
 
                   sectionHeader('Personalization'),
                   buildCard([
@@ -281,6 +303,51 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   ]),
 
                   const SizedBox(height: 32),
+                  sectionHeader('Looking & Motion'),
+                  buildCard([
+                    toggleRow(
+                      'Follow Cursor',
+                      'Eyes and head turn toward your pointer, and settle '
+                          'when it stops. Nothing is recorded or sent anywhere.',
+                      widget.controller.gazeEnabled,
+                      (v) => widget.controller.changeGazeEnabled(v),
+                    ),
+                    if (widget.controller.gazeEnabled) ...[
+                      divider(),
+                      sliderRow(
+                        'Sensitivity (${_sensitivityLabel(_displayedSensitivity)})',
+                        _displayedSensitivity,
+                        (v) => setState(() => _previewSensitivity = v),
+                        onChangeEnd: (v) => unawaited(_commitSensitivity(v)),
+                      ),
+                    ],
+                    divider(),
+                    toggleRow(
+                      'Idle Animation',
+                      'Gentle breathing, blinking and occasional glances '
+                          'while nothing is happening.',
+                      widget.controller.idleAnimationEnabled,
+                      (v) => widget.controller.changeIdleAnimation(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Reactions',
+                      'Celebrates a finished break and perks up for a break '
+                          'reminder. Never makes a sound or a notification.',
+                      widget.controller.reactionsEnabled,
+                      (v) => widget.controller.changeReactionsEnabled(v),
+                    ),
+                    divider(),
+                    toggleRow(
+                      'Reduce Motion',
+                      'No bouncing, recoil or wandering glances. Also on '
+                          'automatically when macOS Reduce Motion is on.',
+                      widget.controller.reducedMotionEnabled,
+                      (v) => widget.controller.changeReducedMotion(v),
+                    ),
+                  ]),
+
+                  const SizedBox(height: 32),
                   sectionHeader('Behavior'),
                   buildCard([
                     toggleRow(
@@ -296,13 +363,18 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       widget.controller.companionClickThrough,
                       (v) => widget.controller.changeClickThrough(v),
                     ),
-                    divider(),
-                    toggleRow(
-                      'Magnetic Attraction',
-                      'The pet will dynamically move toward and follow your cursor.',
-                      widget.controller.companionFollowMouse,
-                      (v) => widget.controller.changeFollowMouse(v),
-                    ),
+                    // Only the full-screen mode can chase the pointer around. The
+                    // floating window never moves toward it, and "Follow
+                    // Cursor" above covers where it looks.
+                    if (!widget.controller.pipModeEnabled) ...[
+                      divider(),
+                      toggleRow(
+                        'Magnetic Attraction',
+                        'The pet will dynamically move toward and follow your cursor.',
+                        widget.controller.companionFollowMouse,
+                        (v) => widget.controller.changeFollowMouse(v),
+                      ),
+                    ],
                     divider(),
                     toggleRow(
                       'Wander Around the Screen',
@@ -365,43 +437,49 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 child: AbsorbPointer(
                   child: Container(
                     color: Colors.black.withValues(alpha: 0.15),
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceElevated.withValues(
-                            alpha: 0.9,
+                    // Near the top, where the switch that was just pressed is,
+                    // rather than the middle of a page that may be scrolled.
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 120),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 16,
                           ),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppTheme.border),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.surfaceElevated.withValues(
+                              alpha: 0.9,
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CupertinoActivityIndicator(
-                              color: AppTheme.accentColor,
-                              radius: 10,
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Configuring Companion...',
-                              style: TextStyle(
-                                color: AppTheme.textPrimary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppTheme.border),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CupertinoActivityIndicator(
+                                color: AppTheme.accentColor,
+                                radius: 10,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Starting your companion...',
+                                style: TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -415,8 +493,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
   }
 
   Widget _buildHeroHeader() {
-    final currentTheme = PetTheme.getTheme(_displayedThemeId);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -430,37 +506,15 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                   Row(
                     children: [
                       Text(
-                        widget.controller.companionEnabled
-                            ? widget.controller.companionPetName
-                            : 'Companion',
+                        // The name the user gave their companion, as chosen.
+                        widget.controller.companionPetName.trim().isEmpty
+                            ? 'Companion'
+                            : widget.controller.companionPetName,
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textPrimary,
                           letterSpacing: -0.5,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppTheme.accentColor.withValues(alpha: 0.2),
-                          ),
-                        ),
-                        child: Text(
-                          currentTheme.species.name.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: AppTheme.accentColor,
-                            letterSpacing: 1.0,
-                          ),
                         ),
                       ),
                     ],
@@ -476,7 +530,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                 ],
               ),
             ),
-            _buildSyncCard(),
           ],
         ),
       ],
@@ -809,7 +862,10 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           itemBuilder: (context, index) {
             final theme = PetTheme.themes[index];
             final isSelected = _displayedThemeId == theme.id;
+            // Every pet is available in the dev flavor; streak gating only
+            // applies to real builds.
             final isLocked =
+                !FlavorConfig.instance.isDev &&
                 theme.requiredConsistencyDays > 0 &&
                 (sl<CompanionStreakService>().currentStreakDays <
                     theme.requiredConsistencyDays);
@@ -1004,34 +1060,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
           },
         ),
       ],
-    );
-  }
-
-  Widget _buildSyncCard() {
-    return CupertinoButton(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      color: AppTheme.accentColor,
-      borderRadius: BorderRadius.circular(12),
-      onPressed: () => widget.controller.refreshCompanion(),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            CupertinoIcons.arrow_2_circlepath,
-            color: Colors.white,
-            size: 18,
-          ),
-          SizedBox(width: 8),
-          Text(
-            'Sync Companion',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

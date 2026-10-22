@@ -47,6 +47,14 @@ sealed class OverlayConfig with _$OverlayConfig {
     bool? pettingEnabled,
     bool? playEnabled,
     bool? treatEnabled,
+
+    /// How the companion looks at the pointer and animates by itself.
+    bool? gazeEnabled,
+    double? gazeSensitivity,
+    bool? idleAnimation,
+    bool? reactionsEnabled,
+    bool? reducedMotion,
+    bool? animationsEnabled,
   }) = _OverlayConfig;
 
   factory OverlayConfig.fromJson(Map<String, dynamic> json) =>

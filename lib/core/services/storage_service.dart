@@ -521,8 +521,13 @@ class StorageService {
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      existing.value = value.toString();
-      kvBox!.put(existing);
+      // Settings are saved as a whole, so almost every key arrives unchanged.
+      // Skipping the write keeps a toggle from costing dozens of database puts.
+      final next = value.toString();
+      if (existing.value != next) {
+        existing.value = next;
+        kvBox!.put(existing);
+      }
     } else {
       kvBox!.put(
         KeyValueRecord(key: key, value: value.toString(), type: 'int'),
@@ -549,8 +554,13 @@ class StorageService {
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      existing.value = value.toString();
-      kvBox!.put(existing);
+      // Settings are saved as a whole, so almost every key arrives unchanged.
+      // Skipping the write keeps a toggle from costing dozens of database puts.
+      final next = value.toString();
+      if (existing.value != next) {
+        existing.value = next;
+        kvBox!.put(existing);
+      }
     } else {
       kvBox!.put(
         KeyValueRecord(key: key, value: value.toString(), type: 'bool'),
@@ -577,8 +587,13 @@ class StorageService {
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      existing.value = value;
-      kvBox!.put(existing);
+      // Settings are saved as a whole, so almost every key arrives unchanged.
+      // Skipping the write keeps a toggle from costing dozens of database puts.
+      final next = value;
+      if (existing.value != next) {
+        existing.value = next;
+        kvBox!.put(existing);
+      }
     } else {
       kvBox!.put(KeyValueRecord(key: key, value: value, type: 'string'));
     }
@@ -603,8 +618,13 @@ class StorageService {
     if (kvBox == null) return false;
     final existing = _getKv(key);
     if (existing != null) {
-      existing.value = value.toString();
-      kvBox!.put(existing);
+      // Settings are saved as a whole, so almost every key arrives unchanged.
+      // Skipping the write keeps a toggle from costing dozens of database puts.
+      final next = value.toString();
+      if (existing.value != next) {
+        existing.value = next;
+        kvBox!.put(existing);
+      }
     } else {
       kvBox!.put(
         KeyValueRecord(key: key, value: value.toString(), type: 'double'),

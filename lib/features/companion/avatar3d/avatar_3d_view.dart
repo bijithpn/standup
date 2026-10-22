@@ -8,8 +8,10 @@ import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_catalog.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_painter.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
+import 'package:breakmate/features/companion/avatar3d/species_face.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_palette_mapper.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
+import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 
 /// Asks [Avatar3DView] to use the card colour the scene was authored with.
@@ -92,6 +94,9 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   double _builtYaw = double.nan;
   double _builtPitch = double.nan;
   double _builtBlink = double.nan;
+  PetEmotion? _builtEmotion;
+  double _builtIntensity = double.nan;
+  Rect? _fitBounds;
 
   @override
   void initState() {
@@ -107,6 +112,7 @@ class _Avatar3DViewState extends State<Avatar3DView> {
         oldWidget.paletteStrength != widget.paletteStrength ||
         oldWidget.style != widget.style) {
       _geometry = null;
+      _fitBounds = null;
       _builtYaw = double.nan;
       _resolveScene();
     }
@@ -130,8 +136,11 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   /// doing. Only the pose and the expression change frame to frame.
   AvatarScene? _tinted(AvatarScene? scene) {
     if (scene == null) return null;
+    final suited = scene.copyWith(
+      faceStyle: tuneFaceForSpecies(widget.preset, scene.faceStyle),
+    );
     return widget.style.applyTo(
-      applyPalette(scene, widget.palette, strength: widget.paletteStrength),
+      applyPalette(suited, widget.palette, strength: widget.paletteStrength),
     );
   }
 
@@ -141,12 +150,15 @@ class _Avatar3DViewState extends State<Avatar3DView> {
     if (scene == null) return null;
 
     final snapshot = widget.snapshot;
-    final base = scene.viewState;
+    final base = _restView(scene.viewState);
 
     // The head leads with the eyes, so gaze turns the camera further than the
     // head alone would; the body lean adds a little roll on top.
     final yaw = base.yaw + snapshot.headTurn.dx * widget.lookRange;
-    final pitch = base.pitch - snapshot.headTurn.dy * widget.lookRange * 0.7;
+    // Screen y grows downward and so does positive gaze; positive pitch here
+    // tips the face down, so the signs add. (Subtracting made the pet look up
+    // at a pointer below it and down at one above.)
+    final pitch = base.pitch + snapshot.headTurn.dy * widget.lookRange * 0.7;
     final roll = base.roll + snapshot.tilt;
 
     return scene.copyWith(
@@ -161,16 +173,30 @@ class _Avatar3DViewState extends State<Avatar3DView> {
     );
   }
 
+  /// The pose the pet rests in. The scenes were authored at a three-quarter
+  /// angle for the editor, which turns several faces half away (and, on the
+  /// cheeky species, behind their own cheeks). Mostly front-on reads as a face
+  /// looking at you, and leaves the head turn to carry the looking.
+  static AvatarViewState _restView(AvatarViewState authored) =>
+      authored.copyWith(
+        yaw: authored.yaw * 0.2,
+        pitch: authored.pitch * 0.2,
+        roll: authored.roll * 0.2,
+      );
+
   AvatarGeometry? _geometryFor(AvatarScene posed) {
     final yaw = posed.viewState.yaw;
     final pitch = posed.viewState.pitch;
     final blink = widget.snapshot.blink;
+    final emotion = widget.snapshot.emotion;
 
     final cached = _geometry;
     if (cached != null &&
         (yaw - _builtYaw).abs() < _poseEpsilon &&
         (pitch - _builtPitch).abs() < _poseEpsilon &&
-        (blink - _builtBlink).abs() < 0.02) {
+        (blink - _builtBlink).abs() < 0.02 &&
+        emotion.emotion == _builtEmotion &&
+        (emotion.intensity - _builtIntensity).abs() < 0.04) {
       return cached;
     }
 
@@ -179,7 +205,27 @@ class _Avatar3DViewState extends State<Avatar3DView> {
     _builtYaw = yaw;
     _builtPitch = pitch;
     _builtBlink = blink;
+    _builtEmotion = emotion.emotion;
+    _builtIntensity = emotion.intensity;
     return built;
+  }
+
+  /// The silhouette the pet is fitted to, measured once at rest.
+  ///
+  /// Fitting to each frame's own silhouette made the whole pet zoom in and out
+  /// as the head turned and the expression changed.
+  Rect _fitBoundsFor(AvatarScene posed) {
+    final cached = _fitBounds;
+    if (cached != null) return cached;
+    final rest = posed.copyWith(
+      viewState: _restView(_scene!.viewState),
+      faceStyle: _scene!.faceStyle,
+    );
+    final bounds = buildAvatarGeometry(
+      rest,
+      densityScale: widget.densityScale,
+    ).bounds;
+    return _fitBounds = bounds;
   }
 
   @override
@@ -204,6 +250,8 @@ class _Avatar3DViewState extends State<Avatar3DView> {
       size: Size(widget.size, widget.size),
       painter: AvatarScenePainter(
         geometry: geometry,
+        fitBounds: _fitBoundsFor(posed),
+        blush: blushFor(snapshot.emotion),
         scene: posed,
         background: background,
         showOutline: widget.showOutline,

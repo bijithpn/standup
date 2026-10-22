@@ -60,8 +60,20 @@ AvatarScene applyPalette(
       ),
   ];
 
+  // Markings follow the body: dark stripes become a dark shade of the new
+  // body hue. Near-white ones (muzzles, belly patches) stay light.
+  final head = scene.facePart;
+  final bodyColor = head == null ? null : map(head.baseColor);
+  final markings = <AvatarMarking>[
+    for (final mark in scene.markings)
+      bodyColor == null || _luminance(mark.color) > 0.8
+          ? mark
+          : mark.withColor(_reshade(mark.color, bodyColor, strength * 0.6)),
+  ];
+
   return scene.copyWithParts(
     parts,
+    markings: markings,
     outlineStyle: AvatarOutlineStyle(
       color: map(scene.outlineStyle.color),
       opacity: scene.outlineStyle.opacity,

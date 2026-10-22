@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
+import 'package:breakmate/core/ipc/ipc_maps.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -12,13 +13,16 @@ import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/ipc/overlay_config.dart';
 import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/features/companion/behavior/companion_mood_machine.dart';
 import 'package:breakmate/features/companion/behavior/cursor_feed.dart';
+import 'package:breakmate/features/companion/behavior/gaze_sector.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_engine.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 import 'package:breakmate/features/companion/behavior/pet_wanderer.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
+import 'package:breakmate/features/companion/overlay/mouse_hit_policy.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
 import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
@@ -27,6 +31,7 @@ import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
+import 'package:breakmate/shared/utils/reduced_motion.dart';
 
 /// The floating companion window.
 ///
@@ -43,7 +48,7 @@ class PiPOverlayWindow extends StatefulWidget {
 }
 
 class _PiPOverlayWindowState extends State<PiPOverlayWindow>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static const MethodChannel _channel = MethodChannel(
     'com.breakmate.desktop/pip_data',
   );
@@ -52,13 +57,24 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   /// to know where it is relative to the cursor, which tolerates being a frame
   /// or two stale — and the window rarely moves.
   static const Duration _viewportSyncInterval = Duration(milliseconds: 400);
-  static const Duration _frameInterval = Duration(milliseconds: 33);
 
-  late final PetBehaviorEngine _engine = PetBehaviorEngine();
+  /// How often a pet that has nothing left to animate is still ticked, so it
+  /// keeps getting drowsy and lonely without drawing a single frame.
+  static const Duration _restInterval = Duration(milliseconds: 250);
+
+  late final PetBehaviorEngine _engine = PetBehaviorEngine(
+    reducedMotion: prefersReducedMotion,
+  );
   late final Ticker _ticker = createTicker(_tickEngine);
+
+  /// The engine's clock. Independent of the ticker, which stops and restarts,
+  /// so the simulation never sees time jump backwards.
+  final Stopwatch _clock = Stopwatch()..start();
+  Timer? _restTimer;
   StreamSubscription<CursorSample>? _cursorSub;
   Timer? _viewportTimer;
   Duration _lastFrameElapsed = Duration.zero;
+  bool _windowVisible = true;
 
   late final CompanionWindowManager _windowManager = CompanionWindowManager(
     displayManager: NativeDisplayManager(),
@@ -112,44 +128,77 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   bool _playEnabled = true;
   bool _treatEnabled = true;
 
+  // How the pet looks at the pointer and animates on its own. Defaults match
+  // the settings defaults so the first frame is right before the host speaks.
+  bool _gazeEnabled = true;
+  double _gazeSensitivity = 0.5;
+  bool _idleAnimation = true;
+  bool _reactions = true;
+  bool _reducedMotionSetting = false;
+  bool _animationsEnabled = true;
+  bool _wanderingRequested = false;
+
   Rect _windowRect = Rect.zero;
   bool _acceptsMouse = true;
   bool _applyingMouseMode = false;
   bool _isDraggingWindow = false;
   bool _isHovered = false;
+  bool _chromeFocused = false;
 
   @override
   void initState() {
     super.initState();
 
+    WidgetsBinding.instance.addObserver(this);
     _channel.setMethodCallHandler(_handleMethodCall);
+    _engine.onNeedsFrames = _requestFrames;
     _engine.start();
-    _ticker.start();
-    _cursorSub = CursorFeed.instance.subscribe(_onCursorSample);
+    _applyBehavior();
+    _requestFrames();
     _viewportTimer = Timer.periodic(
       _viewportSyncInterval,
       (_) => _syncViewport(),
     );
 
     unawaited(_fetchInitialSettings());
+
+    // Tell the native side the first frame exists so it can reveal the window
+    // straight away instead of after a fixed delay.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      unawaited(
+        _channel.invokeMethod<void>('pipReady').catchError((Object _) {}),
+      );
+      // And the app, so its loader can end when the companion is really there.
+      _report('pipReady');
+    });
   }
 
   @override
   void dispose() {
+    SimplePrefs.instance.flush();
+    WidgetsBinding.instance.removeObserver(this);
     _channel.setMethodCallHandler(null);
     _viewportTimer?.cancel();
+    _restTimer?.cancel();
     _cursorSub?.cancel();
     _wanderer.dispose();
     _ticker.dispose();
+    _engine.onNeedsFrames = null;
     _engine.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAccessibilityFeatures() {
+    // The user flipped macOS "Reduce motion" while the companion was running.
+    _applyBehavior();
   }
 
   // ── Settings plumbing ─────────────────────────────────────────────────────
 
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     final args = call.arguments;
-    final map = args is Map ? Map<String, dynamic>.from(args) : null;
+    final map = args is Map ? stringKeyedMap(args) : null;
 
     switch (call.method) {
       case 'syncPiPSettings':
@@ -181,7 +230,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         break;
 
       case 'triggerCompanionState':
-        _engine.nudge();
+        _handleCompanionEvent(map?['state']?.toString());
+        break;
+
+      // The native side reports these so the pet never has to guess whether
+      // animation callbacks ran while it was hidden or the machine slept.
+      case 'setWindowVisible':
+        _setWindowVisible(map?['visible'] != false);
+        break;
+
+      case 'systemDidWake':
+      case 'displaysChanged':
+        unawaited(_reconcileAfterSuspend());
         break;
     }
     return null;
@@ -193,9 +253,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(
-          OverlayConfig.fromJson(Map<String, dynamic>.from(result)),
-        );
+        _applySettings(OverlayConfig.fromJson(stringKeyedMap(result)));
       }
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
@@ -226,6 +284,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       _pettingEnabled = config.pettingEnabled ?? _pettingEnabled;
       _playEnabled = config.playEnabled ?? _playEnabled;
       _treatEnabled = config.treatEnabled ?? _treatEnabled;
+      _gazeEnabled = config.gazeEnabled ?? _gazeEnabled;
+      _gazeSensitivity = (config.gazeSensitivity ?? _gazeSensitivity)
+          .clamp(0.0, 1.0)
+          .toDouble();
+      _idleAnimation = config.idleAnimation ?? _idleAnimation;
+      _reactions = config.reactionsEnabled ?? _reactions;
+      _reducedMotionSetting = config.reducedMotion ?? _reducedMotionSetting;
+      _animationsEnabled = config.animationsEnabled ?? _animationsEnabled;
 
       final incoming = config.avatarDefinitionJson;
       if (incoming != null && incoming.isNotEmpty) {
@@ -233,11 +299,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       }
     });
 
-    _wanderer.enabled = config.wanderingEnabled ?? _wanderer.enabled;
+    _wanderingRequested = config.wanderingEnabled ?? _wanderingRequested;
     unawaited(_windowManager.setOpacity(_pipOpacity));
     final acceptsMouse = _pipDraggableClickable && !_clickThrough;
     _acceptsMouse = acceptsMouse;
     unawaited(_windowManager.setAcceptsMouse(acceptsMouse));
+    _applyBehavior();
+    _syncHitTestSubscription();
     _warmArtwork();
   }
 
@@ -306,10 +374,169 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
 
   // ── Cursor, viewport, click-through ───────────────────────────────────────
 
-  void _tickEngine(Duration elapsed) {
-    if (elapsed - _lastFrameElapsed < _frameInterval) return;
-    _lastFrameElapsed = elapsed;
-    _engine.tick(elapsed);
+  // ── Behaviour, frame pacing, lifecycle ────────────────────────────────────
+
+  /// Pushes the user's preferences, and the system's reduce-motion setting,
+  /// into the engine. Idempotent: the engine ignores values that did not
+  /// change, so calling this on every settings sync is cheap.
+  void _applyBehavior() {
+    final reduced = _reducedMotionSetting || prefersReducedMotion;
+    _engine.configure(
+      gaze: GazeSettings(enabled: _gazeEnabled, sensitivity: _gazeSensitivity),
+      idleAnimation: _idleAnimation,
+      reactions: _reactions,
+      animations: _animationsEnabled,
+      reducedMotion: reduced,
+    );
+    // A pet that is meant to be calm does not stroll across the desktop.
+    _wanderer.enabled = _wanderingRequested && _animationsEnabled && !reduced;
+  }
+
+  void _handleCompanionEvent(String? name) {
+    switch (name) {
+      case 'breakCompleted':
+        _engine.onBreakCompleted();
+      case 'breakReminder':
+        _engine.onBreakReminder();
+      default:
+        _engine.nudge();
+    }
+  }
+
+  /// Runs the frame ticker, unless the pet has nothing to draw. Called
+  /// whenever something may have given it work: a setting, an event, a tap.
+  void _requestFrames() {
+    if (!mounted || !_windowVisible) return;
+    _restTimer?.cancel();
+    _restTimer = null;
+    if (!_ticker.isActive) _ticker.start();
+  }
+
+  void _tickEngine(Duration _) {
+    final now = _clock.elapsed;
+    if (now - _lastFrameElapsed < _engine.frameInterval) return;
+    _lastFrameElapsed = now;
+    _engine.tick(now);
+
+    if (_engine.isSettled) _enterRest();
+  }
+
+  /// Nothing is moving: stop asking Flutter for frames and tick slowly so the
+  /// slow feelings (drowsiness, loneliness) still advance.
+  void _enterRest() {
+    if (_ticker.isActive) _ticker.stop();
+    _restTimer ??= Timer.periodic(_restInterval, (_) {
+      if (!mounted) return;
+      _engine.tick(_clock.elapsed);
+      if (!_engine.isSettled) _requestFrames();
+    });
+  }
+
+  void _setWindowVisible(bool visible) {
+    if (_windowVisible == visible) return;
+    _windowVisible = visible;
+    _engine.setSuspended(!visible);
+    if (visible) {
+      _requestFrames();
+      unawaited(_syncViewport());
+    } else {
+      // Occluded, hidden or on another Space: nobody can see the pet, so draw
+      // nothing and poll nothing until it comes back.
+      if (_ticker.isActive) _ticker.stop();
+      _restTimer?.cancel();
+      _restTimer = null;
+    }
+    _syncHitTestSubscription();
+  }
+
+  /// After sleep or a display change nothing can be assumed about the
+  /// callbacks that did or did not run, or about where the window now is.
+  Future<void> _reconcileAfterSuspend() async {
+    _windowManager.invalidateDisplayCache();
+    _engine.reconcile();
+    await _syncViewport();
+    // The native side may have pulled the window back onto a display that
+    // still exists; remember where it ended up.
+    _windowManager.persistPosition();
+    _requestFrames();
+  }
+
+  // ── Cursor, hit-testing ───────────────────────────────────────────────────
+
+  /// Whether the window needs to know where the cursor is for itself, apart
+  /// from where the pet looks.
+  ///
+  /// With a card behind the pet the whole window is the pet, so it can just
+  /// accept the mouse. Without one, the transparent margins must not swallow
+  /// clicks meant for whatever is underneath, and that takes watching the
+  /// cursor.
+  bool get _needsHitTesting =>
+      _windowVisible &&
+      _pipDraggableClickable &&
+      (_clickThrough || !_hasBackdrop);
+
+  void _syncHitTestSubscription() {
+    if (_needsHitTesting && _cursorSub == null) {
+      _cursorSub = CursorFeed.instance.subscribe(_onCursorSample);
+    } else if (!_needsHitTesting && _cursorSub != null) {
+      _cursorSub!.cancel();
+      _cursorSub = null;
+    }
+  }
+
+  /// Decides whether the window should swallow clicks.
+  ///
+  /// This reuses the shared cursor sample rather than asking the platform
+  /// again, so click-through costs nothing beyond the poll the pet already
+  /// needed to know where to look.
+  void _onCursorSample(CursorSample sample) {
+    if (!mounted || _isDraggingWindow) return;
+
+    // A window that has stopped accepting the mouse never hears the pointer
+    // leave, so hover is cleared from here when the cursor is plainly gone.
+    if (_isHovered &&
+        !_windowRect.isEmpty &&
+        !_windowRect.inflate(2).contains(sample.position)) {
+      setState(() => _isHovered = false);
+      _wanderer.resume();
+      _engine.hover(false);
+    }
+
+    final shouldAccept = shouldWindowAcceptMouse(
+      draggableClickable: _pipDraggableClickable,
+      clickThrough: _clickThrough,
+      hasBackdrop: _hasBackdrop,
+      hovered: _isHovered,
+      cursor: sample.position,
+      windowRect: _windowRect,
+      stageRect: _stageGlobalRect,
+    );
+
+    if (shouldAccept == _acceptsMouse || _applyingMouseMode) return;
+    _acceptsMouse = shouldAccept;
+    _applyingMouseMode = true;
+    _windowManager.setAcceptsMouse(shouldAccept).whenComplete(() {
+      _applyingMouseMode = false;
+    });
+  }
+
+  /// Where the pet is drawn, in the same screen space as the cursor.
+  Rect get _stageGlobalRect {
+    final local = _stageLocalRect;
+    if (local == null || _windowRect.isEmpty) return Rect.zero;
+    return local.shift(_windowRect.topLeft);
+  }
+
+  Rect? _stageLocalRect;
+
+  /// Where the pet's eyes are on screen, or null until it has been laid out.
+  ///
+  /// Gaze is measured from here. The head sits in the upper part of the
+  /// square the pet is drawn into, well above the middle of the window.
+  Offset? get _eyeGlobal {
+    final stage = _stageGlobalRect;
+    if (stage.isEmpty) return null;
+    return Offset(stage.center.dx, stage.top + stage.height * 0.38);
   }
 
   Future<void> _syncViewport() async {
@@ -322,37 +549,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         size.width,
         size.height,
       );
-      _engine.setViewport(_windowRect);
+      _engine.setViewport(_windowRect, eye: _eyeGlobal);
     } catch (_) {
       // The window may be mid-move or already gone.
     }
-  }
-
-  /// Decides whether the window should swallow clicks.
-  ///
-  /// This reuses the shared cursor sample rather than asking the platform
-  /// again, so click-through costs nothing beyond the poll the pet already
-  /// needed to know where to look.
-  void _onCursorSample(CursorSample sample) {
-    if (!mounted || _isDraggingWindow) return;
-
-    final bool shouldAccept;
-    if (!_pipDraggableClickable) {
-      shouldAccept = false;
-    } else if (!_clickThrough) {
-      shouldAccept = true;
-    } else {
-      shouldAccept =
-          !_windowRect.isEmpty &&
-          _windowRect.deflate(4).contains(sample.position);
-    }
-
-    if (shouldAccept == _acceptsMouse || _applyingMouseMode) return;
-    _acceptsMouse = shouldAccept;
-    _applyingMouseMode = true;
-    _windowManager.setAcceptsMouse(shouldAccept).whenComplete(() {
-      _applyingMouseMode = false;
-    });
   }
 
   // ── Interaction ───────────────────────────────────────────────────────────
@@ -430,6 +630,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   }
 
   Future<void> _handleClose() async {
+    SimplePrefs.instance.flush();
     await NativeBridge.hidePipWindow();
   }
 
@@ -485,7 +686,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   /// headroom above the stage instead of letting a bounce hit the window edge.
   double get _petSizeFactor {
     final normalized = ((_scale - 2.0) / 13.0).clamp(0.0, 1.0);
-    return 0.60 + normalized * 0.40;
+    return 0.88 + normalized * 0.12;
   }
 
   /// The interactions this window is allowed to offer, in the order they are
@@ -508,10 +709,14 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
             setState(() => _isHovered = true);
             // Nothing walks off while it is being looked at.
             _wanderer.suspend();
+            // Works even with cursor-following off: being hovered is a plain
+            // window event, not tracking.
+            _engine.hover(true);
           },
           onExit: (_) {
             setState(() => _isHovered = false);
             _wanderer.resume();
+            _engine.hover(false);
           },
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
@@ -535,8 +740,10 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   Widget _buildPet() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final topHeadroom = math.max(36.0, constraints.maxHeight * 0.12);
-        final bottomHeadroom = math.max(30.0, constraints.maxHeight * 0.09);
+        // The top strip holds the drag handle and buttons; the bottom one the
+        // action buttons and their caption. Everything between is the pet's.
+        const topHeadroom = 34.0;
+        const bottomHeadroom = 52.0;
         const horizontalInset = 12.0;
         final safeWidth = math.max(
           48.0,
@@ -548,6 +755,17 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
         );
         final safeExtent = math.min(safeWidth, safeHeight);
         final stageSize = math.max(48.0, safeExtent * _petSizeFactor);
+        _stageLocalRect = Rect.fromLTWH(
+          (constraints.maxWidth - stageSize) / 2,
+          topHeadroom +
+              (constraints.maxHeight -
+                      topHeadroom -
+                      bottomHeadroom -
+                      stageSize) /
+                  2,
+          stageSize,
+          stageSize,
+        );
 
         return Padding(
           padding: EdgeInsets.fromLTRB(
@@ -557,20 +775,28 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
             bottomHeadroom,
           ),
           child: Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.center,
             child: AnimatedBuilder(
               animation: _engine,
-              builder: (context, _) => PetStage(
-                snapshot: _engine.snapshot,
-                size: stageSize,
-                definition: _isBlob ? null : _avatarDefinition,
-                blobName: _isBlob ? _petName : null,
-                background: _backdropColor,
-                // The contact shadow needs a surface to fall on.
-                showShadow: false,
-                showSceneShadow: _hasBackdrop,
+              builder: (context, _) => Semantics(
+                // Mood only. Gaze changes constantly and would make a screen
+                // reader chatter.
+                label: _semanticLabel(_engine.snapshot.mood),
+                button: true,
                 onTap: _handlePetTap,
-                onDoubleTap: _isBlob ? _handleRename : null,
+                excludeSemantics: true,
+                child: PetStage(
+                  snapshot: _engine.snapshot,
+                  size: stageSize,
+                  definition: _isBlob ? null : _avatarDefinition,
+                  blobName: _isBlob ? _petName : null,
+                  background: _backdropColor,
+                  // The contact shadow needs a surface to fall on.
+                  showShadow: false,
+                  showSceneShadow: _hasBackdrop,
+                  onTap: _handlePetTap,
+                  onDoubleTap: _isBlob ? _handleRename : null,
+                ),
               ),
             ),
           ),
@@ -579,113 +805,138 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     );
   }
 
+  String _semanticLabel(CompanionMood mood) {
+    final name = _petName.trim().isEmpty ? 'Companion' : _petName.trim();
+    final feeling = switch (mood) {
+      CompanionMood.idle => 'relaxed',
+      CompanionMood.sleepy => 'sleepy',
+      CompanionMood.curious => 'curious',
+      CompanionMood.attentive => 'paying attention',
+      CompanionMood.happy => 'happy',
+      CompanionMood.encouraging => 'encouraging you to take a break',
+      CompanionMood.surprised => 'surprised',
+      CompanionMood.resting => 'resting',
+    };
+    return '$name, $feeling. Activate to pet.';
+  }
+
   /// Everything that is not the pet: drag grip, name, close, status. All of it
   /// fades away when the pointer leaves, so the resting state is just an animal
   /// on the desktop.
   Widget _buildChrome() {
-    return AnimatedOpacity(
-      opacity: _isHovered ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      child: IgnorePointer(
-        ignoring: !_isHovered,
-        child: Stack(
-          children: <Widget>[
-            // Dotted grid drag handle along the top edge.
-            Positioned(
-              top: 6,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _DottedDragHandle(
-                  foreground: _chromeForeground,
-                  background: _chromeBackground,
-                  onDragStart: () => unawaited(_startWindowDrag()),
-                  onDragEnd: () {},
+    final showChrome = _isHovered || _chromeFocused;
+    return Focus(
+      canRequestFocus: false,
+      skipTraversal: true,
+      // Keyboard users tab onto the controls without hovering, and the
+      // controls have to be visible once they are there.
+      onFocusChange: (focused) {
+        if (_chromeFocused != focused) setState(() => _chromeFocused = focused);
+      },
+      child: AnimatedOpacity(
+        opacity: showChrome ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: IgnorePointer(
+          ignoring: !showChrome,
+          child: Stack(
+            children: <Widget>[
+              // Dotted grid drag handle along the top edge.
+              Positioned(
+                top: 6,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: _DottedDragHandle(
+                    foreground: _chromeForeground,
+                    background: _chromeBackground,
+                    onDragStart: () => unawaited(_startWindowDrag()),
+                    onDragEnd: () {},
+                  ),
                 ),
               ),
-            ),
 
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  _ChromeButton(
-                    icon: _keepOnScreen
-                        ? Icons.push_pin_rounded
-                        : Icons.push_pin_outlined,
-                    background: _chromeBackground,
-                    foreground: _chromeForeground,
-                    isActive: _keepOnScreen,
-                    tooltip: _keepOnScreen
-                        ? 'Staying on screen — tap to only show during breaks'
-                        : 'Only shows during breaks — tap to keep on screen',
-                    onTap: _toggleKeepOnScreen,
-                  ),
-                  const SizedBox(width: 4),
-                  _ChromeButton(
-                    icon: Icons.close_rounded,
-                    background: _chromeBackground,
-                    foreground: _chromeForeground,
-                    tooltip: 'Hide companion',
-                    onTap: _handleClose,
-                  ),
-                ],
-              ),
-            ),
-
-            // Name and edit sit top-left so the bottom of the window is free
-            // for the interactions, which are the part a new user needs.
-            Positioned(
-              top: 6,
-              left: 6,
-              right: 60,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  if (_isBlob) ...<Widget>[
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
                     _ChromeButton(
-                      icon: Icons.edit_rounded,
+                      icon: _keepOnScreen
+                          ? Icons.push_pin_rounded
+                          : Icons.push_pin_outlined,
                       background: _chromeBackground,
                       foreground: _chromeForeground,
-                      tooltip:
-                          'Rename '
-                          '${_petName.trim().isEmpty ? 'companion' : _petName}',
-                      onTap: _handleRename,
+                      isActive: _keepOnScreen,
+                      tooltip: _keepOnScreen
+                          ? 'Staying on screen — tap to only show during breaks'
+                          : 'Only shows during breaks — tap to keep on screen',
+                      onTap: _toggleKeepOnScreen,
                     ),
                     const SizedBox(width: 4),
-                  ],
-                  Flexible(
-                    child: _NamePill(
-                      name: _petName,
+                    _ChromeButton(
+                      icon: Icons.close_rounded,
                       background: _chromeBackground,
                       foreground: _chromeForeground,
+                      tooltip: 'Hide companion',
+                      onTap: _handleClose,
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
 
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 8,
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _engine,
-                  builder: (context, _) => _ActionBar(
-                    actions: _availableActions,
-                    suggested: _engine.wish,
-                    background: _chromeBackground,
-                    foreground: _chromeForeground,
-                    onSelected: _handleWish,
+              // Name and edit sit top-left so the bottom of the window is free
+              // for the interactions, which are the part a new user needs.
+              Positioned(
+                top: 6,
+                left: 6,
+                right: 60,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    if (_isBlob) ...<Widget>[
+                      _ChromeButton(
+                        icon: Icons.edit_rounded,
+                        background: _chromeBackground,
+                        foreground: _chromeForeground,
+                        tooltip:
+                            'Rename '
+                            '${_petName.trim().isEmpty ? 'companion' : _petName}',
+                        onTap: _handleRename,
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: _NamePill(
+                        name: _petName,
+                        background: _chromeBackground,
+                        foreground: _chromeForeground,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 8,
+                child: Center(
+                  child: AnimatedBuilder(
+                    animation: _engine,
+                    builder: (context, _) => _ActionBar(
+                      actions: _availableActions,
+                      suggested: _engine.wish,
+                      background: _chromeBackground,
+                      foreground: _chromeForeground,
+                      onSelected: _handleWish,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -855,8 +1106,8 @@ class _ActionButton extends StatelessWidget {
         cursor: SystemMouseCursors.click,
         onEnter: (_) => onEnter(),
         onExit: (_) => onExit(),
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
+        child: _Pressable(
+          label: style.hint,
           onTap: onTap,
           child: Container(
             width: 30,
@@ -909,8 +1160,8 @@ class _ChromeButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      child: _Pressable(
+        label: tooltip,
         onTap: onTap,
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
@@ -1093,4 +1344,61 @@ class _DottedGridPainter extends CustomPainter {
   @override
   bool shouldRepaint(_DottedGridPainter oldDelegate) =>
       oldDelegate.color != color;
+}
+
+/// A tappable control that also works from the keyboard and to a screen
+/// reader: focusable, activated by Enter or Space, announced as a button, and
+/// ringed in the accent colour while focused.
+class _Pressable extends StatefulWidget {
+  const _Pressable({
+    required this.label,
+    required this.onTap,
+    required this.child,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+  final Widget child;
+
+  @override
+  State<_Pressable> createState() => _PressableState();
+}
+
+class _PressableState extends State<_Pressable> {
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: widget.label,
+      onTap: widget.onTap,
+      excludeSemantics: true,
+      child: FocusableActionDetector(
+        onShowFocusHighlight: (value) => setState(() => _focused = value),
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onTap();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: DecoratedBox(
+            position: DecorationPosition.foreground,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: _focused
+                  ? Border.all(color: AppTheme.accent, width: 1.5)
+                  : null,
+            ),
+            child: widget.child,
+          ),
+        ),
+      ),
+    );
+  }
 }

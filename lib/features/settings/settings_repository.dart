@@ -253,6 +253,25 @@ class SettingsRepository extends ChangeNotifier {
       companionFollowMouse: cp?.companionFollowMouse ?? false,
       unlockedPets: _decodeStringList(cp?.unlockedPetsJson ?? '[]'),
       pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      companionGazeEnabled: _storage.getBool(
+        'companion_gaze_enabled',
+        defaultValue: true,
+      ),
+      companionGazeSensitivity: _storage
+          .getDouble('companion_gaze_sensitivity', defaultValue: 0.5)
+          .clamp(0.0, 1.0),
+      companionIdleAnimation: _storage.getBool(
+        'companion_idle_animation',
+        defaultValue: true,
+      ),
+      companionReactions: _storage.getBool(
+        'companion_reactions',
+        defaultValue: true,
+      ),
+      companionReducedMotion: _storage.getBool(
+        'companion_reduced_motion',
+        defaultValue: false,
+      ),
       ballThrowEnabled: _storage.getBool(
         'ball_throw_enabled',
         defaultValue: true,
@@ -493,6 +512,25 @@ class SettingsRepository extends ChangeNotifier {
         defaultValue: false,
       ),
       pettingEnabled: _storage.getBool('petting_enabled', defaultValue: true),
+      companionGazeEnabled: _storage.getBool(
+        'companion_gaze_enabled',
+        defaultValue: true,
+      ),
+      companionGazeSensitivity: _storage
+          .getDouble('companion_gaze_sensitivity', defaultValue: 0.5)
+          .clamp(0.0, 1.0),
+      companionIdleAnimation: _storage.getBool(
+        'companion_idle_animation',
+        defaultValue: true,
+      ),
+      companionReactions: _storage.getBool(
+        'companion_reactions',
+        defaultValue: true,
+      ),
+      companionReducedMotion: _storage.getBool(
+        'companion_reduced_motion',
+        defaultValue: false,
+      ),
       ballThrowEnabled: _storage.getBool(
         'ball_throw_enabled',
         defaultValue: true,
@@ -761,6 +799,23 @@ class SettingsRepository extends ChangeNotifier {
     );
     await _storage.setDouble('companion_scale', settings.companionScale);
     await _storage.setBool('petting_enabled', settings.pettingEnabled);
+    await _storage.setBool(
+      'companion_gaze_enabled',
+      settings.companionGazeEnabled,
+    );
+    await _storage.setDouble(
+      'companion_gaze_sensitivity',
+      settings.companionGazeSensitivity,
+    );
+    await _storage.setBool(
+      'companion_idle_animation',
+      settings.companionIdleAnimation,
+    );
+    await _storage.setBool('companion_reactions', settings.companionReactions);
+    await _storage.setBool(
+      'companion_reduced_motion',
+      settings.companionReducedMotion,
+    );
     await _storage.setBool('ball_throw_enabled', settings.ballThrowEnabled);
     await _storage.setBool('treat_enabled', settings.treatEnabled);
     await _storage.setBool('developer_reactions', settings.developerReactions);

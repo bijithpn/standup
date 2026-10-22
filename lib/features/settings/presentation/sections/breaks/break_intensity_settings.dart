@@ -1,9 +1,7 @@
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/display/controllers/display_controller.dart';
-import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:provider/provider.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -20,10 +18,6 @@ class BreakIntensitySettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Provider.of<BreakController>(context);
-    final isPaused = controller.isPaused;
-    final isBreak = controller.isBreakActive;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -53,45 +47,6 @@ class BreakIntensitySettings extends StatelessWidget {
             settings.playMusicDuringBreak,
             (val) {
               onSave(settings.copyWith(playMusicDuringBreak: val));
-            },
-          ),
-        ]),
-        const SizedBox(height: 16),
-        sectionHeader('Manual Controls'),
-        buildCard([
-          actionRow(
-            label: isPaused ? 'Timer is Paused' : 'Timer is Running',
-            subtitle: isPaused
-                ? 'Resume to continue your focus session.'
-                : 'Pause if you need to step away for a moment.',
-            buttonText: isPaused ? 'Resume' : 'Pause',
-            buttonColor: isPaused
-                ? AppTheme.accentColor
-                : AppTheme.longBreakColor,
-            onPressed: () => controller.togglePause(),
-          ),
-          divider(),
-          actionRow(
-            label: 'Take Break Now',
-            subtitle: 'Manually trigger a rest session immediately.',
-            buttonText: 'Start Break',
-            buttonColor: AppTheme.accentColor,
-            onPressed: isBreak ? null : () => controller.takeBreakNow(),
-          ),
-          divider(),
-          actionRow(
-            label: isBreak ? 'Skip Current Break' : 'Skip Next Break',
-            subtitle: isBreak
-                ? 'End the active break session early.'
-                : 'Bypass the upcoming scheduled rest.',
-            buttonText: 'Skip',
-            buttonColor: AppTheme.textSecondary,
-            onPressed: () {
-              if (isBreak) {
-                controller.skipCurrentBreak();
-              } else {
-                controller.skipNextBreak();
-              }
             },
           ),
         ]),

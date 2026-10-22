@@ -32,7 +32,8 @@ mixin _$OverlayConfig {
 /// The overlay offers these on hover, so it has to know which ones are
 /// permitted. Sending them saves the overlay engine a settings lookup it
 /// has no way to perform.
- bool? get pettingEnabled; bool? get playEnabled; bool? get treatEnabled;
+ bool? get pettingEnabled; bool? get playEnabled; bool? get treatEnabled;/// How the companion looks at the pointer and animates by itself.
+ bool? get gazeEnabled; double? get gazeSensitivity; bool? get idleAnimation; bool? get reactionsEnabled; bool? get reducedMotion; bool? get animationsEnabled;
 /// Create a copy of OverlayConfig
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -45,16 +46,16 @@ $OverlayConfigCopyWith<OverlayConfig> get copyWith => _$OverlayConfigCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OverlayConfig&&(identical(other.themeId, themeId) || other.themeId == themeId)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.companionToyType, companionToyType) || other.companionToyType == companionToyType)&&(identical(other.companionTreatType, companionTreatType) || other.companionTreatType == companionTreatType)&&(identical(other.petName, petName) || other.petName == petName)&&(identical(other.followMouse, followMouse) || other.followMouse == followMouse)&&(identical(other.wanderingEnabled, wanderingEnabled) || other.wanderingEnabled == wanderingEnabled)&&(identical(other.state, state) || other.state == state)&&const DeepCollectionEquality().equals(other.mouseFollow, mouseFollow)&&(identical(other.avatarDefinitionJson, avatarDefinitionJson) || other.avatarDefinitionJson == avatarDefinitionJson)&&(identical(other.renderMode, renderMode) || other.renderMode == renderMode)&&(identical(other.keepOnScreen, keepOnScreen) || other.keepOnScreen == keepOnScreen)&&(identical(other.clickThrough, clickThrough) || other.clickThrough == clickThrough)&&(identical(other.pipBackgroundStyle, pipBackgroundStyle) || other.pipBackgroundStyle == pipBackgroundStyle)&&(identical(other.pipOpacity, pipOpacity) || other.pipOpacity == pipOpacity)&&(identical(other.pipDraggableClickable, pipDraggableClickable) || other.pipDraggableClickable == pipDraggableClickable)&&(identical(other.previewBackground, previewBackground) || other.previewBackground == previewBackground)&&(identical(other.pettingEnabled, pettingEnabled) || other.pettingEnabled == pettingEnabled)&&(identical(other.playEnabled, playEnabled) || other.playEnabled == playEnabled)&&(identical(other.treatEnabled, treatEnabled) || other.treatEnabled == treatEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is OverlayConfig&&(identical(other.themeId, themeId) || other.themeId == themeId)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.companionToyType, companionToyType) || other.companionToyType == companionToyType)&&(identical(other.companionTreatType, companionTreatType) || other.companionTreatType == companionTreatType)&&(identical(other.petName, petName) || other.petName == petName)&&(identical(other.followMouse, followMouse) || other.followMouse == followMouse)&&(identical(other.wanderingEnabled, wanderingEnabled) || other.wanderingEnabled == wanderingEnabled)&&(identical(other.state, state) || other.state == state)&&const DeepCollectionEquality().equals(other.mouseFollow, mouseFollow)&&(identical(other.avatarDefinitionJson, avatarDefinitionJson) || other.avatarDefinitionJson == avatarDefinitionJson)&&(identical(other.renderMode, renderMode) || other.renderMode == renderMode)&&(identical(other.keepOnScreen, keepOnScreen) || other.keepOnScreen == keepOnScreen)&&(identical(other.clickThrough, clickThrough) || other.clickThrough == clickThrough)&&(identical(other.pipBackgroundStyle, pipBackgroundStyle) || other.pipBackgroundStyle == pipBackgroundStyle)&&(identical(other.pipOpacity, pipOpacity) || other.pipOpacity == pipOpacity)&&(identical(other.pipDraggableClickable, pipDraggableClickable) || other.pipDraggableClickable == pipDraggableClickable)&&(identical(other.previewBackground, previewBackground) || other.previewBackground == previewBackground)&&(identical(other.pettingEnabled, pettingEnabled) || other.pettingEnabled == pettingEnabled)&&(identical(other.playEnabled, playEnabled) || other.playEnabled == playEnabled)&&(identical(other.treatEnabled, treatEnabled) || other.treatEnabled == treatEnabled)&&(identical(other.gazeEnabled, gazeEnabled) || other.gazeEnabled == gazeEnabled)&&(identical(other.gazeSensitivity, gazeSensitivity) || other.gazeSensitivity == gazeSensitivity)&&(identical(other.idleAnimation, idleAnimation) || other.idleAnimation == idleAnimation)&&(identical(other.reactionsEnabled, reactionsEnabled) || other.reactionsEnabled == reactionsEnabled)&&(identical(other.reducedMotion, reducedMotion) || other.reducedMotion == reducedMotion)&&(identical(other.animationsEnabled, animationsEnabled) || other.animationsEnabled == animationsEnabled));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,themeId,scale,companionToyType,companionTreatType,petName,followMouse,wanderingEnabled,state,const DeepCollectionEquality().hash(mouseFollow),avatarDefinitionJson,renderMode,keepOnScreen,clickThrough,pipBackgroundStyle,pipOpacity,pipDraggableClickable,previewBackground,pettingEnabled,playEnabled,treatEnabled]);
+int get hashCode => Object.hashAll([runtimeType,themeId,scale,companionToyType,companionTreatType,petName,followMouse,wanderingEnabled,state,const DeepCollectionEquality().hash(mouseFollow),avatarDefinitionJson,renderMode,keepOnScreen,clickThrough,pipBackgroundStyle,pipOpacity,pipDraggableClickable,previewBackground,pettingEnabled,playEnabled,treatEnabled,gazeEnabled,gazeSensitivity,idleAnimation,reactionsEnabled,reducedMotion,animationsEnabled]);
 
 @override
 String toString() {
-  return 'OverlayConfig(themeId: $themeId, scale: $scale, companionToyType: $companionToyType, companionTreatType: $companionTreatType, petName: $petName, followMouse: $followMouse, wanderingEnabled: $wanderingEnabled, state: $state, mouseFollow: $mouseFollow, avatarDefinitionJson: $avatarDefinitionJson, renderMode: $renderMode, keepOnScreen: $keepOnScreen, clickThrough: $clickThrough, pipBackgroundStyle: $pipBackgroundStyle, pipOpacity: $pipOpacity, pipDraggableClickable: $pipDraggableClickable, previewBackground: $previewBackground, pettingEnabled: $pettingEnabled, playEnabled: $playEnabled, treatEnabled: $treatEnabled)';
+  return 'OverlayConfig(themeId: $themeId, scale: $scale, companionToyType: $companionToyType, companionTreatType: $companionTreatType, petName: $petName, followMouse: $followMouse, wanderingEnabled: $wanderingEnabled, state: $state, mouseFollow: $mouseFollow, avatarDefinitionJson: $avatarDefinitionJson, renderMode: $renderMode, keepOnScreen: $keepOnScreen, clickThrough: $clickThrough, pipBackgroundStyle: $pipBackgroundStyle, pipOpacity: $pipOpacity, pipDraggableClickable: $pipDraggableClickable, previewBackground: $previewBackground, pettingEnabled: $pettingEnabled, playEnabled: $playEnabled, treatEnabled: $treatEnabled, gazeEnabled: $gazeEnabled, gazeSensitivity: $gazeSensitivity, idleAnimation: $idleAnimation, reactionsEnabled: $reactionsEnabled, reducedMotion: $reducedMotion, animationsEnabled: $animationsEnabled)';
 }
 
 
@@ -65,7 +66,7 @@ abstract mixin class $OverlayConfigCopyWith<$Res>  {
   factory $OverlayConfigCopyWith(OverlayConfig value, $Res Function(OverlayConfig) _then) = _$OverlayConfigCopyWithImpl;
 @useResult
 $Res call({
- String? themeId, double? scale, String? companionToyType, String? companionTreatType, String? petName, bool? followMouse, bool? wanderingEnabled, String? state, Map<String, dynamic>? mouseFollow, String? avatarDefinitionJson, String? renderMode, bool? keepOnScreen, bool? clickThrough, String? pipBackgroundStyle, double? pipOpacity, bool? pipDraggableClickable, String? previewBackground, bool? pettingEnabled, bool? playEnabled, bool? treatEnabled
+ String? themeId, double? scale, String? companionToyType, String? companionTreatType, String? petName, bool? followMouse, bool? wanderingEnabled, String? state, Map<String, dynamic>? mouseFollow, String? avatarDefinitionJson, String? renderMode, bool? keepOnScreen, bool? clickThrough, String? pipBackgroundStyle, double? pipOpacity, bool? pipDraggableClickable, String? previewBackground, bool? pettingEnabled, bool? playEnabled, bool? treatEnabled, bool? gazeEnabled, double? gazeSensitivity, bool? idleAnimation, bool? reactionsEnabled, bool? reducedMotion, bool? animationsEnabled
 });
 
 
@@ -82,7 +83,7 @@ class _$OverlayConfigCopyWithImpl<$Res>
 
 /// Create a copy of OverlayConfig
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? themeId = freezed,Object? scale = freezed,Object? companionToyType = freezed,Object? companionTreatType = freezed,Object? petName = freezed,Object? followMouse = freezed,Object? wanderingEnabled = freezed,Object? state = freezed,Object? mouseFollow = freezed,Object? avatarDefinitionJson = freezed,Object? renderMode = freezed,Object? keepOnScreen = freezed,Object? clickThrough = freezed,Object? pipBackgroundStyle = freezed,Object? pipOpacity = freezed,Object? pipDraggableClickable = freezed,Object? previewBackground = freezed,Object? pettingEnabled = freezed,Object? playEnabled = freezed,Object? treatEnabled = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? themeId = freezed,Object? scale = freezed,Object? companionToyType = freezed,Object? companionTreatType = freezed,Object? petName = freezed,Object? followMouse = freezed,Object? wanderingEnabled = freezed,Object? state = freezed,Object? mouseFollow = freezed,Object? avatarDefinitionJson = freezed,Object? renderMode = freezed,Object? keepOnScreen = freezed,Object? clickThrough = freezed,Object? pipBackgroundStyle = freezed,Object? pipOpacity = freezed,Object? pipDraggableClickable = freezed,Object? previewBackground = freezed,Object? pettingEnabled = freezed,Object? playEnabled = freezed,Object? treatEnabled = freezed,Object? gazeEnabled = freezed,Object? gazeSensitivity = freezed,Object? idleAnimation = freezed,Object? reactionsEnabled = freezed,Object? reducedMotion = freezed,Object? animationsEnabled = freezed,}) {
   return _then(_self.copyWith(
 themeId: freezed == themeId ? _self.themeId : themeId // ignore: cast_nullable_to_non_nullable
 as String?,scale: freezed == scale ? _self.scale : scale // ignore: cast_nullable_to_non_nullable
@@ -104,6 +105,12 @@ as bool?,previewBackground: freezed == previewBackground ? _self.previewBackgrou
 as String?,pettingEnabled: freezed == pettingEnabled ? _self.pettingEnabled : pettingEnabled // ignore: cast_nullable_to_non_nullable
 as bool?,playEnabled: freezed == playEnabled ? _self.playEnabled : playEnabled // ignore: cast_nullable_to_non_nullable
 as bool?,treatEnabled: freezed == treatEnabled ? _self.treatEnabled : treatEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,gazeEnabled: freezed == gazeEnabled ? _self.gazeEnabled : gazeEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,gazeSensitivity: freezed == gazeSensitivity ? _self.gazeSensitivity : gazeSensitivity // ignore: cast_nullable_to_non_nullable
+as double?,idleAnimation: freezed == idleAnimation ? _self.idleAnimation : idleAnimation // ignore: cast_nullable_to_non_nullable
+as bool?,reactionsEnabled: freezed == reactionsEnabled ? _self.reactionsEnabled : reactionsEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,reducedMotion: freezed == reducedMotion ? _self.reducedMotion : reducedMotion // ignore: cast_nullable_to_non_nullable
+as bool?,animationsEnabled: freezed == animationsEnabled ? _self.animationsEnabled : animationsEnabled // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }
@@ -186,10 +193,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? themeId,  double? scale,  String? companionToyType,  String? companionTreatType,  String? petName,  bool? followMouse,  bool? wanderingEnabled,  String? state,  Map<String, dynamic>? mouseFollow,  String? avatarDefinitionJson,  String? renderMode,  bool? keepOnScreen,  bool? clickThrough,  String? pipBackgroundStyle,  double? pipOpacity,  bool? pipDraggableClickable,  String? previewBackground,  bool? pettingEnabled,  bool? playEnabled,  bool? treatEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String? themeId,  double? scale,  String? companionToyType,  String? companionTreatType,  String? petName,  bool? followMouse,  bool? wanderingEnabled,  String? state,  Map<String, dynamic>? mouseFollow,  String? avatarDefinitionJson,  String? renderMode,  bool? keepOnScreen,  bool? clickThrough,  String? pipBackgroundStyle,  double? pipOpacity,  bool? pipDraggableClickable,  String? previewBackground,  bool? pettingEnabled,  bool? playEnabled,  bool? treatEnabled,  bool? gazeEnabled,  double? gazeSensitivity,  bool? idleAnimation,  bool? reactionsEnabled,  bool? reducedMotion,  bool? animationsEnabled)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _OverlayConfig() when $default != null:
-return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companionTreatType,_that.petName,_that.followMouse,_that.wanderingEnabled,_that.state,_that.mouseFollow,_that.avatarDefinitionJson,_that.renderMode,_that.keepOnScreen,_that.clickThrough,_that.pipBackgroundStyle,_that.pipOpacity,_that.pipDraggableClickable,_that.previewBackground,_that.pettingEnabled,_that.playEnabled,_that.treatEnabled);case _:
+return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companionTreatType,_that.petName,_that.followMouse,_that.wanderingEnabled,_that.state,_that.mouseFollow,_that.avatarDefinitionJson,_that.renderMode,_that.keepOnScreen,_that.clickThrough,_that.pipBackgroundStyle,_that.pipOpacity,_that.pipDraggableClickable,_that.previewBackground,_that.pettingEnabled,_that.playEnabled,_that.treatEnabled,_that.gazeEnabled,_that.gazeSensitivity,_that.idleAnimation,_that.reactionsEnabled,_that.reducedMotion,_that.animationsEnabled);case _:
   return orElse();
 
 }
@@ -207,10 +214,10 @@ return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companion
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? themeId,  double? scale,  String? companionToyType,  String? companionTreatType,  String? petName,  bool? followMouse,  bool? wanderingEnabled,  String? state,  Map<String, dynamic>? mouseFollow,  String? avatarDefinitionJson,  String? renderMode,  bool? keepOnScreen,  bool? clickThrough,  String? pipBackgroundStyle,  double? pipOpacity,  bool? pipDraggableClickable,  String? previewBackground,  bool? pettingEnabled,  bool? playEnabled,  bool? treatEnabled)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String? themeId,  double? scale,  String? companionToyType,  String? companionTreatType,  String? petName,  bool? followMouse,  bool? wanderingEnabled,  String? state,  Map<String, dynamic>? mouseFollow,  String? avatarDefinitionJson,  String? renderMode,  bool? keepOnScreen,  bool? clickThrough,  String? pipBackgroundStyle,  double? pipOpacity,  bool? pipDraggableClickable,  String? previewBackground,  bool? pettingEnabled,  bool? playEnabled,  bool? treatEnabled,  bool? gazeEnabled,  double? gazeSensitivity,  bool? idleAnimation,  bool? reactionsEnabled,  bool? reducedMotion,  bool? animationsEnabled)  $default,) {final _that = this;
 switch (_that) {
 case _OverlayConfig():
-return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companionTreatType,_that.petName,_that.followMouse,_that.wanderingEnabled,_that.state,_that.mouseFollow,_that.avatarDefinitionJson,_that.renderMode,_that.keepOnScreen,_that.clickThrough,_that.pipBackgroundStyle,_that.pipOpacity,_that.pipDraggableClickable,_that.previewBackground,_that.pettingEnabled,_that.playEnabled,_that.treatEnabled);}
+return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companionTreatType,_that.petName,_that.followMouse,_that.wanderingEnabled,_that.state,_that.mouseFollow,_that.avatarDefinitionJson,_that.renderMode,_that.keepOnScreen,_that.clickThrough,_that.pipBackgroundStyle,_that.pipOpacity,_that.pipDraggableClickable,_that.previewBackground,_that.pettingEnabled,_that.playEnabled,_that.treatEnabled,_that.gazeEnabled,_that.gazeSensitivity,_that.idleAnimation,_that.reactionsEnabled,_that.reducedMotion,_that.animationsEnabled);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -224,10 +231,10 @@ return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companion
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? themeId,  double? scale,  String? companionToyType,  String? companionTreatType,  String? petName,  bool? followMouse,  bool? wanderingEnabled,  String? state,  Map<String, dynamic>? mouseFollow,  String? avatarDefinitionJson,  String? renderMode,  bool? keepOnScreen,  bool? clickThrough,  String? pipBackgroundStyle,  double? pipOpacity,  bool? pipDraggableClickable,  String? previewBackground,  bool? pettingEnabled,  bool? playEnabled,  bool? treatEnabled)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String? themeId,  double? scale,  String? companionToyType,  String? companionTreatType,  String? petName,  bool? followMouse,  bool? wanderingEnabled,  String? state,  Map<String, dynamic>? mouseFollow,  String? avatarDefinitionJson,  String? renderMode,  bool? keepOnScreen,  bool? clickThrough,  String? pipBackgroundStyle,  double? pipOpacity,  bool? pipDraggableClickable,  String? previewBackground,  bool? pettingEnabled,  bool? playEnabled,  bool? treatEnabled,  bool? gazeEnabled,  double? gazeSensitivity,  bool? idleAnimation,  bool? reactionsEnabled,  bool? reducedMotion,  bool? animationsEnabled)?  $default,) {final _that = this;
 switch (_that) {
 case _OverlayConfig() when $default != null:
-return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companionTreatType,_that.petName,_that.followMouse,_that.wanderingEnabled,_that.state,_that.mouseFollow,_that.avatarDefinitionJson,_that.renderMode,_that.keepOnScreen,_that.clickThrough,_that.pipBackgroundStyle,_that.pipOpacity,_that.pipDraggableClickable,_that.previewBackground,_that.pettingEnabled,_that.playEnabled,_that.treatEnabled);case _:
+return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companionTreatType,_that.petName,_that.followMouse,_that.wanderingEnabled,_that.state,_that.mouseFollow,_that.avatarDefinitionJson,_that.renderMode,_that.keepOnScreen,_that.clickThrough,_that.pipBackgroundStyle,_that.pipOpacity,_that.pipDraggableClickable,_that.previewBackground,_that.pettingEnabled,_that.playEnabled,_that.treatEnabled,_that.gazeEnabled,_that.gazeSensitivity,_that.idleAnimation,_that.reactionsEnabled,_that.reducedMotion,_that.animationsEnabled);case _:
   return null;
 
 }
@@ -239,7 +246,7 @@ return $default(_that.themeId,_that.scale,_that.companionToyType,_that.companion
 @JsonSerializable()
 
 class _OverlayConfig implements OverlayConfig {
-  const _OverlayConfig({this.themeId, this.scale, this.companionToyType, this.companionTreatType, this.petName, this.followMouse, this.wanderingEnabled, this.state, final  Map<String, dynamic>? mouseFollow, this.avatarDefinitionJson, this.renderMode, this.keepOnScreen, this.clickThrough, this.pipBackgroundStyle, this.pipOpacity, this.pipDraggableClickable, this.previewBackground, this.pettingEnabled, this.playEnabled, this.treatEnabled}): _mouseFollow = mouseFollow;
+  const _OverlayConfig({this.themeId, this.scale, this.companionToyType, this.companionTreatType, this.petName, this.followMouse, this.wanderingEnabled, this.state, final  Map<String, dynamic>? mouseFollow, this.avatarDefinitionJson, this.renderMode, this.keepOnScreen, this.clickThrough, this.pipBackgroundStyle, this.pipOpacity, this.pipDraggableClickable, this.previewBackground, this.pettingEnabled, this.playEnabled, this.treatEnabled, this.gazeEnabled, this.gazeSensitivity, this.idleAnimation, this.reactionsEnabled, this.reducedMotion, this.animationsEnabled}): _mouseFollow = mouseFollow;
   factory _OverlayConfig.fromJson(Map<String, dynamic> json) => _$OverlayConfigFromJson(json);
 
 @override final  String? themeId;
@@ -287,6 +294,13 @@ class _OverlayConfig implements OverlayConfig {
 @override final  bool? pettingEnabled;
 @override final  bool? playEnabled;
 @override final  bool? treatEnabled;
+/// How the companion looks at the pointer and animates by itself.
+@override final  bool? gazeEnabled;
+@override final  double? gazeSensitivity;
+@override final  bool? idleAnimation;
+@override final  bool? reactionsEnabled;
+@override final  bool? reducedMotion;
+@override final  bool? animationsEnabled;
 
 /// Create a copy of OverlayConfig
 /// with the given fields replaced by the non-null parameter values.
@@ -301,16 +315,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OverlayConfig&&(identical(other.themeId, themeId) || other.themeId == themeId)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.companionToyType, companionToyType) || other.companionToyType == companionToyType)&&(identical(other.companionTreatType, companionTreatType) || other.companionTreatType == companionTreatType)&&(identical(other.petName, petName) || other.petName == petName)&&(identical(other.followMouse, followMouse) || other.followMouse == followMouse)&&(identical(other.wanderingEnabled, wanderingEnabled) || other.wanderingEnabled == wanderingEnabled)&&(identical(other.state, state) || other.state == state)&&const DeepCollectionEquality().equals(other._mouseFollow, _mouseFollow)&&(identical(other.avatarDefinitionJson, avatarDefinitionJson) || other.avatarDefinitionJson == avatarDefinitionJson)&&(identical(other.renderMode, renderMode) || other.renderMode == renderMode)&&(identical(other.keepOnScreen, keepOnScreen) || other.keepOnScreen == keepOnScreen)&&(identical(other.clickThrough, clickThrough) || other.clickThrough == clickThrough)&&(identical(other.pipBackgroundStyle, pipBackgroundStyle) || other.pipBackgroundStyle == pipBackgroundStyle)&&(identical(other.pipOpacity, pipOpacity) || other.pipOpacity == pipOpacity)&&(identical(other.pipDraggableClickable, pipDraggableClickable) || other.pipDraggableClickable == pipDraggableClickable)&&(identical(other.previewBackground, previewBackground) || other.previewBackground == previewBackground)&&(identical(other.pettingEnabled, pettingEnabled) || other.pettingEnabled == pettingEnabled)&&(identical(other.playEnabled, playEnabled) || other.playEnabled == playEnabled)&&(identical(other.treatEnabled, treatEnabled) || other.treatEnabled == treatEnabled));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _OverlayConfig&&(identical(other.themeId, themeId) || other.themeId == themeId)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.companionToyType, companionToyType) || other.companionToyType == companionToyType)&&(identical(other.companionTreatType, companionTreatType) || other.companionTreatType == companionTreatType)&&(identical(other.petName, petName) || other.petName == petName)&&(identical(other.followMouse, followMouse) || other.followMouse == followMouse)&&(identical(other.wanderingEnabled, wanderingEnabled) || other.wanderingEnabled == wanderingEnabled)&&(identical(other.state, state) || other.state == state)&&const DeepCollectionEquality().equals(other._mouseFollow, _mouseFollow)&&(identical(other.avatarDefinitionJson, avatarDefinitionJson) || other.avatarDefinitionJson == avatarDefinitionJson)&&(identical(other.renderMode, renderMode) || other.renderMode == renderMode)&&(identical(other.keepOnScreen, keepOnScreen) || other.keepOnScreen == keepOnScreen)&&(identical(other.clickThrough, clickThrough) || other.clickThrough == clickThrough)&&(identical(other.pipBackgroundStyle, pipBackgroundStyle) || other.pipBackgroundStyle == pipBackgroundStyle)&&(identical(other.pipOpacity, pipOpacity) || other.pipOpacity == pipOpacity)&&(identical(other.pipDraggableClickable, pipDraggableClickable) || other.pipDraggableClickable == pipDraggableClickable)&&(identical(other.previewBackground, previewBackground) || other.previewBackground == previewBackground)&&(identical(other.pettingEnabled, pettingEnabled) || other.pettingEnabled == pettingEnabled)&&(identical(other.playEnabled, playEnabled) || other.playEnabled == playEnabled)&&(identical(other.treatEnabled, treatEnabled) || other.treatEnabled == treatEnabled)&&(identical(other.gazeEnabled, gazeEnabled) || other.gazeEnabled == gazeEnabled)&&(identical(other.gazeSensitivity, gazeSensitivity) || other.gazeSensitivity == gazeSensitivity)&&(identical(other.idleAnimation, idleAnimation) || other.idleAnimation == idleAnimation)&&(identical(other.reactionsEnabled, reactionsEnabled) || other.reactionsEnabled == reactionsEnabled)&&(identical(other.reducedMotion, reducedMotion) || other.reducedMotion == reducedMotion)&&(identical(other.animationsEnabled, animationsEnabled) || other.animationsEnabled == animationsEnabled));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hashAll([runtimeType,themeId,scale,companionToyType,companionTreatType,petName,followMouse,wanderingEnabled,state,const DeepCollectionEquality().hash(_mouseFollow),avatarDefinitionJson,renderMode,keepOnScreen,clickThrough,pipBackgroundStyle,pipOpacity,pipDraggableClickable,previewBackground,pettingEnabled,playEnabled,treatEnabled]);
+int get hashCode => Object.hashAll([runtimeType,themeId,scale,companionToyType,companionTreatType,petName,followMouse,wanderingEnabled,state,const DeepCollectionEquality().hash(_mouseFollow),avatarDefinitionJson,renderMode,keepOnScreen,clickThrough,pipBackgroundStyle,pipOpacity,pipDraggableClickable,previewBackground,pettingEnabled,playEnabled,treatEnabled,gazeEnabled,gazeSensitivity,idleAnimation,reactionsEnabled,reducedMotion,animationsEnabled]);
 
 @override
 String toString() {
-  return 'OverlayConfig(themeId: $themeId, scale: $scale, companionToyType: $companionToyType, companionTreatType: $companionTreatType, petName: $petName, followMouse: $followMouse, wanderingEnabled: $wanderingEnabled, state: $state, mouseFollow: $mouseFollow, avatarDefinitionJson: $avatarDefinitionJson, renderMode: $renderMode, keepOnScreen: $keepOnScreen, clickThrough: $clickThrough, pipBackgroundStyle: $pipBackgroundStyle, pipOpacity: $pipOpacity, pipDraggableClickable: $pipDraggableClickable, previewBackground: $previewBackground, pettingEnabled: $pettingEnabled, playEnabled: $playEnabled, treatEnabled: $treatEnabled)';
+  return 'OverlayConfig(themeId: $themeId, scale: $scale, companionToyType: $companionToyType, companionTreatType: $companionTreatType, petName: $petName, followMouse: $followMouse, wanderingEnabled: $wanderingEnabled, state: $state, mouseFollow: $mouseFollow, avatarDefinitionJson: $avatarDefinitionJson, renderMode: $renderMode, keepOnScreen: $keepOnScreen, clickThrough: $clickThrough, pipBackgroundStyle: $pipBackgroundStyle, pipOpacity: $pipOpacity, pipDraggableClickable: $pipDraggableClickable, previewBackground: $previewBackground, pettingEnabled: $pettingEnabled, playEnabled: $playEnabled, treatEnabled: $treatEnabled, gazeEnabled: $gazeEnabled, gazeSensitivity: $gazeSensitivity, idleAnimation: $idleAnimation, reactionsEnabled: $reactionsEnabled, reducedMotion: $reducedMotion, animationsEnabled: $animationsEnabled)';
 }
 
 
@@ -321,7 +335,7 @@ abstract mixin class _$OverlayConfigCopyWith<$Res> implements $OverlayConfigCopy
   factory _$OverlayConfigCopyWith(_OverlayConfig value, $Res Function(_OverlayConfig) _then) = __$OverlayConfigCopyWithImpl;
 @override @useResult
 $Res call({
- String? themeId, double? scale, String? companionToyType, String? companionTreatType, String? petName, bool? followMouse, bool? wanderingEnabled, String? state, Map<String, dynamic>? mouseFollow, String? avatarDefinitionJson, String? renderMode, bool? keepOnScreen, bool? clickThrough, String? pipBackgroundStyle, double? pipOpacity, bool? pipDraggableClickable, String? previewBackground, bool? pettingEnabled, bool? playEnabled, bool? treatEnabled
+ String? themeId, double? scale, String? companionToyType, String? companionTreatType, String? petName, bool? followMouse, bool? wanderingEnabled, String? state, Map<String, dynamic>? mouseFollow, String? avatarDefinitionJson, String? renderMode, bool? keepOnScreen, bool? clickThrough, String? pipBackgroundStyle, double? pipOpacity, bool? pipDraggableClickable, String? previewBackground, bool? pettingEnabled, bool? playEnabled, bool? treatEnabled, bool? gazeEnabled, double? gazeSensitivity, bool? idleAnimation, bool? reactionsEnabled, bool? reducedMotion, bool? animationsEnabled
 });
 
 
@@ -338,7 +352,7 @@ class __$OverlayConfigCopyWithImpl<$Res>
 
 /// Create a copy of OverlayConfig
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? themeId = freezed,Object? scale = freezed,Object? companionToyType = freezed,Object? companionTreatType = freezed,Object? petName = freezed,Object? followMouse = freezed,Object? wanderingEnabled = freezed,Object? state = freezed,Object? mouseFollow = freezed,Object? avatarDefinitionJson = freezed,Object? renderMode = freezed,Object? keepOnScreen = freezed,Object? clickThrough = freezed,Object? pipBackgroundStyle = freezed,Object? pipOpacity = freezed,Object? pipDraggableClickable = freezed,Object? previewBackground = freezed,Object? pettingEnabled = freezed,Object? playEnabled = freezed,Object? treatEnabled = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? themeId = freezed,Object? scale = freezed,Object? companionToyType = freezed,Object? companionTreatType = freezed,Object? petName = freezed,Object? followMouse = freezed,Object? wanderingEnabled = freezed,Object? state = freezed,Object? mouseFollow = freezed,Object? avatarDefinitionJson = freezed,Object? renderMode = freezed,Object? keepOnScreen = freezed,Object? clickThrough = freezed,Object? pipBackgroundStyle = freezed,Object? pipOpacity = freezed,Object? pipDraggableClickable = freezed,Object? previewBackground = freezed,Object? pettingEnabled = freezed,Object? playEnabled = freezed,Object? treatEnabled = freezed,Object? gazeEnabled = freezed,Object? gazeSensitivity = freezed,Object? idleAnimation = freezed,Object? reactionsEnabled = freezed,Object? reducedMotion = freezed,Object? animationsEnabled = freezed,}) {
   return _then(_OverlayConfig(
 themeId: freezed == themeId ? _self.themeId : themeId // ignore: cast_nullable_to_non_nullable
 as String?,scale: freezed == scale ? _self.scale : scale // ignore: cast_nullable_to_non_nullable
@@ -360,6 +374,12 @@ as bool?,previewBackground: freezed == previewBackground ? _self.previewBackgrou
 as String?,pettingEnabled: freezed == pettingEnabled ? _self.pettingEnabled : pettingEnabled // ignore: cast_nullable_to_non_nullable
 as bool?,playEnabled: freezed == playEnabled ? _self.playEnabled : playEnabled // ignore: cast_nullable_to_non_nullable
 as bool?,treatEnabled: freezed == treatEnabled ? _self.treatEnabled : treatEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,gazeEnabled: freezed == gazeEnabled ? _self.gazeEnabled : gazeEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,gazeSensitivity: freezed == gazeSensitivity ? _self.gazeSensitivity : gazeSensitivity // ignore: cast_nullable_to_non_nullable
+as double?,idleAnimation: freezed == idleAnimation ? _self.idleAnimation : idleAnimation // ignore: cast_nullable_to_non_nullable
+as bool?,reactionsEnabled: freezed == reactionsEnabled ? _self.reactionsEnabled : reactionsEnabled // ignore: cast_nullable_to_non_nullable
+as bool?,reducedMotion: freezed == reducedMotion ? _self.reducedMotion : reducedMotion // ignore: cast_nullable_to_non_nullable
+as bool?,animationsEnabled: freezed == animationsEnabled ? _self.animationsEnabled : animationsEnabled // ignore: cast_nullable_to_non_nullable
 as bool?,
   ));
 }

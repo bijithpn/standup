@@ -8,8 +8,10 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     'com.breakmate.desktop/bridge',
   );
 
-  int durationSeconds = 300;
-  int remainingSeconds = 300;
+  // Only shown until the real break arrives; a minute, not five, so a late or
+  // missing config never makes a short break look like a five-minute one.
+  int durationSeconds = 60;
+  int remainingSeconds = 60;
   DateTime? targetEndTime;
   Timer? localTimer;
   late final ValueNotifier<int> remainingSecondsNotifier = ValueNotifier<int>(

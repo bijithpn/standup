@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
+import 'package:breakmate/core/ipc/ipc_maps.dart';
 
 const _ipcChannel = MethodChannel('com.breakmate/ipc');
 
@@ -21,7 +22,7 @@ class IpcBridge {
       _logger.info('IPC event: ${call.method}');
       try {
         final args = call.arguments as Map<dynamic, dynamic>?;
-        final data = args?.map((k, v) => MapEntry(k.toString(), v)) ?? {};
+        final data = args == null ? <String, dynamic>{} : stringKeyedMap(args);
         handler(call.method, data);
       } catch (e) {
         _logger.error('IPC handler error: $e');
