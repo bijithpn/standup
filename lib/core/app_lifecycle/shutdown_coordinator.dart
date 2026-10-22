@@ -1,3 +1,4 @@
+import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -18,6 +19,10 @@ class ShutdownCoordinator {
 
   Future<void> shutdown() async {
     _logger.info('Initiating graceful shutdown...');
+
+    // Preferences are written a moment after they change; make sure the last
+    // ones are on disk before the process goes.
+    SimplePrefs.instance.flush();
 
     try {
       if (sl.isRegistered<TimerOrchestrator>()) {

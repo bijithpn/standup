@@ -550,6 +550,7 @@ class MainFlutterWindow: NSWindow {
       case "triggerCompanionState":
         if let args = call.arguments as? [String: Any], let state = args["state"] as? String {
           CompanionWindowManager.shared.triggerState(state)
+          PiPFlutterWindowManager.shared.triggerState(state)
           result(nil)
         } else {
           result(FlutterError(code: "INVALID_ARGS", message: "Missing state", details: nil))

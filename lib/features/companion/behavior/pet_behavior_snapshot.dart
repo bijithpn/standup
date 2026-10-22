@@ -1,5 +1,7 @@
 import 'dart:ui' show Offset;
 
+import 'package:breakmate/features/companion/behavior/companion_mood_machine.dart';
+import 'package:breakmate/features/companion/behavior/gaze_sector.dart';
 import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 
 /// What the pet is doing right now, at the coarse level a viewer would name.
@@ -47,6 +49,8 @@ class PetBehaviorSnapshot {
     this.attention = 0.0,
     this.activity = PetActivity.idle,
     this.emotion = PetEmotionState.neutral,
+    this.gazeDirection = GazeDirection.center,
+    this.mood = CompanionMood.idle,
   });
 
   /// Where the eyes point, each axis -1..1. Positive is right and down.
@@ -86,6 +90,12 @@ class PetBehaviorSnapshot {
   /// say it out loud.
   final PetEmotionState emotion;
 
+  /// Which of the nine sectors the pet is looking toward.
+  final GazeDirection gazeDirection;
+
+  /// The event-driven mood behind [emotion], for labels and assistive tech.
+  final CompanionMood mood;
+
   /// True when the pet is alert enough to react to things.
   bool get isAwake =>
       activity != PetActivity.sleeping && activity != PetActivity.drowsy;
@@ -103,6 +113,8 @@ class PetBehaviorSnapshot {
     double? attention,
     PetActivity? activity,
     PetEmotionState? emotion,
+    GazeDirection? gazeDirection,
+    CompanionMood? mood,
   }) {
     return PetBehaviorSnapshot(
       gaze: gaze ?? this.gaze,
@@ -117,6 +129,8 @@ class PetBehaviorSnapshot {
       attention: attention ?? this.attention,
       activity: activity ?? this.activity,
       emotion: emotion ?? this.emotion,
+      gazeDirection: gazeDirection ?? this.gazeDirection,
+      mood: mood ?? this.mood,
     );
   }
 

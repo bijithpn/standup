@@ -90,19 +90,16 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
     highlight: _Highlight(enabled: false),
   ),
 
-  // Wide eyes, big highlights, open mouth.
+  // Bright, a little wider eyes and a bigger smile. Kept modest: eyes stretched
+  // into tall slits and an open mouth read as alarm, not delight, and the open
+  // mouth looked like an oversized nose.
   PetEmotion.excited: _Expression(
-    eyeHeight: 1.35,
-    eyeWidth: 1.12,
-    eyeGap: 0.94,
-    mouth: _Mouth(
-      enabled: true,
-      shape: 'ellipse',
-      curve: 48,
-      width: 0.62,
-      height: 2.0,
-    ),
-    highlight: _Highlight(enabled: true, size: 1.5),
+    eyeHeight: 1.18,
+    eyeWidth: 1.08,
+    eyeGap: 0.97,
+    eyeRoundness: 1.15,
+    mouth: _Mouth(enabled: true, curve: 70, width: 0.95, height: 1.1),
+    highlight: _Highlight(enabled: true, size: 1.4),
   ),
 
   // One raised, slightly narrowed look — attention without alarm.
@@ -154,20 +151,20 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
     highlight: _Highlight(enabled: false),
   ),
 
-  // Everything opens at once.
+  // Eyes open wide and round, a small "o" of a mouth.
   PetEmotion.startled: _Expression(
-    eyeHeight: 1.6,
-    eyeWidth: 1.2,
-    eyeGap: 0.9,
-    eyeRoundness: 1.4,
+    eyeHeight: 1.3,
+    eyeWidth: 1.12,
+    eyeGap: 0.95,
+    eyeRoundness: 1.5,
     mouth: _Mouth(
       enabled: true,
       shape: 'ellipse',
       curve: -10,
-      width: 0.42,
-      height: 1.9,
+      width: 0.4,
+      height: 1.1,
     ),
-    highlight: _Highlight(enabled: true, size: 1.6),
+    highlight: _Highlight(enabled: true, size: 1.5),
   ),
 };
 

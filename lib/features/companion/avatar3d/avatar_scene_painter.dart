@@ -18,6 +18,7 @@ class AvatarScenePainter extends CustomPainter {
     this.showOutline = true,
     this.showShadow = true,
     this.fitPadding = 0.06,
+    this.fitBounds,
   });
 
   final AvatarGeometry geometry;
@@ -33,6 +34,10 @@ class AvatarScenePainter extends CustomPainter {
   /// Fraction of the fitted size left as breathing room around the silhouette.
   final double fitPadding;
 
+  /// The silhouette to fit to, when the caller wants a steady size across
+  /// poses. Defaults to this frame's own.
+  final Rect? fitBounds;
+
   @override
   void paint(Canvas canvas, Size size) {
     if (background != null) {
@@ -44,7 +49,7 @@ class AvatarScenePainter extends CustomPainter {
 
     // Fit the scene's own silhouette to the widget, so every species arrives
     // the same size and centred no matter where it was authored in frame.
-    final bounds = geometry.bounds;
+    final bounds = fitBounds ?? geometry.bounds;
     final extent = math.max(bounds.width, bounds.height) * (1 + fitPadding * 2);
     final scale = extent <= 0
         ? 1.0
@@ -60,10 +65,15 @@ class AvatarScenePainter extends CustomPainter {
 
     if (showShadow && scene.showAvatarShadow) _paintShadow(canvas);
 
+    PartGeometry? faceHost;
     for (final part in geometry.parts) {
       _paintPart(canvas, part);
-      if (part.part.id == geometry.facePartId) _paintFace(canvas, part);
+      if (part.part.id == geometry.facePartId) faceHost = part;
     }
+    // The face goes on last. Cheeks, muzzles and snouts are separate parts
+    // drawn after the head, and painting the face straight after its host let
+    // them cover the eyes completely on a chinchilla, hamster or seal.
+    if (faceHost != null) _paintFace(canvas, faceHost);
 
     canvas.restore();
   }
@@ -128,6 +138,13 @@ class AvatarScenePainter extends CustomPainter {
     }
   }
 
+  static final RegExp _mouthPartId = RegExp(
+    'beak|bill|snout|muzzle|tooth|teeth|nose',
+  );
+
+  bool get _hasOwnMouthParts =>
+      scene.parts.any((part) => _mouthPartId.hasMatch(part.id));
+
   void _paintFace(Canvas canvas, PartGeometry host) {
     final face = geometry.face;
     if (face.isEmpty) return;
@@ -137,8 +154,12 @@ class AvatarScenePainter extends CustomPainter {
     for (final eye in face.eyes) {
       canvas.drawPath(eye.path, ink);
     }
-    if (face.nose != null) canvas.drawPath(face.nose!.path, ink);
-    if (face.mouth != null) canvas.drawPath(face.mouth!.path, ink);
+    // A species with its own beak, bill, snout or muzzle already has a
+    // mouth. Drawing the face's one on top of it put a smile on the bill.
+    if (!_hasOwnMouthParts) {
+      if (face.nose != null) canvas.drawPath(face.nose!.path, ink);
+      if (face.mouth != null) canvas.drawPath(face.mouth!.path, ink);
+    }
 
     if (face.highlights.isEmpty) return;
     final highlight = Paint()

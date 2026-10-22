@@ -31,6 +31,11 @@ final class PiPFlutterWindowManager: NSObject {
     private var instance: Instance?
     private var isSettingUp = false
 
+    /// Observer tokens for the system notifications below. Kept so they are
+    /// removed exactly once and never registered twice for one window.
+    private var observers: [NSObjectProtocol] = []
+    private var workspaceObservers: [NSObjectProtocol] = []
+
     /// Flutter pulls these once its handler is registered, so a settings push
     /// that lands before the engine is ready is not lost.
     private var pendingInitialArgs: [String: Any]?
@@ -126,6 +131,11 @@ final class PiPFlutterWindowManager: NSObject {
         channel.setMethodCallHandler { [weak self] call, result in
             if call.method == "getInitialSettings" {
                 result(self?.pendingInitialArgs ?? [:])
+            } else if call.method == "pipReady" {
+                // First frame is on screen: show the window now rather than
+                // waiting out a fixed delay.
+                result(nil)
+                self?.fadeIn()
             } else {
                 result(FlutterMethodNotImplemented)
             }
@@ -164,16 +174,29 @@ final class PiPFlutterWindowManager: NSObject {
             channel.invokeMethod("syncPiPSettings", arguments: args)
         }
 
+        installObservers(for: window)
+
         // Fade in once the engine has drawn its first transparent frame,
-        // otherwise the panel flashes opaque black.
+        // otherwise the panel flashes opaque black. The engine says when
+        // (`pipReady`); the timer is only a fallback if it never does.
         window.alphaValue = 0.0
         window.orderFrontRegardless()
-        let targetAlpha = CGFloat(max(0.1, min(1.0, (args?["pipOpacity"] as? Double) ?? 1.0)))
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.2
-                window.animator().alphaValue = targetAlpha
-            }
+        targetAlpha = CGFloat(max(0.1, min(1.0, (args?["pipOpacity"] as? Double) ?? 1.0)))
+        hasFadedIn = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            self?.fadeIn()
+        }
+    }
+
+    private var targetAlpha: CGFloat = 1.0
+    private var hasFadedIn = true
+
+    private func fadeIn() {
+        guard !hasFadedIn, let window = instance?.window else { return }
+        hasFadedIn = true
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.12
+            window.animator().alphaValue = targetAlpha
         }
     }
 
@@ -181,6 +204,7 @@ final class PiPFlutterWindowManager: NSObject {
         guard let current = instance else { return }
         instance = nil
         pendingInitialArgs = nil
+        removeObservers()
 
         current.channel.setMethodCallHandler(nil)
         FlutterMethodChannel(
@@ -214,6 +238,13 @@ final class PiPFlutterWindowManager: NSObject {
         current.channel.invokeMethod("syncPiPSettings", arguments: args)
     }
 
+    /// Forwards an app event (a finished break, a break starting) to the pet.
+    /// Only its face reacts: nothing here activates the app or the window.
+    func triggerState(_ state: String) {
+        guard let current = instance else { return }
+        current.channel.invokeMethod("triggerCompanionState", arguments: ["state": state])
+    }
+
     func updateTheme(themeId: String, extra: [String: Any]?) {
         guard let current = instance else { return }
         var payload: [String: Any] = extra ?? [:]
@@ -227,6 +258,75 @@ final class PiPFlutterWindowManager: NSObject {
             "updateCompanionName",
             arguments: ["petName": petName]
         )
+    }
+
+    // MARK: - System notifications
+
+    /// Listens for the things a long-running overlay must reconcile after:
+    /// displays changing, the machine waking, and the window being covered or
+    /// moved to another Space. Registered once per window and removed with it.
+    private func installObservers(for window: NSWindow) {
+        removeObservers()
+
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.restoreValidPosition()
+            self?.instance?.channel.invokeMethod("displaysChanged", arguments: nil)
+        })
+        observers.append(center.addObserver(
+            forName: NSWindow.didChangeOcclusionStateNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] note in
+            guard let win = note.object as? NSWindow else { return }
+            let visible = win.occlusionState.contains(.visible)
+            self?.instance?.channel.invokeMethod("setWindowVisible", arguments: ["visible": visible])
+        })
+
+        let workspace = NSWorkspace.shared.notificationCenter
+        workspaceObservers.append(workspace.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            // Displays often come back a moment after the wake notification.
+            self?.restoreValidPosition()
+            self?.instance?.channel.invokeMethod("systemDidWake", arguments: nil)
+        })
+    }
+
+    private func removeObservers() {
+        observers.forEach { NotificationCenter.default.removeObserver($0) }
+        observers.removeAll()
+        workspaceObservers.forEach { NSWorkspace.shared.notificationCenter.removeObserver($0) }
+        workspaceObservers.removeAll()
+    }
+
+    /// Moves the panel back onto a display if the one it was on has gone, or
+    /// a resolution change left it mostly off-screen. A window that is still
+    /// reachable is left exactly where the user put it.
+    private func restoreValidPosition() {
+        guard let window = instance?.window else { return }
+        let frame = window.frame
+        let minVisible: CGFloat = 40
+
+        let reachable = NSScreen.screens.contains { screen in
+            let overlap = screen.visibleFrame.intersection(frame)
+            return !overlap.isNull && overlap.width >= minVisible && overlap.height >= minVisible
+        }
+        if reachable { return }
+
+        guard let screen = NSScreen.main ?? NSScreen.screens.first else { return }
+        let visible = screen.visibleFrame
+        let origin = NSPoint(
+            x: visible.maxX - frame.width - 20,
+            y: visible.minY + 20
+        )
+        window.setFrameOrigin(origin)
     }
 
     /// Applies the settings that belong to the panel rather than to Flutter.

@@ -98,6 +98,17 @@ class PipWindowArgs {
   final bool? playEnabled;
   final bool? treatEnabled;
 
+  /// How the companion looks at the pointer and animates on its own. These
+  /// travel in the payload for the same reason as the interactions above.
+  final bool? gazeEnabled;
+  final double? gazeSensitivity;
+  final bool? idleAnimation;
+  final bool? reactionsEnabled;
+  final bool? reducedMotion;
+
+  /// Master animation switch (the app-wide "enable animations" preference).
+  final bool? animationsEnabled;
+
   const PipWindowArgs({
     this.x,
     this.y,
@@ -123,6 +134,12 @@ class PipWindowArgs {
     this.pettingEnabled,
     this.playEnabled,
     this.treatEnabled,
+    this.gazeEnabled,
+    this.gazeSensitivity,
+    this.idleAnimation,
+    this.reactionsEnabled,
+    this.reducedMotion,
+    this.animationsEnabled,
   });
 
   Map<String, dynamic> toMap() {
@@ -164,6 +181,12 @@ class PipWindowArgs {
     if (pettingEnabled != null) map['pettingEnabled'] = pettingEnabled;
     if (playEnabled != null) map['playEnabled'] = playEnabled;
     if (treatEnabled != null) map['treatEnabled'] = treatEnabled;
+    if (gazeEnabled != null) map['gazeEnabled'] = gazeEnabled;
+    if (gazeSensitivity != null) map['gazeSensitivity'] = gazeSensitivity;
+    if (idleAnimation != null) map['idleAnimation'] = idleAnimation;
+    if (reactionsEnabled != null) map['reactionsEnabled'] = reactionsEnabled;
+    if (reducedMotion != null) map['reducedMotion'] = reducedMotion;
+    if (animationsEnabled != null) map['animationsEnabled'] = animationsEnabled;
     return map;
   }
 
@@ -193,6 +216,12 @@ class PipWindowArgs {
       pettingEnabled: map['pettingEnabled'] as bool?,
       playEnabled: map['playEnabled'] as bool?,
       treatEnabled: map['treatEnabled'] as bool?,
+      gazeEnabled: map['gazeEnabled'] as bool?,
+      gazeSensitivity: (map['gazeSensitivity'] as num?)?.toDouble(),
+      idleAnimation: map['idleAnimation'] as bool?,
+      reactionsEnabled: map['reactionsEnabled'] as bool?,
+      reducedMotion: map['reducedMotion'] as bool?,
+      animationsEnabled: map['animationsEnabled'] as bool?,
     );
   }
 }

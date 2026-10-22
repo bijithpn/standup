@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -58,7 +59,29 @@ class SimplePrefs {
     }
   }
 
+  Timer? _writeTimer;
+  bool _dirty = false;
+
+  /// Queues a write. Settings are saved as dozens of keys in a row, and
+  /// writing, fsyncing and renaming the whole file for each one blocked the UI
+  /// for hundreds of milliseconds on every toggle. A burst now costs one write.
   void _persist() {
+    if (_filePath == null) return;
+    _dirty = true;
+    _writeTimer ??= Timer(const Duration(milliseconds: 120), flush);
+  }
+
+  /// Writes any pending changes now. Called on shutdown, and by anything that
+  /// needs the file to be current.
+  void flush() {
+    _writeTimer?.cancel();
+    _writeTimer = null;
+    if (!_dirty) return;
+    _dirty = false;
+    _writeNow();
+  }
+
+  void _writeNow() {
     if (_filePath == null) return;
     try {
       final json = jsonEncode(_data);
@@ -83,6 +106,7 @@ class SimplePrefs {
   }
 
   void setBool(String key, bool value) {
+    if (_data[key] == value) return;
     _data[key] = value;
     _persist();
     debugPrint('[SimplePrefs] setBool($key, $value) persisted.');
@@ -95,6 +119,7 @@ class SimplePrefs {
   }
 
   void setString(String key, String value) {
+    if (_data[key] == value) return;
     _data[key] = value;
     _persist();
   }
@@ -108,6 +133,7 @@ class SimplePrefs {
   }
 
   void setInt(String key, int value) {
+    if (_data[key] == value) return;
     _data[key] = value;
     _persist();
   }
@@ -121,6 +147,7 @@ class SimplePrefs {
   }
 
   void setDouble(String key, double value) {
+    if (_data[key] == value) return;
     _data[key] = value;
     _persist();
   }

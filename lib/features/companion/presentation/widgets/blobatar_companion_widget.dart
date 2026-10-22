@@ -109,6 +109,7 @@ class _BlobatarCompanionWidgetState extends State<BlobatarCompanionWidget>
       scale: _scaleAnimation,
       child: Center(
         child: Blobatar(
+          key: ValueKey<String>(effectiveName),
           name: effectiveName,
           size: widget.size,
           animate: widget.animate,

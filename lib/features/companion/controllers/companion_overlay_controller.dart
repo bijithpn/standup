@@ -172,6 +172,8 @@ class CompanionOverlayController extends ChangeNotifier {
     _eventSub = sl<EventBus>().stream.listen((event) {
       if (event is TimerStateChangedEvent) {
         _handleTimerStateChanged(event);
+      } else if (event is BreakEndedEvent) {
+        _handleBreakEnded(event);
       } else if (event is CompanionInteractionEvent) {
         _handleCompanionInteraction(event);
       }
@@ -223,6 +225,25 @@ class CompanionOverlayController extends ChangeNotifier {
     if (_isBreakActive == isBreak) return;
     _isBreakActive = isBreak;
     _applyBreakVisibility();
+    // A gentle nudge as a break begins. Only the companion's face changes; no
+    // sound, notification or window activation is involved.
+    if (isBreak) _notifyCompanion('breakReminder');
+  }
+
+  /// A finished break is the one thing the companion celebrates. Skipped
+  /// breaks are not worth a reaction either way.
+  void _handleBreakEnded(BreakEndedEvent event) {
+    if (event.skipped) return;
+    _notifyCompanion('breakCompleted');
+  }
+
+  /// Tells the floating companion about something that happened, if it is
+  /// showing and the user has reactions switched on. The companion applies its
+  /// own rules too; this just avoids a native round-trip nobody will see.
+  void _notifyCompanion(String eventName) {
+    if (!_companionEnabled || !_isCompanionShown || !_pipModeEnabled) return;
+    if (!reactionsEnabled || !_enableAnimations) return;
+    unawaited(NativeBridge.triggerCompanionState(eventName));
   }
 
   /// Shows or hides the companion around a break when it is not pinned.
@@ -265,10 +286,21 @@ class CompanionOverlayController extends ChangeNotifier {
   /// The interaction toggles rolled into one comparable value.
   static String _interactionSignature(SettingsModel settings) =>
       '${settings.companionWanderingEnabled}/${settings.pettingEnabled}'
-      '/${settings.ballThrowEnabled}/${settings.treatEnabled}';
+      '/${settings.ballThrowEnabled}/${settings.treatEnabled}'
+      '/${settings.companionGazeEnabled}/${settings.companionGazeSensitivity}'
+      '/${settings.companionIdleAnimation}/${settings.companionReactions}'
+      '/${settings.companionReducedMotion}';
 
   String? _lastInteractionSignature;
   bool get pettingEnabled => _settingsRepo.currentSettings.pettingEnabled;
+  bool get gazeEnabled => _settingsRepo.currentSettings.companionGazeEnabled;
+  double get gazeSensitivity =>
+      _settingsRepo.currentSettings.companionGazeSensitivity;
+  bool get idleAnimationEnabled =>
+      _settingsRepo.currentSettings.companionIdleAnimation;
+  bool get reactionsEnabled => _settingsRepo.currentSettings.companionReactions;
+  bool get reducedMotionEnabled =>
+      _settingsRepo.currentSettings.companionReducedMotion;
   bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
   bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
   bool get developerReactions =>
@@ -878,6 +910,12 @@ class CompanionOverlayController extends ChangeNotifier {
       'pettingEnabled': pettingEnabled,
       'playEnabled': ballThrowEnabled,
       'treatEnabled': treatEnabled,
+      'gazeEnabled': gazeEnabled,
+      'gazeSensitivity': gazeSensitivity,
+      'idleAnimation': idleAnimationEnabled,
+      'reactionsEnabled': reactionsEnabled,
+      'reducedMotion': reducedMotionEnabled,
+      'animationsEnabled': _enableAnimations,
       'pipBackgroundStyle': _pipBackgroundStyle,
       'pipOpacity': _pipOpacity,
       'pipDraggableClickable': _pipDraggableClickable,
@@ -1064,6 +1102,38 @@ class CompanionOverlayController extends ChangeNotifier {
       pettingEnabled: value,
     );
     await _settingsRepo.save(updated);
+  }
+
+  Future<void> changeGazeEnabled(bool value) async {
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(companionGazeEnabled: value),
+    );
+  }
+
+  Future<void> changeGazeSensitivity(double value) async {
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(
+        companionGazeSensitivity: value.clamp(0.0, 1.0),
+      ),
+    );
+  }
+
+  Future<void> changeIdleAnimation(bool value) async {
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(companionIdleAnimation: value),
+    );
+  }
+
+  Future<void> changeReactionsEnabled(bool value) async {
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(companionReactions: value),
+    );
+  }
+
+  Future<void> changeReducedMotion(bool value) async {
+    await _settingsRepo.save(
+      _settingsRepo.currentSettings.copyWith(companionReducedMotion: value),
+    );
   }
 
   Future<void> changeBallThrowEnabled(bool value) async {

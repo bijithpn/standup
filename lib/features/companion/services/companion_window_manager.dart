@@ -237,22 +237,39 @@ class CompanionWindowManager {
     await _windowController.setAcceptsMouse(accepts);
   }
 
+  /// Forgets what was learned about the displays.
+  ///
+  /// Call after a display is attached, removed or rearranged, or after the
+  /// machine wakes: the primary height is what converts between Flutter's and
+  /// AppKit's coordinates, and a stale one puts the companion, and the
+  /// companion's idea of where the cursor is, at the wrong height.
+  void invalidateDisplayCache() {
+    _cachedPrimaryHeight = null;
+    _primaryHeightMeasuredAt = null;
+  }
+
   Future<Offset> getPosition() async {
     final pos = await _windowController.getPosition();
-    double y = pos['y'] as double;
-    if (Platform.isMacOS) {
-      final primaryHeight = await _getPrimaryScreenHeight();
-      y = primaryHeight - y - _currentSize.height;
-    }
-    _currentPosition = Offset(pos['x'] as double, y);
+
+    // The size is read first: the flip below depends on the window's height.
     if (pos.containsKey('width') && pos.containsKey('height')) {
       final w = pos['width'] as double;
       final h = pos['height'] as double;
-      if (w > 0 && h > 0) {
+      if (w > 0 && h > 0 && Size(w, h) != _currentSize) {
         _currentSize = Size(w, h);
         _persistSize(_currentSize);
       }
     }
+
+    double y = pos['y'] as double;
+    if (Platform.isMacOS) {
+      // Cached: this runs several times a second, and enumerating displays
+      // natively each time is a round-trip that buys nothing while they have
+      // not changed.
+      final primaryHeight = await _primaryScreenHeight();
+      y = primaryHeight - y - _currentSize.height;
+    }
+    _currentPosition = Offset(pos['x'] as double, y);
     return _currentPosition;
   }
 
