@@ -13,6 +13,11 @@ import 'package:breakmate/features/analytics/segments/productivity_summary.dart'
 /// rather than used, and drawing each one turns the day into confetti.
 const int kTimelineMergeThresholdSeconds = 45;
 
+/// Two stretches further apart than this are not joined: the time between them
+/// was not recorded (asleep, tracking off), and stretching one across it would
+/// draw time that never happened.
+const int kTimelineGapToleranceSeconds = 90;
+
 /// Rolls one day's segments into a summary.
 DailyProductivitySummary aggregateDay(
   String date,
@@ -199,8 +204,12 @@ List<TimelineEntry> buildTimeline(
     if (!segment.isValid) continue;
 
     final last = entries.isEmpty ? null : entries.last;
-    final continues =
+    final adjacent =
         last != null &&
+        segment.startedAt.difference(last.endedAt).inSeconds <=
+            kTimelineGapToleranceSeconds;
+    final continues =
+        adjacent &&
         last.kind == segment.activityKind &&
         last.appKey == segment.appKey;
 
@@ -210,7 +219,7 @@ List<TimelineEntry> buildTimeline(
     }
 
     // Too brief to see, and there is something to fold it into.
-    if (last != null && segment.seconds < mergeThresholdSeconds) {
+    if (adjacent && segment.seconds < mergeThresholdSeconds) {
       last.endedAt = segment.endedAt;
       continue;
     }

@@ -46,6 +46,13 @@ class ProductivityRepository extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Writes anything still buffered and drops today's cached numbers, so what
+  /// is on screen includes the minute that is in progress right now.
+  void refreshToday() {
+    _segments.flush();
+    invalidate();
+  }
+
   /// `YYYY-MM-DD` for [time], the key segments are stored under.
   static String dateKey(DateTime time) =>
       '${time.year}-${time.month.toString().padLeft(2, '0')}'
@@ -133,12 +140,16 @@ class ProductivityRepository extends ChangeNotifier {
   Future<List<ProductivityInsight>> insights({
     int historyDays = 14,
     DateTime? now,
+    int? focusGoalSeconds,
   }) async {
     final moment = now ?? DateTime.now();
     final range = await summaryForLastDays(historyDays, now: moment);
+    final todayKey = dateKey(moment);
     return generateInsights(
       range: range,
-      today: summaryForDate(dateKey(moment)),
+      today: summaryForDate(todayKey),
+      focusGoalSeconds: focusGoalSeconds,
+      todayTimeline: timelineForDate(todayKey),
     );
   }
 

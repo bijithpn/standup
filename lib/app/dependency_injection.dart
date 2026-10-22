@@ -20,10 +20,8 @@ import 'package:breakmate/core/services/calendar_repository.dart';
 import 'package:breakmate/core/services/calendar_permission_service.dart';
 import 'package:breakmate/core/services/calendar_event_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
-import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
-import 'package:breakmate/features/clock_out/clock_out_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -70,7 +68,6 @@ Future<void> initDependencies() async {
   sl.registerSingleton<AppNavigationService>(AppNavigationService(sl()));
   sl.registerSingleton<WindowService>(WindowService.instance);
   sl.registerSingleton<OverlayWindowService>(OverlayWindowService());
-  sl.registerSingleton<SystemMediaService>(SystemMediaService());
   sl.registerSingleton<DisplayManager>(DisplayManager());
   sl.registerSingleton<OverlayFitService>(OverlayFitService());
 
@@ -101,7 +98,6 @@ Future<void> initDependencies() async {
       calendarService: sl(),
     ),
   );
-  sl.registerSingleton<ClockOutService>(ClockOutService(sl()));
   sl.registerSingleton<AppUsageService>(AppUsageService(storage: sl()));
   sl.registerSingleton<FocusSessionService>(FocusSessionService(storage: sl()));
   sl.registerSingleton<BreakHistoryService>(BreakHistoryService(storage: sl()));

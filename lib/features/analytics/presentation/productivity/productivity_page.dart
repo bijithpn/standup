@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
@@ -85,11 +87,21 @@ class _ProductivityPageState extends State<ProductivityPage> {
   void initState() {
     super.initState();
     _repository?.addListener(_onDataChanged);
+    _repository?.refreshToday();
+    // Keeps the numbers current while the screen is open, since a long stretch
+    // in one app is only written when it ends.
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _repository?.refreshToday(),
+    );
     _load();
   }
 
+  Timer? _refreshTimer;
+
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _repository?.removeListener(_onDataChanged);
     super.dispose();
   }
@@ -113,7 +125,11 @@ class _ProductivityPageState extends State<ProductivityPage> {
     }
 
     final summary = await repository.summaryForLastDays(_range.days, now: _now);
-    final insights = await repository.insights(now: _now);
+    final goalHours = _settings?.currentSettings.dailyWorkGoalHours;
+    final insights = await repository.insights(
+      now: _now,
+      focusGoalSeconds: goalHours == null ? null : goalHours * 3600,
+    );
 
     if (!mounted) return;
     setState(() {

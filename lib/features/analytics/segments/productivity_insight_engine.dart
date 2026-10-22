@@ -1,3 +1,4 @@
+import 'package:breakmate/core/storage/models/activity_segment.dart';
 import 'package:breakmate/features/analytics/segments/productivity_insight.dart';
 import 'package:breakmate/features/analytics/segments/productivity_summary.dart';
 
@@ -25,9 +26,14 @@ const int kMinComparableSeconds = 30 * 60;
 ///
 /// [range] carries the history the patterns are drawn from; [today] is the day
 /// being looked at, used for the observations that are about right now.
+///
+/// [focusGoalSeconds] is the daily focus goal, and [todayTimeline] the day's
+/// stretches in order; both are optional and simply unlock more findings.
 List<ProductivityInsight> generateInsights({
   required RangeProductivitySummary range,
   DailyProductivitySummary? today,
+  int? focusGoalSeconds,
+  List<TimelineEntry>? todayTimeline,
 }) {
   final days = range.activeDayCount;
   final insights = <ProductivityInsight>[];
@@ -43,6 +49,18 @@ List<ProductivityInsight> generateInsights({
 
     final fragmented = _fragmentedDay(today);
     if (fragmented != null) insights.add(fragmented);
+
+    final noBreak = _noBreakYet(today);
+    if (noBreak != null) insights.add(noBreak);
+
+    final stretch = _longestStretch(today, todayTimeline);
+    if (stretch != null) insights.add(stretch);
+
+    final pace = _goalProgress(today, focusGoalSeconds);
+    if (pace != null) insights.add(pace);
+
+    final usual = _comparedWithUsual(today, range);
+    if (usual != null) insights.add(usual);
   }
 
   if (InsightEvidence.isSufficient(days)) {
@@ -63,10 +81,14 @@ List<ProductivityInsight> generateInsights({
   // Strongest evidence first, so a hedged possibility never sits above a
   // finding the data actually supports.
   insights.sort((left, right) {
+    // Evidence strength always leads, so a possibility never outranks a
+    // measurement; priority then puts the actionable findings first.
     final byConfidence = left.confidence.index.compareTo(
       right.confidence.index,
     );
     if (byConfidence != 0) return byConfidence;
+    final byPriority = right.priority.compareTo(left.priority);
+    if (byPriority != 0) return byPriority;
     return right.evidenceDayCount.compareTo(left.evidenceDayCount);
   });
 
@@ -124,6 +146,9 @@ ProductivityInsight? _idleShare(DailyProductivitySummary today) {
         '${_formatDuration(today.trackedSeconds)} tracked today was idle.',
     confidence: InsightConfidence.high,
     evidenceDayCount: 1,
+    suggestion:
+        'Time away from the screen is healthy rest. If you were not actually '
+        'away, lower the idle time in General settings so it is not counted.',
     supportingData: <String, Object>{
       'idleSeconds': today.idleSeconds,
       'trackedSeconds': today.trackedSeconds,
@@ -147,9 +172,179 @@ ProductivityInsight? _fragmentedDay(DailyProductivitySummary today) {
         'about ${rate.toStringAsFixed(1)} an hour.',
     confidence: InsightConfidence.high,
     evidenceDayCount: 1,
+    priority: 50,
+    suggestion:
+        'Try batching chat and email into two or three set times, and close '
+        'the apps you are not using for the next hour.',
     supportingData: <String, Object>{
       'switches': today.contextSwitches,
       'perHour': rate,
+    },
+  );
+}
+
+/// Working a long time with no break at all today.
+ProductivityInsight? _noBreakYet(DailyProductivitySummary today) {
+  if (today.breakSeconds > 0) return null;
+  if (today.activeSeconds < 90 * 60) return null;
+
+  return ProductivityInsight(
+    id: 'today-no-break',
+    type: InsightType.breakPattern,
+    title: 'No break yet today',
+    description:
+        'You have worked ${_formatDuration(today.activeSeconds)} without a '
+        'break.',
+    confidence: InsightConfidence.high,
+    evidenceDayCount: 1,
+    priority: 100,
+    suggestion:
+        'Stand up for five minutes now. Short, regular breaks keep focus '
+        'higher for the rest of the day.',
+    supportingData: <String, Object>{'activeSeconds': today.activeSeconds},
+  );
+}
+
+/// How long the longest unbroken stretch of work was.
+ProductivityInsight? _longestStretch(
+  DailyProductivitySummary today,
+  List<TimelineEntry>? timeline,
+) {
+  if (timeline == null || timeline.isEmpty) return null;
+
+  var longest = 0;
+  for (final entry in timeline) {
+    if (entry.kind == ActivityKind.active && entry.seconds > longest) {
+      longest = entry.seconds;
+    }
+  }
+
+  if (longest >= 75 * 60) {
+    return ProductivityInsight(
+      id: 'today-long-stretch',
+      type: InsightType.breakPattern,
+      title: 'A very long stretch',
+      description:
+          'Your longest run today was ${_formatDuration(longest)} in one '
+          'app without stopping.',
+      confidence: InsightConfidence.high,
+      evidenceDayCount: 1,
+      priority: 90,
+      suggestion:
+          'Aim for a pause about every 50–60 minutes. You will keep your '
+          'edge longer and your eyes and back will thank you.',
+      supportingData: <String, Object>{'longestSeconds': longest},
+    );
+  }
+
+  // Plenty of time at the computer, but never more than a short burst at once.
+  if (today.activeSeconds >= 60 * 60 && longest < 20 * 60) {
+    return ProductivityInsight(
+      id: 'today-short-bursts',
+      type: InsightType.contextSwitching,
+      title: 'Focus in short bursts',
+      description:
+          'You were active for ${_formatDuration(today.activeSeconds)}, but '
+          'your longest uninterrupted stretch was ${_formatDuration(longest)}.',
+      confidence: InsightConfidence.high,
+      evidenceDayCount: 1,
+      priority: 70,
+      suggestion:
+          'Try one 25-minute block on a single task with notifications off, '
+          'then take a short break.',
+      supportingData: <String, Object>{'longestSeconds': longest},
+    );
+  }
+  return null;
+}
+
+/// How far today is from the daily focus goal.
+ProductivityInsight? _goalProgress(
+  DailyProductivitySummary today,
+  int? goalSeconds,
+) {
+  if (goalSeconds == null || goalSeconds <= 0) return null;
+  if (today.activeSeconds < 10 * 60) return null;
+
+  if (today.activeSeconds >= goalSeconds) {
+    return ProductivityInsight(
+      id: 'today-goal-reached',
+      type: InsightType.goalProgress,
+      title: 'Goal reached',
+      description:
+          'You have reached today\'s ${_formatDuration(goalSeconds)} focus '
+          'goal with ${_formatDuration(today.activeSeconds)}.',
+      confidence: InsightConfidence.high,
+      evidenceDayCount: 1,
+      priority: 80,
+      suggestion:
+          'Nicely done. Anything more today is a bonus — it is fine to wind '
+          'down.',
+      supportingData: <String, Object>{'activeSeconds': today.activeSeconds},
+    );
+  }
+
+  final left = goalSeconds - today.activeSeconds;
+  final percent = (today.activeSeconds / goalSeconds * 100).round();
+  return ProductivityInsight(
+    id: 'today-goal-progress',
+    type: InsightType.goalProgress,
+    title: '$percent% of today\'s goal',
+    description:
+        '${_formatDuration(today.activeSeconds)} done, '
+        '${_formatDuration(left)} to go to reach '
+        '${_formatDuration(goalSeconds)}.',
+    confidence: InsightConfidence.high,
+    evidenceDayCount: 1,
+    priority: 60,
+    supportingData: <String, Object>{
+      'activeSeconds': today.activeSeconds,
+      'leftSeconds': left,
+    },
+  );
+}
+
+/// Today set against the user's own usual day.
+ProductivityInsight? _comparedWithUsual(
+  DailyProductivitySummary today,
+  RangeProductivitySummary range,
+) {
+  final others = range.days
+      .where((d) => d.hasActivity && d.date != today.date)
+      .toList();
+  if (others.length < InsightEvidence.minimumDays) return null;
+  if (today.activeSeconds < 20 * 60) return null;
+
+  final usual =
+      others.fold<int>(0, (sum, d) => sum + d.activeSeconds) ~/ others.length;
+  if (usual <= 0) return null;
+
+  final change = (today.activeSeconds - usual) / usual;
+  if (change.abs() < kMeaningfulChangeRatio) return null;
+
+  final more = change > 0;
+  final percent = (change.abs() * 100).round();
+  final confidence = InsightEvidence.forDays(others.length);
+
+  return ProductivityInsight(
+    id: 'today-vs-usual',
+    type: InsightType.comparison,
+    title: more ? 'A busier day than usual' : 'A lighter day than usual',
+    description:
+        'So far today you have been active '
+        '${_formatDuration(today.activeSeconds)} — $percent% '
+        '${more ? 'more' : 'less'} than your usual '
+        '${_formatDuration(usual)} a day.',
+    confidence: confidence,
+    evidenceDayCount: others.length,
+    priority: 40,
+    suggestion: more
+        ? 'Make sure you are taking your breaks — busy days are when they '
+              'matter most.'
+        : null,
+    supportingData: <String, Object>{
+      'todaySeconds': today.activeSeconds,
+      'usualSeconds': usual,
     },
   );
 }
@@ -237,6 +432,9 @@ List<ProductivityInsight> _focusOpportunity(
           'Work you care about tends to go better scheduled here.',
       confidence: window.confidence,
       evidenceDayCount: window.evidenceDayCount,
+      suggestion:
+          'Put your hardest task in ${_formatHour(startHour)}–'
+          '${_formatHour(endHour)} and keep meetings out of it.',
       supportingData: window.supportingData,
     ),
   ];

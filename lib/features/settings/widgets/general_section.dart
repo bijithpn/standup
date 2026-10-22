@@ -38,8 +38,6 @@ class GeneralSection extends StatelessWidget {
           divider(),
           _buildQuietModePresets(),
           divider(),
-          _buildAutoPauseMedia(),
-          divider(),
           _buildGlobalHotkey(),
         ]),
         const SizedBox(height: 48),
@@ -167,19 +165,6 @@ class GeneralSection extends StatelessWidget {
           sl<TrayManagerService>().triggerActionAnimation();
         },
       ),
-    );
-  }
-
-  Widget _buildAutoPauseMedia() {
-    return buildListRow(
-      'Auto-pause Media',
-      'Pause Spotify/Apple Music when a break starts',
-      settings.autoPauseMedia,
-      CupertinoIcons.speaker_slash,
-      (v) {
-        onSave(settings.copyWith(autoPauseMedia: v));
-        sl<TrayManagerService>().triggerActionAnimation();
-      },
     );
   }
 
