@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.8.2` | 1.8.2 | 39 | 2026-10-22 | Release pipeline fixes: ad-hoc signed macOS builds and release readiness checks |
 | `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements |
 | `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
 | `v1.6.0` | 1.6.0 | 35 | 2026-09-02 | App Usage Analytics, Category Budgets, Focus Streaks & New Themes |
@@ -25,6 +26,23 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.8.2] - 2026-10-22
+
+Tags: `v1.8.2`
+
+Build: `39`
+
+Release title: Release Pipeline Fixes
+
+### Fixed
+
+- macOS release builds are now ad-hoc code signed (including Sparkle and nested frameworks), avoiding the "app is damaged" error on first launch of the downloaded DMG.
+- Fixed a syntax error in the DMG release script banner.
+
+### Changed
+
+- Added a release-readiness check to the dev CI that verifies the Sparkle signing key and required release files before changes reach `main`.
 
 ## [1.8.0] - 2026-10-17
 

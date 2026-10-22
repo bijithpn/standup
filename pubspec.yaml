@@ -1,7 +1,7 @@
 name: breakmate
-description: "BreakMate — a macOS menu bar break reminder app for healthy work habits."
+description: "BreakMate — a desktop break-reminder and wellness companion for macOS, Windows and Linux that protects your eyes, posture, and focus."
 publish_to: "none"
-version: 1.8.1+38
+version: 1.8.2+39
 #BreakMate
 environment:
   sdk: ^3.10.4
