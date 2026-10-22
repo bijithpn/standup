@@ -4,7 +4,7 @@
 
 **A desktop break-reminder and wellness companion that protects your eyes, posture, and focus — without breaking your flow.**
 
-[![Version](https://img.shields.io/badge/version-1.8.1-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.8.2-blue)](CHANGELOG.md)
 [![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#installation)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41-02569B?logo=flutter)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)

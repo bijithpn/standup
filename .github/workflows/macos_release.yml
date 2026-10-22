@@ -65,6 +65,13 @@ jobs:
         run: |
           npm install -g appdmg
 
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: pods-${{ runner.os }}-${{ hashFiles('macos/Podfile.lock') }}
+          restore-keys: pods-${{ runner.os }}-
+
       - name: Build macOS App
         run: |
           flutter pub get

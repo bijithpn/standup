@@ -104,7 +104,6 @@ jobs:
 
   build-macos:
     name: Build macOS
-    needs: static-analysis-and-tests
     runs-on: macos-14
     timeout-minutes: 45
     steps:
@@ -129,7 +128,6 @@ jobs:
 
   build-linux:
     name: Build Linux
-    needs: static-analysis-and-tests
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -170,7 +168,6 @@ jobs:
 
   build-windows:
     name: Build Windows
-    needs: static-analysis-and-tests
     runs-on: windows-2022
     timeout-minutes: 45
     steps:
