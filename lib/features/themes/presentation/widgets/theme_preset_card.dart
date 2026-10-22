@@ -42,8 +42,8 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
               color: widget.isSelected
                   ? p.accent
                   : _isHovered
-                      ? p.accent.withValues(alpha: 0.5)
-                      : p.border,
+                  ? p.accent.withValues(alpha: 0.5)
+                  : p.border,
               width: widget.isSelected ? 2 : 1,
             ),
             boxShadow: widget.isSelected
@@ -55,14 +55,14 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                     ),
                   ]
                 : _isHovered
-                    ? [
-                        BoxShadow(
-                          color: p.accent.withValues(alpha: 0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : [],
+                ? [
+                    BoxShadow(
+                      color: p.accent.withValues(alpha: 0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : [],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,11 +107,7 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
                     ),
                   ),
                   if (widget.isSelected)
-                    Icon(
-                      LucideIcons.circleCheck,
-                      size: 16,
-                      color: p.accent,
-                    ),
+                    Icon(LucideIcons.circleCheck, size: 16, color: p.accent),
                 ],
               ),
               const SizedBox(height: 10),

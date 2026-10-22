@@ -9,7 +9,8 @@ class SvgFallbackRenderer implements PetRenderer {
   String? get currentPetId => _currentPetId;
 
   @override
-  PetRendererCapabilities get capabilities => PetRendererCapabilities.svgFallback;
+  PetRendererCapabilities get capabilities =>
+      PetRendererCapabilities.svgFallback;
 
   @override
   bool get isInitialized => _initialized;

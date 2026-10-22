@@ -350,19 +350,19 @@ class NeedsEngine {
   }
 
   void onBreakStarted() {
-    _needs = _needs.copyWith(breakMode: true).applyDelta(
-      restfulnessDelta: 0.1,
-      happinessDelta: 10.0,
-    );
+    _needs = _needs
+        .copyWith(breakMode: true)
+        .applyDelta(restfulnessDelta: 0.1, happinessDelta: 10.0);
     _logger.info('NeedsEngine.onBreakStarted()');
   }
 
   void onBreakCompleted() {
-    _needs = _needs.copyWith(breakMode: false).applyDelta(
-      happinessDelta: 20.0,
-      affectionDelta: 0.1,
+    _needs = _needs
+        .copyWith(breakMode: false)
+        .applyDelta(happinessDelta: 20.0, affectionDelta: 0.1);
+    _logger.info(
+      'NeedsEngine.onBreakCompleted(): happiness=${_needs.happiness}',
     );
-    _logger.info('NeedsEngine.onBreakCompleted(): happiness=${_needs.happiness}');
   }
 
   void onWorkBlockLong({double minutesBeyondThreshold = 1.0}) {

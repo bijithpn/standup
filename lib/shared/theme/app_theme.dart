@@ -237,69 +237,69 @@ class AppTheme {
   static Color get destructiveColor => error;
 
   static TextStyle get sidebarItemStyle => TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: textPrimary,
-        letterSpacing: -0.1,
-        fontFamily: 'Inter',
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: textPrimary,
+    letterSpacing: -0.1,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get sectionTitle => TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: textPrimary,
-        letterSpacing: -0.2,
-        fontFamily: 'Inter',
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: textPrimary,
+    letterSpacing: -0.2,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get sectionSubtitle => TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w400,
-        color: textSecondary,
-        letterSpacing: 0,
-        fontFamily: 'Inter',
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w400,
+    color: textSecondary,
+    letterSpacing: 0,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get headerStyle => TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w600,
-        color: textPrimary,
-        letterSpacing: -0.5,
-        fontFamily: 'Inter',
-      );
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+    color: textPrimary,
+    letterSpacing: -0.5,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get subHeaderStyle => TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textSecondary,
-        letterSpacing: -0.1,
-        fontFamily: 'Inter',
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: textSecondary,
+    letterSpacing: -0.1,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get breakTitleStyle => TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.w700,
-        color: textPrimary,
-        letterSpacing: -0.8,
-        fontFamily: 'Inter',
-      );
+    fontSize: 32,
+    fontWeight: FontWeight.w700,
+    color: textPrimary,
+    letterSpacing: -0.8,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get tipStyle => TextStyle(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textSecondary,
-        height: 1.5,
-        letterSpacing: 0.1,
-        fontFamily: 'Inter',
-      );
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: textSecondary,
+    height: 1.5,
+    letterSpacing: 0.1,
+    fontFamily: 'Inter',
+  );
 
   static TextStyle get skipButtonStyle => TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-        color: textSecondary,
-        letterSpacing: 0.2,
-        fontFamily: 'Inter',
-      );
+    fontSize: 13,
+    fontWeight: FontWeight.w500,
+    color: textSecondary,
+    letterSpacing: 0.2,
+    fontFamily: 'Inter',
+  );
 
   static Widget glassContainer({
     required Widget child,

@@ -158,7 +158,11 @@ void main() {
       active(builder, 'code', day.add(poll));
 
       // The machine slept for two hours.
-      final finished = active(builder, 'code', day.add(const Duration(hours: 2)));
+      final finished = active(
+        builder,
+        'code',
+        day.add(const Duration(hours: 2)),
+      );
 
       expect(finished, isNotNull);
       expect(

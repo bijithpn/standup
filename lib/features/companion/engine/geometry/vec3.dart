@@ -19,10 +19,10 @@ class Vec3 {
   double dot(Vec3 other) => x * other.x + y * other.y + z * other.z;
 
   Vec3 cross(Vec3 other) => Vec3(
-        y * other.z - z * other.y,
-        z * other.x - x * other.z,
-        x * other.y - y * other.x,
-      );
+    y * other.z - z * other.y,
+    z * other.x - x * other.z,
+    x * other.y - y * other.x,
+  );
 
   double get lengthSquared => x * x + y * y + z * z;
   double get length => math.sqrt(lengthSquared);
@@ -36,31 +36,19 @@ class Vec3 {
   Vec3 rotateX(double angle) {
     final cosA = math.cos(angle);
     final sinA = math.sin(angle);
-    return Vec3(
-      x,
-      y * cosA - z * sinA,
-      y * sinA + z * cosA,
-    );
+    return Vec3(x, y * cosA - z * sinA, y * sinA + z * cosA);
   }
 
   Vec3 rotateY(double angle) {
     final cosA = math.cos(angle);
     final sinA = math.sin(angle);
-    return Vec3(
-      x * cosA + z * sinA,
-      y,
-      -x * sinA + z * cosA,
-    );
+    return Vec3(x * cosA + z * sinA, y, -x * sinA + z * cosA);
   }
 
   Vec3 rotateZ(double angle) {
     final cosA = math.cos(angle);
     final sinA = math.sin(angle);
-    return Vec3(
-      x * cosA - y * sinA,
-      x * sinA + y * cosA,
-      z,
-    );
+    return Vec3(x * cosA - y * sinA, x * sinA + y * cosA, z);
   }
 
   @override
@@ -72,8 +60,13 @@ class Vec3 {
           (z - other.z).abs() < 1e-6;
 
   @override
-  int get hashCode => Object.hash(x.toStringAsFixed(5), y.toStringAsFixed(5), z.toStringAsFixed(5));
+  int get hashCode => Object.hash(
+    x.toStringAsFixed(5),
+    y.toStringAsFixed(5),
+    z.toStringAsFixed(5),
+  );
 
   @override
-  String toString() => 'Vec3(${x.toStringAsFixed(2)}, ${y.toStringAsFixed(2)}, ${z.toStringAsFixed(2)})';
+  String toString() =>
+      'Vec3(${x.toStringAsFixed(2)}, ${y.toStringAsFixed(2)}, ${z.toStringAsFixed(2)})';
 }

@@ -57,7 +57,8 @@ class ClassicSlideshowTemplate extends StatelessWidget {
         fit: BoxFit.cover,
         filterQuality: FilterQuality.low,
       );
-    } else if (pageController != null && AppConstants.wellnessSlideshow.isNotEmpty) {
+    } else if (pageController != null &&
+        AppConstants.wellnessSlideshow.isNotEmpty) {
       background = PageView.builder(
         controller: pageController,
         physics: const NeverScrollableScrollPhysics(),
@@ -73,8 +74,8 @@ class ClassicSlideshowTemplate extends StatelessWidget {
       final img = (sImage != null && sImage.isNotEmpty)
           ? sImage
           : (AppConstants.wellnessSlideshow.isNotEmpty
-              ? AppConstants.wellnessSlideshow.first
-              : null);
+                ? AppConstants.wellnessSlideshow.first
+                : null);
       if (img != null && img.isNotEmpty) {
         background = Image.asset(
           img,

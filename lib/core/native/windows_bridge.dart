@@ -298,7 +298,10 @@ class WindowsBridge implements NativeBridgePlatform {
 
   @override
   Future<void> openAvatarEditor(String editorUrl) async {
-    developer.log('openAvatarEditor not supported on Windows', name: 'BreakMate');
+    developer.log(
+      'openAvatarEditor not supported on Windows',
+      name: 'BreakMate',
+    );
   }
 
   @override

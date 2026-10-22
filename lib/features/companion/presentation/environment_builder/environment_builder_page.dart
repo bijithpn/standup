@@ -212,8 +212,6 @@ class _NarrowLayout extends StatelessWidget {
   }
 }
 
-
-
 class _PreviewPanel extends StatelessWidget {
   const _PreviewPanel();
 

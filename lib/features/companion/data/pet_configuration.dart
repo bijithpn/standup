@@ -21,14 +21,14 @@ class PetConfiguration {
   });
 
   Map<String, dynamic> toJson() => {
-        'petId': petId,
-        'species': species,
-        'camera': camera.toJson(),
-        'pose': pose,
-        'materials': materials,
-        'expression': expression,
-        'animation': animation,
-      };
+    'petId': petId,
+    'species': species,
+    'camera': camera.toJson(),
+    'pose': pose,
+    'materials': materials,
+    'expression': expression,
+    'animation': animation,
+  };
 
   factory PetConfiguration.fromJson(Map<String, dynamic> json) {
     return PetConfiguration(

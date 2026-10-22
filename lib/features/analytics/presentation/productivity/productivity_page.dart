@@ -30,11 +30,7 @@ enum ProductivityRange {
 /// overview, the timeline, the applications and the findings stack in the order
 /// someone would actually ask them.
 class ProductivityPage extends StatefulWidget {
-  const ProductivityPage({
-    super.key,
-    this.repository,
-    this.settingsRepository,
-  });
+  const ProductivityPage({super.key, this.repository, this.settingsRepository});
 
   /// Injected in tests; resolved from the service locator otherwise.
   final ProductivityRepository? repository;
@@ -94,10 +90,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
       return;
     }
 
-    final summary = await repository.summaryForLastDays(
-      _range.days,
-      now: _now,
-    );
+    final summary = await repository.summaryForLastDays(_range.days, now: _now);
     final insights = await repository.insights(now: _now);
 
     if (!mounted) return;
@@ -187,12 +180,11 @@ class _ProductivityPageState extends State<ProductivityPage> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : !hasActivity
-                    ? ProductivityEmptyState(
-                        trackingEnabled: _trackingEnabled,
-                        onEnableTracking:
-                            _trackingEnabled ? null : _enableTracking,
-                      )
-                    : _content(summary, showingToday),
+                ? ProductivityEmptyState(
+                    trackingEnabled: _trackingEnabled,
+                    onEnableTracking: _trackingEnabled ? null : _enableTracking,
+                  )
+                : _content(summary, showingToday),
           ),
         ],
       ),
@@ -201,18 +193,24 @@ class _ProductivityPageState extends State<ProductivityPage> {
 
   Widget _content(RangeProductivitySummary? summary, bool showingToday) {
     final day = _today;
-    final apps = showingToday ? day.apps : (summary?.apps ?? const <AppTotal>[]);
-    final activeSeconds =
-        showingToday ? day.activeSeconds : (summary?.activeSeconds ?? 0);
+    final apps = showingToday
+        ? day.apps
+        : (summary?.apps ?? const <AppTotal>[]);
+    final activeSeconds = showingToday
+        ? day.activeSeconds
+        : (summary?.activeSeconds ?? 0);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
       children: <Widget>[
         ProductivityOverviewCard(
           activeSeconds: activeSeconds,
-          idleSeconds: showingToday ? day.idleSeconds : summary?.idleSeconds ?? 0,
-          breakSeconds:
-              showingToday ? day.breakSeconds : summary?.breakSeconds ?? 0,
+          idleSeconds: showingToday
+              ? day.idleSeconds
+              : summary?.idleSeconds ?? 0,
+          breakSeconds: showingToday
+              ? day.breakSeconds
+              : summary?.breakSeconds ?? 0,
           contextSwitches: showingToday
               ? day.contextSwitches
               : summary?.contextSwitches ?? 0,
@@ -220,8 +218,8 @@ class _ProductivityPageState extends State<ProductivityPage> {
           caption: showingToday
               ? null
               : 'across ${summary?.activeDayCount ?? 0} '
-                  '${(summary?.activeDayCount ?? 0) == 1 ? 'day' : 'days'} '
-                  'with activity',
+                    '${(summary?.activeDayCount ?? 0) == 1 ? 'day' : 'days'} '
+                    'with activity',
         ),
         const SizedBox(height: 26),
 
@@ -231,9 +229,10 @@ class _ProductivityPageState extends State<ProductivityPage> {
             subtitle: day.firstActivityAt == null
                 ? null
                 : '${formatClock(day.firstActivityAt!)} to '
-                    '${formatClock(day.lastActivityAt!)}',
+                      '${formatClock(day.lastActivityAt!)}',
             child: ActivityTimelineView(
-              entries: _repository?.timelineForDate(_todayKey) ??
+              entries:
+                  _repository?.timelineForDate(_todayKey) ??
                   const <TimelineEntry>[],
             ),
           ),

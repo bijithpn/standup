@@ -129,7 +129,9 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: isSelected ? AppTheme.accentColor : const Color(0xFF2C2F42),
+                  color: isSelected
+                      ? AppTheme.accentColor
+                      : const Color(0xFF2C2F42),
                 ),
               ),
               onSelected: (selected) {
@@ -165,7 +167,9 @@ class _AvatarSpeciesPickerState extends State<AvatarSpeciesPicker> {
                 : const Color(0xFF131520),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected ? AppTheme.accentColor : const Color(0xFF26293A),
+              color: isSelected
+                  ? AppTheme.accentColor
+                  : const Color(0xFF26293A),
               width: isSelected ? 2.0 : 1.0,
             ),
             boxShadow: isSelected

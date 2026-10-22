@@ -36,7 +36,8 @@ class PetTheme {
     int requiredConsistencyDays = 0,
     PetSpecies petSpecies = PetSpecies.cat,
   }) {
-    final def = definition ??
+    final def =
+        definition ??
         (species != null
             ? AvatarDefinition.fromSpecies(species)
             : AvatarDefinition.fromSpecies(AvatarSpecies.cat));

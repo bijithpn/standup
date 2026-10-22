@@ -28,7 +28,8 @@ class AvatarShapeSpec {
   final double exponent;
   final double faceCurvature;
   final double faceScale;
-  final String profile; // 'superellipsoid', 'cone', 'frustum', 'half-cone', 'teardrop', 'trapezoid'
+  final String
+  profile; // 'superellipsoid', 'cone', 'frustum', 'half-cone', 'teardrop', 'trapezoid'
   final double radiusX;
   final double radiusY;
   final double radiusZ;

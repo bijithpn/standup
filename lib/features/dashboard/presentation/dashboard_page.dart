@@ -42,7 +42,9 @@ class DashboardPage extends StatelessWidget {
                           const SizedBox(height: 10),
                           const DashboardHeader(),
                           const SizedBox(height: 40),
-                          TimerSection(calendarEvents: dashboardCtrl.calendarEvents),
+                          TimerSection(
+                            calendarEvents: dashboardCtrl.calendarEvents,
+                          ),
                           const SizedBox(height: 40),
                           const ActionGrid(),
                           if (calendarEnabled) ...[
@@ -50,15 +52,22 @@ class DashboardPage extends StatelessWidget {
                             CalendarSection(
                               calendarEvents: dashboardCtrl.calendarEvents,
                               loading: dashboardCtrl.calendarLoading,
-                              permissionGranted: dashboardCtrl.calendarPermissionGranted,
-                              permissionDenied: dashboardCtrl.calendarPermissionDenied,
-                              isRequestingPermission: dashboardCtrl.isRequestingPermission,
+                              permissionGranted:
+                                  dashboardCtrl.calendarPermissionGranted,
+                              permissionDenied:
+                                  dashboardCtrl.calendarPermissionDenied,
+                              isRequestingPermission:
+                                  dashboardCtrl.isRequestingPermission,
                               onLoadEvents: dashboardCtrl.loadCalendarEvents,
                               onRequestAccess: () async {
-                                final granted = await dashboardCtrl.requestCalendarAccess();
+                                final granted = await dashboardCtrl
+                                    .requestCalendarAccess();
                                 if (context.mounted) {
                                   if (granted) {
-                                    Toast.showSuccess(context, 'Calendar access granted!');
+                                    Toast.showSuccess(
+                                      context,
+                                      'Calendar access granted!',
+                                    );
                                   } else {
                                     Toast.showError(
                                       context,

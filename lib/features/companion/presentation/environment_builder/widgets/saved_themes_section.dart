@@ -7,11 +7,7 @@ class SavedThemesSection extends StatelessWidget {
   final EnvironmentBuilderController ctrl;
   final VoidCallback? onLoaded;
 
-  const SavedThemesSection({
-    super.key,
-    required this.ctrl,
-    this.onLoaded,
-  });
+  const SavedThemesSection({super.key, required this.ctrl, this.onLoaded});
 
   @override
   Widget build(BuildContext context) {

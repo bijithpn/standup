@@ -106,9 +106,7 @@ Future<void> initDependencies() async {
   sl.registerSingleton<FocusSessionService>(FocusSessionService(storage: sl()));
   sl.registerSingleton<BreakHistoryService>(BreakHistoryService(storage: sl()));
   sl.registerSingleton<ContextSwitchTracker>(ContextSwitchTracker());
-  sl.registerLazySingleton<AppIconCache>(
-    () => AppIconCache(appTracking: sl()),
-  );
+  sl.registerLazySingleton<AppIconCache>(() => AppIconCache(appTracking: sl()));
   sl.registerSingleton<ActivitySegmentRepository>(
     ActivitySegmentRepository(storage: sl()),
   );
@@ -236,7 +234,9 @@ Future<void> initDependencies() async {
   sl.registerSingleton<ExplainHotkeyService>(ExplainHotkeyService());
 
   sl.registerSingleton<FocusModeService>(FocusModeService());
-  sl.registerSingleton<FocusFilterService>(FocusFilterService(focusModeService: sl()));
+  sl.registerSingleton<FocusFilterService>(
+    FocusFilterService(focusModeService: sl()),
+  );
   sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
 
   sl.registerSingleton<CompanionStateManager>(

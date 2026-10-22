@@ -94,9 +94,8 @@ class _BreakMateAppState extends State<BreakMateApp> with WindowListener {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.macosTheme,
             routes: {'/main': (context) => const MainLayout()},
-            builder: (context, widget) => ScaffoldMessenger(
-              child: widget ?? const SizedBox.shrink(),
-            ),
+            builder: (context, widget) =>
+                ScaffoldMessenger(child: widget ?? const SizedBox.shrink()),
             home: child,
           );
         },

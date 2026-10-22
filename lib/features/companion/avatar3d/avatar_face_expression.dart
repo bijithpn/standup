@@ -197,8 +197,10 @@ AvatarFaceStyle expressFace(
     height: face.height * blend(expression.eyeHeight) * lidsOpen,
     width: face.width * blend(expression.eyeWidth),
     gap: face.gap * blend(expression.eyeGap),
-    eyeRoundness:
-        math.min(100, face.eyeRoundness * blend(expression.eyeRoundness)),
+    eyeRoundness: math.min(
+      100,
+      face.eyeRoundness * blend(expression.eyeRoundness),
+    ),
     // The tilt mirrors, so both outer corners move the same way — rotating
     // both eyes the same direction reads as a head tilt, not an expression.
     leftEyeRotation: face.leftEyeRotation + expression.outerTilt * t,
@@ -210,13 +212,15 @@ AvatarFaceStyle expressFace(
     mouthCurve: mouth == null
         ? face.mouthCurve
         : face.mouthCurve + (mouth.curve - face.mouthCurve) * t,
-    mouthWidth:
-        mouth == null ? face.mouthWidth : face.mouthWidth * blend(mouth.width),
+    mouthWidth: mouth == null
+        ? face.mouthWidth
+        : face.mouthWidth * blend(mouth.width),
     mouthHeight: mouth == null
         ? face.mouthHeight
         : face.mouthHeight * blend(mouth.height),
-    highlightEnabled:
-        highlight == null ? face.highlightEnabled : highlight.enabled,
+    highlightEnabled: highlight == null
+        ? face.highlightEnabled
+        : highlight.enabled,
     highlightSize: highlight == null
         ? face.highlightSize
         : face.highlightSize * blend(highlight.size),

@@ -118,7 +118,9 @@ class PetStage extends StatelessWidget {
         densityScale: avatarDensityFor(size),
         // The palette the user chose, applied to the companion itself rather
         // than only to swatches in the customizer.
-        palette: def.palette == AvatarPalette.defaultPalette ? null : def.palette,
+        palette: def.palette == AvatarPalette.defaultPalette
+            ? null
+            : def.palette,
         style: avatarStyleFrom(def.parts),
       );
     }
@@ -200,12 +202,7 @@ class PetStage extends StatelessWidget {
           1.0,
         )
         ..rotateZ(snapshot.tilt * 0.6)
-        ..scaleByDouble(
-          snapshot.squash,
-          2.0 - snapshot.squash,
-          1.0,
-          1.0,
-        ),
+        ..scaleByDouble(snapshot.squash, 2.0 - snapshot.squash, 1.0, 1.0),
       alignment: Alignment.center,
       child: Blobatar(
         name: blobName!,

@@ -64,7 +64,9 @@ class AvatarFaceProjector {
       return ProjectedFace3D.invisible;
     }
 
-    final spec = AvatarShapeSpec.specs[shape] ?? AvatarShapeSpec.specs[AvatarBodyShape.sphere]!;
+    final spec =
+        AvatarShapeSpec.specs[shape] ??
+        AvatarShapeSpec.specs[AvatarBodyShape.sphere]!;
     final radiusX = spec.radiusX;
     final radiusY = spec.radiusY;
     final radiusZ = spec.radiusZ;
@@ -97,7 +99,11 @@ class AvatarFaceProjector {
     }
 
     // Helper to generate rounded rectangle eye polygon
-    List<ui.Offset> buildEyePolygon(double eyeCenterX, double eyeCenterY, double tilt) {
+    List<ui.Offset> buildEyePolygon(
+      double eyeCenterX,
+      double eyeCenterY,
+      double tilt,
+    ) {
       final points = <ui.Offset>[];
       const steps = 16;
       final hw = eyeWidth / 2.0;
@@ -151,9 +157,19 @@ class AvatarFaceProjector {
     if (hasNose) {
       nose = [];
       final pTop = project2DTo3DSurface(0, noseOffsetY - noseHeight / 2.0);
-      final pBottomLeft = project2DTo3DSurface(-noseWidth / 2.0, noseOffsetY + noseHeight / 2.0);
-      final pBottomRight = project2DTo3DSurface(noseWidth / 2.0, noseOffsetY + noseHeight / 2.0);
-      nose.addAll([toScreen(pTop), toScreen(pBottomLeft), toScreen(pBottomRight)]);
+      final pBottomLeft = project2DTo3DSurface(
+        -noseWidth / 2.0,
+        noseOffsetY + noseHeight / 2.0,
+      );
+      final pBottomRight = project2DTo3DSurface(
+        noseWidth / 2.0,
+        noseOffsetY + noseHeight / 2.0,
+      );
+      nose.addAll([
+        toScreen(pTop),
+        toScreen(pBottomLeft),
+        toScreen(pBottomRight),
+      ]);
     }
 
     final centerFaceP = project2DTo3DSurface(0, 0);

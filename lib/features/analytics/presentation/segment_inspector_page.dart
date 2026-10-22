@@ -70,17 +70,21 @@ class _SegmentInspectorPageState extends State<SegmentInspectorPage> {
       ..writeln('Idle     ${_hms(summary.idleSeconds)}')
       ..writeln('Break    ${_hms(summary.breakSeconds)}')
       ..writeln('Tracked  ${_hms(summary.trackedSeconds)}')
-      ..writeln('Switches ${summary.contextSwitches} '
-          '(${summary.switchesPerActiveHour.toStringAsFixed(1)}/active hour)')
+      ..writeln(
+        'Switches ${summary.contextSwitches} '
+        '(${summary.switchesPerActiveHour.toStringAsFixed(1)}/active hour)',
+      )
       ..writeln('First    ${summary.firstActivityAt}')
       ..writeln('Last     ${summary.lastActivityAt}')
       ..writeln()
       ..writeln('── Applications ──');
 
     for (final app in summary.apps) {
-      buffer.writeln('${_hms(app.seconds).padLeft(9)}  '
-          '${app.sessionCount.toString().padLeft(3)} sessions  '
-          '${app.categoryName.padRight(14)} ${app.appName}');
+      buffer.writeln(
+        '${_hms(app.seconds).padLeft(9)}  '
+        '${app.sessionCount.toString().padLeft(3)} sessions  '
+        '${app.categoryName.padRight(14)} ${app.appName}',
+      );
     }
 
     buffer
@@ -90,28 +94,34 @@ class _SegmentInspectorPageState extends State<SegmentInspectorPage> {
       final seconds = summary.hourlyActiveSeconds[hour];
       if (seconds == 0) continue;
       final switches = summary.hourlySwitches[hour];
-      buffer.writeln('${hour.toString().padLeft(2)}:00  '
-          '${_hms(seconds).padLeft(9)}  $switches switches');
+      buffer.writeln(
+        '${hour.toString().padLeft(2)}:00  '
+        '${_hms(seconds).padLeft(9)}  $switches switches',
+      );
     }
 
     buffer
       ..writeln()
       ..writeln('── Timeline (merged for display) ──');
     for (final entry in timeline) {
-      buffer.writeln('${_clock(entry.startedAt)}–${_clock(entry.endedAt)}  '
-          '${_hms(entry.seconds).padLeft(9)}  '
-          '${entry.kind.name.padRight(8)} '
-          '${entry.appName.isEmpty ? '-' : entry.appName}');
+      buffer.writeln(
+        '${_clock(entry.startedAt)}–${_clock(entry.endedAt)}  '
+        '${_hms(entry.seconds).padLeft(9)}  '
+        '${entry.kind.name.padRight(8)} '
+        '${entry.appName.isEmpty ? '-' : entry.appName}',
+      );
     }
 
     buffer
       ..writeln()
       ..writeln('── Raw segments (${segments.length}) ──');
     for (final segment in segments) {
-      buffer.writeln('${_clock(segment.startedAt)}–${_clock(segment.endedAt)}  '
-          '${_hms(segment.seconds).padLeft(9)}  '
-          '${segment.activityKind.name.padRight(8)} '
-          '${segment.appName.isEmpty ? '-' : segment.appName}');
+      buffer.writeln(
+        '${_clock(segment.startedAt)}–${_clock(segment.endedAt)}  '
+        '${_hms(segment.seconds).padLeft(9)}  '
+        '${segment.activityKind.name.padRight(8)} '
+        '${segment.appName.isEmpty ? '-' : segment.appName}',
+      );
     }
 
     buffer
@@ -119,8 +129,10 @@ class _SegmentInspectorPageState extends State<SegmentInspectorPage> {
       ..writeln('── Insights (${_insights.length}) ──');
     for (final insight in _insights) {
       buffer
-        ..writeln('[${insight.confidence.name}] ${insight.title} '
-            '(${insight.evidenceDayCount}d)')
+        ..writeln(
+          '[${insight.confidence.name}] ${insight.title} '
+          '(${insight.evidenceDayCount}d)',
+        )
         ..writeln('  ${insight.description}')
         ..writeln('  ${insight.supportingData}');
     }
@@ -295,14 +307,14 @@ class _SegmentInspectorPageState extends State<SegmentInspectorPage> {
   }
 
   ButtonStyle get _buttonStyle => OutlinedButton.styleFrom(
-        foregroundColor: AppTheme.textPrimary,
-        side: BorderSide(color: AppTheme.border),
-        textStyle: const TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      );
+    foregroundColor: AppTheme.textPrimary,
+    side: BorderSide(color: AppTheme.border),
+    textStyle: const TextStyle(
+      fontFamily: 'Inter',
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+    ),
+  );
 
   Widget _stat(String label, String value) {
     return Column(

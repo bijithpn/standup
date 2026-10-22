@@ -81,8 +81,9 @@ class CompanionComponent
          anchor: Anchor.bottomCenter,
        );
 
-  double get _strideFrequency =>
-      isMounted ? game.currentTheme.species.defaultProfile.strideFrequency : 1.0;
+  double get _strideFrequency => isMounted
+      ? game.currentTheme.species.defaultProfile.strideFrequency
+      : 1.0;
 
   @override
   void onMount() {
@@ -495,7 +496,9 @@ class CompanionComponent
       return;
     }
 
-    if (animationTicker != null && animations != null && animations!.isNotEmpty) {
+    if (animationTicker != null &&
+        animations != null &&
+        animations!.isNotEmpty) {
       super.render(canvas);
     }
     _renderOverlays(canvas);

@@ -180,7 +180,9 @@ class _CompanionInteractiveTemplateState
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: BreakOverlayTheme.surfaceSubtle.withValues(alpha: 0.85),
+                      color: BreakOverlayTheme.surfaceSubtle.withValues(
+                        alpha: 0.85,
+                      ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.08),

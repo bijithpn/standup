@@ -4,9 +4,7 @@ import 'package:breakmate/features/analytics/habits_summary.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/habits_summary_card.dart';
 
 void main() {
-  testWidgets('shows both streak counts and the sync sentence', (
-    tester,
-  ) async {
+  testWidgets('shows both streak counts and the sync sentence', (tester) async {
     const summary = HabitsSummary(breakStreakDays: 5, focusStreakDays: 5);
     await tester.pumpWidget(
       const MaterialApp(

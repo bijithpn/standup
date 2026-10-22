@@ -40,7 +40,14 @@ enum AvatarBodyShape {
 }
 
 /// How a primitive's surface is generated.
-enum ShapeProfile { superellipsoid, cone, frustum, halfCone, teardrop, trapezoid }
+enum ShapeProfile {
+  superellipsoid,
+  cone,
+  frustum,
+  halfCone,
+  teardrop,
+  trapezoid,
+}
 
 class ShapeSpec {
   const ShapeSpec({
@@ -62,107 +69,108 @@ class ShapeSpec {
   final double radiusZ;
 }
 
-const Map<AvatarBodyShape, ShapeSpec> kShapeSpecs = <AvatarBodyShape, ShapeSpec>{
-  AvatarBodyShape.capsule: ShapeSpec(
-    exponent: 0.52,
-    faceCurvature: 0.52,
-    faceScale: 0.52,
-    profile: ShapeProfile.superellipsoid,
-    radiusX: 150,
-    radiusY: 109,
-    radiusZ: 109,
-  ),
-  AvatarBodyShape.cone: ShapeSpec(
-    exponent: 1,
-    faceCurvature: 0.8,
-    faceScale: 0.8,
-    profile: ShapeProfile.cone,
-    radiusX: 139,
-    radiusY: 139,
-    radiusZ: 124,
-  ),
-  AvatarBodyShape.diamond: ShapeSpec(
-    exponent: 1.65,
-    faceCurvature: 0.72,
-    faceScale: 1.12,
-    profile: ShapeProfile.superellipsoid,
-    radiusX: 139,
-    radiusY: 139,
-    radiusZ: 106,
-  ),
-  AvatarBodyShape.ellipse: ShapeSpec(
-    exponent: 1,
-    faceCurvature: 1,
-    faceScale: 1,
-    profile: ShapeProfile.superellipsoid,
-    radiusX: 153,
-    radiusY: 118,
-    radiusZ: 122,
-  ),
-  AvatarBodyShape.frustum: ShapeSpec(
-    exponent: 1,
-    faceCurvature: 0.72,
-    faceScale: 0.72,
-    profile: ShapeProfile.frustum,
-    radiusX: 139,
-    radiusY: 139,
-    radiusZ: 124,
-  ),
-  AvatarBodyShape.halfCone: ShapeSpec(
-    exponent: 1,
-    faceCurvature: 0.8,
-    faceScale: 0.8,
-    profile: ShapeProfile.halfCone,
-    radiusX: 139,
-    radiusY: 139,
-    radiusZ: 124,
-  ),
-  AvatarBodyShape.rounded: ShapeSpec(
-    exponent: 0.5,
-    faceCurvature: 0.55,
-    faceScale: 0.5,
-    profile: ShapeProfile.superellipsoid,
-    radiusX: 132,
-    radiusY: 132,
-    radiusZ: 116,
-  ),
-  AvatarBodyShape.sphere: ShapeSpec(
-    exponent: 1,
-    faceCurvature: 1,
-    faceScale: 1,
-    profile: ShapeProfile.superellipsoid,
-    radiusX: 139,
-    radiusY: 139,
-    radiusZ: 139,
-  ),
-  AvatarBodyShape.square: ShapeSpec(
-    exponent: 0.3,
-    faceCurvature: 0.28,
-    faceScale: 0.38,
-    profile: ShapeProfile.superellipsoid,
-    radiusX: 132,
-    radiusY: 132,
-    radiusZ: 108,
-  ),
-  AvatarBodyShape.teardrop: ShapeSpec(
-    exponent: 0.78,
-    faceCurvature: 0.7,
-    faceScale: 0.72,
-    profile: ShapeProfile.teardrop,
-    radiusX: 132,
-    radiusY: 148,
-    radiusZ: 112,
-  ),
-  AvatarBodyShape.trapezoid: ShapeSpec(
-    exponent: 0.56,
-    faceCurvature: 0.62,
-    faceScale: 0.72,
-    profile: ShapeProfile.trapezoid,
-    radiusX: 142,
-    radiusY: 132,
-    radiusZ: 116,
-  ),
-};
+const Map<AvatarBodyShape, ShapeSpec> kShapeSpecs =
+    <AvatarBodyShape, ShapeSpec>{
+      AvatarBodyShape.capsule: ShapeSpec(
+        exponent: 0.52,
+        faceCurvature: 0.52,
+        faceScale: 0.52,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 150,
+        radiusY: 109,
+        radiusZ: 109,
+      ),
+      AvatarBodyShape.cone: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 0.8,
+        faceScale: 0.8,
+        profile: ShapeProfile.cone,
+        radiusX: 139,
+        radiusY: 139,
+        radiusZ: 124,
+      ),
+      AvatarBodyShape.diamond: ShapeSpec(
+        exponent: 1.65,
+        faceCurvature: 0.72,
+        faceScale: 1.12,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 139,
+        radiusY: 139,
+        radiusZ: 106,
+      ),
+      AvatarBodyShape.ellipse: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 1,
+        faceScale: 1,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 153,
+        radiusY: 118,
+        radiusZ: 122,
+      ),
+      AvatarBodyShape.frustum: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 0.72,
+        faceScale: 0.72,
+        profile: ShapeProfile.frustum,
+        radiusX: 139,
+        radiusY: 139,
+        radiusZ: 124,
+      ),
+      AvatarBodyShape.halfCone: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 0.8,
+        faceScale: 0.8,
+        profile: ShapeProfile.halfCone,
+        radiusX: 139,
+        radiusY: 139,
+        radiusZ: 124,
+      ),
+      AvatarBodyShape.rounded: ShapeSpec(
+        exponent: 0.5,
+        faceCurvature: 0.55,
+        faceScale: 0.5,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 132,
+        radiusY: 132,
+        radiusZ: 116,
+      ),
+      AvatarBodyShape.sphere: ShapeSpec(
+        exponent: 1,
+        faceCurvature: 1,
+        faceScale: 1,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 139,
+        radiusY: 139,
+        radiusZ: 139,
+      ),
+      AvatarBodyShape.square: ShapeSpec(
+        exponent: 0.3,
+        faceCurvature: 0.28,
+        faceScale: 0.38,
+        profile: ShapeProfile.superellipsoid,
+        radiusX: 132,
+        radiusY: 132,
+        radiusZ: 108,
+      ),
+      AvatarBodyShape.teardrop: ShapeSpec(
+        exponent: 0.78,
+        faceCurvature: 0.7,
+        faceScale: 0.72,
+        profile: ShapeProfile.teardrop,
+        radiusX: 132,
+        radiusY: 148,
+        radiusZ: 112,
+      ),
+      AvatarBodyShape.trapezoid: ShapeSpec(
+        exponent: 0.56,
+        faceCurvature: 0.62,
+        faceScale: 0.72,
+        profile: ShapeProfile.trapezoid,
+        radiusX: 142,
+        radiusY: 132,
+        radiusZ: 116,
+      ),
+    };
 
 /// Per-part modifiers that change how its primitive is sampled.
 class ShapeOptions {
@@ -218,7 +226,9 @@ Vec3 surfacePoint(
         final vertical = signedPow(math.sin(lat), spec.exponent);
         final progress = clampDouble((vertical + 1) / 2, 0, 1);
         final latitudeRadius = math.max(math.cos(lat), 0.0);
-        final latitudeFactor = math.pow(latitudeRadius, spec.exponent).toDouble();
+        final latitudeFactor = math
+            .pow(latitudeRadius, spec.exponent)
+            .toDouble();
         final widthTaper = interpolate(0.46, 1.24, progress);
         final depthTaper = interpolate(0.7, 1.12, progress);
 
@@ -246,8 +256,11 @@ Vec3 surfacePoint(
         final latitudeFactor = math.pow(latitudeRadius, exponent).toDouble();
         final vertical = signedPow(math.sin(lat), exponent);
         final progress = clampDouble((vertical + 1) / 2, 0, 1);
-        final horizontalTaper =
-            interpolate(options.topScale ?? 0.82, 1.08, progress);
+        final horizontalTaper = interpolate(
+          options.topScale ?? 0.82,
+          1.08,
+          progress,
+        );
         final depthTaper = interpolate(0.92, 1.04, progress);
 
         return Vec3(
@@ -348,10 +361,7 @@ Vec3 surfaceNormal(
   );
 
   return normalize(
-    cross(
-      subtract(alongLongitude, center),
-      subtract(alongLatitude, center),
-    ),
+    cross(subtract(alongLongitude, center), subtract(alongLatitude, center)),
   );
 }
 

@@ -37,10 +37,10 @@ class FocusInsightService {
     required BreakHistoryService breakHistoryService,
     required FocusSessionService focusSessionService,
     required NotificationService notificationService,
-  })  : _storage = storage,
-        _breakHistoryService = breakHistoryService,
-        _focusSessionService = focusSessionService,
-        _notificationService = notificationService;
+  }) : _storage = storage,
+       _breakHistoryService = breakHistoryService,
+       _focusSessionService = focusSessionService,
+       _notificationService = notificationService;
 
   void start() {
     _checkTimer ??= Timer.periodic(_checkInterval, (_) => checkAndMaybeShow());

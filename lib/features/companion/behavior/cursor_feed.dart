@@ -17,7 +17,7 @@ import 'package:breakmate/core/native/native_bridge.dart';
 /// exactly when the old fixed 60 Hz timer was burning the most for nothing.
 class CursorFeed {
   CursorFeed({NativeBridgePlatform? bridge})
-      : _bridge = bridge ?? NativeBridge.instance;
+    : _bridge = bridge ?? NativeBridge.instance;
 
   static final CursorFeed instance = CursorFeed();
 

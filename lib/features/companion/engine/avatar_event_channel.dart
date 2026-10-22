@@ -5,8 +5,7 @@ import 'package:breakmate/features/companion/domain/avatar_animation_clip.dart';
 
 abstract class AvatarEvent {
   final DateTime timestamp;
-  AvatarEvent({DateTime? timestamp})
-      : timestamp = timestamp ?? DateTime.now();
+  AvatarEvent({DateTime? timestamp}) : timestamp = timestamp ?? DateTime.now();
 }
 
 class AvatarAnimationStartedEvent extends AvatarEvent {
@@ -112,13 +111,21 @@ class AvatarEventChannel {
       case 'click':
         final x = (data?['x'] as num?)?.toDouble();
         final y = (data?['y'] as num?)?.toDouble();
-        emit(AvatarTapEvent(position: x != null && y != null ? ui.Offset(x, y) : null));
+        emit(
+          AvatarTapEvent(
+            position: x != null && y != null ? ui.Offset(x, y) : null,
+          ),
+        );
         break;
       case 'double_tap':
       case 'double_click':
         final x = (data?['x'] as num?)?.toDouble();
         final y = (data?['y'] as num?)?.toDouble();
-        emit(AvatarDoubleTapEvent(position: x != null && y != null ? ui.Offset(x, y) : null));
+        emit(
+          AvatarDoubleTapEvent(
+            position: x != null && y != null ? ui.Offset(x, y) : null,
+          ),
+        );
         break;
       case 'proximity':
         final dist = (data?['distance'] as num?)?.toDouble() ?? 0.0;

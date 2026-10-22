@@ -81,7 +81,8 @@ class BreakStartWarningOverlay extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   ValueListenableBuilder<int>(
-                    valueListenable: remainingSecondsNotifier ??
+                    valueListenable:
+                        remainingSecondsNotifier ??
                         ValueNotifier<int>(durationSeconds),
                     builder: (context, remaining, _) {
                       final displaySec = remaining > 0 ? remaining : 1;

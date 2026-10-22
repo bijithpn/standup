@@ -14,13 +14,11 @@ import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 /// around breaks, and [close] when tracking stops. Each call returns any
 /// segment that just finished.
 class ActivitySegmentBuilder {
-  ActivitySegmentBuilder({
-    required Duration pollInterval,
-    Duration? maxGap,
-  })  : _pollInterval = pollInterval,
-        // Three missed polls is the point where "the loop is a little late"
-        // becomes "something stopped the machine".
-        _maxGap = maxGap ?? pollInterval * 3;
+  ActivitySegmentBuilder({required Duration pollInterval, Duration? maxGap})
+    : _pollInterval = pollInterval,
+      // Three missed polls is the point where "the loop is a little late"
+      // becomes "something stopped the machine".
+      _maxGap = maxGap ?? pollInterval * 3;
 
   final Duration _pollInterval;
   final Duration _maxGap;

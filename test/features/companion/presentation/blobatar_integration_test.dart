@@ -13,51 +13,54 @@ void main() {
       expect(blobatarTheme.type, equals(PetType.blobatar));
     });
 
-    testWidgets('BlobatarCompanionWidget dynamically updates when name changes',
-        (tester) async {
-      String currentName = 'Bubbles';
+    testWidgets(
+      'BlobatarCompanionWidget dynamically updates when name changes',
+      (tester) async {
+        String currentName = 'Bubbles';
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                return Column(
-                  children: [
-                    BlobatarCompanionWidget(
-                      name: currentName,
-                      size: 140,
-                      animate: BlobatarAnimate.hover,
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          currentName = 'Cosmo';
-                        });
-                      },
-                      child: const Text('Change Name'),
-                    ),
-                  ],
-                );
-              },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  return Column(
+                    children: [
+                      BlobatarCompanionWidget(
+                        name: currentName,
+                        size: 140,
+                        animate: BlobatarAnimate.hover,
+                      ),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            currentName = 'Cosmo';
+                          });
+                        },
+                        child: const Text('Change Name'),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final initialBlobatar = tester.widget<Blobatar>(find.byType(Blobatar));
-      expect(initialBlobatar.name, equals('Bubbles'));
+        final initialBlobatar = tester.widget<Blobatar>(find.byType(Blobatar));
+        expect(initialBlobatar.name, equals('Bubbles'));
 
-      // Tap button to change name
-      await tester.tap(find.text('Change Name'));
-      await tester.pump();
+        // Tap button to change name
+        await tester.tap(find.text('Change Name'));
+        await tester.pump();
 
-      final updatedBlobatar = tester.widget<Blobatar>(find.byType(Blobatar));
-      expect(updatedBlobatar.name, equals('Cosmo'));
-    });
+        final updatedBlobatar = tester.widget<Blobatar>(find.byType(Blobatar));
+        expect(updatedBlobatar.name, equals('Cosmo'));
+      },
+    );
 
-    testWidgets('Blobatar opens naming dialog on tap and saves new name',
-        (tester) async {
+    testWidgets('Blobatar opens naming dialog on tap and saves new name', (
+      tester,
+    ) async {
       String companionName = 'Blobby';
 
       await tester.pumpWidget(

@@ -133,10 +133,7 @@ class CompanionWindowManager {
       final primaryHeight = await _getPrimaryScreenHeight();
       targetY = primaryHeight - _currentPosition.dy - _currentSize.height;
     }
-    await _windowController.setPosition(
-      _currentPosition.dx,
-      targetY,
-    );
+    await _windowController.setPosition(_currentPosition.dx, targetY);
 
     await _windowController.setNonActivating(true);
 

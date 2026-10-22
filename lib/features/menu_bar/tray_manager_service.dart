@@ -165,7 +165,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     }
 
     final settingsRepo = _settingsRepo;
-    final selectedThemeId = settingsRepo?.currentSettings.companionPetTheme ?? 'cat';
+    final selectedThemeId =
+        settingsRepo?.currentSettings.companionPetTheme ?? 'cat';
     final theme = PetTheme.getTheme(selectedThemeId);
 
     _stateFramePaths.clear();
@@ -377,7 +378,8 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
     if (Platform.isWindows) return; // Windows uses static .ico, no animation
 
     final settingsRepo = _settingsRepo;
-    final selectedThemeId = settingsRepo?.currentSettings.companionPetTheme ?? 'cat';
+    final selectedThemeId =
+        settingsRepo?.currentSettings.companionPetTheme ?? 'cat';
     final theme = PetTheme.getTheme(selectedThemeId);
     final activeState = _determineActiveState();
     final config = theme.animations[activeState];

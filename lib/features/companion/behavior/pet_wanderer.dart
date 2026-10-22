@@ -82,9 +82,9 @@ class PetWanderer {
     required PetBehaviorEngine engine,
     math.Random? random,
     this.onArrived,
-  })  : _target = target,
-        _engine = engine,
-        _random = random ?? math.Random();
+  }) : _target = target,
+       _engine = engine,
+       _random = random ?? math.Random();
 
   /// The wanderer for the real companion window.
   factory PetWanderer.forWindow({
@@ -295,8 +295,10 @@ class PetWanderer {
       _to = target;
       _lastPosition = origin;
       _elapsed = 0;
-      _duration = ((target - origin).distance / _speed)
-          .clamp(_minJourneySeconds, _maxJourneySeconds);
+      _duration = ((target - origin).distance / _speed).clamp(
+        _minJourneySeconds,
+        _maxJourneySeconds,
+      );
     } catch (_) {
       // A display that vanished, a window that is already gone. Try later.
       _scheduleDwell();
@@ -349,7 +351,8 @@ class PetWanderer {
 
   void _scheduleDwell() {
     _dwellRemaining =
-        minDwellSeconds + _random.nextDouble() * (maxDwellSeconds - minDwellSeconds);
+        minDwellSeconds +
+        _random.nextDouble() * (maxDwellSeconds - minDwellSeconds);
   }
 
   // ── Where to go ───────────────────────────────────────────────────────────
@@ -394,8 +397,7 @@ class PetWanderer {
     if (displays.isEmpty) return null;
 
     final size = _target.size;
-    final centre =
-        _target.position + Offset(size.width / 2, size.height / 2);
+    final centre = _target.position + Offset(size.width / 2, size.height / 2);
 
     var best = displays.first;
     for (final display in displays) {

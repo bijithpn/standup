@@ -45,13 +45,13 @@ class WeeklyDigestService {
     required NotificationService notificationService,
     required AppUsageService usageService,
     required SettingsRepository settingsRepository,
-  })  : _storage = storage,
-        _statsService = statsService,
-        _focusSessionService = focusSessionService,
-        _streakService = streakService,
-        _notificationService = notificationService,
-        _usageService = usageService,
-        _settingsRepository = settingsRepository;
+  }) : _storage = storage,
+       _statsService = statsService,
+       _focusSessionService = focusSessionService,
+       _streakService = streakService,
+       _notificationService = notificationService,
+       _usageService = usageService,
+       _settingsRepository = settingsRepository;
 
   void start() {
     _checkTimer ??= Timer.periodic(_checkInterval, (_) => checkAndMaybeShow());
@@ -168,7 +168,8 @@ class WeeklyDigestService {
   /// [categoriesOverBudget], the same check [AppUsageSection] runs for
   /// today alone, once per day of the week.
   Map<AppCategory, int> _daysOverBudget(DateTime today) {
-    final budgetMinutes = _settingsRepository.currentSettings.categoryDailyBudgetMinutes;
+    final budgetMinutes =
+        _settingsRepository.currentSettings.categoryDailyBudgetMinutes;
     if (budgetMinutes.isEmpty) return const {};
 
     final counts = <AppCategory, int>{};
@@ -191,8 +192,8 @@ class WeeklyDigestService {
   String _weekKey(DateTime date) {
     final firstDayOfYear = DateTime(date.year, 1, 1);
     final daysSinceYearStart = date.difference(firstDayOfYear).inDays;
-    final weekNumber =
-        ((daysSinceYearStart + firstDayOfYear.weekday - 1) / 7).floor();
+    final weekNumber = ((daysSinceYearStart + firstDayOfYear.weekday - 1) / 7)
+        .floor();
     return '${date.year}-W$weekNumber';
   }
 

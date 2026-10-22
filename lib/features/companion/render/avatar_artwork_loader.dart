@@ -51,7 +51,8 @@ class AvatarArtworkLoader extends BytesLoader {
     final pending = _inFlight[recipe];
     if (pending != null) return pending;
 
-    final assetBundle = bundle ??
+    final assetBundle =
+        bundle ??
         (context == null ? rootBundle : DefaultAssetBundle.of(context));
 
     final future = _compile(assetBundle);

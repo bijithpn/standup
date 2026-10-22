@@ -180,12 +180,11 @@ class _LayersManagerTabState extends State<LayersManagerTab> {
                                     layer.assetPath,
                                     fit: BoxFit.contain,
                                     errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Icon(
-                                      CupertinoIcons.photo,
-                                      size: 14,
-                                      color: AppTheme.textMuted,
-                                    ),
+                                        (context, error, stackTrace) => Icon(
+                                          CupertinoIcons.photo,
+                                          size: 14,
+                                          color: AppTheme.textMuted,
+                                        ),
                                   ),
                                 ),
                               ),

@@ -63,7 +63,9 @@ List<ProductivityInsight> generateInsights({
   // Strongest evidence first, so a hedged possibility never sits above a
   // finding the data actually supports.
   insights.sort((left, right) {
-    final byConfidence = left.confidence.index.compareTo(right.confidence.index);
+    final byConfidence = left.confidence.index.compareTo(
+      right.confidence.index,
+    );
     if (byConfidence != 0) return byConfidence;
     return right.evidenceDayCount.compareTo(left.evidenceDayCount);
   });
@@ -89,7 +91,8 @@ ProductivityInsight? _busiestApplication(DailyProductivitySummary today) {
     id: 'today-busiest-app',
     type: InsightType.applicationPattern,
     title: app.appName,
-    description: '${_formatDuration(app.seconds)} today, '
+    description:
+        '${_formatDuration(app.seconds)} today, '
         '${(share * 100).round()}% of your active time, '
         'across ${app.sessionCount} '
         '${app.sessionCount == 1 ? 'session' : 'sessions'}.',
@@ -116,7 +119,8 @@ ProductivityInsight? _idleShare(DailyProductivitySummary today) {
     id: 'today-idle',
     type: InsightType.idleTime,
     title: 'Away from the keyboard',
-    description: '${_formatDuration(today.idleSeconds)} of the '
+    description:
+        '${_formatDuration(today.idleSeconds)} of the '
         '${_formatDuration(today.trackedSeconds)} tracked today was idle.',
     confidence: InsightConfidence.high,
     evidenceDayCount: 1,
@@ -138,7 +142,8 @@ ProductivityInsight? _fragmentedDay(DailyProductivitySummary today) {
     id: 'today-switching',
     type: InsightType.contextSwitching,
     title: 'Context switching',
-    description: '${today.contextSwitches} application switches today, '
+    description:
+        '${today.contextSwitches} application switches today, '
         'about ${rate.toStringAsFixed(1)} an hour.',
     confidence: InsightConfidence.high,
     evidenceDayCount: 1,
@@ -187,7 +192,8 @@ ProductivityInsight? _focusWindow(RangeProductivitySummary range) {
   if (bestStart < 0 || bestSeconds < 20 * 60) return null;
 
   final confidence = InsightEvidence.forDays(activeDays.length);
-  final window = '${_formatHour(bestStart)}–${_formatHour(bestStart + windowHours)}';
+  final window =
+      '${_formatHour(bestStart)}–${_formatHour(bestStart + windowHours)}';
 
   return ProductivityInsight(
     id: 'focus-window',
@@ -195,7 +201,7 @@ ProductivityInsight? _focusWindow(RangeProductivitySummary range) {
     title: 'Your busiest hours',
     description: confidence.isAssertable
         ? 'Most of your active time falls between $window, averaging '
-            '${_formatDuration(bestSeconds.round())} a day.'
+              '${_formatDuration(bestSeconds.round())} a day.'
         : 'Your active time so far leans toward $window.',
     confidence: confidence,
     evidenceDayCount: activeDays.length,
@@ -225,7 +231,8 @@ List<ProductivityInsight> _focusOpportunity(
       id: 'focus-opportunity',
       type: InsightType.focusOpportunity,
       title: 'Protect your best hours',
-      description: 'You are most active between '
+      description:
+          'You are most active between '
           '${_formatHour(startHour)} and ${_formatHour(endHour)}. '
           'Work you care about tends to go better scheduled here.',
       confidence: window.confidence,
@@ -269,10 +276,10 @@ ProductivityInsight? _afternoonSwitching(RangeProductivitySummary range) {
       title: 'Afternoon focus',
       description: confidence.isAssertable
           ? 'Your mornings run without switching applications, while '
-              'afternoons average ${afternoonRate.toStringAsFixed(1)} switches '
-              'an hour.'
+                'afternoons average ${afternoonRate.toStringAsFixed(1)} switches '
+                'an hour.'
           : 'Your mornings so far have run without switching applications, '
-              'unlike your afternoons.',
+                'unlike your afternoons.',
       confidence: confidence,
       evidenceDayCount: mornings.length,
       supportingData: <String, Object>{
@@ -295,9 +302,9 @@ ProductivityInsight? _afternoonSwitching(RangeProductivitySummary range) {
     title: 'Afternoon focus',
     description: confidence.isAssertable
         ? 'Your context switching runs $percent% $direction after '
-            '${_formatHour(kAfternoonStartHour)} than in the morning.'
+              '${_formatHour(kAfternoonStartHour)} than in the morning.'
         : 'Your afternoons appear to carry $percent% $direction context '
-            'switching than your mornings.',
+              'switching than your mornings.',
     confidence: confidence,
     evidenceDayCount: mornings.length,
     supportingData: <String, Object>{
@@ -328,10 +335,10 @@ ProductivityInsight? _breakRhythm(RangeProductivitySummary range) {
     title: 'Break rhythm',
     description: confidence.isAssertable
         ? 'You average ${_formatDuration(averageBreakSeconds)} of breaks '
-            'against ${_formatDuration(averageActiveSeconds)} of active time '
-            'a day.'
+              'against ${_formatDuration(averageActiveSeconds)} of active time '
+              'a day.'
         : 'So far you are averaging ${_formatDuration(averageBreakSeconds)} '
-            'of breaks a day.',
+              'of breaks a day.',
     confidence: confidence,
     evidenceDayCount: activeDays.length,
     supportingData: <String, Object>{

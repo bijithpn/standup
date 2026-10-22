@@ -24,8 +24,8 @@ class PetBehaviorEngine extends ChangeNotifier {
     CursorFeed? cursorFeed,
     math.Random? random,
     this.reducedMotion = false,
-  })  : _cursorFeed = cursorFeed ?? CursorFeed.instance,
-        _random = random ?? math.Random();
+  }) : _cursorFeed = cursorFeed ?? CursorFeed.instance,
+       _random = random ?? math.Random();
 
   final CursorFeed _cursorFeed;
   final math.Random _random;
@@ -440,8 +440,8 @@ class PetBehaviorEngine extends ChangeNotifier {
     final resting = _quietSeconds > _sleepAfter
         ? 0.04
         : _quietSeconds > _drowsyAfter
-            ? 0.14
-            : 0.3;
+        ? 0.14
+        : 0.3;
     final target = math.max(
       resting,
       math.max(
@@ -478,10 +478,7 @@ class PetBehaviorEngine extends ChangeNotifier {
       // Close up, the pet looks *at* the cursor rather than toward it.
       if (distance < _intimateRadius) {
         target = target * 1.35;
-        target = Offset(
-          target.dx.clamp(-1.0, 1.0),
-          target.dy.clamp(-1.0, 1.0),
-        );
+        target = Offset(target.dx.clamp(-1.0, 1.0), target.dy.clamp(-1.0, 1.0));
       }
 
       _setGazeTarget(target, snap: false);
@@ -620,7 +617,8 @@ class PetBehaviorEngine extends ChangeNotifier {
         _blinkTimer = _nextBlinkDelay();
       }
       _blink = math.max(_blink, value.clamp(0.0, 1.0));
-      if (_blinkProgress < 0) _blink = _quietSeconds > _drowsyAfter ? 0.45 : 0.0;
+      if (_blinkProgress < 0)
+        _blink = _quietSeconds > _drowsyAfter ? 0.45 : 0.0;
       return;
     }
 
@@ -711,7 +709,8 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     if (_startle > 0.25) return state(PetEmotion.startled, _startle);
     // A game outranks everything except a fright, and outlasts it too.
-    if (_playing > 0.2) return state(PetEmotion.excited, 0.55 + _playing * 0.45);
+    if (_playing > 0.2)
+      return state(PetEmotion.excited, 0.55 + _playing * 0.45);
     if (_quietSeconds > _sleepAfter) return state(PetEmotion.sleepy, 1.0);
     if (_delight > 0.25) {
       return state(PetEmotion.affectionate, 0.6 + _delight * 0.4);
@@ -804,10 +803,7 @@ class PetBehaviorEngine extends ChangeNotifier {
   }) {
     final ax = (target.dx - current.dx) * stiffness - velocity.dx * damping;
     final ay = (target.dy - current.dy) * stiffness - velocity.dy * damping;
-    final nextVelocity = Offset(
-      velocity.dx + ax * dt,
-      velocity.dy + ay * dt,
-    );
+    final nextVelocity = Offset(velocity.dx + ax * dt, velocity.dy + ay * dt);
     return (
       Offset(
         current.dx + nextVelocity.dx * dt,

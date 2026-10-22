@@ -35,9 +35,15 @@ class EnvironmentComponent extends PositionComponent
     backgroundImagePath = newPath;
     final cfg = EnvironmentThemeConfig.getByPath(newPath);
     try {
-      _skyImage = cfg.skyPath.isNotEmpty ? await PetAssetLoader.loadImage(cfg.skyPath) : null;
-      _groundImage = cfg.groundPath.isNotEmpty ? await PetAssetLoader.loadImage(cfg.groundPath) : null;
-      _cloudImage = cfg.cloudPath.isNotEmpty ? await PetAssetLoader.loadImage(cfg.cloudPath) : null;
+      _skyImage = cfg.skyPath.isNotEmpty
+          ? await PetAssetLoader.loadImage(cfg.skyPath)
+          : null;
+      _groundImage = cfg.groundPath.isNotEmpty
+          ? await PetAssetLoader.loadImage(cfg.groundPath)
+          : null;
+      _cloudImage = cfg.cloudPath.isNotEmpty
+          ? await PetAssetLoader.loadImage(cfg.cloudPath)
+          : null;
     } catch (e, st) {
       ErrorHandler().handleError(e, st);
     }

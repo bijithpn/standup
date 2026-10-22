@@ -67,7 +67,8 @@ class PetRegistryService {
         ),
         personality: PetPersonality.energetic,
         theme: theme,
-        avatarDefinition: theme.avatarDefinition ?? AvatarDefinition.fromSpecies(species),
+        avatarDefinition:
+            theme.avatarDefinition ?? AvatarDefinition.fromSpecies(species),
       );
       registerProfile(profile);
     }

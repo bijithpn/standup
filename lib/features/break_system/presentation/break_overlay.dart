@@ -118,7 +118,8 @@ class _BreakOverlayContent extends StatelessWidget {
             settings: settings,
             remaining: remaining,
             total: total,
-            onSkip: null, // OverlayChrome provides authoritative skip affordance
+            onSkip:
+                null, // OverlayChrome provides authoritative skip affordance
             pageController: pageController,
             kenBurnsController: kenBurnsController,
             exerciseTitle: controller.currentExerciseTitle,

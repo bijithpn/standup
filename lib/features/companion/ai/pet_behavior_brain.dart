@@ -9,7 +9,6 @@ class PetBehaviorBrain {
   final Map<PetState, DateTime> _lastStateTimes = {};
   final Map<PetState, int> _stateFrequency = {};
 
-
   PetState decideNextState(PetBehaviorContext context) {
     final candidates = _getCandidateStates(context);
 

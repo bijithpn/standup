@@ -118,19 +118,18 @@ class _ActivityTimelineViewState extends State<ActivityTimelineView> {
     );
   }
 
-  void _updateHover(
-    Offset position,
-    double width,
-    int startHour,
-    int endHour,
-  ) {
+  void _updateHover(Offset position, double width, int startHour, int endHour) {
     final span = (endHour - startHour) * 3600;
     if (span <= 0 || width <= 0) return;
 
     final secondsFromStart = (position.dx / width) * span;
     final at = widget.entries.first.startedAt;
-    final moment = DateTime(at.year, at.month, at.day, startHour)
-        .add(Duration(seconds: secondsFromStart.round()));
+    final moment = DateTime(
+      at.year,
+      at.month,
+      at.day,
+      startHour,
+    ).add(Duration(seconds: secondsFromStart.round()));
 
     TimelineEntry? found;
     for (final entry in widget.entries) {
@@ -323,7 +322,10 @@ class _TimelinePainter extends CustomPainter {
       )..layout();
 
       final labelX = math.min(x + 3, size.width - painter.width);
-      painter.paint(canvas, Offset(math.max(0, labelX), ribbonHeight + _ribbonGap));
+      painter.paint(
+        canvas,
+        Offset(math.max(0, labelX), ribbonHeight + _ribbonGap),
+      );
     }
   }
 

@@ -63,10 +63,7 @@ class _AboutSectionState extends State<AboutSection> {
           child: Column(
             children: [
               const SizedBox(height: 12),
-              const ThemedAppIcon.badge(
-                size: 72,
-                showDevBadge: true,
-              ),
+              const ThemedAppIcon.badge(size: 72, showDevBadge: true),
               const SizedBox(height: 16),
               ShaderMask(
                 shaderCallback: (bounds) => const LinearGradient(
@@ -172,9 +169,8 @@ class _AboutSectionState extends State<AboutSection> {
             null,
             CupertinoIcons.exclamationmark_triangle,
             null,
-            onTap: () => _launchUrl(
-              'https://github.com/bijithpn/standup/issues',
-            ),
+            onTap: () =>
+                _launchUrl('https://github.com/bijithpn/standup/issues'),
             trailing: Icon(
               CupertinoIcons.link,
               size: 14,

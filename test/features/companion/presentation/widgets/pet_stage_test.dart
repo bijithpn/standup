@@ -36,8 +36,9 @@ void main() {
   }
 
   group('PetStage', () {
-    testWidgets('draws the generative blob when a name is given',
-        (tester) async {
+    testWidgets('draws the generative blob when a name is given', (
+      tester,
+    ) async {
       await pumpStage(tester, blobName: 'Bubbles');
 
       expect(find.byType(Blobatar), findsOneWidget);
@@ -56,7 +57,9 @@ void main() {
       expect(find.byType(Avatar3DView), findsNothing);
     });
 
-    testWidgets('a blank blob name falls back to the companion', (tester) async {
+    testWidgets('a blank blob name falls back to the companion', (
+      tester,
+    ) async {
       await pumpStage(
         tester,
         blobName: '   ',
@@ -79,23 +82,19 @@ void main() {
       expect(find.byType(AvatarArtwork), findsNothing);
     });
 
-    testWidgets('renaming the blob rebuilds it under the new name',
-        (tester) async {
+    testWidgets('renaming the blob rebuilds it under the new name', (
+      tester,
+    ) async {
       await pumpStage(tester, blobName: 'Bubbles');
-      expect(
-        tester.widget<Blobatar>(find.byType(Blobatar)).name,
-        'Bubbles',
-      );
+      expect(tester.widget<Blobatar>(find.byType(Blobatar)).name, 'Bubbles');
 
       await pumpStage(tester, blobName: 'Cosmo');
-      expect(
-        tester.widget<Blobatar>(find.byType(Blobatar)).name,
-        'Cosmo',
-      );
+      expect(tester.widget<Blobatar>(find.byType(Blobatar)).name, 'Cosmo');
     });
 
-    testWidgets('a closed-eyed snapshot squeezes the blob\'s eyes shut',
-        (tester) async {
+    testWidgets('a closed-eyed snapshot squeezes the blob\'s eyes shut', (
+      tester,
+    ) async {
       await pumpStage(tester, blobName: 'Bubbles');
       final open = tester.widget<Blobatar>(find.byType(Blobatar)).expression;
 
@@ -136,14 +135,16 @@ void main() {
           definition: AvatarDefinition.fromSpecies(species),
         );
         // Whichever renderer claims it, exactly one must draw the pet.
-        final drawn = tester.widgetList(find.byType(Avatar3DView)).length +
+        final drawn =
+            tester.widgetList(find.byType(Avatar3DView)).length +
             tester.widgetList(find.byType(AvatarArtwork)).length;
         expect(drawn, 1, reason: '${species.name} drew $drawn companions');
       }
     });
 
-    testWidgets('every species the app offers has an authored 3D scene',
-        (tester) async {
+    testWidgets('every species the app offers has an authored 3D scene', (
+      tester,
+    ) async {
       final missing = AvatarSpecies.values
           .where((species) => !hasAvatarScene(species.name))
           .map((species) => species.name)

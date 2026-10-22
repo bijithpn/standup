@@ -37,8 +37,11 @@ void main() {
       final disabled = ProductivityConfig.production.copyWith(enabled: false);
 
       expect(disabled.enabled, isFalse);
-      expect(disabled.backgroundMonitoringEnabled, isTrue,
-          reason: 'copyWith must change only what it was asked to');
+      expect(
+        disabled.backgroundMonitoringEnabled,
+        isTrue,
+        reason: 'copyWith must change only what it was asked to',
+      );
     });
   });
 
@@ -61,7 +64,10 @@ void main() {
 
     test('an unrecognised value falls back to the default', () {
       expect(ActivityRetention.fromDays(13), ActivityRetention.defaultChoice);
-      expect(ActivityRetention.fromLabel('nope'), ActivityRetention.defaultChoice);
+      expect(
+        ActivityRetention.fromLabel('nope'),
+        ActivityRetention.defaultChoice,
+      );
     });
   });
 }

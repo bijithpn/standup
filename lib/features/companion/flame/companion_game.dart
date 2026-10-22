@@ -41,9 +41,9 @@ import 'package:breakmate/features/companion/flame/components/custom_layer_compo
 
 enum CompanionPowerTier {
   highPerformance, // 60 FPS: AC Power / Active
-  batteryBalanced,  // 30 FPS: On Battery (> 20%)
-  lowPower,         // 20 FPS: Low Battery (<= 20%) or Low Power Mode
-  backgroundEco,    // 10 FPS: App Inactive / Minimized
+  batteryBalanced, // 30 FPS: On Battery (> 20%)
+  lowPower, // 20 FPS: Low Battery (<= 20%) or Low Power Mode
+  backgroundEco, // 10 FPS: App Inactive / Minimized
 }
 
 class CompanionGame extends FlameGame {
@@ -196,8 +196,7 @@ class CompanionGame extends FlameGame {
   /// world coordinates equal screen coordinates 1:1.
   Offset? get petAnchorPoint {
     if (petComponent == null) return null;
-    final halfHeight =
-        (petComponent!.size.y * petComponent!.scale.y.abs()) / 2;
+    final halfHeight = (petComponent!.size.y * petComponent!.scale.y.abs()) / 2;
     return Offset(
       petComponent!.position.x,
       petComponent!.position.y - halfHeight,
@@ -378,7 +377,8 @@ class CompanionGame extends FlameGame {
       );
       _updateQuietModeBit(
         0x04,
-        event.isLowPowerMode || (event.isOnBattery && event.batteryLevel <= 0.20),
+        event.isLowPowerMode ||
+            (event.isOnBattery && event.batteryLevel <= 0.20),
       );
       return;
     } else if (event is IdleDetectedEvent) {
@@ -646,7 +646,8 @@ class CompanionGame extends FlameGame {
   void _applyPetStateToComponent(PetState state) {
     final animState = _mapPetStateToAnimationState(state);
     _currentAnimationState = animState;
-    final safeState = (petComponent?.animations?.containsKey(animState) == true ||
+    final safeState =
+        (petComponent?.animations?.containsKey(animState) == true ||
             _theme.isAvatar)
         ? animState
         : PetAnimationState.idle;
@@ -1041,7 +1042,8 @@ class CompanionGame extends FlameGame {
 
   double get minFrameDelta => 1.0 / targetFps;
 
-  bool get isThrottled => currentPowerTier != CompanionPowerTier.highPerformance;
+  bool get isThrottled =>
+      currentPowerTier != CompanionPowerTier.highPerformance;
 
   void updateEnergyStatus({
     bool? isOnBattery,
@@ -1365,20 +1367,30 @@ class CompanionGame extends FlameGame {
   Future<void> preCacheThemeAssets(EnvironmentThemeConfig config) async {
     try {
       // Pre-cache background images
-      if (config.skyPath.isNotEmpty) await PetAssetLoader.loadImage(config.skyPath);
-      if (config.groundPath.isNotEmpty) await PetAssetLoader.loadImage(config.groundPath);
-      if (config.cloudPath.isNotEmpty) await PetAssetLoader.loadImage(config.cloudPath);
+      if (config.skyPath.isNotEmpty)
+        await PetAssetLoader.loadImage(config.skyPath);
+      if (config.groundPath.isNotEmpty)
+        await PetAssetLoader.loadImage(config.groundPath);
+      if (config.cloudPath.isNotEmpty)
+        await PetAssetLoader.loadImage(config.cloudPath);
 
       // Pre-cache NPCs
-      if (config.birdAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.birdAsset.path);
-      if (config.rabbitIdleAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rabbitIdleAsset.path);
-      if (config.rabbitRunAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rabbitRunAsset.path);
+      if (config.birdAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.birdAsset.path);
+      if (config.rabbitIdleAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.rabbitIdleAsset.path);
+      if (config.rabbitRunAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.rabbitRunAsset.path);
 
       // Pre-cache decorations
-      if (config.mountainLeftAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.mountainLeftAsset.path);
-      if (config.mountainRightAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.mountainRightAsset.path);
-      if (config.rockLeftAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rockLeftAsset.path);
-      if (config.rockRightAsset.path.isNotEmpty) await PetAssetLoader.loadImage(config.rockRightAsset.path);
+      if (config.mountainLeftAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.mountainLeftAsset.path);
+      if (config.mountainRightAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.mountainRightAsset.path);
+      if (config.rockLeftAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.rockLeftAsset.path);
+      if (config.rockRightAsset.path.isNotEmpty)
+        await PetAssetLoader.loadImage(config.rockRightAsset.path);
 
       // Pre-cache dynamic layers
       for (final layer in config.layers) {

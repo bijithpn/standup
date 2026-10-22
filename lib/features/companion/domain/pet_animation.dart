@@ -11,11 +11,4 @@ enum PetAnimation {
   interact,
 }
 
-enum PetExpression {
-  neutral,
-  happy,
-  excited,
-  sleepy,
-  curious,
-  sad,
-}
+enum PetExpression { neutral, happy, excited, sleepy, curious, sad }

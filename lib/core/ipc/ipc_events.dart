@@ -21,9 +21,8 @@ sealed class IpcEvent with _$IpcEvent {
     required String title,
   }) = BreakStartedIpcEvent;
 
-  const factory IpcEvent.breakEnded({
-    required bool skipped,
-  }) = BreakEndedIpcEvent;
+  const factory IpcEvent.breakEnded({required bool skipped}) =
+      BreakEndedIpcEvent;
 
   const factory IpcEvent.companionInteraction({
     required String interactionType,
@@ -35,13 +34,11 @@ sealed class IpcEvent with _$IpcEvent {
     required String bundleId,
   }) = MeetingDetectedIpcEvent;
 
-  const factory IpcEvent.focusMode({
-    required bool isActive,
-  }) = FocusModeIpcEvent;
+  const factory IpcEvent.focusMode({required bool isActive}) =
+      FocusModeIpcEvent;
 
-  const factory IpcEvent.trayAction({
-    required String action,
-  }) = TrayActionIpcEvent;
+  const factory IpcEvent.trayAction({required String action}) =
+      TrayActionIpcEvent;
 
   const factory IpcEvent.companionClose() = CompanionCloseIpcEvent;
 
@@ -50,9 +47,8 @@ sealed class IpcEvent with _$IpcEvent {
     required double y,
   }) = CompanionPositionChangedIpcEvent;
 
-  const factory IpcEvent.companionStateChanged({
-    required String state,
-  }) = CompanionStateChangedIpcEvent;
+  const factory IpcEvent.companionStateChanged({required String state}) =
+      CompanionStateChangedIpcEvent;
 
   const factory IpcEvent.unknown({
     required String eventName,
@@ -63,20 +59,18 @@ sealed class IpcEvent with _$IpcEvent {
       _$IpcEventFromJson(json);
 
   String get eventName => when(
-        timerStateChanged: (_, _, _, _, _) =>
-            IpcEventNames.timerStateChanged,
-        breakStarted: (_, _, _) => IpcEventNames.breakStarted,
-        breakEnded: (_) => IpcEventNames.breakEnded,
-        companionInteraction: (_, _) => IpcEventNames.companionInteraction,
-        meetingDetected: (_, _) => IpcEventNames.detectionMeeting,
-        focusMode: (_) => IpcEventNames.detectionFocusMode,
-        trayAction: (_) => IpcEventNames.trayAction,
-        companionClose: () => IpcEventNames.companionClose,
-        companionPositionChanged: (_, _) =>
-            IpcEventNames.companionPositionChanged,
-        companionStateChanged: (_) => IpcEventNames.companionStateChanged,
-        unknown: (name, _) => name,
-      );
+    timerStateChanged: (_, _, _, _, _) => IpcEventNames.timerStateChanged,
+    breakStarted: (_, _, _) => IpcEventNames.breakStarted,
+    breakEnded: (_) => IpcEventNames.breakEnded,
+    companionInteraction: (_, _) => IpcEventNames.companionInteraction,
+    meetingDetected: (_, _) => IpcEventNames.detectionMeeting,
+    focusMode: (_) => IpcEventNames.detectionFocusMode,
+    trayAction: (_) => IpcEventNames.trayAction,
+    companionClose: () => IpcEventNames.companionClose,
+    companionPositionChanged: (_, _) => IpcEventNames.companionPositionChanged,
+    companionStateChanged: (_) => IpcEventNames.companionStateChanged,
+    unknown: (name, _) => name,
+  );
 
   Map<String, dynamic> get payload => (toJson()..remove('runtimeType'));
 

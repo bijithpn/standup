@@ -48,18 +48,24 @@ class _BlobatarCompanionWidgetState extends State<BlobatarCompanionWidget>
 
     _scaleAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 1.12)
-            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 1.12,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
         weight: 40,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.12, end: 0.95)
-            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        tween: Tween<double>(
+          begin: 1.12,
+          end: 0.95,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
         weight: 35,
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.95, end: 1.0)
-            .chain(CurveTween(curve: Curves.elasticOut)),
+        tween: Tween<double>(
+          begin: 0.95,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.elasticOut)),
         weight: 25,
       ),
     ]).animate(_bounceController);

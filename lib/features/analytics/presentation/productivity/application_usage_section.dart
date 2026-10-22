@@ -65,7 +65,9 @@ class ApplicationUsageList extends StatelessWidget {
             _ApplicationRow(
               app: shown[index],
               totalActiveSeconds: totalActiveSeconds,
-              onTap: onSelected == null ? null : () => onSelected!(shown[index]),
+              onTap: onSelected == null
+                  ? null
+                  : () => onSelected!(shown[index]),
             ),
           ],
         ],
@@ -87,8 +89,9 @@ class _ApplicationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final share =
-        totalActiveSeconds == 0 ? 0.0 : app.seconds / totalActiveSeconds;
+    final share = totalActiveSeconds == 0
+        ? 0.0
+        : app.seconds / totalActiveSeconds;
     final colour = categoryColor(app.categoryName);
 
     return InkWell(
@@ -197,8 +200,9 @@ class ApplicationDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final share =
-        totalActiveSeconds == 0 ? 0.0 : app.seconds / totalActiveSeconds;
+    final share = totalActiveSeconds == 0
+        ? 0.0
+        : app.seconds / totalActiveSeconds;
 
     return Container(
       constraints: const BoxConstraints(maxHeight: 560),
@@ -273,7 +277,10 @@ class ApplicationDetailSheet extends StatelessWidget {
                       label: 'Share',
                       value: '${(share * 100).round()}%',
                     ),
-                    _DetailStat(label: 'Sessions', value: '${app.sessionCount}'),
+                    _DetailStat(
+                      label: 'Sessions',
+                      value: '${app.sessionCount}',
+                    ),
                     _DetailStat(
                       label: 'Average',
                       value: formatDuration(app.averageSessionSeconds),
@@ -292,8 +299,10 @@ class ApplicationDetailSheet extends StatelessWidget {
                     _HistoryRow(
                       label: shortWeekday(entry.key),
                       seconds: entry.value,
-                      peakSeconds: historyByDate.values
-                          .fold<int>(0, (a, b) => b > a ? b : a),
+                      peakSeconds: historyByDate.values.fold<int>(
+                        0,
+                        (a, b) => b > a ? b : a,
+                      ),
                     ),
                 ],
                 if (segments.isNotEmpty) ...<Widget>[

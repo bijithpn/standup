@@ -465,9 +465,12 @@ class SettingsModel {
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
           pipDraggableClickable ?? this.pipDraggableClickable,
-      hydrationReminderEnabled: hydrationReminderEnabled ?? this.hydrationReminderEnabled,
-      stretchReminderEnabled: stretchReminderEnabled ?? this.stretchReminderEnabled,
-      standUpReminderEnabled: standUpReminderEnabled ?? this.standUpReminderEnabled,
+      hydrationReminderEnabled:
+          hydrationReminderEnabled ?? this.hydrationReminderEnabled,
+      stretchReminderEnabled:
+          stretchReminderEnabled ?? this.stretchReminderEnabled,
+      standUpReminderEnabled:
+          standUpReminderEnabled ?? this.standUpReminderEnabled,
       companionToyType: companionToyType ?? this.companionToyType,
       companionTreatType: companionTreatType ?? this.companionTreatType,
       templateAccentOverrides:
@@ -656,18 +659,15 @@ class SettingsModel {
       companionWanderingEnabled:
           map['companionWanderingEnabled'] as bool? ?? true,
       companionPreviewBackground:
-          map['companionPreviewBackground'] as String? ??
-          '',
+          map['companionPreviewBackground'] as String? ?? '',
       unlockedPets:
           (map['unlockedPets'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
       companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
-      companionAvatarDefinition:
-          map['companionAvatarDefinition'] as String?,
-      companionKeepOnScreen:
-          map['companionKeepOnScreen'] as bool? ?? true,
+      companionAvatarDefinition: map['companionAvatarDefinition'] as String?,
+      companionKeepOnScreen: map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
       ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
       treatEnabled: map['treatEnabled'] as bool? ?? true,
@@ -696,7 +696,8 @@ class SettingsModel {
       pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'transparent',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
-      hydrationReminderEnabled: map['hydrationReminderEnabled'] as bool? ?? false,
+      hydrationReminderEnabled:
+          map['hydrationReminderEnabled'] as bool? ?? false,
       stretchReminderEnabled: map['stretchReminderEnabled'] as bool? ?? false,
       standUpReminderEnabled: map['standUpReminderEnabled'] as bool? ?? false,
       companionToyType: map['companionToyType'] as String? ?? 'tennis_ball',

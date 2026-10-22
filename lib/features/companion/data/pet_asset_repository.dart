@@ -48,4 +48,3 @@ class PetAssetRepository {
     return asset;
   }
 }
-

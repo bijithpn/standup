@@ -60,7 +60,9 @@ class ThemeController extends ChangeNotifier {
     _customAccent = color;
     AppTheme.applyCustomAccent(_customAccent);
     notifyListeners();
-    unawaited(_storage.setInt(_kCustomAccentStorageKey, color?.toARGB32() ?? 0));
+    unawaited(
+      _storage.setInt(_kCustomAccentStorageKey, color?.toARGB32() ?? 0),
+    );
   }
 
   Future<void> resetToDefault() async {
@@ -68,7 +70,9 @@ class ThemeController extends ChangeNotifier {
     _customAccent = null;
     _applyCurrentPreset();
     notifyListeners();
-    unawaited(_storage.setString(_kPresetStorageKey, AppThemePreset.nordicSlate.id));
+    unawaited(
+      _storage.setString(_kPresetStorageKey, AppThemePreset.nordicSlate.id),
+    );
     unawaited(_storage.setInt(_kCustomAccentStorageKey, 0));
   }
 
@@ -114,7 +118,9 @@ class ThemeController extends ChangeNotifier {
 
     final hour = DateTime.now().hour;
     final isEvening = hour >= 19 || hour < 7;
-    return isEvening ? AppThemePreset.solarizedAmber : AppThemePreset.nordicSlate;
+    return isEvening
+        ? AppThemePreset.solarizedAmber
+        : AppThemePreset.nordicSlate;
   }
 
   /// Syncs the main window's native blur/vibrancy with the selected preset.
@@ -127,7 +133,9 @@ class ThemeController extends ChangeNotifier {
     try {
       if (preset.id == AppThemePreset.nativeVibrancy.id) {
         await Window.setEffect(
-          effect: Platform.isMacOS ? WindowEffect.sidebar : WindowEffect.acrylic,
+          effect: Platform.isMacOS
+              ? WindowEffect.sidebar
+              : WindowEffect.acrylic,
           dark: preset.isDark,
         );
       } else {

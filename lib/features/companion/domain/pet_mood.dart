@@ -19,9 +19,12 @@ extension PetMoodCalculator on PetMood {
   static PetMood fromNeeds(PetNeeds needs) {
     if (needs.breakMode) return PetMood.happy;
     if (needs.energyLevel <= 20.0 || needs.energy <= 0.20) return PetMood.tired;
-    if (needs.hunger > 75.0 || needs.hungerNormalized > 0.75) return PetMood.hungry;
-    if (needs.boredom > 70.0 || needs.boredomNormalized > 0.70) return PetMood.bored;
-    if (needs.happiness > 80.0 || needs.happinessNormalized > 0.80) return PetMood.happy;
+    if (needs.hunger > 75.0 || needs.hungerNormalized > 0.75)
+      return PetMood.hungry;
+    if (needs.boredom > 70.0 || needs.boredomNormalized > 0.70)
+      return PetMood.bored;
+    if (needs.happiness > 80.0 || needs.happinessNormalized > 0.80)
+      return PetMood.happy;
     if (needs.focusMode) return PetMood.relaxed;
     if (needs.affection > 0.7) return PetMood.affectionate;
     if (needs.playfulness > 0.7) return PetMood.playful;
@@ -105,4 +108,3 @@ class PetMoodState {
     );
   }
 }
-

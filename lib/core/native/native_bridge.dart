@@ -663,4 +663,3 @@ class NativeBridge {
   static Future<void> hideCustomizerViewport() =>
       _platform.hideCustomizerViewport();
 }
-

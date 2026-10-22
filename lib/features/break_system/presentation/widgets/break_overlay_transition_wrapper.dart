@@ -20,7 +20,8 @@ class BreakOverlayTransitionWrapper extends StatefulWidget {
     BuildContext context,
     PageController pageController,
     AnimationController kenBurnsController,
-  ) builder;
+  )
+  builder;
 
   const BreakOverlayTransitionWrapper({
     super.key,
@@ -35,7 +36,8 @@ class BreakOverlayTransitionWrapper extends StatefulWidget {
 }
 
 class _BreakOverlayTransitionWrapperState
-    extends State<BreakOverlayTransitionWrapper> with TickerProviderStateMixin {
+    extends State<BreakOverlayTransitionWrapper>
+    with TickerProviderStateMixin {
   late PageController _pageController;
   int _currentSlide = 0;
   Timer? _slideshowTimer;
@@ -121,7 +123,8 @@ class _BreakOverlayTransitionWrapperState
   }
 
   void _startSlideshow() {
-    if (_slideshowTimer != null || AppConstants.wellnessSlideshow.isEmpty) return;
+    if (_slideshowTimer != null || AppConstants.wellnessSlideshow.isEmpty)
+      return;
     _slideshowTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (!mounted) return;
       setState(() {
@@ -143,7 +146,10 @@ class _BreakOverlayTransitionWrapperState
     _classicEffectsRunning = enabled;
     if (enabled) {
       _startSlideshow();
-      _kenBurnsController.repeatUnlessReducedMotion(reverse: true, staticValue: 0);
+      _kenBurnsController.repeatUnlessReducedMotion(
+        reverse: true,
+        staticValue: 0,
+      );
     } else {
       _slideshowTimer?.cancel();
       _slideshowTimer = null;

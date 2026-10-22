@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/shared/shared.dart';
 import 'package:breakmate/features/companion/presentation/environment_builder/environment_builder_controller.dart';
 
-
 class ActionBar extends StatefulWidget {
   final EnvironmentBuilderController ctrl;
 

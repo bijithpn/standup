@@ -261,10 +261,7 @@ class GeneralSection extends StatelessWidget {
                 children: [
                   Text(
                     e.value,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppTheme.textMuted,
-                    ),
+                    style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                   ),
                   const SizedBox(height: 4),
                   GestureDetector(

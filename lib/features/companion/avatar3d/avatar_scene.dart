@@ -92,11 +92,11 @@ class AvatarPart {
   final double cutAngle;
 
   ShapeOptions get shapeOptions => ShapeOptions(
-        bottomTaper: bottomTaper,
-        cutAngle: cutAngle,
-        roundness: roundness,
-        topScale: topScale,
-      );
+    bottomTaper: bottomTaper,
+    cutAngle: cutAngle,
+    roundness: roundness,
+    topScale: topScale,
+  );
 
   static AvatarPart? fromJson(Map<String, dynamic> json) {
     final id = json['id'];
@@ -128,8 +128,9 @@ class AvatarPart {
       roundness: json['roundness'] is num
           ? (json['roundness'] as num).toDouble()
           : null,
-      topScale:
-          json['topScale'] is num ? (json['topScale'] as num).toDouble() : null,
+      topScale: json['topScale'] is num
+          ? (json['topScale'] as num).toDouble()
+          : null,
       bottomTaper: _toDouble(json['bottomTaper'], 0),
       cutAngle: _toDouble(json['cutAngle'], 0),
     );
@@ -198,8 +199,11 @@ class AvatarOutlineStyle {
   final double opacity;
   final double width;
 
-  static const AvatarOutlineStyle none =
-      AvatarOutlineStyle(color: Color(0xFF000000), opacity: 0, width: 0);
+  static const AvatarOutlineStyle none = AvatarOutlineStyle(
+    color: Color(0xFF000000),
+    opacity: 0,
+    width: 0,
+  );
 
   static AvatarOutlineStyle fromJson(Map<String, dynamic>? json) {
     if (json == null) return none;
@@ -452,8 +456,9 @@ class AvatarFaceStyle {
   static AvatarFaceStyle fromJson(Map<String, dynamic>? json) {
     if (json == null) return const AvatarFaceStyle();
     final highlight = json['eyeHighlight'];
-    final highlightMap =
-        highlight is Map ? Map<String, dynamic>.from(highlight) : null;
+    final highlightMap = highlight is Map
+        ? Map<String, dynamic>.from(highlight)
+        : null;
 
     return AvatarFaceStyle(
       gap: _toDouble(json['gap'], 42),

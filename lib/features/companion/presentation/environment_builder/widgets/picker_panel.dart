@@ -126,7 +126,9 @@ class _PickerPanelState extends State<PickerPanel> {
                   Icon(
                     tab.icon,
                     size: 18,
-                    color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
+                    color: isSelected
+                        ? AppTheme.accent
+                        : AppTheme.textSecondary,
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -134,8 +136,12 @@ class _PickerPanelState extends State<PickerPanel> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 10,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? AppTheme.textPrimary : AppTheme.textSecondary,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? AppTheme.textPrimary
+                          : AppTheme.textSecondary,
                       fontFamily: 'Inter',
                     ),
                   ),
@@ -288,8 +294,10 @@ class _PickerPanelState extends State<PickerPanel> {
             AssetPickerSection(
               label: 'Configure ${_getToyLabel(_selectedToyKey)}',
               paths: ['none', ...ctrl.toyPaths],
-              selectedPath: d.toyPaths[_selectedToyKey] ??
-                  (EnvironmentAssetCatalogue.toys[_selectedToyKey]?.path ?? 'none'),
+              selectedPath:
+                  d.toyPaths[_selectedToyKey] ??
+                  (EnvironmentAssetCatalogue.toys[_selectedToyKey]?.path ??
+                      'none'),
               onSelected: (p) => ctrl.updateToy(_selectedToyKey, p),
             ),
             _sectionDivider(),
@@ -305,8 +313,10 @@ class _PickerPanelState extends State<PickerPanel> {
             AssetPickerSection(
               label: 'Configure ${_getFoodLabel(_selectedFoodKey)}',
               paths: ['none', ...ctrl.foodPaths],
-              selectedPath: d.foodPaths[_selectedFoodKey] ??
-                  (EnvironmentAssetCatalogue.foods[_selectedFoodKey]?.path ?? 'none'),
+              selectedPath:
+                  d.foodPaths[_selectedFoodKey] ??
+                  (EnvironmentAssetCatalogue.foods[_selectedFoodKey]?.path ??
+                      'none'),
               onSelected: (p) => ctrl.updateFood(_selectedFoodKey, p),
             ),
           ],

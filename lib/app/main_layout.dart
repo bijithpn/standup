@@ -173,7 +173,9 @@ class _MainLayoutState extends State<MainLayout> {
     final currentSection = _canonicalSection(
       _navigationService.selectedSection.value,
     );
-    final initialIndex = _allItems.indexWhere((item) => item.section == currentSection);
+    final initialIndex = _allItems.indexWhere(
+      (item) => item.section == currentSection,
+    );
     if (initialIndex != -1) {
       _pageIndex = initialIndex;
     }
@@ -189,9 +191,7 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _handleExternalNavigation() {
-    final section = _canonicalSection(
-      _navigationService.selectedSection.value,
-    );
+    final section = _canonicalSection(_navigationService.selectedSection.value);
     final index = _allItems.indexWhere((item) => item.section == section);
     if (index != -1 && index != _pageIndex && mounted) {
       setState(() => _pageIndex = index);
@@ -541,8 +541,7 @@ class _SidebarContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ThemedAppIcon.badge(size: 72, showDevBadge: true,
-          ),
+          const ThemedAppIcon.badge(size: 72, showDevBadge: true),
           const SizedBox(height: 14),
           RichText(
             text: TextSpan(

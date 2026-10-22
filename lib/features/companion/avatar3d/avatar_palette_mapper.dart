@@ -82,8 +82,10 @@ Map<int, Color> _buildSubstitutions(
   final inkCandidates = <int>{};
 
   for (final part in scene.parts) {
-    final volume =
-        (part.scaleX * part.scaleY * part.scaleZ).abs().clamp(0.0001, 100.0);
+    final volume = (part.scaleX * part.scaleY * part.scaleZ).abs().clamp(
+      0.0001,
+      100.0,
+    );
     void add(Color colour, double weight) {
       final key = colour.toARGB32();
       coverage[key] = (coverage[key] ?? 0) + volume * weight;
@@ -121,13 +123,18 @@ Map<int, Color> _buildSubstitutions(
 
     // Ink stays ink. Eyes and outlines drawn in the body colour would erase
     // the face entirely.
-    if (inkCandidates.contains(key) && ink != null && _luminance(source) < 0.4) {
+    if (inkCandidates.contains(key) &&
+        ink != null &&
+        _luminance(source) < 0.4) {
       substitutions[key] = _reshade(source, ink, strength * 0.7);
       continue;
     }
 
-    substitutions[key] =
-        _reshade(source, roles[roleIndex % roles.length], strength);
+    substitutions[key] = _reshade(
+      source,
+      roles[roleIndex % roles.length],
+      strength,
+    );
     roleIndex++;
   }
 
@@ -196,8 +203,9 @@ class _Hsl {
     if (maxV == minV) return _Hsl(0, 0, lightness);
 
     final d = maxV - minV;
-    final saturation =
-        lightness > 0.5 ? d / (2 - maxV - minV) : d / (maxV + minV);
+    final saturation = lightness > 0.5
+        ? d / (2 - maxV - minV)
+        : d / (maxV + minV);
     double hue;
     if (maxV == r) {
       hue = (g - b) / d + (g < b ? 6 : 0);

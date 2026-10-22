@@ -115,7 +115,10 @@ class AvatarSceneStyle {
             opacity: scene.outlineStyle.opacity,
             // Scenes that shipped without an outline have nothing to scale, so
             // asking for a heavier one has to start from a real weight.
-            width: (scene.outlineStyle.width == 0 ? 2.0 : scene.outlineStyle.width) *
+            width:
+                (scene.outlineStyle.width == 0
+                    ? 2.0
+                    : scene.outlineStyle.width) *
                 width.clamp(minOutlineWidth, maxOutlineWidth),
           );
 
@@ -135,7 +138,10 @@ class AvatarSceneStyle {
     final scale = faceScale?.clamp(minFaceScale, maxFaceScale);
     final spacing = eyeSpacing?.clamp(minEyeSpacing, maxEyeSpacing);
 
-    if (scale == null && spacing == null && eyeSparkle == null && nose == null) {
+    if (scale == null &&
+        spacing == null &&
+        eyeSparkle == null &&
+        nose == null) {
       return face;
     }
 
@@ -159,16 +165,16 @@ class AvatarSceneStyle {
   /// The form this is stored and transmitted in. Unchanged fields are left
   /// out entirely.
   Map<String, dynamic> toJson() => <String, dynamic>{
-        if (showOutline != null) 'showOutline': showOutline,
-        if (outlineWidth != null) 'outlineWidth': outlineWidth,
-        if (showShadow != null) 'showShadow': showShadow,
-        if (lightAzimuth != null) 'lightAzimuth': lightAzimuth,
-        if (lightElevation != null) 'lightElevation': lightElevation,
-        if (faceScale != null) 'faceScale': faceScale,
-        if (eyeSpacing != null) 'eyeSpacing': eyeSpacing,
-        if (eyeSparkle != null) 'eyeSparkle': eyeSparkle,
-        if (nose != null) 'nose': nose,
-      };
+    if (showOutline != null) 'showOutline': showOutline,
+    if (outlineWidth != null) 'outlineWidth': outlineWidth,
+    if (showShadow != null) 'showShadow': showShadow,
+    if (lightAzimuth != null) 'lightAzimuth': lightAzimuth,
+    if (lightElevation != null) 'lightElevation': lightElevation,
+    if (faceScale != null) 'faceScale': faceScale,
+    if (eyeSpacing != null) 'eyeSpacing': eyeSpacing,
+    if (eyeSparkle != null) 'eyeSparkle': eyeSparkle,
+    if (nose != null) 'nose': nose,
+  };
 
   static AvatarSceneStyle fromJson(Map<String, dynamic>? json) {
     if (json == null || json.isEmpty) return authored;
@@ -203,16 +209,16 @@ class AvatarSceneStyle {
 
   @override
   int get hashCode => Object.hash(
-        showOutline,
-        outlineWidth,
-        showShadow,
-        lightAzimuth,
-        lightElevation,
-        faceScale,
-        eyeSpacing,
-        eyeSparkle,
-        nose,
-      );
+    showOutline,
+    outlineWidth,
+    showShadow,
+    lightAzimuth,
+    lightElevation,
+    faceScale,
+    eyeSpacing,
+    eyeSparkle,
+    nose,
+  );
 }
 
 /// Where the style lives inside an [AvatarDefinition]'s free-form part map.

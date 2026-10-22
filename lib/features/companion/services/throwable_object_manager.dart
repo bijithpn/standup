@@ -49,7 +49,6 @@ class ThrowableObjectManager {
     }
   }
 
-
   PhysicsEntityId? spawnThrowable(
     Offset releasePoint,
     Offset dragVector, {

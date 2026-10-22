@@ -51,14 +51,15 @@ class AvatarArtworkRecipe {
 
   @override
   int get hashCode => Object.hash(
-        assetKey,
-        transparentBackdrop,
-        palette,
-        paletteStrength,
-        centerContent,
-      );
+    assetKey,
+    transparentBackdrop,
+    palette,
+    paletteStrength,
+    centerContent,
+  );
 
   @override
-  String toString() => 'AvatarArtworkRecipe($assetKey, '
+  String toString() =>
+      'AvatarArtworkRecipe($assetKey, '
       'transparent: $transparentBackdrop, palette: ${palette?.name})';
 }

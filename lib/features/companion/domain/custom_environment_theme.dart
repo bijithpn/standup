@@ -477,9 +477,7 @@ class EnvironmentAssetCatalogue {
   ];
 
   static const List<ThemeAssetConfig> mountains = [
-    ThemeAssetConfig(
-      path: '',
-    ),
+    ThemeAssetConfig(path: ''),
     ThemeAssetConfig(path: ''),
     ThemeAssetConfig(path: ''),
     ThemeAssetConfig(path: ''),
@@ -570,18 +568,10 @@ class EnvironmentAssetCatalogue {
   ];
 
   static const Map<String, ThemeAssetConfig> toys = {
-    'tennis_ball': ThemeAssetConfig(
-      path: '',
-    ),
-    'base_ball': ThemeAssetConfig(
-      path: '',
-    ),
-    'basket_ball': ThemeAssetConfig(
-      path: '',
-    ),
-    'football': ThemeAssetConfig(
-      path: '',
-    ),
+    'tennis_ball': ThemeAssetConfig(path: ''),
+    'base_ball': ThemeAssetConfig(path: ''),
+    'basket_ball': ThemeAssetConfig(path: ''),
+    'football': ThemeAssetConfig(path: ''),
   };
 
   static const Map<String, ThemeAssetConfig> foods = {

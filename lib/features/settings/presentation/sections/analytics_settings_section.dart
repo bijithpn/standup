@@ -177,7 +177,11 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         return AnimatedBuilder(
           animation: sl<FocusStreakService>(),
           builder: (context, _) {
-            return Consumer3<AppUsageService, FocusSessionService, BreakHistoryService>(
+            return Consumer3<
+              AppUsageService,
+              FocusSessionService,
+              BreakHistoryService
+            >(
               builder: (context, usageService, focusService, breakHistory, _) {
                 final correlation = BreakFocusCorrelation.compute(
                   events: breakHistory.events,
@@ -361,8 +365,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           const SizedBox(height: 28),
           sectionHeader(
             'Focus Trend',
-            subtitle:
-                'Daily focus score over the last $_focusTrendDays days.',
+            subtitle: 'Daily focus score over the last $_focusTrendDays days.',
           ),
           const SizedBox(height: 12),
           _buildFocusTrendSection(),
@@ -476,7 +479,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                       Text(
                         current > 0
                             ? '$current-day focus streak'
-                                '${highest != null ? ' · ${highest.label}' : ''}'
+                                  '${highest != null ? ' · ${highest.label}' : ''}'
                             : 'No focus streak yet',
                         style: TextStyle(
                           color: AppTheme.textPrimary,
@@ -484,7 +487,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (next != null && daysToNext != null && daysToNext > 0) ...[
+                      if (next != null &&
+                          daysToNext != null &&
+                          daysToNext > 0) ...[
                         const SizedBox(height: 2),
                         Text(
                           '$daysToNext day${daysToNext == 1 ? '' : 's'} to '

@@ -81,7 +81,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
           final Map<dynamic, dynamic>? args =
               call.arguments as Map<dynamic, dynamic>?;
           if (args != null) {
-            _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(args)));
+            _applySettings(
+              OverlayConfig.fromJson(Map<String, dynamic>.from(args)),
+            );
           }
           break;
       }
@@ -94,7 +96,9 @@ class _CompanionOverlayWindowState extends State<CompanionOverlayWindow> {
         'getInitialSettings',
       );
       if (result != null) {
-        _applySettings(OverlayConfig.fromJson(Map<String, dynamic>.from(result)));
+        _applySettings(
+          OverlayConfig.fromJson(Map<String, dynamic>.from(result)),
+        );
         EventBus.instance.emit(
           CompanionInteractionEvent(
             interactionType: 'init',

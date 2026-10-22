@@ -835,7 +835,8 @@ class PetAssetLoader {
         try {
           final bytes = await rootBundle.load(assetPath);
           final file = File(outputPath);
-          if (!file.parent.existsSync()) file.parent.createSync(recursive: true);
+          if (!file.parent.existsSync())
+            file.parent.createSync(recursive: true);
           file.writeAsBytesSync(bytes.buffer.asUint8List(), flush: true);
           return file.path;
         } catch (e, st) {

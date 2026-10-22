@@ -264,4 +264,3 @@ class BatteryStateChangedEvent extends AppEvent {
     super.timestamp,
   });
 }
-

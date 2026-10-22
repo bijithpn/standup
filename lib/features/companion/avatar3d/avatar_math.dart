@@ -56,10 +56,10 @@ Vec3 subtract(Vec3 left, Vec3 right) =>
     Vec3(left.x - right.x, left.y - right.y, left.z - right.z);
 
 Vec3 cross(Vec3 left, Vec3 right) => Vec3(
-      left.y * right.z - left.z * right.y,
-      left.z * right.x - left.x * right.z,
-      left.x * right.y - left.y * right.x,
-    );
+  left.y * right.z - left.z * right.y,
+  left.z * right.x - left.x * right.z,
+  left.x * right.y - left.y * right.x,
+);
 
 /// The camera rotation: yaw about the vertical axis, then pitch.
 Vec3 rotateByPose(Vec3 point, double yaw, double pitch) {

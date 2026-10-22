@@ -32,7 +32,8 @@ class FocusSessionDetector {
       return _closeSession();
     }
 
-    final gapExceeded = _lastTick != null && now.difference(_lastTick!) > maxGap;
+    final gapExceeded =
+        _lastTick != null && now.difference(_lastTick!) > maxGap;
     if (_activeCategory != category || gapExceeded) {
       final closed = _closeSession();
       _activeCategory = category;
@@ -60,6 +61,10 @@ class FocusSessionDetector {
     if (category == null || start == null || end == null) return null;
     final duration = end.difference(start).inSeconds;
     if (duration < minDurationSeconds) return null;
-    return FocusSession(category: category, start: start, durationSeconds: duration);
+    return FocusSession(
+      category: category,
+      start: start,
+      durationSeconds: duration,
+    );
   }
 }

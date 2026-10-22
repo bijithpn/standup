@@ -160,14 +160,14 @@ class RangeProductivitySummary {
   final Map<String, int> categorySeconds;
 
   static RangeProductivitySummary empty() => const RangeProductivitySummary(
-        days: <DailyProductivitySummary>[],
-        activeSeconds: 0,
-        idleSeconds: 0,
-        breakSeconds: 0,
-        contextSwitches: 0,
-        apps: <AppTotal>[],
-        categorySeconds: <String, int>{},
-      );
+    days: <DailyProductivitySummary>[],
+    activeSeconds: 0,
+    idleSeconds: 0,
+    breakSeconds: 0,
+    contextSwitches: 0,
+    apps: <AppTotal>[],
+    categorySeconds: <String, int>{},
+  );
 
   bool get hasActivity => days.any((day) => day.hasActivity);
 

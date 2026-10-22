@@ -7,25 +7,24 @@ import 'package:breakmate/features/themes/domain/app_theme_preset.dart';
 
 void main() {
   group('ThemedAppIcon', () {
-    testWidgets('renders SvgPicture with active theme accent color by default',
-        (tester) async {
-      AppTheme.applyPreset(AppThemePreset.nordicSlate);
+    testWidgets(
+      'renders SvgPicture with active theme accent color by default',
+      (tester) async {
+        AppTheme.applyPreset(AppThemePreset.nordicSlate);
 
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ThemedAppIcon(size: 64),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: ThemedAppIcon(size: 64))),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.byType(ThemedAppIcon), findsOneWidget);
-      expect(find.byType(SvgPicture), findsOneWidget);
-    });
+        expect(find.byType(ThemedAppIcon), findsOneWidget);
+        expect(find.byType(SvgPicture), findsOneWidget);
+      },
+    );
 
-    testWidgets('generates SVG string containing correct hex color',
-        (tester) async {
+    testWidgets('generates SVG string containing correct hex color', (
+      tester,
+    ) async {
       const testColor = Color(0xFF38BDF8);
       final svgStr = ThemedAppIcon.generateSvgString(color: testColor);
 
@@ -39,25 +38,21 @@ void main() {
 
       await tester.pumpWidget(
         const MaterialApp(
-          home: Scaffold(
-            body: ThemedAppIcon(size: 48, color: customColor),
-          ),
+          home: Scaffold(body: ThemedAppIcon(size: 48, color: customColor)),
         ),
       );
       await tester.pumpAndSettle();
 
-      final themedIcon = tester.widget<ThemedAppIcon>(find.byType(ThemedAppIcon));
+      final themedIcon = tester.widget<ThemedAppIcon>(
+        find.byType(ThemedAppIcon),
+      );
       expect(themedIcon.color, equals(customColor));
       expect(find.byType(SvgPicture), findsOneWidget);
     });
 
     testWidgets('renders in badge mode with styled container', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: ThemedAppIcon.badge(size: 72),
-          ),
-        ),
+        const MaterialApp(home: Scaffold(body: ThemedAppIcon.badge(size: 72))),
       );
       await tester.pumpAndSettle();
 

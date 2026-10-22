@@ -68,16 +68,16 @@ DailyProductivitySummary aggregateDay(
             (categorySeconds[segment.categoryName] ?? 0) + seconds;
 
         (byApp[segment.appKey] ??= _AppAccumulator(
-          appKey: segment.appKey,
-          appName: segment.appName,
-          categoryName: segment.categoryName,
-        ))
+            appKey: segment.appKey,
+            appName: segment.appName,
+            categoryName: segment.categoryName,
+          ))
           ..seconds += seconds
           ..sessionCount += 1
           ..longestSessionSeconds =
               seconds > byApp[segment.appKey]!.longestSessionSeconds
-                  ? seconds
-                  : byApp[segment.appKey]!.longestSessionSeconds;
+              ? seconds
+              : byApp[segment.appKey]!.longestSessionSeconds;
 
         _spreadAcrossHours(segment, hourly);
     }
@@ -199,7 +199,8 @@ List<TimelineEntry> buildTimeline(
     if (!segment.isValid) continue;
 
     final last = entries.isEmpty ? null : entries.last;
-    final continues = last != null &&
+    final continues =
+        last != null &&
         last.kind == segment.activityKind &&
         last.appKey == segment.appKey;
 
@@ -256,13 +257,13 @@ class _AppAccumulator {
   int longestSessionSeconds = 0;
 
   AppTotal build() => AppTotal(
-        appKey: appKey,
-        appName: appName,
-        categoryName: categoryName,
-        seconds: seconds,
-        sessionCount: sessionCount,
-        longestSessionSeconds: longestSessionSeconds,
-      );
+    appKey: appKey,
+    appName: appName,
+    categoryName: categoryName,
+    seconds: seconds,
+    sessionCount: sessionCount,
+    longestSessionSeconds: longestSessionSeconds,
+  );
 }
 
 class _MutableEntry {

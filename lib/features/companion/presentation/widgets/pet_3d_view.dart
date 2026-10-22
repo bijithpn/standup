@@ -143,17 +143,22 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
         final proc = _proceduralAnimator.currentState;
 
         // Gaze / Cursor look-at
-        final lookX = widget.externalLookAt?.dx ?? (pose.yaw * 0.5).clamp(-1.0, 1.0);
-        final lookY = widget.externalLookAt?.dy ?? (pose.pitch * 0.5).clamp(-1.0, 1.0);
+        final lookX =
+            widget.externalLookAt?.dx ?? (pose.yaw * 0.5).clamp(-1.0, 1.0);
+        final lookY =
+            widget.externalLookAt?.dy ?? (pose.pitch * 0.5).clamp(-1.0, 1.0);
 
         // Convert camera azimuth & elevation to total 3D rotations in radians
         final totalYaw = (camera.azimuth * math.pi / 180.0) + (lookX * 0.45);
-        final totalPitch = -(camera.elevation * math.pi / 180.0) - (lookY * 0.38);
+        final totalPitch =
+            -(camera.elevation * math.pi / 180.0) - (lookY * 0.38);
         final totalRoll = pose.roll + (lookX * 0.10);
 
         final double zoomScale = (1.0 / camera.distance.clamp(0.4, 4.0));
         final double baseAvatarSize =
-            math.min(widget.width, widget.height) * 0.85 * widget.definition.scale;
+            math.min(widget.width, widget.height) *
+            0.85 *
+            widget.definition.scale;
         final double currentSize = baseAvatarSize * zoomScale;
 
         final double bounceY = proc.offsetY;
@@ -187,13 +192,21 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
           children: [
             // 1. Dynamic 3D Ground Drop Shadow reacting to 3D Orbit Camera angles
             Positioned(
-              bottom: (widget.height - currentSize) / 2 - 10.0 - (camera.elevation * 0.25),
-              left: (widget.width - (currentSize * 0.65 * shadowScale)) / 2 - (camera.azimuth * 0.15),
+              bottom:
+                  (widget.height - currentSize) / 2 -
+                  10.0 -
+                  (camera.elevation * 0.25),
+              left:
+                  (widget.width - (currentSize * 0.65 * shadowScale)) / 2 -
+                  (camera.azimuth * 0.15),
               child: CustomPaint(
                 size: Size(currentSize * 0.65 * shadowScale, 14 * shadowScale),
                 painter: _Pet3DShadowPainter(
                   shadowScale,
-                  skewX: (lookX * 0.2 + camera.azimuth * 0.004).clamp(-0.4, 0.4),
+                  skewX: (lookX * 0.2 + camera.azimuth * 0.004).clamp(
+                    -0.4,
+                    0.4,
+                  ),
                 ),
               ),
             ),
@@ -219,8 +232,12 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             center: Alignment(
-                              (-lookX * 0.65 - 0.12 - (camera.azimuth * 0.005)).clamp(-1.0, 1.0),
-                              (-lookY * 0.65 - 0.12 + (camera.elevation * 0.005)).clamp(-1.0, 1.0),
+                              (-lookX * 0.65 - 0.12 - (camera.azimuth * 0.005))
+                                  .clamp(-1.0, 1.0),
+                              (-lookY * 0.65 -
+                                      0.12 +
+                                      (camera.elevation * 0.005))
+                                  .clamp(-1.0, 1.0),
                             ),
                             radius: 0.92,
                             colors: [
@@ -255,10 +272,7 @@ class _Pet3DViewState extends State<Pet3DView> with TickerProviderStateMixin {
         );
 
         if (widget.transparentBackground) {
-          return ColoredBox(
-            color: Colors.transparent,
-            child: interactive,
-          );
+          return ColoredBox(color: Colors.transparent, child: interactive);
         }
 
         return interactive;

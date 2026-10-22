@@ -39,8 +39,9 @@ class AppUsageTracker {
   final ContextSwitchTracker? _contextSwitchTracker;
   final FocusSessionDetector _focusDetector = FocusSessionDetector();
   final ActivitySegmentRepository? _segments;
-  final ActivitySegmentBuilder _segmentBuilder =
-      ActivitySegmentBuilder(pollInterval: _pollInterval);
+  final ActivitySegmentBuilder _segmentBuilder = ActivitySegmentBuilder(
+    pollInterval: _pollInterval,
+  );
   final EventBus? _eventBus;
   StreamSubscription<AppEvent>? _eventSub;
   final AppLogger _logger = AppLogger();
@@ -65,14 +66,14 @@ class AppUsageTracker {
     ContextSwitchTracker? contextSwitchTracker,
     ActivitySegmentRepository? segmentRepository,
     EventBus? eventBus,
-  })  : _segments = segmentRepository,
-        _eventBus = eventBus,
-        _appTracking = appTracking,
-        _usageService = usageService,
-        _settingsRepo = settingsRepo,
-        _activityMonitor = activityMonitor,
-        _focusSessionService = focusSessionService,
-        _contextSwitchTracker = contextSwitchTracker;
+  }) : _segments = segmentRepository,
+       _eventBus = eventBus,
+       _appTracking = appTracking,
+       _usageService = usageService,
+       _settingsRepo = settingsRepo,
+       _activityMonitor = activityMonitor,
+       _focusSessionService = focusSessionService,
+       _contextSwitchTracker = contextSwitchTracker;
 
   void start() {
     // The build's own switch, checked before the user's: a disabled module

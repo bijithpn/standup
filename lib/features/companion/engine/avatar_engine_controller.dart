@@ -15,8 +15,8 @@ class AvatarEngineController {
   AvatarEngineController({
     JsEvaluator? jsEvaluator,
     AvatarEventChannel? eventChannel,
-  })  : _jsEvaluator = jsEvaluator,
-        _eventChannel = eventChannel ?? AvatarEventChannel();
+  }) : _jsEvaluator = jsEvaluator,
+       _eventChannel = eventChannel ?? AvatarEventChannel();
 
   final JsEvaluator? _jsEvaluator;
   final AvatarEventChannel _eventChannel;
@@ -107,10 +107,12 @@ class AvatarEngineController {
     final dx = cursorScreenPosition.dx - petScreenPosition.dx;
     final dy = cursorScreenPosition.dy - petScreenPosition.dy;
 
-    final double rawTargetX =
-        maxDistance > 0 ? (dx / maxDistance).clamp(-1.0, 1.0) : 0.0;
-    final double rawTargetY =
-        maxDistance > 0 ? (dy / maxDistance).clamp(-1.0, 1.0) : 0.0;
+    final double rawTargetX = maxDistance > 0
+        ? (dx / maxDistance).clamp(-1.0, 1.0)
+        : 0.0;
+    final double rawTargetY = maxDistance > 0
+        ? (dy / maxDistance).clamp(-1.0, 1.0)
+        : 0.0;
 
     final cursorDelta = (cursorScreenPosition - _lastCursorPosition).distance;
     _lastCursorPosition = cursorScreenPosition;
@@ -134,10 +136,14 @@ class AvatarEngineController {
       _saccadeOffset = ui.Offset.zero;
     }
 
-    final double targetWithSaccadesX =
-        (rawTargetX + _saccadeOffset.dx).clamp(-1.0, 1.0);
-    final double targetWithSaccadesY =
-        (rawTargetY + _saccadeOffset.dy).clamp(-1.0, 1.0);
+    final double targetWithSaccadesX = (rawTargetX + _saccadeOffset.dx).clamp(
+      -1.0,
+      1.0,
+    );
+    final double targetWithSaccadesY = (rawTargetY + _saccadeOffset.dy).clamp(
+      -1.0,
+      1.0,
+    );
 
     if (enableSmoothing) {
       final double smoothFactor = (damping * 60.0 * dt).clamp(0.0, 1.0);
@@ -184,11 +190,7 @@ class AvatarEngineController {
       AvatarProximityEvent(distance: distance, isInside: isInside),
     );
     _eventChannel.emit(
-      AvatarGazeEvent(
-        lookAtX: gaze.dx,
-        lookAtY: gaze.dy,
-        yaw: _currentYaw,
-      ),
+      AvatarGazeEvent(lookAtX: gaze.dx, lookAtY: gaze.dy, yaw: _currentYaw),
     );
 
     await setLookAt(gaze.dx, gaze.dy);

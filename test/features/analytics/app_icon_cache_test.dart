@@ -18,16 +18,28 @@ void main() {
   test('fetches the icon once and caches it for subsequent calls', () async {
     final bytes = Uint8List.fromList([1, 2, 3]);
     when(
-      () => mockTracking.getAppIcon(bundleId: 'com.example.app', executableName: null),
+      () => mockTracking.getAppIcon(
+        bundleId: 'com.example.app',
+        executableName: null,
+      ),
     ).thenAnswer((_) async => bytes);
 
-    final first = await cache.iconFor(appKey: 'com.example.app', bundleId: 'com.example.app');
-    final second = await cache.iconFor(appKey: 'com.example.app', bundleId: 'com.example.app');
+    final first = await cache.iconFor(
+      appKey: 'com.example.app',
+      bundleId: 'com.example.app',
+    );
+    final second = await cache.iconFor(
+      appKey: 'com.example.app',
+      bundleId: 'com.example.app',
+    );
 
     expect(first, bytes);
     expect(second, bytes);
     verify(
-      () => mockTracking.getAppIcon(bundleId: 'com.example.app', executableName: null),
+      () => mockTracking.getAppIcon(
+        bundleId: 'com.example.app',
+        executableName: null,
+      ),
     ).called(1);
   });
 

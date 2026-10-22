@@ -59,8 +59,9 @@ class CompanionPetState extends State<CompanionPet>
   /// where it thinks it is by a few pixels.
   static const Duration _originRefresh = Duration(seconds: 2);
 
-  late final PetBehaviorEngine _engine =
-      PetBehaviorEngine(reducedMotion: widget.isStatic);
+  late final PetBehaviorEngine _engine = PetBehaviorEngine(
+    reducedMotion: widget.isStatic,
+  );
   Ticker? _ticker;
   StreamSubscription<CursorSample>? _cursorSub;
   Timer? _originTimer;

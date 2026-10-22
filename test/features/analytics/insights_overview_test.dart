@@ -214,11 +214,7 @@ void main() {
 
     test('flags a bad break hour once there is enough data and the skip '
         'rate is high', () {
-      final events = [
-        _event(14, false),
-        _event(14, false),
-        _event(14, false),
-      ];
+      final events = [_event(14, false), _event(14, false), _event(14, false)];
       final insights = buildOverviewInsights(
         todayCategoryTotals: const {},
         budgetMinutes: const {},

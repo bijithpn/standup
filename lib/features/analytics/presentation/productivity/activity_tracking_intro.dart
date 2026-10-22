@@ -228,7 +228,10 @@ class ClearActivityHistoryDialog extends StatelessWidget {
 
   final int segmentCount;
 
-  static Future<bool> show(BuildContext context, {required int segmentCount}) async {
+  static Future<bool> show(
+    BuildContext context, {
+    required int segmentCount,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) =>
@@ -260,10 +263,10 @@ class ClearActivityHistoryDialog extends StatelessWidget {
           segmentCount == 0
               ? 'There is no recorded activity to delete.'
               : 'This permanently deletes $segmentCount recorded '
-                  '${segmentCount == 1 ? 'entry' : 'entries'} — your timeline, '
-                  'application totals and every insight drawn from them. '
-                  'Your settings and break history are not affected.\n\n'
-                  'This cannot be undone.',
+                    '${segmentCount == 1 ? 'entry' : 'entries'} — your timeline, '
+                    'application totals and every insight drawn from them. '
+                    'Your settings and break history are not affected.\n\n'
+                    'This cannot be undone.',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 12.5,

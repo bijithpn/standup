@@ -295,10 +295,20 @@ class SettingsRepository extends ChangeNotifier {
         'pip_draggable_clickable',
         defaultValue: true,
       ),
-      hydrationReminderEnabled: _storage.getBool('hydration_reminder_enabled', defaultValue: false),
-      stretchReminderEnabled: _storage.getBool('stretch_reminder_enabled', defaultValue: false),
-      standUpReminderEnabled: _storage.getBool('stand_up_reminder_enabled', defaultValue: false),
-      companionAvatarUrlParams: _storage
+      hydrationReminderEnabled: _storage.getBool(
+        'hydration_reminder_enabled',
+        defaultValue: false,
+      ),
+      stretchReminderEnabled: _storage.getBool(
+        'stretch_reminder_enabled',
+        defaultValue: false,
+      ),
+      standUpReminderEnabled: _storage.getBool(
+        'stand_up_reminder_enabled',
+        defaultValue: false,
+      ),
+      companionAvatarUrlParams:
+          _storage
               .getString(
                 AppConstants.keyCompanionAvatarUrlParams,
                 defaultValue: '',
@@ -533,9 +543,18 @@ class SettingsRepository extends ChangeNotifier {
         'pip_draggable_clickable',
         defaultValue: true,
       ),
-      hydrationReminderEnabled: _storage.getBool('hydration_reminder_enabled', defaultValue: false),
-      stretchReminderEnabled: _storage.getBool('stretch_reminder_enabled', defaultValue: false),
-      standUpReminderEnabled: _storage.getBool('stand_up_reminder_enabled', defaultValue: false),
+      hydrationReminderEnabled: _storage.getBool(
+        'hydration_reminder_enabled',
+        defaultValue: false,
+      ),
+      stretchReminderEnabled: _storage.getBool(
+        'stretch_reminder_enabled',
+        defaultValue: false,
+      ),
+      standUpReminderEnabled: _storage.getBool(
+        'stand_up_reminder_enabled',
+        defaultValue: false,
+      ),
     );
   }
 
@@ -778,9 +797,18 @@ class SettingsRepository extends ChangeNotifier {
       'pip_draggable_clickable',
       settings.pipDraggableClickable,
     );
-    await _storage.setBool('hydration_reminder_enabled', settings.hydrationReminderEnabled);
-    await _storage.setBool('stretch_reminder_enabled', settings.stretchReminderEnabled);
-    await _storage.setBool('stand_up_reminder_enabled', settings.standUpReminderEnabled);
+    await _storage.setBool(
+      'hydration_reminder_enabled',
+      settings.hydrationReminderEnabled,
+    );
+    await _storage.setBool(
+      'stretch_reminder_enabled',
+      settings.stretchReminderEnabled,
+    );
+    await _storage.setBool(
+      'stand_up_reminder_enabled',
+      settings.standUpReminderEnabled,
+    );
 
     _storage.settingsBox!.put(snapshot);
     debugPrint(
