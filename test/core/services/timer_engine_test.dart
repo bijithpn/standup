@@ -457,9 +457,10 @@ void main() {
         'stuck forever', () {
       fakeAsync((async) {
         // A long break interval (60min) so it never interrupts the
-        // running state during this test — activityRatio clamps at 1.2x,
-        // giving a target window of 30 * 1.2 * [0.85, 1.15] ≈
-        // [30.6, 41.4] minutes.
+        // running state during this test — activityRatio clamps at 1.2x, and
+        // the first hour of a day is a light-workload period (x1.25), giving
+        // a target window of 30 * 1.2 * 1.25 * [0.85, 1.15] ≈
+        // [38.3, 51.8] minutes.
         fakeSettingsRepository.setSettings(
           const SettingsModel(
             shortBreakIntervalMinutes: 60,
@@ -479,17 +480,17 @@ void main() {
         );
         engine.startTimers();
 
-        // Below the lower bound (30.6min) with margin — nothing yet.
+        // Below the lower bound (38.3min) with margin — nothing yet.
         async.elapse(const Duration(minutes: 28));
         expect(fired, isEmpty);
 
-        // Past the upper bound (41.4min) with margin — must have fired.
+        // Past the upper bound (51.8min) with margin — must have fired.
         // (Each cycle re-randomizes independently, so a short first cycle
         // followed by another short one can legitimately produce more
         // than one event here — that's the intended "randomly, not on a
         // fixed schedule" behavior, not a bug, so this only checks that
         // at least one fired and that it's the right reminder.)
-        async.elapse(const Duration(minutes: 15));
+        async.elapse(const Duration(minutes: 27));
         expect(fired, isNotEmpty);
         expect(fired.first.reminderType, equals('posture'));
       });
@@ -499,9 +500,10 @@ void main() {
         'with randomized jitter', () {
       fakeAsync((async) {
         // A long break interval (60min) so it never interrupts the
-        // running state during this test — activityRatio clamps at 1.2x,
-        // giving a target window of 20 * 1.2 * [0.85, 1.15] ≈
-        // [20.4, 27.6] minutes.
+        // running state during this test — activityRatio clamps at 1.2x, and
+        // the first hour of a day is a light-workload period (x1.25), giving
+        // a target window of 20 * 1.2 * 1.25 * [0.85, 1.15] ≈
+        // [25.5, 34.5] minutes.
         fakeSettingsRepository.setSettings(
           const SettingsModel(
             shortBreakIntervalMinutes: 60,
@@ -521,12 +523,12 @@ void main() {
         );
         engine.startTimers();
 
-        // Below the lower bound (20.4min) with margin.
+        // Below the lower bound (25.5min) with margin.
         async.elapse(const Duration(minutes: 18));
         expect(fired, isEmpty);
 
-        // Past the upper bound (27.6min) with margin.
-        async.elapse(const Duration(minutes: 12));
+        // Past the upper bound (34.5min) with margin.
+        async.elapse(const Duration(minutes: 20));
         expect(fired, isNotEmpty);
         expect(fired.first.reminderType, equals('eyeblink'));
       });

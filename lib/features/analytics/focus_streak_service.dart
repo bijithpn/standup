@@ -103,8 +103,9 @@ class FocusStreakService extends ChangeNotifier {
           .values
           .fold<int>(0, (sum, s) => sum + s);
 
-      if (totalActiveSeconds == 0)
+      if (totalActiveSeconds == 0) {
         continue; // no activity: a day off, not a break
+      }
 
       final dateKey = _dateKey(date);
       final score = _focusSessionService.focusScore(

@@ -69,7 +69,6 @@ class PipWindowArgs {
   final bool? clickThrough;
   final bool? followMouse;
   final bool? wanderingEnabled;
-  final bool? isLowPowerMode;
   final String? pipBackgroundStyle;
   final double? pipOpacity;
   final bool? pipDraggableClickable;
@@ -110,7 +109,6 @@ class PipWindowArgs {
     this.clickThrough,
     this.followMouse,
     this.wanderingEnabled,
-    this.isLowPowerMode,
     this.pipBackgroundStyle,
     this.pipOpacity,
     this.pipDraggableClickable,
@@ -140,7 +138,6 @@ class PipWindowArgs {
     if (clickThrough != null) map['clickThrough'] = clickThrough;
     if (followMouse != null) map['followMouse'] = followMouse;
     if (wanderingEnabled != null) map['wanderingEnabled'] = wanderingEnabled;
-    if (isLowPowerMode != null) map['isLowPowerMode'] = isLowPowerMode;
     if (pipBackgroundStyle != null) {
       map['pipBackgroundStyle'] = pipBackgroundStyle;
     }
@@ -182,7 +179,6 @@ class PipWindowArgs {
       clickThrough: map['clickThrough'] as bool?,
       followMouse: map['followMouse'] as bool?,
       wanderingEnabled: map['wanderingEnabled'] as bool?,
-      isLowPowerMode: map['isLowPowerMode'] as bool?,
       pipBackgroundStyle: map['pipBackgroundStyle'] as String?,
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble(),
       pipDraggableClickable: map['pipDraggableClickable'] as bool?,

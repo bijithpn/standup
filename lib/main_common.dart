@@ -406,7 +406,9 @@ void mainCommon(FlavorConfig config) async {
         ServerSocket? singleInstanceServer;
 
         if (isMainIsolate) {
-          int port = 10425;
+          // One loopback port per flavor, so a dev build never talks to (or
+          // force-kills) a running production app.
+          final int port = config.isDev ? 10426 : 10425;
           bool bound = false;
 
           try {

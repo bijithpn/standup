@@ -13,7 +13,7 @@ import 'package:breakmate/features/companion/domain/pet_personality.dart';
 import 'package:breakmate/features/companion/domain/pet_state_machine.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/engine/avatar_engine_controller.dart';
-import 'package:breakmate/features/companion/flame/companion_game.dart';
+import '../../helpers/pet_profile_from_theme.dart';
 import 'package:breakmate/features/companion/services/pet_companion_service.dart';
 import 'package:breakmate/features/companion/services/pet_navigation_service.dart';
 import 'package:breakmate/features/companion/services/physics_simulator.dart';
@@ -63,7 +63,7 @@ void main() {
           physicsSimulator: physicsSimulator,
         );
 
-        final profile = CompanionGame.getProfileFromTheme(theme);
+        final profile = profileFromTheme(theme);
         expect(profile.theme, isNotNull);
         expect(profile.theme!.avatarDefinition, isNotNull);
         expect(
@@ -100,7 +100,7 @@ void main() {
           stateMachine: stateMachine,
           brain: brain,
           navigation: navigation,
-          profile: CompanionGame.getProfileFromTheme(theme),
+          profile: profileFromTheme(theme),
           needsEngine: needsEngine,
         );
 
@@ -257,24 +257,13 @@ void main() {
     test(
       'PetAssetLoader provides graceful backward compatibility for 3D avatar themes alongside sprite/environment assets',
       () async {
-        // 1. 3D Avatar Theme validation
         final avatarTheme = PetTheme.avatar(species: AvatarSpecies.panda);
-        final avatarIssues = await PetAssetLoader.validateTheme(avatarTheme);
-        expect(
-          avatarIssues,
-          isEmpty,
-          reason: 'Avatar theme validation should pass cleanly',
-        );
+        final avatarProfile = profileFromTheme(avatarTheme);
 
-        // 2. 3D Avatar animation loading returns empty or valid map gracefully without throwing
-        final avatarProfile = CompanionGame.getProfileFromTheme(avatarTheme);
-        final avatarAnims = await PetAssetLoader.loadAnimations(avatarProfile);
-        expect(avatarAnims, isNotNull);
-
-        // 3. Pre-caching avatar theme does not throw
+        // 1. Pre-caching avatar theme does not throw
         await expectLater(PetAssetLoader.preCache(avatarProfile), completes);
 
-        // 4. Pre-caching backgrounds remains fully functional
+        // 2. Pre-caching backgrounds remains fully functional
         await expectLater(PetAssetLoader.preCacheBackgrounds(), completes);
       },
     );

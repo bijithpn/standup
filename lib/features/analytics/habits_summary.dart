@@ -33,8 +33,9 @@ class HabitsSummary {
   int get gapDays => (breakStreakDays - focusStreakDays).abs();
 
   HabitsSyncStatus get syncStatus {
-    if (breakStreakDays == 0 && focusStreakDays == 0)
+    if (breakStreakDays == 0 && focusStreakDays == 0) {
       return HabitsSyncStatus.none;
+    }
     if (breakStreakDays == focusStreakDays) return HabitsSyncStatus.inSync;
     return breakStreakDays > focusStreakDays
         ? HabitsSyncStatus.breakStreakAhead

@@ -617,8 +617,9 @@ class PetBehaviorEngine extends ChangeNotifier {
         _blinkTimer = _nextBlinkDelay();
       }
       _blink = math.max(_blink, value.clamp(0.0, 1.0));
-      if (_blinkProgress < 0)
+      if (_blinkProgress < 0) {
         _blink = _quietSeconds > _drowsyAfter ? 0.45 : 0.0;
+      }
       return;
     }
 
@@ -709,8 +710,9 @@ class PetBehaviorEngine extends ChangeNotifier {
 
     if (_startle > 0.25) return state(PetEmotion.startled, _startle);
     // A game outranks everything except a fright, and outlasts it too.
-    if (_playing > 0.2)
+    if (_playing > 0.2) {
       return state(PetEmotion.excited, 0.55 + _playing * 0.45);
+    }
     if (_quietSeconds > _sleepAfter) return state(PetEmotion.sleepy, 1.0);
     if (_delight > 0.25) {
       return state(PetEmotion.affectionate, 0.6 + _delight * 0.4);

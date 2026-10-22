@@ -123,8 +123,9 @@ class _BreakOverlayTransitionWrapperState
   }
 
   void _startSlideshow() {
-    if (_slideshowTimer != null || AppConstants.wellnessSlideshow.isEmpty)
+    if (_slideshowTimer != null || AppConstants.wellnessSlideshow.isEmpty) {
       return;
+    }
     _slideshowTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (!mounted) return;
       setState(() {

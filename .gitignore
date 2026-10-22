@@ -69,3 +69,6 @@ docs/
 # raw screen recordings
 *.mp4
 !screenshots/walkthrough.mp4
+
+# Release installer output (built by scripts/create_dmg.sh and CI)
+/release_dmg/
