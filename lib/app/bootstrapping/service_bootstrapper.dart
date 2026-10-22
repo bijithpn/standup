@@ -1,4 +1,5 @@
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'package:breakmate/core/errors/app_exception.dart';
 import 'package:breakmate/features/companion/services/custom_environment_repository.dart';
@@ -26,8 +27,16 @@ import 'package:breakmate/core/errors/error_handler.dart';
 /// Decoupling initialization from GetIt registration prevents circular dependency
 class ServiceBootstrapper {
   static Future<void> bootstrap() async {
+    final sw = Stopwatch()..start();
+    void mark(String label) {
+      if (!kReleaseMode) {
+        debugPrint('[Bootstrap] ${sw.elapsedMilliseconds}ms — $label');
+      }
+    }
+
     final storage = sl<StorageService>();
     await storage.init();
+    mark('storage.init');
 
     if (!storage.isReady) {
       throw AppException(
@@ -41,12 +50,14 @@ class ServiceBootstrapper {
 
     final settingsRepo = sl<SettingsRepository>();
     await settingsRepo.load();
+    mark('settings.load');
 
     final notifications = sl<NotificationService>();
     final displayManager = sl<DisplayManager>();
 
     // Parallelize initialization of independent I/O services to optimize startup time.
     await Future.wait([notifications.init(), displayManager.initialize()]);
+    mark('notifications+display');
 
     notifications.setNotificationsEnabled(
       settingsRepo.currentSettings.notificationsEnabled,
@@ -54,6 +65,7 @@ class ServiceBootstrapper {
     notifications.setSoundEnabled(settingsRepo.currentSettings.soundEnabled);
 
     await sl<StatsService>().initialize();
+    mark('stats.initialize');
 
     // Analytics and insight trackers are not needed for the first frame.
     unawaited(
@@ -77,10 +89,12 @@ class ServiceBootstrapper {
     final companionOverlayController = sl<CompanionOverlayController>();
 
     await Future.wait([trayManager.init(), companionOverlayController.init()]);
+    mark('tray+companion init');
 
     sl<TimerOrchestrator>().initialize();
     sl<DailyResetService>().start();
     sl<BreakController>().initialize();
+    mark('orchestrator+break controller');
 
     // Pre-cache tray animation frames on startup to avoid frame drops on macOS Menubar updates.
     try {

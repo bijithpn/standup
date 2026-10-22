@@ -97,23 +97,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       }
     }
 
-    final supportDir = await getApplicationSupportDirectory();
-    final defaultFile = p.join(supportDir.path, 'bm_tray_default.png');
-    try {
-      final f = File(defaultFile);
-      if (f.existsSync()) f.deleteSync();
-    } catch (_) {}
-
-    try {
-      _defaultIconPath = await PetAssetLoader.extractAndWhitenAsset(
-        AppConstants.trayIconPath,
-        defaultFile,
-      );
-    } catch (_) {
-      _defaultIconPath = AppConstants.trayIconPath;
-    }
-
-    _defaultIconPath ??= defaultFile;
+    // Show the bundled icon straight away. The recoloured template icon and
+    // the pet frames are built shortly after the first frame (see
+    // _initializeFramesInBackground), which keeps pixel work off startup.
+    _defaultIconPath = AppConstants.trayIconPath;
 
     await _applyIcon();
     await _buildMenu();

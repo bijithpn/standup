@@ -355,7 +355,7 @@ void mainCommon(FlavorConfig config) async {
         final startupT0 = DateTime.now();
         final startupMarks = <MapEntry<String, int>>[];
         void logStartup(String label) {
-          if (kDebugMode) {
+          if (!kReleaseMode) {
             final ms = DateTime.now().difference(startupT0).inMilliseconds;
             startupMarks.add(MapEntry(label, ms));
             debugPrint('[Startup] +${ms}ms — $label');
