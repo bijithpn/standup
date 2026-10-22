@@ -102,4 +102,44 @@ void main() {
     // One period selector for the whole page.
     expect(find.text('This Week'), findsOneWidget);
   });
+
+  // Layout overflow shows up as a test failure, so render the page at the
+  // widths the window can actually have.
+  for (final width in [420.0, 700.0, 1100.0]) {
+    testWidgets('Statistics lays out without overflow at ${width.toInt()}px', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: sl<AppUsageService>()),
+            ChangeNotifierProvider.value(value: sl<FocusSessionService>()),
+            ChangeNotifierProvider.value(value: sl<BreakHistoryService>()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: AnalyticsSettingsSection(
+                  stats: const StatsModel(currentStreak: 2, longestStreak: 5),
+                  settings: const SettingsModel(
+                    appUsageTrackingEnabled: true,
+                    categoryDailyBudgetMinutes: {'coding': 120},
+                  ),
+                  onSave: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Daily budgets'), findsOneWidget);
+    });
+  }
 }

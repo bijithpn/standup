@@ -45,7 +45,9 @@ class DashboardPage extends StatelessWidget {
                           TimerSection(
                             calendarEvents: dashboardCtrl.calendarEvents,
                           ),
-                          const SizedBox(height: 40),
+                          const SizedBox(height: 32),
+                          const DailySummarySection(),
+                          const SizedBox(height: 32),
                           const ActionGrid(),
                           if (calendarEnabled) ...[
                             const SizedBox(height: 40),
@@ -78,8 +80,6 @@ class DashboardPage extends StatelessWidget {
                               },
                             ),
                           ],
-                          const SizedBox(height: 40),
-                          const DailySummarySection(),
                           const SizedBox(height: 20),
                         ],
                       );

@@ -5,16 +5,20 @@ import 'package:breakmate/core/constants/app_strings.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
+/// "Break activity" on the front page: how today's breaks are going against
+/// the daily goal, what happened and when, and how long you have worked.
 class DailySummarySection extends StatelessWidget {
   const DailySummarySection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<StatsService>(
-      builder: (context, statsService, child) {
+    return Consumer3<StatsService, BreakHistoryService, SettingsRepository>(
+      builder: (context, statsService, history, settings, child) {
         final stats = statsService.load();
         final todayStr = _todayString();
         final todayStats = stats.weeklyData.lastWhere(
@@ -27,10 +31,17 @@ class DailySummarySection extends StatelessWidget {
           ),
         );
 
-        final hasData =
-            todayStats.breaksCompleted > 0 ||
-            todayStats.breaksSkipped > 0 ||
-            todayStats.usageMinutes > 0;
+        final now = DateTime.now();
+        final startOfDay = DateTime(now.year, now.month, now.day);
+        final events = history.eventsBetween(startOfDay, now)
+          ..sort((a, b) => a.time.compareTo(b.time));
+
+        final goal = settings.currentSettings.dailyBreakGoalCount;
+        final done = todayStats.breaksCompleted;
+        final skipped = todayStats.breaksSkipped;
+        final total = done + skipped;
+        final hasData = total > 0 || todayStats.usageMinutes > 0;
+        final rate = total == 0 ? null : (done / total * 100).round();
 
         return Container(
           padding: const EdgeInsets.all(24),
@@ -39,69 +50,109 @@ class DailySummarySection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    AppStrings.todayActivity,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Break activity',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Today',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  if (hasData) _RecommendationChip(stats: stats),
+                  _GoalChip(done: done, goal: goal),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
+                  minHeight: 8,
+                  color: done >= goal ? AppTheme.success : AppTheme.accent,
+                  backgroundColor: AppTheme.border,
+                ),
+              ),
+              const SizedBox(height: 22),
               if (!hasData)
                 Center(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text(
-                      AppStrings.noActivityRecorded,
+                      'No breaks yet today. Your first one will show up here.',
                       style: TextStyle(color: AppTheme.textMuted, fontSize: 13),
                     ),
                   ),
                 )
-              else
+              else ...[
                 ValueListenableBuilder<Duration>(
                   valueListenable: sl<TimerEngine>().totalWorkTodayNotifier,
                   builder: (context, workToday, _) {
-                    final hours = workToday.inHours;
-                    final minutes = workToday.inMinutes % 60;
-                    final seconds = workToday.inSeconds % 60;
-
-                    String focusTimeStr;
-                    if (hours > 0) {
-                      focusTimeStr = '${hours}h ${minutes}m';
-                    } else if (minutes > 0) {
-                      focusTimeStr = '${minutes}m ${seconds}s';
-                    } else {
-                      focusTimeStr = '${seconds}s';
-                    }
-
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         _StatItem(
                           label: AppStrings.completed,
-                          value: '${todayStats.breaksCompleted}',
+                          value: '$done',
                           color: AppTheme.success,
                         ),
                         _StatItem(
                           label: AppStrings.skipped,
-                          value: '${todayStats.breaksSkipped}',
+                          value: '$skipped',
                           color: AppTheme.error,
                         ),
                         _StatItem(
-                          label: AppStrings.focusTimeMins,
-                          value: focusTimeStr,
+                          label: 'Kept',
+                          value: rate == null ? '–' : '$rate%',
+                          color: AppTheme.accent,
+                        ),
+                        _StatItem(
+                          label: 'Worked',
+                          value: _formatWork(workToday),
                           color: AppTheme.warning,
                         ),
                       ],
                     );
                   },
                 ),
+                if (events.isNotEmpty) ...[
+                  const SizedBox(height: 22),
+                  Text(
+                    'Timeline',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final e
+                          in events.reversed.take(12).toList().reversed)
+                        _EventChip(event: e),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: 18),
+                _RecommendationChip(stats: stats),
+              ],
             ],
           ),
         );
@@ -109,9 +160,83 @@ class DailySummarySection extends StatelessWidget {
     );
   }
 
+  static String _formatWork(Duration d) {
+    final h = d.inHours;
+    final m = d.inMinutes % 60;
+    if (h > 0) return '${h}h ${m}m';
+    if (m > 0) return '${m}m';
+    return '${d.inSeconds}s';
+  }
+
   String _todayString() {
     final now = DateTime.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  }
+}
+
+class _GoalChip extends StatelessWidget {
+  final int done;
+  final int goal;
+  const _GoalChip({required this.done, required this.goal});
+
+  @override
+  Widget build(BuildContext context) {
+    final met = done >= goal && goal > 0;
+    final color = met ? AppTheme.success : AppTheme.accent;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        met ? 'Goal reached · $done / $goal' : '$done / $goal breaks',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+class _EventChip extends StatelessWidget {
+  final BreakEvent event;
+  const _EventChip({required this.event});
+
+  @override
+  Widget build(BuildContext context) {
+    final ok = event.completed;
+    final color = ok ? AppTheme.success : AppTheme.error;
+    final h = event.time.hour.toString().padLeft(2, '0');
+    final m = event.time.minute.toString().padLeft(2, '0');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            ok ? Icons.check_circle_rounded : Icons.cancel_rounded,
+            size: 13,
+            color: color,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            '$h:$m',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

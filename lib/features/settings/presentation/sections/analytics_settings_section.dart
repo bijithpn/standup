@@ -2,6 +2,8 @@ import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart'
+    show CircularProgressIndicator, LinearProgressIndicator;
 import 'package:breakmate/features/analytics/presentation/widgets/break_statistics_section.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -14,6 +16,7 @@ import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/features/analytics/break_focus_correlation.dart';
@@ -92,7 +95,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         _buildPeriodBar(),
         const SizedBox(height: 20),
         // Headline numbers first: what the period added up to.
-        _buildDetailGrid(viewMetrics),
+        _buildHero(viewMetrics),
         const SizedBox(height: 32),
 
         _groupHeader(
@@ -109,6 +112,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           'Your timeline, apps and what the activity shows.',
         ),
         _buildTimeAndAppsSection(),
+        _buildBudgetsCard(),
         const SizedBox(height: 32),
 
         _groupHeader(
@@ -127,6 +131,116 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         BreakStatisticsSection(stats: _stats, selectedFilter: _selectedFilter),
         const SizedBox(height: 48),
       ],
+    );
+  }
+
+  /// The top of the page: one overall score as a ring, with the numbers it is
+  /// made of next to it.
+  Widget _buildHero(_ViewMetrics m) {
+    final overall = ((m.productivityScore + m.wellnessScore) / 2).round();
+    final verdict = overall >= 80
+        ? 'Great balance'
+        : overall >= 60
+        ? 'Going well'
+        : overall > 0
+        ? 'Room to improve'
+        : 'Just getting started';
+    final ringColor = overall >= 80
+        ? AppTheme.success
+        : overall >= 60
+        ? AppTheme.accent
+        : AppTheme.warning;
+
+    final ring = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 132,
+          height: 132,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 132,
+                height: 132,
+                child: CircularProgressIndicator(
+                  value: (overall / 100).clamp(0.0, 1.0),
+                  strokeWidth: 10,
+                  strokeCap: StrokeCap.round,
+                  color: ringColor,
+                  backgroundColor: AppTheme.border,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$overall',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'of 100',
+                    style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          verdict,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: ringColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Productivity ${m.productivityScore} · Wellness ${m.wellnessScore}',
+          style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+        ),
+      ],
+    );
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: AppTheme.border),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.accentColor.withValues(alpha: 0.14),
+            AppTheme.surfaceCard,
+          ],
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth > 640;
+          final tiles = _buildDetailGrid(m);
+          if (!wide) {
+            return Column(children: [ring, const SizedBox(height: 20), tiles]);
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ring,
+              const SizedBox(width: 28),
+              Expanded(child: tiles),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -190,6 +304,108 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           (i) => setState(() => _selectedFilter = i),
         ),
       ],
+    );
+  }
+
+  /// Today's progress against the soft daily budgets set in Personal Goals.
+  /// Hidden until tracking is on and at least one budget exists.
+  Widget _buildBudgetsCard() {
+    final budgets = {
+      for (final e in widget.settings.categoryDailyBudgetMinutes.entries)
+        if (e.value > 0) e.key: e.value,
+    };
+    if (!widget.settings.appUsageTrackingEnabled || budgets.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 20),
+      child: Consumer<AppUsageService>(
+        builder: (context, usage, _) {
+          final today = usage.categoryTotals(UsagePeriod.today);
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: AppTheme.cardDecoration(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Daily budgets',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  "Today's time against your soft limits (set in Personal "
+                  'Goals). Nothing is ever blocked.',
+                  style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                ),
+                const SizedBox(height: 14),
+                for (final category in AppCategory.values)
+                  if (budgets.containsKey(category.name))
+                    _budgetRow(
+                      category,
+                      today[category] ?? 0,
+                      budgets[category.name]! * 60,
+                    ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _budgetRow(AppCategory category, int usedSeconds, int budgetSeconds) {
+    final ratio = usedSeconds / budgetSeconds;
+    final over = ratio >= 1;
+    final color = over ? AppTheme.warning : category.color;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(category.icon, size: 15, color: category.color),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  category.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              Text(
+                '${formatUsageDuration(usedSeconds)} of '
+                '${formatUsageDuration(budgetSeconds)}'
+                '${over ? '  ·  over' : ''}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: over ? AppTheme.warning : AppTheme.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: ratio.clamp(0.0, 1.0),
+              minHeight: 5,
+              color: color,
+              backgroundColor: AppTheme.border,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -687,27 +903,30 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    chartTitle,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chartTitle,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    chartSubtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      chartSubtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -825,14 +1044,14 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   Widget _buildDetailGrid(_ViewMetrics metrics) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+        final crossAxisCount = 2;
         return GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: constraints.maxWidth > 600 ? 1.4 : 1.3,
+          childAspectRatio: constraints.maxWidth > 360 ? 2.1 : 1.6,
           children: [
             _buildStatCard(
               AppStrings.completed,
@@ -881,54 +1100,71 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, size: 14, color: color),
+            child: Icon(icon, size: 16, color: color),
           ),
-          const Spacer(),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              if (unit.isNotEmpty) ...[
-                SizedBox(width: unit == '%' ? 1 : 4),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  unit,
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    if (unit.isNotEmpty) ...[
+                      SizedBox(width: unit == '%' ? 1 : 4),
+                      Flexible(
+                        child: Text(
+                          unit,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
-            ],
+            ),
           ),
         ],
       ),

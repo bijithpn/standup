@@ -374,10 +374,14 @@ class SettingsModel {
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       postureReminderEnabled:
-          healthRemindersEnabled ?? postureReminderEnabled ?? this.postureReminderEnabled,
+          healthRemindersEnabled ??
+          postureReminderEnabled ??
+          this.postureReminderEnabled,
       postureReminderType: postureReminderType ?? this.postureReminderType,
       eyeBlinkReminderEnabled:
-          healthRemindersEnabled ?? eyeBlinkReminderEnabled ?? this.eyeBlinkReminderEnabled,
+          healthRemindersEnabled ??
+          eyeBlinkReminderEnabled ??
+          this.eyeBlinkReminderEnabled,
       eyeBlinkReminderType: eyeBlinkReminderType ?? this.eyeBlinkReminderType,
       showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
       breakTheme: breakTheme ?? this.breakTheme,
@@ -467,11 +471,17 @@ class SettingsModel {
       pipDraggableClickable:
           pipDraggableClickable ?? this.pipDraggableClickable,
       hydrationReminderEnabled:
-          healthRemindersEnabled ?? hydrationReminderEnabled ?? this.hydrationReminderEnabled,
+          healthRemindersEnabled ??
+          hydrationReminderEnabled ??
+          this.hydrationReminderEnabled,
       stretchReminderEnabled:
-          healthRemindersEnabled ?? stretchReminderEnabled ?? this.stretchReminderEnabled,
+          healthRemindersEnabled ??
+          stretchReminderEnabled ??
+          this.stretchReminderEnabled,
       standUpReminderEnabled:
-          healthRemindersEnabled ?? standUpReminderEnabled ?? this.standUpReminderEnabled,
+          healthRemindersEnabled ??
+          standUpReminderEnabled ??
+          this.standUpReminderEnabled,
       companionToyType: companionToyType ?? this.companionToyType,
       companionTreatType: companionTreatType ?? this.companionTreatType,
       templateAccentOverrides:

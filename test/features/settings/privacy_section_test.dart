@@ -16,9 +16,7 @@ import '../../helpers/fake_calendar_sync_controller.dart';
 
 void main() {
   setUp(() {
-    sl.registerSingleton<CalendarSyncController>(
-      FakeCalendarSyncController(),
-    );
+    sl.registerSingleton<CalendarSyncController>(FakeCalendarSyncController());
     if (!sl.isRegistered<AppTrackingService>()) {
       sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
     }

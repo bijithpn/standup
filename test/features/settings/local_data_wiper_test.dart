@@ -62,9 +62,7 @@ void main() {
     sl.registerSingleton<AppUsageService>(usage);
     sl.registerSingleton<FocusSessionService>(focus);
     sl.registerSingleton<SettingsRepository>(settingsRepo);
-    sl.registerSingleton<CalendarSyncController>(
-      FakeCalendarSyncController(),
-    );
+    sl.registerSingleton<CalendarSyncController>(FakeCalendarSyncController());
     sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
     sl.registerLazySingleton<AppIconCache>(
       () => AppIconCache(appTracking: sl()),
