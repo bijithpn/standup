@@ -89,6 +89,9 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
       final double? idleSeconds =
           (await invokeMethodProxy('getIdleTime')) as double?;
       if (idleSeconds != null) {
+        // Cheap per-poll sample (already measured) for the health reminders,
+        // which need finer idle detail than the pause threshold.
+        sendPort.send({'type': 'idleSample', 'idleSeconds': idleSeconds});
         final thresholdSeconds = idleThresholdMinutes * 60;
         final newIsIdle = idleSeconds >= thresholdSeconds;
 
@@ -202,7 +205,14 @@ class BackgroundPollingService {
           _sendPort = message;
         } else if (message is Map<String, dynamic>) {
           final type = message['type'] as String?;
-          if (type == 'idleChanged') {
+          if (type == 'idleSample') {
+            final idleSeconds = (message['idleSeconds'] as num).toDouble();
+            try {
+              sl<ActivityMonitor>().sampleIdle(idleSeconds);
+            } catch (e, st) {
+              ErrorHandler().handleError(e, st);
+            }
+          } else if (type == 'idleChanged') {
             final isIdle = message['isIdle'] as bool;
             final idleSeconds = (message['idleSeconds'] as num).toDouble();
             try {

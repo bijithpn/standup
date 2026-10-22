@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:breakmate/features/settings/exercise_model.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 
 import 'package:breakmate/core/events/app_events.dart';
@@ -148,6 +149,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
             const SizedBox.shrink(), // Overlay UI is rendered in separate window
         strictMode: settings.strictMode,
         breakTheme: settings.breakTheme,
+        showOnAllDisplays: settings.showOnAllDisplays,
         overlayData: {
           'isLong': isLong,
           'breakType': _timerEngine.activeBreak?.type.name,
@@ -211,15 +213,16 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  void _pickRandomExercise() {
-    final exercises = _settingsRepo
-        .getExercises()
-        .where((e) => e.enabled)
-        .toList();
-    if (exercises.isEmpty) return;
+  String? _currentExerciseId;
 
-    final random = Random();
-    final exercise = exercises[random.nextInt(exercises.length)];
+  void _pickRandomExercise() {
+    final exercise = ExerciseModel.pickForBreak(
+      _settingsRepo.getExercises(),
+      Random(),
+      avoidId: _currentExerciseId,
+    );
+    if (exercise == null) return;
+    _currentExerciseId = exercise.id;
     _currentExerciseTitle = exercise.title;
     _currentExerciseInstructions = exercise.instructions;
   }
@@ -485,6 +488,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         builder: (_) => const SizedBox.shrink(),
         strictMode: settings.strictMode,
         breakTheme: settings.breakTheme,
+        showOnAllDisplays: settings.showOnAllDisplays,
         overlayData: {
           'isLong': isLong,
           'breakType': _timerEngine.activeBreak?.type.name,

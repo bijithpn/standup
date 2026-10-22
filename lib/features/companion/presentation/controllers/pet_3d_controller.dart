@@ -13,8 +13,8 @@ class Pet3DController extends ChangeNotifier {
   Pet3DController({
     PetCameraState initialCamera = const PetCameraState(),
     PetPose initialPose = PetPose.identity,
-  })  : _cameraState = initialCamera,
-        _pose = initialPose;
+  }) : _cameraState = initialCamera,
+       _pose = initialPose;
 
   PetCameraState get cameraState => _cameraState;
   PetPose get pose => _pose;
@@ -23,7 +23,10 @@ class Pet3DController extends ChangeNotifier {
 
   void rotate({required double deltaAzimuth, required double deltaElevation}) {
     final nextAzimuth = (_cameraState.azimuth + deltaAzimuth) % 360.0;
-    final nextElevation = (_cameraState.elevation + deltaElevation).clamp(-45.0, 45.0);
+    final nextElevation = (_cameraState.elevation + deltaElevation).clamp(
+      -45.0,
+      45.0,
+    );
     _cameraState = _cameraState.copyWith(
       azimuth: nextAzimuth,
       elevation: nextElevation,

@@ -36,7 +36,9 @@ class StandaloneBreakOverlay extends StatefulWidget {
 
 class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     with TickerProviderStateMixin, BreakTimerManager {
-  static const MethodChannel _bridge = MethodChannel('com.breakmate.desktop/bridge');
+  static const MethodChannel _bridge = MethodChannel(
+    'com.breakmate.desktop/bridge',
+  );
 
   late OverlayWindowConfig _config;
   late String _currentTemplate;
@@ -70,12 +72,21 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _initialized = true;
 
     _currentTemplate = AppConstants.wellnessSlideshow.isNotEmpty
-        ? AppConstants.wellnessSlideshow[Random().nextInt(AppConstants.wellnessSlideshow.length)]
+        ? AppConstants.wellnessSlideshow[Random().nextInt(
+            AppConstants.wellnessSlideshow.length,
+          )]
         : '';
-    _currentTheme = BreakTheme.values[Random().nextInt(BreakTheme.values.length)];
+    _currentTheme =
+        BreakTheme.values[Random().nextInt(BreakTheme.values.length)];
 
-    _kenBurnsController = AnimationController(vsync: this, duration: const Duration(seconds: 15));
-    _fadeController = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _kenBurnsController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 15),
+    );
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
 
     _setupBridge();
     _loadInitialData();
@@ -104,7 +115,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
 
-    final config = OverlayWindowConfig.fromJson(Map<String, dynamic>.from(args));
+    final config = OverlayWindowConfig.fromJson(
+      Map<String, dynamic>.from(args),
+    );
     BreakOverlayConfigLoader.updateStatsIfNeeded(config);
 
     final targetEndMs = config.targetEndTime;
@@ -137,9 +150,12 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       if (config.classicImage != null) {
         _currentTemplate = config.classicImage!;
       }
-      _syncClassicEffects(config.breakTemplate == 'classic' && config.enableAnimations);
+      _syncClassicEffects(
+        config.breakTemplate == 'classic' && config.enableAnimations,
+      );
 
-      if (config.reminderType != null && config.reminderType != _config.reminderType) {
+      if (config.reminderType != null &&
+          config.reminderType != _config.reminderType) {
         _maxWarningSeconds = newRemaining;
       }
       if (newRemaining > _maxWarningSeconds) {
@@ -148,19 +164,24 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
       final isQuick = _config.overlayType == 'quickReminder';
       final isPreBreak = _config.overlayType == 'preBreakWarning';
-      _fadeController.duration = Duration(milliseconds: (isQuick || isPreBreak) ? 400 : 600);
+      _fadeController.duration = Duration(
+        milliseconds: (isQuick || isPreBreak) ? 400 : 600,
+      );
 
       if (isQuick) {
         final capturedType = _config.overlayType;
         Future.delayed(AppConstants.healthReminderDismissDuration, () {
-          if (mounted && _overlayDataGeneration == myGeneration && _config.overlayType == capturedType) {
+          if (mounted &&
+              _overlayDataGeneration == myGeneration &&
+              _config.overlayType == capturedType) {
             _skipBreak();
           }
         });
       }
     });
 
-    if (_fadeController.status != AnimationStatus.forward && _fadeController.value < 1) {
+    if (_fadeController.status != AnimationStatus.forward &&
+        _fadeController.value < 1) {
       _fadeController.forward();
     }
   }
@@ -203,14 +224,19 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     if (_classicEffectsRunning == enabled) return;
     _classicEffectsRunning = enabled;
     if (enabled) {
-      _kenBurnsController.repeatUnlessReducedMotion(reverse: true, staticValue: 0);
+      _kenBurnsController.repeatUnlessReducedMotion(
+        reverse: true,
+        staticValue: 0,
+      );
     } else {
       _kenBurnsController.stop();
     }
   }
 
-  void _completeBreak() => completeBreak(_config.isPreview, _config.overlayType, _fadeController);
-  void _skipBreak() => skipBreak(_config.isPreview, _config.overlayType, _fadeController);
+  void _completeBreak() =>
+      completeBreak(_config.isPreview, _config.overlayType, _fadeController);
+  void _skipBreak() =>
+      skipBreak(_config.isPreview, _config.overlayType, _fadeController);
   void _quitApp() => _bridge.invokeMethod('quitApp');
 
   bool get _canDismiss =>
@@ -221,9 +247,13 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
   void _handleTemplateError(FlutterErrorDetails details) {
     if (!_templateFailed) {
-      debugPrint('Template ${_config.breakTemplate} failed: ${details.exception}');
+      debugPrint(
+        'Template ${_config.breakTemplate} failed: ${details.exception}',
+      );
       _templateFailed = true;
-      ErrorToastService.showError('Template "${_config.breakTemplate}" could not be loaded.');
+      ErrorToastService.showError(
+        'Template "${_config.breakTemplate}" could not be loaded.',
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           setState(() {
@@ -267,8 +297,8 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
           color: _config.overlayType == 'preBreakWarning'
               ? Colors.transparent
               : (isDimmedOverlay
-                  ? Colors.black.withValues(alpha: 0.25)
-                  : Colors.black),
+                    ? Colors.black.withValues(alpha: 0.25)
+                    : Colors.black),
           child: BreakOverlayKeyboardHandler(
             canDismiss: _canDismiss,
             onSkip: _skipBreak,

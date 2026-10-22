@@ -2,18 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_gate.dart';
 
 void main() {
-  test('allows the poster when nothing meeting/presentation-like is active', () {
-    expect(
-      allowFullPosterReminder(
-        detectMeetings: true,
-        calendarMeetingActive: false,
-        detectVideoCalls: true,
-        videoCallActive: false,
-        presenting: false,
-      ),
-      isTrue,
-    );
-  });
+  test(
+    'allows the poster when nothing meeting/presentation-like is active',
+    () {
+      expect(
+        allowFullPosterReminder(
+          detectMeetings: true,
+          calendarMeetingActive: false,
+          detectVideoCalls: true,
+          videoCallActive: false,
+          presenting: false,
+        ),
+        isTrue,
+      );
+    },
+  );
 
   test('blocks the poster during a detected calendar meeting', () {
     expect(

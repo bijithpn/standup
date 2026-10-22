@@ -15,7 +15,9 @@ import 'package:breakmate/app/dependency_injection.dart';
 /// platforms without any bespoke native polling code.
 class PresentationDetectionService {
   static const double _coverageThreshold = 0.95;
-  static const Duration _pollInterval = Duration(seconds: 2);
+  // The result only decides how the next break is presented, so a few seconds
+  // of staleness is invisible while each poll enumerates every window.
+  static const Duration _pollInterval = Duration(seconds: 5);
 
   final DisplayManager _displayManager;
 

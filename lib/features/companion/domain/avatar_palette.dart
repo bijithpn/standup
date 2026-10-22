@@ -270,16 +270,8 @@ class AvatarPalette {
           belly == other.belly;
 
   @override
-  int get hashCode => Object.hash(
-        name,
-        primary,
-        secondary,
-        accent,
-        snout,
-        ears,
-        eyes,
-        belly,
-      );
+  int get hashCode =>
+      Object.hash(name, primary, secondary, accent, snout, ears, eyes, belly);
 
   @override
   String toString() => 'AvatarPalette($name: $primary, $secondary, $accent)';

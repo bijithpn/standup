@@ -232,12 +232,12 @@ BreakMate runs several Flutter engines (via `FlutterEngineGroup`) so heavy secon
 | --- | --- |
 | **Main** | Dashboard, settings, timer engine, statistics, native hooks. |
 | **Overlay** (`overlayMain`) | Full-screen break, warning, and reminder overlays. |
-| **Companion** (`companionMain`) | Flame/3D renderer for the desktop pet and PiP window. |
+| **Companion** (`companionMain`) | 3D avatar web renderer for the desktop pet and PiP window. |
 | **Background polling** | Lightweight activity, meeting, and app-usage sampling. |
 
 - **IPC** — a MethodChannel layer syncs timer state, meeting/sleep state, and interactions across isolates in real time.
 - **Native bridges** — Swift (`AppDelegate`, `CompanionWindowManager`, EventKit calendar) on macOS; C++ (`display_bridge`, `companion_window_manager`) on Windows; GTK runner on Linux.
-- **Single-instance lock** — a localhost TCP listener on port `10425`; a second launch asks the running instance to shut down, with stale-process cleanup.
+- **Single-instance lock** — a localhost TCP listener (port `10425` for production, `10426` for the dev flavor, so the two can run side by side); a second launch of the same flavor asks the running instance to shut down, with stale-process cleanup.
 - **Storage** — unified `StorageService` with migrations, lock-file cleanup, and a mirrored key-value store for critical settings.
 - **State & DI** — `provider` + `get_it`, with a dedicated bootstrapper for startup ordering.
 

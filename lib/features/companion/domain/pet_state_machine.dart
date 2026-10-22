@@ -196,7 +196,8 @@ class PetStateMachine extends ChangeNotifier {
       ? DateTime.now().difference(_stateEnteredAt!)
       : Duration.zero;
   PetMoodState? get currentMood => _currentMood;
-  AvatarAnimationClip get currentAnimationClip => _currentState.toAnimationClip();
+  AvatarAnimationClip get currentAnimationClip =>
+      _currentState.toAnimationClip();
 
   Stream<PetState> get stateStream => _stateController.stream;
   final StreamController<PetState> _stateController =

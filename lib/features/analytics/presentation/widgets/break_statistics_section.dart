@@ -117,10 +117,14 @@ class BreakStatisticsSection extends StatelessWidget {
               children: [
                 _YearlyHeatmap(days: stats.weeklyData),
                 const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  runSpacing: 6,
+                  spacing: 16,
                   children: [
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           'How it works: ',

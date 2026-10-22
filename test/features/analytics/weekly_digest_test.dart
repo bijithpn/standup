@@ -39,27 +39,33 @@ void main() {
     expect(markdown, isNot(contains('Break adherence')));
   });
 
-  test('includes the worst over-budget category in both message and markdown', () {
-    const digest = WeeklyDigest(
-      breakAdherenceRate: 0.0,
-      breaksCompleted: 0,
-      breaksSkipped: 0,
-      topFocusCategory: null,
-      longestDeepWorkSessionSeconds: 0,
-      companionMilestoneLabel: null,
-      daysOverBudgetByCategory: {
-        AppCategory.browsing: 5,
-        AppCategory.coding: 1,
-      },
-    );
+  test(
+    'includes the worst over-budget category in both message and markdown',
+    () {
+      const digest = WeeklyDigest(
+        breakAdherenceRate: 0.0,
+        breaksCompleted: 0,
+        breaksSkipped: 0,
+        topFocusCategory: null,
+        longestDeepWorkSessionSeconds: 0,
+        companionMilestoneLabel: null,
+        daysOverBudgetByCategory: {
+          AppCategory.browsing: 5,
+          AppCategory.coding: 1,
+        },
+      );
 
-    expect(digest.toMessage(), contains('Browsing was over its daily budget 5/7 days.'));
-    final markdown = digest.toMarkdown(generatedAt: DateTime(2026, 9, 6));
-    expect(markdown, contains('- **Browsing over budget:** 5/7 days'));
-    expect(markdown, contains('- **Coding over budget:** 1/7 days'));
-    // Sparse-data fallback shouldn't fire when budget data exists.
-    expect(markdown, isNot(contains('Not much tracked data this week yet')));
-  });
+      expect(
+        digest.toMessage(),
+        contains('Browsing was over its daily budget 5/7 days.'),
+      );
+      final markdown = digest.toMarkdown(generatedAt: DateTime(2026, 9, 6));
+      expect(markdown, contains('- **Browsing over budget:** 5/7 days'));
+      expect(markdown, contains('- **Coding over budget:** 1/7 days'));
+      // Sparse-data fallback shouldn't fire when budget data exists.
+      expect(markdown, isNot(contains('Not much tracked data this week yet')));
+    },
+  );
 
   group('trend regression (§7.3)', () {
     test('adherenceDeltaPoints is null without a trailing average', () {

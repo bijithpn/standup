@@ -115,35 +115,3 @@ class SwipeToDismissHint extends StatelessWidget {
     );
   }
 }
-
-class SkipBreakButton extends StatelessWidget {
-  final VoidCallback onSkip;
-
-  const SkipBreakButton({super.key, required this.onSkip});
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onSkip,
-        behavior: HitTestBehavior.opaque,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Opacity(
-            opacity: 0.4,
-            child: const Text(
-              'Skip',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: BreakOverlayTheme.labelFontSize,
-                fontWeight: FontWeight.w400,
-                fontFamily: BreakOverlayTheme.fontFamily,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}

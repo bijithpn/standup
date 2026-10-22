@@ -105,7 +105,9 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
   }
 
   Future<void> _loadAndSetup() async {
-    if (widget.petTheme.isAvatar || widget.use3dAvatar || widget.avatarDefinition != null) {
+    if (widget.petTheme.isAvatar ||
+        widget.use3dAvatar ||
+        widget.avatarDefinition != null) {
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -123,8 +125,7 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       return;
     }
 
-    final String bgPath =
-        widget.backgroundImagePath ?? '';
+    final String bgPath = widget.backgroundImagePath ?? '';
     final config = EnvironmentThemeConfig.getByPath(bgPath);
 
     final cachedSprite = PetAssetLoader.getImageSync(path);
@@ -168,7 +169,8 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       final double computedPadding = await _calculateImagePadding(loadedSprite);
 
       // Only attempt sky/ground/cloud if paths are non-empty and backgroundImagePath is set.
-      final hasBg = widget.backgroundImagePath != null &&
+      final hasBg =
+          widget.backgroundImagePath != null &&
           widget.backgroundImagePath!.isNotEmpty;
       final skyPath = hasBg ? config.skyPath : '';
       final groundPath = config.groundPath;
@@ -179,13 +181,19 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       ui.Image? cloudImage;
 
       if (hasBg && skyPath.isNotEmpty) {
-        try { bgImage = await PetAssetLoader.loadImage(skyPath); } catch (_) {}
+        try {
+          bgImage = await PetAssetLoader.loadImage(skyPath);
+        } catch (_) {}
       }
       if (groundPath.isNotEmpty) {
-        try { groundImage = await PetAssetLoader.loadImage(groundPath); } catch (_) {}
+        try {
+          groundImage = await PetAssetLoader.loadImage(groundPath);
+        } catch (_) {}
       }
       if (cloudPath.isNotEmpty) {
-        try { cloudImage = await PetAssetLoader.loadImage(cloudPath); } catch (_) {}
+        try {
+          cloudImage = await PetAssetLoader.loadImage(cloudPath);
+        } catch (_) {}
       }
 
       if (mounted) {
@@ -210,7 +218,6 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       }
     }
   }
-
 
   Future<double> _calculateImagePadding(ui.Image image) async {
     final dynamic anim =
@@ -351,13 +358,19 @@ class _CompanionSpriteWidgetState extends State<CompanionSpriteWidget>
       );
     }
 
-    if (widget.petTheme.isAvatar || widget.use3dAvatar || widget.avatarDefinition != null) {
-      final species = AvatarSpecies.tryParse(widget.petTheme.id) ?? AvatarSpecies.cat;
-      final def = widget.avatarDefinition ??
+    if (widget.petTheme.isAvatar ||
+        widget.use3dAvatar ||
+        widget.avatarDefinition != null) {
+      final species =
+          AvatarSpecies.tryParse(widget.petTheme.id) ?? AvatarSpecies.cat;
+      final def =
+          widget.avatarDefinition ??
           widget.petTheme.avatarDefinition ??
           AvatarDefinition.fromSpecies(species);
-      final effectiveW = widget.size?.width ?? (widget.petTheme.spriteSize * effectiveScale);
-      final effectiveH = widget.size?.height ?? (widget.petTheme.spriteSize * effectiveScale);
+      final effectiveW =
+          widget.size?.width ?? (widget.petTheme.spriteSize * effectiveScale);
+      final effectiveH =
+          widget.size?.height ?? (widget.petTheme.spriteSize * effectiveScale);
       return SizedBox(
         width: effectiveW,
         height: effectiveH,

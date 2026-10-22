@@ -115,7 +115,10 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
   void _randomizeSeed() {
     final randomValue = (math.Random().nextInt(900000) + 100000).toString();
     final newSeed = '${_currentDefinition.species.name}-$randomValue';
-    final generated = AvatarDefinition.fromSeed(newSeed, species: _currentDefinition.species);
+    final generated = AvatarDefinition.fromSeed(
+      newSeed,
+      species: _currentDefinition.species,
+    );
     _updateDefinition(generated);
   }
 
@@ -229,7 +232,9 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                     decoration: BoxDecoration(
                       color: AppTheme.accentColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.accentColor.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppTheme.accentColor.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Icon(
                       CupertinoIcons.cube_box_fill,
@@ -252,10 +257,7 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
               const SizedBox(height: 2),
               const Text(
                 'Interactive 3D depth viewport & textures',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: Color(0xFF8E92A8),
-                ),
+                style: TextStyle(fontSize: 11.5, color: Color(0xFF8E92A8)),
               ),
             ],
           ),
@@ -297,7 +299,10 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
               if (badge != null) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.accentColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -317,10 +322,7 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF7E8299),
-            ),
+            style: const TextStyle(fontSize: 11, color: Color(0xFF7E8299)),
           ),
           const SizedBox(height: 10),
           child,
@@ -386,11 +388,16 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                   top: 14,
                   left: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10121C).withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.12),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -427,16 +434,25 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                   top: 14,
                   right: 16,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 9,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppTheme.accentColor.withValues(alpha: 0.16),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.accentColor.withValues(alpha: 0.35)),
+                      border: Border.all(
+                        color: AppTheme.accentColor.withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(CupertinoIcons.viewfinder, size: 12, color: AppTheme.accentColor),
+                        Icon(
+                          CupertinoIcons.viewfinder,
+                          size: 12,
+                          color: AppTheme.accentColor,
+                        ),
                         const SizedBox(width: 5),
                         Text(
                           '3D Depth Tracking',
@@ -460,7 +476,11 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              const Icon(CupertinoIcons.circle_grid_hex, size: 12, color: Color(0xFF8E92A8)),
+              const Icon(
+                CupertinoIcons.circle_grid_hex,
+                size: 12,
+                color: Color(0xFF8E92A8),
+              ),
               const SizedBox(width: 6),
               const Text(
                 'Stage Lighting:',
@@ -481,22 +501,31 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                     onTap: () => setState(() => _previewBgColor = color),
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 9,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: isSelected
                             ? AppTheme.accentColor.withValues(alpha: 0.22)
                             : const Color(0xFF191B28),
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: isSelected ? AppTheme.accentColor : const Color(0xFF292C3E),
+                          color: isSelected
+                              ? AppTheme.accentColor
+                              : const Color(0xFF292C3E),
                         ),
                       ),
                       child: Text(
                         name,
                         style: TextStyle(
                           fontSize: 10.5,
-                          fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? AppTheme.accentColor : const Color(0xFFA2A6BC),
+                          fontWeight: isSelected
+                              ? FontWeight.w700
+                              : FontWeight.w500,
+                          color: isSelected
+                              ? AppTheme.accentColor
+                              : const Color(0xFFA2A6BC),
                         ),
                       ),
                     ),
@@ -511,16 +540,25 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                 },
                 borderRadius: BorderRadius.circular(8),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppTheme.accentColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.accentColor.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppTheme.accentColor.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(CupertinoIcons.play_circle_fill, size: 12, color: AppTheme.accentColor),
+                      Icon(
+                        CupertinoIcons.play_circle_fill,
+                        size: 12,
+                        color: AppTheme.accentColor,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         'Preview Anim',
@@ -552,7 +590,9 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
         separatorBuilder: (context, index) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final pal = palettes[index];
-          final isSelected = _currentDefinition.palette.name.toLowerCase() == pal.name.toLowerCase();
+          final isSelected =
+              _currentDefinition.palette.name.toLowerCase() ==
+              pal.name.toLowerCase();
 
           return InkWell(
             key: Key('palette_card_${pal.name.toLowerCase()}'),
@@ -568,7 +608,9 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                     : const Color(0xFF131520),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isSelected ? AppTheme.accentColor : const Color(0xFF26293A),
+                  color: isSelected
+                      ? AppTheme.accentColor
+                      : const Color(0xFF26293A),
                   width: isSelected ? 2.0 : 1.0,
                 ),
                 boxShadow: isSelected
@@ -602,8 +644,12 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 11,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                      color: isSelected ? Colors.white : const Color(0xFFB0B4C8),
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFFB0B4C8),
                     ),
                   ),
                 ],
@@ -623,12 +669,12 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
       decoration: BoxDecoration(
         color: color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
         boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.4),
-            blurRadius: 3,
-          ),
+          BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 3),
         ],
       ),
     );
@@ -649,12 +695,22 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
             ),
             decoration: InputDecoration(
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               hintText: 'e.g. fluffy-cat-101',
-              hintStyle: const TextStyle(color: Color(0xFF63677E), fontSize: 13),
+              hintStyle: const TextStyle(
+                color: Color(0xFF63677E),
+                fontSize: 13,
+              ),
               filled: true,
               fillColor: const Color(0xFF131520),
-              prefixIcon: const Icon(CupertinoIcons.number, size: 16, color: Color(0xFF6F738B)),
+              prefixIcon: const Icon(
+                CupertinoIcons.number,
+                size: 16,
+                color: Color(0xFF6F738B),
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Color(0xFF26293A)),
@@ -680,27 +736,40 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
         const SizedBox(width: 8),
         IconButton(
           key: const Key('copy_seed_button'),
-          icon: const Icon(CupertinoIcons.doc_on_doc, size: 18, color: Color(0xFF8E92A8)),
+          icon: const Icon(
+            CupertinoIcons.doc_on_doc,
+            size: 18,
+            color: Color(0xFF8E92A8),
+          ),
           tooltip: 'Copy Seed',
           onPressed: _copySeed,
         ),
         IconButton(
           key: const Key('paste_seed_button'),
-          icon: const Icon(CupertinoIcons.doc_on_clipboard, size: 18, color: Color(0xFF8E92A8)),
+          icon: const Icon(
+            CupertinoIcons.doc_on_clipboard,
+            size: 18,
+            color: Color(0xFF8E92A8),
+          ),
           tooltip: 'Paste Seed',
           onPressed: _pasteSeed,
         ),
         ElevatedButton.icon(
           key: const Key('randomize_seed_button'),
           icon: const Icon(CupertinoIcons.shuffle, size: 14),
-          label: const Text('Randomize', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+          label: const Text(
+            'Randomize',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF222536),
             foregroundColor: Colors.white,
             elevation: 0,
             side: const BorderSide(color: Color(0xFF33374E)),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
           onPressed: _randomizeSeed,
         ),
@@ -715,23 +784,29 @@ class _AvatarCustomizerSheetState extends State<AvatarCustomizerSheet> {
         TextButton.icon(
           key: const Key('reset_default_button'),
           icon: const Icon(CupertinoIcons.arrow_counterclockwise, size: 15),
-          label: const Text('Reset to Default', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFF7E8299),
+          label: const Text(
+            'Reset to Default',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
           ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF7E8299)),
           onPressed: _resetToDefault,
         ),
         ElevatedButton.icon(
           key: const Key('save_pet_button'),
           icon: const Icon(CupertinoIcons.check_mark_circled_solid, size: 16),
-          label: const Text('Save Pet', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+          label: const Text(
+            'Save Pet',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.accentColor,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
             elevation: 2,
             shadowColor: AppTheme.accentColor.withValues(alpha: 0.4),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
           onPressed: () {
             widget.onSaved?.call(_currentDefinition);

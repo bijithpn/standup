@@ -23,7 +23,8 @@ import 'package:breakmate/features/companion/services/companion_streak_service.d
 /// history each time it's checked, on the same periodic-timer pattern
 /// [WeeklyDigestService] and [FocusInsightService] already use.
 class FocusStreakService extends ChangeNotifier {
-  static const _kHighestMilestoneDaysKey = 'focus_highest_streak_milestone_days';
+  static const _kHighestMilestoneDaysKey =
+      'focus_highest_streak_milestone_days';
   static const _checkInterval = Duration(minutes: 15);
 
   /// A day counts toward the streak once its Focus Score reaches this share
@@ -48,17 +49,20 @@ class FocusStreakService extends ChangeNotifier {
     required AppUsageService usageService,
     required StorageService storage,
     required EventBus eventBus,
-  })  : _focusSessionService = focusSessionService,
-        _usageService = usageService,
-        _storage = storage,
-        _eventBus = eventBus,
-        _highestMilestoneDays = storage.getInt(
-          _kHighestMilestoneDaysKey,
-          defaultValue: 0,
-        );
+  }) : _focusSessionService = focusSessionService,
+       _usageService = usageService,
+       _storage = storage,
+       _eventBus = eventBus,
+       _highestMilestoneDays = storage.getInt(
+         _kHighestMilestoneDaysKey,
+         defaultValue: 0,
+       );
 
   void start() {
-    _checkTimer ??= Timer.periodic(_checkInterval, (_) => checkAndMaybeCelebrate());
+    _checkTimer ??= Timer.periodic(
+      _checkInterval,
+      (_) => checkAndMaybeCelebrate(),
+    );
     checkAndMaybeCelebrate();
   }
 
@@ -99,7 +103,9 @@ class FocusStreakService extends ChangeNotifier {
           .values
           .fold<int>(0, (sum, s) => sum + s);
 
-      if (totalActiveSeconds == 0) continue; // no activity: a day off, not a break
+      if (totalActiveSeconds == 0) {
+        continue; // no activity: a day off, not a break
+      }
 
       final dateKey = _dateKey(date);
       final score = _focusSessionService.focusScore(

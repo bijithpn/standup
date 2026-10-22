@@ -18,8 +18,8 @@ class ActivitySegmentRepository extends ChangeNotifier {
     required StorageService storage,
     AppLogger? logger,
     this.flushThreshold = 8,
-  })  : _storage = storage,
-        _logger = logger ?? AppLogger();
+  }) : _storage = storage,
+       _logger = logger ?? AppLogger();
 
   final StorageService _storage;
   final AppLogger _logger;
@@ -93,10 +93,20 @@ class ActivitySegmentRepository extends ChangeNotifier {
     final box = _box;
     if (box == null) return const <ActivitySegment>[];
 
-    final startMs = DateTime(from.year, from.month, from.day)
-        .millisecondsSinceEpoch;
-    final endMs = DateTime(to.year, to.month, to.day, 23, 59, 59, 999)
-        .millisecondsSinceEpoch;
+    final startMs = DateTime(
+      from.year,
+      from.month,
+      from.day,
+    ).millisecondsSinceEpoch;
+    final endMs = DateTime(
+      to.year,
+      to.month,
+      to.day,
+      23,
+      59,
+      59,
+      999,
+    ).millisecondsSinceEpoch;
 
     try {
       final query = box
@@ -145,8 +155,11 @@ class ActivitySegmentRepository extends ChangeNotifier {
     _lastRetentionDay = todayKey;
 
     pruneBefore(
-      DateTime(today.year, today.month, today.day)
-          .subtract(Duration(days: retentionDays)),
+      DateTime(
+        today.year,
+        today.month,
+        today.day,
+      ).subtract(Duration(days: retentionDays)),
     );
   }
 
@@ -160,10 +173,13 @@ class ActivitySegmentRepository extends ChangeNotifier {
     if (box == null) return 0;
 
     try {
-      final query =
-          box.query(ActivitySegment_.startedAtMs.lessThan(
-        cutoff.millisecondsSinceEpoch,
-      )).build();
+      final query = box
+          .query(
+            ActivitySegment_.startedAtMs.lessThan(
+              cutoff.millisecondsSinceEpoch,
+            ),
+          )
+          .build();
       try {
         final removed = query.remove();
         if (removed > 0) {

@@ -18,6 +18,15 @@ class ActivityMonitor {
     _onActivityChanged = callback;
   }
 
+  void Function(double idleSeconds)? _onIdleSample;
+
+  /// Called with the current idle time on every poll (a few seconds apart).
+  void setIdleSampleCallback(void Function(double idleSeconds) callback) {
+    _onIdleSample = callback;
+  }
+
+  void sampleIdle(double idleSeconds) => _onIdleSample?.call(idleSeconds);
+
   void start() {
     _isIdle = false;
     BackgroundPollingService.instance.start();

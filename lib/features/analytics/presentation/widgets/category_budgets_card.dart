@@ -83,7 +83,10 @@ class CategoryBudgetsCard extends StatelessWidget {
         _stepperButton(
           icon: CupertinoIcons.minus,
           enabled: minutes > 0,
-          onPressed: () => _setMinutes(category, (minutes - _stepMinutes).clamp(0, _maxMinutes)),
+          onPressed: () => _setMinutes(
+            category,
+            (minutes - _stepMinutes).clamp(0, _maxMinutes),
+          ),
         ),
         SizedBox(
           width: 76,
@@ -100,7 +103,10 @@ class CategoryBudgetsCard extends StatelessWidget {
         _stepperButton(
           icon: CupertinoIcons.plus,
           enabled: minutes < _maxMinutes,
-          onPressed: () => _setMinutes(category, (minutes + _stepMinutes).clamp(0, _maxMinutes)),
+          onPressed: () => _setMinutes(
+            category,
+            (minutes + _stepMinutes).clamp(0, _maxMinutes),
+          ),
         ),
       ],
     );
@@ -117,7 +123,10 @@ class CategoryBudgetsCard extends StatelessWidget {
       child: IconButton(
         padding: EdgeInsets.zero,
         iconSize: 14,
-        icon: Icon(icon, color: enabled ? AppTheme.accentColor : AppTheme.textMuted),
+        icon: Icon(
+          icon,
+          color: enabled ? AppTheme.accentColor : AppTheme.textMuted,
+        ),
         onPressed: enabled ? onPressed : null,
       ),
     );

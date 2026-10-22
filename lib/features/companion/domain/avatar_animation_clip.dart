@@ -87,8 +87,10 @@ enum AvatarAnimationClip {
 
   static AvatarAnimationClip fromName(String name) {
     return AvatarAnimationClip.values.firstWhere(
-      (clip) => clip.name == name || clip.name.toLowerCase() == name.toLowerCase(),
-      orElse: () => throw ArgumentError('Unknown AvatarAnimationClip name: $name'),
+      (clip) =>
+          clip.name == name || clip.name.toLowerCase() == name.toLowerCase(),
+      orElse: () =>
+          throw ArgumentError('Unknown AvatarAnimationClip name: $name'),
     );
   }
 
@@ -96,7 +98,8 @@ enum AvatarAnimationClip {
     if (name == null || name.isEmpty) return null;
     try {
       return AvatarAnimationClip.values.firstWhere(
-        (clip) => clip.name == name || clip.name.toLowerCase() == name.toLowerCase(),
+        (clip) =>
+            clip.name == name || clip.name.toLowerCase() == name.toLowerCase(),
       );
     } catch (_) {
       return null;

@@ -8,11 +8,7 @@ abstract class PetRenderer {
   Future<void> initialize();
   Future<void> loadPet(String petId);
 
-  void setCamera({
-    double? azimuth,
-    double? elevation,
-    double? distance,
-  });
+  void setCamera({double? azimuth, double? elevation, double? distance});
 
   void rotate(double deltaX, double deltaY);
   void zoom(double delta);

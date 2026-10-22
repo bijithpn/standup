@@ -19,7 +19,9 @@ abstract final class BreakOverlayTheme {
   static const Color accentLong = Color(0xFF86EFAC); // long / recovery break
   static const Color accentAmber = Color(0xFFC49A4A); // warm-amber / wind-down
   static const Color accentZen = Color(0xFF7EC8E3); // zen / breathe
-  static const Color accentNature = Color(0xFF74C69D); // eye-break nature backdrop
+  static const Color accentNature = Color(
+    0xFF74C69D,
+  ); // eye-break nature backdrop
 
   // Borders / surfaces
   static const Color borderSubtle = Color(0x0DFFFFFF); // 5 % white

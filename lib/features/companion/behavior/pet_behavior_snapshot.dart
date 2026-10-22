@@ -121,7 +121,8 @@ class PetBehaviorSnapshot {
   }
 
   @override
-  String toString() => 'PetBehaviorSnapshot(${activity.name}, '
+  String toString() =>
+      'PetBehaviorSnapshot(${activity.name}, '
       'gaze: ${gaze.dx.toStringAsFixed(2)},${gaze.dy.toStringAsFixed(2)}, '
       'arousal: ${arousal.toStringAsFixed(2)})';
 }

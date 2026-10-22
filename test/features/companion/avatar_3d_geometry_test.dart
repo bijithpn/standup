@@ -44,7 +44,10 @@ void main() {
       );
 
       // Rotating 90 degrees changes the set of visible front-facing cells
-      expect(frontGeometry.cells.map((c) => c.id).toSet(), isNot(equals(sideGeometry.cells.map((c) => c.id).toSet())));
+      expect(
+        frontGeometry.cells.map((c) => c.id).toSet(),
+        isNot(equals(sideGeometry.cells.map((c) => c.id).toSet())),
+      );
     });
 
     test('tapered bodies (cones, half-cone) resolve unique geometry', () {

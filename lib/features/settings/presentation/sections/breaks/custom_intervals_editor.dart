@@ -19,9 +19,10 @@ class CustomIntervalsEditor extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader(
-          'Custom Rhythm',
+          'Break intervals',
           subtitle:
-              'Fine-tune your break frequency and duration for maximum productivity.',
+              'The exact timings behind your profile. Picking a profile sets '
+              'these for you; change them here for a rhythm of your own.',
         ),
         buildCard([
           inputRow(

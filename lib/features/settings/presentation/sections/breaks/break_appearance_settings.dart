@@ -805,18 +805,18 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   runSpacing: 12,
                   children: [
                     ...colorPresets.map((preset) {
-                      final overrideInt =
-                          widget
-                              .settings
-                              .templateAccentOverrides[_accentOverrideTemplateId];
-                      final isSelected =
-                          overrideInt == preset.color.toARGB32();
+                      final overrideInt = widget
+                          .settings
+                          .templateAccentOverrides[_accentOverrideTemplateId];
+                      final isSelected = overrideInt == preset.color.toARGB32();
                       return GestureDetector(
                         onTap: () {
-                          final updated = Map<String, int>.from(
-                            widget.settings.templateAccentOverrides,
-                          )..[_accentOverrideTemplateId] = preset.color
-                              .toARGB32();
+                          final updated =
+                              Map<String, int>.from(
+                                  widget.settings.templateAccentOverrides,
+                                )
+                                ..[_accentOverrideTemplateId] = preset.color
+                                    .toARGB32();
                           widget.onSave(
                             widget.settings.copyWith(
                               templateAccentOverrides: updated,
@@ -844,8 +844,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                                       CupertinoIcons.checkmark,
                                       size: 12,
                                       color:
-                                          preset.color.computeLuminance() >
-                                              0.5
+                                          preset.color.computeLuminance() > 0.5
                                           ? Colors.black87
                                           : Colors.white,
                                     ),
@@ -911,7 +910,10 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected
                       ? AppTheme.accentColor
@@ -929,7 +931,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   style: TextStyle(
                     color: isSelected ? Colors.white : AppTheme.textSecondary,
                     fontSize: 12,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight: isSelected
+                        ? FontWeight.w600
+                        : FontWeight.normal,
                     fontFamily: 'Inter',
                   ),
                 ),
@@ -1082,15 +1086,15 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      _LiveTemplatePreview(
-                        id: id,
-                        settings: widget.settings,
-                      ),
+                      _LiveTemplatePreview(id: id, settings: widget.settings),
                       Positioned(
                         top: 8,
                         left: 8,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.black.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(6),
@@ -1250,4 +1254,3 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
     );
   }
 }
-

@@ -108,7 +108,8 @@ class AppThemePreset {
   static const forestMatcha = AppThemePreset(
     id: 'forest_matcha',
     name: 'Forest Matcha',
-    description: 'Organic botanical moss surfaces with jade and sage highlights.',
+    description:
+        'Organic botanical moss surfaces with jade and sage highlights.',
     primary: Color(0xFF141D16),
     primaryDark: Color(0xFF0B120C),
     primaryLight: Color(0xFF253327),
@@ -129,7 +130,8 @@ class AppThemePreset {
   static const eInkPaper = AppThemePreset(
     id: 'e_ink_paper',
     name: 'E-Ink Minimal',
-    description: 'High-contrast monochrome editorial layout for distraction-free focus.',
+    description:
+        'High-contrast monochrome editorial layout for distraction-free focus.',
     primary: Color(0xFF202020),
     primaryDark: Color(0xFF0F0F0F),
     primaryLight: Color(0xFF404040),
@@ -150,7 +152,8 @@ class AppThemePreset {
   static const cyberpunk = AppThemePreset(
     id: 'cyberpunk',
     name: 'Cyberpunk HUD',
-    description: 'Pitch obsidian black with high-voltage lime and circuit orange.',
+    description:
+        'Pitch obsidian black with high-voltage lime and circuit orange.',
     primary: Color(0xFF121212),
     primaryDark: Color(0xFF050505),
     primaryLight: Color(0xFF242424),
@@ -171,7 +174,8 @@ class AppThemePreset {
   static const crimsonEmber = AppThemePreset(
     id: 'crimson_ember',
     name: 'Crimson Ember',
-    description: 'Deep charcoal ruby base with vibrant scarlet and rose gold glow.',
+    description:
+        'Deep charcoal ruby base with vibrant scarlet and rose gold glow.',
     primary: Color(0xFF1E1418),
     primaryDark: Color(0xFF100A0C),
     primaryLight: Color(0xFF331F27),
@@ -192,7 +196,8 @@ class AppThemePreset {
   static const oceanAbyss = AppThemePreset(
     id: 'ocean_abyss',
     name: 'Ocean Abyss',
-    description: 'Midnight sapphire depths with vivid cyan and aquamarine luminescence.',
+    description:
+        'Midnight sapphire depths with vivid cyan and aquamarine luminescence.',
     primary: Color(0xFF0C1929),
     primaryDark: Color(0xFF060E18),
     primaryLight: Color(0xFF172D47),
@@ -213,7 +218,8 @@ class AppThemePreset {
   static const auroraBorealis = AppThemePreset(
     id: 'aurora_borealis',
     name: 'Aurora Borealis',
-    description: 'Arctic polar night with radiant celestial emerald and violet flare.',
+    description:
+        'Arctic polar night with radiant celestial emerald and violet flare.',
     primary: Color(0xFF0E1A1A),
     primaryDark: Color(0xFF070F0F),
     primaryLight: Color(0xFF192C2C),
@@ -234,7 +240,8 @@ class AppThemePreset {
   static const desertDusk = AppThemePreset(
     id: 'desert_dusk',
     name: 'Desert Dusk',
-    description: 'Warm terracotta and canyon clay with radiant twilight apricot.',
+    description:
+        'Warm terracotta and canyon clay with radiant twilight apricot.',
     primary: Color(0xFF221714),
     primaryDark: Color(0xFF140D0B),
     primaryLight: Color(0xFF382520),
@@ -255,7 +262,8 @@ class AppThemePreset {
   static const lavenderMist = AppThemePreset(
     id: 'lavender_mist',
     name: 'Lavender Mist',
-    description: 'Serene twilight plum atmosphere with soft pastel lilac luminescence.',
+    description:
+        'Serene twilight plum atmosphere with soft pastel lilac luminescence.',
     primary: Color(0xFF191624),
     primaryDark: Color(0xFF0F0D17),
     primaryLight: Color(0xFF2B253C),
@@ -276,7 +284,8 @@ class AppThemePreset {
   static const monokaiPro = AppThemePreset(
     id: 'monokai_pro',
     name: 'Monokai Pro',
-    description: 'Classic anthracite developer aesthetic with vivid yellow and magenta highlights.',
+    description:
+        'Classic anthracite developer aesthetic with vivid yellow and magenta highlights.',
     primary: Color(0xFF222227),
     primaryDark: Color(0xFF17171A),
     primaryLight: Color(0xFF36363D),
@@ -389,10 +398,7 @@ class AppThemePreset {
 
   static AppThemePreset findById(String? id) {
     if (id == null) return nordicSlate;
-    return allPresets.firstWhere(
-      (p) => p.id == id,
-      orElse: () => nordicSlate,
-    );
+    return allPresets.firstWhere((p) => p.id == id, orElse: () => nordicSlate);
   }
 
   ThemeData toMaterialTheme() {

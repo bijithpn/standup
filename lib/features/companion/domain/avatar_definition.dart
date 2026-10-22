@@ -45,7 +45,8 @@ class AvatarDefinition {
       seed: effectiveSeed,
       scale: scale,
       yaw: yaw,
-      parts: parts ?? Map<String, dynamic>.from(species.defaultPartConfigurations),
+      parts:
+          parts ?? Map<String, dynamic>.from(species.defaultPartConfigurations),
     );
   }
 
@@ -56,7 +57,8 @@ class AvatarDefinition {
       hash = (hash * 0x01000193) & 0xFFFFFFFF;
     }
 
-    final selectedSpecies = species ??
+    final selectedSpecies =
+        species ??
         AvatarSpecies.values[hash.abs() % AvatarSpecies.values.length];
 
     final presetList = AvatarPalette.presets.values.toList();
@@ -75,7 +77,9 @@ class AvatarDefinition {
       seed: seed,
       scale: 1.0,
       yaw: 0.0,
-      parts: Map<String, dynamic>.from(selectedSpecies.defaultPartConfigurations),
+      parts: Map<String, dynamic>.from(
+        selectedSpecies.defaultPartConfigurations,
+      ),
     );
   }
 
@@ -119,12 +123,15 @@ class AvatarDefinition {
 
   factory AvatarDefinition.fromJson(Map<String, dynamic> json) {
     final speciesStr = json['species'] as String? ?? 'cat';
-    final parsedSpecies = AvatarSpecies.tryParse(speciesStr) ?? AvatarSpecies.cat;
+    final parsedSpecies =
+        AvatarSpecies.tryParse(speciesStr) ?? AvatarSpecies.cat;
     final parsedBreed = json['breed'] as String?;
 
     AvatarPalette parsedPalette;
     if (json['palette'] is Map<String, dynamic>) {
-      parsedPalette = AvatarPalette.fromJson(json['palette'] as Map<String, dynamic>);
+      parsedPalette = AvatarPalette.fromJson(
+        json['palette'] as Map<String, dynamic>,
+      );
     } else if (json['palette'] is String) {
       parsedPalette = AvatarPalette.fromName(json['palette'] as String);
     } else {
@@ -162,15 +169,15 @@ class AvatarDefinition {
 
   @override
   int get hashCode => Object.hash(
-        schemaVersion,
-        species,
-        palette,
-        pattern,
-        seed,
-        scale,
-        yaw,
-        Object.hashAll(parts.entries),
-      );
+    schemaVersion,
+    species,
+    palette,
+    pattern,
+    seed,
+    scale,
+    yaw,
+    Object.hashAll(parts.entries),
+  );
 
   @override
   String toString() =>

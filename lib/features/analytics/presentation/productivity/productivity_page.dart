@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/app_usage_service.dart';
+import 'package:breakmate/features/analytics/presentation/widgets/daily_budgets_card.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/application_usage_section.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/activity_timeline_view.dart';
 import 'package:breakmate/features/analytics/presentation/productivity/productivity_cards.dart';
@@ -34,7 +39,15 @@ class ProductivityPage extends StatefulWidget {
     super.key,
     this.repository,
     this.settingsRepository,
+    this.embedded = false,
+    this.range,
   });
+
+  /// When true the page renders only its content (no scaffold, header or own
+  /// scrolling) so it can sit inside the Statistics screen, which supplies
+  /// the period selector through [range].
+  final bool embedded;
+  final ProductivityRange? range;
 
   /// Injected in tests; resolved from the service locator otherwise.
   final ProductivityRepository? repository;
@@ -45,7 +58,7 @@ class ProductivityPage extends StatefulWidget {
 }
 
 class _ProductivityPageState extends State<ProductivityPage> {
-  ProductivityRange _range = ProductivityRange.today;
+  late ProductivityRange _range = widget.range ?? ProductivityRange.today;
   RangeProductivitySummary? _rangeSummary;
   List<ProductivityInsight> _insights = const <ProductivityInsight>[];
   bool _loading = true;
@@ -74,13 +87,30 @@ class _ProductivityPageState extends State<ProductivityPage> {
   void initState() {
     super.initState();
     _repository?.addListener(_onDataChanged);
+    _repository?.refreshToday();
+    // Keeps the numbers current while the screen is open, since a long stretch
+    // in one app is only written when it ends.
+    _refreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _repository?.refreshToday(),
+    );
     _load();
   }
 
+  Timer? _refreshTimer;
+
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _repository?.removeListener(_onDataChanged);
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(ProductivityPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final next = widget.range;
+    if (next != null && next != _range) _selectRange(next);
   }
 
   void _onDataChanged() {
@@ -94,11 +124,12 @@ class _ProductivityPageState extends State<ProductivityPage> {
       return;
     }
 
-    final summary = await repository.summaryForLastDays(
-      _range.days,
+    final summary = await repository.summaryForLastDays(_range.days, now: _now);
+    final goalHours = _settings?.currentSettings.dailyWorkGoalHours;
+    final insights = await repository.insights(
       now: _now,
+      focusGoalSeconds: goalHours == null ? null : goalHours * 3600,
     );
-    final insights = await repository.insights(now: _now);
 
     if (!mounted) return;
     setState(() {
@@ -171,6 +202,28 @@ class _ProductivityPageState extends State<ProductivityPage> {
         ? _today.hasActivity
         : (summary?.hasActivity ?? false);
 
+    if (widget.embedded) {
+      if (_loading) {
+        return const Padding(
+          padding: EdgeInsets.symmetric(vertical: 48),
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      if (!hasActivity) {
+        return ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 280),
+          child: ProductivityEmptyState(
+            trackingEnabled: _trackingEnabled,
+            onEnableTracking: _trackingEnabled ? null : _enableTracking,
+          ),
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: _contentChildren(summary, showingToday),
+      );
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.surface,
       body: Column(
@@ -187,12 +240,11 @@ class _ProductivityPageState extends State<ProductivityPage> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : !hasActivity
-                    ? ProductivityEmptyState(
-                        trackingEnabled: _trackingEnabled,
-                        onEnableTracking:
-                            _trackingEnabled ? null : _enableTracking,
-                      )
-                    : _content(summary, showingToday),
+                ? ProductivityEmptyState(
+                    trackingEnabled: _trackingEnabled,
+                    onEnableTracking: _trackingEnabled ? null : _enableTracking,
+                  )
+                : _content(summary, showingToday),
           ),
         ],
       ),
@@ -200,84 +252,116 @@ class _ProductivityPageState extends State<ProductivityPage> {
   }
 
   Widget _content(RangeProductivitySummary? summary, bool showingToday) {
-    final day = _today;
-    final apps = showingToday ? day.apps : (summary?.apps ?? const <AppTotal>[]);
-    final activeSeconds =
-        showingToday ? day.activeSeconds : (summary?.activeSeconds ?? 0);
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-      children: <Widget>[
-        ProductivityOverviewCard(
-          activeSeconds: activeSeconds,
-          idleSeconds: showingToday ? day.idleSeconds : summary?.idleSeconds ?? 0,
-          breakSeconds:
-              showingToday ? day.breakSeconds : summary?.breakSeconds ?? 0,
-          contextSwitches: showingToday
-              ? day.contextSwitches
-              : summary?.contextSwitches ?? 0,
-          switchesPerHour: showingToday ? day.switchesPerActiveHour : null,
-          caption: showingToday
-              ? null
-              : 'across ${summary?.activeDayCount ?? 0} '
+      children: _contentChildren(summary, showingToday),
+    );
+  }
+
+  List<Widget> _contentChildren(
+    RangeProductivitySummary? summary,
+    bool showingToday,
+  ) {
+    final day = _today;
+    final apps = showingToday
+        ? day.apps
+        : (summary?.apps ?? const <AppTotal>[]);
+    final activeSeconds = showingToday
+        ? day.activeSeconds
+        : (summary?.activeSeconds ?? 0);
+
+    return <Widget>[
+      ProductivityOverviewCard(
+        activeSeconds: activeSeconds,
+        idleSeconds: showingToday ? day.idleSeconds : summary?.idleSeconds ?? 0,
+        breakSeconds: showingToday
+            ? day.breakSeconds
+            : summary?.breakSeconds ?? 0,
+        contextSwitches: showingToday
+            ? day.contextSwitches
+            : summary?.contextSwitches ?? 0,
+        switchesPerHour: showingToday ? day.switchesPerActiveHour : null,
+        focusGoalSeconds: showingToday && _settings != null
+            ? _settings!.currentSettings.dailyWorkGoalHours * 3600
+            : null,
+        caption: showingToday
+            ? null
+            : 'across ${summary?.activeDayCount ?? 0} '
                   '${(summary?.activeDayCount ?? 0) == 1 ? 'day' : 'days'} '
                   'with activity',
-        ),
-        const SizedBox(height: 26),
+      ),
+      const SizedBox(height: 26),
 
-        if (showingToday) ...<Widget>[
-          ProductivitySection(
-            title: 'Timeline',
-            subtitle: day.firstActivityAt == null
-                ? null
-                : '${formatClock(day.firstActivityAt!)} to '
-                    '${formatClock(day.lastActivityAt!)}',
-            child: ActivityTimelineView(
-              entries: _repository?.timelineForDate(_todayKey) ??
-                  const <TimelineEntry>[],
-            ),
-          ),
-          const SizedBox(height: 26),
-        ] else if (summary != null) ...<Widget>[
-          ProductivitySection(
-            title: 'Daily activity',
-            subtitle: 'Active time per day',
-            child: DailyActivityBars(days: summary.days),
-          ),
-          const SizedBox(height: 26),
-        ],
-
+      if (showingToday) ...<Widget>[
         ProductivitySection(
-          title: 'Applications',
-          subtitle: apps.isEmpty
+          title: 'Timeline',
+          subtitle: day.firstActivityAt == null
               ? null
-              : '${apps.length} ${apps.length == 1 ? 'application' : 'applications'}',
-          child: ApplicationUsageList(
-            apps: apps,
-            totalActiveSeconds: activeSeconds,
-            limit: 8,
-            onSelected: _openApplication,
+              : '${formatClock(day.firstActivityAt!)} to '
+                    '${formatClock(day.lastActivityAt!)}',
+          child: ActivityTimelineView(
+            entries:
+                _repository?.timelineForDate(_todayKey) ??
+                const <TimelineEntry>[],
           ),
         ),
         const SizedBox(height: 26),
-
+      ] else if (summary != null) ...<Widget>[
         ProductivitySection(
-          title: 'Insights',
-          subtitle: _insights.isEmpty
-              ? 'Not enough data yet'
-              : 'What the recorded activity shows',
-          child: _insights.isEmpty
-              ? _NotEnoughInsights()
-              : Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    for (final insight in _insights)
-                      InsightCard(insight: insight),
-                  ],
-                ),
+          title: 'Daily activity',
+          subtitle: 'Active time per day',
+          child: DailyActivityBars(
+            days: summary.days,
+            goalSeconds: _settings == null
+                ? null
+                : _settings!.currentSettings.dailyWorkGoalHours * 3600,
+          ),
         ),
+        const SizedBox(height: 26),
       ],
-    );
+
+      ProductivitySection(
+        title: 'Applications',
+        subtitle: apps.isEmpty
+            ? null
+            : '${apps.length} ${apps.length == 1 ? 'application' : 'applications'}',
+        child: ApplicationUsageList(
+          apps: apps,
+          totalActiveSeconds: activeSeconds,
+          limit: 8,
+          onSelected: _openApplication,
+        ),
+      ),
+      const SizedBox(height: 26),
+
+      if (showingToday &&
+          sl.isRegistered<AppUsageService>() &&
+          _settings != null) ...<Widget>[
+        DailyBudgetsCard(
+          usedSecondsByCategory: sl<AppUsageService>().categoryTotals(
+            UsagePeriod.today,
+          ),
+          budgetMinutes: _settings!.currentSettings.categoryDailyBudgetMinutes,
+        ),
+        const SizedBox(height: 26),
+      ],
+
+      ProductivitySection(
+        title: 'Insights',
+        subtitle: _insights.isEmpty
+            ? 'Not enough data yet'
+            : 'What the recorded activity shows',
+        child: _insights.isEmpty
+            ? _NotEnoughInsights()
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  for (final insight in _insights)
+                    InsightCard(insight: insight),
+                ],
+              ),
+      ),
+    ];
   }
 }
 

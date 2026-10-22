@@ -10,10 +10,7 @@ void main() {
     tracker.recordSwitch(now.add(const Duration(minutes: 10)));
     tracker.recordSwitch(now.add(const Duration(minutes: 20)));
 
-    expect(
-      tracker.switchesInWindow(now.add(const Duration(minutes: 30))),
-      3,
-    );
+    expect(tracker.switchesInWindow(now.add(const Duration(minutes: 30))), 3);
   });
 
   test('prunes switches older than the window', () {
@@ -24,10 +21,7 @@ void main() {
     tracker.recordSwitch(now.add(const Duration(minutes: 90)));
 
     // The first switch is now 90 minutes in the past, outside the 1-hour window.
-    expect(
-      tracker.switchesInWindow(now.add(const Duration(minutes: 90))),
-      1,
-    );
+    expect(tracker.switchesInWindow(now.add(const Duration(minutes: 90))), 1);
   });
 
   test('isHighSwitchRate reflects the configured threshold', () {

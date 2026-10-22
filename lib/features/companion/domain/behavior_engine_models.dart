@@ -327,7 +327,8 @@ class PetConfigV2 {
       'themeId': themeId,
       'petName': petName,
       'scale': scale,
-      if (avatarDefinition != null) 'avatarDefinition': avatarDefinition!.toJson(),
+      if (avatarDefinition != null)
+        'avatarDefinition': avatarDefinition!.toJson(),
     };
   }
 

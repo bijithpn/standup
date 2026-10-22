@@ -40,6 +40,12 @@ enum InsightType {
 
   /// A suggestion the user could act on.
   focusOpportunity,
+
+  /// How today is going against the daily focus goal.
+  goalProgress,
+
+  /// How today compares with the user's usual day.
+  comparison,
 }
 
 /// One observation about how the user's time was spent.
@@ -52,7 +58,17 @@ class ProductivityInsight {
     required this.confidence,
     required this.evidenceDayCount,
     this.supportingData = const <String, Object>{},
+    this.suggestion,
+    this.priority = 0,
   });
+
+  /// One concrete thing the user could do about the finding, written to be
+  /// read on its own. Absent when the finding is simply informative.
+  final String? suggestion;
+
+  /// Higher shows first. Findings about right now that the user can act on sit
+  /// above background patterns; ties fall back to evidence strength.
+  final int priority;
 
   /// Stable across regenerations of the same finding, so the UI can keep a
   /// dismissed insight dismissed.

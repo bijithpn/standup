@@ -131,11 +131,7 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   AvatarScene? _tinted(AvatarScene? scene) {
     if (scene == null) return null;
     return widget.style.applyTo(
-      applyPalette(
-        scene,
-        widget.palette,
-        strength: widget.paletteStrength,
-      ),
+      applyPalette(scene, widget.palette, strength: widget.paletteStrength),
     );
   }
 
@@ -223,12 +219,7 @@ class _Avatar3DViewState extends State<Avatar3DView> {
           0.0,
           1.0,
         )
-        ..scaleByDouble(
-          snapshot.squash,
-          2.0 - snapshot.squash,
-          1.0,
-          1.0,
-        ),
+        ..scaleByDouble(snapshot.squash, 2.0 - snapshot.squash, 1.0, 1.0),
       alignment: Alignment.center,
       child: painted,
     );

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 enum ExerciseCategory { eyeRest, stretch, posture, breathing, movement }
 
@@ -22,6 +23,34 @@ class ExerciseModel {
     this.isFavorite = false,
     this.isHidden = false,
   });
+
+  /// Whether this exercise can be offered during a break. `enabled` (the
+  /// original switch) and `isHidden` (kept for exercises hidden in earlier versions) are two
+  /// flags for one idea, so an exercise is in rotation only when both agree.
+  bool get isActive => enabled && !isHidden;
+
+  bool get isCustom => id.startsWith('custom_');
+
+  /// Picks the exercise for a break from [all]. Favorites are preferred (about
+  /// 70% of the time when any exist) so starring something actually changes
+  /// what you see; hidden or disabled exercises are never chosen. Returns null
+  /// when nothing is active. [avoidId] avoids repeating the previous pick.
+  static ExerciseModel? pickForBreak(
+    List<ExerciseModel> all,
+    Random random, {
+    String? avoidId,
+  }) {
+    var pool = all.where((e) => e.isActive).toList();
+    if (pool.isEmpty) return null;
+    if (pool.length > 1 && avoidId != null) {
+      pool = pool.where((e) => e.id != avoidId).toList();
+    }
+    final favorites = pool.where((e) => e.isFavorite).toList();
+    final source = favorites.isNotEmpty && random.nextDouble() < 0.7
+        ? favorites
+        : pool;
+    return source[random.nextInt(source.length)];
+  }
 
   ExerciseModel copyWith({
     String? id,

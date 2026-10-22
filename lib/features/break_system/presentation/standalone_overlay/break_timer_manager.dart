@@ -12,7 +12,9 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
   int remainingSeconds = 300;
   DateTime? targetEndTime;
   Timer? localTimer;
-  late final ValueNotifier<int> remainingSecondsNotifier = ValueNotifier<int>(remainingSeconds);
+  late final ValueNotifier<int> remainingSecondsNotifier = ValueNotifier<int>(
+    remainingSeconds,
+  );
 
   bool isDismissing = false;
 
@@ -45,7 +47,11 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     localTimer = null;
   }
 
-  void completeBreak(bool isInternalPreview, String overlayType, AnimationController fadeController) {
+  void completeBreak(
+    bool isInternalPreview,
+    String overlayType,
+    AnimationController fadeController,
+  ) {
     if (isDismissing) return;
     isDismissing = true;
 
@@ -70,7 +76,11 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
     });
   }
 
-  void skipBreak(bool isInternalPreview, String overlayType, AnimationController fadeController) {
+  void skipBreak(
+    bool isInternalPreview,
+    String overlayType,
+    AnimationController fadeController,
+  ) {
     if (isDismissing) return;
     isDismissing = true;
 

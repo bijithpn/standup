@@ -175,11 +175,7 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
               child: FadeTransition(
                 opacity: CurvedAnimation(
                   parent: _entrance,
-                  curve: const Interval(
-                    0.25,
-                    0.85,
-                    curve: Curves.easeOutCubic,
-                  ),
+                  curve: const Interval(0.25, 0.85, curve: Curves.easeOutCubic),
                 ),
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 720),
@@ -231,11 +227,7 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
                 child: FadeTransition(
                   opacity: CurvedAnimation(
                     parent: _entrance,
-                    curve: const Interval(
-                      0.5,
-                      1.0,
-                      curve: Curves.easeOutCubic,
-                    ),
+                    curve: const Interval(0.5, 1.0, curve: Curves.easeOutCubic),
                   ),
                   child: GestureDetector(
                     onTap: widget.onSkip,

@@ -15,7 +15,7 @@ import 'package:breakmate/features/settings/widgets/general_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/breaks_settings_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/focus_detection_section.dart';
 import 'package:breakmate/features/settings/widgets/notifications_section.dart';
-import 'package:breakmate/features/settings/presentation/sections/exercises_section.dart';
+import 'package:breakmate/features/settings/presentation/sections/calendar_sync_section.dart';
 import 'package:breakmate/features/settings/presentation/sections/clock_out_section.dart';
 import 'package:breakmate/features/settings/widgets/update_section.dart';
 import 'package:breakmate/features/settings/widgets/about_section.dart';
@@ -162,8 +162,8 @@ class _SettingsPageState extends State<SettingsPage> {
         return FocusDetectionSection(settings: _settings, onSave: _save);
       case 'Notifications':
         return NotificationsSection(settings: _settings, onSave: _save);
-      case 'Exercises':
-        return ExercisesSection(settings: _settings, onSave: _save);
+      case 'Calendar Sync':
+        return const CalendarSyncSection();
       case 'Clock Out':
         return ClockOutSection(settings: _settings, onSave: _save);
       case 'Updates':
@@ -224,9 +224,6 @@ class _SettingsPageState extends State<SettingsPage> {
       warnings.add(
         'Long break interval should be greater than the short break interval.',
       );
-    }
-    if (_settings.intensityLevel == 'locked' && !_settings.strictMode) {
-      warnings.add('Locked intensity works best with strict mode enabled.');
     }
     if (_settings.calendarEnabled &&
         (!_settings.detectMeetings && !_settings.detectVideoCalls)) {

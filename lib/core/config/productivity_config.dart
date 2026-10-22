@@ -12,7 +12,6 @@ class ProductivityConfig {
     required this.backgroundMonitoringEnabled,
     required this.insightsEnabled,
     required this.weeklyAnalyticsEnabled,
-    required this.diagnosticsVisible,
     required this.verboseLogging,
   });
 
@@ -30,31 +29,25 @@ class ProductivityConfig {
   /// Whether the multi-day views are offered.
   final bool weeklyAnalyticsEnabled;
 
-  /// The raw segment inspector. Development only: it shows exactly what was
-  /// recorded, which is a debugging tool rather than a product surface.
-  final bool diagnosticsVisible;
-
   /// Event-level logging. Off in production, where the useful signal is an
   /// error, not a line per application switch.
   final bool verboseLogging;
 
-  /// Everything on, with diagnostics — the development build.
+  /// Everything on, with verbose logging — the development build.
   static const ProductivityConfig development = ProductivityConfig(
     enabled: true,
     backgroundMonitoringEnabled: true,
     insightsEnabled: true,
     weeklyAnalyticsEnabled: true,
-    diagnosticsVisible: true,
     verboseLogging: true,
   );
 
-  /// Everything on, nothing exposed — the released build.
+  /// Everything on, quiet logging — the released build.
   static const ProductivityConfig production = ProductivityConfig(
     enabled: true,
     backgroundMonitoringEnabled: true,
     insightsEnabled: true,
     weeklyAnalyticsEnabled: true,
-    diagnosticsVisible: false,
     verboseLogging: false,
   );
 
@@ -75,7 +68,6 @@ class ProductivityConfig {
     bool? backgroundMonitoringEnabled,
     bool? insightsEnabled,
     bool? weeklyAnalyticsEnabled,
-    bool? diagnosticsVisible,
     bool? verboseLogging,
   }) {
     return ProductivityConfig(
@@ -85,7 +77,6 @@ class ProductivityConfig {
       insightsEnabled: insightsEnabled ?? this.insightsEnabled,
       weeklyAnalyticsEnabled:
           weeklyAnalyticsEnabled ?? this.weeklyAnalyticsEnabled,
-      diagnosticsVisible: diagnosticsVisible ?? this.diagnosticsVisible,
       verboseLogging: verboseLogging ?? this.verboseLogging,
     );
   }

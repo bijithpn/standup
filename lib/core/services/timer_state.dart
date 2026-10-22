@@ -15,6 +15,9 @@ class TimerStateData {
   bool isPreBreak = false;
   int postureElapsedSeconds = 0;
   int eyeBlinkElapsedSeconds = 0;
+  int hydrationElapsedSeconds = 0;
+  int stretchElapsedSeconds = 0;
+  int standUpElapsedSeconds = 0;
   bool clockOutTriggered = false;
   DateTime? longBreakWindowStartedAt;
   DateTime? lastBreakFinishedAt;

@@ -251,9 +251,7 @@ class _Tab extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: isSelected
-                    ? Colors.white
-                    : BreakOverlayTheme.textDim,
+                color: isSelected ? Colors.white : BreakOverlayTheme.textDim,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
                 fontFamily: BreakOverlayTheme.fontFamily,

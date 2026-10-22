@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
-import 'package:breakmate/shared/widgets/app_dropdown.dart';
 
 class BreakIntensitySettings extends StatelessWidget {
   final SettingsModel settings;
@@ -28,54 +27,6 @@ class BreakIntensitySettings extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader('Break Intensity'),
-        buildCard([
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Strictness Level',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Gentle allows easy skips; Locked requires full focus.',
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                AppDropdown<String>(
-                  value: settings.intensityLevel,
-                  onChanged: (v) {
-                    if (v != null) {
-                      onSave(settings.copyWith(intensityLevel: v));
-                    }
-                  },
-                  items: const [
-                    AppDropdownItem(value: 'gentle', label: 'GENTLE'),
-                    AppDropdownItem(value: 'standard', label: 'STANDARD'),
-                    AppDropdownItem(value: 'strict', label: 'STRICT'),
-                    AppDropdownItem(value: 'locked', label: 'LOCKED'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ]),
-        const SizedBox(height: 16),
         sectionHeader('Display Options'),
         buildCard([
           toggleRow(

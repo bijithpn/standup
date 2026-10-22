@@ -23,14 +23,14 @@ class PetCameraState {
   }
 
   Map<String, dynamic> toJson() => {
-        'azimuth': azimuth,
-        'elevation': elevation,
-        'distance': distance,
-      };
+    'azimuth': azimuth,
+    'elevation': elevation,
+    'distance': distance,
+  };
 
   factory PetCameraState.fromJson(Map<String, dynamic> json) => PetCameraState(
-        azimuth: (json['azimuth'] as num?)?.toDouble() ?? 0.0,
-        elevation: (json['elevation'] as num?)?.toDouble() ?? 0.0,
-        distance: (json['distance'] as num?)?.toDouble() ?? 1.0,
-      );
+    azimuth: (json['azimuth'] as num?)?.toDouble() ?? 0.0,
+    elevation: (json['elevation'] as num?)?.toDouble() ?? 0.0,
+    distance: (json['distance'] as num?)?.toDouble() ?? 1.0,
+  );
 }

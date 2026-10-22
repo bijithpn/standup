@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_start_warning_overlay.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/poster_reminder_overlay.dart';
 
-class QuickReminderOverlay extends StatelessWidget {
+class QuickReminderOverlay extends StatefulWidget {
   final String? reminderType;
   final String overlayType;
   final Animation<double> fadeAnimation;
@@ -31,8 +34,34 @@ class QuickReminderOverlay extends StatelessWidget {
   });
 
   @override
+  State<QuickReminderOverlay> createState() => _QuickReminderOverlayState();
+}
+
+class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
+  // Picked once per showing (and again if the reminder type changes) so the
+  // wording varies between reminders without flickering while one is visible.
+  int _wordingSeed = Random().nextInt(1 << 30);
+
+  @override
+  void didUpdateWidget(QuickReminderOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reminderType != widget.reminderType) {
+      _wordingSeed = Random().nextInt(1 << 30);
+    }
+  }
+
+  String? get reminderType => widget.reminderType;
+  String get overlayType => widget.overlayType;
+  Animation<double> get fadeAnimation => widget.fadeAnimation;
+  String get title => widget.title;
+  int get durationSeconds => widget.durationSeconds;
+  ValueNotifier<int>? get remainingSecondsNotifier =>
+      widget.remainingSecondsNotifier;
+  VoidCallback? get onSkip => widget.onSkip;
+  bool get allowFullPoster => widget.allowFullPoster;
+
+  @override
   Widget build(BuildContext context) {
-    final isPosture = reminderType == 'posture';
     final isMeetingBreak = reminderType == 'meetingBreak';
     final isBreakStart =
         reminderType == 'breakStart' || overlayType == 'preBreakWarning';
@@ -50,21 +79,21 @@ class QuickReminderOverlay extends StatelessWidget {
 
     final icon = isMeetingBreak
         ? Icons.videocam_rounded
-        : isPosture
-        ? Icons.accessibility_new_rounded
-        : Icons.remove_red_eye_rounded;
+        : switch (reminderType) {
+            'posture' => Icons.accessibility_new_rounded,
+            'hydration' => Icons.water_drop_rounded,
+            'stretch' => Icons.self_improvement_rounded,
+            'standup' => Icons.directions_walk_rounded,
+            _ => Icons.remove_red_eye_rounded,
+          };
     final pillText = isMeetingBreak
         ? 'Break ready after your meeting'
-        : isPosture
-        ? 'Posture check'
-        : 'Rest your eyes';
+        : HealthReminderCopy.pill(reminderType, Random(_wordingSeed));
 
     if (allowFullPoster) {
       final posterText = isMeetingBreak
           ? 'Break ready after your meeting!'
-          : isPosture
-          ? 'Watch your posture!'
-          : 'Rest your eyes!';
+          : HealthReminderCopy.poster(reminderType);
 
       return PosterReminderOverlay(
         icon: icon,

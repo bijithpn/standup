@@ -4,13 +4,10 @@ import 'package:breakmate/features/companion/domain/custom_environment_layer.dar
 
 void main() {
   group('CustomEnvironmentTheme Layers', () {
-    test(
-      'fromDefaults initializes valid custom environment theme',
-      () {
-        final theme = CustomEnvironmentTheme.fromDefaults();
-        expect(theme.layers, isA<List<CustomEnvironmentLayer>>());
-      },
-    );
+    test('fromDefaults initializes valid custom environment theme', () {
+      final theme = CustomEnvironmentTheme.fromDefaults();
+      expect(theme.layers, isA<List<CustomEnvironmentLayer>>());
+    });
 
     test('toJson and fromJson preserves custom layers list properties', () {
       final original = CustomEnvironmentTheme.fromDefaults();

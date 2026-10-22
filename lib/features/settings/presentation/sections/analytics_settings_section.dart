@@ -1,5 +1,7 @@
+import 'package:breakmate/core/config/productivity_config.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show CircularProgressIndicator;
 import 'package:breakmate/features/analytics/presentation/widgets/break_statistics_section.dart';
 import 'package:breakmate/features/analytics/stats_model.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -53,7 +55,7 @@ class AnalyticsSettingsSection extends StatefulWidget {
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
-  int _selectedTab = 0; // 0: Overview, 1: Focus, 2: App Usage, 3: Breaks
+  bool _focusExpanded = false;
 
   /// How many days back the calendar-vs-focus comparison (§7.4) looks —
   /// computed once per widget lifetime via [_loadCalendarComparison], not
@@ -82,56 +84,272 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final viewMetrics = _calculateViewMetrics();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
+        const SizedBox(height: 18),
+        _buildPeriodBar(),
         const SizedBox(height: 20),
-        _buildControlsRow(),
-        const SizedBox(height: 24),
-        switch (_selectedTab) {
-          0 => _buildOverviewTab(),
-          1 => _buildFocusTab(),
-          2 => _buildAppUsageTab(),
-          _ => BreakStatisticsSection(
-            stats: _stats,
-            selectedFilter: _selectedFilter,
+        // Headline numbers first: what the period added up to.
+        _buildHero(viewMetrics),
+        const SizedBox(height: 32),
+
+        _groupHeader(
+          CupertinoIcons.sparkles,
+          'Overview',
+          'How your productivity and wellbeing balance out $_periodLabel.',
+        ),
+        _buildOverviewTab(),
+        const SizedBox(height: 32),
+
+        // Time spent per app lives on the Productivity screen; only when that
+        // screen is switched off do we fall back to a short summary here.
+        if (!ProductivityConfig.current.enabled) ...[
+          _groupHeader(
+            CupertinoIcons.time,
+            'Where your time goes',
+            'Your apps and what the activity shows.',
           ),
-        },
+          _buildAppUsageTab(),
+          const SizedBox(height: 32),
+        ],
+
+        // Focus is the longest block, so it starts folded.
+        _groupHeader(
+          CupertinoIcons.scope,
+          'Focus',
+          'Uninterrupted deep-work sessions $_periodLabel.',
+          trailing: _foldButton(
+            expanded: _focusExpanded,
+            onTap: () => setState(() => _focusExpanded = !_focusExpanded),
+          ),
+        ),
+        if (_focusExpanded) _buildFocusTab(),
+        const SizedBox(height: 32),
+
+        _groupHeader(
+          CupertinoIcons.checkmark_seal,
+          'Breaks',
+          'Breaks you took, skipped and how they add up.',
+        ),
+        BreakStatisticsSection(stats: _stats, selectedFilter: _selectedFilter),
         const SizedBox(height: 48),
       ],
     );
   }
 
-  /// The tab selector (what to look at) and the period filter (what range),
-  /// as two independent controls — every tab still respects the selected
-  /// period, so this stays visible everywhere rather than being nested per
-  /// tab.
-  Widget _buildControlsRow() {
-    final tabs = segmentedControl(
-      ['Overview', 'Focus', 'App Usage', 'Breaks'],
-      _selectedTab,
-      (i) => setState(() => _selectedTab = i),
-    );
-    final period = segmentedControl(
-      ['Today', 'This Week', 'Month'],
-      _selectedFilter,
-      (i) => setState(() => _selectedFilter = i),
+  /// The top of the page: one overall score as a ring, with the numbers it is
+  /// made of next to it.
+  Widget _buildHero(_ViewMetrics m) {
+    final overall = ((m.productivityScore + m.wellnessScore) / 2).round();
+    final verdict = overall >= 80
+        ? 'Great balance'
+        : overall >= 60
+        ? 'Going well'
+        : overall > 0
+        ? 'Room to improve'
+        : 'Just getting started';
+    final ringColor = overall >= 80
+        ? AppTheme.success
+        : overall >= 60
+        ? AppTheme.accent
+        : AppTheme.warning;
+
+    final ring = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 132,
+          height: 132,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 132,
+                height: 132,
+                child: CircularProgressIndicator(
+                  value: (overall / 100).clamp(0.0, 1.0),
+                  strokeWidth: 10,
+                  strokeCap: StrokeCap.round,
+                  color: ringColor,
+                  backgroundColor: AppTheme.border,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '$overall',
+                    style: TextStyle(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -1,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'of 100',
+                    style: TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          verdict,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: ringColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Productivity ${m.productivityScore} · Wellness ${m.wellnessScore}',
+          style: TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+        ),
+      ],
     );
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 850) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [tabs, const SizedBox(height: 12), period],
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+        border: Border.all(color: AppTheme.border),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.accentColor.withValues(alpha: 0.14),
+            AppTheme.surfaceCard,
+          ],
+        ),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth > 640;
+          final tiles = _buildDetailGrid(m);
+          if (!wide) {
+            return Column(children: [ring, const SizedBox(height: 20), tiles]);
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ring,
+              const SizedBox(width: 28),
+              Expanded(child: tiles),
+            ],
           );
-        }
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [tabs, period],
-        );
-      },
+        },
+      ),
+    );
+  }
+
+  /// A clear heading for each part of the one-page view.
+  Widget _groupHeader(
+    IconData icon,
+    String title,
+    String subtitle, {
+    Widget? trailing,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: AppTheme.accentColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+
+  Widget _foldButton({required bool expanded, required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                expanded ? 'Hide' : 'Show',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.accentColor,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                expanded
+                    ? CupertinoIcons.chevron_up
+                    : CupertinoIcons.chevron_down,
+                size: 12,
+                color: AppTheme.accentColor,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// One period selector for the whole page — every section follows it.
+  Widget _buildPeriodBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Showing $_periodLabel',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+        ),
+        segmentedControl(
+          ['Today', 'This Week', 'Month'],
+          _selectedFilter,
+          (i) => setState(() => _selectedFilter = i),
+        ),
+      ],
     );
   }
 
@@ -140,11 +358,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Overview',
-          subtitle: 'Your productivity and wellness balance for $_periodLabel.',
-        ),
-        const SizedBox(height: 12),
         WellnessScoreCard(
           productivityScore: viewMetrics.productivityScore,
           wellnessScore: viewMetrics.wellnessScore,
@@ -157,10 +370,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         sectionHeader('Activity Trend'),
         const SizedBox(height: 12),
         _buildTrendSection(),
-        const SizedBox(height: 28),
-        sectionHeader('At a Glance'),
-        const SizedBox(height: 12),
-        _buildDetailGrid(viewMetrics),
       ],
     );
   }
@@ -177,7 +386,11 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         return AnimatedBuilder(
           animation: sl<FocusStreakService>(),
           builder: (context, _) {
-            return Consumer3<AppUsageService, FocusSessionService, BreakHistoryService>(
+            return Consumer3<
+              AppUsageService,
+              FocusSessionService,
+              BreakHistoryService
+            >(
               builder: (context, usageService, focusService, breakHistory, _) {
                 final correlation = BreakFocusCorrelation.compute(
                   events: breakHistory.events,
@@ -361,8 +574,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           const SizedBox(height: 28),
           sectionHeader(
             'Focus Trend',
-            subtitle:
-                'Daily focus score over the last $_focusTrendDays days.',
+            subtitle: 'Daily focus score over the last $_focusTrendDays days.',
           ),
           const SizedBox(height: 12),
           _buildFocusTrendSection(),
@@ -476,7 +688,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                       Text(
                         current > 0
                             ? '$current-day focus streak'
-                                '${highest != null ? ' · ${highest.label}' : ''}'
+                                  '${highest != null ? ' · ${highest.label}' : ''}'
                             : 'No focus streak yet',
                         style: TextStyle(
                           color: AppTheme.textPrimary,
@@ -484,7 +696,9 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      if (next != null && daysToNext != null && daysToNext > 0) ...[
+                      if (next != null &&
+                          daysToNext != null &&
+                          daysToNext > 0) ...[
                         const SizedBox(height: 2),
                         Text(
                           '$daysToNext day${daysToNext == 1 ? '' : 's'} to '
@@ -619,27 +833,30 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    chartTitle,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chartTitle,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    chartSubtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
+                    const SizedBox(height: 2),
+                    Text(
+                      chartSubtitle,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -757,14 +974,14 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   Widget _buildDetailGrid(_ViewMetrics metrics) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 600 ? 4 : 2;
+        final crossAxisCount = 2;
         return GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: crossAxisCount,
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
-          childAspectRatio: constraints.maxWidth > 600 ? 1.4 : 1.3,
+          childAspectRatio: constraints.maxWidth > 360 ? 2.1 : 1.6,
           children: [
             _buildStatCard(
               AppStrings.completed,
@@ -813,54 +1030,71 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     Color color,
   ) {
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceCard,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              color: color.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(9),
             ),
-            child: Icon(icon, size: 14, color: color),
+            child: Icon(icon, size: 16, color: color),
           ),
-          const Spacer(),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: AppTheme.textPrimary,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              if (unit.isNotEmpty) ...[
-                SizedBox(width: unit == '%' ? 1 : 4),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  unit,
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textMuted,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    if (unit.isNotEmpty) ...[
+                      SizedBox(width: unit == '%' ? 1 : 4),
+                      Flexible(
+                        child: Text(
+                          unit,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
-            ],
+            ),
           ),
         ],
       ),

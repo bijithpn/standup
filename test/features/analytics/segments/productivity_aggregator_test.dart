@@ -140,8 +140,10 @@ void main() {
         seg(fromMinute: 800, toMinute: 921),
       ]);
 
-      final hourlyTotal =
-          summary.hourlyActiveSeconds.fold<int>(0, (sum, s) => sum + s);
+      final hourlyTotal = summary.hourlyActiveSeconds.fold<int>(
+        0,
+        (sum, s) => sum + s,
+      );
       expect(hourlyTotal, summary.activeSeconds);
     });
 
@@ -167,11 +169,26 @@ void main() {
   group('aggregateRange', () {
     test('sums days and merges their applications', () {
       final monday = aggregateDay('2026-09-21', <ActivitySegment>[
-        seg(fromMinute: 540, toMinute: 600, app: 'code', day: DateTime(2026, 9, 21)),
+        seg(
+          fromMinute: 540,
+          toMinute: 600,
+          app: 'code',
+          day: DateTime(2026, 9, 21),
+        ),
       ]);
       final tuesday = aggregateDay('2026-09-22', <ActivitySegment>[
-        seg(fromMinute: 540, toMinute: 630, app: 'code', day: DateTime(2026, 9, 22)),
-        seg(fromMinute: 630, toMinute: 660, app: 'chrome', day: DateTime(2026, 9, 22)),
+        seg(
+          fromMinute: 540,
+          toMinute: 630,
+          app: 'code',
+          day: DateTime(2026, 9, 22),
+        ),
+        seg(
+          fromMinute: 630,
+          toMinute: 660,
+          app: 'chrome',
+          day: DateTime(2026, 9, 22),
+        ),
       ]);
 
       final range = aggregateRange(<DailyProductivitySummary>[monday, tuesday]);
@@ -220,7 +237,9 @@ void main() {
           appName: 'chrome',
           categoryName: 'browsing',
           date: _date,
-          startedAtMs: _day.add(const Duration(minutes: 600)).millisecondsSinceEpoch,
+          startedAtMs: _day
+              .add(const Duration(minutes: 600))
+              .millisecondsSinceEpoch,
           endedAtMs: _day
               .add(const Duration(minutes: 600, seconds: 10))
               .millisecondsSinceEpoch,

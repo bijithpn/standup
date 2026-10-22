@@ -1,8 +1,11 @@
 // Regression coverage: posture/eye-rest/meeting-break reminders must render
 // the minimal pill (icon + short label), never the old full break template
 // with long instructional copy.
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/quick_reminder_overlay.dart';
 
 void main() {
@@ -35,12 +38,23 @@ void main() {
     await tester.pump();
   }
 
+  /// The pill wording is one of a few variants; find whichever was chosen.
+  Finder pillText(String type) {
+    final variants = <String>{
+      for (var seed = 0; seed < 200; seed++)
+        HealthReminderCopy.pill(type, Random(seed)),
+    };
+    return find.byWidgetPredicate(
+      (w) => w is Text && variants.contains(w.data),
+    );
+  }
+
   testWidgets(
     'posture reminder shows only the minimal pill: icon + short label',
     (tester) async {
       await pumpReminder(tester, reminderType: 'posture');
 
-      expect(find.text('Posture check'), findsOneWidget);
+      expect(pillText('posture'), findsOneWidget);
       expect(find.byIcon(Icons.accessibility_new_rounded), findsOneWidget);
 
       // Must not contain the old full-template long instructional copy.
@@ -56,7 +70,7 @@ void main() {
     (tester) async {
       await pumpReminder(tester, reminderType: 'eyeblink');
 
-      expect(find.text('Rest your eyes'), findsOneWidget);
+      expect(pillText('eyeblink'), findsOneWidget);
       expect(find.byIcon(Icons.remove_red_eye_rounded), findsOneWidget);
       expect(
         find.textContaining('look away', findRichText: true),
@@ -81,10 +95,7 @@ void main() {
 
       final container = tester.widget<Container>(
         find
-            .ancestor(
-              of: find.text('Posture check'),
-              matching: find.byType(Container),
-            )
+            .ancestor(of: pillText('posture'), matching: find.byType(Container))
             .first,
       );
       final decoration = container.decoration as BoxDecoration;
@@ -137,4 +148,37 @@ void main() {
       expect(decoration.color!.a, closeTo(0.36, 0.01));
     },
   );
+
+  for (final entry in {
+    'hydration': Icons.water_drop_rounded,
+    'stretch': Icons.self_improvement_rounded,
+    'standup': Icons.directions_walk_rounded,
+  }.entries) {
+    testWidgets('${entry.key} reminder shows its own icon and wording', (
+      tester,
+    ) async {
+      await pumpReminder(tester, reminderType: entry.key);
+      expect(find.byIcon(entry.value), findsOneWidget);
+      expect(pillText(entry.key), findsOneWidget);
+    });
+  }
+
+  test('every reminder type has several wording variants', () {
+    for (final type in [
+      'eyeblink',
+      'posture',
+      'hydration',
+      'stretch',
+      'standup',
+    ]) {
+      final pills = {
+        for (var s = 0; s < 100; s++) HealthReminderCopy.pill(type, Random(s)),
+      };
+      final lines = {
+        for (var s = 0; s < 100; s++) HealthReminderCopy.text(type, Random(s)),
+      };
+      expect(pills.length, greaterThan(1), reason: '$type pill');
+      expect(lines.length, greaterThan(1), reason: '$type text');
+    }
+  });
 }

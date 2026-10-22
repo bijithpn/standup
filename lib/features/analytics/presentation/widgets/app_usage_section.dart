@@ -53,7 +53,11 @@ class AppUsageSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(CupertinoIcons.app_badge, size: 20, color: AppTheme.accentColor),
+              Icon(
+                CupertinoIcons.app_badge,
+                size: 20,
+                color: AppTheme.accentColor,
+              ),
               const SizedBox(width: 8),
               Text(
                 'App Usage',
@@ -106,7 +110,10 @@ class AppUsageSection extends StatelessWidget {
 
   Widget _buildPopulatedState() {
     final dominant = _dominantCategory();
-    final totalSeconds = categoryTotals.values.fold<int>(0, (sum, s) => sum + s);
+    final totalSeconds = categoryTotals.values.fold<int>(
+      0,
+      (sum, s) => sum + s,
+    );
     final tip = usageTip(dominant, totalSeconds ~/ 60);
     final maxSeconds = topApps.first.seconds;
 
@@ -152,7 +159,11 @@ class AppUsageSection extends StatelessWidget {
             children: [
               for (final category in AppCategory.values)
                 if ((categoryTotals[category] ?? 0) > 0)
-                  _buildCategoryChip(category, categoryTotals[category]!, totalSeconds),
+                  _buildCategoryChip(
+                    category,
+                    categoryTotals[category]!,
+                    totalSeconds,
+                  ),
             ],
           ),
           const SizedBox(height: 16),
@@ -165,12 +176,19 @@ class AppUsageSection extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(CupertinoIcons.lightbulb, size: 16, color: AppTheme.accentColor),
+                Icon(
+                  CupertinoIcons.lightbulb,
+                  size: 16,
+                  color: AppTheme.accentColor,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     tip,
-                    style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                 ),
               ],
@@ -254,7 +272,9 @@ class AppUsageSection extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: fraction.clamp(0.05, 1.0),
                     minHeight: 4,
-                    backgroundColor: entry.category.color.withValues(alpha: 0.12),
+                    backgroundColor: entry.category.color.withValues(
+                      alpha: 0.12,
+                    ),
                     valueColor: AlwaysStoppedAnimation(entry.category.color),
                   ),
                 ),
@@ -283,7 +303,12 @@ class AppUsageSection extends StatelessWidget {
         if (bytes != null && bytes.isNotEmpty) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: Image.memory(bytes, width: 28, height: 28, fit: BoxFit.cover),
+            child: Image.memory(
+              bytes,
+              width: 28,
+              height: 28,
+              fit: BoxFit.cover,
+            ),
           );
         }
         return _buildInitialsAvatar(entry.name, entry.category.color);
@@ -303,13 +328,23 @@ class AppUsageSection extends StatelessWidget {
       alignment: Alignment.center,
       child: Text(
         letter,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
 
-  Widget _buildCategoryChip(AppCategory category, int seconds, int totalSeconds) {
-    final percent = totalSeconds > 0 ? (seconds / totalSeconds * 100).round() : 0;
+  Widget _buildCategoryChip(
+    AppCategory category,
+    int seconds,
+    int totalSeconds,
+  ) {
+    final percent = totalSeconds > 0
+        ? (seconds / totalSeconds * 100).round()
+        : 0;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(

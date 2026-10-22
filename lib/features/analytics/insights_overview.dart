@@ -82,8 +82,10 @@ List<OverviewInsight> buildOverviewInsights({
         currentInterval != null &&
         currentInterval > _minSuggestedIntervalMinutes;
     final newInterval = canShorten
-        ? (currentInterval - _intervalShortenStepMinutes)
-              .clamp(_minSuggestedIntervalMinutes, currentInterval)
+        ? (currentInterval - _intervalShortenStepMinutes).clamp(
+            _minSuggestedIntervalMinutes,
+            currentInterval,
+          )
         : null;
 
     insights.add(

@@ -20,10 +20,8 @@ class SettingsModel {
   final bool soundEnabled;
   final bool notificationsEnabled;
   final bool postureReminderEnabled;
-  final int postureReminderIntervalMinutes;
   final String postureReminderType;
   final bool eyeBlinkReminderEnabled;
-  final int eyeBlinkReminderIntervalMinutes;
   final String eyeBlinkReminderType;
 
   final bool showOnAllDisplays;
@@ -100,6 +98,20 @@ class SettingsModel {
   final String pipBackgroundStyle;
   final double pipOpacity;
   final bool pipDraggableClickable;
+  final bool hydrationReminderEnabled;
+  final bool stretchReminderEnabled;
+  final bool standUpReminderEnabled;
+
+  /// The single "Health reminders" switch. All reminder kinds (eye rest,
+  /// posture, hydration, stretch, stand up) are scheduled together and shown
+  /// at varied times according to how the user works; the five stored flags
+  /// are kept in step so older saved settings keep working.
+  bool get healthRemindersEnabled =>
+      eyeBlinkReminderEnabled ||
+      postureReminderEnabled ||
+      hydrationReminderEnabled ||
+      stretchReminderEnabled ||
+      standUpReminderEnabled;
 
   final String companionToyType;
   final String companionTreatType;
@@ -162,10 +174,8 @@ class SettingsModel {
     this.soundEnabled = true,
     this.notificationsEnabled = true,
     this.postureReminderEnabled = false,
-    this.postureReminderIntervalMinutes = 30,
     this.postureReminderType = 'overlay',
     this.eyeBlinkReminderEnabled = false,
-    this.eyeBlinkReminderIntervalMinutes = 20,
     this.eyeBlinkReminderType = 'overlay',
     this.showOnAllDisplays = true,
     this.breakTheme = 'random',
@@ -215,6 +225,9 @@ class SettingsModel {
     this.pipBackgroundStyle = 'scene',
     this.pipOpacity = 1.0,
     this.pipDraggableClickable = true,
+    this.hydrationReminderEnabled = false,
+    this.stretchReminderEnabled = false,
+    this.standUpReminderEnabled = false,
     this.companionToyType = 'tennis_ball',
     this.companionTreatType = 'sushi',
     this.templateAccentOverrides = const {},
@@ -258,10 +271,8 @@ class SettingsModel {
     bool? soundEnabled,
     bool? notificationsEnabled,
     bool? postureReminderEnabled,
-    int? postureReminderIntervalMinutes,
     String? postureReminderType,
     bool? eyeBlinkReminderEnabled,
-    int? eyeBlinkReminderIntervalMinutes,
     String? eyeBlinkReminderType,
     bool? showOnAllDisplays,
     String? breakTheme,
@@ -329,6 +340,10 @@ class SettingsModel {
     String? pipBackgroundStyle,
     double? pipOpacity,
     bool? pipDraggableClickable,
+    bool? healthRemindersEnabled,
+    bool? hydrationReminderEnabled,
+    bool? stretchReminderEnabled,
+    bool? standUpReminderEnabled,
     String? companionToyType,
     String? companionTreatType,
     Map<String, int>? templateAccentOverrides,
@@ -359,15 +374,14 @@ class SettingsModel {
       soundEnabled: soundEnabled ?? this.soundEnabled,
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       postureReminderEnabled:
-          postureReminderEnabled ?? this.postureReminderEnabled,
-      postureReminderIntervalMinutes:
-          postureReminderIntervalMinutes ?? this.postureReminderIntervalMinutes,
+          healthRemindersEnabled ??
+          postureReminderEnabled ??
+          this.postureReminderEnabled,
       postureReminderType: postureReminderType ?? this.postureReminderType,
       eyeBlinkReminderEnabled:
-          eyeBlinkReminderEnabled ?? this.eyeBlinkReminderEnabled,
-      eyeBlinkReminderIntervalMinutes:
-          eyeBlinkReminderIntervalMinutes ??
-          this.eyeBlinkReminderIntervalMinutes,
+          healthRemindersEnabled ??
+          eyeBlinkReminderEnabled ??
+          this.eyeBlinkReminderEnabled,
       eyeBlinkReminderType: eyeBlinkReminderType ?? this.eyeBlinkReminderType,
       showOnAllDisplays: showOnAllDisplays ?? this.showOnAllDisplays,
       breakTheme: breakTheme ?? this.breakTheme,
@@ -456,6 +470,18 @@ class SettingsModel {
       pipOpacity: pipOpacity ?? this.pipOpacity,
       pipDraggableClickable:
           pipDraggableClickable ?? this.pipDraggableClickable,
+      hydrationReminderEnabled:
+          healthRemindersEnabled ??
+          hydrationReminderEnabled ??
+          this.hydrationReminderEnabled,
+      stretchReminderEnabled:
+          healthRemindersEnabled ??
+          stretchReminderEnabled ??
+          this.stretchReminderEnabled,
+      standUpReminderEnabled:
+          healthRemindersEnabled ??
+          standUpReminderEnabled ??
+          this.standUpReminderEnabled,
       companionToyType: companionToyType ?? this.companionToyType,
       companionTreatType: companionTreatType ?? this.companionTreatType,
       templateAccentOverrides:
@@ -482,10 +508,8 @@ class SettingsModel {
     'soundEnabled': soundEnabled,
     'notificationsEnabled': notificationsEnabled,
     'postureReminderEnabled': postureReminderEnabled,
-    'postureReminderIntervalMinutes': postureReminderIntervalMinutes,
     'postureReminderType': postureReminderType,
     'eyeBlinkReminderEnabled': eyeBlinkReminderEnabled,
-    'eyeBlinkReminderIntervalMinutes': eyeBlinkReminderIntervalMinutes,
     'eyeBlinkReminderType': eyeBlinkReminderType,
     'showOnAllDisplays': showOnAllDisplays,
     'breakTheme': breakTheme,
@@ -549,6 +573,9 @@ class SettingsModel {
     'pipBackgroundStyle': pipBackgroundStyle,
     'pipOpacity': pipOpacity,
     'pipDraggableClickable': pipDraggableClickable,
+    'hydrationReminderEnabled': hydrationReminderEnabled,
+    'stretchReminderEnabled': stretchReminderEnabled,
+    'standUpReminderEnabled': standUpReminderEnabled,
     'companionToyType': companionToyType,
     'companionTreatType': companionTreatType,
     'templateAccentOverrides': templateAccentOverrides,
@@ -583,12 +610,8 @@ class SettingsModel {
       soundEnabled: map['soundEnabled'] as bool? ?? true,
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       postureReminderEnabled: map['postureReminderEnabled'] as bool? ?? false,
-      postureReminderIntervalMinutes:
-          map['postureReminderIntervalMinutes'] as int? ?? 30,
       postureReminderType: map['postureReminderType'] as String? ?? 'overlay',
       eyeBlinkReminderEnabled: map['eyeBlinkReminderEnabled'] as bool? ?? false,
-      eyeBlinkReminderIntervalMinutes:
-          map['eyeBlinkReminderIntervalMinutes'] as int? ?? 20,
       eyeBlinkReminderType: map['eyeBlinkReminderType'] as String? ?? 'overlay',
       showOnAllDisplays: map['showOnAllDisplays'] as bool? ?? true,
       breakTheme: map['breakTheme'] as String? ?? 'random',
@@ -641,18 +664,15 @@ class SettingsModel {
       companionWanderingEnabled:
           map['companionWanderingEnabled'] as bool? ?? true,
       companionPreviewBackground:
-          map['companionPreviewBackground'] as String? ??
-          '',
+          map['companionPreviewBackground'] as String? ?? '',
       unlockedPets:
           (map['unlockedPets'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
       companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
-      companionAvatarDefinition:
-          map['companionAvatarDefinition'] as String?,
-      companionKeepOnScreen:
-          map['companionKeepOnScreen'] as bool? ?? true,
+      companionAvatarDefinition: map['companionAvatarDefinition'] as String?,
+      companionKeepOnScreen: map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
       ballThrowEnabled: map['ballThrowEnabled'] as bool? ?? true,
       treatEnabled: map['treatEnabled'] as bool? ?? true,
@@ -681,6 +701,10 @@ class SettingsModel {
       pipBackgroundStyle: map['pipBackgroundStyle'] as String? ?? 'transparent',
       pipOpacity: (map['pipOpacity'] as num?)?.toDouble() ?? 1.0,
       pipDraggableClickable: map['pipDraggableClickable'] as bool? ?? true,
+      hydrationReminderEnabled:
+          map['hydrationReminderEnabled'] as bool? ?? false,
+      stretchReminderEnabled: map['stretchReminderEnabled'] as bool? ?? false,
+      standUpReminderEnabled: map['standUpReminderEnabled'] as bool? ?? false,
       companionToyType: map['companionToyType'] as String? ?? 'tennis_ball',
       companionTreatType: map['companionTreatType'] as String? ?? 'sushi',
       templateAccentOverrides:

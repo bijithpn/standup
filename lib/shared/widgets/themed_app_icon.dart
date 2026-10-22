@@ -102,8 +102,8 @@ class ThemedAppIcon extends StatelessWidget {
     this.borderRadius,
     this.shadows,
     this.showDevBadge = true,
-  })  : isBadge = true,
-        innerIconSize = iconSize ?? (size * 0.58);
+  }) : isBadge = true,
+       innerIconSize = iconSize ?? (size * 0.58);
 
   static String generateSvgString({required Color color}) {
     final hex =
@@ -147,11 +147,7 @@ class ThemedAppIcon extends StatelessWidget {
     );
 
     if (!isBadge) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: iconWidget,
-      );
+      return SizedBox(width: size, height: size, child: iconWidget);
     }
 
     bool isDev = false;
@@ -202,9 +198,7 @@ class ThemedAppIcon extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 // Background surface
-                Container(
-                  color: effectiveBg.withValues(alpha: 0.85),
-                ),
+                Container(color: effectiveBg.withValues(alpha: 0.85)),
                 // Themed SVG logo
                 Center(child: iconWidget),
                 // Dev badge if development flavor

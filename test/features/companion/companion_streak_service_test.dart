@@ -11,8 +11,7 @@ class InMemoryStorageService extends FakeStorageService {
   final Map<String, int> _ints = {};
 
   @override
-  int getInt(String key, {int defaultValue = 0}) =>
-      _ints[key] ?? defaultValue;
+  int getInt(String key, {int defaultValue = 0}) => _ints[key] ?? defaultValue;
 
   @override
   Future<bool> setInt(String key, int value) async {
@@ -65,9 +64,9 @@ void main() {
     statsService = FakeStatsService(storage);
     eventBus = EventBus.instance;
     emittedInteractions = [];
-    subscription = eventBus
-        .on<CompanionInteractionEvent>()
-        .listen(emittedInteractions.add);
+    subscription = eventBus.on<CompanionInteractionEvent>().listen(
+      emittedInteractions.add,
+    );
     streakService = CompanionStreakService(
       statsService: statsService,
       storage: storage,
@@ -88,29 +87,35 @@ void main() {
     expect(streakService.currentStreakDays, equals(0));
   });
 
-  test('crossing the first tier unlocks it and celebrates the companion', () async {
-    statsService.setCurrentStreak(3);
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'crossing the first tier unlocks it and celebrates the companion',
+    () async {
+      statsService.setCurrentStreak(3);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(streakService.highestMilestone?.days, equals(3));
-    expect(streakService.nextMilestone?.days, equals(7));
-    expect(emittedInteractions, hasLength(1));
-    expect(emittedInteractions.single.interactionType, equals('happy'));
-    expect(
-      emittedInteractions.single.metadata?['reason'],
-      equals('streak_milestone'),
-    );
-    expect(emittedInteractions.single.metadata?['days'], equals(3));
-  });
+      expect(streakService.highestMilestone?.days, equals(3));
+      expect(streakService.nextMilestone?.days, equals(7));
+      expect(emittedInteractions, hasLength(1));
+      expect(emittedInteractions.single.interactionType, equals('happy'));
+      expect(
+        emittedInteractions.single.metadata?['reason'],
+        equals('streak_milestone'),
+      );
+      expect(emittedInteractions.single.metadata?['days'], equals(3));
+    },
+  );
 
-  test('jumping several tiers at once only celebrates the highest one', () async {
-    statsService.setCurrentStreak(10);
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'jumping several tiers at once only celebrates the highest one',
+    () async {
+      statsService.setCurrentStreak(10);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(streakService.highestMilestone?.days, equals(7));
-    expect(emittedInteractions, hasLength(1));
-    expect(emittedInteractions.single.metadata?['days'], equals(7));
-  });
+      expect(streakService.highestMilestone?.days, equals(7));
+      expect(emittedInteractions, hasLength(1));
+      expect(emittedInteractions.single.metadata?['days'], equals(7));
+    },
+  );
 
   test('does not re-celebrate a tier already reached', () async {
     statsService.setCurrentStreak(3);
@@ -121,29 +126,35 @@ void main() {
     expect(emittedInteractions, hasLength(1));
   });
 
-  test('a streak reset does not un-celebrate a previously reached milestone', () async {
-    statsService.setCurrentStreak(7);
-    await Future<void>.delayed(Duration.zero);
-    statsService.setCurrentStreak(0);
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'a streak reset does not un-celebrate a previously reached milestone',
+    () async {
+      statsService.setCurrentStreak(7);
+      await Future<void>.delayed(Duration.zero);
+      statsService.setCurrentStreak(0);
+      await Future<void>.delayed(Duration.zero);
 
-    expect(streakService.highestMilestone?.days, equals(7));
-    expect(streakService.currentStreakDays, equals(0));
-    expect(emittedInteractions, hasLength(1));
-  });
+      expect(streakService.highestMilestone?.days, equals(7));
+      expect(streakService.currentStreakDays, equals(0));
+      expect(emittedInteractions, hasLength(1));
+    },
+  );
 
-  test('the highest milestone persists across a fresh service instance', () async {
-    statsService.setCurrentStreak(14);
-    await Future<void>.delayed(Duration.zero);
+  test(
+    'the highest milestone persists across a fresh service instance',
+    () async {
+      statsService.setCurrentStreak(14);
+      await Future<void>.delayed(Duration.zero);
 
-    final rehydrated = CompanionStreakService(
-      statsService: FakeStatsService(storage),
-      storage: storage,
-      eventBus: eventBus,
-    );
+      final rehydrated = CompanionStreakService(
+        statsService: FakeStatsService(storage),
+        storage: storage,
+        eventBus: eventBus,
+      );
 
-    expect(rehydrated.highestMilestone?.days, equals(14));
-  });
+      expect(rehydrated.highestMilestone?.days, equals(14));
+    },
+  );
 
   test('reaches the final tier without exceeding the tier list', () async {
     statsService.setCurrentStreak(1000);

@@ -65,6 +65,18 @@ class TimerRepository {
         'timer_eye_blink_elapsed',
         state.eyeBlinkElapsedSeconds,
       );
+      _storageService.setInt(
+        'timer_hydration_elapsed',
+        state.hydrationElapsedSeconds,
+      );
+      _storageService.setInt(
+        'timer_stretch_elapsed',
+        state.stretchElapsedSeconds,
+      );
+      _storageService.setInt(
+        'timer_stand_up_elapsed',
+        state.standUpElapsedSeconds,
+      );
       if (state.longBreakWindowStartedAt != null) {
         _storageService.setInt(
           'timer_long_break_window',
@@ -198,6 +210,18 @@ class TimerRepository {
       );
       state.eyeBlinkElapsedSeconds = _storageService.getInt(
         'timer_eye_blink_elapsed',
+        defaultValue: 0,
+      );
+      state.hydrationElapsedSeconds = _storageService.getInt(
+        'timer_hydration_elapsed',
+        defaultValue: 0,
+      );
+      state.stretchElapsedSeconds = _storageService.getInt(
+        'timer_stretch_elapsed',
+        defaultValue: 0,
+      );
+      state.standUpElapsedSeconds = _storageService.getInt(
+        'timer_stand_up_elapsed',
         defaultValue: 0,
       );
 

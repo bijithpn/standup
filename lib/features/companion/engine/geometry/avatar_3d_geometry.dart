@@ -69,7 +69,9 @@ class Avatar3DGeometry {
     double cutAngle = 0.0,
     double bottomTaper = 0.0,
   }) {
-    if (spec.profile == 'cone' || spec.profile == 'frustum' || spec.profile == 'half-cone') {
+    if (spec.profile == 'cone' ||
+        spec.profile == 'frustum' ||
+        spec.profile == 'half-cone') {
       final progress = _clamp((math.sin(latitude) + 1.0) / 2.0, 0.0, 1.0);
       final rClamped = _clamp(roundness, 0.0, 100.0) / 100.0;
       final easedProgress = progress * progress * (3.0 - 2.0 * progress);
@@ -80,7 +82,9 @@ class Avatar3DGeometry {
       final tipRatio = spec.profile == 'frustum' ? 0.46 : 0.0;
       final ringRadius = tipRatio + (1.0 - tipRatio) * taperedProgress;
       final cutAngleRad = cutAngle * math.pi / 180.0;
-      final sampledLon = spec.profile == 'half-cone' ? cutAngleRad + longitude / 2.0 : longitude;
+      final sampledLon = spec.profile == 'half-cone'
+          ? cutAngleRad + longitude / 2.0
+          : longitude;
 
       return Vec3(
         spec.radiusX * scaleX * ringRadius * math.sin(sampledLon),
@@ -101,9 +105,17 @@ class Avatar3DGeometry {
     }
 
     return Vec3(
-      spec.radiusX * scaleX * latFactor * lowerTaper * _signedPow(math.sin(longitude), spec.exponent),
+      spec.radiusX *
+          scaleX *
+          latFactor *
+          lowerTaper *
+          _signedPow(math.sin(longitude), spec.exponent),
       spec.radiusY * scaleY * vertical,
-      spec.radiusZ * scaleZ * latFactor * lowerTaper * _signedPow(math.cos(longitude), spec.exponent),
+      spec.radiusZ *
+          scaleZ *
+          latFactor *
+          lowerTaper *
+          _signedPow(math.cos(longitude), spec.exponent),
     );
   }
 
@@ -121,19 +133,37 @@ class Avatar3DGeometry {
   }) {
     const delta = 0.008;
     final center = _getSurfacePoint(
-      spec, longitude, latitude,
-      scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ,
-      roundness: roundness, cutAngle: cutAngle, bottomTaper: bottomTaper,
+      spec,
+      longitude,
+      latitude,
+      scaleX: scaleX,
+      scaleY: scaleY,
+      scaleZ: scaleZ,
+      roundness: roundness,
+      cutAngle: cutAngle,
+      bottomTaper: bottomTaper,
     );
     final pLon = _getSurfacePoint(
-      spec, longitude + delta, latitude,
-      scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ,
-      roundness: roundness, cutAngle: cutAngle, bottomTaper: bottomTaper,
+      spec,
+      longitude + delta,
+      latitude,
+      scaleX: scaleX,
+      scaleY: scaleY,
+      scaleZ: scaleZ,
+      roundness: roundness,
+      cutAngle: cutAngle,
+      bottomTaper: bottomTaper,
     );
     final pLat = _getSurfacePoint(
-      spec, longitude, latitude + delta,
-      scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ,
-      roundness: roundness, cutAngle: cutAngle, bottomTaper: bottomTaper,
+      spec,
+      longitude,
+      latitude + delta,
+      scaleX: scaleX,
+      scaleY: scaleY,
+      scaleZ: scaleZ,
+      roundness: roundness,
+      cutAngle: cutAngle,
+      bottomTaper: bottomTaper,
     );
 
     final tangentLon = pLon - center;
@@ -158,7 +188,9 @@ class Avatar3DGeometry {
     double bottomTaper = 0.0,
     ui.Offset centerOffset = const ui.Offset(210, 202),
   }) {
-    final spec = AvatarShapeSpec.specs[shape] ?? AvatarShapeSpec.specs[AvatarBodyShape.sphere]!;
+    final spec =
+        AvatarShapeSpec.specs[shape] ??
+        AvatarShapeSpec.specs[AvatarBodyShape.sphere]!;
 
     // Transform in 3D: Local -> Rotate yaw, pitch, roll
     Vec3 transform3D(Vec3 point) {
@@ -198,9 +230,15 @@ class Avatar3DGeometry {
       for (int j = 0; j <= outlineLonSteps; j++) {
         final lon = -math.pi + (j / outlineLonSteps) * math.pi * 2;
         final rawPoint = _getSurfacePoint(
-          spec, lon, lat,
-          scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ,
-          roundness: roundness, cutAngle: cutAngle, bottomTaper: bottomTaper,
+          spec,
+          lon,
+          lat,
+          scaleX: scaleX,
+          scaleY: scaleY,
+          scaleZ: scaleZ,
+          roundness: roundness,
+          cutAngle: cutAngle,
+          bottomTaper: bottomTaper,
         );
         final worldP = transform3D(rawPoint);
         outlinePoints.add(project(worldP));
@@ -220,45 +258,96 @@ class Avatar3DGeometry {
           spec,
           (lon0 + lon1) / 2,
           (lat0 + lat1) / 2,
-          scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ,
-          roundness: roundness, cutAngle: cutAngle, bottomTaper: bottomTaper,
+          scaleX: scaleX,
+          scaleY: scaleY,
+          scaleZ: scaleZ,
+          roundness: roundness,
+          cutAngle: cutAngle,
+          bottomTaper: bottomTaper,
         );
         final worldNormal = transform3D(rawNormal);
 
         // Horizon back-face culling for cells
         if (worldNormal.z <= 0.015) continue;
 
-        final p00 = transform3D(_getSurfacePoint(spec, lon0, lat0, scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ));
-        final p10 = transform3D(_getSurfacePoint(spec, lon1, lat0, scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ));
-        final p11 = transform3D(_getSurfacePoint(spec, lon1, lat1, scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ));
-        final p01 = transform3D(_getSurfacePoint(spec, lon0, lat1, scaleX: scaleX, scaleY: scaleY, scaleZ: scaleZ));
+        final p00 = transform3D(
+          _getSurfacePoint(
+            spec,
+            lon0,
+            lat0,
+            scaleX: scaleX,
+            scaleY: scaleY,
+            scaleZ: scaleZ,
+          ),
+        );
+        final p10 = transform3D(
+          _getSurfacePoint(
+            spec,
+            lon1,
+            lat0,
+            scaleX: scaleX,
+            scaleY: scaleY,
+            scaleZ: scaleZ,
+          ),
+        );
+        final p11 = transform3D(
+          _getSurfacePoint(
+            spec,
+            lon1,
+            lat1,
+            scaleX: scaleX,
+            scaleY: scaleY,
+            scaleZ: scaleZ,
+          ),
+        );
+        final p01 = transform3D(
+          _getSurfacePoint(
+            spec,
+            lon0,
+            lat1,
+            scaleX: scaleX,
+            scaleY: scaleY,
+            scaleZ: scaleZ,
+          ),
+        );
 
         final avgDepth = (p00.z + p10.z + p11.z + p01.z) / 4.0;
         final shade = _clamp(worldNormal.dot(lightVec), -1.0, 1.0);
 
-        final projectedCorners = [project(p00), project(p10), project(p11), project(p01)];
+        final projectedCorners = [
+          project(p00),
+          project(p10),
+          project(p11),
+          project(p01),
+        ];
 
-        cells.add(BodyCell3D(
-          id: '$latIdx-$lonIdx',
-          depth: avgDepth,
-          shade: shade,
-          vertices: projectedCorners,
-          worldVertices: [p00, p10, p11, p01],
-        ));
+        cells.add(
+          BodyCell3D(
+            id: '$latIdx-$lonIdx',
+            depth: avgDepth,
+            shade: shade,
+            vertices: projectedCorners,
+            worldVertices: [p00, p10, p11, p01],
+          ),
+        );
 
         // Depth-sorted triangles
-        triangles.add(BodyTriangle3D(
-          id: '$latIdx-$lonIdx-a',
-          depth: (p00.z + p10.z + p11.z) / 3.0,
-          vertices: [p00, p10, p11],
-          projectedVertices: [project(p00), project(p10), project(p11)],
-        ));
-        triangles.add(BodyTriangle3D(
-          id: '$latIdx-$lonIdx-b',
-          depth: (p00.z + p11.z + p01.z) / 3.0,
-          vertices: [p00, p11, p01],
-          projectedVertices: [project(p00), project(p11), project(p01)],
-        ));
+        triangles.add(
+          BodyTriangle3D(
+            id: '$latIdx-$lonIdx-a',
+            depth: (p00.z + p10.z + p11.z) / 3.0,
+            vertices: [p00, p10, p11],
+            projectedVertices: [project(p00), project(p10), project(p11)],
+          ),
+        );
+        triangles.add(
+          BodyTriangle3D(
+            id: '$latIdx-$lonIdx-b',
+            depth: (p00.z + p11.z + p01.z) / 3.0,
+            vertices: [p00, p11, p01],
+            projectedVertices: [project(p00), project(p11), project(p01)],
+          ),
+        );
       }
     }
 
@@ -289,7 +378,9 @@ class Avatar3DGeometry {
   static List<ui.Offset> _computeConvexHull(List<ui.Offset> points) {
     if (points.length <= 3) return points;
     final sorted = List<ui.Offset>.from(points)
-      ..sort((a, b) => a.dx != b.dx ? a.dx.compareTo(b.dx) : a.dy.compareTo(b.dy));
+      ..sort(
+        (a, b) => a.dx != b.dx ? a.dx.compareTo(b.dx) : a.dy.compareTo(b.dy),
+      );
 
     double crossProduct(ui.Offset o, ui.Offset a, ui.Offset b) {
       return (a.dx - o.dx) * (b.dy - o.dy) - (a.dy - o.dy) * (b.dx - o.dx);
@@ -297,7 +388,8 @@ class Avatar3DGeometry {
 
     final lower = <ui.Offset>[];
     for (final p in sorted) {
-      while (lower.length >= 2 && crossProduct(lower[lower.length - 2], lower.last, p) <= 0) {
+      while (lower.length >= 2 &&
+          crossProduct(lower[lower.length - 2], lower.last, p) <= 0) {
         lower.removeLast();
       }
       lower.add(p);
@@ -305,7 +397,8 @@ class Avatar3DGeometry {
 
     final upper = <ui.Offset>[];
     for (final p in sorted.reversed) {
-      while (upper.length >= 2 && crossProduct(upper[upper.length - 2], upper.last, p) <= 0) {
+      while (upper.length >= 2 &&
+          crossProduct(upper[upper.length - 2], upper.last, p) <= 0) {
         upper.removeLast();
       }
       upper.add(p);

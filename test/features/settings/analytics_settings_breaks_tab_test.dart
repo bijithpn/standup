@@ -59,9 +59,13 @@ void main() {
     sl.unregister<AppUsageService>();
   });
 
-  testWidgets('selecting the Breaks tab shows the break statistics section', (
+  testWidgets('Statistics is one page: every section is on the same screen', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1100, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -82,11 +86,65 @@ void main() {
         ),
       ),
     );
-
-    await tester.tap(find.text('Breaks'));
     await tester.pumpAndSettle();
 
+    // No tabs to switch between: all the groups are present at once.
+    for (final heading in ['Overview', 'Focus', 'Breaks']) {
+      expect(find.text(heading), findsOneWidget, reason: heading);
+    }
+    // Time and app usage are on the Productivity screen, not repeated here.
+    expect(find.text('Where your time goes'), findsNothing);
+    // Focus is the longest block, so it starts folded.
+    expect(find.text('Focus Score'), findsNothing);
+    await tester.tap(find.text('Show'));
+    await tester.pumpAndSettle();
+    expect(find.text('Focus Score'), findsOneWidget);
     expect(find.text('Break Statistics'), findsOneWidget);
-    expect(find.text('Current Streak'), findsOneWidget);
+    expect(find.text('Current Streak'), findsWidgets);
+    // One period selector for the whole page.
+    expect(find.text('This Week'), findsOneWidget);
   });
+
+  // Layout overflow shows up as a test failure, so render the page at the
+  // widths the window can actually have.
+  for (final width in [420.0, 700.0, 1100.0]) {
+    testWidgets('Statistics lays out without overflow at ${width.toInt()}px', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 4000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: sl<AppUsageService>()),
+            ChangeNotifierProvider.value(value: sl<FocusSessionService>()),
+            ChangeNotifierProvider.value(value: sl<BreakHistoryService>()),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: AnalyticsSettingsSection(
+                  stats: const StatsModel(currentStreak: 2, longestStreak: 5),
+                  settings: const SettingsModel(
+                    appUsageTrackingEnabled: true,
+                    categoryDailyBudgetMinutes: {'coding': 120},
+                  ),
+                  onSave: (_) {},
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // Unfold the longest block too, so it is checked for overflow as well.
+      await tester.tap(find.text('Show'));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

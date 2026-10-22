@@ -108,6 +108,7 @@ class ActivitySegment {
   }
 
   @override
-  String toString() => 'ActivitySegment($date ${activityKind.name} '
+  String toString() =>
+      'ActivitySegment($date ${activityKind.name} '
       '${appName.isEmpty ? '-' : appName} ${seconds}s)';
 }

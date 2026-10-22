@@ -18,7 +18,7 @@ import 'package:breakmate/features/analytics/segments/productivity_summary.dart'
 /// every rebuild is the easiest way to make a dashboard feel slow.
 class ProductivityRepository extends ChangeNotifier {
   ProductivityRepository({required ActivitySegmentRepository segments})
-      : _segments = segments {
+    : _segments = segments {
     _segments.addListener(_onSegmentsChanged);
   }
 
@@ -44,6 +44,13 @@ class ProductivityRepository extends ChangeNotifier {
     _dayCache.remove(today);
     _volatileDate = today;
     notifyListeners();
+  }
+
+  /// Writes anything still buffered and drops today's cached numbers, so what
+  /// is on screen includes the minute that is in progress right now.
+  void refreshToday() {
+    _segments.flush();
+    invalidate();
   }
 
   /// `YYYY-MM-DD` for [time], the key segments are stored under.
@@ -74,9 +81,11 @@ class ProductivityRepository extends ChangeNotifier {
   List<ActivitySegment> appSegments(String date, String appKey) {
     return _segments
         .segmentsForDate(date)
-        .where((segment) =>
-            segment.activityKind == ActivityKind.active &&
-            segment.appKey == appKey)
+        .where(
+          (segment) =>
+              segment.activityKind == ActivityKind.active &&
+              segment.appKey == appKey,
+        )
         .toList(growable: false);
   }
 
@@ -98,9 +107,7 @@ class ProductivityRepository extends ChangeNotifier {
     ];
 
     if (days <= _isolateThresholdDays) {
-      return aggregateRange(
-        dates.map(summaryForDate).toList(growable: false),
-      );
+      return aggregateRange(dates.map(summaryForDate).toList(growable: false));
     }
 
     final uncached = dates
@@ -118,7 +125,10 @@ class ProductivityRepository extends ChangeNotifier {
     }
 
     return aggregateRange(
-      dates.map((date) => _dayCache[date] ?? DailyProductivitySummary.empty(date))
+      dates
+          .map(
+            (date) => _dayCache[date] ?? DailyProductivitySummary.empty(date),
+          )
           .toList(growable: false),
     );
   }
@@ -130,12 +140,16 @@ class ProductivityRepository extends ChangeNotifier {
   Future<List<ProductivityInsight>> insights({
     int historyDays = 14,
     DateTime? now,
+    int? focusGoalSeconds,
   }) async {
     final moment = now ?? DateTime.now();
     final range = await summaryForLastDays(historyDays, now: moment);
+    final todayKey = dateKey(moment);
     return generateInsights(
       range: range,
-      today: summaryForDate(dateKey(moment)),
+      today: summaryForDate(todayKey),
+      focusGoalSeconds: focusGoalSeconds,
+      todayTimeline: timelineForDate(todayKey),
     );
   }
 

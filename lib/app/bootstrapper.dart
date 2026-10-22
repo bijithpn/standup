@@ -14,39 +14,46 @@ class AppBootstrapper {
 
     ipc.setTypedEventHandler((event) {
       event.when(
-        timerStateChanged: (stateName, countdownSeconds, workElapsedSeconds, targetEndTime, totalWorkTodaySeconds) {
-          final endTime = targetEndTime != null
-              ? DateTime.fromMillisecondsSinceEpoch(targetEndTime)
-              : null;
+        timerStateChanged:
+            (
+              stateName,
+              countdownSeconds,
+              workElapsedSeconds,
+              targetEndTime,
+              totalWorkTodaySeconds,
+            ) {
+              final endTime = targetEndTime != null
+                  ? DateTime.fromMillisecondsSinceEpoch(targetEndTime)
+                  : null;
 
-          TimerStateEvent? timerState;
-          switch (stateName) {
-            case 'running':
-              timerState = TimerStateEvent.running;
-              break;
-            case 'breakActive':
-              timerState = TimerStateEvent.breakActive;
-              break;
-            case 'paused':
-              timerState = TimerStateEvent.paused;
-              break;
-            case 'idle':
-              timerState = TimerStateEvent.idle;
-              break;
-          }
+              TimerStateEvent? timerState;
+              switch (stateName) {
+                case 'running':
+                  timerState = TimerStateEvent.running;
+                  break;
+                case 'breakActive':
+                  timerState = TimerStateEvent.breakActive;
+                  break;
+                case 'paused':
+                  timerState = TimerStateEvent.paused;
+                  break;
+                case 'idle':
+                  timerState = TimerStateEvent.idle;
+                  break;
+              }
 
-          if (timerState != null) {
-            eventBus.emit(
-              TimerStateChangedEvent(
-                state: timerState,
-                countdownSeconds: countdownSeconds,
-                workElapsedSeconds: workElapsedSeconds,
-                targetEndTime: endTime,
-                totalWorkTodaySeconds: totalWorkTodaySeconds,
-              ),
-            );
-          }
-        },
+              if (timerState != null) {
+                eventBus.emit(
+                  TimerStateChangedEvent(
+                    state: timerState,
+                    countdownSeconds: countdownSeconds,
+                    workElapsedSeconds: workElapsedSeconds,
+                    targetEndTime: endTime,
+                    totalWorkTodaySeconds: totalWorkTodaySeconds,
+                  ),
+                );
+              }
+            },
         breakStarted: (isLongBreak, durationSeconds, title) {
           eventBus.emit(
             BreakStartedEvent(
@@ -61,10 +68,7 @@ class AppBootstrapper {
         },
         meetingDetected: (isActive, bundleId) {
           eventBus.emit(
-            MeetingDetectedEvent(
-              isActive: isActive,
-              bundleId: bundleId,
-            ),
+            MeetingDetectedEvent(isActive: isActive, bundleId: bundleId),
           );
         },
         focusMode: (isActive) {

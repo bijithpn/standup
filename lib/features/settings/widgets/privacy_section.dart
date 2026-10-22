@@ -4,10 +4,10 @@ import 'package:breakmate/features/analytics/presentation/productivity/activity_
 import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
 import 'package:breakmate/features/analytics/segments/productivity_repository.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
-import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
-import 'package:breakmate/features/analytics/presentation/widgets/category_budgets_card.dart';
+import 'package:breakmate/core/services/app_navigation_service.dart';
+import 'package:breakmate/core/services/calendar_permission_service.dart';
+import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
@@ -33,8 +33,6 @@ class PrivacySection extends StatefulWidget {
 }
 
 class _PrivacySectionState extends State<PrivacySection> {
-  int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
-
   /// How many activity entries are stored, so "clear history" can say what it
   /// would actually delete.
   int _segmentCount = 0;
@@ -48,110 +46,66 @@ class _PrivacySectionState extends State<PrivacySection> {
   void initState() {
     super.initState();
     _refreshSegmentCount();
-  }
-
-  UsagePeriod get _usagePeriod {
-    switch (_selectedFilter) {
-      case 1:
-        return UsagePeriod.week;
-      case 2:
-        return UsagePeriod.month;
-      default:
-        return UsagePeriod.today;
-    }
+    // Shared, throttled: shows the real calendar permission state.
+    sl<CalendarSyncController>().refresh();
   }
 
   @override
   Widget build(BuildContext context) {
     final settings = widget.settings;
 
+    final calendar = sl<CalendarSyncController>();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         sectionHeader(
-          'Privacy Report',
+          'Privacy',
           subtitle:
-              'Your data is yours. Learn how BreakMate protects your privacy.',
+              'Everything BreakMate records is stored on this Mac. There are '
+              'no accounts and no servers, and nothing is sent anywhere.',
         ),
-        const SizedBox(height: 16),
 
-        buildCard([
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Local-Only Storage',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'All your settings, break history, and productivity stats are stored locally on this machine using ObjectBox. We do not have servers and we do not collect your personal data.',
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                ),
-              ],
-            ),
-          ),
-          divider(),
-          _settingsInfoTile(
-            context,
-            title: 'Native Integrations',
-            subtitle:
-                'Meeting detection and active app tracking run entirely on your OS. We only check for specific keywords locally to suggest relevant breaks.',
-            icon: LucideIcons.cpu,
-          ),
-          divider(),
-          _settingsInfoTile(
-            context,
-            title: 'Calendar Access',
-            subtitle:
-                'If enabled, we only read event start/end times to avoid interrupting your work. Event titles and details are never saved.',
-            icon: LucideIcons.calendar,
-          ),
-        ]),
-
-        const SizedBox(height: 32),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: sectionHeader(
-                'App Usage Dashboard',
-                subtitle:
-                    'A transparent look at exactly what BreakMate has recorded about your app usage.',
+        // ── Permissions ─────────────────────────────────────────────────
+        sectionHeader('Permissions'),
+        ChangeNotifierProvider<CalendarSyncController>.value(
+          value: calendar,
+          child: Consumer<CalendarSyncController>(
+            builder: (context, c, _) => buildCard([
+              _PermissionRow(
+                title: 'Calendar',
+                detail:
+                    'Reads event times to keep breaks out of meetings. '
+                    'Titles are never saved.',
+                status: _calendarStatus(c),
+                actionLabel:
+                    c.state == CalendarConnectionState.permissionBlocked
+                    ? 'Open System Settings'
+                    : 'Manage in Calendar Sync',
+                onAction: c.state == CalendarConnectionState.permissionBlocked
+                    ? c.openSystemSettings
+                    : () => sl<AppNavigationService>().openSection(
+                        'Calendar Sync',
+                      ),
               ),
-            ),
-            if (settings.appUsageTrackingEnabled)
-              segmentedControl(
-                ['Today', 'Week', 'Month'],
-                _selectedFilter,
-                (i) => setState(() => _selectedFilter = i),
-                isSmall: true,
-              ),
-          ],
+            ]),
+          ),
         ),
-        const SizedBox(height: 16),
 
+        // ── Data collection ─────────────────────────────────────────────
+        sectionHeader('Data collection'),
         buildCard([
           toggleRow(
-            'Track App Usage',
-            'See which apps you use most, here and on the Productivity screen. '
-                'Only app names and time spent are stored, locally — never window titles or URLs.',
+            'Track app usage',
+            'Stores app names and time spent, locally. Never window titles, '
+                'URLs or documents.',
             settings.appUsageTrackingEnabled,
             (value) => _setTracking(settings, value),
           ),
-        ]),
-
-        if (settings.appUsageTrackingEnabled) ...[
-          const SizedBox(height: 16),
-          buildCard([
+          if (settings.appUsageTrackingEnabled) ...[
+            divider(),
             dropdownRow(
-              'Keep Activity History',
+              'Keep activity history',
               ActivityRetention.fromDays(
                 settings.activityHistoryRetentionDays,
               ).label,
@@ -169,57 +123,20 @@ class _PrivacySectionState extends State<PrivacySection> {
             ),
             divider(),
             actionRow(
-              label: 'Clear Activity History',
+              label: 'Clear activity history',
               subtitle: _segmentCount == 0
-                  ? 'No activity has been recorded yet.'
-                  : '$_segmentCount recorded entries make up your timeline, '
-                        'application totals and insights.',
-              buttonText: 'Clear History',
+                  ? 'Nothing recorded yet.'
+                  : '$_segmentCount recorded entries.',
+              buttonText: 'Clear',
               onPressed: _segmentCount == 0 ? null : _clearActivityHistory,
               isDestructive: true,
             ),
-          ]),
-        ],
-
-        if (settings.appUsageTrackingEnabled) ...[
-          const SizedBox(height: 16),
-          CategoryBudgetsCard(
-            budgetMinutes: settings.categoryDailyBudgetMinutes,
-            onChanged: (updated) => widget.onSave(
-              settings.copyWith(categoryDailyBudgetMinutes: updated),
-            ),
-          ),
-        ],
-
-        Consumer<AppUsageService>(
-          builder: (context, usageService, _) {
-            final period = _usagePeriod;
-            return AppUsageSection(
-              enabled: settings.appUsageTrackingEnabled,
-              // No limit here: the Privacy dashboard's whole point is full
-              // disclosure, so every tracked app is shown, not just the top 8.
-              topApps: usageService.topApps(period, limit: null),
-              categoryTotals: usageService.categoryTotals(period),
-              iconCache: sl(),
-              onEnable: () => widget.onSave(
-                settings.copyWith(appUsageTrackingEnabled: true),
-              ),
-              listTitle: 'All Tracked Apps',
-              // Daily budgets only mean something against today's totals.
-              budgetMinutes: period == UsagePeriod.today
-                  ? settings.categoryDailyBudgetMinutes
-                  : const {},
-            );
-          },
-        ),
-
-        const SizedBox(height: 24),
-        buildCard([
+          ],
+          divider(),
           toggleRow(
-            'Send Crash Reports',
-            'When the app crashes, send an anonymised error report (no app usage, '
-                'window titles, URLs or file paths) so the bug can be fixed. '
-                'Takes effect immediately.',
+            'Send crash reports',
+            'Anonymised error reports (no app usage, titles, URLs or paths) '
+                'so bugs can be fixed.',
             _crashReporting,
             (value) {
               SimplePrefs.instance.setBool(
@@ -230,23 +147,61 @@ class _PrivacySectionState extends State<PrivacySection> {
             },
           ),
         ]),
-
-        const SizedBox(height: 24),
         _DataTransparencyPanel(enabled: settings.appUsageTrackingEnabled),
 
+        // ── Recorded data ───────────────────────────────────────────────
+        // The detailed app-usage view lives on the Statistics screen only.
+        if (settings.appUsageTrackingEnabled) ...[
+          sectionHeader('Recorded app usage'),
+          buildCard([
+            actionRow(
+              label: 'See exactly what was recorded',
+              subtitle:
+                  'Every tracked app and the time spent, by day, week or month.',
+              buttonText: 'Open Productivity',
+              onPressed: () =>
+                  sl<AppNavigationService>().openSection('Productivity'),
+            ),
+          ]),
+        ],
+
+        // ── Your data ───────────────────────────────────────────────────
         const SizedBox(height: 24),
+        sectionHeader('Your data'),
         buildCard([
           actionRow(
-            label: 'Delete All Local Data',
+            label: 'Delete all local data',
             subtitle:
-                'This will reset all settings and wipe your statistics history. This cannot be undone.',
-            buttonText: 'Wipe Data',
+                'Resets all settings and permanently deletes statistics and '
+                'activity history. Exported backups are not affected.',
+            buttonText: 'Delete…',
             onPressed: _confirmWipeAllData,
             isDestructive: true,
           ),
         ]),
       ],
     );
+  }
+
+  _PermissionStatus _calendarStatus(CalendarSyncController c) {
+    switch (c.state) {
+      case CalendarConnectionState.connected:
+        return _PermissionStatus.granted;
+      case CalendarConnectionState.permissionBlocked:
+        return _PermissionStatus.denied;
+      case CalendarConnectionState.permissionNeeded:
+        return _PermissionStatus.notRequested;
+      case CalendarConnectionState.error:
+        return _PermissionStatus.granted;
+      case CalendarConnectionState.checking:
+        return _PermissionStatus.checking;
+      case CalendarConnectionState.disconnected:
+        return c.permission == CalendarPermissionStatus.granted
+            ? _PermissionStatus.granted
+            : c.permission == CalendarPermissionStatus.notDetermined
+            ? _PermissionStatus.notRequested
+            : _PermissionStatus.denied;
+    }
   }
 
   /// Turning tracking on for the first time explains itself before it starts;
@@ -320,44 +275,6 @@ class _PrivacySectionState extends State<PrivacySection> {
           : 0;
     });
   }
-
-  Widget _settingsInfoTile(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: AppTheme.accentColor),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Plain-language breakdown of exactly what the app usage feature stores,
@@ -430,31 +347,12 @@ class _DataTransparencyPanel extends StatelessWidget {
             text:
                 'Exported backups include your activity history — keep them private',
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppTheme.info.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(LucideIcons.clock, size: 15, color: AppTheme.info),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    enabled
-                        ? 'History rolls off automatically after 30 days — nothing older than that is ever kept.'
-                        : 'Tracking is off, so nothing new is being recorded. Any history already on this device still ages out after 30 days.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 8),
+          Text(
+            enabled
+                ? 'History rolls off automatically after 30 days.'
+                : 'Tracking is off. Existing history still ages out after 30 days.',
+            style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
           ),
         ],
       ),
@@ -488,6 +386,79 @@ class _TransparencyRow extends StatelessWidget {
               style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _PermissionStatus { checking, granted, notRequested, denied }
+
+class _PermissionRow extends StatelessWidget {
+  final String title;
+  final String detail;
+  final _PermissionStatus status;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _PermissionRow({
+    required this.title,
+    required this.detail,
+    required this.status,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (String label, Color color) = switch (status) {
+      _PermissionStatus.checking => ('Checking…', AppTheme.textSecondary),
+      _PermissionStatus.granted => ('Granted', AppTheme.success),
+      _PermissionStatus.notRequested => ('Not requested', AppTheme.warning),
+      _PermissionStatus.denied => ('Denied', AppTheme.error),
+    };
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(onPressed: onAction, child: Text(actionLabel)),
         ],
       ),
     );

@@ -8,7 +8,8 @@ class AppIconCache {
   final AppTrackingService _appTracking;
   final Map<String, Uint8List?> _cache = {};
 
-  AppIconCache({required AppTrackingService appTracking}) : _appTracking = appTracking;
+  AppIconCache({required AppTrackingService appTracking})
+    : _appTracking = appTracking;
 
   Future<Uint8List?> iconFor({
     required String appKey,

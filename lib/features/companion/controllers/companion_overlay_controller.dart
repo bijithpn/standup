@@ -13,7 +13,6 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
 import 'package:breakmate/features/companion/services/avatar_web_server.dart';
-import 'package:flame/flame.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -876,7 +875,6 @@ class CompanionOverlayController extends ChangeNotifier {
       // is allowed at all. A companion that walks about while animations are
       // off would be the most conspicuous thing on the screen.
       'wanderingEnabled': companionWanderingEnabled && _enableAnimations,
-      'isLowPowerMode': !_enableAnimations,
       'pettingEnabled': pettingEnabled,
       'playEnabled': ballThrowEnabled,
       'treatEnabled': treatEnabled,
@@ -933,7 +931,6 @@ class CompanionOverlayController extends ChangeNotifier {
     // Evict existing pet assets and clear cached SpriteSheets to release memory before loading the new theme.
     // This prevents GPU memory overhead from accumulative sprite sheets when the breed is toggled.
     PetAssetLoader.clearCache();
-    Flame.images.clear(themeId);
 
     final species = PetTheme.getTheme(themeId).species;
     final random = Random();

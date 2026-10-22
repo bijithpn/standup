@@ -33,9 +33,6 @@ sealed class OverlayConfig with _$OverlayConfig {
     /// When false it only appears while a break is running and hides again
     /// afterwards, so the desktop is its own during focused work.
     bool? keepOnScreen,
-    bool? isOnBattery,
-    bool? isAppActive,
-    bool? isLowPowerMode,
     bool? clickThrough,
     String? pipBackgroundStyle,
     double? pipOpacity,

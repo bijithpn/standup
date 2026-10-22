@@ -15,11 +15,7 @@ class InsightsOverviewCard extends StatelessWidget {
   /// action render without a button regardless.
   final ValueChanged<InsightAction>? onApply;
 
-  const InsightsOverviewCard({
-    super.key,
-    required this.insights,
-    this.onApply,
-  });
+  const InsightsOverviewCard({super.key, required this.insights, this.onApply});
 
   @override
   Widget build(BuildContext context) {

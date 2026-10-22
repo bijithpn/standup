@@ -26,7 +26,9 @@ class AvatarWebServer {
 
   Uri buildCompanionUrl({String? queryParams}) {
     if (queryParams != null && queryParams.isNotEmpty) {
-      final cleanQuery = queryParams.startsWith('?') ? queryParams.substring(1) : queryParams;
+      final cleanQuery = queryParams.startsWith('?')
+          ? queryParams.substring(1)
+          : queryParams;
       return Uri.parse('$baseUrl/?$cleanQuery&companion=1#/companion');
     }
     return companionUrl;
@@ -34,7 +36,9 @@ class AvatarWebServer {
 
   Uri buildEditorUrl({String? queryParams}) {
     if (queryParams != null && queryParams.isNotEmpty) {
-      final cleanQuery = queryParams.startsWith('?') ? queryParams.substring(1) : queryParams;
+      final cleanQuery = queryParams.startsWith('?')
+          ? queryParams.substring(1)
+          : queryParams;
       return Uri.parse('$baseUrl/?$cleanQuery#/editor');
     }
     return editorUrl;
@@ -90,9 +94,31 @@ class AvatarWebServer {
       final exeDir = exe.parent;
       final candidates = [
         // macOS: BreakMate Dev.app/Contents/Frameworks/App.framework/Resources/flutter_assets
-        p.join(exeDir.parent.path, 'Frameworks', 'App.framework', 'Resources', 'flutter_assets'),
-        p.join(exeDir.parent.path, 'Frameworks', 'App.framework', 'Versions', 'A', 'Resources', 'flutter_assets'),
-        p.join(exeDir.parent.path, 'Frameworks', 'App.framework', 'Versions', 'Current', 'Resources', 'flutter_assets'),
+        p.join(
+          exeDir.parent.path,
+          'Frameworks',
+          'App.framework',
+          'Resources',
+          'flutter_assets',
+        ),
+        p.join(
+          exeDir.parent.path,
+          'Frameworks',
+          'App.framework',
+          'Versions',
+          'A',
+          'Resources',
+          'flutter_assets',
+        ),
+        p.join(
+          exeDir.parent.path,
+          'Frameworks',
+          'App.framework',
+          'Versions',
+          'Current',
+          'Resources',
+          'flutter_assets',
+        ),
         p.join(exeDir.parent.path, 'Resources', 'flutter_assets'),
         // Windows: flutter_assets alongside .exe
         p.join(exeDir.path, 'data', 'flutter_assets'),
@@ -146,7 +172,9 @@ class AvatarWebServer {
     }
 
     try {
-      final content = await rootBundle.loadString('assets/avatars/web/svg_map.json');
+      final content = await rootBundle.loadString(
+        'assets/avatars/web/svg_map.json',
+      );
       final decoded = jsonDecode(content) as Map<String, dynamic>;
       _svgMap = decoded.map((k, v) => MapEntry(k, v.toString()));
     } catch (_) {}
@@ -187,7 +215,10 @@ class AvatarWebServer {
         final mappedRelative = _svgMap?[fileName];
         if (mappedRelative != null) {
           if (_resolvedAvatarsPath != null) {
-            final mappedDiskPath = p.join(_resolvedAvatarsPath!, mappedRelative);
+            final mappedDiskPath = p.join(
+              _resolvedAvatarsPath!,
+              mappedRelative,
+            );
             final mappedFile = File(mappedDiskPath);
             if (mappedFile.existsSync()) {
               _setContentType(response, mappedDiskPath);
@@ -208,7 +239,9 @@ class AvatarWebServer {
         }
       }
 
-      final cleanPath = requestedPath.startsWith('/') ? requestedPath.substring(1) : requestedPath;
+      final cleanPath = requestedPath.startsWith('/')
+          ? requestedPath.substring(1)
+          : requestedPath;
 
       // 2. Try serving directly from local file directory if resolved
       if (_resolvedWebPath != null) {
@@ -246,7 +279,9 @@ class AvatarWebServer {
         }
 
         try {
-          final indexData = await rootBundle.load('assets/avatars/web/index.html');
+          final indexData = await rootBundle.load(
+            'assets/avatars/web/index.html',
+          );
           _setContentType(response, 'index.html');
           response.add(indexData.buffer.asUint8List());
           await response.close();
@@ -271,20 +306,36 @@ class AvatarWebServer {
     final ext = p.extension(path).toLowerCase();
     switch (ext) {
       case '.html':
-        response.headers.contentType = ContentType('text', 'html', charset: 'utf-8');
+        response.headers.contentType = ContentType(
+          'text',
+          'html',
+          charset: 'utf-8',
+        );
         break;
       case '.js':
       case '.mjs':
-        response.headers.contentType = ContentType('application', 'javascript', charset: 'utf-8');
+        response.headers.contentType = ContentType(
+          'application',
+          'javascript',
+          charset: 'utf-8',
+        );
         break;
       case '.css':
-        response.headers.contentType = ContentType('text', 'css', charset: 'utf-8');
+        response.headers.contentType = ContentType(
+          'text',
+          'css',
+          charset: 'utf-8',
+        );
         break;
       case '.svg':
         response.headers.contentType = ContentType('image', 'svg+xml');
         break;
       case '.json':
-        response.headers.contentType = ContentType('application', 'json', charset: 'utf-8');
+        response.headers.contentType = ContentType(
+          'application',
+          'json',
+          charset: 'utf-8',
+        );
         break;
       case '.png':
         response.headers.contentType = ContentType('image', 'png');

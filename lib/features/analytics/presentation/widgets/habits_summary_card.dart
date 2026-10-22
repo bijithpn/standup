@@ -43,7 +43,10 @@ class HabitsSummaryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          Container(height: 1, color: AppTheme.textMuted.withValues(alpha: 0.1)),
+          Container(
+            height: 1,
+            color: AppTheme.textMuted.withValues(alpha: 0.1),
+          ),
           const SizedBox(height: 12),
           Text(
             summary.describe(),

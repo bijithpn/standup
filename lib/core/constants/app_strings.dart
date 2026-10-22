@@ -27,7 +27,6 @@ class AppStrings {
 
   static const String navBreaks = 'Breaks';
   static const String navFocusMode = 'Focus mode';
-  static const String navExercises = 'Exercises';
   static const String navNotifications = 'Notifications';
   static const String navCompanion = 'Companion';
   static const String navStatistics = 'Statistics';

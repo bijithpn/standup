@@ -31,10 +31,6 @@ class TimerSection extends StatelessWidget {
 
         final nextReason = _nextBreakReason(engine, settingsRepo);
         final statusChips = <_StatusChipData>[
-          _StatusChipData(
-            settings.intensityLevel.toUpperCase(),
-            AppTheme.accent,
-          ),
           if (settings.quietModeEnabled)
             _StatusChipData('QUIET', AppTheme.warning),
           if (settings.calendarEnabled)

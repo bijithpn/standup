@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:vector_graphics/vector_graphics_compat.dart' show RenderingStrategy;
+import 'package:vector_graphics/vector_graphics_compat.dart'
+    show RenderingStrategy;
 
 import 'package:breakmate/features/companion/domain/avatar_breed.dart';
 import 'package:breakmate/features/companion/domain/avatar_definition.dart';
@@ -19,17 +20,16 @@ AvatarArtworkRecipe avatarRecipeFor(
   double paletteStrength = 0.85,
 }) {
   final breedId = definition.breed;
-  final breed =
-      breedId == null ? null : AvatarBreed.find(definition.species, breedId);
+  final breed = breedId == null
+      ? null
+      : AvatarBreed.find(definition.species, breedId);
 
   // Both base species snapshots and breed snapshots carry authored colouring.
   // Only recolour when the user has explicitly moved off the default palette.
   final isDefaultPalette =
       definition.palette == AvatarPalette.defaultPalette ||
       definition.palette.name == 'default';
-  final palette = !applyPalette || isDefaultPalette
-      ? null
-      : definition.palette;
+  final palette = !applyPalette || isDefaultPalette ? null : definition.palette;
 
   return AvatarArtworkRecipe(
     assetKey: breed?.svgAssetPath ?? definition.species.svgAssetPath,
@@ -69,19 +69,19 @@ class AvatarArtwork extends StatelessWidget {
     bool transparentBackdrop = true,
     bool applyPalette = true,
   }) : this(
-          key: key,
-          recipe: avatarRecipeFor(
-            definition,
-            transparentBackdrop: transparentBackdrop,
-            applyPalette: applyPalette,
-          ),
-          width: width,
-          height: height,
-          fit: fit,
-          alignment: alignment,
-          placeholder: placeholder,
-          semanticsLabel: semanticsLabel ?? definition.species.displayName,
-        );
+         key: key,
+         recipe: avatarRecipeFor(
+           definition,
+           transparentBackdrop: transparentBackdrop,
+           applyPalette: applyPalette,
+         ),
+         width: width,
+         height: height,
+         fit: fit,
+         alignment: alignment,
+         placeholder: placeholder,
+         semanticsLabel: semanticsLabel ?? definition.species.displayName,
+       );
 
   final AvatarArtworkRecipe recipe;
   final double? width;

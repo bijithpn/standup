@@ -100,7 +100,8 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage>
     super.initState();
 
     var initial =
-        widget.initialDefinition ?? AvatarDefinition.fromSpecies(AvatarSpecies.cat);
+        widget.initialDefinition ??
+        AvatarDefinition.fromSpecies(AvatarSpecies.cat);
     if (initial.breed == null) {
       final breeds = AvatarBreed.forSpecies(initial.species);
       if (breeds.isNotEmpty) initial = initial.copyWith(breed: breeds.first.id);
@@ -267,8 +268,9 @@ class _AvatarCustomizerPageState extends State<AvatarCustomizerPage>
 
   String get _summary {
     final breedId = _definition.breed;
-    final breed =
-        breedId == null ? null : AvatarBreed.find(_definition.species, breedId);
+    final breed = breedId == null
+        ? null
+        : AvatarBreed.find(_definition.species, breedId);
     final name = breed?.displayName ?? _definition.species.displayName;
     return '$name · ${_definition.palette.name}';
   }
@@ -354,7 +356,10 @@ class _StudioTopBar extends StatelessWidget {
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 ),
@@ -433,10 +438,7 @@ class _StudioSidebar extends StatelessWidget {
         children: <Widget>[
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-            child: _SectionTabs(
-              selected: section,
-              onChanged: onSectionChanged,
-            ),
+            child: _SectionTabs(selected: section, onChanged: onSectionChanged),
           ),
           Expanded(child: _buildPanel()),
         ],
@@ -669,8 +671,7 @@ class _ArtworkTile extends StatelessWidget {
                   fontFamily: 'Inter',
                   fontSize: 10,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color:
-                      isSelected ? AppTheme.accent : AppTheme.textSecondary,
+                  color: isSelected ? AppTheme.accent : AppTheme.textSecondary,
                 ),
               ),
             ],
@@ -828,8 +829,9 @@ class _PalettePanel extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: isSelected
                             ? AppTheme.accent
                             : AppTheme.textPrimary,
@@ -837,8 +839,7 @@ class _PalettePanel extends StatelessWidget {
                     ),
                   ),
                   if (isSelected)
-                    Icon(Icons.check_rounded,
-                        size: 15, color: AppTheme.accent),
+                    Icon(Icons.check_rounded, size: 15, color: AppTheme.accent),
                 ],
               ),
             ),
@@ -876,8 +877,9 @@ class _StylePanel extends StatelessWidget {
   /// The scene as authored, when the catalog has it. Used for the starting
   /// position of controls the user has not touched, so a slider at rest shows
   /// the truth rather than a made-up default.
-  AvatarScene? get _authored =>
-      AvatarSceneCatalog.instance.sceneFor(avatarPresetFor(definition.species.name));
+  AvatarScene? get _authored => AvatarSceneCatalog.instance.sceneFor(
+    avatarPresetFor(definition.species.name),
+  );
 
   void _apply(AvatarSceneStyle style) {
     onUpdate(
@@ -900,7 +902,8 @@ class _StylePanel extends StatelessWidget {
             children: <Widget>[
               _StyleSlider(
                 label: 'Direction',
-                value: style.lightAzimuth ??
+                value:
+                    style.lightAzimuth ??
                     scene?.lightAzimuth ??
                     kDefaultLightAzimuth,
                 min: -180,
@@ -911,7 +914,8 @@ class _StylePanel extends StatelessWidget {
               ),
               _StyleSlider(
                 label: 'Height',
-                value: style.lightElevation ??
+                value:
+                    style.lightElevation ??
                     scene?.lightElevation ??
                     kDefaultLightElevation,
                 min: AvatarSceneStyle.minElevation,
@@ -966,7 +970,10 @@ class _StylePanel extends StatelessWidget {
               ),
               _StyleSwitch(
                 label: 'Eye sparkle',
-                value: style.eyeSparkle ?? scene?.faceStyle.highlightEnabled ?? false,
+                value:
+                    style.eyeSparkle ??
+                    scene?.faceStyle.highlightEnabled ??
+                    false,
                 onChanged: (v) => _apply(style.copyWith(eyeSparkle: v)),
               ),
               _StyleSwitch(
@@ -1181,7 +1188,10 @@ class _PaletteSwatches extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: _parse(colors[i]),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.surfaceElevated, width: 1.5),
+                  border: Border.all(
+                    color: AppTheme.surfaceElevated,
+                    width: 1.5,
+                  ),
                 ),
               ),
             ),
@@ -1212,8 +1222,9 @@ class _SeedPanel extends StatefulWidget {
 }
 
 class _SeedPanelState extends State<_SeedPanel> {
-  late final TextEditingController _controller =
-      TextEditingController(text: widget.definition.seed);
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.definition.seed,
+  );
 
   @override
   void didUpdateWidget(_SeedPanel oldWidget) {
@@ -1257,8 +1268,10 @@ class _SeedPanelState extends State<_SeedPanel> {
               fillColor: AppTheme.surfaceCard,
               hintText: 'e.g. fluffy-cat-42',
               hintStyle: TextStyle(fontSize: 12, color: AppTheme.textMuted),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppTheme.radiusSm),
                 borderSide: BorderSide(color: AppTheme.border),
@@ -1387,9 +1400,8 @@ class _StudioPreview extends StatelessWidget {
                       bottom: 16,
                       child: AnimatedBuilder(
                         animation: engine,
-                        builder: (context, _) => _ActivityChip(
-                          label: engine.snapshot.activity.name,
-                        ),
+                        builder: (context, _) =>
+                            _ActivityChip(label: engine.snapshot.activity.name),
                       ),
                     ),
                     const Positioned(

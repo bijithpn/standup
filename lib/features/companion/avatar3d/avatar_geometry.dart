@@ -110,7 +110,9 @@ AvatarGeometry buildAvatarGeometry(
   );
 
   final density =
-      clampDouble(scene.gridDensity, 20, 200) / 100 * clampDouble(densityScale, 0.25, 2);
+      clampDouble(scene.gridDensity, 20, 200) /
+      100 *
+      clampDouble(densityScale, 0.25, 2);
   final latitudeSteps = math.max((_baseLatitudeSteps * density).round(), 4);
   final longitudeSteps = math.max((_baseLongitudeSteps * density).round(), 8);
 
@@ -232,7 +234,9 @@ PartGeometry _buildPart(
       if (normal.z <= _minimumFacing) continue;
 
       final corners = <Vec3>[
-        transformPoint(surfacePoint(spec, lonStart, latStart, options: options)),
+        transformPoint(
+          surfacePoint(spec, lonStart, latStart, options: options),
+        ),
         transformPoint(surfacePoint(spec, lonEnd, latStart, options: options)),
         transformPoint(surfacePoint(spec, lonEnd, latEnd, options: options)),
         transformPoint(surfacePoint(spec, lonStart, latEnd, options: options)),
@@ -255,7 +259,8 @@ PartGeometry _buildPart(
         1,
       );
       final depth =
-          corners.fold<double>(0, (sum, point) => sum + point.z) / corners.length;
+          corners.fold<double>(0, (sum, point) => sum + point.z) /
+          corners.length;
 
       depthSum += depth;
       depthCount++;
@@ -473,12 +478,19 @@ FaceGeometry _buildFace(
   }
 
   /// Lifts a face outline onto the head and drops it if it has turned away.
-  FaceFeature? projectFeature(double centerX, double centerY, List<Vec2> boundary) {
-    final centerNormal =
-        transformNormal(faceNormal(spec, Vec2(centerX, centerY), options: options));
+  FaceFeature? projectFeature(
+    double centerX,
+    double centerY,
+    List<Vec2> boundary,
+  ) {
+    final centerNormal = transformNormal(
+      faceNormal(spec, Vec2(centerX, centerY), options: options),
+    );
 
     final lifted = boundary
-        .map((point) => transformPoint(facePoint(spec, point, options: options)))
+        .map(
+          (point) => transformPoint(facePoint(spec, point, options: options)),
+        )
         .toList(growable: false);
     final visible = clipToVisibleHemisphere(lifted);
     if (visible.length < 3) return null;
@@ -504,11 +516,18 @@ FaceGeometry _buildFace(
   for (var index = 0; index < 2; index++) {
     final centerX = index == 0 ? -eyeOffset : eyeOffset;
     const centerY = 0.0;
-    final rotation = style.rotation +
+    final rotation =
+        style.rotation +
         (index == 0 ? style.leftEyeRotation : style.rightEyeRotation);
 
     final boundary = style.eyeShape == 'ellipse'
-        ? _ellipseBoundary(centerX, centerY, style.width, style.height, rotation)
+        ? _ellipseBoundary(
+            centerX,
+            centerY,
+            style.width,
+            style.height,
+            rotation,
+          )
         : _roundedRectBoundary(
             centerX,
             centerY,

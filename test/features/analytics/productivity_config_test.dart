@@ -4,14 +4,13 @@ import 'package:breakmate/core/config/productivity_config.dart';
 
 void main() {
   group('flavour configuration', () {
-    test('production hides diagnostics and stays quiet', () {
+    test('production stays quiet', () {
       const config = ProductivityConfig.production;
 
-      expect(config.diagnosticsVisible, isFalse);
       expect(config.verboseLogging, isFalse);
     });
 
-    test('development differs only in what it exposes', () {
+    test('development differs only in logging', () {
       const dev = ProductivityConfig.development;
       const prod = ProductivityConfig.production;
 
@@ -22,14 +21,13 @@ void main() {
       expect(dev.insightsEnabled, prod.insightsEnabled);
       expect(dev.weeklyAnalyticsEnabled, prod.weeklyAnalyticsEnabled);
 
-      expect(dev.diagnosticsVisible, isTrue);
       expect(dev.verboseLogging, isTrue);
     });
 
-    test('falls back to the least-exposing config without a flavour', () {
+    test('falls back to the production config without a flavour', () {
       // Tests run without FlavorConfig initialised; the safe answer is the
-      // one that shows least, not a crash.
-      expect(ProductivityConfig.current.diagnosticsVisible, isFalse);
+      // quiet production config, not a crash.
+      expect(ProductivityConfig.current.verboseLogging, isFalse);
       expect(ProductivityConfig.current.enabled, isTrue);
     });
 
@@ -37,8 +35,11 @@ void main() {
       final disabled = ProductivityConfig.production.copyWith(enabled: false);
 
       expect(disabled.enabled, isFalse);
-      expect(disabled.backgroundMonitoringEnabled, isTrue,
-          reason: 'copyWith must change only what it was asked to');
+      expect(
+        disabled.backgroundMonitoringEnabled,
+        isTrue,
+        reason: 'copyWith must change only what it was asked to',
+      );
     });
   });
 
@@ -61,7 +62,10 @@ void main() {
 
     test('an unrecognised value falls back to the default', () {
       expect(ActivityRetention.fromDays(13), ActivityRetention.defaultChoice);
-      expect(ActivityRetention.fromLabel('nope'), ActivityRetention.defaultChoice);
+      expect(
+        ActivityRetention.fromLabel('nope'),
+        ActivityRetention.defaultChoice,
+      );
     });
   });
 }

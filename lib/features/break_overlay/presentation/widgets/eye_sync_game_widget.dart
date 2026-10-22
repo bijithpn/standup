@@ -68,16 +68,18 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
 
     _orbController
       ..reset()
-      ..forward().then((_) {
-        if (!mounted) return;
-        _orbX = _targetX;
-        _orbY = _targetY;
-        _orbDelayTimer = Timer(const Duration(milliseconds: 600), () {
-          if (mounted && !_done) _moveOrbToTarget();
-        });
-      }).catchError((_) {
-        // Ticker was canceled, safe to ignore
-      });
+      ..forward()
+          .then((_) {
+            if (!mounted) return;
+            _orbX = _targetX;
+            _orbY = _targetY;
+            _orbDelayTimer = Timer(const Duration(milliseconds: 600), () {
+              if (mounted && !_done) _moveOrbToTarget();
+            });
+          })
+          .catchError((_) {
+            // Ticker was canceled, safe to ignore
+          });
   }
 
   void _startSession() {

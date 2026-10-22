@@ -32,9 +32,7 @@ class FocusTrendChart extends StatelessWidget {
         ? weekdayLabels[points[i].date.weekday % 7]
         : '${points[i].date.day}';
     bool shouldShowLabel(int i) =>
-        useWeekdayLabels ||
-        i == points.length - 1 ||
-        i % labelInterval == 0;
+        useWeekdayLabels || i == points.length - 1 || i % labelInterval == 0;
 
     return LineChart(
       LineChartData(
@@ -58,9 +56,15 @@ class FocusTrendChart extends StatelessWidget {
           ),
         ),
         titlesData: FlTitlesData(
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          topTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
+          leftTitles: const AxisTitles(
+            sideTitles: SideTitles(showTitles: false),
+          ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,

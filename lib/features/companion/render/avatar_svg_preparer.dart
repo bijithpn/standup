@@ -121,11 +121,10 @@ List<_AuthoredColor> _histogram(String raw, {int? backdrop}) {
     (byColor[argb] ??= _AuthoredColor(argb, index++)).count++;
   }
 
-  return byColor.values.toList()
-    ..sort((a, b) {
-      final byCount = b.count.compareTo(a.count);
-      return byCount != 0 ? byCount : a.firstSeen.compareTo(b.firstSeen);
-    });
+  return byColor.values.toList()..sort((a, b) {
+    final byCount = b.count.compareTo(a.count);
+    return byCount != 0 ? byCount : a.firstSeen.compareTo(b.firstSeen);
+  });
 }
 
 class _Hsl {
@@ -328,13 +327,18 @@ ArtworkBounds? measureContent(String preparedSvg, String debugName) {
 /// Squaring it is what makes every species come out the same visual size: a
 /// tall pet and a wide one both fill their own square, so neither ends up
 /// noticeably smaller than the other once `BoxFit.contain` has had its say.
-String recenterViewBox(String svg, ArtworkBounds bounds, {double padding = 0.06}) {
+String recenterViewBox(
+  String svg,
+  ArtworkBounds bounds, {
+  double padding = 0.06,
+}) {
   final side = math.max(bounds.width, bounds.height) * (1 + padding * 2);
   if (side <= 0) return svg;
 
   final left = bounds.centerX - side / 2;
   final top = bounds.centerY - side / 2;
-  final viewBox = 'viewBox="${_trim(left)} ${_trim(top)} '
+  final viewBox =
+      'viewBox="${_trim(left)} ${_trim(top)} '
       '${_trim(side)} ${_trim(side)}"';
 
   if (_viewBoxAttr.hasMatch(svg)) {

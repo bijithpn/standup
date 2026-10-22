@@ -46,7 +46,9 @@ class AvatarScenePainter extends CustomPainter {
     // the same size and centred no matter where it was authored in frame.
     final bounds = geometry.bounds;
     final extent = math.max(bounds.width, bounds.height) * (1 + fitPadding * 2);
-    final scale = extent <= 0 ? 1.0 : math.min(size.width, size.height) / extent;
+    final scale = extent <= 0
+        ? 1.0
+        : math.min(size.width, size.height) / extent;
 
     canvas.translate(size.width / 2, size.height / 2);
     // The scene's own `scale` and `position` are the editor's framing inside
@@ -100,8 +102,9 @@ class AvatarScenePainter extends CustomPainter {
           ..style = PaintingStyle.stroke
           ..strokeWidth = outline.width
           ..strokeJoin = StrokeJoin.round
-          ..color =
-              outline.color.withValues(alpha: (outline.opacity / 100).clamp(0, 1)),
+          ..color = outline.color.withValues(
+            alpha: (outline.opacity / 100).clamp(0, 1),
+          ),
       );
     }
 

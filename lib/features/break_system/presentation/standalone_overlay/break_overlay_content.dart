@@ -65,8 +65,7 @@ class BreakOverlayContent extends StatelessWidget {
         isInternalPreview: config.isPreview,
         canDismiss: canDismiss,
         breakInfo: breakInfo,
-        exerciseTitle:
-            config.showWellnessNotes ? config.exerciseTitle : null,
+        exerciseTitle: config.showWellnessNotes ? config.exerciseTitle : null,
         intensityLevel: config.intensityLevel,
         onSkip: onSkip,
         child: RepaintBoundary(
@@ -78,7 +77,8 @@ class BreakOverlayContent extends StatelessWidget {
               settings: settings,
               remaining: remaining,
               total: config.durationSeconds,
-              onSkip: null, // OverlayChrome handles the authoritative skip button
+              onSkip:
+                  null, // OverlayChrome handles the authoritative skip button
               currentTemplate: currentTemplate,
               kenBurnsController: kenBurnsController,
               exerciseTitle: config.exerciseTitle,

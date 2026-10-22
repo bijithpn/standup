@@ -10,6 +10,8 @@ import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
 import 'package:breakmate/features/analytics/focus_session_models.dart';
 import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
+import '../../helpers/fake_calendar_sync_controller.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -60,6 +62,7 @@ void main() {
     sl.registerSingleton<AppUsageService>(usage);
     sl.registerSingleton<FocusSessionService>(focus);
     sl.registerSingleton<SettingsRepository>(settingsRepo);
+    sl.registerSingleton<CalendarSyncController>(FakeCalendarSyncController());
     sl.registerLazySingleton<AppTrackingService>(() => AppTrackingService());
     sl.registerLazySingleton<AppIconCache>(
       () => AppIconCache(appTracking: sl()),
@@ -111,7 +114,7 @@ void main() {
       ),
     );
 
-    final wipe = find.text('Wipe Data');
+    final wipe = find.text('Delete…');
     await tester.ensureVisible(wipe);
     await tester.tap(wipe);
     await tester.pumpAndSettle();

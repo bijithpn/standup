@@ -9,6 +9,8 @@ import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/services/focus_filter_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
+import 'package:breakmate/core/services/daily_reset_service.dart';
 import 'package:breakmate/core/services/timer_orchestrator.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
@@ -18,11 +20,8 @@ import 'package:breakmate/core/services/calendar_repository.dart';
 import 'package:breakmate/core/services/calendar_permission_service.dart';
 import 'package:breakmate/core/services/calendar_event_service.dart';
 import 'package:breakmate/core/services/window_service.dart';
-import 'package:breakmate/core/services/system_media_service.dart';
 import 'package:breakmate/core/native/app_tracking_service.dart';
 import 'package:breakmate/features/wellness/domain/wellness_engine.dart';
-import 'package:breakmate/features/wellness/data/wellness_library_repository.dart';
-import 'package:breakmate/features/clock_out/clock_out_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
@@ -69,7 +68,6 @@ Future<void> initDependencies() async {
   sl.registerSingleton<AppNavigationService>(AppNavigationService(sl()));
   sl.registerSingleton<WindowService>(WindowService.instance);
   sl.registerSingleton<OverlayWindowService>(OverlayWindowService());
-  sl.registerSingleton<SystemMediaService>(SystemMediaService());
   sl.registerSingleton<DisplayManager>(DisplayManager());
   sl.registerSingleton<OverlayFitService>(OverlayFitService());
 
@@ -93,14 +91,18 @@ Future<void> initDependencies() async {
   );
 
   sl.registerSingleton<StatsService>(StatsService(storage: sl()));
-  sl.registerSingleton<ClockOutService>(ClockOutService(sl()));
+  sl.registerLazySingleton<CalendarSyncController>(
+    () => CalendarSyncController(
+      settingsRepository: sl(),
+      permissionService: sl(),
+      calendarService: sl(),
+    ),
+  );
   sl.registerSingleton<AppUsageService>(AppUsageService(storage: sl()));
   sl.registerSingleton<FocusSessionService>(FocusSessionService(storage: sl()));
   sl.registerSingleton<BreakHistoryService>(BreakHistoryService(storage: sl()));
   sl.registerSingleton<ContextSwitchTracker>(ContextSwitchTracker());
-  sl.registerLazySingleton<AppIconCache>(
-    () => AppIconCache(appTracking: sl()),
-  );
+  sl.registerLazySingleton<AppIconCache>(() => AppIconCache(appTracking: sl()));
   sl.registerSingleton<ActivitySegmentRepository>(
     ActivitySegmentRepository(storage: sl()),
   );
@@ -215,15 +217,22 @@ Future<void> initDependencies() async {
     ),
   );
 
+  sl.registerSingleton<DailyResetService>(
+    DailyResetService(
+      storage: sl(),
+      timerEngine: sl(),
+      statsService: sl(),
+      sessionStateRepository: sl(),
+    ),
+  );
+
   sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
   sl.registerSingleton<ExplainHotkeyService>(ExplainHotkeyService());
 
-  sl.registerLazySingleton<WellnessLibraryRepository>(
-    () => WellnessLibraryRepository(settingsRepo: sl()),
-  );
-
   sl.registerSingleton<FocusModeService>(FocusModeService());
-  sl.registerSingleton<FocusFilterService>(FocusFilterService(focusModeService: sl()));
+  sl.registerSingleton<FocusFilterService>(
+    FocusFilterService(focusModeService: sl()),
+  );
   sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
 
   sl.registerSingleton<CompanionStateManager>(

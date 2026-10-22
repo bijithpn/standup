@@ -10,7 +10,11 @@ void main() {
       final config = PetConfiguration(
         petId: 'cat_calico_01',
         species: 'cat',
-        camera: const PetCameraState(azimuth: 30.0, elevation: 10.0, distance: 1.2),
+        camera: const PetCameraState(
+          azimuth: 30.0,
+          elevation: 10.0,
+          distance: 1.2,
+        ),
         pose: {'yaw': 0.1, 'pitch': 0.05, 'roll': 0.0},
         materials: {'primary': '#e67e22', 'secondary': '#f39c12'},
         expression: PetExpression.happy.name,

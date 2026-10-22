@@ -7,7 +7,10 @@ enum AppCategory { coding, writing, browsing, meeting, design, general }
 class AppCategorizer {
   AppCategorizer._();
 
-  static AppCategory categorize({required String name, required String bundleId}) {
+  static AppCategory categorize({
+    required String name,
+    required String bundleId,
+  }) {
     final lowerName = name.toLowerCase();
     final lowerBundleId = bundleId.toLowerCase();
 

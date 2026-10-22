@@ -34,8 +34,7 @@ class MeetingBreakCorrelation {
   double get nearMeetingSkipRate =>
       nearMeetingCount == 0 ? 0.0 : nearMeetingSkipped / nearMeetingCount;
 
-  double get otherSkipRate =>
-      otherCount == 0 ? 0.0 : otherSkipped / otherCount;
+  double get otherSkipRate => otherCount == 0 ? 0.0 : otherSkipped / otherCount;
 
   bool get hasEnoughData =>
       nearMeetingCount >= minMeetingProximitySamples &&
@@ -43,8 +42,7 @@ class MeetingBreakCorrelation {
 
   /// Percentage-point gap; positive means breaks before a meeting get
   /// skipped more often.
-  double get skipRateDeltaPoints =>
-      (nearMeetingSkipRate - otherSkipRate) * 100;
+  double get skipRateDeltaPoints => (nearMeetingSkipRate - otherSkipRate) * 100;
 
   String describe() {
     final delta = skipRateDeltaPoints;

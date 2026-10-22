@@ -112,8 +112,10 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
         setState(() {
           _targetGaze = Offset(event.lookAtX, event.lookAtY);
           _gazeOffset = Offset(
-            ui.lerpDouble(_gazeOffset.dx, _targetGaze.dx, 0.35) ?? _targetGaze.dx,
-            ui.lerpDouble(_gazeOffset.dy, _targetGaze.dy, 0.35) ?? _targetGaze.dy,
+            ui.lerpDouble(_gazeOffset.dx, _targetGaze.dx, 0.35) ??
+                _targetGaze.dx,
+            ui.lerpDouble(_gazeOffset.dy, _targetGaze.dy, 0.35) ??
+                _targetGaze.dy,
           );
         });
       } else if (event is AvatarAnimationStartedEvent ||
@@ -198,7 +200,8 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   @override
   void didUpdateWidget(AvatarView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.externalLookAt != null && widget.externalLookAt != oldWidget.externalLookAt) {
+    if (widget.externalLookAt != null &&
+        widget.externalLookAt != oldWidget.externalLookAt) {
       _applyTargetLookAt(widget.externalLookAt!.dx, widget.externalLookAt!.dy);
     }
 
@@ -242,10 +245,14 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
     final w = widget.width > 0 ? widget.width : 160.0;
     final h = widget.height > 0 ? widget.height : 160.0;
 
-    final normalizedX =
-        ((event.localPosition.dx / (w / 2.0)) - 1.0).clamp(-1.0, 1.0);
-    final normalizedY =
-        ((event.localPosition.dy / (h / 2.0)) - 1.0).clamp(-1.0, 1.0);
+    final normalizedX = ((event.localPosition.dx / (w / 2.0)) - 1.0).clamp(
+      -1.0,
+      1.0,
+    );
+    final normalizedY = ((event.localPosition.dy / (h / 2.0)) - 1.0).clamp(
+      -1.0,
+      1.0,
+    );
 
     _applyTargetLookAt(normalizedX, normalizedY);
   }
@@ -329,10 +336,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
     );
 
     if (widget.transparent) {
-      return ColoredBox(
-        color: Colors.transparent,
-        child: interactiveContent,
-      );
+      return ColoredBox(color: Colors.transparent, child: interactiveContent);
     }
 
     return interactiveContent;

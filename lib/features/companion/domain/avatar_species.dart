@@ -30,7 +30,11 @@ enum AvatarSpecies {
   cat(
     displayName: 'Cat',
     category: AvatarSpeciesCategory.feline,
-    defaultPartConfigurations: {'hasPointyEars': true, 'hasLongTail': true, 'hasWhiskers': true},
+    defaultPartConfigurations: {
+      'hasPointyEars': true,
+      'hasLongTail': true,
+      'hasWhiskers': true,
+    },
   ),
   chinchilla(
     displayName: 'Chinchilla',
@@ -40,7 +44,11 @@ enum AvatarSpecies {
   chick(
     displayName: 'Chick',
     category: AvatarSpeciesCategory.avian,
-    defaultPartConfigurations: {'hasBeak': true, 'hasWings': true, 'hasSmallTail': true},
+    defaultPartConfigurations: {
+      'hasBeak': true,
+      'hasWings': true,
+      'hasSmallTail': true,
+    },
   ),
   cow(
     displayName: 'Cow',
@@ -50,27 +58,47 @@ enum AvatarSpecies {
   dog(
     displayName: 'Dog',
     category: AvatarSpeciesCategory.canine,
-    defaultPartConfigurations: {'hasFloppyEars': true, 'hasTail': true, 'hasSnout': true},
+    defaultPartConfigurations: {
+      'hasFloppyEars': true,
+      'hasTail': true,
+      'hasSnout': true,
+    },
   ),
   duck(
     displayName: 'Duck',
     category: AvatarSpeciesCategory.avian,
-    defaultPartConfigurations: {'hasFlatBeak': true, 'hasWings': true, 'hasWebbedFeet': true},
+    defaultPartConfigurations: {
+      'hasFlatBeak': true,
+      'hasWings': true,
+      'hasWebbedFeet': true,
+    },
   ),
   deer(
     displayName: 'Deer',
     category: AvatarSpeciesCategory.wildlife,
-    defaultPartConfigurations: {'hasAntlers': true, 'hasSpottedBack': true, 'hasSlenderLegs': true},
+    defaultPartConfigurations: {
+      'hasAntlers': true,
+      'hasSpottedBack': true,
+      'hasSlenderLegs': true,
+    },
   ),
   fox(
     displayName: 'Fox',
     category: AvatarSpeciesCategory.canine,
-    defaultPartConfigurations: {'hasPointyEars': true, 'hasBushyTail': true, 'hasPointySnout': true},
+    defaultPartConfigurations: {
+      'hasPointyEars': true,
+      'hasBushyTail': true,
+      'hasPointySnout': true,
+    },
   ),
   ferret(
     displayName: 'Ferret',
     category: AvatarSpeciesCategory.wildlife,
-    defaultPartConfigurations: {'hasLongBody': true, 'hasShortLegs': true, 'hasMask': true},
+    defaultPartConfigurations: {
+      'hasLongBody': true,
+      'hasShortLegs': true,
+      'hasMask': true,
+    },
   ),
   guineaPig(
     displayName: 'Guinea Pig',
@@ -80,7 +108,11 @@ enum AvatarSpecies {
   goose(
     displayName: 'Goose',
     category: AvatarSpeciesCategory.avian,
-    defaultPartConfigurations: {'hasLongNeck': true, 'hasOrangeBeak': true, 'hasWings': true},
+    defaultPartConfigurations: {
+      'hasLongNeck': true,
+      'hasOrangeBeak': true,
+      'hasWings': true,
+    },
   ),
   hamster(
     displayName: 'Hamster',
@@ -105,17 +137,30 @@ enum AvatarSpecies {
   otter(
     displayName: 'Otter',
     category: AvatarSpeciesCategory.aquatic,
-    defaultPartConfigurations: {'hasSleekBody': true, 'hasWebbedPaws': true, 'hasTaperedTail': true},
+    defaultPartConfigurations: {
+      'hasSleekBody': true,
+      'hasWebbedPaws': true,
+      'hasTaperedTail': true,
+    },
   ),
   owl(
     displayName: 'Owl',
     category: AvatarSpeciesCategory.avian,
-    defaultPartConfigurations: {'hasBeak': true, 'hasWings': true, 'hasBigEyes': true, 'hasEarTufts': true},
+    defaultPartConfigurations: {
+      'hasBeak': true,
+      'hasWings': true,
+      'hasBigEyes': true,
+      'hasEarTufts': true,
+    },
   ),
   parrot(
     displayName: 'Parrot',
     category: AvatarSpeciesCategory.avian,
-    defaultPartConfigurations: {'hasCurvedBeak': true, 'hasWings': true, 'hasColorfulCrest': true},
+    defaultPartConfigurations: {
+      'hasCurvedBeak': true,
+      'hasWings': true,
+      'hasColorfulCrest': true,
+    },
   ),
   pig(
     displayName: 'Pig',
@@ -130,7 +175,11 @@ enum AvatarSpecies {
   penguin(
     displayName: 'Penguin',
     category: AvatarSpeciesCategory.avian,
-    defaultPartConfigurations: {'hasFlippers': true, 'hasBeak': true, 'hasWhiteBelly': true},
+    defaultPartConfigurations: {
+      'hasFlippers': true,
+      'hasBeak': true,
+      'hasWhiteBelly': true,
+    },
   ),
   rabbit(
     displayName: 'Rabbit',
@@ -140,7 +189,10 @@ enum AvatarSpecies {
   redPanda(
     displayName: 'Red Panda',
     category: AvatarSpeciesCategory.wildlife,
-    defaultPartConfigurations: {'hasRingedTail': true, 'hasWhiteFaceMarks': true},
+    defaultPartConfigurations: {
+      'hasRingedTail': true,
+      'hasWhiteFaceMarks': true,
+    },
   ),
   raccoon(
     displayName: 'Raccoon',
@@ -155,7 +207,11 @@ enum AvatarSpecies {
   seal(
     displayName: 'Seal',
     category: AvatarSpeciesCategory.aquatic,
-    defaultPartConfigurations: {'hasFlippers': true, 'hasRoundBody': true, 'hasWhiskers': true},
+    defaultPartConfigurations: {
+      'hasFlippers': true,
+      'hasRoundBody': true,
+      'hasWhiskers': true,
+    },
   ),
   squirrel(
     displayName: 'Squirrel',
@@ -165,17 +221,29 @@ enum AvatarSpecies {
   tiger(
     displayName: 'Tiger',
     category: AvatarSpeciesCategory.feline,
-    defaultPartConfigurations: {'hasStripes': true, 'hasLongTail': true, 'hasRoundEars': true},
+    defaultPartConfigurations: {
+      'hasStripes': true,
+      'hasLongTail': true,
+      'hasRoundEars': true,
+    },
   ),
   wolf(
     displayName: 'Wolf',
     category: AvatarSpeciesCategory.canine,
-    defaultPartConfigurations: {'hasPointyEars': true, 'hasLongMuzzle': true, 'hasBushyTail': true},
+    defaultPartConfigurations: {
+      'hasPointyEars': true,
+      'hasLongMuzzle': true,
+      'hasBushyTail': true,
+    },
   ),
   bear(
     displayName: 'Bear',
     category: AvatarSpeciesCategory.wildlife,
-    defaultPartConfigurations: {'hasRoundEars': true, 'hasSturdyBody': true, 'hasShortTail': true},
+    defaultPartConfigurations: {
+      'hasRoundEars': true,
+      'hasSturdyBody': true,
+      'hasShortTail': true,
+    },
   );
 
   final String displayName;
@@ -197,13 +265,17 @@ enum AvatarSpecies {
 
   static AvatarSpecies? tryParse(String? name) {
     if (name == null || name.isEmpty) return null;
-    final normalized = name.toLowerCase().replaceAll('_', '').replaceAll('-', '');
+    final normalized = name
+        .toLowerCase()
+        .replaceAll('_', '')
+        .replaceAll('-', '');
     try {
       return AvatarSpecies.values.firstWhere(
         (s) =>
             s.name == name ||
             s.name.toLowerCase() == name.toLowerCase() ||
-            s.name.toLowerCase().replaceAll('_', '').replaceAll('-', '') == normalized,
+            s.name.toLowerCase().replaceAll('_', '').replaceAll('-', '') ==
+                normalized,
       );
     } catch (_) {
       return null;

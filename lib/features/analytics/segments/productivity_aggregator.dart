@@ -13,6 +13,11 @@ import 'package:breakmate/features/analytics/segments/productivity_summary.dart'
 /// rather than used, and drawing each one turns the day into confetti.
 const int kTimelineMergeThresholdSeconds = 45;
 
+/// Two stretches further apart than this are not joined: the time between them
+/// was not recorded (asleep, tracking off), and stretching one across it would
+/// draw time that never happened.
+const int kTimelineGapToleranceSeconds = 90;
+
 /// Rolls one day's segments into a summary.
 DailyProductivitySummary aggregateDay(
   String date,
@@ -68,16 +73,16 @@ DailyProductivitySummary aggregateDay(
             (categorySeconds[segment.categoryName] ?? 0) + seconds;
 
         (byApp[segment.appKey] ??= _AppAccumulator(
-          appKey: segment.appKey,
-          appName: segment.appName,
-          categoryName: segment.categoryName,
-        ))
+            appKey: segment.appKey,
+            appName: segment.appName,
+            categoryName: segment.categoryName,
+          ))
           ..seconds += seconds
           ..sessionCount += 1
           ..longestSessionSeconds =
               seconds > byApp[segment.appKey]!.longestSessionSeconds
-                  ? seconds
-                  : byApp[segment.appKey]!.longestSessionSeconds;
+              ? seconds
+              : byApp[segment.appKey]!.longestSessionSeconds;
 
         _spreadAcrossHours(segment, hourly);
     }
@@ -199,7 +204,12 @@ List<TimelineEntry> buildTimeline(
     if (!segment.isValid) continue;
 
     final last = entries.isEmpty ? null : entries.last;
-    final continues = last != null &&
+    final adjacent =
+        last != null &&
+        segment.startedAt.difference(last.endedAt).inSeconds <=
+            kTimelineGapToleranceSeconds;
+    final continues =
+        adjacent &&
         last.kind == segment.activityKind &&
         last.appKey == segment.appKey;
 
@@ -209,7 +219,7 @@ List<TimelineEntry> buildTimeline(
     }
 
     // Too brief to see, and there is something to fold it into.
-    if (last != null && segment.seconds < mergeThresholdSeconds) {
+    if (adjacent && segment.seconds < mergeThresholdSeconds) {
       last.endedAt = segment.endedAt;
       continue;
     }
@@ -256,13 +266,13 @@ class _AppAccumulator {
   int longestSessionSeconds = 0;
 
   AppTotal build() => AppTotal(
-        appKey: appKey,
-        appName: appName,
-        categoryName: categoryName,
-        seconds: seconds,
-        sessionCount: sessionCount,
-        longestSessionSeconds: longestSessionSeconds,
-      );
+    appKey: appKey,
+    appName: appName,
+    categoryName: categoryName,
+    seconds: seconds,
+    sessionCount: sessionCount,
+    longestSessionSeconds: longestSessionSeconds,
+  );
 }
 
 class _MutableEntry {

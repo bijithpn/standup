@@ -1,4 +1,5 @@
 import 'dart:async' show Timer;
+import 'package:clock/clock.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -45,10 +46,17 @@ class StatsService extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    _ensureStorageKeys();
+    await rolloverIfNeeded();
+    await _refreshStatsAsync();
+  }
+
+  /// Zeroes the daily counters when the local calendar day has changed since
+  /// the last recorded activity. Idempotent: a second call on the same day is
+  /// a no-op. Returns true when a rollover happened.
+  Future<bool> rolloverIfNeeded() async {
     final today = _todayString();
     final lastDate = _storage.getString(AppConstants.keyLastActiveDate);
-
-    _ensureStorageKeys();
 
     if (lastDate != today) {
       // calculation will always see lastActive == today.
@@ -86,9 +94,10 @@ class StatsService extends ChangeNotifier {
           debugPrint('Error migrating weekly data: $e');
         }
       }
+      await _refreshStatsAsync();
+      return true;
     }
-
-    await _refreshStatsAsync();
+    return false;
   }
 
   StatsModel load() {
@@ -293,12 +302,13 @@ class StatsService extends ChangeNotifier {
   }
 
   String _todayString() {
-    final now = DateTime.now();
+    final now = clock.now();
     return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
   }
 
   String _getYesterdayString() {
-    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final n = clock.now();
+    final yesterday = DateTime(n.year, n.month, n.day - 1);
     return '${yesterday.year}-${yesterday.month.toString().padLeft(2, '0')}-${yesterday.day.toString().padLeft(2, '0')}';
   }
 }

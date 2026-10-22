@@ -37,8 +37,10 @@ class AvatarSceneCatalog {
         final key = entry.key;
         final value = entry.value;
         if (key is! String || value is! Map) continue;
-        final scene =
-            AvatarScene.fromJson(key, Map<String, dynamic>.from(value));
+        final scene = AvatarScene.fromJson(
+          key,
+          Map<String, dynamic>.from(value),
+        );
         if (scene != null) scenes[key] = scene;
       }
       return _scenes = scenes;

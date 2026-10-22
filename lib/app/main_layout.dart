@@ -6,13 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:macos_ui/macos_ui.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
-import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
-import 'package:breakmate/features/analytics/presentation/segment_inspector_page.dart';
-import 'package:breakmate/features/wellness/presentation/wellness_library_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
 import 'package:provider/provider.dart';
@@ -76,9 +74,9 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Intelligent Detection',
     ),
     _NavItem(
-      label: AppStrings.navExercises,
-      icon: CupertinoIcons.person_crop_circle,
-      section: 'Exercises',
+      label: 'Calendar Sync',
+      icon: CupertinoIcons.calendar,
+      section: 'Calendar Sync',
     ),
     _NavItem(
       label: AppStrings.navNotifications,
@@ -101,23 +99,10 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.graph_square,
       section: 'Statistics',
     ),
-    // Development only: the raw rows every productivity number is derived
-    // from, so the data can be read back before screens are built on it.
-    if (ProductivityConfig.current.diagnosticsVisible)
-      _NavItem(
-        label: 'Activity Segments',
-        icon: CupertinoIcons.list_bullet_indent,
-        section: 'Segments',
-      ),
     _NavItem(
       label: 'Personal Goals',
       icon: CupertinoIcons.forward_fill,
       section: 'Goals',
-    ),
-    _NavItem(
-      label: 'Wellness Library',
-      icon: CupertinoIcons.book,
-      section: 'Wellness Library',
     ),
     _NavItem(
       label: 'Themes & Styling',
@@ -162,12 +147,26 @@ class _MainLayoutState extends State<MainLayout> {
 
   List<_NavItem> get _allItems => [..._mainNavItems, ..._bottomNavItems];
 
+  /// Sections that were merged into another screen; saved or deep-linked
+  /// names keep working.
+  static const Map<String, String> _legacySections = {
+    'Exercises': 'Breaks & Profiles',
+    'Wellness Library': 'Breaks & Profiles',
+  };
+
+  String _canonicalSection(String section) =>
+      _legacySections[section] ?? section;
+
   @override
   void initState() {
     super.initState();
     _navigationService = sl<AppNavigationService>();
-    final currentSection = _navigationService.selectedSection.value;
-    final initialIndex = _allItems.indexWhere((item) => item.section == currentSection);
+    final currentSection = _canonicalSection(
+      _navigationService.selectedSection.value,
+    );
+    final initialIndex = _allItems.indexWhere(
+      (item) => item.section == currentSection,
+    );
     if (initialIndex != -1) {
       _pageIndex = initialIndex;
     }
@@ -183,7 +182,7 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   void _handleExternalNavigation() {
-    final section = _navigationService.selectedSection.value;
+    final section = _canonicalSection(_navigationService.selectedSection.value);
     final index = _allItems.indexWhere((item) => item.section == section);
     if (index != -1 && index != _pageIndex && mounted) {
       setState(() => _pageIndex = index);
@@ -423,8 +422,8 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Breaks & Profiles');
       case 'Intelligent Detection':
         return const SettingsPage(section: 'Intelligent Detection');
-      case 'Exercises':
-        return const SettingsPage(section: 'Exercises');
+      case 'Calendar Sync':
+        return const SettingsPage(section: 'Calendar Sync');
       case 'Notifications':
         return const SettingsPage(section: 'Notifications');
       case 'Companion':
@@ -433,12 +432,8 @@ class _MainLayoutState extends State<MainLayout> {
         return const ProductivityPage();
       case 'Statistics':
         return const SettingsPage(section: 'Statistics');
-      case 'Segments':
-        return const SegmentInspectorPage();
       case 'Goals':
         return const SettingsPage(section: 'Goals');
-      case 'Wellness Library':
-        return const WellnessLibraryPage();
       case 'Themes':
       case 'Themes & Styling':
         return const SettingsPage(section: 'Themes');
@@ -535,8 +530,7 @@ class _SidebarContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const ThemedAppIcon.badge(size: 72, showDevBadge: true,
-          ),
+          const ThemedAppIcon.badge(size: 72, showDevBadge: true),
           const SizedBox(height: 14),
           RichText(
             text: TextSpan(
@@ -644,16 +638,20 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                     : AppTheme.textSecondary,
               ),
               const SizedBox(width: 12),
-              Text(
-                widget.item.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                  color: isSelected
-                      ? AppTheme.textPrimary
-                      : AppTheme.textSecondary,
-                  letterSpacing: -0.1,
-                  fontFamily: 'Inter',
+              Expanded(
+                child: Text(
+                  widget.item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                    color: isSelected
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
+                    letterSpacing: -0.1,
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ),
             ],

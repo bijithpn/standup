@@ -126,10 +126,7 @@ class CalendarEventRow extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   timeLabel,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.textMuted,
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted),
                 ),
               ],
             ),

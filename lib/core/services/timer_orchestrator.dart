@@ -8,6 +8,7 @@ import 'package:breakmate/core/ipc/ipc_bridge.dart';
 import 'package:breakmate/core/ipc/ipc_events.dart';
 import 'package:breakmate/core/services/activity_monitor.dart';
 import 'package:breakmate/core/services/adaptive_break_service.dart';
+import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
@@ -238,9 +239,10 @@ class TimerOrchestrator {
     final settings = settingsRepository.currentSettings;
 
     if (settings.companionEnabled) {
-      final interactionType = event.reminderType == 'posture'
-          ? 'stretch'
-          : 'blink';
+      final interactionType = switch (event.reminderType) {
+        'posture' || 'stretch' || 'standup' => 'stretch',
+        _ => 'blink',
+      };
       eventBus.emit(
         CompanionInteractionEvent(interactionType: interactionType),
       );
@@ -263,9 +265,7 @@ class TimerOrchestrator {
     // key is missing. Without it, health reminders rendered the wrong
     // overlay.
     NativeEnhancementsService.instance.triggerFlashReminder(
-      text: event.reminderType == 'posture'
-          ? 'Straighten posture & relax shoulders'
-          : 'Blink eyes & look into distance',
+      text: HealthReminderCopy.text(event.reminderType),
     );
 
     sl<OverlayWindowService>().showOverlay(
@@ -279,7 +279,8 @@ class TimerOrchestrator {
         'overlayType': 'quickReminder',
         'reminderType': event.reminderType,
         'durationSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
-        'remainingSeconds': AppConstants.healthReminderDismissDuration.inSeconds,
+        'remainingSeconds':
+            AppConstants.healthReminderDismissDuration.inSeconds,
         // Computed here (main engine) because the overlay's own Flutter
         // isolate doesn't have SettingsRepository or the detection
         // services registered — see `OverlayWindowConfig.allowFullPoster`.
@@ -360,6 +361,7 @@ class TimerOrchestrator {
 
   void _setupActivityMonitor() {
     activityMonitor.setIdleThreshold(timerEngine.pauseTimerAfterMinutes);
+    activityMonitor.setIdleSampleCallback(timerEngine.reportIdleSeconds);
     activityMonitor.setActivityCallback((isActive) {
       final state = timerEngine.state;
 
