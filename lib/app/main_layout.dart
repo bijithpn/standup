@@ -10,7 +10,6 @@ import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/settings/settings_page.dart';
 import 'package:breakmate/core/config/productivity_config.dart';
-import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/analytics/presentation/segment_inspector_page.dart';
 import 'package:breakmate/features/dashboard/presentation/dashboard_page.dart';
 import 'package:breakmate/features/break_system/application/break_controller.dart';
@@ -89,12 +88,6 @@ class _MainLayoutState extends State<MainLayout> {
       icon: CupertinoIcons.paw,
       section: 'Companion',
     ),
-    if (ProductivityConfig.current.enabled)
-      _NavItem(
-        label: 'Productivity',
-        icon: CupertinoIcons.chart_bar,
-        section: 'Productivity',
-      ),
     _NavItem(
       label: AppStrings.navStatistics,
       icon: CupertinoIcons.graph_square,
@@ -160,6 +153,7 @@ class _MainLayoutState extends State<MainLayout> {
   /// names keep working.
   static const Map<String, String> _legacySections = {
     'Exercises': 'Breaks & Profiles',
+    'Productivity': 'Statistics', // merged into the one Statistics screen
     'Wellness Library': 'Breaks & Profiles',
   };
 
@@ -437,8 +431,6 @@ class _MainLayoutState extends State<MainLayout> {
         return const SettingsPage(section: 'Notifications');
       case 'Companion':
         return const SettingsPage(section: 'Companion');
-      case 'Productivity':
-        return const ProductivityPage();
       case 'Statistics':
         return const SettingsPage(section: 'Statistics');
       case 'Segments':
@@ -649,16 +641,20 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
                     : AppTheme.textSecondary,
               ),
               const SizedBox(width: 12),
-              Text(
-                widget.item.label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                  color: isSelected
-                      ? AppTheme.textPrimary
-                      : AppTheme.textSecondary,
-                  letterSpacing: -0.1,
-                  fontFamily: 'Inter',
+              Expanded(
+                child: Text(
+                  widget.item.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+                    color: isSelected
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
+                    letterSpacing: -0.1,
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ),
             ],

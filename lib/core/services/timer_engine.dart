@@ -66,15 +66,14 @@ class TimerEngine extends ChangeNotifier {
   // a fresh random target is fine after every app restart.
   final HealthReminderScheduler _healthScheduler;
 
-  // Active-work seconds since each newer reminder was last satisfied. Eye rest
-  // and posture keep their persisted counters in [TimerStateData]; these are
-  // in-memory only (a fresh count after a restart is fine for them).
-  final Map<HealthReminderKind, int> _reminderElapsed = {};
-
+  // Active-work seconds since each reminder was last satisfied. They live in
+  // [TimerStateData] so all of them survive a restart.
   int _elapsedFor(HealthReminderKind kind) => switch (kind) {
     HealthReminderKind.eyeRest => _stateData.eyeBlinkElapsedSeconds,
     HealthReminderKind.posture => _stateData.postureElapsedSeconds,
-    _ => _reminderElapsed[kind] ?? 0,
+    HealthReminderKind.hydration => _stateData.hydrationElapsedSeconds,
+    HealthReminderKind.stretch => _stateData.stretchElapsedSeconds,
+    HealthReminderKind.standUp => _stateData.standUpElapsedSeconds,
   };
 
   void _resetElapsed(HealthReminderKind kind) {
@@ -83,19 +82,18 @@ class TimerEngine extends ChangeNotifier {
         _stateData.eyeBlinkElapsedSeconds = 0;
       case HealthReminderKind.posture:
         _stateData.postureElapsedSeconds = 0;
-      default:
-        _reminderElapsed[kind] = 0;
+      case HealthReminderKind.hydration:
+        _stateData.hydrationElapsedSeconds = 0;
+      case HealthReminderKind.stretch:
+        _stateData.stretchElapsedSeconds = 0;
+      case HealthReminderKind.standUp:
+        _stateData.standUpElapsedSeconds = 0;
     }
   }
 
+  /// One switch controls them all; the scheduler picks which one to show.
   bool _reminderEnabled(HealthReminderKind kind, SettingsModel s) =>
-      switch (kind) {
-        HealthReminderKind.eyeRest => s.eyeBlinkReminderEnabled,
-        HealthReminderKind.posture => s.postureReminderEnabled,
-        HealthReminderKind.hydration => s.hydrationReminderEnabled,
-        HealthReminderKind.stretch => s.stretchReminderEnabled,
-        HealthReminderKind.standUp => s.standUpReminderEnabled,
-      };
+      s.healthRemindersEnabled;
 
   void _resetAllReminderCounters() {
     for (final kind in HealthReminderKind.values) {
@@ -397,14 +395,9 @@ class TimerEngine extends ChangeNotifier {
         _stateData.totalWorkToday += delta;
         _stateData.postureElapsedSeconds += delta.inSeconds;
         _stateData.eyeBlinkElapsedSeconds += delta.inSeconds;
-        for (final kind in const [
-          HealthReminderKind.hydration,
-          HealthReminderKind.stretch,
-          HealthReminderKind.standUp,
-        ]) {
-          _reminderElapsed[kind] =
-              (_reminderElapsed[kind] ?? 0) + delta.inSeconds;
-        }
+        _stateData.hydrationElapsedSeconds += delta.inSeconds;
+        _stateData.stretchElapsedSeconds += delta.inSeconds;
+        _stateData.standUpElapsedSeconds += delta.inSeconds;
 
         final wasPreBreak = isPreBreak;
         _checkBreakConditions();

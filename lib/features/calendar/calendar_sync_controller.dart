@@ -120,6 +120,9 @@ class CalendarSyncController extends ChangeNotifier {
   }
 
   Future<void> _refresh() async {
+    // Callers often invoke refresh() from initState; yield once so listeners
+    // are never notified while the framework is still building.
+    await Future<void>.value();
     _checking = _permission == CalendarPermissionStatus.notDetermined;
     notifyListeners();
     try {

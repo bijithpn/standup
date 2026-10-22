@@ -12,6 +12,8 @@ import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/core/services/health_reminder_scheduler.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
+import 'package:breakmate/core/services/timer_repository.dart';
+import 'package:breakmate/core/services/timer_state.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
 import '../../helpers/in_memory_settings_repository.dart';
@@ -158,32 +160,26 @@ void main() {
     });
   });
 
-  test(
-    'hydration, stretch and stand-up fire when enabled, and not otherwise',
-    () {
+  test('one switch turns on every reminder kind, shown at varied times', () {
+    final kinds = <String>{};
+    for (var s = 0; s < 6; s++) {
+      seed = s;
       fakeAsync((async) {
+        reminders.clear();
         settings.save(
-          settings.currentSettings.copyWith(
-            eyeBlinkReminderEnabled: false,
-            postureReminderEnabled: false,
-            hydrationReminderEnabled: true,
-            stretchReminderEnabled: true,
-            standUpReminderEnabled: true,
-          ),
+          settings.currentSettings.copyWith(healthRemindersEnabled: true),
         );
         final engine = newEngine()..startTimers();
-        run(async, const Duration(minutes: 100));
-        final types = reminders.map((r) => r.reminderType).toSet();
-        expect(types, containsAll(['stretch', 'hydration']));
-        // Nothing for the disabled ones.
-        expect(types, isNot(contains('eyeblink')));
-        expect(types, isNot(contains('posture')));
-        // Never more than the hourly cap.
-        expect(reminders.length, lessThanOrEqualTo(8));
+        run(async, const Duration(hours: 4));
+        kinds.addAll(reminders.map((r) => r.reminderType));
+        // Never more than the hourly cap (5 on busy days) over 4 hours.
+        expect(reminders.length, lessThanOrEqualTo(20));
         engine.dispose();
       });
-    },
-  );
+    }
+    expect(kinds.length, greaterThanOrEqualTo(3));
+    expect(kinds, contains('eyeblink'));
+  });
 
   test('a busier day produces more reminders than a light one', () {
     int countFor(Duration alreadyWorked) {
@@ -191,7 +187,7 @@ void main() {
       fakeAsync((async) {
         reminders.clear();
         settings.save(
-          settings.currentSettings.copyWith(hydrationReminderEnabled: true),
+          settings.currentSettings.copyWith(healthRemindersEnabled: true),
         );
         final engine = newEngine(worked: alreadyWorked)..startTimers();
         run(async, const Duration(minutes: 120));
@@ -205,5 +201,44 @@ void main() {
       countFor(const Duration(hours: 7)),
       greaterThan(countFor(Duration.zero)),
     );
+  });
+
+  test('reminder counters are saved and restored for every kind', () {
+    final storage = sl<StorageService>();
+    final repo = TimerRepository(storage);
+    final state = TimerStateData()
+      ..eyeBlinkElapsedSeconds = 11
+      ..postureElapsedSeconds = 22
+      ..hydrationElapsedSeconds = 33
+      ..stretchElapsedSeconds = 44
+      ..standUpElapsedSeconds = 55;
+    repo.save(
+      state,
+      shortBreakIntervalMinutes: 20,
+      shortBreakDurationSeconds: 20,
+      preBreakWarningSeconds: 10,
+      longBreakIntervalMinutes: 60,
+      longBreakDurationMinutes: 5,
+      pauseTimerAfterMinutes: 5,
+      resetTimerAfterMinutes: 15,
+    );
+
+    final restored = TimerStateData();
+    repo.restore(
+      restored,
+      defaultShortBreakIntervalMinutes: 20,
+      defaultShortBreakDurationSeconds: 20,
+      defaultPreBreakWarningSeconds: 10,
+      defaultLongBreakIntervalMinutes: 60,
+      defaultLongBreakDurationMinutes: 5,
+      defaultPauseTimerAfterMinutes: 5,
+      defaultResetTimerAfterMinutes: 15,
+      onSettingsRestored: (a, b, c, d, e, f, g) {},
+    );
+    expect(restored.eyeBlinkElapsedSeconds, 11);
+    expect(restored.postureElapsedSeconds, 22);
+    expect(restored.hydrationElapsedSeconds, 33);
+    expect(restored.stretchElapsedSeconds, 44);
+    expect(restored.standUpElapsedSeconds, 55);
   });
 }

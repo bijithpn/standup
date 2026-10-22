@@ -4,9 +4,7 @@ import 'package:breakmate/features/analytics/presentation/productivity/activity_
 import 'package:breakmate/features/analytics/segments/activity_segment_repository.dart';
 import 'package:breakmate/features/analytics/segments/productivity_repository.dart';
 import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/features/analytics/app_usage_models.dart';
 import 'package:breakmate/features/analytics/app_usage_service.dart';
-import 'package:breakmate/features/analytics/presentation/widgets/app_usage_section.dart';
 import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/calendar_permission_service.dart';
 import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
@@ -35,8 +33,6 @@ class PrivacySection extends StatefulWidget {
 }
 
 class _PrivacySectionState extends State<PrivacySection> {
-  int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
-
   /// How many activity entries are stored, so "clear history" can say what it
   /// would actually delete.
   int _segmentCount = 0;
@@ -52,17 +48,6 @@ class _PrivacySectionState extends State<PrivacySection> {
     _refreshSegmentCount();
     // Shared, throttled: shows the real calendar permission state.
     sl<CalendarSyncController>().refresh();
-  }
-
-  UsagePeriod get _usagePeriod {
-    switch (_selectedFilter) {
-      case 1:
-        return UsagePeriod.week;
-      case 2:
-        return UsagePeriod.month;
-      default:
-        return UsagePeriod.today;
-    }
   }
 
   @override
@@ -165,37 +150,19 @@ class _PrivacySectionState extends State<PrivacySection> {
         _DataTransparencyPanel(enabled: settings.appUsageTrackingEnabled),
 
         // ── Recorded data ───────────────────────────────────────────────
+        // The detailed app-usage view lives on the Statistics screen only.
         if (settings.appUsageTrackingEnabled) ...[
-          Row(
-            children: [
-              Expanded(child: sectionHeader('Recorded app usage')),
-              segmentedControl(
-                ['Today', 'Week', 'Month'],
-                _selectedFilter,
-                (i) => setState(() => _selectedFilter = i),
-                isSmall: true,
-              ),
-            ],
-          ),
-          Consumer<AppUsageService>(
-            builder: (context, usageService, _) {
-              final period = _usagePeriod;
-              return AppUsageSection(
-                enabled: settings.appUsageTrackingEnabled,
-                // Full disclosure: every tracked app, not just the top few.
-                topApps: usageService.topApps(period, limit: null),
-                categoryTotals: usageService.categoryTotals(period),
-                iconCache: sl(),
-                onEnable: () => widget.onSave(
-                  settings.copyWith(appUsageTrackingEnabled: true),
-                ),
-                listTitle: 'All tracked apps',
-                budgetMinutes: period == UsagePeriod.today
-                    ? settings.categoryDailyBudgetMinutes
-                    : const {},
-              );
-            },
-          ),
+          sectionHeader('Recorded app usage'),
+          buildCard([
+            actionRow(
+              label: 'See exactly what was recorded',
+              subtitle:
+                  'Every tracked app and the time spent, by day, week or month.',
+              buttonText: 'Open Statistics',
+              onPressed: () =>
+                  sl<AppNavigationService>().openSection('Statistics'),
+            ),
+          ]),
         ],
 
         // ── Your data ───────────────────────────────────────────────────

@@ -59,9 +59,13 @@ void main() {
     sl.unregister<AppUsageService>();
   });
 
-  testWidgets('selecting the Breaks tab shows the break statistics section', (
+  testWidgets('Statistics is one page: every section is on the same screen', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(1100, 4000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
     await tester.pumpWidget(
       MultiProvider(
         providers: [
@@ -82,11 +86,20 @@ void main() {
         ),
       ),
     );
-
-    await tester.tap(find.text('Breaks'));
     await tester.pumpAndSettle();
 
+    // No tabs to switch between: all the groups are present at once.
+    for (final heading in [
+      'Overview',
+      'Where your time goes',
+      'Focus',
+      'Breaks',
+    ]) {
+      expect(find.text(heading), findsOneWidget, reason: heading);
+    }
     expect(find.text('Break Statistics'), findsOneWidget);
-    expect(find.text('Current Streak'), findsOneWidget);
+    expect(find.text('Current Streak'), findsWidgets);
+    // One period selector for the whole page.
+    expect(find.text('This Week'), findsOneWidget);
   });
 }

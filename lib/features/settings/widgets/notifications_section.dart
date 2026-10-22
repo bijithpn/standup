@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
@@ -31,42 +33,26 @@ class NotificationsSection extends StatelessWidget {
         const SizedBox(height: 24),
         sectionHeader('Health Reminders'),
         buildCard([
-          _buildPostureReminder(),
-          divider(),
-          _buildEyeBlinkReminder(),
-          divider(),
-          _buildSimpleReminder(
-            'Hydration',
-            'Roughly hourly. A long break counts as a drink.',
-            settings.hydrationReminderEnabled,
-            (v) => onSave(settings.copyWith(hydrationReminderEnabled: v)),
-            'hydration',
+          toggleRow(
+            'Health reminders',
+            'Gentle nudges for your eyes, posture, water, stretching and '
+                'standing up — shown one at a time, at varied moments.',
+            settings.healthRemindersEnabled,
+            (v) => onSave(settings.copyWith(healthRemindersEnabled: v)),
           ),
-          divider(),
-          _buildSimpleReminder(
-            'Stretch',
-            'Neck, shoulders and wrists, about every 40 minutes of work.',
-            settings.stretchReminderEnabled,
-            (v) => onSave(settings.copyWith(stretchReminderEnabled: v)),
-            'stretch',
-          ),
-          divider(),
-          _buildSimpleReminder(
-            'Stand up & move',
-            'After about an hour of sitting. Also covers posture and stretch.',
-            settings.standUpReminderEnabled,
-            (v) => onSave(settings.copyWith(standUpReminderEnabled: v)),
-            'standup',
-          ),
+          if (settings.healthRemindersEnabled) ...[
+            divider(),
+            _buildReminderPreviewRow(onPreview: _previewRandom),
+          ],
         ]),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),
           child: Text(
-            'Timing is slightly random and adapts to you: the more you work '
-            'today, the more often reminders come; light days get fewer. '
-            'They hold back during meetings, right around breaks, and after '
-            'you step away. At most 4 per hour (5 on very busy days), and '
-            'ones you keep ignoring are spaced further apart.',
+            'Which reminder appears is random and follows how you work: the '
+            'more you have worked today, the more often they come; light days '
+            'get fewer. They hold back during meetings, right around breaks, '
+            'and after you step away. At most 4 per hour (5 on very busy '
+            'days), and ones you keep ignoring are spaced further apart.',
             style: TextStyle(
               fontSize: 12,
               height: 1.4,
@@ -106,6 +92,11 @@ class NotificationsSection extends StatelessWidget {
   // reminders always show the (dismissable, low-opacity) overlay now — see
   // `_handleHealthReminder` in timer_orchestrator.dart for the same choice
   // on the real, non-preview path.
+  void _previewRandom() {
+    const types = ['eyeblink', 'posture', 'hydration', 'stretch', 'standup'];
+    _showPreview(types[Random().nextInt(types.length)]);
+  }
+
   void _showPreview(String reminderType) {
     // `type` (above) only picks the native window's behavior — the Dart
     // overlay itself reads `overlayType` from the JSON payload to decide
@@ -140,58 +131,6 @@ class NotificationsSection extends StatelessWidget {
     });
   }
 
-  Widget _buildSimpleReminder(
-    String title,
-    String subtitle,
-    bool enabled,
-    ValueChanged<bool> onChanged,
-    String previewType,
-  ) {
-    return Column(
-      children: [
-        toggleRow(title, subtitle, enabled, onChanged),
-        if (enabled) ...[
-          divider(),
-          _buildReminderPreviewRow(onPreview: () => _showPreview(previewType)),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildPostureReminder() {
-    return Column(
-      children: [
-        toggleRow(
-          'Posture Correction',
-          'About every 30 minutes of work. Skipped if you just took a break or stood up, and held back during meetings.',
-          settings.postureReminderEnabled,
-          (v) => onSave(settings.copyWith(postureReminderEnabled: v)),
-        ),
-        if (settings.postureReminderEnabled) ...[
-          divider(),
-          _buildReminderPreviewRow(onPreview: () => _showPreview('posture')),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildEyeBlinkReminder() {
-    return Column(
-      children: [
-        toggleRow(
-          'Eye Rest & Blinking',
-          'About every 20 minutes of work (20-20-20 rule). Skipped if you just looked away or a break is about to start.',
-          settings.eyeBlinkReminderEnabled,
-          (v) => onSave(settings.copyWith(eyeBlinkReminderEnabled: v)),
-        ),
-        if (settings.eyeBlinkReminderEnabled) ...[
-          divider(),
-          _buildReminderPreviewRow(onPreview: () => _showPreview('eye')),
-        ],
-      ],
-    );
-  }
-
   // No manual interval anymore — timing is automatic, tied to the actual
   // break cycle (see `TimerEngine._checkHealthReminders`) rather than a
   // separately configured countdown. Enable/disable above is the only
@@ -203,7 +142,7 @@ class NotificationsSection extends StatelessWidget {
         children: [
           const Expanded(
             child: Text(
-              'Timed automatically alongside your break timer',
+              'Preview a random reminder',
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
           ),

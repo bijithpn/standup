@@ -41,14 +41,23 @@ class HealthReminderCopy {
     return list[(random ?? Random()).nextInt(list.length)];
   }
 
-  /// Short label for the compact pill.
-  static String pill(String? type) => switch (type) {
-    'posture' => 'Posture check',
-    'hydration' => 'Drink some water',
-    'stretch' => 'Time to stretch',
-    'standup' => 'Stand up & move',
-    _ => 'Rest your eyes',
+  static const Map<String, List<String>> _pills = {
+    'eyeblink': ['Rest your eyes', 'Look away for a moment', 'Blink & refocus'],
+    'posture': ['Posture check', 'Sit tall', 'Relax your shoulders'],
+    'hydration': ['Drink some water', 'Time for water', 'Stay hydrated'],
+    'stretch': [
+      'Time to stretch',
+      'Roll your shoulders',
+      'Stretch your wrists',
+    ],
+    'standup': ['Stand up & move', 'Take a short walk', 'Time to move'],
   };
+
+  /// Short label for the compact pill (one of a few variants).
+  static String pill(String? type, [Random? random]) {
+    final list = _pills[type] ?? _pills['eyeblink']!;
+    return list[(random ?? Random()).nextInt(list.length)];
+  }
 
   /// Big wording for the full-screen poster.
   static String poster(String? type) => switch (type) {

@@ -81,7 +81,8 @@ class WorkloadEstimator {
 ///
 ///  * **Workload-aware.** The busier the day (long hours, constant app
 ///    switching) the more often reminders come; light days get fewer.
-///  * **Random, not mechanical.** Each interval is jittered ±15%.
+///  * **Random, not mechanical.** Each interval is jittered ±15%, and when
+///    several reminders are due the one shown is a weighted random pick.
 ///  * **Real relief counts.** Stepping away resets the matching reminders; a
 ///    completed break resets all but hydration (a long break resets that too);
 ///    a skipped break resets nothing.
@@ -213,8 +214,10 @@ class HealthReminderScheduler {
     _recentFires.removeWhere((t) => now.difference(t) >= capWindow);
     if (_recentFires.length >= hourlyCap(workloadFactor)) return null;
 
-    HealthReminderKind? best;
-    double bestOverdue = -1;
+    // Everything that is due competes; the pick is random but weighted toward
+    // what is most overdue, so the reminders vary from one to the next instead
+    // of following a fixed order.
+    final candidates = <HealthReminderKind, double>{};
     elapsedSeconds.forEach((kind, elapsed) {
       final target =
           targetSeconds(
@@ -225,17 +228,20 @@ class HealthReminderScheduler {
           workloadFactor;
       final overdue = elapsed - target;
       if (overdue < 0) return;
-
       if (untilNextBreak != null && untilNextBreak <= kind.breakAbsorbWindow) {
         return;
       }
-
-      if (overdue > bestOverdue) {
-        best = kind;
-        bestOverdue = overdue;
-      }
+      candidates[kind] = overdue + 120;
     });
-    return best;
+    if (candidates.isEmpty) return null;
+
+    final total = candidates.values.fold<double>(0, (a, b) => a + b);
+    var roll = _random.nextDouble() * total;
+    for (final entry in candidates.entries) {
+      roll -= entry.value;
+      if (roll <= 0) return entry.key;
+    }
+    return candidates.keys.last;
   }
 
   /// Call when a reminder is actually shown. Returns the kinds whose elapsed

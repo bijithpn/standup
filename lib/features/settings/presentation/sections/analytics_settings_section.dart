@@ -1,3 +1,5 @@
+import 'package:breakmate/core/config/productivity_config.dart';
+import 'package:breakmate/features/analytics/presentation/productivity/productivity_page.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/analytics/presentation/widgets/break_statistics_section.dart';
@@ -53,7 +55,6 @@ class AnalyticsSettingsSection extends StatefulWidget {
 
 class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   int _selectedFilter = 0; // 0: Today, 1: Week, 2: Month
-  int _selectedTab = 0; // 0: Overview, 1: Focus, 2: App Usage, 3: Breaks
 
   /// How many days back the calendar-vs-focus comparison (§7.4) looks —
   /// computed once per widget lifetime via [_loadCalendarComparison], not
@@ -82,57 +83,128 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
 
   @override
   Widget build(BuildContext context) {
+    final viewMetrics = _calculateViewMetrics();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(),
+        const SizedBox(height: 18),
+        _buildPeriodBar(),
         const SizedBox(height: 20),
-        _buildControlsRow(),
-        const SizedBox(height: 24),
-        switch (_selectedTab) {
-          0 => _buildOverviewTab(),
-          1 => _buildFocusTab(),
-          2 => _buildAppUsageTab(),
-          _ => BreakStatisticsSection(
-            stats: _stats,
-            selectedFilter: _selectedFilter,
-          ),
-        },
+        // Headline numbers first: what the period added up to.
+        _buildDetailGrid(viewMetrics),
+        const SizedBox(height: 32),
+
+        _groupHeader(
+          CupertinoIcons.sparkles,
+          'Overview',
+          'How your productivity and wellbeing balance out $_periodLabel.',
+        ),
+        _buildOverviewTab(),
+        const SizedBox(height: 32),
+
+        _groupHeader(
+          CupertinoIcons.time,
+          'Where your time goes',
+          'Your timeline, apps and what the activity shows.',
+        ),
+        _buildTimeAndAppsSection(),
+        const SizedBox(height: 32),
+
+        _groupHeader(
+          CupertinoIcons.scope,
+          'Focus',
+          'Uninterrupted deep-work sessions $_periodLabel.',
+        ),
+        _buildFocusTab(),
+        const SizedBox(height: 32),
+
+        _groupHeader(
+          CupertinoIcons.checkmark_seal,
+          'Breaks',
+          'Breaks you took, skipped and how they add up.',
+        ),
+        BreakStatisticsSection(stats: _stats, selectedFilter: _selectedFilter),
         const SizedBox(height: 48),
       ],
     );
   }
 
-  /// The tab selector (what to look at) and the period filter (what range),
-  /// as two independent controls — every tab still respects the selected
-  /// period, so this stays visible everywhere rather than being nested per
-  /// tab.
-  Widget _buildControlsRow() {
-    final tabs = segmentedControl(
-      ['Overview', 'Focus', 'App Usage', 'Breaks'],
-      _selectedTab,
-      (i) => setState(() => _selectedTab = i),
+  /// A clear heading for each part of the one-page view.
+  Widget _groupHeader(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.accentColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: AppTheme.accentColor),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
-    final period = segmentedControl(
-      ['Today', 'This Week', 'Month'],
-      _selectedFilter,
-      (i) => setState(() => _selectedFilter = i),
-    );
+  }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 850) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [tabs, const SizedBox(height: 12), period],
-          );
-        }
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [tabs, period],
-        );
-      },
+  /// One period selector for the whole page — every section follows it.
+  Widget _buildPeriodBar() {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Showing $_periodLabel',
+            style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
+          ),
+        ),
+        segmentedControl(
+          ['Today', 'This Week', 'Month'],
+          _selectedFilter,
+          (i) => setState(() => _selectedFilter = i),
+        ),
+      ],
     );
+  }
+
+  /// The detailed activity view (timeline, applications, insights) when the
+  /// activity pipeline is available; the simpler app-usage summary otherwise.
+  Widget _buildTimeAndAppsSection() {
+    if (ProductivityConfig.current.enabled) {
+      final range = switch (_selectedFilter) {
+        1 => ProductivityRange.week,
+        2 => ProductivityRange.month,
+        _ => ProductivityRange.today,
+      };
+      return ProductivityPage(embedded: true, range: range);
+    }
+    return _buildAppUsageTab();
   }
 
   Widget _buildOverviewTab() {
@@ -140,11 +212,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        sectionHeader(
-          'Overview',
-          subtitle: 'Your productivity and wellness balance for $_periodLabel.',
-        ),
-        const SizedBox(height: 12),
         WellnessScoreCard(
           productivityScore: viewMetrics.productivityScore,
           wellnessScore: viewMetrics.wellnessScore,
@@ -157,10 +224,6 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
         sectionHeader('Activity Trend'),
         const SizedBox(height: 12),
         _buildTrendSection(),
-        const SizedBox(height: 28),
-        sectionHeader('At a Glance'),
-        const SizedBox(height: 12),
-        _buildDetailGrid(viewMetrics),
       ],
     );
   }

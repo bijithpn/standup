@@ -3,9 +3,11 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakmate/core/services/health_reminder_scheduler.dart';
+import 'package:breakmate/features/settings/settings_model.dart';
 
 void main() {
   workloadTests();
+  settingsSwitchTests();
   final t0 = DateTime(2026, 3, 10, 10);
   const eye = HealthReminderKind.eyeRest;
   const posture = HealthReminderKind.posture;
@@ -41,11 +43,26 @@ void main() {
     expect(due({eye: target}), eye);
   });
 
-  test('picks the most overdue reminder first', () {
-    final e = s.targetSeconds(eye);
-    final p = s.targetSeconds(posture);
-    expect(due({eye: e + 10, posture: p + 600}), posture);
-  });
+  test(
+    'when several are due the pick is random but favors the most overdue',
+    () {
+      final counts = {eye: 0, posture: 0};
+      for (var seed = 0; seed < 300; seed++) {
+        final sched = HealthReminderScheduler(random: Random(seed));
+        final e = sched.targetSeconds(eye);
+        final p = sched.targetSeconds(posture);
+        final pick = sched.nextDue(
+          now: t0,
+          elapsedSeconds: {eye: e + 10, posture: p + 1200},
+          untilNextBreak: null,
+          blockedByContext: false,
+        );
+        counts[pick!] = counts[pick]! + 1;
+      }
+      expect(counts[eye], greaterThan(0), reason: 'less overdue still appears');
+      expect(counts[posture], greaterThan(counts[eye]!));
+    },
+  );
 
   test('two reminders are never shown back to back', () {
     final e = s.targetSeconds(eye);
@@ -261,6 +278,34 @@ void workloadTests() {
       expect(inFirstHour, 4);
       expect(HealthReminderScheduler.hourlyCap(0.7), 5);
       expect(fired, greaterThanOrEqualTo(inFirstHour));
+    });
+  });
+}
+
+void settingsSwitchTests() {
+  group('single health reminders switch', () {
+    test('turns every reminder kind on and off together', () {
+      const off = SettingsModel();
+      expect(off.healthRemindersEnabled, isFalse);
+      final on = off.copyWith(healthRemindersEnabled: true);
+      expect(on.eyeBlinkReminderEnabled, isTrue);
+      expect(on.postureReminderEnabled, isTrue);
+      expect(on.hydrationReminderEnabled, isTrue);
+      expect(on.stretchReminderEnabled, isTrue);
+      expect(on.standUpReminderEnabled, isTrue);
+      expect(
+        on.copyWith(healthRemindersEnabled: false).healthRemindersEnabled,
+        isFalse,
+      );
+    });
+
+    test('settings saved with only one old toggle still count as on', () {
+      expect(
+        const SettingsModel(
+          eyeBlinkReminderEnabled: true,
+        ).healthRemindersEnabled,
+        isTrue,
+      );
     });
   });
 }
