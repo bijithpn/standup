@@ -4,7 +4,27 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                                                                        <item>
+                                                                                <item>
+            <title>Version 1.9.0</title>
+            <pubDate>Fri, 23 Oct 2026 06:27:45 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.9.0</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>update launch behavior to open on current Space and improve user notifications</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.8.4...v1.9.0">https://github.com/bijithpn/standup/compare/v1.8.4...v1.9.0</a></p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.9.0/BreakMate-Installer.dmg"
+                       sparkle:version="41"
+                       sparkle:shortVersionString="1.9.0"
+                       sparkle:edSignature="mciO5jbpPrYyzaOy6c1egLGWPFK9ycZCyd44rh9VXb4H24Y0Si6aO71Zy9um57OgAHuTEwBys+q+b0FzGQG+Bw=="
+                       length="36077606"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.8.4</title>
             <pubDate>Thu, 22 Oct 2026 12:25:24 +0000</pubDate>
             <description><![CDATA[
