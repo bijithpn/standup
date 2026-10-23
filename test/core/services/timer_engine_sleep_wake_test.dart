@@ -56,67 +56,60 @@ void main() {
   int breakEnds() => events.whereType<BreakEndedEvent>().length;
 
   group('break countdown across sleep', () {
-    test(
-      'short sleep: remaining time reflects wall clock, not stale counter',
-      () {
-        fakeAsync((async) {
-          final engine = newEngine()..startTimers();
-          engine.triggerBreakNow();
-          final total = engine.countdownSeconds;
-          expect(engine.state, TimerState.breakActive);
-
-          async.elapse(const Duration(seconds: 5));
-          engine.handleSystemSleep();
-          async.elapse(const Duration(seconds: 10));
-          engine.handleSystemWake();
-
-          expect(engine.state, TimerState.breakActive);
-          expect(engine.countdownSeconds, total - 15);
-          expect(engine.countdownNotifier.value, total - 15);
-          expect(
-            engine.targetEndTime!.difference(clock.now()).inSeconds,
-            engine.countdownSeconds,
-          );
-          engine.dispose();
-        });
-      },
-    );
-
-    test('sleep longer than remaining: completes once, never restarts', () {
+    test('sleep/lock does not count toward the break countdown', () {
       fakeAsync((async) {
         final engine = newEngine()..startTimers();
         engine.triggerBreakNow();
-        async.elapse(const Duration(seconds: 3));
+        final total = engine.countdownSeconds;
+        expect(engine.state, TimerState.breakActive);
+
+        async.elapse(const Duration(seconds: 5));
         engine.handleSystemSleep();
-        async.elapse(const Duration(minutes: 45));
+        async.elapse(const Duration(seconds: 10));
         engine.handleSystemWake();
-        async.flushMicrotasks();
 
-        expect(engine.state, isNot(TimerState.breakActive));
-        expect(engine.activeBreak, isNull);
-        expect(breakEnds(), 1);
-        expect(engine.targetEndTime, isNotNull); // new work deadline, not break
-
-        // Repeated wake/unlock notifications must not duplicate anything.
-        engine.handleSystemWake();
-        engine.handleSystemWake();
-        async.flushMicrotasks();
-        expect(breakEnds(), 1);
+        expect(engine.state, TimerState.breakActive);
+        expect(engine.countdownSeconds, total - 5);
+        expect(engine.countdownNotifier.value, total - 5);
+        expect(
+          engine.targetEndTime!.difference(clock.now()).inSeconds,
+          engine.countdownSeconds,
+        );
         engine.dispose();
       });
     });
 
-    test('repeated sleep/wake cycles keep one consistent deadline', () {
+    test('long sleep does not finish the break; it resumes with time left', () {
       fakeAsync((async) {
         final engine = newEngine()..startTimers();
         engine.triggerBreakNow();
-        final deadline = engine.targetEndTime!;
+        async.elapse(const Duration(seconds: 3));
+        final remaining = engine.countdownSeconds;
+        engine.handleSystemSleep();
+        async.elapse(const Duration(minutes: 45));
+        engine.handleSystemWake();
+        engine.handleSystemWake();
+        async.flushMicrotasks();
+
+        expect(engine.state, TimerState.breakActive);
+        expect(engine.countdownSeconds, remaining);
+        expect(breakEnds(), 0);
+        engine.dispose();
+      });
+    });
+
+    test('repeated sleep/wake cycles keep remaining time constant', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        engine.triggerBreakNow();
+        final remaining = engine.countdownSeconds;
         for (var i = 0; i < 3; i++) {
           engine.handleSystemSleep();
+          engine.handleSystemSleep(); // lock + sleep back to back
           async.elapse(const Duration(seconds: 2));
           engine.handleSystemWake();
         }
-        expect(engine.targetEndTime, deadline);
+        expect(engine.countdownSeconds, remaining);
         expect(breakEnds(), 0);
         engine.dispose();
       });
@@ -132,7 +125,7 @@ void main() {
         engine.handleSystemSleep();
         async.elapse(const Duration(seconds: 10));
         engine.handleSystemWake();
-        expect(engine.countdownSeconds, before + 110);
+        expect(engine.countdownSeconds, before + 120);
         engine.dispose();
       });
     });
