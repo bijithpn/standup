@@ -3,8 +3,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-class PaperLightTemplate extends StatelessWidget {
+class PaperLightTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final int remainingSeconds;
@@ -20,107 +21,212 @@ class PaperLightTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  @override
+  State<PaperLightTemplate> createState() => _PaperLightTemplateState();
+}
+
+class _PaperLightTemplateState extends State<PaperLightTemplate>
+    with SingleTickerProviderStateMixin {
+  static const Color _ink = Color(0xFF1A1814);
+  static const Color _stone = Color(0xFF6B6560); // 5.2:1 on the cream
+  static const Color _forest = Color(0xFF2D6A4F);
+
+  /// A printed page is always light, whatever the theme.
+  static const BreakPalette _paper = BreakPalette(
+    canvas: Color(0xFFF5F3EE),
+    canvasRaised: Color(0xFFFAF9F6),
+    surface: Color(0xFFFFFFFF),
+    border: Color(0x1A1A1814),
+    track: Color(0x1F1A1814),
+    textPrimary: _ink,
+    textSecondary: Color(0xFF4A4540),
+    textMuted: _stone,
+    isDark: false,
+  );
+
+  /// E-ink style flash on entrance: black for 120ms, then a 200ms fade.
+  late final AnimationController _flash = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 320),
+  );
+  bool _started = false;
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started) return;
+    _started = true;
+    if (!breakShouldFreeze(context)) _flash.forward();
   }
 
   @override
-  Widget build(BuildContext context) {
-    const primary = Color(0xFF1A1814);
-    const secondary = Color(0xFF6B6560);
-    const accent = Color(0xFF2D6A4F);
-    final isShort = breakInfo.type == BreakType.short;
-    final breakName = isShort ? 'Eye rest' : 'Long break';
+  void dispose() {
+    _flash.dispose();
+    super.dispose();
+  }
 
-    return ColoredBox(
-      color: const Color(0xFFF5F3EE),
+  TextStyle _serif(double size, Color color, {FontWeight? weight}) =>
+      BreakOverlayTheme.serif.copyWith(
+        fontSize: size,
+        fontWeight: weight ?? FontWeight.w400,
+        color: color,
+        fontFeatures: BreakOverlayTheme.tabular,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    final forest = BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'paper_light',
+      _forest,
+    );
+    final progress = breakProgress(
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
+    final showTip =
+        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
+
+    return BreakScaffold(
+      palette: _paper,
+      canvas: _paper.canvas,
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: forest,
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+          // Hairline, then the label hanging under it.
+          Positioned(
+            left: 240,
+            top: 160,
+            width: 800,
+            child: BreakEntrance(
+              scale: false,
+              child: Container(height: 1, color: _ink.withValues(alpha: 0.15)),
+            ),
+          ),
+          Positioned(
+            left: 240,
+            top: 184,
+            width: 800,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: Row(
                 children: [
-                  Icon(
-                    LucideIcons.leaf,
-                    size: 20,
-                    color: accent.withValues(alpha: 0.55),
+                  ExcludeSemantics(
+                    child: Icon(LucideIcons.leaf, size: 16, color: forest),
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    breakName,
-                    style: const TextStyle(
-                      color: secondary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _formatTime(remainingSeconds),
-                    style: const TextStyle(
-                      color: primary,
-                      fontSize: 72,
-                      fontWeight: FontWeight.w200,
-                      fontFamily: BreakOverlayTheme.fontFamily,
-                      fontFeatures: [FontFeature.tabularFigures()],
-                      letterSpacing: -2,
-                      height: 1.0,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    width: 80,
-                    height: 0.5,
-                    color: const Color(0xFFD4CFC9),
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: 300,
-                    child: Text(
-                      breakInfo.tip,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: secondary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        fontStyle: FontStyle.italic,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(width: 8),
+                  BreakLabel(_kind.label, color: _stone),
                 ],
               ),
             ),
           ),
-          if (!settings.strictMode && onSkip != null)
-            Positioned(
-              bottom: BreakOverlayTheme.skipBottom,
-              right: BreakOverlayTheme.skipRight,
-              child: GestureDetector(
-                onTap: onSkip,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: const Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: secondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 360 - 40,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(2),
+              scale: false,
+              child: BreakCountdown(
+                seconds: widget.remainingSeconds,
+                style: _serif(72, _ink).copyWith(height: 1.0),
+                color: breakClockColor(widget.settings, _paper, fallback: _ink),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 360 + 36 + 24,
+            child: Center(
+              child: BreakEntrance(
+                delay: BreakEntrance.stagger(3),
+                scale: false,
+                child: SizedBox(
+                  width: 320,
+                  height: 2,
+                  child: BreakSmoothProgress(
+                    progress: progress,
+                    builder: (context, anim) => CustomPaint(
+                      painter: _Rule(
+                        progress: anim,
+                        color: forest,
+                        track: _ink.withValues(alpha: 0.10),
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
+          ),
+          if (showTip)
+            Positioned(
+              left: 0,
+              right: 0,
+              top: 360 + 36 + 24 + 36,
+              child: Center(
+                child: BreakEntrance(
+                  delay: BreakEntrance.stagger(4),
+                  scale: false,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Text(
+                      widget.breakInfo.tip,
+                      textAlign: TextAlign.center,
+                      style: _serif(16, _stone).copyWith(height: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // E-ink flash.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _flash,
+                builder: (context, _) {
+                  final t = _flash.value;
+                  // Hold black for the first 120ms of 320ms, then fade out.
+                  final opacity = t <= 0.375 ? 1.0 : 1.0 - (t - 0.375) / 0.625;
+                  if (!_flash.isAnimating) return const SizedBox.shrink();
+                  return ColoredBox(
+                    color: Colors.black.withValues(alpha: opacity.clamp(0, 1)),
+                  );
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _Rule extends CustomPainter {
+  final Animation<double> progress;
+  final Color color;
+  final Color track;
+
+  _Rule({required this.progress, required this.color, required this.track})
+    : super(repaint: progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint();
+    p.color = track;
+    canvas.drawRect(Offset.zero & size, p);
+    p.color = color;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, size.width * progress.value, size.height),
+      p,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _Rule old) =>
+      old.color != color || old.track != track;
 }
