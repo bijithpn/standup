@@ -63,6 +63,10 @@ class CompanionPetState extends State<CompanionPet>
     reducedMotion: widget.isStatic,
   );
   Ticker? _ticker;
+  final Stopwatch _clock = Stopwatch()..start();
+  Duration _lastFrameElapsed = Duration.zero;
+  Timer? _restTimer;
+  static const Duration _restInterval = Duration(milliseconds: 250);
   StreamSubscription<CursorSample>? _cursorSub;
   Timer? _originTimer;
 
@@ -76,7 +80,8 @@ class CompanionPetState extends State<CompanionPet>
     _engine.startLocal();
 
     if (!widget.isStatic) {
-      _ticker = createTicker(_engine.tick)..start();
+      _ticker = createTicker(_tickEngine)..start();
+      _engine.onNeedsFrames = _requestFrames;
       _refreshOrigin();
       _originTimer = Timer.periodic(_originRefresh, (_) => _refreshOrigin());
     }
@@ -96,9 +101,39 @@ class CompanionPetState extends State<CompanionPet>
   void dispose() {
     _cursorSub?.cancel();
     _originTimer?.cancel();
+    _restTimer?.cancel();
+    _engine.onNeedsFrames = null;
     _ticker?.dispose();
     _engine.dispose();
     super.dispose();
+  }
+
+  /// Runs the frame ticker again after something gave the pet work to do.
+  void _requestFrames() {
+    final ticker = _ticker;
+    if (!mounted || ticker == null) return;
+    _restTimer?.cancel();
+    _restTimer = null;
+    if (!ticker.isActive) ticker.start();
+  }
+
+  void _tickEngine(Duration _) {
+    final now = _clock.elapsed;
+    if (now - _lastFrameElapsed < _engine.frameInterval) return;
+    _lastFrameElapsed = now;
+    _engine.tick(now);
+    if (_engine.isSettled) _enterRest();
+  }
+
+  /// Nothing is moving: stop asking Flutter for frames and tick slowly so the
+  /// slow feelings (drowsiness, loneliness) still advance.
+  void _enterRest() {
+    _ticker?.stop();
+    _restTimer ??= Timer.periodic(_restInterval, (_) {
+      if (!mounted) return;
+      _engine.tick(_clock.elapsed);
+      if (!_engine.isSettled) _requestFrames();
+    });
   }
 
   void _bindCursor() {

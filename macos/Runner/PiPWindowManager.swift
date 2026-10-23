@@ -433,7 +433,7 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
         if let followMouse = args?["followMouse"] as? Bool {
             self.isFollowMouseEnabled = followMouse
         }
-        startCursorTracking()
+        if isFollowMouseEnabled { startCursorTracking() } else { stopCursorTracking() }
 
         currentUrlStr = avatarUrlStr
         if let url = URL(string: avatarUrlStr) {
@@ -461,9 +461,14 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
 
     private func startCursorTracking() {
         cursorTrackingTimer?.invalidate()
-        cursorTrackingTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { [weak self] _ in
+        // ~30 Hz is plenty for a head that eases toward the pointer; the
+        // tolerance lets macOS coalesce wakeups with other timers.
+        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
             self?.updateHeadTracking()
         }
+        timer.tolerance = 0.01
+        RunLoop.main.add(timer, forMode: .common)
+        cursorTrackingTimer = timer
     }
 
     private func stopCursorTracking() {
@@ -518,7 +523,10 @@ final class PiPWindowManager: NSObject, WKNavigationDelegate, WKScriptMessageHan
 
         if let followMouse = args["followMouse"] as? Bool {
             isFollowMouseEnabled = followMouse
-            if !followMouse {
+            if followMouse {
+                if pipWindow?.isVisible == true { startCursorTracking() }
+            } else {
+                stopCursorTracking()
                 wv.evaluateJavaScript("window.postMessage({ type: 'SET_POSE', yaw: 0, pitch: 0 }, '*');", completionHandler: nil)
                 currentYaw = 0.0
                 currentPitch = 0.0

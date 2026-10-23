@@ -466,14 +466,12 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   /// Whether the window needs to know where the cursor is for itself, apart
   /// from where the pet looks.
   ///
-  /// With a card behind the pet the whole window is the pet, so it can just
-  /// accept the mouse. Without one, the transparent margins must not swallow
-  /// clicks meant for whatever is underneath, and that takes watching the
-  /// cursor.
-  bool get _needsHitTesting =>
-      _windowVisible &&
-      _pipDraggableClickable &&
-      (_clickThrough || !_hasBackdrop);
+  /// The controls are shown on hover, and a panel that never becomes the key
+  /// window does not reliably get enter/exit events, so hover is also read from
+  /// the cursor. Without a card behind the pet, the transparent margins must
+  /// not swallow clicks meant for whatever is underneath, which takes the same
+  /// watching.
+  bool get _needsHitTesting => _windowVisible && _pipDraggableClickable;
 
   void _syncHitTestSubscription() {
     if (_needsHitTesting && _cursorSub == null) {
@@ -492,14 +490,11 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   void _onCursorSample(CursorSample sample) {
     if (!mounted || _isDraggingWindow) return;
 
-    // A window that has stopped accepting the mouse never hears the pointer
-    // leave, so hover is cleared from here when the cursor is plainly gone.
-    if (_isHovered &&
-        !_windowRect.isEmpty &&
-        !_windowRect.inflate(2).contains(sample.position)) {
-      setState(() => _isHovered = false);
-      _wanderer.resume();
-      _engine.hover(false);
+    // The window's own enter/exit events are not trusted: a window that has
+    // stopped accepting the mouse never hears the pointer leave, and a
+    // non-activating panel may never hear it arrive.
+    if (!_windowRect.isEmpty) {
+      _setHovered(_windowRect.inflate(2).contains(sample.position));
     }
 
     final shouldAccept = shouldWindowAcceptMouse(
@@ -518,6 +513,20 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     _windowManager.setAcceptsMouse(shouldAccept).whenComplete(() {
       _applyingMouseMode = false;
     });
+  }
+
+  void _setHovered(bool hovered) {
+    if (_isHovered == hovered || !mounted) return;
+    setState(() => _isHovered = hovered);
+    if (hovered) {
+      // Nothing walks off while it is being looked at.
+      _wanderer.suspend();
+    } else {
+      _wanderer.resume();
+    }
+    // Works even with cursor-following off: being hovered is a plain window
+    // event, not tracking.
+    _engine.hover(hovered);
   }
 
   /// Where the pet is drawn, in the same screen space as the cursor.
@@ -705,19 +714,8 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       body: Opacity(
         opacity: _pipOpacity.clamp(0.2, 1.0),
         child: MouseRegion(
-          onEnter: (_) {
-            setState(() => _isHovered = true);
-            // Nothing walks off while it is being looked at.
-            _wanderer.suspend();
-            // Works even with cursor-following off: being hovered is a plain
-            // window event, not tracking.
-            _engine.hover(true);
-          },
-          onExit: (_) {
-            setState(() => _isHovered = false);
-            _wanderer.resume();
-            _engine.hover(false);
-          },
+          onEnter: (_) => _setHovered(true),
+          onExit: (_) => _setHovered(false),
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onPanStart: _pipDraggableClickable

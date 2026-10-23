@@ -43,6 +43,7 @@ class MeetingDetectionService {
   Timer? _pollTimer;
   bool _isRunning = false;
   bool _isMeetingActive = false;
+  bool? _lastPolled;
   final StreamController<bool> _controller = StreamController<bool>.broadcast();
 
   bool get isMeetingActive => _isMeetingActive;
@@ -71,6 +72,7 @@ class MeetingDetectionService {
     _pollTimer?.cancel();
     _pollTimer = null;
     _isMeetingActive = false;
+    _lastPolled = null;
     debugPrint('MeetingDetectionService stopped');
   }
 
@@ -101,7 +103,12 @@ class MeetingDetectionService {
     try {
       final app = await _appTracking.getActiveApp();
       if (app == null) return;
-      _emit(_matchesKnownMeetingApp(app));
+      final active = _matchesKnownMeetingApp(app);
+      // Polling repeats itself; only tell listeners (and the other windows,
+      // over IPC) when the answer actually changed.
+      if (active == _lastPolled) return;
+      _lastPolled = active;
+      _emit(active);
     } catch (e) {
       debugPrint('MeetingDetectionService poll error: $e');
     }

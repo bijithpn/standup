@@ -115,6 +115,13 @@ class PetWanderer {
   static const Duration tickInterval = Duration(milliseconds: 40);
   static const double _dt = 0.04;
 
+  /// While the pet is dwelling nothing moves, so the loop only needs to notice
+  /// that the dwell has run out. A coarse tick keeps the timer from waking the
+  /// app 25 times a second for the minute or two between walks.
+  static const Duration restInterval = Duration(milliseconds: 500);
+  static const double _restDt = 0.5;
+  bool _fastTicking = true;
+
   /// The window sits still for somewhere in this range between walks.
   static const double minDwellSeconds = 45;
   static const double maxDwellSeconds = 170;
@@ -186,7 +193,22 @@ class PetWanderer {
     if (_running) return;
     _running = true;
     _scheduleDwell();
-    _timer = Timer.periodic(tickInterval, (_) => tick());
+    _fastTicking = false;
+    _startTimer(restInterval);
+  }
+
+  void _startTimer(Duration interval) {
+    _timer?.cancel();
+    _timer = Timer.periodic(interval, (_) => _onTimer());
+  }
+
+  void _onTimer() {
+    tick(_fastTicking ? _dt : _restDt);
+    final needsFast = _duration > 0 || _awaitingPlatform;
+    if (needsFast != _fastTicking) {
+      _fastTicking = needsFast;
+      _startTimer(needsFast ? tickInterval : restInterval);
+    }
   }
 
   void stop() {
@@ -223,16 +245,16 @@ class PetWanderer {
   /// One step. Driven by the internal timer; exposed so a test can advance it
   /// without waiting in real time.
   @visibleForTesting
-  void tick() {
+  void tick([double dt = _dt]) {
     if (_duration > 0) {
-      _advanceJourney(_dt);
+      _advanceJourney(dt);
       return;
     }
 
-    _boundsAge += _dt;
+    _boundsAge += dt;
     if (!_enabled || _suspended) return;
 
-    _dwellRemaining -= _dt;
+    _dwellRemaining -= dt;
     if (_dwellRemaining > 0) return;
 
     if (!wantsToMove) {

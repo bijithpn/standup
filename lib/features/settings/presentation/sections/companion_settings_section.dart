@@ -363,18 +363,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                       widget.controller.companionClickThrough,
                       (v) => widget.controller.changeClickThrough(v),
                     ),
-                    // Only the full-screen mode can chase the pointer around. The
-                    // floating window never moves toward it, and "Follow
-                    // Cursor" above covers where it looks.
-                    if (!widget.controller.pipModeEnabled) ...[
-                      divider(),
-                      toggleRow(
-                        'Magnetic Attraction',
-                        'The pet will dynamically move toward and follow your cursor.',
-                        widget.controller.companionFollowMouse,
-                        (v) => widget.controller.changeFollowMouse(v),
-                      ),
-                    ],
                     divider(),
                     toggleRow(
                       'Wander Around the Screen',
@@ -412,20 +400,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                           'quickest way to win it over.',
                       widget.controller.treatEnabled,
                       (v) => widget.controller.changeTreatEnabled(v),
-                    ),
-                    divider(),
-                    toggleRow(
-                      'Developer Milestones',
-                      'Enable pet reactions triggered by coding accomplishments.',
-                      widget.controller.developerReactions,
-                      (v) => widget.controller.changeDeveloperReactions(v),
-                    ),
-                    divider(),
-                    toggleRow(
-                      'Quiet Mode Auto-Activation',
-                      'Automatically calm the pet during meetings, focus blocks, or battery-saver mode.',
-                      widget.controller.quietModeAutoActivate,
-                      (v) => widget.controller.changeQuietModeAutoActivate(v),
                     ),
                   ]),
                 ],

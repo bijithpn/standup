@@ -306,10 +306,6 @@ class CompanionOverlayController extends ChangeNotifier {
       _settingsRepo.currentSettings.companionReducedMotion;
   bool get ballThrowEnabled => _settingsRepo.currentSettings.ballThrowEnabled;
   bool get treatEnabled => _settingsRepo.currentSettings.treatEnabled;
-  bool get developerReactions =>
-      _settingsRepo.currentSettings.developerReactions;
-  bool get quietModeAutoActivate =>
-      _settingsRepo.currentSettings.quietModeAutoActivate;
   bool get isLowDistractionMode =>
       _companionClickThrough &&
       !_companionFollowMouse &&
@@ -1187,20 +1183,6 @@ class CompanionOverlayController extends ChangeNotifier {
 
   Future<void> changeTreatEnabled(bool value) async {
     final updated = _settingsRepo.currentSettings.copyWith(treatEnabled: value);
-    await _settingsRepo.save(updated);
-  }
-
-  Future<void> changeDeveloperReactions(bool value) async {
-    final updated = _settingsRepo.currentSettings.copyWith(
-      developerReactions: value,
-    );
-    await _settingsRepo.save(updated);
-  }
-
-  Future<void> changeQuietModeAutoActivate(bool value) async {
-    final updated = _settingsRepo.currentSettings.copyWith(
-      quietModeAutoActivate: value,
-    );
     await _settingsRepo.save(updated);
   }
 

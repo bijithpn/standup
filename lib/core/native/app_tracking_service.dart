@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
@@ -37,12 +38,38 @@ class AppTrackingService {
   static const _channel = MethodChannel('com.breakmate/app_tracking');
   final AppLogger _logger = AppLogger();
 
+  /// Meeting detection, app-usage tracking and the wellness engine all ask for
+  /// the active app on their own timers, and their ticks often land together.
+  /// Callers asking for the same detail within this window share one native
+  /// lookup. Short enough that no poller sees a stale app for a whole tick.
+  static const Duration _shareWindow = Duration(milliseconds: 1500);
+  final Map<String, ({DateTime at, Future<ActiveAppInfo?> result})> _recent =
+      {};
+
   /// By default only the app identity is read. The window title and the
   /// browser tab URL are privacy-sensitive, so the native side fetches them
   /// only when a caller explicitly asks.
   Future<ActiveAppInfo?> getActiveApp({
     bool includeTitle = false,
     bool includeUrl = false,
+  }) {
+    final key = '$includeTitle:$includeUrl';
+    final now = clock.now();
+    final recent = _recent[key];
+    if (recent != null && now.difference(recent.at) < _shareWindow) {
+      return recent.result;
+    }
+    final result = _fetchActiveApp(
+      includeTitle: includeTitle,
+      includeUrl: includeUrl,
+    );
+    _recent[key] = (at: now, result: result);
+    return result;
+  }
+
+  Future<ActiveAppInfo?> _fetchActiveApp({
+    required bool includeTitle,
+    required bool includeUrl,
   }) async {
     try {
       final result = await _channel.invokeMapMethod<String, dynamic>(
