@@ -1,11 +1,11 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-class RingOnlyTemplate extends StatelessWidget {
+class RingOnlyTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final int remainingSeconds;
@@ -21,64 +21,82 @@ class RingOnlyTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  @override
+  State<RingOnlyTemplate> createState() => _RingOnlyTemplateState();
+}
+
+class _RingOnlyTemplateState extends State<RingOnlyTemplate> {
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+
+  bool get _complete => widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+
+  @override
+  void didUpdateWidget(covariant RingOnlyTemplate old) {
+    super.didUpdateWidget(old);
+    final wasComplete = old.remainingSeconds <= 0 && old.totalSeconds > 0;
+    if (_complete && !wasComplete) {
+      // Quiet tactile cue where the platform supports it.
+      HapticFeedback.lightImpact().catchError((_) {});
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isShort = breakInfo.type == BreakType.short;
-    final breakName = isShort ? 'Eye rest' : 'Long break';
-    final progress = totalSeconds > 0
-        ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
-        : 0.0;
-    final accent = settings.clockFaceTextColorHex != 0xFFFFFFFF
-        ? Color(settings.clockFaceTextColorHex)
-        : const Color(0xFF818CF8);
+    final palette = BreakPalette.of(context);
+    final accent = breakAccent(
+      widget.settings,
+      'ring_only',
+      BreakOverlayTheme.periwinkle,
+    );
+    final progress = breakProgress(
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
 
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
+    return BreakScaffold(
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: accent,
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          Center(
-            child: RepaintBoundary(
-              child: SizedBox(
-                width: 300,
-                height: 300,
-                child: CustomPaint(
-                  painter: _RingPainter(accent: accent, progress: progress),
+          Positioned(
+            left: 640 - 120,
+            top: 400 - 120,
+            child: BreakEntrance(
+              child: Semantics(
+                label: '${_kind.label}, ${(progress * 100).round()} percent',
+                child: TweenAnimationBuilder<double>(
+                  // Completion: the ring flashes to full alpha with a glow.
+                  tween: Tween(end: _complete ? 1.0 : 0.0),
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOut,
+                  builder: (context, flash, child) => BreakProgressRing(
+                    size: 240,
+                    strokeWidth: 1.5,
+                    progress: progress,
+                    color: accent.withValues(alpha: 0.7 + 0.3 * flash),
+                    trackColor: palette.isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : const Color(0xFF1C1F24).withValues(alpha: 0.10),
+                    taperDegrees: 12,
+                    taperTo: 4,
+                    flash: flash * 0.8,
+                    child: child,
+                  ),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        LucideIcons.eye,
-                        size: 20,
-                        color: Colors.white.withValues(alpha: 0.28),
+                      ExcludeSemantics(
+                        child: Icon(
+                          _kind.icon,
+                          size: 18,
+                          color: palette.textMuted,
+                        ),
                       ),
                       const SizedBox(height: 12),
-                      Text(
-                        _formatTime(remainingSeconds),
-                        style: TextStyle(
-                          color: Color(settings.clockFaceTextColorHex),
-                          fontSize: 56,
-                          fontWeight: FontWeight.w200,
-                          fontFamily: BreakOverlayTheme.fontFamily,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                          letterSpacing: -2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        breakName,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.3),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: BreakOverlayTheme.fontFamily,
-                        ),
+                      BreakCountdown(
+                        seconds: widget.remainingSeconds,
+                        color: breakClockColor(widget.settings, palette),
                       ),
                     ],
                   ),
@@ -86,69 +104,8 @@ class RingOnlyTemplate extends StatelessWidget {
               ),
             ),
           ),
-          if (!settings.strictMode && onSkip != null)
-            Positioned(
-              bottom: BreakOverlayTheme.skipBottom,
-              right: BreakOverlayTheme.skipRight,
-              child: GestureDetector(
-                onTap: onSkip,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: BreakOverlayTheme.textDim,
-                      fontSize: BreakOverlayTheme.labelFontSize,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
-                    ),
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
-}
-
-class _RingPainter extends CustomPainter {
-  final Color accent;
-  final double progress;
-
-  const _RingPainter({required this.accent, required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 4;
-
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = Colors.white.withValues(alpha: 0.08),
-    );
-
-    if (progress > 0) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        math.pi * 2 * progress,
-        false,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3
-          ..strokeCap = StrokeCap.round
-          ..color = accent.withValues(alpha: 0.6),
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _RingPainter old) =>
-      old.progress != progress || old.accent != accent;
 }
