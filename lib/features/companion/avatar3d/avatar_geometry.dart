@@ -403,7 +403,12 @@ List<Vec2> _roundedRectBoundary(
   return points;
 }
 
-/// A soft smile: an arc swept between the mouth's corners.
+/// A smile: a constant-thickness stroke along a parabola, with rounded ends.
+///
+/// Ported from the editor, which sweeps the stroke along the curve's normal and
+/// sizes the arc from the mouth's *width*. The earlier version offset the edges
+/// vertically and sized the arc from the height, so a tall mouth collapsed into
+/// a sharp black V instead of a smile.
 List<Vec2> _mouthBoundary(
   double centerX,
   double centerY,
@@ -413,22 +418,90 @@ List<Vec2> _mouthBoundary(
   double rotation,
 ) {
   const steps = 28;
-  final amount = clampDouble(curve, -100, 100) / 100;
-  final upper = <Vec2>[];
-  final lower = <Vec2>[];
+  const capSteps = 8;
+  final halfWidth = width / 2;
+  final halfHeight = height / 2;
+  final depth = clampDouble(curve, -100, 100) / 100 * width * 0.28;
 
+  final centers = <Vec2>[];
+  final normals = <Vec2>[];
+  final tangents = <Vec2>[];
   for (var step = 0; step <= steps; step++) {
-    final progress = step / steps;
-    final x = centerX + (progress - 0.5) * width;
-    final bow = math.sin(progress * math.pi) * amount * height * 1.6;
-    upper.add(Vec2(x, centerY + bow - height / 2));
-    lower.add(Vec2(x, centerY + bow + height / 2));
+    final x = -halfWidth + width * step / steps;
+    final nx = x / halfWidth;
+    final y = depth * (1 - nx * nx);
+    final slope = -2 * depth * x / (halfWidth * halfWidth);
+    final length = math.sqrt(1 + slope * slope);
+    centers.add(Vec2(centerX + x, centerY + y));
+    normals.add(Vec2(-slope / length, 1 / length));
+    tangents.add(Vec2(1 / length, slope / length));
   }
 
+  Vec2 capPoint(int i, double angle) => Vec2(
+    centers[i].x +
+        (math.cos(angle) * tangents[i].x + math.sin(angle) * normals[i].x) *
+            halfHeight,
+    centers[i].y +
+        (math.cos(angle) * tangents[i].y + math.sin(angle) * normals[i].y) *
+            halfHeight,
+  );
+
+  final points = <Vec2>[
+    for (var i = 0; i <= steps; i++)
+      Vec2(
+        centers[i].x - normals[i].x * halfHeight,
+        centers[i].y - normals[i].y * halfHeight,
+      ),
+    for (var i = 1; i <= capSteps; i++)
+      capPoint(steps, -math.pi / 2 + i / capSteps * math.pi),
+    for (var i = steps - 1; i >= 0; i--)
+      Vec2(
+        centers[i].x + normals[i].x * halfHeight,
+        centers[i].y + normals[i].y * halfHeight,
+      ),
+    for (var i = 1; i < capSteps; i++)
+      capPoint(0, math.pi / 2 + i / capSteps * math.pi),
+  ];
+
   return <Vec2>[
-    for (final point in upper)
+    for (final point in points)
       rotateFacePoint(point, centerX, centerY, rotation),
-    for (final point in lower.reversed)
+  ];
+}
+
+/// An open mouth: flat along the top, rounded below, like a happy "D".
+///
+/// [curve] lifts the corners a little, so it can read as a grin or a gasp.
+List<Vec2> _openMouthBoundary(
+  double centerX,
+  double centerY,
+  double width,
+  double height,
+  double curve,
+  double rotation,
+) {
+  const steps = 24;
+  final top = centerY - height / 2;
+  final lift = clampDouble(curve, -100, 100) / 100 * height * 0.25;
+  final points = <Vec2>[];
+  for (var step = 0; step <= steps; step++) {
+    final angle = math.pi * step / steps;
+    points.add(
+      Vec2(
+        centerX + math.cos(angle) * width / 2,
+        top + math.sin(angle) * height,
+      ),
+    );
+  }
+  // The top edge, from the left corner back to the right. Sagging in the
+  // middle lifts the corners, so it reads as a smile rather than a flat lid.
+  for (var step = 1; step < steps; step++) {
+    final x = centerX - width / 2 + width * step / steps;
+    final nx = (x - centerX) / (width / 2);
+    points.add(Vec2(x, top + lift * (1 - nx * nx)));
+  }
+  return <Vec2>[
+    for (final point in points)
       rotateFacePoint(point, centerX, centerY, rotation),
   ];
 }
@@ -585,6 +658,15 @@ FaceGeometry _buildFace(
             style.mouthY,
             style.mouthWidth,
             style.mouthHeight,
+            style.mouthRotation,
+          )
+        : style.mouthShape == 'open'
+        ? _openMouthBoundary(
+            0,
+            style.mouthY,
+            style.mouthWidth,
+            style.mouthHeight,
+            style.mouthCurve,
             style.mouthRotation,
           )
         : _mouthBoundary(

@@ -304,6 +304,17 @@ class PetBehaviorEngine extends ChangeNotifier {
   double _bounceVelocity = 0.0;
   double _bounce = 0.0;
 
+  /// Secondary motion: a head roll that overshoots and rings out after a hop
+  /// or a touch, the way a body keeps moving after the thing driving it stops.
+  double _wobble = 0.0;
+  double _wobbleVelocity = 0.0;
+
+  /// Seconds until the pet does something unprompted: a hop, a shake, a stretch.
+  double _idleActionTimer = 6.0;
+
+  /// True while the user has the window in their hand.
+  bool _held = false;
+
   double _accumulator = 0.0;
   Duration _lastTick = Duration.zero;
   bool _running = false;
@@ -334,6 +345,8 @@ class PetBehaviorEngine extends ChangeNotifier {
         _blinkProgress < 0 &&
         _bounce == 0.0 &&
         _bounceVelocity == 0.0 &&
+        _wobble == 0.0 &&
+        _wobbleVelocity == 0.0 &&
         _startle == 0.0 &&
         _delight == 0.0 &&
         _playing == 0.0 &&
@@ -432,6 +445,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     _loneliness = math.max(0.0, _loneliness - 0.5);
     _sinceInteraction = 0.0;
     if (!_reducedMotion && _animations) _bounceVelocity = -150.0;
+    _rock(3.5);
     _wake();
   }
 
@@ -449,6 +463,7 @@ class PetBehaviorEngine extends ChangeNotifier {
     _loneliness = math.max(0.0, _loneliness - 0.6);
     _sinceInteraction = 0.0;
     if (!_reducedMotion && _animations) _bounceVelocity = -260.0;
+    _rock(9.0);
     _wake();
   }
 
@@ -465,7 +480,45 @@ class PetBehaviorEngine extends ChangeNotifier {
     _loneliness = 0.0;
     _sinceInteraction = 0.0;
     if (!_reducedMotion && _animations) _bounceVelocity = -110.0;
+    _rock(2.0);
     _wake();
+  }
+
+  /// A single hop, for effects that need the pet to move in time with
+  /// something drawn on screen. Silent under reduced motion.
+  void hop(double strength) {
+    onNeedsFrames?.call();
+    if (!_motionAllowed) return;
+    _bounceVelocity = -strength;
+    _rock(strength / 40);
+  }
+
+  /// Kicks the head roll one way or the other; it rings out on its own.
+  void _rock(double impulse) {
+    if (!_motionAllowed) return;
+    final side = _random.nextBool() ? 1.0 : -1.0;
+    _wobbleVelocity += side * impulse;
+  }
+
+  /// The user picked the window up. The pet is startled and then hangs there.
+  void grab() {
+    onNeedsFrames?.call();
+    _held = true;
+    _startle = 1.0;
+    _attention = 1.0;
+    _arousal = math.min(1.0, _arousal + 0.4);
+    _quietSeconds = 0.0;
+    _rock(7.0);
+    _wake();
+  }
+
+  /// The window was set down again: a small landing, and relief.
+  void release() {
+    onNeedsFrames?.call();
+    _held = false;
+    _delight = math.max(_delight, 0.6);
+    if (_motionAllowed) _bounceVelocity = 120.0;
+    _rock(5.0);
   }
 
   /// The user took a break. The companion is glad of it.
@@ -938,7 +991,9 @@ class PetBehaviorEngine extends ChangeNotifier {
   }
 
   void _updateImpulses(double dt) {
-    _startle = _decay(_startle, 2.4, dt);
+    _updateWobble(dt);
+    _updateIdleAction(dt);
+    _startle = _decay(_startle, _held ? 0.0 : 2.4, dt);
     _delight = _decay(_delight, 1.6, dt);
     // Much slower than the others: a game lasts, where a touch is over as
     // soon as the hand lifts. This rate keeps the pet visibly excited for
@@ -963,6 +1018,49 @@ class PetBehaviorEngine extends ChangeNotifier {
     if (_bounce.abs() < 0.05 && _bounceVelocity.abs() < 0.5) {
       _bounce = 0.0;
       _bounceVelocity = 0.0;
+    }
+  }
+
+  void _updateWobble(double dt) {
+    if (!_motionAllowed) {
+      _wobble = 0.0;
+      _wobbleVelocity = 0.0;
+      return;
+    }
+    // A held pet dangles and swings; otherwise a lightly damped spring rings
+    // the roll out over about a second.
+    final target = _held ? math.sin(_clock.inMilliseconds / 260.0) * 0.12 : 0.0;
+    _wobbleVelocity +=
+        ((target - _wobble) * 120.0 - _wobbleVelocity * 5.5) * dt;
+    _wobble += _wobbleVelocity * dt;
+    if ((_wobble - target).abs() < 0.0008 && _wobbleVelocity.abs() < 0.01) {
+      _wobble = target;
+      _wobbleVelocity = 0.0;
+    }
+  }
+
+  /// Now and then, with nobody touching it, the pet does something of its own:
+  /// a small hop, a shake of the head, a stretch. This is what separates a
+  /// living thing sitting there from a picture that breathes.
+  void _updateIdleAction(double dt) {
+    if (!_idleMotion || _held) return;
+    if (_quietSeconds > _drowsyAfter) return; // Dozing pets do not fidget.
+    _idleActionTimer -= dt;
+    if (_idleActionTimer > 0) return;
+    _idleActionTimer = 7.0 + _random.nextDouble() * 12.0;
+
+    switch (_random.nextInt(4)) {
+      case 0:
+        _bounceVelocity = -70.0;
+        _rock(2.5);
+      case 1:
+        _rock(6.0); // A quick shake of the head.
+      case 2:
+        _bounceVelocity = 40.0; // A stretch: sinks, then rises.
+        _attention = math.max(_attention, 0.5);
+      default:
+        _rock(3.0);
+        _idleGazeTimer = 0.0; // Looks somewhere else.
     }
   }
 
@@ -1020,7 +1118,11 @@ class PetBehaviorEngine extends ChangeNotifier {
     }
     // A game outranks everything except a fright, and outlasts it too.
     if (_playing > 0.2) {
-      return state(PetEmotion.excited, 0.55 + _playing * 0.45);
+      return state(PetEmotion.playful, 0.55 + _playing * 0.45);
+    }
+    // Rapid attention winds the pet up past mere contentment: it laughs.
+    if (_delight > 0.25 && _arousal > 0.78) {
+      return state(PetEmotion.laughing, 0.7 + _delight * 0.3);
     }
     if (mood == CompanionMood.happy ||
         mood == CompanionMood.encouraging ||
@@ -1098,8 +1200,12 @@ class PetBehaviorEngine extends ChangeNotifier {
           : 1.0 +
                 (_idleMotion ? breath * 0.012 : 0.0) +
                 _delight * 0.05 -
-                _startle * 0.03,
-      tilt: _tilt + _travel.dx * 0.11,
+                _startle * 0.03 +
+                // Squash and stretch: narrower and taller in the air, wider
+                // and shorter as it lands. This is most of what makes a hop
+                // read as a body rather than a sticker moving up and down.
+                (_bounce * 0.0045).clamp(-0.14, 0.16),
+      tilt: _tilt + _travel.dx * 0.11 + _wobble,
       arousal: _arousal.clamp(0.0, 1.0),
       attention: _attention.clamp(0.0, 1.0),
       activity: _activity(),

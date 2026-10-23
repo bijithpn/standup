@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 import 'package:breakmate/features/companion/avatar3d/avatar_face_expression.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_geometry.dart';
@@ -11,7 +12,6 @@ import 'package:breakmate/features/companion/avatar3d/avatar_scene_style.dart';
 import 'package:breakmate/features/companion/avatar3d/species_face.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_palette_mapper.dart';
 import 'package:breakmate/features/companion/behavior/pet_behavior_snapshot.dart';
-import 'package:breakmate/features/companion/behavior/pet_emotion.dart';
 import 'package:breakmate/features/companion/domain/avatar_palette.dart';
 
 /// Asks [Avatar3DView] to use the card colour the scene was authored with.
@@ -84,7 +84,8 @@ class Avatar3DView extends StatefulWidget {
   State<Avatar3DView> createState() => _Avatar3DViewState();
 }
 
-class _Avatar3DViewState extends State<Avatar3DView> {
+class _Avatar3DViewState extends State<Avatar3DView>
+    with SingleTickerProviderStateMixin {
   /// Below this, a pose change is not worth a rebuild — it would not move the
   /// silhouette by a visible amount.
   static const double _poseEpsilon = 0.004;
@@ -93,15 +94,55 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   AvatarGeometry? _geometry;
   double _builtYaw = double.nan;
   double _builtPitch = double.nan;
-  double _builtBlink = double.nan;
-  PetEmotion? _builtEmotion;
-  double _builtIntensity = double.nan;
+  AvatarFaceStyle? _builtFace;
   Rect? _fitBounds;
+
+  /// The expression as drawn, easing toward the one the pet is feeling.
+  ///
+  /// The behaviour engine changes emotion in one step, and drawing that
+  /// directly made the face pop between shapes. This is the same face, arrived
+  /// at over a fraction of a second. Blinking is applied afterwards, outside
+  /// the easing, because a blink is quick on purpose.
+  AvatarFaceStyle? _shownFace;
+  late final Ticker _faceTicker;
+  Duration _lastFaceTick = Duration.zero;
+
+  /// Seconds for the face to cover most of the way to a new expression.
+  static const double _faceEaseSeconds = 0.11;
+
+  void _easeFace(Duration elapsed) {
+    final target = _targetFace;
+    final shown = _shownFace;
+    if (target == null || shown == null) {
+      _faceTicker.stop();
+      return;
+    }
+    final dt = (elapsed - _lastFaceTick).inMicroseconds / 1e6;
+    _lastFaceTick = elapsed;
+    final k = 1 - math.exp(-dt.clamp(0.0, 0.1) / _faceEaseSeconds);
+    final next = shown.lerpTo(target, k);
+    if (next.isCloseTo(target)) {
+      _shownFace = target;
+      _faceTicker.stop();
+    } else {
+      _shownFace = next;
+    }
+    if (mounted) setState(() {});
+  }
+
+  AvatarFaceStyle? _targetFace;
 
   @override
   void initState() {
     super.initState();
+    _faceTicker = createTicker(_easeFace);
     _resolveScene();
+  }
+
+  @override
+  void dispose() {
+    _faceTicker.dispose();
+    super.dispose();
   }
 
   @override
@@ -114,6 +155,7 @@ class _Avatar3DViewState extends State<Avatar3DView> {
       _geometry = null;
       _fitBounds = null;
       _builtYaw = double.nan;
+      _shownFace = null;
       _resolveScene();
     }
   }
@@ -165,12 +207,29 @@ class _Avatar3DViewState extends State<Avatar3DView> {
       viewState: base.copyWith(yaw: yaw, pitch: pitch, roll: roll),
       // The face is where the companion says what it feels. Nothing else has
       // to: no caption, no badge, no colour code.
-      faceStyle: expressFace(
-        scene.faceStyle,
-        snapshot.emotion,
-        blink: snapshot.blink,
-      ),
+      faceStyle: _expressedFace(scene, snapshot),
     );
+  }
+
+  /// The face to draw this frame: the eased expression, then the blink.
+  AvatarFaceStyle _expressedFace(
+    AvatarScene scene,
+    PetBehaviorSnapshot snapshot,
+  ) {
+    final target = expressFace(scene.faceStyle, snapshot.emotion);
+    _targetFace = target;
+
+    final shown = _shownFace;
+    if (shown == null) {
+      _shownFace = target;
+    } else if (!shown.isCloseTo(target) && !_faceTicker.isActive) {
+      // Keeps easing even when the pet holds still and the widget is not being
+      // rebuilt for any other reason.
+      _lastFaceTick = Duration.zero;
+      _faceTicker.start();
+    }
+
+    return (_shownFace ?? target).withEyeOpenness(1 - snapshot.blink);
   }
 
   /// The pose the pet rests in. The scenes were authored at a three-quarter
@@ -187,16 +246,14 @@ class _Avatar3DViewState extends State<Avatar3DView> {
   AvatarGeometry? _geometryFor(AvatarScene posed) {
     final yaw = posed.viewState.yaw;
     final pitch = posed.viewState.pitch;
-    final blink = widget.snapshot.blink;
-    final emotion = widget.snapshot.emotion;
+    final face = posed.faceStyle;
 
     final cached = _geometry;
     if (cached != null &&
         (yaw - _builtYaw).abs() < _poseEpsilon &&
         (pitch - _builtPitch).abs() < _poseEpsilon &&
-        (blink - _builtBlink).abs() < 0.02 &&
-        emotion.emotion == _builtEmotion &&
-        (emotion.intensity - _builtIntensity).abs() < 0.04) {
+        _builtFace != null &&
+        face.isCloseTo(_builtFace!, epsilon: 0.08)) {
       return cached;
     }
 
@@ -204,9 +261,7 @@ class _Avatar3DViewState extends State<Avatar3DView> {
     _geometry = built;
     _builtYaw = yaw;
     _builtPitch = pitch;
-    _builtBlink = blink;
-    _builtEmotion = emotion.emotion;
-    _builtIntensity = emotion.intensity;
+    _builtFace = face;
     return built;
   }
 

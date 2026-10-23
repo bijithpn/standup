@@ -275,20 +275,33 @@ void main() {
     });
   });
 
+  group('laughing', () {
+    test('rapid petting wins a laugh rather than just a smile', () {
+      final engine = _engine();
+      addTearDown(engine.dispose);
+
+      for (var i = 0; i < 3; i++) {
+        engine.pet();
+      }
+      _advance(engine, 0.3);
+      expect(engine.snapshot.emotion.emotion, PetEmotion.laughing);
+    });
+  });
+
   group('playing and feeding', () {
-    test('a game leaves the pet excited, and keeps it there a while', () {
+    test('a game leaves the pet playful, and keeps it there a while', () {
       final engine = _engine();
       addTearDown(engine.dispose);
 
       engine.play();
       final now = _advance(engine, 1.0);
-      expect(engine.snapshot.emotion.emotion, PetEmotion.excited);
+      expect(engine.snapshot.emotion.emotion, PetEmotion.playful);
       expect(engine.snapshot.activity, PetActivity.playful);
 
       // Still wound up half a minute later. A game that evaporates in two
       // seconds is a button press, not play.
       _advance(engine, 30.0, from: now);
-      expect(engine.snapshot.emotion.emotion, PetEmotion.excited);
+      expect(engine.snapshot.emotion.emotion, PetEmotion.playful);
     });
 
     test('a game wears off eventually', () {

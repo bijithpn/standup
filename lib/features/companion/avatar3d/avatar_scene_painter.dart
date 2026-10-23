@@ -77,19 +77,51 @@ class AvatarScenePainter extends CustomPainter {
 
     if (showShadow && scene.showAvatarShadow) _paintShadow(canvas);
 
+    // Outlines first, every part's, then the fills over the top. The strokes
+    // are centred on each silhouette, so what survives the fills is only the
+    // creature's outer contour. Stroking each part just before filling it left
+    // a full ring around every cheek, muzzle and ear on the head — goggles
+    // around the eyes of the hamster, a box around the capybara's mouth. The
+    // editor does the same: one outline around the whole.
+    for (final part in geometry.parts) {
+      _paintOutline(canvas, part);
+    }
+
+    // Parts that stand proud of the face and have to stay in front of the
+    // head's own markings: a beak is not covered by a belly patch.
+    bool standsProud(PartGeometry part) =>
+        _frontParts.hasMatch(part.part.id) &&
+        part.part.id != geometry.facePartId;
+
     PartGeometry? faceHost;
     for (final part in geometry.parts) {
+      if (standsProud(part)) continue;
+      _paintPart(canvas, part);
+      if (part.part.id == geometry.facePartId) {
+        faceHost = part;
+      } else {
+        _paintMarkings(canvas, part);
+      }
+    }
+    // The head's own markings go over the cheeks and muzzle, which are separate
+    // parts drawn after the head: they hid the cream cheek and muzzle patches
+    // the illustrator put on the head to sit over them, and painting the face
+    // straight after the head let them cover the eyes on a chinchilla, hamster
+    // or seal.
+    if (faceHost != null) _paintMarkings(canvas, faceHost);
+    for (final part in geometry.parts) {
+      if (!standsProud(part)) continue;
       _paintPart(canvas, part);
       _paintMarkings(canvas, part);
-      if (part.part.id == geometry.facePartId) faceHost = part;
     }
-    // The face goes on last. Cheeks, muzzles and snouts are separate parts
-    // drawn after the head, and painting the face straight after its host let
-    // them cover the eyes completely on a chinchilla, hamster or seal.
     if (faceHost != null) _paintFace(canvas, faceHost);
 
     canvas.restore();
   }
+
+  static final RegExp _frontParts = RegExp(
+    r'^(beak|bill|snout|nostril|tooth|teeth|forelock)',
+  );
 
   /// The head's largest dimension in scene units, or 0 if there is no head.
   /// A head's longest side barely changes as it turns, so this does not make
@@ -126,22 +158,25 @@ class AvatarScenePainter extends CustomPainter {
     canvas.restore();
   }
 
+  void _paintOutline(Canvas canvas, PartGeometry geometry) {
+    if (!showOutline || !scene.showOutline || scene.outlineStyle.width <= 0) {
+      return;
+    }
+    final outline = scene.outlineStyle;
+    canvas.drawPath(
+      geometry.outline,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = outline.width
+        ..strokeJoin = StrokeJoin.round
+        ..color = outline.color.withValues(
+          alpha: (outline.opacity / 100).clamp(0, 1),
+        ),
+    );
+  }
+
   void _paintPart(Canvas canvas, PartGeometry geometry) {
     final part = geometry.part;
-
-    if (showOutline && scene.showOutline && scene.outlineStyle.width > 0) {
-      final outline = scene.outlineStyle;
-      canvas.drawPath(
-        geometry.outline,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = outline.width
-          ..strokeJoin = StrokeJoin.round
-          ..color = outline.color.withValues(
-            alpha: (outline.opacity / 100).clamp(0, 1),
-          ),
-      );
-    }
 
     // A solid base under the cells: the cells only cover the lit hemisphere,
     // and without this the silhouette's edge shows canvas through the seams.

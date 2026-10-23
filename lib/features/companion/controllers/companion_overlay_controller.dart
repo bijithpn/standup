@@ -199,6 +199,10 @@ class CompanionOverlayController extends ChangeNotifier {
       case 'pipReady':
         final ready = _pipReady;
         if (ready != null && !ready.isCompleted) ready.complete();
+      case 'closeCompanion':
+        // The window's own close button. Treated as turning the companion off,
+        // so the switch in Settings matches and can bring it back.
+        unawaited(toggleCompanion(false));
       case 'keepOnScreen':
         final value = event.metadata?['value'];
         if (value is bool) unawaited(changeKeepOnScreen(value));

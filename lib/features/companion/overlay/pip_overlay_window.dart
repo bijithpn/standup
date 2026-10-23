@@ -24,6 +24,7 @@ import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/overlay/mouse_hit_policy.dart';
 import 'package:breakmate/features/companion/avatar3d/avatar_3d_view.dart';
+import 'package:breakmate/features/companion/presentation/widgets/pet_interaction_effect.dart';
 import 'package:breakmate/features/companion/presentation/widgets/pet_stage.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_loader.dart';
@@ -71,6 +72,9 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
   /// so the simulation never sees time jump backwards.
   final Stopwatch _clock = Stopwatch()..start();
   Timer? _restTimer;
+  final List<Timer> _hopTimers = <Timer>[];
+  PetInteractionKind? _effectKind;
+  int _effectSeq = 0;
   StreamSubscription<CursorSample>? _cursorSub;
   Timer? _viewportTimer;
   Duration _lastFrameElapsed = Duration.zero;
@@ -180,6 +184,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     _channel.setMethodCallHandler(null);
     _viewportTimer?.cancel();
     _restTimer?.cancel();
+    _cancelHops();
     _cursorSub?.cancel();
     _wanderer.dispose();
     _ticker.dispose();
@@ -575,6 +580,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     if (!_pipDraggableClickable || _isDraggingWindow) return;
     _isDraggingWindow = true;
     _wanderer.suspend();
+    _engine.grab();
 
     try {
       if (!_acceptsMouse) {
@@ -586,6 +592,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
       ErrorHandler().handleError(e, st);
     } finally {
       _isDraggingWindow = false;
+      _engine.release();
       await _syncViewport();
       _wanderer.resume();
     }
@@ -600,10 +607,13 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     switch (wish) {
       case PetWish.petting:
         _engine.pet();
+        _playEffect(PetInteractionKind.pet);
       case PetWish.play:
         _engine.play();
+        _playEffect(PetInteractionKind.play);
       case PetWish.treat:
         _engine.feed();
+        _playEffect(PetInteractionKind.treat);
       case PetWish.rest:
         _engine.onBreakTaken();
         _engine.pet();
@@ -613,6 +623,27 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     }
     // Whatever just happened, the pet is now busy with the user.
     _wanderer.suspend();
+  }
+
+  /// Draws the prop for [kind] over the pet and hops the pet in time with it.
+  void _playEffect(PetInteractionKind kind) {
+    _cancelHops();
+    setState(() {
+      _effectKind = kind;
+      _effectSeq++;
+    });
+    for (final hop in kind.hops) {
+      _hopTimers.add(
+        Timer(kind.duration * hop.at, () => _engine.hop(hop.strength)),
+      );
+    }
+  }
+
+  void _cancelHops() {
+    for (final timer in _hopTimers) {
+      timer.cancel();
+    }
+    _hopTimers.clear();
   }
 
   void _report(String interactionType) {
@@ -638,8 +669,23 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
     unawaited(NativeBridge.focusApp());
   }
 
+  /// Closing the window turns the companion off, so Settings agrees with what
+  /// is on screen and offers the switch to bring it back. Hiding the window
+  /// alone left it reading "active" with nothing to click.
   Future<void> _handleClose() async {
     SimplePrefs.instance.flush();
+    try {
+      await IpcBridge.instance.dispatch(
+        IpcEvent.companionInteraction(
+          interactionType: 'closeCompanion',
+          metadata: <String, dynamic>{'petName': _petName},
+        ),
+      );
+    } catch (e, st) {
+      ErrorHandler().handleError(e, st);
+    }
+    // The host hides the window itself once the setting is saved. This covers
+    // the host being unreachable.
     await NativeBridge.hidePipWindow();
   }
 
@@ -725,6 +771,18 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
               clipBehavior: Clip.none,
               children: <Widget>[
                 Positioned.fill(child: _buildPet()),
+                if (_effectKind != null && _stageLocalRect != null)
+                  Positioned.fromRect(
+                    rect: _stageLocalRect!,
+                    child: PetInteractionEffect(
+                      key: ValueKey<int>(_effectSeq),
+                      kind: _effectKind!,
+                      size: _stageLocalRect!.width,
+                      onDone: () {
+                        if (mounted) setState(() => _effectKind = null);
+                      },
+                    ),
+                  ),
                 Positioned.fill(child: _buildChrome()),
               ],
             ),
@@ -877,7 +935,7 @@ class _PiPOverlayWindowState extends State<PiPOverlayWindow>
                       icon: Icons.close_rounded,
                       background: _chromeBackground,
                       foreground: _chromeForeground,
-                      tooltip: 'Hide companion',
+                      tooltip: 'Turn companion off',
                       onTap: _handleClose,
                     ),
                   ],

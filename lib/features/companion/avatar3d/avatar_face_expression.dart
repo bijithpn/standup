@@ -50,18 +50,23 @@ class _Mouth {
     this.curve = 0,
     this.width = 1.0,
     this.height = 1.0,
+    this.rotation = 0,
     this.shape,
   });
 
   final bool enabled;
 
-  /// `ellipse` for an open mouth, null to keep the authored shape.
+  /// `ellipse` for a round "o", `open` for a grin with the mouth open, null to
+  /// keep the authored stroke.
   final String? shape;
 
   /// -100..100. Positive smiles, negative frowns.
   final double curve;
   final double width;
   final double height;
+
+  /// Degrees the whole mouth is turned, for a lopsided grin.
+  final double rotation;
 }
 
 class _Highlight {
@@ -74,54 +79,59 @@ class _Highlight {
 const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
   // Resting: round open eyes, a small calm smile.
   PetEmotion.content: _Expression(
-    eyeHeight: 1.0,
-    mouth: _Mouth(enabled: true, curve: 35, width: 0.8, height: 0.9),
+    mouth: _Mouth(enabled: true, curve: 45, width: 0.9, height: 0.8),
     highlight: _Highlight(enabled: true, size: 1.0),
   ),
 
-  // Delighted: eyes smile shut into upturned dashes, and a wide open grin.
+  // Pleased: eyes crinkle into upturned arcs over a wide, clean smile.
   PetEmotion.happy: _Expression(
-    eyeHeight: 0.3,
-    eyeWidth: 1.45,
+    eyeHeight: 0.34,
+    eyeWidth: 1.4,
     eyeRoundness: 1.3,
     outerTilt: -14,
-    mouth: _Mouth(enabled: true, curve: 95, width: 1.9, height: 2.1),
+    mouth: _Mouth(enabled: true, curve: 90, width: 1.5, height: 0.9),
     highlight: _Highlight(enabled: false),
   ),
 
-  // Bright and bouncy: big round eyes full of sparkle, a wide grin.
+  // Bright and bouncy: big round eyes full of sparkle, a wide open grin.
   PetEmotion.excited: _Expression(
-    eyeHeight: 1.3,
-    eyeWidth: 1.25,
-    eyeGap: 0.95,
+    eyeHeight: 1.28,
+    eyeWidth: 1.22,
+    eyeGap: 0.96,
     eyeRoundness: 1.6,
-    mouth: _Mouth(enabled: true, curve: 100, width: 1.6, height: 1.9),
+    mouth: _Mouth(
+      enabled: true,
+      shape: 'open',
+      curve: 55,
+      width: 1.3,
+      height: 1.9,
+    ),
     highlight: _Highlight(enabled: true, size: 1.9),
   ),
 
-  // Interested: bigger, rounder eyes with a bright catchlight, and a tiny "o".
+  // Interested: bigger, rounder eyes with a bright catchlight, a tiny "o".
   PetEmotion.curious: _Expression(
-    eyeHeight: 1.22,
-    eyeWidth: 1.12,
+    eyeHeight: 1.2,
+    eyeWidth: 1.1,
     eyeRoundness: 1.4,
     outerTilt: -3,
     mouth: _Mouth(
       enabled: true,
       shape: 'ellipse',
       curve: 0,
-      width: 0.3,
-      height: 0.5,
+      width: 0.4,
+      height: 0.9,
     ),
     highlight: _Highlight(enabled: true, size: 1.7),
   ),
 
-  // The warmest face: huge shiny eyes, a soft smile and rosy cheeks.
+  // The warmest face: huge shiny eyes and a soft smile with rosy cheeks.
   PetEmotion.affectionate: _Expression(
-    eyeHeight: 1.3,
-    eyeWidth: 1.3,
+    eyeHeight: 1.28,
+    eyeWidth: 1.28,
     eyeGap: 1.05,
     eyeRoundness: 1.7,
-    mouth: _Mouth(enabled: true, curve: 70, width: 0.9, height: 1.0),
+    mouth: _Mouth(enabled: true, curve: 75, width: 1.1, height: 0.9),
     highlight: _Highlight(enabled: true, size: 2.2),
   ),
 
@@ -129,11 +139,10 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
   // miserable.
   PetEmotion.lonely: _Expression(
     eyeHeight: 1.1,
-    eyeWidth: 1.0,
     eyeGap: 1.08,
     eyeRoundness: 1.4,
     outerTilt: 16,
-    mouth: _Mouth(enabled: true, curve: -55, width: 0.7, height: 0.8),
+    mouth: _Mouth(enabled: true, curve: -70, width: 0.85, height: 0.8),
     highlight: _Highlight(enabled: true, size: 1.6),
   ),
 
@@ -142,7 +151,7 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
     eyeHeight: 0.5,
     eyeWidth: 1.05,
     outerTilt: 9,
-    mouth: _Mouth(enabled: true, curve: -12, width: 0.6, height: 0.6),
+    mouth: _Mouth(enabled: true, curve: -15, width: 0.7, height: 0.7),
     highlight: _Highlight(enabled: false),
   ),
 
@@ -156,20 +165,53 @@ const Map<PetEmotion, _Expression> _expressions = <PetEmotion, _Expression>{
     highlight: _Highlight(enabled: false),
   ),
 
-  // Wide round eyes, a small "o" of a mouth.
+  // Wide round eyes, a round "o" of a mouth.
   PetEmotion.startled: _Expression(
-    eyeHeight: 1.4,
+    eyeHeight: 1.45,
     eyeWidth: 1.2,
     eyeGap: 0.95,
     eyeRoundness: 1.7,
     mouth: _Mouth(
       enabled: true,
       shape: 'ellipse',
-      curve: -10,
-      width: 0.4,
-      height: 1.0,
+      curve: 0,
+      width: 0.55,
+      height: 1.5,
     ),
     highlight: _Highlight(enabled: true, size: 1.4),
+  ),
+
+  // Cheeky: one corner of the grin higher than the other, eyes a touch
+  // narrowed and tilted, as if it has just thought of something.
+  PetEmotion.playful: _Expression(
+    eyeHeight: 0.92,
+    eyeWidth: 1.1,
+    eyeRoundness: 1.4,
+    outerTilt: -10,
+    mouth: _Mouth(
+      enabled: true,
+      curve: 80,
+      width: 1.25,
+      height: 0.95,
+      rotation: -9,
+    ),
+    highlight: _Highlight(enabled: true, size: 1.8),
+  ),
+
+  // Laughing out loud: eyes shut in happy arcs, mouth wide open.
+  PetEmotion.laughing: _Expression(
+    eyeHeight: 0.22,
+    eyeWidth: 1.5,
+    eyeRoundness: 1.3,
+    outerTilt: -16,
+    mouth: _Mouth(
+      enabled: true,
+      shape: 'open',
+      curve: 70,
+      width: 1.45,
+      height: 2.1,
+    ),
+    highlight: _Highlight(enabled: false),
   ),
 };
 
@@ -180,6 +222,8 @@ double blushFor(PetEmotionState state) {
     PetEmotion.affectionate => 1.0,
     PetEmotion.happy => 0.8,
     PetEmotion.excited => 0.55,
+    PetEmotion.playful => 0.5,
+    PetEmotion.laughing => 0.9,
     PetEmotion.content => 0.2,
     PetEmotion.curious => 0.15,
     _ => 0.0,
@@ -234,6 +278,9 @@ AvatarFaceStyle expressFace(
     mouthHeight: mouth == null
         ? face.mouthHeight
         : face.mouthHeight * blend(mouth.height),
+    mouthRotation: mouth == null
+        ? face.mouthRotation
+        : face.mouthRotation + mouth.rotation * t,
     highlightEnabled: highlight == null
         ? face.highlightEnabled
         : highlight.enabled,

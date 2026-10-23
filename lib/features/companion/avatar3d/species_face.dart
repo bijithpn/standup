@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:breakmate/features/companion/avatar3d/avatar_scene.dart';
 
 /// Eyes, nose and mouth sized for each animal's own body.
@@ -117,15 +119,31 @@ const Map<String, _Face> _faces = <String, _Face>{
   'cow': _Face(w: 22, h: 32, gap: 64, mouthW: 26),
   'pig': _Face(w: 18, h: 26, gap: 74, mouthW: 28),
   // Birds: the beak is the mouth. Eyes only.
-  'chick': _Face(w: 15, h: 19, gap: 58),
-  'duck': _Face(w: 13, h: 17, gap: 62),
-  'goose': _Face(w: 13, h: 17, gap: 54),
-  'penguin': _Face(w: 17, h: 21, gap: 50),
-  'parrot': _Face(w: 14, h: 17, gap: 42),
+  'chick': _Face(w: 18, h: 22, gap: 58),
+  'duck': _Face(w: 16, h: 21, gap: 62),
+  'goose': _Face(w: 16, h: 21, gap: 54),
+  'penguin': _Face(w: 24, h: 30, gap: 52),
+  'parrot': _Face(w: 18, h: 22, gap: 44),
   'owl': _Face(w: 36, h: 40, gap: 62, tilt: 4),
   // Weather: simple and happy.
   'cloud': _Face(w: 16, h: 20, gap: 50, mouthW: 18, curve: 85),
   'sun': _Face(w: 16, h: 24, gap: 46, mouthW: 22, curve: 75),
+};
+
+const double _minimumEyeScale = 0.75;
+
+/// Species drawn with eyes too small to carry an expression, because a muzzle
+/// or cheeks take most of the face. Their eyes are enlarged past the
+/// illustrator's size, by this much, so that a smile or a start still shows.
+const Map<String, double> _eyeBoost = <String, double>{
+  'capybara': 1.4,
+  'beaver': 1.35,
+  'seal': 1.35,
+  'hedgehog': 1.3,
+  'bun': 1.3,
+  'guinea-pig': 1.15,
+  'hamster': 1.15,
+  'squirrel': 1.15,
 };
 
 /// [base] with the proportions suited to [preset], or [base] unchanged for a
@@ -136,8 +154,17 @@ AvatarFaceStyle tuneFaceForSpecies(String preset, AvatarFaceStyle base) {
   final nose = face.nose;
   return base.tuned(
     // A touch larger than the table: small eyes read as cold, big ones as cute.
-    width: face.w * 1.2,
-    height: face.h * 1.2,
+    // Never smaller than three quarters of what the illustrator drew, though:
+    // the table's character is worth nothing if the eyes are too small for an
+    // expression to be read from them.
+    width: math.max(
+      face.w * 1.2,
+      base.width * math.max(_minimumEyeScale, _eyeBoost[preset] ?? 0),
+    ),
+    height: math.max(
+      face.h * 1.2,
+      base.height * math.max(_minimumEyeScale, _eyeBoost[preset] ?? 0),
+    ),
     gap: face.gap,
     leftEyeRotation: face.tilt,
     rightEyeRotation: -face.tilt,

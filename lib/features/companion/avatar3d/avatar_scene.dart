@@ -315,6 +315,76 @@ class AvatarFaceStyle {
   final double highlightOpacity;
   final double highlightSize;
 
+  /// This face blended toward [other] by [t] (0..1).
+  ///
+  /// Numbers move smoothly; the things that cannot be halfway — whether the
+  /// mouth is there at all, and which shape it is — follow [other] once the
+  /// blend is past the midpoint. Expressions are tweened with this, so a
+  /// change of feeling slides rather than snapping.
+  AvatarFaceStyle lerpTo(AvatarFaceStyle other, double t) {
+    if (t <= 0) return this;
+    if (t >= 1) return other;
+    double mix(double a, double b) => a + (b - a) * t;
+    final late = t >= 0.5;
+    return AvatarFaceStyle(
+      gap: mix(gap, other.gap),
+      width: mix(width, other.width),
+      height: mix(height, other.height),
+      rotation: mix(rotation, other.rotation),
+      leftEyeRotation: mix(leftEyeRotation, other.leftEyeRotation),
+      rightEyeRotation: mix(rightEyeRotation, other.rightEyeRotation),
+      eyeShape: late ? other.eyeShape : eyeShape,
+      eyeRoundness: mix(eyeRoundness, other.eyeRoundness),
+      noseEnabled: noseEnabled,
+      noseShape: noseShape,
+      noseWidth: noseWidth,
+      noseHeight: noseHeight,
+      noseY: noseY,
+      noseRotation: noseRotation,
+      // An absent mouth is treated as a closed, zero-width one, so it grows in
+      // and shrinks away instead of popping.
+      mouthEnabled: mouthEnabled || other.mouthEnabled,
+      mouthShape: late ? other.mouthShape : mouthShape,
+      mouthWidth: mix(
+        mouthEnabled ? mouthWidth : other.mouthWidth * 0.3,
+        other.mouthEnabled ? other.mouthWidth : mouthWidth * 0.3,
+      ),
+      mouthHeight: mix(mouthHeight, other.mouthHeight),
+      mouthY: mix(mouthY, other.mouthY),
+      mouthCurve: mix(mouthCurve, other.mouthCurve),
+      mouthRotation: mix(mouthRotation, other.mouthRotation),
+      highlightEnabled: late ? other.highlightEnabled : highlightEnabled,
+      highlightColor: highlightColor,
+      highlightOffsetX: mix(highlightOffsetX, other.highlightOffsetX),
+      highlightOffsetY: mix(highlightOffsetY, other.highlightOffsetY),
+      highlightOpacity: mix(highlightOpacity, other.highlightOpacity),
+      highlightSize: mix(
+        highlightEnabled ? highlightSize : other.highlightSize * 0.4,
+        other.highlightEnabled ? other.highlightSize : highlightSize * 0.4,
+      ),
+    );
+  }
+
+  /// Whether [other] is close enough to this face that redrawing would change
+  /// nothing anyone could see.
+  bool isCloseTo(AvatarFaceStyle other, {double epsilon = 0.15}) {
+    bool near(double a, double b) => (a - b).abs() < epsilon;
+    return mouthEnabled == other.mouthEnabled &&
+        mouthShape == other.mouthShape &&
+        highlightEnabled == other.highlightEnabled &&
+        near(gap, other.gap) &&
+        near(width, other.width) &&
+        near(height, other.height) &&
+        near(leftEyeRotation, other.leftEyeRotation) &&
+        near(rightEyeRotation, other.rightEyeRotation) &&
+        near(eyeRoundness, other.eyeRoundness) &&
+        near(mouthWidth, other.mouthWidth) &&
+        near(mouthHeight, other.mouthHeight) &&
+        near(mouthCurve, other.mouthCurve) &&
+        near(mouthRotation, other.mouthRotation) &&
+        near(highlightSize, other.highlightSize);
+  }
+
   /// Scales the eye openings, for blinking. 0 is shut, 1 is the authored size.
   AvatarFaceStyle withEyeOpenness(double openness) {
     if (openness >= 0.999) return this;
@@ -390,6 +460,7 @@ class AvatarFaceStyle {
     double? mouthCurve,
     double? mouthWidth,
     double? mouthHeight,
+    double? mouthRotation,
     bool? highlightEnabled,
     double? highlightSize,
   }) {
@@ -414,7 +485,7 @@ class AvatarFaceStyle {
       mouthHeight: mouthHeight ?? this.mouthHeight,
       mouthY: mouthY,
       mouthCurve: mouthCurve ?? this.mouthCurve,
-      mouthRotation: mouthRotation,
+      mouthRotation: mouthRotation ?? this.mouthRotation,
       highlightEnabled: highlightEnabled ?? this.highlightEnabled,
       highlightColor: highlightColor,
       highlightOffsetX: highlightOffsetX,

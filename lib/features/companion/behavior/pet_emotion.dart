@@ -31,13 +31,21 @@ enum PetEmotion {
   sleepy,
 
   /// A fright, from sudden movement nearby. Always brief.
-  startled;
+  startled,
+
+  /// In the middle of a game: cheeky, a little lopsided, up to something.
+  playful,
+
+  /// Properly tickled. Eyes screwed shut, mouth wide open.
+  laughing;
 
   /// Whether the emotion is a pleasant one, for choosing warm or cool accents.
   bool get isPositive =>
       this == PetEmotion.happy ||
       this == PetEmotion.excited ||
       this == PetEmotion.affectionate ||
+      this == PetEmotion.playful ||
+      this == PetEmotion.laughing ||
       this == PetEmotion.content;
 
   /// Whether this state should hold the face still rather than animate it.
