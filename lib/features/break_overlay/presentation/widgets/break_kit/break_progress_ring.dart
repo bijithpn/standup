@@ -30,6 +30,10 @@ class BreakProgressRing extends StatefulWidget {
   final double tickGap;
   final Color? tickColor;
 
+  /// When true, ticks that have *not* yet elapsed are lit and elapsed ticks
+  /// fade to [tickColor] (a countdown). Default lights the elapsed ones.
+  final bool ticksRemainingLit;
+
   /// Widen the last [taperDegrees] of the arc from [strokeWidth] to
   /// [taperTo], ending in a round cap.
   final double taperDegrees;
@@ -62,6 +66,7 @@ class BreakProgressRing extends StatefulWidget {
     this.tickWidth = 1.5,
     this.tickGap = 12,
     this.tickColor,
+    this.ticksRemainingLit = false,
     this.taperDegrees = 0,
     this.taperTo = 4,
     this.cometDegrees = 0,
@@ -124,6 +129,7 @@ class _BreakProgressRingState extends State<BreakProgressRing>
             tickWidth: w.tickWidth,
             tickGap: w.tickGap,
             tickColor: w.tickColor ?? w.trackColor,
+            ticksRemainingLit: w.ticksRemainingLit,
             taperDegrees: w.taperDegrees,
             taperTo: w.taperTo,
             cometDegrees: w.cometDegrees,
@@ -149,6 +155,7 @@ class _RingPainter extends CustomPainter {
   final double tickWidth;
   final double tickGap;
   final Color tickColor;
+  final bool ticksRemainingLit;
   final double taperDegrees;
   final double taperTo;
   final double cometDegrees;
@@ -175,6 +182,7 @@ class _RingPainter extends CustomPainter {
     required this.tickWidth,
     required this.tickGap,
     required this.tickColor,
+    required this.ticksRemainingLit,
     required this.taperDegrees,
     required this.taperTo,
     required this.cometDegrees,
@@ -260,7 +268,13 @@ class _RingPainter extends CustomPainter {
       final a = startAngle + sweep * (n == 0 ? 0 : i / n);
       final cs = math.cos(a);
       final sn = math.sin(a);
-      _tick.color = i < litCount ? color : tickColor;
+      if (ticksRemainingLit) {
+        // Elapsed ticks fade from the accent to the track colour.
+        final e = (p * tickCount - i).clamp(0.0, 1.0);
+        _tick.color = Color.lerp(color, tickColor, e)!;
+      } else {
+        _tick.color = i < litCount ? color : tickColor;
+      }
       canvas.drawLine(
         Offset(center.dx + cs * inner, center.dy + sn * inner),
         Offset(center.dx + cs * outer, center.dy + sn * outer),
@@ -281,6 +295,7 @@ class _RingPainter extends CustomPainter {
       old.tickWidth != tickWidth ||
       old.tickGap != tickGap ||
       old.tickColor != tickColor ||
+      old.ticksRemainingLit != ticksRemainingLit ||
       old.taperDegrees != taperDegrees ||
       old.taperTo != taperTo ||
       old.cometDegrees != cometDegrees ||
