@@ -679,6 +679,8 @@ void mainCommon(FlavorConfig config) async {
             sl<DailyResetService>().onSystemWake();
           } else if (call.method == 'onAvatarSaved') {
             final urlParams = call.arguments?['urlParams'] as String?;
+            // The overlay window keeps its own end time; send the extended one.
+            sl<BreakController>().refreshSettings();
             if (urlParams != null &&
                 sl.isRegistered<CompanionOverlayController>()) {
               await sl<CompanionOverlayController>().saveAvatarUrlParams(
