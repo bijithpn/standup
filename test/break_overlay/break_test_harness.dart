@@ -120,6 +120,34 @@ Future<void> loadInter() async {
     loader.addFont(Future.value(ByteData.sublistView(bytes)));
   }
   await loader.load();
+  await _loadIconFont('MaterialIcons', _materialIconsPath());
+  await _loadIconFont(
+    'packages/lucide_icons_flutter/Lucide',
+    'packages/lucide_icons_flutter/assets/lucide.ttf',
+  );
+}
+
+String _materialIconsPath() {
+  final root =
+      Platform.environment['FLUTTER_ROOT'] ??
+      File(Platform.resolvedExecutable).parent.parent.parent.parent.parent.path;
+  return '$root/bin/cache/artifacts/material_fonts/MaterialIcons-Regular.otf';
+}
+
+Future<void> _loadIconFont(String family, String path) async {
+  try {
+    final file = File(path);
+    final ByteData data;
+    if (file.existsSync()) {
+      data = ByteData.sublistView(file.readAsBytesSync());
+    } else {
+      data = await rootBundle.load(path);
+    }
+    final loader = FontLoader(family)..addFont(Future.value(data));
+    await loader.load();
+  } catch (_) {
+    // Icons stay as boxes in goldens; layout is unaffected.
+  }
 }
 
 const shortBreak = BreakModel(

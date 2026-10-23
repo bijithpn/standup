@@ -12,12 +12,7 @@ void main() {
 
   for (final id in allBreakTemplateIds) {
     testWidgets('golden: $id', (tester) async {
-      await pumpBreakTemplate(
-        tester,
-        id,
-        preview: true,
-        onSkip: () {},
-      );
+      await pumpBreakTemplate(tester, id, preview: true, onSkip: () {});
       await expectLater(
         find.byType(MaterialApp),
         matchesGoldenFile('goldens/$id.png'),
