@@ -72,3 +72,6 @@ docs/
 
 # Release installer output (built by scripts/create_dmg.sh and CI)
 /release_dmg/
+
+# Flutter golden-test diff artifacts
+test/**/failures/
