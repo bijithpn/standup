@@ -120,6 +120,21 @@ Future<void> loadInter() async {
     loader.addFont(Future.value(ByteData.sublistView(bytes)));
   }
   await loader.load();
+  // System monospace faces do not exist under flutter test; alias them to a
+  // real font so goldens show glyphs instead of Ahem boxes.
+  final roboto = File(
+    _materialIconsPath().replaceFirst(
+      'MaterialIcons-Regular.otf',
+      'Roboto-Regular.ttf',
+    ),
+  );
+  if (roboto.existsSync()) {
+    for (final family in ['Menlo', 'Courier', 'Georgia']) {
+      final l = FontLoader(family)
+        ..addFont(Future.value(ByteData.sublistView(roboto.readAsBytesSync())));
+      await l.load();
+    }
+  }
   await _loadIconFont('MaterialIcons', _materialIconsPath());
   await _loadIconFont(
     'packages/lucide_icons_flutter/Lucide',
