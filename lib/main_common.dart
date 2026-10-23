@@ -715,7 +715,10 @@ void mainCommon(FlavorConfig config) async {
         }
 
         try {
-          PackageInfo packageInfo = await PackageInfo.fromPlatform();
+          PackageInfo packageInfo = await PackageInfo.fromPlatform().timeout(
+            const Duration(seconds: 3),
+          );
+          logStartup('package info ready');
           if (packageInfo.appName.isNotEmpty) {
             launchAtStartup.setup(
               appName: packageInfo.appName,
@@ -771,6 +774,7 @@ void mainCommon(FlavorConfig config) async {
               }
             }
           });
+          logStartup('launching BreakMateApp');
           runApp(const BreakMateApp());
         }
       } catch (e, stack) {
