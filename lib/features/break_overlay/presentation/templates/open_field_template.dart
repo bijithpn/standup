@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 class OpenFieldTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -24,160 +26,305 @@ class OpenFieldTemplate extends StatefulWidget {
   State<OpenFieldTemplate> createState() => _OpenFieldTemplateState();
 }
 
-class _OpenFieldTemplateState extends State<OpenFieldTemplate> {
-  String? _imagePath;
+class _OpenFieldTemplateState extends State<OpenFieldTemplate>
+    with TickerProviderStateMixin {
+  /// Light text over a landscape, whatever the theme.
+  static const BreakPalette _field = BreakPalette(
+    canvas: Color(0xFF20324A),
+    canvasRaised: Color(0xFF2B4258),
+    surface: Color(0xFF1F2F40),
+    border: Color(0x33FFFFFF),
+    track: Color(0x33FFFFFF),
+    textPrimary: Color(0xFFF2F4F7),
+    textSecondary: Color(0xFFD7DEE6),
+    textMuted: Color(0xFFC3CCD6),
+    isDark: true,
+  );
+
+  static const List<Color> _sky = [Color(0xFF20324A), Color(0xFF5E7F8F)];
+
+  /// Mist: 30px drift over 20s. Grass: +-3 degree sway over 4s.
+  late final AnimationController _mist = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 20),
+  );
+  late final AnimationController _grass = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 4),
+  );
+
+  ImageProvider? _image;
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
   @override
   void initState() {
     super.initState();
-    _loadImage();
+    _image = _resolveImage();
   }
 
   @override
-  void didUpdateWidget(covariant OpenFieldTemplate oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.settings.customImagePath != widget.settings.customImagePath) {
-      _loadImage();
+  void didUpdateWidget(covariant OpenFieldTemplate old) {
+    super.didUpdateWidget(old);
+    if (old.settings.customImagePath != widget.settings.customImagePath) {
+      setState(() => _image = _resolveImage());
     }
   }
 
-  Future<void> _loadImage() async {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    breakSyncLoop(_mist, context, reverse: true);
+    breakSyncLoop(_grass, context, park: 0.0);
+    final img = _image;
+    if (img != null) BreakImageBackground.precache(context, img);
+  }
+
+  @override
+  void dispose() {
+    _mist.dispose();
+    _grass.dispose();
+    super.dispose();
+  }
+
+  ImageProvider? _resolveImage() {
     final path = widget.settings.customImagePath;
     final isCustomEnabled = path != null && !path.startsWith('disabled:');
     final actualPath = (path != null && path.startsWith('disabled:'))
         ? path.substring(9)
         : path;
-
     if (isCustomEnabled &&
         actualPath != null &&
         actualPath != 'default_path' &&
         File(actualPath).existsSync()) {
-      setState(() {
-        _imagePath = actualPath;
-      });
-    } else {
-      setState(() {
-        _imagePath = null;
-      });
+      return ResizeImage(FileImage(File(actualPath)), width: 2560);
     }
-  }
-
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
-    final isShort = widget.breakInfo.type == BreakType.short;
-    final breakTitle = isShort ? 'Eye rest' : 'Long break';
+    final accent = _kind.accent;
+    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final showTip =
+        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 
-    Widget background;
-    if (_imagePath != null) {
-      background = Image.file(
-        File(_imagePath!),
-        fit: BoxFit.cover,
-        filterQuality: FilterQuality.low,
-      );
-    } else {
-      background = const ColoredBox(color: BreakOverlayTheme.background);
-    }
-
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
-      child: Stack(
+    return BreakScaffold(
+      palette: _field,
+      canvas: _field.canvas,
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: accent,
+      background: Stack(
         fit: StackFit.expand,
         children: [
-          RepaintBoundary(child: background),
+          BreakImageBackground(image: _image, fallback: _sky),
+          // The procedural landscape stands in until (or instead of) a photo.
+          if (_image == null) ...[
+            const CustomPaint(painter: _HillsPainter()),
+            TweenAnimationBuilder<double>(
+              tween: Tween(end: complete ? 1.0 : 0.0),
+              duration: BreakMotion.slow,
+              builder: (context, fade, _) => CustomPaint(
+                painter: _MistPainter(drift: _mist, fade: fade),
+              ),
+            ),
+            CustomPaint(painter: _GrassPainter(sway: _grass)),
+          ],
+          // Bottom scrim keeps the text readable on any image.
           const DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [Colors.transparent, Color(0xBF000000)],
-                stops: [0.3, 1.0],
+                stops: [0.4, 1.0],
               ),
             ),
           ),
-          Column(
-            children: [
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Focal point on the horizon: look at this, far away.
+          Positioned(
+            left: 900 - 40,
+            top: 440 - 34,
+            width: 80,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(2),
+              scale: false,
+              child: ExcludeSemantics(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      breakTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: BreakOverlayTheme.fontFamily,
+                      'LOOK HERE',
+                      maxLines: 1,
+                      softWrap: false,
+                      style: BreakOverlayTheme.micro.copyWith(
+                        color: _field.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      _formatTime(widget.remainingSeconds),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: BreakOverlayTheme.timerFontSizeLg,
-                        fontWeight: FontWeight.w200,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        fontFeatures: [FontFeature.tabularFigures()],
-                        letterSpacing: -2,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: 380,
-                      child: Text(
-                        widget.breakInfo.tip,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: BreakOverlayTheme.fontFamily,
-                          height: 1.5,
-                        ),
+                    Container(
+                      width: 4,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 48),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Row(
-                  children: [
-                    const Spacer(),
-                    if (!widget.settings.strictMode && widget.onSkip != null)
-                      GestureDetector(
-                        onTap: widget.onSkip,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: Text(
-                            'Skip',
-                            style: TextStyle(
-                              color: BreakOverlayTheme.textDim,
-                              fontSize: BreakOverlayTheme.labelFontSize,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: BreakOverlayTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+            ),
+          ),
+          Positioned(
+            left: 64,
+            bottom: 64,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                BreakEntrance(
+                  scale: false,
+                  child: BreakLabel(_kind.label, textAlign: TextAlign.left),
                 ),
-              ),
-              const SizedBox(height: 36),
-            ],
+                const SizedBox(height: 8),
+                BreakEntrance(
+                  delay: BreakEntrance.stagger(1),
+                  scale: false,
+                  child: BreakCountdown(
+                    seconds: widget.remainingSeconds,
+                    textAlign: TextAlign.left,
+                    color: breakClockColor(widget.settings, _field),
+                  ),
+                ),
+                if (showTip) ...[
+                  const SizedBox(height: 12),
+                  BreakEntrance(
+                    delay: BreakEntrance.stagger(2),
+                    scale: false,
+                    child: BreakTip(
+                      widget.breakInfo.tip,
+                      textAlign: TextAlign.left,
+                      maxWidth: 380,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+}
+
+/// Three rolling hills in front of the sky: far, middle, near.
+class _HillsPainter extends CustomPainter {
+  const _HillsPainter();
+
+  static const _hills = [
+    (base: 0.55, amp: 0.05, f: 1.3, p: 0.4, color: Color(0xFF2F5D4A)),
+    (base: 0.63, amp: 0.06, f: 1.0, p: 2.1, color: Color(0xFF3E7A5E)),
+    (base: 0.74, amp: 0.05, f: 0.8, p: 4.0, color: Color(0x9974C69D)),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    for (final h in _hills) {
+      final path = Path()..moveTo(0, size.height);
+      for (var i = 0; i <= 40; i++) {
+        final t = i / 40;
+        final y =
+            size.height * (h.base - h.amp * math.sin(t * math.pi * h.f + h.p));
+        path.lineTo(size.width * t, y);
+      }
+      path
+        ..lineTo(size.width, size.height)
+        ..close();
+      paint.color = h.color;
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HillsPainter old) => false;
+}
+
+class _MistPainter extends CustomPainter {
+  final Animation<double> drift;
+  final double fade;
+
+  final Paint _p = Paint()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 24);
+
+  _MistPainter({required this.drift, required this.fade})
+    : super(repaint: drift);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final dx = 30 * Curves.easeInOutSine.transform(drift.value);
+    _p.color = Colors.white.withValues(alpha: 0.08 * (1 - fade));
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          -60 + dx,
+          size.height * 0.60,
+          size.width + 120,
+          size.height * 0.07,
+        ),
+        const Radius.circular(40),
+      ),
+      _p,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _MistPainter old) => old.fade != fade;
+}
+
+/// 40 blades of grass along the bottom edge, each swaying on its own phase.
+class _GrassPainter extends CustomPainter {
+  final Animation<double> sway;
+
+  static const int _count = 40;
+  late final List<({double x, double h, double phase})> _blades = () {
+    final r = math.Random(5);
+    return [
+      for (var i = 0; i < _count; i++)
+        (
+          x: (i + 0.5 + (r.nextDouble() - 0.5) * 0.6) / _count,
+          h: 20 + r.nextDouble() * 20,
+          phase: r.nextDouble(),
+        ),
+    ];
+  }();
+
+  final Paint _p = Paint()
+    ..color = const Color(0xFF74C69D)
+    ..strokeWidth = 2
+    ..strokeCap = StrokeCap.round;
+
+  _GrassPainter({required this.sway}) : super(repaint: sway);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = size.height / 800;
+    for (final b in _blades) {
+      final angle =
+          3 * math.pi / 180 * math.sin((sway.value + b.phase) * 2 * math.pi);
+      final base = Offset(size.width * b.x, size.height + 2);
+      final len = b.h * k;
+      canvas.drawLine(
+        base,
+        base + Offset(math.sin(angle) * len, -math.cos(angle) * len),
+        _p,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _GrassPainter old) => false;
 }
