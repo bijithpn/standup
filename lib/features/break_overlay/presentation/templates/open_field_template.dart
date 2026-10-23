@@ -28,19 +28,6 @@ class OpenFieldTemplate extends StatefulWidget {
 
 class _OpenFieldTemplateState extends State<OpenFieldTemplate>
     with TickerProviderStateMixin {
-  /// Light text over a landscape, whatever the theme.
-  static const BreakPalette _field = BreakPalette(
-    canvas: Color(0xFF20324A),
-    canvasRaised: Color(0xFF2B4258),
-    surface: Color(0xFF1F2F40),
-    border: Color(0x33FFFFFF),
-    track: Color(0x33FFFFFF),
-    textPrimary: Color(0xFFF2F4F7),
-    textSecondary: Color(0xFFD7DEE6),
-    textMuted: Color(0xFFC3CCD6),
-    isDark: true,
-  );
-
   static const List<Color> _sky = [Color(0xFF20324A), Color(0xFF5E7F8F)];
 
   /// Mist: 30px drift over 20s. Grass: +-3 degree sway over 4s.
@@ -109,8 +96,8 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate>
         widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 
     return BreakScaffold(
-      palette: _field,
-      canvas: _field.canvas,
+      palette: BreakPalette.field,
+      canvas: BreakPalette.field.canvas,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: accent,
@@ -162,7 +149,7 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate>
                       maxLines: 1,
                       softWrap: false,
                       style: BreakOverlayTheme.micro.copyWith(
-                        color: _field.textSecondary,
+                        color: BreakPalette.field.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -196,7 +183,7 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate>
                   child: BreakCountdown(
                     seconds: widget.remainingSeconds,
                     textAlign: TextAlign.left,
-                    color: breakClockColor(widget.settings, _field),
+                    color: breakClockColor(widget.settings, BreakPalette.field),
                   ),
                 ),
                 if (showTip) ...[

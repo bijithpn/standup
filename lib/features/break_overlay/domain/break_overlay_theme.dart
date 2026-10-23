@@ -52,6 +52,110 @@ class BreakPalette {
     isDark: false,
   );
 
+  /// Photos are shown over a fixed dark treatment, so this template ignores
+  /// the light/dark theme.
+  static const BreakPalette onPhoto = BreakPalette(
+    canvas: Color(0xFF1E2A3A),
+    canvasRaised: Color(0xFF26364A),
+    surface: Color(0xFF1F2530),
+    border: Color(0x1FFFFFFF),
+    track: Color(0x33FFFFFF),
+    textPrimary: Color(0xFFF2F4F7),
+    textSecondary: Color(0xFFD0D6DE),
+    textMuted: Color(0xFFB4BCC8),
+    isDark: true,
+  );
+
+  /// Twilight is always violet, so this ignores the light/dark theme.
+  static const BreakPalette twilight = BreakPalette(
+    canvas: Color(0xFF1B1530),
+    canvasRaised: Color(0xFF281F45),
+    surface: Color(0xFF281F45),
+    border: Color(0x33C4B5FD),
+    track: Color(0x33C4B5FD),
+    textPrimary: Color(0xFFEEEAFB),
+    textSecondary: Color(0xFFD6CFF3),
+    textMuted: Color(0xFFBDB4E2),
+    isDark: true,
+  );
+
+  static const BreakPalette terminal = BreakPalette(
+    canvas: Color(0xFF0B0F0A),
+    canvasRaised: Color(0xFF121910),
+    surface: Color(0xFF141A12),
+    border: Color(0x33B5CC7A),
+    track: Color(0x33B5CC7A),
+    textPrimary: BreakOverlayTheme.phosphor,
+    textSecondary: Color(0xFFA9BE72),
+    textMuted: Color(0xFF8FA25F),
+    isDark: true,
+  );
+
+  /// A printed page is always light, whatever the theme.
+  static const BreakPalette paper = BreakPalette(
+    canvas: Color(0xFFF5F3EE),
+    canvasRaised: Color(0xFFFAF9F6),
+    surface: Color(0xFFFFFFFF),
+    border: Color(0x1A1A1814),
+    track: Color(0x1F1A1814),
+    textPrimary: Color(0xFF1A1814),
+    textSecondary: Color(0xFF4A4540),
+    textMuted: Color(0xFF6B6560),
+    isDark: false,
+  );
+
+  /// Light text over a landscape, whatever the theme.
+  static const BreakPalette field = BreakPalette(
+    canvas: Color(0xFF20324A),
+    canvasRaised: Color(0xFF2B4258),
+    surface: Color(0xFF1F2F40),
+    border: Color(0x33FFFFFF),
+    track: Color(0x33FFFFFF),
+    textPrimary: Color(0xFFF2F4F7),
+    textSecondary: Color(0xFFD7DEE6),
+    textMuted: Color(0xFFC3CCD6),
+    isDark: true,
+  );
+
+  /// The night is always dark, so this ignores the light/dark theme.
+  static const BreakPalette night = BreakPalette(
+    canvas: Color(0xFF0A0E27),
+    canvasRaised: Color(0xFF141A3A),
+    surface: Color(0xFF141A3A),
+    border: Color(0x33FFFFFF),
+    track: Color(0x33FFFFFF),
+    textPrimary: Color(0xFFF2F4F7),
+    textSecondary: Color(0xFFD0D6E6),
+    textMuted: Color(0xFFB4BCD2),
+    isDark: true,
+  );
+
+  /// A sunset is always warm and blue-free, so this ignores the theme.
+  static const BreakPalette sunset = BreakPalette(
+    canvas: Color(0xFF1A120A),
+    canvasRaised: Color(0xFF2A1A0D),
+    surface: Color(0xFF2A1A0D),
+    border: Color(0x33D4A55A),
+    track: Color(0x33D4A55A),
+    textPrimary: Color(0xFFF3E9DA),
+    textSecondary: Color(0xFFC9B79C),
+    textMuted: Color(0xFFC9B79C),
+    isDark: true,
+  );
+
+  /// The end of the day is always warm, whatever the theme.
+  static const BreakPalette evening = BreakPalette(
+    canvas: Color(0xFF140D07),
+    canvasRaised: Color(0xFF2E1C0C),
+    surface: Color(0xFF2E1C0C),
+    border: Color(0x1AFFFFFF),
+    track: Color(0x33C49A4A),
+    textPrimary: Color(0xFFF3E9DA),
+    textSecondary: Color(0xFFC9B79C),
+    textMuted: Color(0xFFC9B79C),
+    isDark: true,
+  );
+
   /// [accent] adjusted so strokes and glyphs stay visible on this palette:
   /// unchanged on dark, deepened on light (the pastel accents are under 2:1
   /// on cream).
@@ -67,6 +171,9 @@ class BreakPalette {
 
   /// The palette in effect: a [BreakPaletteScope] override if one exists,
   /// otherwise dark.
+  ///
+  /// Templates must read colors from here (or the fixed palettes in
+  /// [BreakOverlayTheme]) and never from `Theme.of(context)`.
   ///
   /// This deliberately does not follow `Theme.of(context).brightness`: the
   /// standalone overlay window runs a bare `MaterialApp`, whose default theme
@@ -138,6 +245,8 @@ abstract final class BreakOverlayTheme {
 
   // ── Typography ──
   static const String fontFamily = 'Inter';
+  static const String monoFamily = 'JetBrains Mono';
+  static const String serifFamily = 'Source Serif 4';
   static const List<FontFeature> tabular = [FontFeature.tabularFigures()];
 
   static const TextStyle hero = TextStyle(
@@ -174,11 +283,10 @@ abstract final class BreakOverlayTheme {
     letterSpacing: 0.6,
   );
 
-  /// Serif for Haiku Card and Paper Light. The project bundles no serif, so
-  /// this uses Georgia with platform serif fallbacks.
+  /// Serif for Haiku Card and Paper Light (bundled Source Serif 4).
   static const TextStyle serif = TextStyle(
-    fontFamily: 'Georgia',
-    fontFamilyFallback: ['Times New Roman', 'Times', 'serif'],
+    fontFamily: serifFamily,
+    fontFamilyFallback: ['Georgia', 'Times New Roman', 'Times', 'serif'],
   );
 
   // ── Depth ──
@@ -202,46 +310,6 @@ abstract final class BreakOverlayTheme {
     final override = overrides[templateId];
     return override != null ? Color(override) : fallback;
   }
-
-  // ── Deprecated aliases (kept so unmigrated code still compiles) ──
-  @Deprecated('Use BreakPalette.of(context).canvas')
-  static const Color background = Color(0xFF14181F);
-  @Deprecated('Use BreakPalette.of(context).canvasRaised')
-  static const Color surfaceSubtle = Color(0xFF1B2029);
-  @Deprecated('Use BreakPalette.of(context).textPrimary')
-  static const Color textPrimary = Color(0xFFF2F4F7);
-  @Deprecated('Use BreakPalette.of(context).textSecondary')
-  static const Color textSecondary = Color(0xFFB4BCC8);
-  @Deprecated('Use BreakPalette.of(context).textMuted')
-  static const Color textMuted = Color(0xFF8A93A1);
-  @Deprecated('Use BreakPalette.of(context).textMuted')
-  static const Color textDim = Color(0xFF8A93A1);
-  @Deprecated('Use BreakOverlayTheme.eyeRest')
-  static const Color accentShort = eyeRest;
-  @Deprecated('Use BreakOverlayTheme.recovery')
-  static const Color accentLong = recovery;
-  @Deprecated('Use BreakOverlayTheme.amber')
-  static const Color accentAmber = Color(0xFFC49A4A);
-  @Deprecated('Use BreakOverlayTheme.eyeRest')
-  static const Color accentZen = eyeRest;
-  @Deprecated('Use BreakOverlayTheme.nature')
-  static const Color accentNature = nature;
-  @Deprecated('Use BreakPalette.of(context).border')
-  static const Color borderSubtle = Color(0x1FFFFFFF);
-  @Deprecated('Use BreakPalette.of(context).canvas with alpha')
-  static const Color surfaceOverlay = Color(0x80000000);
-  @Deprecated('Use BreakSkipButton')
-  static const double skipFontSize = 13.0;
-  @Deprecated('Use BreakOverlayTheme.hero')
-  static const double timerFontSizeLg = 64.0;
-  @Deprecated('Use BreakOverlayTheme.display')
-  static const double timerFontSizeMd = 54.0;
-  @Deprecated('Use BreakOverlayTheme.title')
-  static const double timerFontSizeSm = 20.0;
-  @Deprecated('Use BreakOverlayTheme.micro')
-  static const double labelFontSize = 13.0;
-  @Deprecated('Use BreakOverlayTheme.body')
-  static const double headingFontSize = 16.0;
 }
 
 /// Motion tokens shared by every template.

@@ -30,6 +30,8 @@ class IrisRestTemplate extends StatefulWidget {
 
 class _IrisRestTemplateState extends State<IrisRestTemplate>
     with SingleTickerProviderStateMixin {
+  bool _showStreak = false;
+
   static const Color _good = Color(0xFF4ADE80);
   static const Color _fair = Color(0xFFF59E0B);
   static const Color _low = Color(0xFFEF4444);
@@ -209,7 +211,7 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
                   ),
                 ),
               ),
-              // Compliance strip: dots, then the streak chart and its caption.
+              // Compliance strip: dots, with the streak chart behind a toggle.
               Positioned(
                 left: 0,
                 right: 0,
@@ -217,63 +219,52 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
                 child: BreakEntrance(
                   delay: BreakEntrance.stagger(3),
                   scale: false,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  child: Column(
                     children: [
-                      for (var i = 0; i < recentDays.length; i++) ...[
-                        if (i > 0) const SizedBox(width: 8),
-                        Semantics(
-                          label: _dayLabel(
-                            recentDays[i],
-                            i == recentDays.length - 1,
-                          ),
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              color: pointColors[i],
-                              shape: BoxShape.circle,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          for (var i = 0; i < recentDays.length; i++) ...[
+                            if (i > 0) const SizedBox(width: 8),
+                            Semantics(
+                              label: _dayLabel(
+                                recentDays[i],
+                                i == recentDays.length - 1,
+                              ),
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: BoxDecoration(
+                                  color: pointColors[i],
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
                             ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () =>
+                            setState(() => _showStreak = !_showStreak),
+                        style: TextButton.styleFrom(
+                          foregroundColor: palette.textSecondary,
+                          textStyle: BreakOverlayTheme.micro,
+                        ),
+                        child: Text(
+                          _showStreak ? 'Hide streak' : 'Your streak',
+                        ),
+                      ),
+                      if (_showStreak)
+                        SizedBox(
+                          width: 360,
+                          height: 64,
+                          child: BreakActivityGraph(
+                            dataPoints: dataPoints,
+                            pointColors: pointColors,
                           ),
                         ),
-                      ],
                     ],
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 612,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(4),
-                  scale: false,
-                  child: Center(
-                    child: SizedBox(
-                      width: 360,
-                      height: 64,
-                      child: BreakActivityGraph(
-                        dataPoints: dataPoints,
-                        pointColors: pointColors,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 684,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(5),
-                  scale: false,
-                  child: Text(
-                    "Break alert! Let's keep that streak going.",
-                    textAlign: TextAlign.center,
-                    style: BreakOverlayTheme.micro.copyWith(
-                      color: palette.textSecondary,
-                      letterSpacing: 0.2,
-                    ),
                   ),
                 ),
               ),

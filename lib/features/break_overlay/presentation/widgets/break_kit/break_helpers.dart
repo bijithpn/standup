@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
@@ -11,6 +12,21 @@ String breakFormatTime(int seconds) {
   final sec = s % 60;
   return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
 }
+
+/// 0 before 18:00, ramping to 0.6 by 21:00, held until 06:00, then gone.
+double breakEveningTint(DateTime now) {
+  final h = now.hour + now.minute / 60;
+  if (h < 6) return 0.6;
+  return (((h - 18) / 3).clamp(0.0, 1.0)) * 0.6;
+}
+
+/// [accent] warmed toward amber in the evening, so late breaks do not glare
+/// blue. Unchanged during the day.
+Color breakTimeTinted(Color accent, {DateTime? now}) => Color.lerp(
+  accent,
+  BreakOverlayTheme.amber,
+  breakEveningTint(now ?? clock.now()),
+)!;
 
 /// Elapsed fraction of the break, 0..1.
 double breakProgress(int remaining, int total) =>

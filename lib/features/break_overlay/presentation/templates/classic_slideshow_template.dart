@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -41,20 +42,6 @@ class ClassicSlideshowTemplate extends StatefulWidget {
 
 class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
     with SingleTickerProviderStateMixin {
-  /// Photos are shown over a fixed dark treatment, so this template ignores
-  /// the light/dark theme.
-  static const BreakPalette _onPhoto = BreakPalette(
-    canvas: Color(0xFF1E2A3A),
-    canvasRaised: Color(0xFF26364A),
-    surface: Color(0xFF1F2530),
-    border: Color(0x1FFFFFFF),
-    track: Color(0x33FFFFFF),
-    textPrimary: Color(0xFFF2F4F7),
-    textSecondary: Color(0xFFD0D6DE),
-    textMuted: Color(0xFFB4BCC8),
-    isDark: true,
-  );
-
   static const List<Color> _fallback = [Color(0xFF1E2A3A), Color(0xFF3A4F63)];
 
   ImageProvider? _image;
@@ -176,6 +163,17 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
       fallback: _fallback,
       imageBuilder: _kenBurns,
     );
+    // No photo and no bundled slideshow: paint misty ridges instead of a flat
+    // gradient, so the tile still reads as a landscape.
+    if (_image == null && AppConstants.wellnessSlideshow.isEmpty) {
+      photo = Stack(
+        fit: StackFit.expand,
+        children: [
+          photo,
+          _kenBurns(const CustomPaint(painter: _RidgesPainter())),
+        ],
+      );
+    }
     final pages = widget.pageController;
     if (_image == null &&
         pages != null &&
@@ -206,7 +204,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
     }
 
     return BreakScaffold(
-      palette: _onPhoto,
+      palette: BreakPalette.onPhoto,
       canvas: _fallback.first,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
@@ -266,7 +264,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
                                 textAlign: TextAlign.left,
                                 color: breakClockColor(
                                   widget.settings,
-                                  _onPhoto,
+                                  BreakPalette.onPhoto,
                                 ),
                               ),
                             ],
@@ -313,14 +311,14 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
                           Text(
                             title,
                             style: BreakOverlayTheme.title.copyWith(
-                              color: _onPhoto.textPrimary,
+                              color: BreakPalette.onPhoto.textPrimary,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             widget.breakInfo.tip,
                             style: BreakOverlayTheme.body.copyWith(
-                              color: _onPhoto.textSecondary,
+                              color: BreakPalette.onPhoto.textSecondary,
                             ),
                           ),
                           if (hasExercise)
@@ -340,4 +338,55 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
       ),
     );
   }
+}
+
+/// Four layered ridge lines fading into haze, with a low sun glow.
+class _RidgesPainter extends CustomPainter {
+  const _RidgesPainter();
+
+  static const List<Color> _layers = [
+    Color(0xFF4C6279),
+    Color(0xFF3E5368),
+    Color(0xFF2F4357),
+    Color(0xFF22313F),
+  ];
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glowCenter = Offset(size.width * 0.72, size.height * 0.46);
+    canvas.drawCircle(
+      glowCenter,
+      size.shortestSide * 0.7,
+      Paint()
+        ..shader =
+            const RadialGradient(
+              colors: [Color(0x33FFD9A8), Color(0x00FFD9A8)],
+            ).createShader(
+              Rect.fromCircle(
+                center: glowCenter,
+                radius: size.shortestSide * 0.7,
+              ),
+            ),
+    );
+    for (var i = 0; i < _layers.length; i++) {
+      final base = size.height * (0.50 + 0.1 * i);
+      final amp = size.height * (0.07 - 0.008 * i);
+      final path = Path()..moveTo(0, size.height);
+      for (var x = 0.0; x <= size.width; x += 8) {
+        final t = x / size.width;
+        final y =
+            base +
+            amp * math.sin(t * math.pi * (1.6 + 0.5 * i) + i * 1.7) +
+            amp * 0.4 * math.sin(t * math.pi * (4.1 + i) + i);
+        path.lineTo(x, y);
+      }
+      path
+        ..lineTo(size.width, size.height)
+        ..close();
+      canvas.drawPath(path, Paint()..color = _layers[i]);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _RidgesPainter old) => false;
 }

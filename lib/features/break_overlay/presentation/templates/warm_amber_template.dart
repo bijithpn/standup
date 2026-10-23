@@ -29,19 +29,6 @@ class WarmAmberTemplate extends StatefulWidget {
 
 class _WarmAmberTemplateState extends State<WarmAmberTemplate>
     with SingleTickerProviderStateMixin {
-  /// A sunset is always warm and blue-free, so this ignores the theme.
-  static const BreakPalette _sunset = BreakPalette(
-    canvas: Color(0xFF1A120A),
-    canvasRaised: Color(0xFF2A1A0D),
-    surface: Color(0xFF2A1A0D),
-    border: Color(0x33D4A55A),
-    track: Color(0x33D4A55A),
-    textPrimary: Color(0xFFF3E9DA),
-    textSecondary: Color(0xFFC9B79C),
-    textMuted: Color(0xFFC9B79C),
-    isDark: true,
-  );
-
   /// Glow alpha breathes 26% <-> 32% over an 8s period.
   late final AnimationController _breath = AnimationController(
     vsync: this,
@@ -82,8 +69,8 @@ class _WarmAmberTemplateState extends State<WarmAmberTemplate>
             : stats.breaksCompleted;
 
         return BreakScaffold(
-          palette: _sunset,
-          canvas: _sunset.canvas,
+          palette: BreakPalette.sunset,
+          canvas: BreakPalette.sunset.canvas,
           // "Done for today" is this template's skip affordance.
           showSkip: false,
           onSkip: widget.onSkip,
@@ -121,7 +108,7 @@ class _WarmAmberTemplateState extends State<WarmAmberTemplate>
                   child: Text(
                     'Winding down',
                     style: BreakOverlayTheme.title.copyWith(
-                      color: _sunset.textPrimary,
+                      color: BreakPalette.sunset.textPrimary,
                     ),
                   ),
                 ),
@@ -132,7 +119,10 @@ class _WarmAmberTemplateState extends State<WarmAmberTemplate>
                   child: BreakCountdown(
                     seconds: widget.remainingSeconds,
                     style: BreakOverlayTheme.hero,
-                    color: breakClockColor(widget.settings, _sunset),
+                    color: breakClockColor(
+                      widget.settings,
+                      BreakPalette.sunset,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -142,7 +132,7 @@ class _WarmAmberTemplateState extends State<WarmAmberTemplate>
                   child: Text(
                     '$count breaks today',
                     style: BreakOverlayTheme.body.copyWith(
-                      color: _sunset.textSecondary,
+                      color: BreakPalette.sunset.textSecondary,
                     ),
                   ),
                 ),
@@ -293,7 +283,12 @@ class _SunsetPainter extends CustomPainter {
     canvas.drawCircle(center, radius, _glow);
 
     _disc.color = glow.withValues(alpha: 0.09 * (1 - 0.7 * dim));
-    canvas.drawCircle(center, size.shortestSide * 0.09, _disc);
+    // The disc sits below the glow's centre so the button stays on flat sky.
+    canvas.drawCircle(
+      center.translate(0, size.height * 0.10),
+      size.shortestSide * 0.09,
+      _disc,
+    );
   }
 
   @override

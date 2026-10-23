@@ -41,19 +41,6 @@ class _Star {
 
 class _NightSkyTemplateState extends State<NightSkyTemplate>
     with TickerProviderStateMixin {
-  /// The night is always dark, so this ignores the light/dark theme.
-  static const BreakPalette _night = BreakPalette(
-    canvas: Color(0xFF0A0E27),
-    canvasRaised: Color(0xFF141A3A),
-    surface: Color(0xFF141A3A),
-    border: Color(0x33FFFFFF),
-    track: Color(0x33FFFFFF),
-    textPrimary: Color(0xFFF2F4F7),
-    textSecondary: Color(0xFFD0D6E6),
-    textMuted: Color(0xFFB4BCD2),
-    isDark: true,
-  );
-
   late final AnimationController _twinkle = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 4),
@@ -140,8 +127,8 @@ class _NightSkyTemplateState extends State<NightSkyTemplate>
     final accent = BreakOverlayTheme.dusk;
 
     return BreakScaffold(
-      palette: _night,
-      canvas: _night.canvas,
+      palette: BreakPalette.night,
+      canvas: BreakPalette.night.canvas,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       showSkip: !_isEnding,
@@ -182,7 +169,7 @@ class _NightSkyTemplateState extends State<NightSkyTemplate>
                           _isEnding ? 'Recharged & Ready' : _kind.label,
                           textAlign: TextAlign.center,
                           style: BreakOverlayTheme.title.copyWith(
-                            color: _night.textPrimary,
+                            color: BreakPalette.night.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -196,7 +183,7 @@ class _NightSkyTemplateState extends State<NightSkyTemplate>
                                 : (showTip ? widget.breakInfo.tip : ''),
                             textAlign: TextAlign.center,
                             style: BreakOverlayTheme.body.copyWith(
-                              color: _night.textSecondary,
+                              color: BreakPalette.night.textSecondary,
                             ),
                           ),
                         ),
@@ -210,7 +197,7 @@ class _NightSkyTemplateState extends State<NightSkyTemplate>
                   scale: false,
                   child: BreakCountdown(
                     seconds: widget.remainingSeconds,
-                    color: breakClockColor(widget.settings, _night),
+                    color: breakClockColor(widget.settings, BreakPalette.night),
                   ),
                 ),
               ],

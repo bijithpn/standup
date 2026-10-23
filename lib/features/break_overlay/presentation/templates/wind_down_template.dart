@@ -17,19 +17,6 @@ class _WindDownTemplateState extends State<WindDownTemplate>
     with SingleTickerProviderStateMixin {
   static const Color _gold = Color(0xFFC49A4A);
 
-  /// The end of the day is always warm, whatever the theme.
-  static const BreakPalette _evening = BreakPalette(
-    canvas: Color(0xFF140D07),
-    canvasRaised: Color(0xFF2E1C0C),
-    surface: Color(0xFF2E1C0C),
-    border: Color(0x1AFFFFFF),
-    track: Color(0x33C49A4A),
-    textPrimary: Color(0xFFF3E9DA),
-    textSecondary: Color(0xFFC9B79C),
-    textMuted: Color(0xFFC9B79C),
-    isDark: true,
-  );
-
   /// The glow breathes over a 10s period.
   late final AnimationController _breath = AnimationController(
     vsync: this,
@@ -75,8 +62,8 @@ class _WindDownTemplateState extends State<WindDownTemplate>
         ];
 
         return BreakScaffold(
-          palette: _evening,
-          canvas: _evening.canvas,
+          palette: BreakPalette.evening,
+          canvas: BreakPalette.evening.canvas,
           background: CustomPaint(painter: _GlowPainter(breath: _breath)),
           child: Center(
             child: BreakEntrance(
@@ -93,7 +80,7 @@ class _WindDownTemplateState extends State<WindDownTemplate>
                     'Time to wind down',
                     textAlign: TextAlign.center,
                     style: BreakOverlayTheme.display.copyWith(
-                      color: _evening.textPrimary,
+                      color: BreakPalette.evening.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 32),

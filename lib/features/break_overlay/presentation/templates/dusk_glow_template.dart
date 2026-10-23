@@ -51,19 +51,6 @@ class DuskGlowTemplate extends StatefulWidget {
 
 class _DuskGlowTemplateState extends State<DuskGlowTemplate>
     with SingleTickerProviderStateMixin {
-  /// Twilight is always violet, so this ignores the light/dark theme.
-  static const BreakPalette _dusk = BreakPalette(
-    canvas: Color(0xFF1B1530),
-    canvasRaised: Color(0xFF281F45),
-    surface: Color(0xFF281F45),
-    border: Color(0x33C4B5FD),
-    track: Color(0x33C4B5FD),
-    textPrimary: Color(0xFFEEEAFB),
-    textSecondary: Color(0xFFD6CFF3),
-    textMuted: Color(0xFFBDB4E2),
-    isDark: true,
-  );
-
   /// Aurora curtains drift sideways once every 30s.
   late final AnimationController _drift = AnimationController(
     vsync: this,
@@ -99,8 +86,8 @@ class _DuskGlowTemplateState extends State<DuskGlowTemplate>
     final phase = DuskGlowTemplate.moonPhaseName(_age);
 
     return BreakScaffold(
-      palette: _dusk,
-      canvas: _dusk.canvas,
+      palette: BreakPalette.twilight,
+      canvas: BreakPalette.twilight.canvas,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: accent,
@@ -129,7 +116,7 @@ class _DuskGlowTemplateState extends State<DuskGlowTemplate>
               scale: false,
               child: BreakCountdown(
                 seconds: widget.remainingSeconds,
-                color: breakClockColor(widget.settings, _dusk),
+                color: breakClockColor(widget.settings, BreakPalette.twilight),
               ),
             ),
             const SizedBox(height: 12),
@@ -139,7 +126,7 @@ class _DuskGlowTemplateState extends State<DuskGlowTemplate>
               // The break's own label; never the end-of-day "Wind down" copy.
               child: BreakLabel(
                 '${_kind.label} · ${breakDurationLabel(widget.totalSeconds)}',
-                color: _dusk.textMuted,
+                color: BreakPalette.twilight.textMuted,
               ),
             ),
             const SizedBox(height: 24),
@@ -155,7 +142,7 @@ class _DuskGlowTemplateState extends State<DuskGlowTemplate>
                     painter: _LinePainter(
                       progress: anim,
                       color: accent,
-                      track: _dusk.track,
+                      track: BreakPalette.twilight.track,
                     ),
                   ),
                 ),

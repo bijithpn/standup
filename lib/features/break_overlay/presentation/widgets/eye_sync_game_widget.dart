@@ -6,6 +6,10 @@ import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart
 class EyeSyncGameWidget extends StatefulWidget {
   final int targetSessions;
 
+  /// Test hook: supplies the random source so the orb path is reproducible.
+  @visibleForTesting
+  static math.Random Function()? randomFactory;
+
   const EyeSyncGameWidget({super.key, this.targetSessions = 3});
 
   @override
@@ -28,7 +32,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
   Timer? _sessionTimer;
 
   static const _sessionSeconds = 20;
-  final _rand = math.Random();
+  final _rand = EyeSyncGameWidget.randomFactory?.call() ?? math.Random();
 
   Timer? _orbDelayTimer;
 
@@ -272,9 +276,9 @@ class _EyeSyncViewport extends StatelessWidget {
             width: 320,
             height: 200,
             decoration: BoxDecoration(
-              color: const Color(0xFF0E1218),
+              color: BreakPalette.of(context).canvasRaised,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              border: Border.all(color: BreakPalette.of(context).border),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),

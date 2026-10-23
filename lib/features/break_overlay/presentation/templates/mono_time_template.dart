@@ -30,23 +30,10 @@ class MonoTimeTemplate extends StatefulWidget {
 class _MonoTimeTemplateState extends State<MonoTimeTemplate> {
   /// A terminal is always dark phosphor-on-green-black, whatever the theme.
   static const Color _bg = Color(0xFF0B0F0A);
-  static const BreakPalette _term = BreakPalette(
-    canvas: _bg,
-    canvasRaised: Color(0xFF121910),
-    surface: Color(0xFF141A12),
-    border: Color(0x33B5CC7A),
-    track: Color(0x33B5CC7A),
-    textPrimary: BreakOverlayTheme.phosphor,
-    textSecondary: Color(0xFFA9BE72),
-    textMuted: Color(0xFF8FA25F),
-    isDark: true,
-  );
-
   static const TextStyle _mono = TextStyle(
-    // JetBrains Mono is not bundled; use the platform monospace.
-    fontFamily: 'Menlo',
+    fontFamily: BreakOverlayTheme.monoFamily,
     fontFamilyFallback: [
-      'JetBrains Mono',
+      'Menlo',
       'SF Mono',
       'Consolas',
       'Courier New',
@@ -127,7 +114,7 @@ class _MonoTimeTemplateState extends State<MonoTimeTemplate> {
     final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
     final clockColor = breakClockColor(
       widget.settings,
-      _term,
+      BreakPalette.terminal,
       fallback: phosphor,
     );
 
@@ -142,7 +129,7 @@ class _MonoTimeTemplateState extends State<MonoTimeTemplate> {
     ];
 
     return BreakScaffold(
-      palette: _term,
+      palette: BreakPalette.terminal,
       canvas: _bg,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
@@ -212,7 +199,10 @@ class _MonoTimeTemplateState extends State<MonoTimeTemplate> {
               excludeSemantics: true,
               child: Text(
                 DateFormat('HH:mm').format(clock.now()),
-                style: _mono.copyWith(fontSize: 12, color: _term.textMuted),
+                style: _mono.copyWith(
+                  fontSize: 12,
+                  color: BreakPalette.terminal.textMuted,
+                ),
               ),
             ),
           ),

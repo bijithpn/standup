@@ -20,6 +20,13 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
   bool isDismissing = false;
 
+  /// How long the finished state ("Recharged & Ready") stays on screen before
+  /// the overlay fades out. Natural completion only; skip fades immediately.
+  static const Duration completionHold = Duration(milliseconds: 400);
+
+  /// True from the moment the countdown ends until the fade-out begins.
+  final ValueNotifier<bool> completing = ValueNotifier<bool>(false);
+
   void startLocalTimer(VoidCallback onComplete) {
     localTimer?.cancel();
     localTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -56,6 +63,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
   ) {
     if (isDismissing) return;
     isDismissing = true;
+    completing.value = true;
 
     bool callbackTriggered = false;
     void triggerDismiss() {
@@ -71,10 +79,12 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
       }
     }
 
-    Timer(const Duration(milliseconds: 800), triggerDismiss);
+    // Safety net in case the fade never finishes.
+    Timer(completionHold + const Duration(milliseconds: 800), triggerDismiss);
 
-    fadeController.reverse().then((_) {
-      triggerDismiss();
+    Timer(completionHold, () {
+      if (!mounted) return;
+      fadeController.reverse().then((_) => triggerDismiss());
     });
   }
 
@@ -111,6 +121,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
   void dispose() {
     localTimer?.cancel();
     remainingSecondsNotifier.dispose();
+    completing.dispose();
     super.dispose();
   }
 }

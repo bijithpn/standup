@@ -27,21 +27,32 @@ class ZenModeTemplate extends StatefulWidget {
 
 class _ZenModeTemplateState extends State<ZenModeTemplate>
     with SingleTickerProviderStateMixin {
-  static const int _cycleSeconds = 16; // in 4 / hold 4 / out 4 / hold 4
+  BreathPreset _preset = BreathPreset.box;
 
-  /// One controller drives both the breath and the blob morph.
+  /// A preset picked mid-cycle starts at the next cycle, so a breath is never
+  /// cut short.
+  BreathPreset _pending = BreathPreset.box;
+  double _lastValue = 0;
+
+  /// One controller drives both the breath and the blob morph; one value
+  /// spans one cycle of the current preset.
   late final AnimationController _breath = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: _cycleSeconds),
+    duration: Duration(seconds: _preset.cycleSeconds),
+  );
+  late final Animation<double> _fullness = _breath.drive(
+    BreathFullness(() => _preset),
   );
   String _phaseText = 'Breathe in';
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
   Color get _accent => BreakPalette.of(context).accentOn(
-    BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'zen',
-      _kind.accent,
+    breakTimeTinted(
+      BreakOverlayTheme.resolveAccent(
+        widget.settings.templateAccentOverrides,
+        'zen',
+        _kind.accent,
+      ),
     ),
   );
 
@@ -59,15 +70,36 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     _updatePhase();
   }
 
+  void _selectPreset(BreathPreset p) {
+    setState(() => _pending = p);
+    // Frozen (reduced motion / preview): there is no cycle boundary to wait
+    // for, so switch now.
+    if (!_breath.isAnimating) _applyPending();
+  }
+
+  void _applyPending() {
+    _preset = _pending;
+    _lastValue = 0;
+    _breath.duration = Duration(seconds: _preset.cycleSeconds);
+    if (_breath.isAnimating) {
+      _breath.repeat();
+    } else {
+      setState(() {});
+    }
+  }
+
   void _updatePhase() {
     final v = _breath.value;
-    final phase = v < 0.25
-        ? 'Breathe in'
-        : v < 0.5
-        ? 'Hold'
-        : v < 0.75
-        ? 'Breathe out'
-        : 'Hold';
+    if (v < _lastValue - 0.5 && _pending != _preset) {
+      _applyPending();
+      return;
+    }
+    _lastValue = v;
+    final phase = switch (_preset.phaseAt(v * _preset.cycleSeconds)) {
+      BreathPhase.inhale => 'Breathe in',
+      BreathPhase.exhale => 'Breathe out',
+      _ => 'Hold',
+    };
     if (phase != _phaseText) setState(() => _phaseText = phase);
   }
 
@@ -139,12 +171,35 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                     child: CustomPaint(
                       painter: _BlobPainter(
                         breath: _breath,
+                        fullness: _fullness,
+                        cycleSeconds: () => _preset.cycleSeconds,
                         accent: _accent,
                         reduced: reduced,
                       ),
                     ),
                   ),
                 ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 120,
+            left: 0,
+            right: 0,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(3),
+              scale: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (final p in BreathPreset.all)
+                    _PresetChip(
+                      preset: p,
+                      selected: p == _pending,
+                      accent: _accent,
+                      onTap: () => _selectPreset(p),
+                    ),
+                ],
               ),
             ),
           ),
@@ -182,8 +237,63 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   }
 }
 
+class _PresetChip extends StatelessWidget {
+  final BreathPreset preset;
+  final bool selected;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _PresetChip({
+    required this.preset,
+    required this.selected,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = BreakPalette.of(context);
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: 'Breathing pattern ${preset.label}',
+      excludeSemantics: true,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: AnimatedContainer(
+            duration: BreakMotion.fast,
+            margin: const EdgeInsets.symmetric(horizontal: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: selected ? accent.withValues(alpha: 0.16) : null,
+              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
+              border: Border.all(
+                color: selected
+                    ? accent.withValues(alpha: 0.6)
+                    : palette.border,
+              ),
+            ),
+            child: Text(
+              preset.label,
+              style: BreakOverlayTheme.micro.copyWith(
+                color: selected ? palette.textPrimary : palette.textSecondary,
+                fontFeatures: BreakOverlayTheme.tabular,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _BlobPainter extends CustomPainter {
   final Animation<double> breath;
+  final Animation<double> fullness;
+  final int Function() cycleSeconds;
   final Color accent;
   final bool reduced;
 
@@ -199,6 +309,8 @@ class _BlobPainter extends CustomPainter {
 
   _BlobPainter({
     required this.breath,
+    required this.fullness,
+    required this.cycleSeconds,
     required this.accent,
     required this.reduced,
   }) : super(repaint: breath) {
@@ -207,28 +319,22 @@ class _BlobPainter extends CustomPainter {
     ).createShader(Rect.fromCircle(center: Offset.zero, radius: 120));
   }
 
-  /// 0.75 -> 1.0 on inhale, held, 1.0 -> 0.75 on exhale, held.
-  double _scaleFor(double v) {
-    if (v < 0.25) return 0.75 + 0.25 * Curves.easeInOutSine.transform(v / 0.25);
-    if (v < 0.5) return 1.0;
-    if (v < 0.75) {
-      return 1.0 - 0.25 * Curves.easeInOutSine.transform((v - 0.5) / 0.25);
-    }
-    return 0.75;
-  }
+  /// 0.75 empty, 1.0 full.
+  double _scale() => 0.75 + 0.25 * fullness.value;
 
   @override
   void paint(Canvas canvas, Size size) {
     final v = breath.value;
-    final scale = reduced ? 1.0 : _scaleFor(v);
-    // 8s morph period divides the 16s cycle, so the loop is seamless.
-    final t = v * 16.0;
+    final scale = reduced ? 1.0 : _scale();
+    // Morph in whole periods per cycle (about 8 s each), so the loop is
+    // seamless whatever the preset.
+    final cycle = cycleSeconds();
+    final periods = (cycle / 8).round().clamp(1, 4);
+    final t = v * periods;
 
     for (var i = 0; i < _points; i++) {
       final a = (math.pi * 2 / _points) * i - math.pi / 2;
-      final noise = reduced
-          ? 0.0
-          : 0.06 * math.sin(2 * math.pi * t / 8.0 + i * 1.3);
+      final noise = reduced ? 0.0 : 0.06 * math.sin(2 * math.pi * t + i * 1.3);
       final r = _baseRadius * (1 + noise);
       _ctrl[i] = Offset(math.cos(a) * r, math.sin(a) * r);
     }
@@ -251,7 +357,7 @@ class _BlobPainter extends CustomPainter {
     canvas.translate(size.width / 2, size.height / 2);
     canvas.scale(scale);
     // Reduced motion trades the scale change for a 60% -> 100% opacity swell.
-    final fade = reduced ? 0.6 + 0.4 * ((_scaleFor(v) - 0.75) / 0.25) : 1.0;
+    final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
     _fill.color = Color.fromRGBO(255, 255, 255, fade);
     _stroke.color = accent.withValues(alpha: 0.5 * fade);
     canvas.drawPath(_path, _fill);

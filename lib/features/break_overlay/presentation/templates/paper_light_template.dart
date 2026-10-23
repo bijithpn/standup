@@ -27,22 +27,11 @@ class PaperLightTemplate extends StatefulWidget {
 
 class _PaperLightTemplateState extends State<PaperLightTemplate>
     with SingleTickerProviderStateMixin {
-  static const Color _ink = Color(0xFF1A1814);
+  static const Color _ink = Color(
+    0xFF1A1814,
+  ); // == BreakPalette.paper.textPrimary
   static const Color _stone = Color(0xFF6B6560); // 5.2:1 on the cream
   static const Color _forest = Color(0xFF2D6A4F);
-
-  /// A printed page is always light, whatever the theme.
-  static const BreakPalette _paper = BreakPalette(
-    canvas: Color(0xFFF5F3EE),
-    canvasRaised: Color(0xFFFAF9F6),
-    surface: Color(0xFFFFFFFF),
-    border: Color(0x1A1A1814),
-    track: Color(0x1F1A1814),
-    textPrimary: _ink,
-    textSecondary: Color(0xFF4A4540),
-    textMuted: _stone,
-    isDark: false,
-  );
 
   /// E-ink style flash on entrance: black for 120ms, then a 200ms fade.
   late final AnimationController _flash = AnimationController(
@@ -89,8 +78,8 @@ class _PaperLightTemplateState extends State<PaperLightTemplate>
         widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 
     return BreakScaffold(
-      palette: _paper,
-      canvas: _paper.canvas,
+      palette: BreakPalette.paper,
+      canvas: BreakPalette.paper.canvas,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: forest,
@@ -134,7 +123,11 @@ class _PaperLightTemplateState extends State<PaperLightTemplate>
               child: BreakCountdown(
                 seconds: widget.remainingSeconds,
                 style: _serif(72, _ink).copyWith(height: 1.0),
-                color: breakClockColor(widget.settings, _paper, fallback: _ink),
+                color: breakClockColor(
+                  widget.settings,
+                  BreakPalette.paper,
+                  fallback: _ink,
+                ),
               ),
             ),
           ),

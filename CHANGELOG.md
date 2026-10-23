@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.10.0` | 1.10.0 | 42 | 2026-10-23 | Break template polish: breathing presets, bundled fonts, light-theme coverage and tips (unreleased) |
 | `v1.8.2` | 1.8.2 | 39 | 2026-10-22 | Release pipeline fixes: ad-hoc signed macOS builds and release readiness checks |
 | `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements |
 | `v1.7.0` | 1.7.0 | 36 | 2026-10-17 | Customizable 3D companions, productivity insights, PiP improvements & clock-out reflections |
@@ -26,6 +27,37 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.10.0] - 2026-10-23 (unreleased)
+
+Tags: `v1.10.0` (not yet tagged)
+
+Build: `42`
+
+Release title: Break Template Polish
+
+### Added
+
+- Zen Mode offers three breathing patterns (4-4-4-4, 4-7-8, 5-5) as chips in the overlay; a new pattern starts at the next breath cycle. The choice applies to the current break only.
+- Breathe Line now has a hold phase, using the same box pattern as Zen's default.
+- Tip library for eye-rest and recovery breaks. Split View shows extra tips and the companion's tip bubble rotates through them.
+- Evening warming: Focus Orb, Wave Calm, Zen and Haiku Card shift their accent toward amber from 18:00 to 21:00 and overnight.
+- Day Stack shows empty outlined slots up to your daily break goal.
+- Iris Rest has a "Your streak" toggle that reveals the streak chart (collapsed by default).
+- Soft Floating reopens at the position you last dropped it, until the app restarts.
+- Bundled fonts: Inter Light and ExtraLight, JetBrains Mono, and Source Serif 4.
+- Light-theme golden tests for every template (except Companion), plus tests for moon phase, breathing presets, floating anchors, Activity Studio tabs and more.
+
+### Changed
+
+- Soft Arc is now a horizontal ruler gauge instead of a circular dial.
+- Gallery Focus paints layered ridges instead of a flat gradient while no photos are bundled.
+- Break overlay holds the finished state for 400 ms before fading out after a break completes. Skipping still fades out immediately.
+- Quiet Grid dots, Focus Orb layers and Split View's right pane are easier to see; Warm Amber's sun sits lower; Day Stack blocks are larger.
+- Fixed template palettes (Warm Amber, Dusk Glow, Mono Time, Paper Light, Open Field, Night Sky, Wind Down, Gallery Focus) moved into the shared break theme.
+- Removed the deprecated `BreakOverlayTheme` colour and size aliases.
+- Companion's "Drag companion anywhere" hint no longer overlaps the tip bubble near the top of the screen.
+- Activity Studio uses theme palette colours for its exercise widgets, and the breathing ring now announces its progress to screen readers.
 
 ## [1.8.2] - 2026-10-22
 

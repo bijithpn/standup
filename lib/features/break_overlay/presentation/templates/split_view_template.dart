@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/domain/break_tips.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 class SplitViewTemplate extends StatefulWidget {
@@ -41,6 +42,8 @@ class _SplitViewTemplateState extends State<SplitViewTemplate> {
         widget.breakInfo.triggerReason != null &&
         widget.breakInfo.triggerReason!.isNotEmpty)
       (title: 'Why now', body: widget.breakInfo.triggerReason!),
+    for (final tip in BreakTips.extra(widget.breakInfo))
+      (title: 'Tip', body: tip),
   ];
 
   @override
@@ -92,7 +95,14 @@ class _SplitViewTemplateState extends State<SplitViewTemplate> {
       background: Row(
         children: [
           Expanded(child: ColoredBox(color: palette.canvas)),
-          Expanded(child: ColoredBox(color: palette.canvasRaised)),
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: palette.surface,
+                border: Border(left: BorderSide(color: palette.border)),
+              ),
+            ),
+          ),
         ],
       ),
       child: Stack(

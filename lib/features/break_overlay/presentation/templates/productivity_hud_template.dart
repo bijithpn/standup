@@ -28,8 +28,14 @@ class ProductivityHudTemplate extends StatefulWidget {
 class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
     with SingleTickerProviderStateMixin {
   static const TextStyle _mono = TextStyle(
-    fontFamily: 'Menlo',
-    fontFamilyFallback: ['SF Mono', 'Consolas', 'Courier New', 'monospace'],
+    fontFamily: BreakOverlayTheme.monoFamily,
+    fontFamilyFallback: [
+      'Menlo',
+      'SF Mono',
+      'Consolas',
+      'Courier New',
+      'monospace',
+    ],
     fontSize: 13,
     fontWeight: FontWeight.w400,
     height: 1.4,

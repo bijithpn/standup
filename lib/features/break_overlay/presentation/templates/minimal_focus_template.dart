@@ -28,7 +28,7 @@ class MinimalFocusTemplate extends StatefulWidget {
 
 class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
     with SingleTickerProviderStateMixin {
-  /// Grid alpha breathes 2% -> 4% -> 2% over 8s.
+  /// Grid alpha breathes 3% -> 5% -> 3% over 8s.
   late final AnimationController _breath = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 4),
@@ -190,7 +190,7 @@ class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final t = Curves.easeInOutSine.transform(breath.value);
-    _paint.color = color.withValues(alpha: 0.02 + 0.02 * t);
+    _paint.color = color.withValues(alpha: 0.03 + 0.02 * t);
     canvas.drawRawPoints(ui.PointMode.points, cache.pointsFor(size), _paint);
   }
 

@@ -113,6 +113,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     final myGeneration = _overlayDataGeneration;
 
     isDismissing = false;
+    completing.value = false;
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
 

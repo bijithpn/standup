@@ -21,6 +21,11 @@ class SoftFloatingWidgetTemplate extends StatefulWidget {
     this.onSkip,
   });
 
+  /// Where the card was last left. Lives for the process, so the next break's
+  /// overlay opens where this one was dropped.
+  @visibleForTesting
+  static Alignment lastAnchor = Alignment.bottomRight;
+
   @override
   State<SoftFloatingWidgetTemplate> createState() =>
       _SoftFloatingWidgetTemplateState();
@@ -196,7 +201,8 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
       strictMode: widget.settings.strictMode,
       accent: _accent,
       child: BreakDraggable(
-        initialAnchor: Alignment.bottomRight,
+        initialAnchor: SoftFloatingWidgetTemplate.lastAnchor,
+        onAnchorChanged: (a) => SoftFloatingWidgetTemplate.lastAnchor = a,
         child: Semantics(
           container: true,
           label: 'Break timer, ${widget.remainingSeconds} seconds remaining',

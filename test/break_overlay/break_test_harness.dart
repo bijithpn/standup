@@ -117,11 +117,34 @@ Future<void> setUpBreakTestEnvironment() async {
 
 Future<void> loadInter() async {
   final loader = FontLoader('Inter');
-  for (final f in ['Regular', 'Medium', 'SemiBold', 'Bold']) {
+  for (final f in [
+    'ExtraLight',
+    'Light',
+    'Regular',
+    'Medium',
+    'SemiBold',
+    'Bold',
+  ]) {
     final bytes = File('assets/fonts/Inter/Inter-$f.ttf').readAsBytesSync();
     loader.addFont(Future.value(ByteData.sublistView(bytes)));
   }
   await loader.load();
+  for (final (family, files) in [
+    (
+      'JetBrains Mono',
+      [
+        'assets/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf',
+        'assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf',
+      ],
+    ),
+    ('Source Serif 4', ['assets/fonts/SourceSerif4/SourceSerif4-Regular.ttf']),
+  ]) {
+    final l = FontLoader(family);
+    for (final f in files) {
+      l.addFont(Future.value(ByteData.sublistView(File(f).readAsBytesSync())));
+    }
+    await l.load();
+  }
   // System monospace faces do not exist under flutter test; alias them to a
   // real font so goldens show glyphs instead of Ahem boxes.
   final roboto = File(
@@ -194,6 +217,7 @@ Future<void> pumpBreakTemplate(
   int remaining = 39,
   int total = 60,
   VoidCallback? onSkip,
+  Duration settleFor = const Duration(seconds: 2),
 }) async {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
@@ -242,5 +266,5 @@ Future<void> pumpBreakTemplate(
     ),
   );
   await tester.pumpWidget(app);
-  await tester.pump(const Duration(seconds: 2));
+  await tester.pump(settleFor);
 }

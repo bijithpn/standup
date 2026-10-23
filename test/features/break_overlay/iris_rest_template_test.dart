@@ -5,6 +5,7 @@ import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/iris_rest_template.dart';
+import 'package:breakmate/features/break_system/presentation/widgets/break_activity_graph.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 
 final sl = GetIt.instance;
@@ -50,31 +51,35 @@ void main() {
   );
   const testSettings = SettingsModel();
 
-  testWidgets('shows the eye-break title, countdown, and streak graph', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: IrisRestTemplate(
-            breakInfo: testBreakInfo,
-            settings: testSettings,
-            remainingSeconds: 19,
-            totalSeconds: 20,
+  testWidgets(
+    'shows the eye-break title and countdown, and reveals the streak graph on demand',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: IrisRestTemplate(
+              breakInfo: testBreakInfo,
+              settings: testSettings,
+              remainingSeconds: 19,
+              totalSeconds: 20,
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 800));
+      );
+      await tester.pump(const Duration(milliseconds: 800));
 
-    expect(find.textContaining('Rest Your Eyes'), findsOneWidget);
-    expect(find.text('00:19'), findsOneWidget);
-    expect(
-      find.text("Break alert! Let's keep that streak going."),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-  });
+      expect(find.textContaining('Rest Your Eyes'), findsOneWidget);
+      expect(find.text('00:19'), findsOneWidget);
+      // The streak chart is collapsed until asked for; the caption is gone.
+      expect(find.text('Your streak'), findsOneWidget);
+      expect(find.byType(BreakActivityGraph), findsNothing);
+      await tester.tap(find.text('Your streak'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(BreakActivityGraph), findsOneWidget);
+      expect(find.text('Hide streak'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('shows Skip when not in strict mode and onSkip is provided', (
     tester,

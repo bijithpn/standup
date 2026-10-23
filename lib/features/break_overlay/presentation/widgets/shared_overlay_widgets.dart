@@ -27,17 +27,18 @@ class BreakContextPill extends StatelessWidget {
         ? 'Do: look away and reset your posture'
         : 'Do: stand, breathe, and move gently';
 
+    final palette = BreakPalette.of(context);
     return Container(
       constraints: const BoxConstraints(maxWidth: 420),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: BreakOverlayTheme.surfaceSubtle.withValues(alpha: 0.5),
+        color: palette.canvasRaised.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: BreakOverlayTheme.borderSubtle),
+        border: Border.all(color: palette.border),
       ),
       child: DefaultTextStyle(
         style: TextStyle(
-          color: BreakOverlayTheme.textSecondary,
+          color: palette.textSecondary,
           fontSize: 12,
           fontWeight: FontWeight.w400,
           fontFamily: BreakOverlayTheme.fontFamily,
@@ -61,14 +62,15 @@ class StrictModeNote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isLocked = intensityLevel == 'locked';
+    final palette = BreakPalette.of(context);
     return Center(
       child: Container(
         constraints: const BoxConstraints(maxWidth: 560),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: BreakOverlayTheme.surfaceSubtle.withValues(alpha: 0.5),
+          color: palette.canvasRaised.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: BreakOverlayTheme.borderSubtle),
+          border: Border.all(color: palette.border),
         ),
         child: Text(
           isLocked

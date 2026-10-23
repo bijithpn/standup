@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -28,6 +27,8 @@ class SoftArcTemplate extends StatefulWidget {
 
 class _SoftArcTemplateState extends State<SoftArcTemplate>
     with SingleTickerProviderStateMixin {
+  static const double _gaugeWidth = 560;
+
   /// 0 -> 1 over 300ms each second: the current tick brightens briefly.
   late final AnimationController _tickFlash;
 
@@ -80,20 +81,32 @@ class _SoftArcTemplateState extends State<SoftArcTemplate>
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: accent,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 640 - 130,
-            top: 380 - 130,
-            child: BreakEntrance(
-              child: BreakSmoothProgress(
+      child: Center(
+        child: BreakEntrance(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Icon(_kind.icon, size: 20, color: accent),
+              ),
+              const SizedBox(height: 16),
+              BreakCountdown(
+                seconds: widget.remainingSeconds,
+                color: breakClockColor(
+                  widget.settings,
+                  palette,
+                  fallback: accent,
+                ),
+              ),
+              const SizedBox(height: 28),
+              BreakSmoothProgress(
                 progress: progress,
                 builder: (context, anim) => TweenAnimationBuilder<double>(
                   tween: Tween(end: complete ? 1.0 : 0.0),
                   duration: const Duration(milliseconds: 400),
-                  builder: (context, glow, child) => RepaintBoundary(
+                  builder: (context, glow, _) => RepaintBoundary(
                     child: CustomPaint(
-                      size: const Size(260, 260),
+                      size: const Size(_gaugeWidth, 64),
                       painter: _GaugePainter(
                         progress: anim,
                         tickFlash: reduced ? null : _tickFlash,
@@ -102,39 +115,15 @@ class _SoftArcTemplateState extends State<SoftArcTemplate>
                         majorTick: palette.textMuted,
                         glow: glow,
                       ),
-                      child: child,
-                    ),
-                  ),
-                  child: SizedBox(
-                    width: 260,
-                    height: 260,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ExcludeSemantics(
-                            child: Icon(_kind.icon, size: 20, color: accent),
-                          ),
-                          const SizedBox(height: 16),
-                          BreakCountdown(
-                            seconds: widget.remainingSeconds,
-                            color: breakClockColor(
-                              widget.settings,
-                              palette,
-                              fallback: accent,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          BreakLabel(_readout),
-                        ],
-                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+              const SizedBox(height: 20),
+              BreakLabel(_readout),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -148,16 +137,11 @@ class _GaugePainter extends CustomPainter {
   final Color majorTick;
   final double glow;
 
-  // Open 240-degree gauge with the gap at the bottom.
-  static const double _start = 5 * math.pi / 6; // 150 degrees
-  static const double _sweep = 4 * math.pi / 3; // 240 degrees
   static const int _ticks = 48;
+  static const double _inset = 12;
+  static const double _trackY = 44;
 
-  final Paint _arc = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
-    ..strokeCap = StrokeCap.round;
-  final Paint _track = Paint()
+  final Paint _line = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 3
     ..strokeCap = StrokeCap.round;
@@ -180,42 +164,30 @@ class _GaugePainter extends CustomPainter {
     required this.glow,
   }) : super(repaint: Listenable.merge([progress, ?tickFlash]));
 
-  Offset _at(Offset c, double r, double a) =>
-      Offset(c.dx + math.cos(a) * r, c.dy + math.sin(a) * r);
+  double _x(Size size, double t) => _inset + (size.width - 2 * _inset) * t;
 
-  /// Ticks, track and inner conic fill never change, so record them once.
+  /// Ruler: ticks above a track. They never change, so record them once.
   ui.Picture _record(Size size) {
     final rec = ui.PictureRecorder();
     final canvas = Canvas(rec);
-    final c = size.center(Offset.zero);
-    final r = size.width / 2 - 14;
-    final rect = Rect.fromCircle(center: c, radius: r);
 
-    canvas.drawCircle(
-      c,
-      r - 6,
-      Paint()
-        ..shader = SweepGradient(
-          startAngle: 0,
-          endAngle: _sweep,
-          colors: [accent.withValues(alpha: 0.06), accent.withValues(alpha: 0)],
-          transform: const GradientRotation(_start),
-        ).createShader(rect),
+    _line.color = minorTick;
+    canvas.drawLine(
+      Offset(_x(size, 0), _trackY),
+      Offset(_x(size, 1), _trackY),
+      _line,
     );
-
-    _track.color = minorTick;
-    canvas.drawArc(rect, _start, _sweep, false, _track);
 
     final tick = Paint()..strokeCap = StrokeCap.round;
     for (var i = 0; i <= _ticks; i++) {
       final major = i % 6 == 0;
-      final a = _start + _sweep * i / _ticks;
       tick
         ..strokeWidth = major ? 1.6 : 1.0
         ..color = major ? majorTick : minorTick;
+      final x = _x(size, i / _ticks);
       canvas.drawLine(
-        _at(c, r + 10, a),
-        _at(c, r + 10 + (major ? 12 : 6), a),
+        Offset(x, _trackY - 10 - (major ? 12 : 6)),
+        Offset(x, _trackY - 10),
         tick,
       );
     }
@@ -231,18 +203,14 @@ class _GaugePainter extends CustomPainter {
     }
     canvas.drawPicture(_static!);
 
-    final c = size.center(Offset.zero);
-    final r = size.width / 2 - 14;
     final p = progress.value.clamp(0.0, 1.0);
 
     if (p > 0) {
-      _arc.color = accent;
-      canvas.drawArc(
-        Rect.fromCircle(center: c, radius: r),
-        _start,
-        _sweep * p,
-        false,
-        _arc,
+      _line.color = accent;
+      canvas.drawLine(
+        Offset(_x(size, 0), _trackY),
+        Offset(_x(size, p), _trackY),
+        _line,
       );
     }
 
@@ -250,18 +218,18 @@ class _GaugePainter extends CustomPainter {
     final f = tickFlash;
     if (f != null && f.value < 1) {
       final i = (p * _ticks).floor().clamp(0, _ticks);
-      final a = _start + _sweep * i / _ticks;
       final major = i % 6 == 0;
+      final x = _x(size, i / _ticks);
       _flash.color = accent.withValues(alpha: 1 - f.value);
       canvas.drawLine(
-        _at(c, r + 10, a),
-        _at(c, r + 10 + (major ? 12 : 6), a),
+        Offset(x, _trackY - 10 - (major ? 12 : 6)),
+        Offset(x, _trackY - 10),
         _flash,
       );
     }
 
     // Needle dot at the head, with a halo that peaks on completion.
-    final head = _at(c, r, _start + _sweep * p);
+    final head = Offset(_x(size, p), _trackY);
     _halo.color = accent.withValues(alpha: 0.35 + 0.45 * glow);
     canvas.drawCircle(head, 8 + 4 * glow, _halo);
     _dot.color = accent;

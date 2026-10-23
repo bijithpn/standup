@@ -22,11 +22,11 @@ class DayStackTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  static const double _blockW = 120;
-  static const double _blockH = 14;
+  static const double _blockW = 160;
+  static const double _blockH = 18;
   static const double _gap = 6;
   static const double _baseline = 560;
-  static const int _maxVisible = 24;
+  static const int _maxVisible = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +49,8 @@ class DayStackTemplate extends StatelessWidget {
         // The active block takes one of the 24 slots.
         final shown = completed.clamp(0, _maxVisible - 1);
         final hidden = completed - shown;
+        // Empty slots up to the daily goal, so the stack reads as building up.
+        final goalSlots = settings.dailyBreakGoalCount.clamp(0, _maxVisible);
 
         return BreakScaffold(
           onSkip: onSkip,
@@ -92,9 +94,17 @@ class DayStackTemplate extends StatelessWidget {
                   child: BreakEntrance(
                     delay: Duration(milliseconds: 30 * i),
                     scale: false,
+                    child: _Block(color: accent.withValues(alpha: 0.35)),
+                  ),
+                ),
+              for (var i = shown + 1; i < goalSlots; i++)
+                Positioned(
+                  left: 640 - _blockW / 2,
+                  top: _baseline - (i + 1) * _blockH - i * _gap,
+                  child: ExcludeSemantics(
                     child: _Block(
-                      color: accent.withValues(alpha: 0.35),
-                      track: null,
+                      color: Colors.transparent,
+                      outline: palette.border,
                     ),
                   ),
                 ),
@@ -145,9 +155,9 @@ class DayStackTemplate extends StatelessWidget {
 
 class _Block extends StatelessWidget {
   final Color color;
-  final Color? track;
+  final Color? outline;
 
-  const _Block({required this.color, required this.track});
+  const _Block({required this.color, this.outline});
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +167,7 @@ class _Block extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusSm / 2),
+        border: outline == null ? null : Border.all(color: outline!),
       ),
     );
   }

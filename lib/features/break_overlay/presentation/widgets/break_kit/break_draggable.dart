@@ -27,6 +27,9 @@ class BreakDraggable extends StatefulWidget {
   final double inset;
   final ValueChanged<bool>? onDragChanged;
 
+  /// Called with the anchor the card settled on after a drag.
+  final ValueChanged<Alignment>? onAnchorChanged;
+
   /// Slide in from the anchor's edge with a fade on first show.
   final bool animateEntrance;
 
@@ -37,6 +40,7 @@ class BreakDraggable extends StatefulWidget {
     this.anchors = breakSixAnchors,
     this.inset = 32,
     this.onDragChanged,
+    this.onAnchorChanged,
     this.animateEntrance = true,
   });
 
@@ -143,6 +147,7 @@ class _BreakDraggableState extends State<BreakDraggable>
       _dragging = false;
     });
     widget.onDragChanged?.call(false);
+    widget.onAnchorChanged?.call(best);
 
     if (breakShouldFreeze(context)) {
       _spring.value = 0;

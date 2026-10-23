@@ -212,11 +212,16 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                       0.0,
                       1.0,
                     );
-                    return CustomPaint(
-                      size: const Size.square(ringRadius * 2),
-                      painter: _PhaseArcPainter(
-                        color: phase.color,
-                        progress: progress,
+                    return Semantics(
+                      label: 'Breathing phase',
+                      value: '${(progress * 100).round()} percent complete',
+                      child: CustomPaint(
+                        size: const Size.square(ringRadius * 2),
+                        painter: _PhaseArcPainter(
+                          color: phase.color,
+                          track: BreakPalette.of(context).track,
+                          progress: progress,
+                        ),
                       ),
                     );
                   },
@@ -373,9 +378,14 @@ class _CycleIndicator extends StatelessWidget {
 
 class _PhaseArcPainter extends CustomPainter {
   final Color color;
+  final Color track;
   final double progress;
 
-  const _PhaseArcPainter({required this.color, required this.progress});
+  const _PhaseArcPainter({
+    required this.color,
+    required this.track,
+    required this.progress,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -384,7 +394,7 @@ class _PhaseArcPainter extends CustomPainter {
     final radius = size.width / 2;
 
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
+      ..color = track
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -409,5 +419,5 @@ class _PhaseArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PhaseArcPainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress || old.color != color || old.track != track;
 }

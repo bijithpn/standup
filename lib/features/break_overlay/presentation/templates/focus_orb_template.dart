@@ -36,7 +36,8 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
   );
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-  late final double _tint = _eveningTint(clock.now());
+
+  late final DateTime _now = clock.now();
 
   _OrbPainter? _painter;
   Object? _painterKey;
@@ -53,19 +54,11 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
     super.dispose();
   }
 
-  /// 0 before 18:00, ramping to 60% toward amber by 21:00, held after.
-  static double _eveningTint(DateTime now) {
-    final h = now.hour + now.minute / 60;
-    return (((h - 18) / 3).clamp(0.0, 1.0)) * 0.6;
-  }
-
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     final base = breakAccent(widget.settings, 'focus_orb', _cyan);
-    final hue = palette.accentOn(
-      Color.lerp(base, BreakOverlayTheme.amber, _tint)!,
-    );
+    final hue = palette.accentOn(breakTimeTinted(base, now: _now));
     final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
     final alphaScale = palette.isDark ? 1.0 : 0.85;
 
@@ -160,7 +153,7 @@ class _OrbPainter extends CustomPainter {
 
   // Layer radius ratios and alphas; shaders are built once per colour.
   static const _ratios = [0.25, 0.5, 0.75, 1.0];
-  static const _alphas = [0.70, 0.35, 0.15, 0.06];
+  static const _alphas = [0.84, 0.42, 0.18, 0.07];
   static const double _overdrive = 1.3; // headroom for the completion flash
 
   late final List<Paint> _layers;

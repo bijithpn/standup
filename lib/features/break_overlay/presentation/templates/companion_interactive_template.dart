@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/domain/break_tips.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 class CompanionInteractiveTemplate extends StatefulWidget {
@@ -56,6 +58,14 @@ class _CompanionInteractiveTemplateState
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
+  /// The break's own tip first, then library tips that rotate every 12 s.
+  late final List<String> _tips = [
+    if (widget.breakInfo.tip.isNotEmpty) widget.breakInfo.tip,
+    ...BreakTips.extra(widget.breakInfo),
+  ];
+  int _tipIndex = 0;
+  Timer? _tipTimer;
+
   Color get _accent => BreakPalette.of(context).accentOn(
     BreakOverlayTheme.resolveAccent(
       widget.settings.templateAccentOverrides,
@@ -68,6 +78,12 @@ class _CompanionInteractiveTemplateState
   void didChangeDependencies() {
     super.didChangeDependencies();
     breakSyncLoop(_bob, context, park: 0.0);
+    _tipTimer?.cancel();
+    if (_tips.length > 1 && !breakShouldFreeze(context)) {
+      _tipTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+        if (mounted && !_isDragging) setState(() => _tipIndex++);
+      });
+    }
   }
 
   @override
@@ -84,6 +100,7 @@ class _CompanionInteractiveTemplateState
 
   @override
   void dispose() {
+    _tipTimer?.cancel();
     _bob.dispose();
     _fx.dispose();
     super.dispose();
@@ -219,7 +236,7 @@ class _CompanionInteractiveTemplateState
                       border: Border.all(color: palette.border),
                     ),
                     child: Text(
-                      widget.breakInfo.tip,
+                      _tips[_tipIndex % _tips.length],
                       textAlign: TextAlign.center,
                       style: BreakOverlayTheme.body.copyWith(
                         color: palette.textSecondary,
@@ -235,7 +252,10 @@ class _CompanionInteractiveTemplateState
                 curve: Curves.easeOutCubic,
                 left: 0,
                 right: 0,
-                top: _y! + _widgetSize + 32,
+                // Below the pet, unless the tip bubble is there: then above.
+                top: bubbleAbove
+                    ? _y! + _widgetSize + 32
+                    : math.max(8.0, _y! - 32),
                 child: ExcludeSemantics(
                   child: AnimatedOpacity(
                     opacity: _hasDragged ? 0 : 1,

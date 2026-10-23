@@ -26,10 +26,15 @@ class BreatheLineTemplate extends StatefulWidget {
 
 class _BreatheLineTemplateState extends State<BreatheLineTemplate>
     with SingleTickerProviderStateMixin {
-  /// 4s in, 4s out (reverse repeat), same cadence as before the redesign.
+  /// 4 in, 4 hold, 4 out, 4 hold: the same box pattern as Zen's default.
+  static const BreathPreset _preset = BreathPreset.box;
+
   late final AnimationController _controller = AnimationController(
     vsync: this,
-    duration: const Duration(seconds: 4),
+    duration: Duration(seconds: _preset.cycleSeconds),
+  );
+  late final Animation<double> _fullness = _controller.drive(
+    BreathFullness(() => _preset),
   );
   String _phaseText = 'Breathe in';
   bool _started = false;
@@ -38,15 +43,18 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   @override
   void initState() {
     super.initState();
-    _controller.addStatusListener((status) {
-      if (!mounted) return;
-      if (status == AnimationStatus.forward && _phaseText != 'Breathe in') {
-        setState(() => _phaseText = 'Breathe in');
-      } else if (status == AnimationStatus.reverse &&
-          _phaseText != 'Breathe out') {
-        setState(() => _phaseText = 'Breathe out');
-      }
-    });
+    _controller.addListener(_updatePhase);
+  }
+
+  void _updatePhase() {
+    final phase = switch (_preset.phaseAt(
+      _controller.value * _preset.cycleSeconds,
+    )) {
+      BreathPhase.inhale => 'Breathe in',
+      BreathPhase.exhale => 'Breathe out',
+      _ => 'Hold',
+    };
+    if (phase != _phaseText && mounted) setState(() => _phaseText = phase);
   }
 
   @override
@@ -55,16 +63,17 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
     if (BreakPreviewScope.isPreview(context)) {
       // Preview frame: width ~300, glow ~40%.
       _controller.stop();
-      _controller.value = 0.667;
+      _controller.value = 0.175;
     } else if (!_started) {
       // Reduced motion still runs this loop: it only drives opacity there.
       _started = true;
-      _controller.repeat(reverse: true);
+      _controller.repeat();
     }
   }
 
   @override
   void dispose() {
+    _controller.removeListener(_updatePhase);
     _controller.dispose();
     super.dispose();
   }
@@ -117,7 +126,7 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                 builder: (context, finish, _) => RepaintBoundary(
                   child: CustomPaint(
                     painter: _LinePainter(
-                      progress: _controller,
+                      progress: _fullness,
                       accent: accent,
                       reduced: reduced,
                       maxGlow: palette.isDark ? 0.55 : 0.18,
@@ -205,7 +214,8 @@ class _LinePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final eased = Curves.easeInOutSine.transform(progress.value);
+    // Already eased by the breath preset; holds keep the line full or short.
+    final eased = progress.value;
     // Width 60 -> 380; reduced motion pins it at 220 and pulses the glow.
     final base = reduced ? 220.0 : 60 + 320 * eased;
     final width = base + (420 - base) * finish;
