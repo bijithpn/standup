@@ -229,7 +229,11 @@ Future<void> pumpBreakTemplate(
               kenBurnsController: kenBurns,
             );
             if (preview) w = BreakPreviewScope(child: w);
-            return w;
+            // Dark is the default; light is opted into with a palette scope.
+            return BreakPaletteScope(
+              palette: dark ? BreakPalette.dark : BreakPalette.light,
+              child: w,
+            );
           },
         ),
       ),
