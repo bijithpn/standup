@@ -1,9 +1,13 @@
+import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/guided_breathing_widget.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/eye_sync_game_widget.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 enum _Activity { breathing, eyeSync }
 
@@ -30,16 +34,23 @@ class ActivitiesBreakTemplate extends StatefulWidget {
 
 class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
     with SingleTickerProviderStateMixin {
+  static const double _tabWidth = 168;
+  static const double _controlHeight = 44;
+
   late _Activity _selected;
   Key _activityKey = UniqueKey();
+  final FocusNode _controlFocus = FocusNode(debugLabel: 'activity tabs');
 
-  late AnimationController _underlineController;
-  late Animation<double> _underlineWidth;
+  /// Capsule position in tab units (0 = first tab). Unbounded so the spring
+  /// can overshoot slightly.
+  late final AnimationController _capsule;
+
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
   Color get _accent => BreakOverlayTheme.resolveAccent(
     widget.settings.templateAccentOverrides,
     'activities',
-    BreakOverlayTheme.accentShort,
+    _kind.accent,
   );
 
   @override
@@ -48,19 +59,16 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
     _selected = widget.breakInfo.type == BreakType.short
         ? _Activity.eyeSync
         : _Activity.breathing;
-    _underlineController = AnimationController(
+    _capsule = AnimationController.unbounded(
       vsync: this,
-      duration: const Duration(milliseconds: 200),
-      value: _selected == _Activity.breathing ? 0.0 : 1.0,
-    );
-    _underlineWidth = _underlineController.drive(
-      CurveTween(curve: Curves.easeOut),
+      value: _selected.index.toDouble(),
     );
   }
 
   @override
   void dispose() {
-    _underlineController.dispose();
+    _capsule.dispose();
+    _controlFocus.dispose();
     super.dispose();
   }
 
@@ -70,206 +78,263 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
       _selected = a;
       _activityKey = UniqueKey();
     });
-    if (a == _Activity.breathing) {
-      _underlineController.reverse();
+    final target = a.index.toDouble();
+    if (BreakMotion.reduced(context)) {
+      _capsule.value = target;
     } else {
-      _underlineController.forward();
+      _capsule.animateWith(
+        SpringSimulation(
+          BreakMotion.spring,
+          _capsule.value,
+          target,
+          _capsule.velocity,
+        ),
+      );
     }
   }
 
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  KeyEventResult _onKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+      _switch(_Activity.breathing);
+      return KeyEventResult.handled;
+    }
+    if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+      _switch(_Activity.eyeSync);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   @override
   Widget build(BuildContext context) {
+    final palette = BreakPalette.of(context);
     final isShort = widget.breakInfo.type == BreakType.short;
 
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
+    return BreakScaffold(
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: _accent,
+      background: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.topCenter,
+            radius: 0.9,
+            colors: [_accent.withValues(alpha: 0.06), Colors.transparent],
+          ),
+        ),
+      ),
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        isShort ? 'Quick break' : 'Long break',
-                        style: TextStyle(
-                          color: BreakOverlayTheme.textMuted,
-                          fontSize: BreakOverlayTheme.labelFontSize,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: BreakOverlayTheme.fontFamily,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _formatTime(widget.remainingSeconds),
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.55),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w300,
-                          fontFamily: BreakOverlayTheme.fontFamily,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-
-                  RepaintBoundary(
-                    child: _TabSwitcher(
-                      selected: _selected,
-                      onSelect: _switch,
-                      accent: _accent,
-                      underlineWidth: _underlineWidth,
-                    ),
-                  ),
-                  const SizedBox(height: 36),
-
-                  Expanded(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 480),
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 250),
-                          switchInCurve: Curves.easeOut,
-                          switchOutCurve: Curves.easeIn,
-                          transitionBuilder: (child, anim) =>
-                              FadeTransition(opacity: anim, child: child),
-                          child: _selected == _Activity.breathing
-                              ? GuidedBreathingWidget(
-                                  key: _activityKey,
-                                  targetCycles: isShort ? 2 : 4,
-                                )
-                              : EyeSyncGameWidget(
-                                  key: _activityKey,
-                                  targetSessions: isShort ? 2 : 3,
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+          Positioned(
+            top: 48,
+            left: 64,
+            right: 64,
+            child: Row(
+              children: [
+                BreakLabel(_kind.label, textAlign: TextAlign.left),
+                const Spacer(),
+                BreakCountdown(
+                  seconds: widget.remainingSeconds,
+                  style: BreakOverlayTheme.title,
+                  color: breakClockColor(widget.settings, palette),
+                ),
+              ],
             ),
           ),
-          if (!widget.settings.strictMode && widget.onSkip != null)
-            Positioned(
-              bottom: BreakOverlayTheme.skipBottom,
-              right: BreakOverlayTheme.skipRight,
-              child: GestureDetector(
-                onTap: widget.onSkip,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: BreakOverlayTheme.textDim,
-                      fontSize: BreakOverlayTheme.labelFontSize,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
+          Positioned(
+            top: 112,
+            left: 0,
+            right: 0,
+            child: Center(child: _buildControl(palette)),
+          ),
+          Positioned(
+            top: 112 + _controlHeight + 32,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 720,
+                  maxHeight: 440,
+                ),
+                child: SizedBox(
+                  height: 440,
+                  child: Center(
+                    child: AnimatedSwitcher(
+                      duration: BreakMotion.medium,
+                      switchInCurve: BreakMotion.enter,
+                      switchOutCurve: BreakMotion.enter,
+                      transitionBuilder: (child, anim) {
+                        final incoming = child.key == _activityKey;
+                        final reduced = BreakMotion.reduced(context);
+                        final dx = reduced ? 0.0 : 12 / 720;
+                        return FadeTransition(
+                          opacity: anim,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: Offset(incoming ? dx : -dx, 0),
+                              end: Offset.zero,
+                            ).animate(anim),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: _selected == _Activity.breathing
+                          ? GuidedBreathingWidget(
+                              key: _activityKey,
+                              targetCycles: isShort ? 2 : 4,
+                            )
+                          : EyeSyncGameWidget(
+                              key: _activityKey,
+                              targetSessions: isShort ? 2 : 3,
+                            ),
                     ),
                   ),
                 ),
               ),
             ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildControl(BreakPalette palette) {
+    return Semantics(
+      container: true,
+      inMutuallyExclusiveGroup: true,
+      child: Focus(
+        focusNode: _controlFocus,
+        onKeyEvent: _onKey,
+        child: ListenableBuilder(
+          listenable: _controlFocus,
+          builder: (context, _) {
+            final focused = _controlFocus.hasFocus;
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(
+                  sigmaX: BreakOverlayTheme.glassBlur,
+                  sigmaY: BreakOverlayTheme.glassBlur,
+                ),
+                child: Container(
+                  height: _controlHeight,
+                  padding: const EdgeInsets.all(4),
+                  decoration: ShapeDecoration(
+                    color: palette.isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : Colors.black.withValues(alpha: 0.06),
+                    shape: StadiumBorder(
+                      side: BorderSide(
+                        color: focused ? _accent : palette.border,
+                        width: focused ? 2 : 1,
+                      ),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: _tabWidth * 2,
+                    child: Stack(
+                      children: [
+                        RepaintBoundary(
+                          child: AnimatedBuilder(
+                            animation: _capsule,
+                            builder: (context, _) => Transform.translate(
+                              offset: Offset(_capsule.value * _tabWidth, 0),
+                              child: Container(
+                                width: _tabWidth,
+                                decoration: ShapeDecoration(
+                                  color: _accent.withValues(alpha: 0.22),
+                                  shape: const StadiumBorder(),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            _Tab(
+                              label: 'Breathing',
+                              selected: _selected == _Activity.breathing,
+                              onTap: () {
+                                _controlFocus.requestFocus();
+                                _switch(_Activity.breathing);
+                              },
+                            ),
+                            _Tab(
+                              label: 'Eye sync',
+                              selected: _selected == _Activity.eyeSync,
+                              onTap: () {
+                                _controlFocus.requestFocus();
+                                _switch(_Activity.eyeSync);
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
 }
 
-class _TabSwitcher extends StatelessWidget {
-  final _Activity selected;
-  final void Function(_Activity) onSelect;
-  final Color accent;
-  final Animation<double> underlineWidth;
-
-  const _TabSwitcher({
-    required this.selected,
-    required this.onSelect,
-    required this.accent,
-    required this.underlineWidth,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _Tab(
-          label: 'Breathing',
-          isSelected: selected == _Activity.breathing,
-          accent: accent,
-          onTap: () => onSelect(_Activity.breathing),
-          underlineAnim: ReverseAnimation(underlineWidth),
-        ),
-        const SizedBox(width: 32),
-        _Tab(
-          label: 'Eye sync',
-          isSelected: selected == _Activity.eyeSync,
-          accent: accent,
-          onTap: () => onSelect(_Activity.eyeSync),
-          underlineAnim: underlineWidth,
-        ),
-      ],
-    );
-  }
-}
-
-class _Tab extends StatelessWidget {
+class _Tab extends StatefulWidget {
   final String label;
-  final bool isSelected;
-  final Color accent;
+  final bool selected;
   final VoidCallback onTap;
-  final Animation<double> underlineAnim;
 
   const _Tab({
     required this.label,
-    required this.isSelected,
-    required this.accent,
+    required this.selected,
     required this.onTap,
-    required this.underlineAnim,
   });
 
   @override
+  State<_Tab> createState() => _TabState();
+}
+
+class _TabState extends State<_Tab> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
+    final palette = BreakPalette.of(context);
+    final color = widget.selected
+        ? palette.textPrimary
+        : (_hovered ? palette.textSecondary : palette.textMuted);
+    return Semantics(
+      button: true,
+      selected: widget.selected,
+      label: widget.label,
+      excludeSemantics: true,
+      onTap: widget.onTap,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : BreakOverlayTheme.textDim,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                fontFamily: BreakOverlayTheme.fontFamily,
-              ),
-            ),
-            const SizedBox(height: 6),
-            AnimatedBuilder(
-              animation: underlineAnim,
-              builder: (_, _) => Container(
-                height: 2,
-                width: 40 * underlineAnim.value,
-                decoration: BoxDecoration(
-                  color: accent,
-                  borderRadius: BorderRadius.circular(1),
+        onEnter: (_) => setState(() => _hovered = true),
+        onExit: (_) => setState(() => _hovered = false),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: SizedBox(
+            width: _ActivitiesBreakTemplateState._tabWidth,
+            child: Center(
+              child: AnimatedDefaultTextStyle(
+                duration: BreakMotion.fast,
+                style: BreakOverlayTheme.body.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w500,
+                  height: 1.0,
                 ),
+                child: Text(widget.label),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

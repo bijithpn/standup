@@ -258,7 +258,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                         return Text(
                           '${phase.durationSeconds - elapsed}s',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: Colors.white.withValues(alpha: 0.62),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Inter',
@@ -278,7 +278,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           phase.sublabel,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.62),
             fontSize: 13,
             fontFamily: 'Inter',
           ),
@@ -325,7 +325,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           'You completed ${widget.targetCycles} breathing cycles.\nYour nervous system thanks you.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.62),
             fontSize: 13,
             height: 1.5,
             fontFamily: 'Inter',
@@ -362,7 +362,7 @@ class _CycleIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             color: isActive
                 ? activeColor.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.1),
+                : Colors.white.withValues(alpha: 0.22),
           ),
         );
       }),

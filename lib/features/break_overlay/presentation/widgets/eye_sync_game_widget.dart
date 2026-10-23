@@ -139,7 +139,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           'Focus on the drifting orb and blink naturally.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.62),
             fontSize: 13,
             fontFamily: 'Inter',
           ),
@@ -202,7 +202,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           'You completed ${widget.targetSessions} sessions.\nYour eye strain should feel reduced.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: Colors.white.withValues(alpha: 0.62),
             fontSize: 13,
             height: 1.5,
             fontFamily: 'Inter',
@@ -239,7 +239,7 @@ class _SessionIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             color: isActive
                 ? color.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.1),
+                : Colors.white.withValues(alpha: 0.22),
           ),
         );
       }),
@@ -269,7 +269,7 @@ class _EyeSyncViewport extends StatelessWidget {
             width: 320,
             height: 200,
             decoration: BoxDecoration(
-              color: const Color(0xFF07080A),
+              color: const Color(0xFF0E1218),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
             ),
