@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -35,7 +36,7 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
   );
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-  late final double _tint = _eveningTint(DateTime.now());
+  late final double _tint = _eveningTint(clock.now());
 
   _OrbPainter? _painter;
   Object? _painterKey;

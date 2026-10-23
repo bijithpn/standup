@@ -168,16 +168,18 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                           color: breakClockColor(widget.settings, palette),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          _kind.label.toUpperCase(),
-                          maxLines: 1,
-                          softWrap: false,
-                          style: BreakOverlayTheme.micro.copyWith(
-                            color: palette.textMuted,
-                            height: 1.0,
+                        Expanded(
+                          child: Text(
+                            _kind.label.toUpperCase(),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: BreakOverlayTheme.micro.copyWith(
+                              color: palette.textMuted,
+                              height: 1.0,
+                            ),
                           ),
                         ),
-                        const Spacer(),
                         if (t > 0.6 && canSkip)
                           _Staggered(
                             visible: actionsOpacity > 0,

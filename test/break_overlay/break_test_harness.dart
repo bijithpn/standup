@@ -104,13 +104,15 @@ class TestAssetBundle extends CachingAssetBundle {
 
 /// Registers the fakes templates reach through `sl<...>()` and loads Inter so
 /// goldens show real glyphs instead of Ahem boxes.
+bool skipFonts = false;
+
 Future<void> setUpBreakTestEnvironment() async {
   TestWidgetsFlutterBinding.ensureInitialized();
   final sl = GetIt.instance;
   sl.allowReassignment = true;
   sl.registerSingleton<StatsService>(FakeStatsService());
   sl.registerSingleton<BreakController>(FakeBreakController());
-  await loadInter();
+  if (!skipFonts) await loadInter();
 }
 
 Future<void> loadInter() async {

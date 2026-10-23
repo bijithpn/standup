@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -354,7 +355,7 @@ class _CompanionInteractiveTemplateState
                   label: 'Current time',
                   excludeSemantics: true,
                   child: Text(
-                    DateFormat('HH:mm').format(DateTime.now()),
+                    DateFormat('HH:mm').format(clock.now()),
                     style: BreakOverlayTheme.micro.copyWith(
                       color: palette.textMuted,
                       fontFeatures: BreakOverlayTheme.tabular,

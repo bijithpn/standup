@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -51,7 +52,7 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
   /// Fixed for the whole break so the poem does not change when the minute
   /// rolls over.
   late final List<String> _poem =
-      HaikuCardTemplate._haikus[DateTime.now().minute % 4];
+      HaikuCardTemplate._haikus[clock.now().minute % 4];
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
   final _MountainCache _mountains = _MountainCache();
 

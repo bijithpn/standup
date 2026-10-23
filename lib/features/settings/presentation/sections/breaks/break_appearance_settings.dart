@@ -1105,7 +1105,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Expanded(
+                  Flexible(
+                    flex: 3,
                     child: Text(
                       name,
                       textAlign: TextAlign.left,
@@ -1126,23 +1127,28 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     ),
                   ),
                   const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.textSecondary.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      category.toUpperCase(),
-                      style: TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
-                        fontFamily: 'Inter',
+                  Flexible(
+                    flex: 2,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.textSecondary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        category.toUpperCase(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                          fontFamily: 'Inter',
+                        ),
                       ),
                     ),
                   ),

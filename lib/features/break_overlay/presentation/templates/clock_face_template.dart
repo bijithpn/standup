@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -64,7 +65,7 @@ class _ClockFaceTemplateState extends State<ClockFaceTemplate> {
               label: 'Current time',
               excludeSemantics: true,
               child: Text(
-                DateFormat('HH:mm').format(DateTime.now()),
+                DateFormat('HH:mm').format(clock.now()),
                 style: BreakOverlayTheme.title.copyWith(
                   color: palette.textMuted,
                 ),

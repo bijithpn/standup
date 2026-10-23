@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -69,7 +70,7 @@ class _DuskGlowTemplateState extends State<DuskGlowTemplate>
     duration: const Duration(seconds: 30),
   );
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-  late final double _age = DuskGlowTemplate.moonAge(DateTime.now());
+  late final double _age = DuskGlowTemplate.moonAge(clock.now());
 
   @override
   void didChangeDependencies() {

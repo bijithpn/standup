@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
 import 'package:intl/intl.dart';
@@ -163,7 +164,7 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
               label: 'Current time',
               excludeSemantics: true,
               child: Text(
-                DateFormat('HH:mm').format(DateTime.now()),
+                DateFormat('HH:mm').format(clock.now()),
                 style: BreakOverlayTheme.micro.copyWith(
                   color: palette.textMuted,
                   fontFeatures: BreakOverlayTheme.tabular,

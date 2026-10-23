@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -210,7 +211,7 @@ class _MonoTimeTemplateState extends State<MonoTimeTemplate> {
               label: 'Current time',
               excludeSemantics: true,
               child: Text(
-                DateFormat('HH:mm').format(DateTime.now()),
+                DateFormat('HH:mm').format(clock.now()),
                 style: _mono.copyWith(fontSize: 12, color: _term.textMuted),
               ),
             ),
