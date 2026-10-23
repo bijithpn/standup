@@ -5,6 +5,7 @@ import 'package:breakmate/features/break_system/application/break_controller.dar
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -1052,7 +1053,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                   clipBehavior: Clip.none,
                   decoration: BoxDecoration(
                     color: AppTheme.contentBackground,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(22),
                     border: Border.all(
                       color: isSelected
                           ? AppTheme.accentColor
@@ -1087,34 +1088,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                     clipBehavior: Clip.none,
                     children: [
                       _LiveTemplatePreview(id: id, settings: widget.settings),
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.15),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Text(
-                            category.toUpperCase(),
-                            style: const TextStyle(
-                              color: Colors.white70,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                              fontFamily: 'Inter',
-                            ),
-                          ),
-                        ),
-                      ),
                       if (isSelected)
                         Positioned(
                           top: 6,
@@ -1130,21 +1103,50 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
                 ),
               ),
               const SizedBox(height: 10),
-              Text(
-                name,
-                textAlign: TextAlign.left,
-                style: TextStyle(
-                  color: isSelected
-                      ? AppTheme.accentColor
-                      : isHovered
-                      ? Colors.white
-                      : AppTheme.textPrimary.withValues(alpha: 0.9),
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                  fontSize: 13,
-                  fontFamily: 'Inter',
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      name,
+                      textAlign: TextAlign.left,
+                      style: TextStyle(
+                        color: isSelected
+                            ? AppTheme.accentColor
+                            : isHovered
+                            ? Colors.white
+                            : AppTheme.textPrimary.withValues(alpha: 0.9),
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.w600,
+                        fontSize: 13,
+                        fontFamily: 'Inter',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.textSecondary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(
+                      category.toUpperCase(),
+                      style: TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 4),
               Text(
@@ -1228,26 +1230,37 @@ class _LiveTemplatePreviewState extends State<_LiveTemplatePreview>
 
     return IgnorePointer(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(11),
+        borderRadius: BorderRadius.circular(20),
         child: SizedBox(
           width: double.infinity,
           height: 120,
-          child: FittedBox(
-            fit: BoxFit.cover,
-            child: SizedBox(
-              width: 800,
-              height: 500,
-              child: BreakTemplateSwitcher(
-                breakTemplate: widget.id,
-                breakInfo: _previewBreak,
-                settings: effectiveSettings,
-                remaining: 42,
-                total: 60,
-                onSkip: null,
-                currentTemplate: '',
-                kenBurnsController: _kenBurnsController,
-              ),
-            ),
+          child: LayoutBuilder(
+            builder: (context, c) {
+              // Lay the template out at its design width but with the
+              // thumbnail's aspect ratio, so nothing is cropped at the edges.
+              const designWidth = 1280.0;
+              final aspect = c.maxHeight / c.maxWidth;
+              return FittedBox(
+                fit: BoxFit.fill,
+                child: SizedBox(
+                  width: designWidth,
+                  height: designWidth * aspect,
+                  child: BreakPreviewScope(
+                    child: BreakTemplateSwitcher(
+                      breakTemplate: widget.id,
+                      breakInfo: _previewBreak,
+                      settings: effectiveSettings,
+                      // ~35 % elapsed: a representative mid-break frame.
+                      remaining: 39,
+                      total: 60,
+                      onSkip: null,
+                      currentTemplate: '',
+                      kenBurnsController: _kenBurnsController,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
