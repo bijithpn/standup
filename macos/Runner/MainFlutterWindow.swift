@@ -421,6 +421,9 @@ class MainFlutterWindow: NSWindow {
 
   override func awakeFromNib() {
     MainFlutterWindow.shared = self
+    // Open on whichever Space the user is on (including full-screen apps)
+    // instead of switching back to the Space the window was created in.
+    self.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
     let flutterViewController = FlutterViewController()
     flutterViewController.backgroundColor = .clear
     flutterViewController.view.wantsLayer = true
@@ -716,6 +719,19 @@ class MainFlutterWindow: NSWindow {
     case "floating": self.level = .floating
     default: self.level = .normal
     }
+  }
+
+  /// Brings the window to the user's current Space (even over a full-screen
+  /// app) instead of letting macOS switch to the Space it was last shown on.
+  func showOnCurrentSpace() {
+    collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+    if isMiniaturized { deminiaturize(nil) }
+    // `moveToActiveSpace` only applies when the window is ordered in, so pull
+    // it off its old Space first.
+    if isVisible && !isOnActiveSpace { orderOut(nil) }
+    makeKeyAndOrderFront(nil)
+    NSApp.activate(ignoringOtherApps: true)
+    orderFrontRegardless()
   }
 
   func triggerReopen() {
