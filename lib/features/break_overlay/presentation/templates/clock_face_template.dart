@@ -49,7 +49,11 @@ class _ClockFaceTemplateState extends State<ClockFaceTemplate> {
     final preview = BreakPreviewScope.isPreview(context);
     // The hand makes one turn per minute; thumbnails freeze it at 10s.
     final hand = preview ? 10 / 60 : (elapsed % 60) / 60;
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
 
     return BreakScaffold(
       onSkip: widget.onSkip,

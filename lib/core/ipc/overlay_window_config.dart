@@ -23,6 +23,9 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     @Default('grey_cat') String companionPetTheme,
     @Default(0xFFFFFFFF) int clockFaceTextColorHex,
     @Default(true) bool clockFaceBlurEnabled,
+    @Default('dark') String overlayThemeMode,
+    @Default('box') String breathPreset,
+    @Default(false) bool lookedAwayPromptEnabled,
     String? customImagePath,
     String? exerciseTitle,
     String? exerciseInstructions,
@@ -39,14 +42,18 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     @Default(false) bool allowFullPoster,
   }) = _OverlayWindowConfig;
 
-  factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) {
-    final normalized = Map<String, dynamic>.from(json);
-    if (normalized['overlayType'] == null && normalized['type'] != null) {
-      normalized['overlayType'] = normalized['type'];
-    }
-    if (normalized['breakTemplate'] == null && normalized['template'] != null) {
-      normalized['breakTemplate'] = normalized['template'];
-    }
-    return _$OverlayWindowConfigFromJson(normalized);
+  factory OverlayWindowConfig.fromJson(Map<String, dynamic> json) =>
+      _$OverlayWindowConfigFromJson(_normalize(json));
+}
+
+/// Accepts the legacy `type` and `template` keys.
+Map<String, dynamic> _normalize(Map<String, dynamic> json) {
+  final normalized = Map<String, dynamic>.from(json);
+  if (normalized['overlayType'] == null && normalized['type'] != null) {
+    normalized['overlayType'] = normalized['type'];
   }
+  if (normalized['breakTemplate'] == null && normalized['template'] != null) {
+    normalized['breakTemplate'] = normalized['template'];
+  }
+  return normalized;
 }

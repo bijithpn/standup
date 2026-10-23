@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/breath_preset.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_switcher.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -29,6 +30,12 @@ class BreakAppearanceSettings extends StatefulWidget {
 }
 
 class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
+  static const _themeModeLabels = {
+    'dark': 'Dark',
+    'light': 'Light',
+    'system': 'Match system',
+  };
+
   String? _hoveredId;
   String? _selectedTemplateId;
 
@@ -553,6 +560,51 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             ),
             min: 0.0,
             max: 1.0,
+          ),
+          divider(),
+          dropdownRow(
+            'Break Screen Theme',
+            _themeModeLabels[widget.settings.overlayThemeMode] ?? 'Dark',
+            _themeModeLabels.values.toList(),
+            (label) {
+              final mode = _themeModeLabels.entries
+                  .firstWhere(
+                    (e) => e.value == label,
+                    orElse: () => const MapEntry('dark', 'Dark'),
+                  )
+                  .key;
+              widget.onSave(widget.settings.copyWith(overlayThemeMode: mode));
+            },
+          ),
+          divider(),
+          dropdownRow(
+            'Breathing Pattern',
+            BreathPreset.byId(widget.settings.breathPreset).label,
+            [for (final p in BreathPreset.all) p.label],
+            (label) {
+              final preset = BreathPreset.all.firstWhere(
+                (p) => p.label == label,
+                orElse: () => BreathPreset.box,
+              );
+              widget.onSave(widget.settings.copyWith(breathPreset: preset.id));
+            },
+          ),
+          divider(),
+          toggleRow(
+            'Completion Chime',
+            'Play a soft chime when a break finishes on its own',
+            widget.settings.breakChimeEnabled,
+            (v) =>
+                widget.onSave(widget.settings.copyWith(breakChimeEnabled: v)),
+          ),
+          divider(),
+          toggleRow(
+            '"I Looked Away" Button',
+            'Show a button during eye-rest breaks; confirmed breaks count as a wellness action',
+            widget.settings.lookedAwayPromptEnabled,
+            (v) => widget.onSave(
+              widget.settings.copyWith(lookedAwayPromptEnabled: v),
+            ),
           ),
           divider(),
           toggleRow(

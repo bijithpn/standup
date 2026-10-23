@@ -75,7 +75,11 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
       widget.totalSeconds,
     );
     final pct = (progress * 100).round();
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final canSkip = breakCanSkip(widget.settings, widget.onSkip);
     final showTip =
         widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;

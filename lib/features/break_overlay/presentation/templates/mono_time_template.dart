@@ -111,7 +111,11 @@ class _MonoTimeTemplateState extends State<MonoTimeTemplate> {
       widget.totalSeconds,
     );
     final pct = (progress * 100).round();
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final clockColor = breakClockColor(
       widget.settings,
       BreakPalette.terminal,

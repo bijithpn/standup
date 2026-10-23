@@ -76,7 +76,11 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
       widget.remainingSeconds,
       widget.totalSeconds,
     );
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final reduced = BreakMotion.reduced(context);
     final ink = palette.isDark ? Colors.white : const Color(0xFF1C1F24);
     final cardFill = palette.isDark

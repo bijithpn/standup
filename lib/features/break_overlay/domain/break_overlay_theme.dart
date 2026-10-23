@@ -169,6 +169,14 @@ class BreakPalette {
         .toColor();
   }
 
+  /// The palette for the `overlayThemeMode` setting (`dark`, `light` or
+  /// `system`); [system] is the OS brightness. Unknown values mean dark.
+  static BreakPalette forMode(String mode, Brightness system) => switch (mode) {
+    'light' => light,
+    'system' => system == Brightness.light ? light : dark,
+    _ => dark,
+  };
+
   /// The palette in effect: a [BreakPaletteScope] override if one exists,
   /// otherwise dark.
   ///
@@ -210,6 +218,28 @@ class BreakPreviewScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(BreakPreviewScope old) => false;
+}
+
+/// Tells templates the break has finished and the overlay is holding its
+/// final state before fading out (see `BreakTimerManager.completing`).
+class BreakCompletionScope extends InheritedWidget {
+  final bool completing;
+
+  const BreakCompletionScope({
+    super.key,
+    required this.completing,
+    required super.child,
+  });
+
+  static bool isCompleting(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<BreakCompletionScope>()
+          ?.completing ??
+      false;
+
+  @override
+  bool updateShouldNotify(BreakCompletionScope old) =>
+      completing != old.completing;
 }
 
 /// Central design tokens for all break overlay templates.

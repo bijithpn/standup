@@ -2,6 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/shared_overlay_widgets.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/looked_away_button.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 class OverlayChrome extends StatelessWidget {
@@ -14,6 +16,10 @@ class OverlayChrome extends StatelessWidget {
   final String intensityLevel;
   final VoidCallback onSkip;
 
+  /// Eye-rest "I looked away" button: shown when [onLookedAway] is set.
+  final bool lookedAway;
+  final VoidCallback? onLookedAway;
+
   const OverlayChrome({
     super.key,
     required this.child,
@@ -24,10 +30,13 @@ class OverlayChrome extends StatelessWidget {
     this.exerciseTitle,
     required this.intensityLevel,
     required this.onSkip,
+    this.lookedAway = false,
+    this.onLookedAway,
   });
 
   @override
   Widget build(BuildContext context) {
+    final palette = BreakPalette.of(context);
     return Stack(
       clipBehavior: Clip.none,
       fit: StackFit.expand,
@@ -41,6 +50,20 @@ class OverlayChrome extends StatelessWidget {
               child: BreakContextPill(
                 breakInfo: breakInfo,
                 exerciseTitle: exerciseTitle,
+              ),
+            ),
+          ),
+        if (onLookedAway != null && !templateOwnsChrome)
+          Positioned(
+            top: 28,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SafeArea(
+                child: LookedAwayButton(
+                  confirmed: lookedAway,
+                  onPressed: onLookedAway!,
+                ),
               ),
             ),
           ),
@@ -100,15 +123,15 @@ class OverlayChrome extends StatelessWidget {
                 tooltip: 'Skip break',
                 onPressed: onSkip,
                 icon: const Icon(CupertinoIcons.xmark),
-                color: Colors.white.withValues(alpha: 0.78),
+                color: palette.textSecondary,
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.24),
+                  backgroundColor: palette.isDark
+                      ? Colors.black.withValues(alpha: 0.24)
+                      : Colors.white.withValues(alpha: 0.6),
                   fixedSize: const Size.square(42),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
-                    side: BorderSide(
-                      color: Colors.white.withValues(alpha: 0.12),
-                    ),
+                    side: BorderSide(color: palette.border),
                   ),
                 ),
               ),

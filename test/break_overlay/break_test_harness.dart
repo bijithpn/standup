@@ -78,7 +78,8 @@ class FakeStatsService extends StatsService {
 class FakeBreakController extends ChangeNotifier implements BreakController {
   int completed = 0;
   @override
-  Future<void> completeCurrentBreak() async => completed++;
+  Future<void> completeCurrentBreak({bool lookedAway = false}) async =>
+      completed++;
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
@@ -137,7 +138,13 @@ Future<void> loadInter() async {
         'assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf',
       ],
     ),
-    ('Source Serif 4', ['assets/fonts/SourceSerif4/SourceSerif4-Regular.ttf']),
+    (
+      'Source Serif 4',
+      [
+        'assets/fonts/SourceSerif4/SourceSerif4-Regular.ttf',
+        'assets/fonts/SourceSerif4/SourceSerif4-It.ttf',
+      ],
+    ),
   ]) {
     final l = FontLoader(family);
     for (final f in files) {

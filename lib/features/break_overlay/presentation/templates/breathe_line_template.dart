@@ -26,8 +26,10 @@ class BreatheLineTemplate extends StatefulWidget {
 
 class _BreatheLineTemplateState extends State<BreatheLineTemplate>
     with SingleTickerProviderStateMixin {
-  /// 4 in, 4 hold, 4 out, 4 hold: the same box pattern as Zen's default.
-  static const BreathPreset _preset = BreathPreset.box;
+  /// The user's chosen breathing pattern (box 4-4-4-4 by default).
+  late final BreathPreset _preset = BreathPreset.byId(
+    widget.settings.breathPreset,
+  );
 
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -85,7 +87,11 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
       breakAccent(widget.settings, 'breathe_line', _kind.accent),
     );
     final reduced = BreakMotion.reduced(context);
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
 
     return BreakScaffold(
       onSkip: widget.onSkip,

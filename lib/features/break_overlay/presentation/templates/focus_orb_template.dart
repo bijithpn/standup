@@ -59,7 +59,11 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
     final palette = BreakPalette.of(context);
     final base = breakAccent(widget.settings, 'focus_orb', _cyan);
     final hue = palette.accentOn(breakTimeTinted(base, now: _now));
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final alphaScale = palette.isDark ? 1.0 : 0.85;
 
     final key = Object.hash(hue, alphaScale);

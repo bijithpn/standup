@@ -52,7 +52,7 @@ class StepGuideTemplate extends StatelessWidget {
       breakAccent(settings, 'step_guide', BreakOverlayTheme.mint),
     );
     final progress = breakProgress(remainingSeconds, totalSeconds);
-    final complete = remainingSeconds <= 0 && totalSeconds > 0;
+    final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
     final preview = BreakPreviewScope.isPreview(context);
     final steps = _steps(preview);
     final n = steps.length;

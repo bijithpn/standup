@@ -93,7 +93,11 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
       breakAccent(widget.settings, 'pulse_dot', BreakOverlayTheme.mint),
     );
     final reduced = BreakMotion.reduced(context);
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
 
     return BreakScaffold(
       onSkip: widget.onSkip,

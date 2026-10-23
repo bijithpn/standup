@@ -32,6 +32,33 @@ void main() {
     expect(breakEveningTint(DateTime(2026, 1, 1, 7)), 0);
   });
 
+  testWidgets('quiet_pill: Enter pins the tip open until Enter again', (
+    tester,
+  ) async {
+    Future<void> settle() => tester.pump(const Duration(milliseconds: 600));
+    await pumpBreakTemplate(tester, 'quiet_pill');
+    expect(find.text(shortBreak.tip), findsNothing);
+
+    // Focus the pill and press Enter: pinned.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await settle();
+    expect(find.text(shortBreak.tip), findsOneWidget);
+
+    // Losing focus keeps it open: only the pin holds it now.
+    FocusManager.instance.primaryFocus?.unfocus();
+    await settle();
+    expect(find.text(shortBreak.tip), findsOneWidget);
+
+    // Enter again (refocus first) unpins; after blur it collapses.
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    FocusManager.instance.primaryFocus?.unfocus();
+    await settle();
+    expect(find.text(shortBreak.tip), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   group('activities', () {
     testWidgets('golden: short break shows Eye sync', (tester) async {
       EyeSyncGameWidget.randomFactory = () => math.Random(7);
@@ -62,6 +89,23 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       handle.dispose();
     });
+  });
+
+  testWidgets('activities: breathing ring announces its progress', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    await pumpBreakTemplate(tester, 'activities', breakInfo: longBreak);
+    expect(
+      find.semantics.byPredicate(
+        (n) =>
+            n.label.contains('Breathing phase') &&
+            RegExp(r'\d+ percent complete').hasMatch(n.value),
+      ),
+      findsOneWidget,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    handle.dispose();
   });
 
   group('floating card anchors', () {
@@ -257,6 +301,7 @@ void main() {
       ('One. Two. Three. Four. Five.', 4),
     ]) {
       testWidgets('"$tip" renders $steps step(s)', (tester) async {
+        final handle = tester.ensureSemantics();
         await pumpBreakTemplate(
           tester,
           'step_guide',
@@ -267,10 +312,17 @@ void main() {
             tip: tip,
           ),
         );
-        final first = tip.split('. ').first;
-        expect(find.textContaining(first.replaceAll('.', '')), findsWidgets);
+        expect(
+          find.bySemanticsLabel(RegExp(r'^Step \d of \d, ')),
+          findsNWidgets(steps),
+        );
+        expect(
+          find.bySemanticsLabel(RegExp('^Step \\d of $steps, ')),
+          findsNWidgets(steps),
+        );
         expect(tester.takeException(), isNull);
         await tester.pumpWidget(const SizedBox.shrink());
+        handle.dispose();
       });
     }
   });

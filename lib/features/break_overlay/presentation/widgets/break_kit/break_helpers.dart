@@ -28,6 +28,11 @@ Color breakTimeTinted(Color accent, {DateTime? now}) => Color.lerp(
   breakEveningTint(now ?? clock.now()),
 )!;
 
+/// Whether a template should show its finished state: the countdown reached
+/// zero, or the overlay has begun its completion hold.
+bool breakIsComplete(BuildContext context, int remaining, int total) =>
+    (remaining <= 0 && total > 0) || BreakCompletionScope.isCompleting(context);
+
 /// Elapsed fraction of the break, 0..1.
 double breakProgress(int remaining, int total) =>
     total > 0 ? (1 - remaining / total).clamp(0.0, 1.0) : 0.0;

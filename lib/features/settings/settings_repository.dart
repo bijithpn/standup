@@ -293,6 +293,13 @@ class SettingsRepository extends ChangeNotifier {
         'companion_treat_type',
         defaultValue: 'sushi',
       ),
+      overlayThemeMode: _storage.getString(
+        'overlay_theme_mode',
+        defaultValue: 'dark',
+      ),
+      breathPreset: _storage.getString('breath_preset', defaultValue: 'box'),
+      breakChimeEnabled: _storage.getBool('break_chime_enabled'),
+      lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
       ),
@@ -560,6 +567,13 @@ class SettingsRepository extends ChangeNotifier {
         'companion_treat_type',
         defaultValue: 'sushi',
       ),
+      overlayThemeMode: _storage.getString(
+        'overlay_theme_mode',
+        defaultValue: 'dark',
+      ),
+      breathPreset: _storage.getString('breath_preset', defaultValue: 'box'),
+      breakChimeEnabled: _storage.getBool('break_chime_enabled'),
+      lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
       ),
@@ -828,6 +842,13 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'companion_treat_type',
       settings.companionTreatType,
+    );
+    await _storage.setString('overlay_theme_mode', settings.overlayThemeMode);
+    await _storage.setString('breath_preset', settings.breathPreset);
+    await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
+    await _storage.setBool(
+      'looked_away_prompt_enabled',
+      settings.lookedAwayPromptEnabled,
     );
     await _storage.setString(
       'template_accent_overrides',

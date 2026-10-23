@@ -36,7 +36,7 @@ class DayStackTemplate extends StatelessWidget {
       breakAccent(settings, 'day_stack', BreakOverlayTheme.sky),
     );
     final progress = breakProgress(remainingSeconds, totalSeconds);
-    final complete = remainingSeconds <= 0 && totalSeconds > 0;
+    final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
     final preview = BreakPreviewScope.isPreview(context);
 
     return ListenableBuilder(

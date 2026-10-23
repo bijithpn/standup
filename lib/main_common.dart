@@ -667,7 +667,10 @@ void mainCommon(FlavorConfig config) async {
           } else if (call.method == 'skipBreak') {
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'completeBreak') {
-            sl<BreakController>().completeCurrentBreak();
+            final args = call.arguments;
+            sl<BreakController>().completeCurrentBreak(
+              lookedAway: args is Map && args['lookedAway'] == true,
+            );
           } else if (call.method == 'hideOverlay') {
             await sl<OverlayWindowService>().hideOverlay();
           } else if (call.method == 'quitApp') {
@@ -676,11 +679,11 @@ void mainCommon(FlavorConfig config) async {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
             sl<TimerEngine>().handleSystemWake();
+            // The overlay window keeps its own end time; send the extended one.
+            sl<BreakController>().refreshSettings();
             sl<DailyResetService>().onSystemWake();
           } else if (call.method == 'onAvatarSaved') {
             final urlParams = call.arguments?['urlParams'] as String?;
-            // The overlay window keeps its own end time; send the extended one.
-            sl<BreakController>().refreshSettings();
             if (urlParams != null &&
                 sl.isRegistered<CompanionOverlayController>()) {
               await sl<CompanionOverlayController>().saveAvatarUrlParams(
@@ -971,10 +974,10 @@ class FakeStatsService extends ChangeNotifier implements StatsService {
 
 class FakeBreakController extends ChangeNotifier implements BreakController {
   @override
-  Future<void> completeCurrentBreak() async {
+  Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     const MethodChannel(
       'com.breakmate.desktop/bridge',
-    ).invokeMethod('completeBreak');
+    ).invokeMethod('completeBreak', {'lookedAway': lookedAway});
   }
 
   @override

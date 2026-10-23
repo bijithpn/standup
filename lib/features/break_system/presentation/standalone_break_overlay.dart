@@ -9,6 +9,7 @@ import 'package:breakmate/core/services/error_toast_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_theme.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_timer_manager.dart';
 import 'package:breakmate/features/break_system/presentation/standalone_overlay/break_overlay_keyboard_handler.dart';
@@ -114,6 +115,7 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
 
     isDismissing = false;
     completing.value = false;
+    lookedAway = false;
     _cachedBreakModel = null;
     _cachedSettingsModel = null;
 
@@ -295,31 +297,46 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
         _config.overlayType == 'preBreakWarning' ||
         _config.overlayType == 'quickReminder';
 
+    final palette = BreakPalette.forMode(
+      _cachedSettingsModel!.overlayThemeMode,
+      MediaQuery.platformBrightnessOf(context),
+    );
+
     return PopScope(
       canPop: false,
-      child: FadeTransition(
-        opacity: _fadeController,
-        child: Material(
-          color: _config.overlayType == 'preBreakWarning'
-              ? Colors.transparent
-              : (isDimmedOverlay
-                    ? Colors.black.withValues(alpha: 0.25)
-                    : Colors.black),
-          child: BreakOverlayKeyboardHandler(
-            canDismiss: _canDismiss,
-            onSkip: _skipBreak,
-            onQuitApp: _quitApp,
-            child: RepaintBoundary(
-              child: BreakOverlayContent(
-                config: _config,
-                fadeAnimation: _fadeController,
-                remainingSecondsNotifier: remainingSecondsNotifier,
-                onSkip: _skipBreak,
-                canDismiss: _canDismiss,
-                breakInfo: _cachedBreakModel!,
-                settings: _cachedSettingsModel!,
-                currentTemplate: _currentTemplate,
-                kenBurnsController: _kenBurnsController,
+      child: BreakPaletteScope(
+        palette: palette,
+        child: FadeTransition(
+          opacity: _fadeController,
+          child: Material(
+            color: _config.overlayType == 'preBreakWarning'
+                ? Colors.transparent
+                : (isDimmedOverlay
+                      ? Colors.black.withValues(alpha: 0.25)
+                      : palette.canvas),
+            child: BreakOverlayKeyboardHandler(
+              canDismiss: _canDismiss,
+              onSkip: _skipBreak,
+              onQuitApp: _quitApp,
+              child: RepaintBoundary(
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: completing,
+                  builder: (_, done, child) =>
+                      BreakCompletionScope(completing: done, child: child!),
+                  child: BreakOverlayContent(
+                    config: _config,
+                    fadeAnimation: _fadeController,
+                    remainingSecondsNotifier: remainingSecondsNotifier,
+                    onSkip: _skipBreak,
+                    canDismiss: _canDismiss,
+                    breakInfo: _cachedBreakModel!,
+                    settings: _cachedSettingsModel!,
+                    currentTemplate: _currentTemplate,
+                    kenBurnsController: _kenBurnsController,
+                    lookedAway: lookedAway,
+                    onLookedAway: () => setState(() => lookedAway = true),
+                  ),
+                ),
               ),
             ),
           ),

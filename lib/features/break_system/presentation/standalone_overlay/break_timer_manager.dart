@@ -20,6 +20,10 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
 
   bool isDismissing = false;
 
+  /// The user confirmed they looked away during this break; reported with the
+  /// natural completion so it can count as a wellness action.
+  bool lookedAway = false;
+
   /// How long the finished state ("Recharged & Ready") stays on screen before
   /// the overlay fades out. Natural completion only; skip fades immediately.
   static const Duration completionHold = Duration(milliseconds: 400);
@@ -75,7 +79,7 @@ mixin BreakTimerManager<T extends StatefulWidget> on State<T> {
           overlayType == 'quickReminder') {
         bridgeChannel.invokeMethod('hideOverlay', {'restoreMainWindow': false});
       } else {
-        bridgeChannel.invokeMethod('completeBreak');
+        bridgeChannel.invokeMethod('completeBreak', {'lookedAway': lookedAway});
       }
     }
 

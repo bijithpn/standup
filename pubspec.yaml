@@ -77,6 +77,7 @@ flutter:
     - assets/avatars/web/assets/
     - assets/avatars/animation_covers/
     - assets/icons/
+    - assets/audio/
 
   fonts:
     - family: Inter
@@ -103,3 +104,6 @@ flutter:
       fonts:
         - asset: assets/fonts/SourceSerif4/SourceSerif4-Regular.ttf
           weight: 400
+        - asset: assets/fonts/SourceSerif4/SourceSerif4-It.ttf
+          weight: 400
+          style: italic

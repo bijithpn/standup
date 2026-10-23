@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
@@ -78,7 +77,7 @@ class StrictModeNote extends StatelessWidget {
               : 'Strict mode is active. Skip is hidden for this break intensity.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.5),
+            color: palette.textMuted,
             fontSize: 12,
             fontWeight: FontWeight.w500,
             fontFamily: BreakOverlayTheme.fontFamily,
@@ -95,18 +94,15 @@ class SwipeToDismissHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final muted = BreakPalette.of(context).textMuted;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          CupertinoIcons.chevron_up,
-          size: 20,
-          color: Colors.white.withValues(alpha: 0.4),
-        ),
+        Icon(CupertinoIcons.chevron_up, size: 20, color: muted),
         Text(
           'Swipe up to dismiss',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.4),
+            color: muted,
             fontSize: 12,
             fontWeight: FontWeight.w500,
             letterSpacing: 1.0,

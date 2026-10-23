@@ -27,11 +27,11 @@ class ZenModeTemplate extends StatefulWidget {
 
 class _ZenModeTemplateState extends State<ZenModeTemplate>
     with SingleTickerProviderStateMixin {
-  BreathPreset _preset = BreathPreset.box;
+  late BreathPreset _preset = BreathPreset.byId(widget.settings.breathPreset);
 
   /// A preset picked mid-cycle starts at the next cycle, so a breath is never
   /// cut short.
-  BreathPreset _pending = BreathPreset.box;
+  late BreathPreset _pending = _preset;
   double _lastValue = 0;
 
   /// One controller drives both the breath and the blob morph; one value
@@ -114,7 +114,11 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     final reduced = BreakMotion.reduced(context);
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
 
     return BreakScaffold(
       onSkip: widget.onSkip,

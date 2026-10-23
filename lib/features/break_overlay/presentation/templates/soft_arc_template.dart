@@ -74,7 +74,11 @@ class _SoftArcTemplateState extends State<SoftArcTemplate>
       widget.remainingSeconds,
       widget.totalSeconds,
     );
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final reduced = BreakMotion.reduced(context);
 
     return BreakScaffold(

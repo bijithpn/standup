@@ -91,7 +91,11 @@ class _OpenFieldTemplateState extends State<OpenFieldTemplate>
   @override
   Widget build(BuildContext context) {
     final accent = _kind.accent;
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final showTip =
         widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 

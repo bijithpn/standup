@@ -19,6 +19,8 @@ class BreakOverlayContent extends StatelessWidget {
   final SettingsModel settings;
   final String currentTemplate;
   final AnimationController kenBurnsController;
+  final bool lookedAway;
+  final VoidCallback onLookedAway;
 
   const BreakOverlayContent({
     super.key,
@@ -31,6 +33,8 @@ class BreakOverlayContent extends StatelessWidget {
     required this.settings,
     required this.currentTemplate,
     required this.kenBurnsController,
+    required this.lookedAway,
+    required this.onLookedAway,
   });
 
   bool get _templateOwnsChrome {
@@ -68,6 +72,13 @@ class BreakOverlayContent extends StatelessWidget {
         exerciseTitle: config.showWellnessNotes ? config.exerciseTitle : null,
         intensityLevel: config.intensityLevel,
         onSkip: onSkip,
+        lookedAway: lookedAway,
+        onLookedAway:
+            config.lookedAwayPromptEnabled &&
+                breakInfo.type == BreakType.short &&
+                config.overlayType == 'breakScreen'
+            ? onLookedAway
+            : null,
         child: RepaintBoundary(
           child: ValueListenableBuilder<int>(
             valueListenable: remainingSecondsNotifier,

@@ -38,20 +38,25 @@ Release title: Break Template Polish
 
 ### Added
 
-- Zen Mode offers three breathing patterns (4-4-4-4, 4-7-8, 5-5) as chips in the overlay; a new pattern starts at the next breath cycle. The choice applies to the current break only.
+- Zen Mode offers three breathing patterns (4-4-4-4, 4-7-8, 5-5) as chips in the overlay; a new pattern starts at the next breath cycle. A pick made in the overlay applies to that break only; the saved default is in Settings.
 - Breathe Line now has a hold phase, using the same box pattern as Zen's default.
 - Tip library for eye-rest and recovery breaks. Split View shows extra tips and the companion's tip bubble rotates through them.
 - Evening warming: Focus Orb, Wave Calm, Zen and Haiku Card shift their accent toward amber from 18:00 to 21:00 and overnight.
 - Day Stack shows empty outlined slots up to your daily break goal.
 - Iris Rest has a "Your streak" toggle that reveals the streak chart (collapsed by default).
 - Soft Floating reopens at the position you last dropped it, until the app restarts.
-- Bundled fonts: Inter Light and ExtraLight, JetBrains Mono, and Source Serif 4.
+- Break screen theme setting (Dark, Light, Match system). Dark stays the default; the overlay window, its controls and every template follow the choice.
+- Breathing Pattern setting (4-4-4-4, 4-7-8, 5-5) that Zen Mode and Breathe Line start from.
+- Optional completion chime (soft bell) when a break finishes on its own, off by default.
+- Optional "I looked away" button on eye-rest breaks, off by default. A confirmed break that runs to its end counts as a wellness action.
+- Bundled fonts: Inter Light and ExtraLight, JetBrains Mono, and Source Serif 4 (regular and italic).
 - Light-theme golden tests for every template (except Companion), plus tests for moon phase, breathing presets, floating anchors, Activity Studio tabs and more.
 
 ### Changed
 
 - Soft Arc is now a horizontal ruler gauge instead of a circular dial.
 - Gallery Focus paints layered ridges instead of a flat gradient while no photos are bundled.
+- Templates read a shared completion signal, so they show their finished state during the 400 ms hold as well as at 00:00.
 - Break overlay holds the finished state for 400 ms before fading out after a break completes. Skipping still fades out immediately.
 - Quiet Grid dots, Focus Orb layers and Split View's right pane are easier to see; Warm Amber's sun sits lower; Day Stack blocks are larger.
 - Fixed template palettes (Warm Amber, Dusk Glow, Mono Time, Paper Light, Open Field, Night Sky, Wind Down, Gallery Focus) moved into the shared break theme.

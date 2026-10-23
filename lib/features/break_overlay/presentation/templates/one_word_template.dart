@@ -29,7 +29,7 @@ class OneWordTemplate extends StatelessWidget {
     );
     final word = breakInfo.type == BreakType.long ? 'Pause' : 'Rest';
     final progress = breakProgress(remainingSeconds, totalSeconds);
-    final complete = remainingSeconds <= 0 && totalSeconds > 0;
+    final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
     final reduced = BreakMotion.reduced(context);
     final showTip = settings.showExercisesInBreak && breakInfo.tip.isNotEmpty;
     final base = palette.textSecondary.withValues(alpha: 0.5);

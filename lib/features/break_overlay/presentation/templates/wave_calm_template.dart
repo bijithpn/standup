@@ -55,7 +55,11 @@ class _WaveCalmTemplateState extends State<WaveCalmTemplate>
     );
     // Light theme swaps the waves for a deep blue at the same alphas.
     final waveColor = palette.isDark ? accent : const Color(0xFF3B6E8F);
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
 
     return BreakScaffold(
       onSkip: widget.onSkip,

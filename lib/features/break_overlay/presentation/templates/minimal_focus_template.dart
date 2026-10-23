@@ -63,7 +63,11 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
       widget.remainingSeconds,
       widget.totalSeconds,
     );
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final showTip =
         widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 

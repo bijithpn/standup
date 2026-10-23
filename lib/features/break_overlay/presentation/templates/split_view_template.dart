@@ -83,7 +83,11 @@ class _SplitViewTemplateState extends State<SplitViewTemplate> {
       widget.remainingSeconds,
       widget.totalSeconds,
     );
-    final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
     final items = _items;
     final index = items.isEmpty ? 0 : _index.clamp(0, items.length - 1);
     final reduced = BreakMotion.reduced(context);

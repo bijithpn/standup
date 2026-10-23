@@ -47,6 +47,17 @@ class BreakOverlayConfigLoader {
           'clock_face_blur_enabled',
           defaultValue: true,
         );
+        final themeMode = SimplePrefs.instance.getString(
+          'overlay_theme_mode',
+          defaultValue: 'dark',
+        );
+        final preset = SimplePrefs.instance.getString(
+          'breath_preset',
+          defaultValue: 'box',
+        );
+        final lookedAway = SimplePrefs.instance.getBool(
+          'looked_away_prompt_enabled',
+        );
         final customImg = SimplePrefs.instance.getString(
           'custom_image_path',
           defaultValue: '',
@@ -65,6 +76,9 @@ class BreakOverlayConfigLoader {
           intensityLevel: intensity,
           clockFaceTextColorHex: textColor,
           clockFaceBlurEnabled: blurEnabled,
+          overlayThemeMode: themeMode,
+          breathPreset: preset,
+          lookedAwayPromptEnabled: lookedAway,
           customImagePath: customImg.isEmpty ? null : customImg,
         );
       }
@@ -126,6 +140,9 @@ extension OverlayWindowConfigModels on OverlayWindowConfig {
     showExercisesInBreak: showWellnessNotes,
     clockFaceTextColorHex: clockFaceTextColorHex,
     clockFaceBlurEnabled: clockFaceBlurEnabled,
+    overlayThemeMode: overlayThemeMode,
+    breathPreset: breathPreset,
+    lookedAwayPromptEnabled: lookedAwayPromptEnabled,
     customImagePath: customImagePath,
   );
 }
