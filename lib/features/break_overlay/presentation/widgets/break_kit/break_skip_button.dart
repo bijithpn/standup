@@ -53,9 +53,8 @@ class _BreakSkipButtonState extends State<BreakSkipButton> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             alignment: Alignment.center,
             decoration: ShapeDecoration(
-              color: palette.isDark
-                  ? Colors.white.withValues(alpha: _hovered ? 0.12 : 0.06)
-                  : Colors.black.withValues(alpha: _hovered ? 0.08 : 0.04),
+              // Opaque enough to stay legible over photos and bright waves.
+              color: palette.surface.withValues(alpha: _hovered ? 0.92 : 0.74),
               shape: StadiumBorder(
                 side: _focused
                     ? BorderSide(color: ring, width: 2)
