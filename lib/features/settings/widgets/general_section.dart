@@ -70,25 +70,39 @@ class GeneralSection extends StatelessWidget {
       (v) async {
         onSave(settings.copyWith(autoStart: v));
         try {
-          if (v) {
-            final result = await launchAtStartup.enable();
-            if (result && context.mounted) {
-              Toast.showSuccess(context, 'Will launch at startup');
-            } else if (context.mounted) {
-              Toast.showError(context, 'Launch at startup not available');
+          final ok = v
+              ? await launchAtStartup.enable()
+              : await launchAtStartup.disable();
+          if (ok) {
+            if (context.mounted) {
+              Toast.showSuccess(
+                context,
+                v ? 'Will launch at startup' : 'Startup launch disabled',
+              );
             }
-          } else {
-            final result = await launchAtStartup.disable();
-            if (result && context.mounted) {
-              Toast.showSuccess(context, 'Startup launch disabled');
-            } else if (context.mounted) {
-              Toast.showError(context, 'Could not disable startup launch');
-            }
+            return;
           }
-        } catch (e) {
-          if (context.mounted) {
-            Toast.showError(context, 'Launch at startup requires macOS 10.10+');
-          }
+        } catch (_) {}
+        // Couldn't change it: put the toggle back and tell the user.
+        onSave(settings.copyWith(autoStart: !v));
+        if (context.mounted) {
+          await showCupertinoDialog<void>(
+            context: context,
+            builder: (ctx) => CupertinoAlertDialog(
+              title: const Text('Launch at Startup unavailable'),
+              content: Text(
+                v
+                    ? "This feature can't be enabled on this system."
+                    : "This feature can't be disabled on this system.",
+              ),
+              actions: [
+                CupertinoDialogAction(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
         }
       },
     );

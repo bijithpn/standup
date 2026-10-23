@@ -86,9 +86,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     }
     if let window = mainFlutterWindow as? MainFlutterWindow {
       window.triggerReopen()
-      if window.isMiniaturized { window.deminiaturize(nil) }
-      NSApp.activate(ignoringOtherApps: true)
-      window.makeKeyAndOrderFront(nil)
+      window.showOnCurrentSpace()
     }
     return true
   }
@@ -446,8 +444,11 @@ class WindowBridge: NSObject, FlutterPlugin {
             result(nil)
             return
         }
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        (window as? MainFlutterWindow)?.showOnCurrentSpace()
+        if !(window is MainFlutterWindow) {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        }
         result(nil)
     }
     

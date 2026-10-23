@@ -227,10 +227,11 @@ final class BehaviorEngineBridge: NSObject, FlutterPlugin {
 
     func handleFocusApp(result: @escaping FlutterResult) {
         DispatchQueue.main.async {
-            NSApp.activate(ignoringOtherApps: true)
-            if let window = MainFlutterWindow.shared ?? (NSApp.delegate as? AppDelegate)?.mainFlutterWindow {
-                window.makeKeyAndOrderFront(nil)
-                window.orderFrontRegardless()
+            if let window = MainFlutterWindow.shared {
+                window.showOnCurrentSpace()
+            } else {
+                NSApp.activate(ignoringOtherApps: true)
+                (NSApp.delegate as? AppDelegate)?.mainFlutterWindow?.makeKeyAndOrderFront(nil)
             }
             result(nil)
         }
