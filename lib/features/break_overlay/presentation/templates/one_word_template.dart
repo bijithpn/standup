@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 class OneWordTemplate extends StatelessWidget {
   final BreakModel breakInfo;
@@ -19,98 +20,102 @@ class OneWordTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    final isLong = breakInfo.type == BreakType.long;
+    final palette = BreakPalette.of(context);
+    final kind = BreakKind.of(breakInfo);
+    final accent = breakAccent(settings, 'one_word', kind.accent);
+    final word = breakInfo.type == BreakType.long ? 'Pause' : 'Rest';
+    final progress = breakProgress(remainingSeconds, totalSeconds);
+    final complete = remainingSeconds <= 0 && totalSeconds > 0;
+    final reduced = BreakMotion.reduced(context);
+    final showTip = settings.showExercisesInBreak && breakInfo.tip.isNotEmpty;
+    final base = palette.textSecondary.withValues(alpha: 0.5);
 
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
+    return BreakScaffold(
+      onSkip: onSkip,
+      strictMode: settings.strictMode,
+      accent: accent,
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isLong ? 'Pause' : 'Rest',
-                      style: TextStyle(
-                        color: Color(settings.clockFaceTextColorHex),
-                        fontSize: 88,
-                        fontWeight: FontWeight.w200,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        letterSpacing: -4,
-                        height: 1.0,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      _formatTime(remainingSeconds),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        fontSize: 22,
-                        fontWeight: FontWeight.w300,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Container(
-                      width: 300,
-                      height: 0.5,
-                      color: Colors.white.withValues(alpha: 0.08),
-                    ),
-                    if (settings.showExercisesInBreak &&
-                        breakInfo.tip.isNotEmpty) ...[
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: 280,
-                        child: Text(
-                          breakInfo.tip,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: BreakOverlayTheme.textMuted,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            fontStyle: FontStyle.italic,
-                            fontFamily: BreakOverlayTheme.fontFamily,
-                            height: 1.6,
+          Positioned(
+            top: 270,
+            left: 128,
+            right: 128,
+            height: 180,
+            child: BreakEntrance(
+              scale: false,
+              duration: const Duration(milliseconds: 1200),
+              child: AnimatedOpacity(
+                opacity: complete ? 0 : 1,
+                duration: BreakMotion.slow,
+                child: Semantics(
+                  header: true,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: TweenAnimationBuilder<double>(
+                        // Glide between per-second updates.
+                        tween: Tween(end: progress),
+                        duration: const Duration(seconds: 1),
+                        curve: Curves.linear,
+                        builder: (context, p, _) => ShaderMask(
+                          blendMode: BlendMode.srcIn,
+                          shaderCallback: (bounds) => LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            // Accent above the drain line, base colour below.
+                            stops: [p, p],
+                            colors: [accent, base],
+                          ).createShader(bounds),
+                          child: Text(
+                            word.toUpperCase(),
+                            maxLines: 1,
+                            style: TextStyle(
+                              fontFamily: BreakOverlayTheme.fontFamily,
+                              fontSize: 140,
+                              fontWeight: FontWeight.w200,
+                              height: 1.0,
+                              color: Colors.white,
+                              letterSpacing: reduced ? 6 : 12 * p,
+                            ),
                           ),
                         ),
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-          if (!settings.strictMode && onSkip != null)
+          Positioned(
+            top: 454,
+            left: 0,
+            right: 0,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: BreakCountdown(
+                seconds: remainingSeconds,
+                style: BreakOverlayTheme.title,
+                color: breakClockColor(
+                  settings,
+                  palette,
+                  fallback: palette.textMuted,
+                ),
+              ),
+            ),
+          ),
+          if (showTip)
             Positioned(
-              bottom: BreakOverlayTheme.skipBottom,
-              right: BreakOverlayTheme.skipRight,
-              child: GestureDetector(
-                onTap: onSkip,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: BreakOverlayTheme.textDim,
-                      fontSize: BreakOverlayTheme.labelFontSize,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
-                    ),
-                  ),
+              left: 0,
+              right: 0,
+              bottom: 72,
+              child: Center(
+                child: BreakEntrance(
+                  delay: BreakEntrance.stagger(2),
+                  scale: false,
+                  child: BreakTip(breakInfo.tip),
                 ),
               ),
             ),

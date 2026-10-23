@@ -10,11 +10,15 @@ class BreakEntrance extends StatefulWidget {
   final Duration delay;
   final bool scale;
 
+  /// Length of the fade/scale itself; defaults to [BreakMotion.slow].
+  final Duration? duration;
+
   const BreakEntrance({
     super.key,
     required this.child,
     this.delay = Duration.zero,
     this.scale = true,
+    this.duration,
   });
 
   /// Stagger helper: the n-th text element enters n * 60ms after the focal one.
@@ -40,7 +44,9 @@ class _BreakEntranceState extends State<BreakEntrance>
 
     final reduced = BreakMotion.reduced(context);
     final delay = reduced ? Duration.zero : widget.delay;
-    final run = reduced ? BreakMotion.medium : BreakMotion.slow;
+    final run = reduced
+        ? BreakMotion.medium
+        : (widget.duration ?? BreakMotion.slow);
     final total = delay + run;
     final c = AnimationController(vsync: this, duration: total);
     final curve = CurvedAnimation(
