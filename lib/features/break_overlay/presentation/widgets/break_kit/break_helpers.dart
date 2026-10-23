@@ -72,10 +72,13 @@ Color breakAccent(
 
 /// Countdown color: the user's clock color when customised, otherwise the
 /// palette's primary text so light themes stay legible.
-Color breakClockColor(SettingsModel settings, BreakPalette palette) =>
-    settings.clockFaceTextColorHex != 0xFFFFFFFF
+Color breakClockColor(
+  SettingsModel settings,
+  BreakPalette palette, {
+  Color? fallback,
+}) => settings.clockFaceTextColorHex != 0xFFFFFFFF
     ? Color(settings.clockFaceTextColorHex)
-    : palette.textPrimary;
+    : (fallback ?? palette.textPrimary);
 
 /// Whether the skip affordance should be offered at all.
 bool breakCanSkip(SettingsModel settings, VoidCallback? onSkip) =>
