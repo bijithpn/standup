@@ -18,6 +18,9 @@ class BreakGlass extends StatelessWidget {
   final bool shadow;
   final Color? borderColor;
 
+  /// Skip the backdrop blur (an opaque-ish pill that sits on a plain scrim).
+  final bool blur;
+
   const BreakGlass({
     super.key,
     required this.child,
@@ -27,7 +30,18 @@ class BreakGlass extends StatelessWidget {
     this.borderAlpha = 0.10,
     this.shadow = true,
     this.borderColor,
+    this.blur = true,
   });
+
+  Widget _maybeBlur(Widget w) => blur
+      ? BackdropFilter(
+          filter: ImageFilter.blur(
+            sigmaX: BreakOverlayTheme.glassBlur,
+            sigmaY: BreakOverlayTheme.glassBlur,
+          ),
+          child: w,
+        )
+      : w;
 
   @override
   Widget build(BuildContext context) {
@@ -37,12 +51,8 @@ class BreakGlass extends StatelessWidget {
       painter: shadow ? _OuterShadowPainter(radius) : null,
       child: ClipRRect(
         borderRadius: r,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: BreakOverlayTheme.glassBlur,
-            sigmaY: BreakOverlayTheme.glassBlur,
-          ),
-          child: DecoratedBox(
+        child: _maybeBlur(
+          DecoratedBox(
             decoration: BoxDecoration(
               color: palette.surface.withValues(alpha: fillAlpha),
               borderRadius: r,

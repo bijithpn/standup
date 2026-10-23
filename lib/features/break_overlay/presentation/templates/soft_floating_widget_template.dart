@@ -122,7 +122,10 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                           ),
                         ),
                         if (canSkip)
-                          _SkipIcon(onPressed: widget.onSkip!, accent: _accent),
+                          BreakSkipIcon(
+                            onPressed: widget.onSkip!,
+                            accent: _accent,
+                          ),
                       ],
                     ),
                   ),
@@ -208,68 +211,6 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
                 child: child,
               ),
               child: BreakCompletionPulse(complete: complete, child: card),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SkipIcon extends StatefulWidget {
-  final VoidCallback onPressed;
-  final Color accent;
-
-  const _SkipIcon({required this.onPressed, required this.accent});
-
-  @override
-  State<_SkipIcon> createState() => _SkipIconState();
-}
-
-class _SkipIconState extends State<_SkipIcon> {
-  bool _hovered = false;
-  bool _focused = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    return Semantics(
-      button: true,
-      label: 'Skip break',
-      excludeSemantics: true,
-      onTap: widget.onPressed,
-      child: FocusableActionDetector(
-        mouseCursor: SystemMouseCursors.click,
-        onShowHoverHighlight: (v) => setState(() => _hovered = v),
-        onShowFocusHighlight: (v) => setState(() => _focused = v),
-        actions: {
-          ActivateIntent: CallbackAction<ActivateIntent>(
-            onInvoke: (_) {
-              widget.onPressed();
-              return null;
-            },
-          ),
-        },
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: widget.onPressed,
-          child: AnimatedContainer(
-            duration: BreakMotion.fast,
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: palette.isDark
-                  ? Colors.white.withValues(alpha: _hovered ? 0.14 : 0.07)
-                  : Colors.black.withValues(alpha: _hovered ? 0.1 : 0.05),
-              border: _focused
-                  ? Border.all(color: widget.accent, width: 2)
-                  : null,
-            ),
-            child: Icon(
-              Icons.close_rounded,
-              size: 16,
-              color: palette.textSecondary,
             ),
           ),
         ),
