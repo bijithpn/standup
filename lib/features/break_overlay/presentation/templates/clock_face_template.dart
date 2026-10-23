@@ -34,7 +34,9 @@ class _ClockFaceTemplateState extends State<ClockFaceTemplate> {
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(widget.settings, 'clock_face', _kind.accent);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'clock_face', _kind.accent),
+    );
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,

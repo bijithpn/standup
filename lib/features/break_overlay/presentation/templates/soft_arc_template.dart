@@ -29,11 +29,20 @@ class SoftArcTemplate extends StatefulWidget {
 class _SoftArcTemplateState extends State<SoftArcTemplate>
     with SingleTickerProviderStateMixin {
   /// 0 -> 1 over 300ms each second: the current tick brightens briefly.
-  late final AnimationController _tickFlash = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 300),
-    value: 1,
-  );
+  late final AnimationController _tickFlash;
+
+  @override
+  void initState() {
+    super.initState();
+    // Created eagerly: a lazy initializer first touched in dispose() would try
+    // to look up the (already deactivated) ticker mode.
+    _tickFlash = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 1,
+    );
+  }
+
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
   @override
@@ -57,7 +66,9 @@ class _SoftArcTemplateState extends State<SoftArcTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(widget.settings, 'soft_arc', _kind.accent);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'soft_arc', _kind.accent),
+    );
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,

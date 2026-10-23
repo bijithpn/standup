@@ -32,7 +32,9 @@ class DayStackTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     final kind = BreakKind.of(breakInfo);
-    final accent = breakAccent(settings, 'day_stack', BreakOverlayTheme.sky);
+    final accent = palette.accentOn(
+      breakAccent(settings, 'day_stack', BreakOverlayTheme.sky),
+    );
     final progress = breakProgress(remainingSeconds, totalSeconds);
     final complete = remainingSeconds <= 0 && totalSeconds > 0;
     final preview = BreakPreviewScope.isPreview(context);

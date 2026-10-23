@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class GuidedBreathingWidget extends StatefulWidget {
   final int targetCycles;
@@ -245,7 +246,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                     Text(
                       phase.label,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: BreakPalette.of(context).textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'Inter',
@@ -258,7 +259,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                         return Text(
                           '${phase.durationSeconds - elapsed}s',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.62),
+                            color: BreakPalette.of(context).textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Inter',
@@ -278,7 +279,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           phase.sublabel,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             fontFamily: 'Inter',
           ),
@@ -313,7 +314,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
         Text(
           'Session complete',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: BreakPalette.of(context).textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w300,
             fontFamily: 'Inter',
@@ -325,7 +326,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           'You completed ${widget.targetCycles} breathing cycles.\nYour nervous system thanks you.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             height: 1.5,
             fontFamily: 'Inter',
@@ -362,7 +363,7 @@ class _CycleIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             color: isActive
                 ? activeColor.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.22),
+                : BreakPalette.of(context).track,
           ),
         );
       }),

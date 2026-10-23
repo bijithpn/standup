@@ -192,6 +192,7 @@ class _DoneButtonState extends State<_DoneButton> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      container: true,
       button: true,
       label: 'Done for today',
       excludeSemantics: true,

@@ -43,10 +43,8 @@ class _RingOnlyTemplateState extends State<RingOnlyTemplate> {
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(
-      widget.settings,
-      'ring_only',
-      BreakOverlayTheme.periwinkle,
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'ring_only', BreakOverlayTheme.periwinkle),
     );
     final progress = breakProgress(
       widget.remainingSeconds,

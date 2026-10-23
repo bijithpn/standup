@@ -56,7 +56,9 @@ class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(widget.settings, 'minimal', _kind.accent);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'minimal', _kind.accent),
+    );
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,

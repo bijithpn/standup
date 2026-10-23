@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class EyeSyncGameWidget extends StatefulWidget {
   final int targetSessions;
@@ -139,7 +140,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           'Focus on the drifting orb and blink naturally.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             fontFamily: 'Inter',
           ),
@@ -152,7 +153,9 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
               '${_sessionSeconds - elapsed}s remaining in this session',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: const Color(0xFF93C5FD).withValues(alpha: 0.6),
+                color: BreakPalette.of(
+                  context,
+                ).accentOn(const Color(0xFF93C5FD)).withValues(alpha: 0.8),
                 fontSize: 12,
                 fontFamily: 'Inter',
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -190,7 +193,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
         Text(
           'Eyes refreshed',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: BreakPalette.of(context).textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w300,
             fontFamily: 'Inter',
@@ -202,7 +205,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           'You completed ${widget.targetSessions} sessions.\nYour eye strain should feel reduced.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.62),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             height: 1.5,
             fontFamily: 'Inter',
@@ -239,7 +242,7 @@ class _SessionIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             color: isActive
                 ? color.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.22),
+                : BreakPalette.of(context).track,
           ),
         );
       }),

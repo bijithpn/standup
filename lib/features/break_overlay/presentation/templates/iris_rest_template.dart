@@ -98,10 +98,12 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'iris_rest',
-      _good,
+    final accent = palette.accentOn(
+      BreakOverlayTheme.resolveAccent(
+        widget.settings.templateAccentOverrides,
+        'iris_rest',
+        _good,
+      ),
     );
     final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
     final reduced = BreakMotion.reduced(context);

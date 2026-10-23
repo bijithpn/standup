@@ -254,6 +254,7 @@ class _CompletePillState extends State<_CompletePill> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      container: true,
       button: true,
       label: 'Complete session',
       excludeSemantics: true,

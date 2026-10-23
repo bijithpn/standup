@@ -88,10 +88,8 @@ class _PulseDotTemplateState extends State<PulseDotTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(
-      widget.settings,
-      'pulse_dot',
-      BreakOverlayTheme.mint,
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'pulse_dot', BreakOverlayTheme.mint),
     );
     final reduced = BreakMotion.reduced(context);
     final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;

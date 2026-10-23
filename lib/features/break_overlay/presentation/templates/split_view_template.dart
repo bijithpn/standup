@@ -69,10 +69,12 @@ class _SplitViewTemplateState extends State<SplitViewTemplate> {
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'split_view',
-      _kind.accent,
+    final accent = palette.accentOn(
+      BreakOverlayTheme.resolveAccent(
+        widget.settings.templateAccentOverrides,
+        'split_view',
+        _kind.accent,
+      ),
     );
     final progress = breakProgress(
       widget.remainingSeconds,
@@ -253,6 +255,7 @@ class _Dot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      container: true,
       button: true,
       selected: active,
       label: label,

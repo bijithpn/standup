@@ -23,6 +23,7 @@ class BreakCountdown extends StatelessWidget {
     final palette = BreakPalette.of(context);
     final base = style ?? BreakOverlayTheme.display;
     return Semantics(
+      container: true,
       label: '$seconds seconds remaining',
       excludeSemantics: true,
       child: Text(

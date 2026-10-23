@@ -38,10 +38,12 @@ class _SoftFloatingWidgetTemplateState extends State<SoftFloatingWidgetTemplate>
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakOverlayTheme.resolveAccent(
-    widget.settings.templateAccentOverrides,
-    'floating',
-    _kind.accent,
+  Color get _accent => BreakPalette.of(context).accentOn(
+    BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'floating',
+      _kind.accent,
+    ),
   );
 
   @override

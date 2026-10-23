@@ -68,7 +68,9 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(widget.settings, 'haiku_card', _kind.accent);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'haiku_card', _kind.accent),
+    );
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,

@@ -24,7 +24,9 @@ class OneWordTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     final kind = BreakKind.of(breakInfo);
-    final accent = breakAccent(settings, 'one_word', kind.accent);
+    final accent = palette.accentOn(
+      breakAccent(settings, 'one_word', kind.accent),
+    );
     final word = breakInfo.type == BreakType.long ? 'Pause' : 'Rest';
     final progress = breakProgress(remainingSeconds, totalSeconds);
     final complete = remainingSeconds <= 0 && totalSeconds > 0;

@@ -72,7 +72,9 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(widget.settings, 'breathe_line', _kind.accent);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'breathe_line', _kind.accent),
+    );
     final reduced = BreakMotion.reduced(context);
     final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
 

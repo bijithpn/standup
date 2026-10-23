@@ -24,6 +24,7 @@ class _BreakSkipIconState extends State<BreakSkipIcon> {
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     return Semantics(
+      container: true,
       button: true,
       label: 'Skip break',
       excludeSemantics: true,

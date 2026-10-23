@@ -69,10 +69,8 @@ class _TimeSliceTemplateState extends State<TimeSliceTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = breakAccent(
-      widget.settings,
-      'time_slice',
-      BreakOverlayTheme.sage,
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'time_slice', BreakOverlayTheme.sage),
     );
     final elapsed = _elapsedSegments(widget);
     final reduced = BreakMotion.reduced(context);
@@ -88,6 +86,7 @@ class _TimeSliceTemplateState extends State<TimeSliceTemplate>
             top: 400 - 130,
             child: BreakEntrance(
               child: Semantics(
+                container: true,
                 label:
                     '${_segments - elapsed} of $_segments segments remaining',
                 child: SizedBox(

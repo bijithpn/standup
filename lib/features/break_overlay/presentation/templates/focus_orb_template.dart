@@ -62,9 +62,11 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     final base = breakAccent(widget.settings, 'focus_orb', _cyan);
-    final hue = Color.lerp(base, BreakOverlayTheme.amber, _tint)!;
+    final hue = palette.accentOn(
+      Color.lerp(base, BreakOverlayTheme.amber, _tint)!,
+    );
     final complete = widget.remainingSeconds <= 0 && widget.totalSeconds > 0;
-    final alphaScale = palette.isDark ? 1.0 : 0.5;
+    final alphaScale = palette.isDark ? 1.0 : 0.85;
 
     final key = Object.hash(hue, alphaScale);
     if (_painterKey != key) {

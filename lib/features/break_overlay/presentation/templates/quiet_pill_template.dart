@@ -49,10 +49,12 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakOverlayTheme.resolveAccent(
-    widget.settings.templateAccentOverrides,
-    'quiet_pill',
-    _kind.accent,
+  Color get _accent => BreakPalette.of(context).accentOn(
+    BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'quiet_pill',
+      _kind.accent,
+    ),
   );
 
   @override
@@ -210,52 +212,55 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
         child: Semantics(
           container: true,
           label: 'Break timer, ${widget.remainingSeconds} seconds remaining',
-          child: FocusableActionDetector(
-            onShowHoverHighlight: _setHover,
-            onShowFocusHighlight: _setFocus,
-            actions: {
-              ActivateIntent: CallbackAction<ActivateIntent>(
-                onInvoke: (_) {
-                  setState(() => _pinned = !_pinned);
-                  _syncSize();
-                  return null;
-                },
-              ),
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // The tip lives in a bubble above the pill while expanded.
-                AnimatedSize(
-                  duration: BreakMotion.fast,
-                  curve: BreakMotion.enter,
-                  alignment: Alignment.bottomCenter,
-                  child: _expanded && showTip
-                      ? Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 320),
-                            child: BreakGlass(
-                              radius: BreakOverlayTheme.radiusMd,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 10,
-                              ),
-                              child: Text(
-                                widget.breakInfo.tip,
-                                textAlign: TextAlign.center,
-                                style: BreakOverlayTheme.body.copyWith(
-                                  color: palette.textSecondary,
-                                  fontSize: 13,
+          child: MouseRegion(
+            onEnter: (_) => _setHover(true),
+            onExit: (_) => _setHover(false),
+            child: FocusableActionDetector(
+              onShowFocusHighlight: _setFocus,
+              actions: {
+                ActivateIntent: CallbackAction<ActivateIntent>(
+                  onInvoke: (_) {
+                    setState(() => _pinned = !_pinned);
+                    _syncSize();
+                    return null;
+                  },
+                ),
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The tip lives in a bubble above the pill while expanded.
+                  AnimatedSize(
+                    duration: BreakMotion.fast,
+                    curve: BreakMotion.enter,
+                    alignment: Alignment.bottomCenter,
+                    child: _expanded && showTip
+                        ? Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 320),
+                              child: BreakGlass(
+                                radius: BreakOverlayTheme.radiusMd,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                child: Text(
+                                  widget.breakInfo.tip,
+                                  textAlign: TextAlign.center,
+                                  style: BreakOverlayTheme.body.copyWith(
+                                    color: palette.textSecondary,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        )
-                      : const SizedBox(width: 0, height: 0),
-                ),
-                pill,
-              ],
+                          )
+                        : const SizedBox(width: 0, height: 0),
+                  ),
+                  pill,
+                ],
+              ),
             ),
           ),
         ),

@@ -47,10 +47,12 @@ class _ActivitiesBreakTemplateState extends State<ActivitiesBreakTemplate>
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakOverlayTheme.resolveAccent(
-    widget.settings.templateAccentOverrides,
-    'activities',
-    _kind.accent,
+  Color get _accent => BreakPalette.of(context).accentOn(
+    BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'activities',
+      _kind.accent,
+    ),
   );
 
   @override
@@ -309,6 +311,7 @@ class _TabState extends State<_Tab> {
         ? palette.textPrimary
         : (_hovered ? palette.textSecondary : palette.textMuted);
     return Semantics(
+      container: true,
       button: true,
       selected: widget.selected,
       label: widget.label,

@@ -48,7 +48,9 @@ class StepGuideTemplate extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
     final kind = BreakKind.of(breakInfo);
-    final accent = breakAccent(settings, 'step_guide', BreakOverlayTheme.mint);
+    final accent = palette.accentOn(
+      breakAccent(settings, 'step_guide', BreakOverlayTheme.mint),
+    );
     final progress = breakProgress(remainingSeconds, totalSeconds);
     final complete = remainingSeconds <= 0 && totalSeconds > 0;
     final preview = BreakPreviewScope.isPreview(context);

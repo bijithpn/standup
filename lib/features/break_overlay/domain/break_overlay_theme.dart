@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 /// Resolved colors for a break overlay surface. Obtain with
@@ -51,13 +52,30 @@ class BreakPalette {
     isDark: false,
   );
 
-  /// The palette in effect: a [BreakPaletteScope] override if one exists
-  /// (used by "fixed" templates), otherwise dark/light from the ambient theme.
+  /// [accent] adjusted so strokes and glyphs stay visible on this palette:
+  /// unchanged on dark, deepened on light (the pastel accents are under 2:1
+  /// on cream).
+  Color accentOn(Color accent) {
+    if (isDark) return accent;
+    final hsl = HSLColor.fromColor(accent);
+    if (hsl.lightness <= 0.42) return accent;
+    return hsl
+        .withLightness(0.42)
+        .withSaturation(math.min(1.0, hsl.saturation + 0.1))
+        .toColor();
+  }
+
+  /// The palette in effect: a [BreakPaletteScope] override if one exists,
+  /// otherwise dark.
+  ///
+  /// This deliberately does not follow `Theme.of(context).brightness`: the
+  /// standalone overlay window runs a bare `MaterialApp`, whose default theme
+  /// is light, and break screens have always been dark. Wrap a subtree in
+  /// `BreakPaletteScope(palette: BreakPalette.light, ...)` to opt in to light.
   static BreakPalette of(BuildContext context) {
     final scoped = context
         .dependOnInheritedWidgetOfExactType<BreakPaletteScope>();
-    if (scoped != null) return scoped.palette;
-    return Theme.of(context).brightness == Brightness.light ? light : dark;
+    return scoped?.palette ?? dark;
   }
 }
 

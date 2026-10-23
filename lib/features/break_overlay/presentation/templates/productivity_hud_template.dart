@@ -57,10 +57,12 @@ class _ProductivityHudTemplateState extends State<ProductivityHudTemplate>
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
-    final accent = BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'hud',
-      _kind.accent,
+    final accent = palette.accentOn(
+      BreakOverlayTheme.resolveAccent(
+        widget.settings.templateAccentOverrides,
+        'hud',
+        _kind.accent,
+      ),
     );
     final progress = breakProgress(
       widget.remainingSeconds,

@@ -194,6 +194,7 @@ class _AmberButtonState extends State<_AmberButton> {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      container: true,
       button: true,
       label: widget.label,
       excludeSemantics: true,

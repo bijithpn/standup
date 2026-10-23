@@ -273,6 +273,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
                           ),
                         ),
                         Semantics(
+                          container: true,
                           button: true,
                           label: _expanded
                               ? 'Collapse details'

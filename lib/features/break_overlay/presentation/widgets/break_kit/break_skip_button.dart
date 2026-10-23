@@ -28,6 +28,7 @@ class _BreakSkipButtonState extends State<BreakSkipButton> {
     final palette = BreakPalette.of(context);
     final ring = widget.accent ?? BreakOverlayTheme.eyeRest;
     return Semantics(
+      container: true,
       button: true,
       label: 'Skip break',
       excludeSemantics: true,

@@ -106,7 +106,13 @@ class BreakScaffold extends StatelessWidget {
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): () => onSkip!(),
         },
-        child: Focus(autofocus: !preview, child: stack),
+        // includeSemantics: false keeps this focus node from merging the whole
+        // page into a single accessibility node.
+        child: Focus(
+          autofocus: !preview,
+          includeSemantics: false,
+          child: stack,
+        ),
       );
     }
 
@@ -116,7 +122,11 @@ class BreakScaffold extends StatelessWidget {
         type: MaterialType.transparency,
         child: DefaultTextStyle(
           style: BreakOverlayTheme.body.copyWith(color: pal.textPrimary),
-          child: stack,
+          child: Semantics(
+            container: true,
+            explicitChildNodes: true,
+            child: stack,
+          ),
         ),
       ),
     );
