@@ -47,15 +47,16 @@ Release title: Break Template Polish
 - Soft Floating reopens at the position you last dropped it, until the app restarts.
 - Break screen theme setting (Dark, Light, Match system). Dark stays the default; the overlay window, its controls and every template follow the choice.
 - Breathing Pattern setting (4-4-4-4, 4-7-8, 5-5) that Zen Mode and Breathe Line start from.
-- Optional completion chime (soft bell) when a break finishes on its own, off by default.
+- Optional completion chime (soft bell) when a break finishes on its own, off by default. It stays silent during meetings and presentations.
 - Optional "I looked away" button on eye-rest breaks, off by default. A confirmed break that runs to its end counts as a wellness action.
+- Gallery Focus ships seven bundled landscape photos (CC0, 1.8 MB) and cross-dissolves between them every 20 seconds.
 - Bundled fonts: Inter Light and ExtraLight, JetBrains Mono, and Source Serif 4 (regular and italic).
 - Light-theme golden tests for every template (except Companion), plus tests for moon phase, breathing presets, floating anchors, Activity Studio tabs and more.
 
 ### Changed
 
 - Soft Arc is now a horizontal ruler gauge instead of a circular dial.
-- Gallery Focus paints layered ridges instead of a flat gradient while no photos are bundled.
+- Gallery Focus falls back to painted ridges instead of a flat gradient if no photo can load.
 - Templates read a shared completion signal, so they show their finished state during the 400 ms hold as well as at 00:00.
 - Break overlay holds the finished state for 400 ms before fading out after a break completes. Skipping still fades out immediately.
 - Quiet Grid dots, Focus Orb layers and Split View's right pane are easier to see; Warm Amber's sun sits lower; Day Stack blocks are larger.

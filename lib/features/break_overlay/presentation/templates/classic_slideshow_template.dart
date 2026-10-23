@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
@@ -46,6 +47,14 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
 
   ImageProvider? _image;
 
+  /// The bundled photo on screen, or null for a custom photo / none.
+  String? _assetKey;
+  Timer? _rotator;
+
+  /// How long each bundled photo stays before the next dissolves in.
+  static const Duration _slideEvery = Duration(seconds: 20);
+  static const Duration _dissolve = Duration(milliseconds: 1200);
+
   /// 1 = card expanded, 0 = collapsed; driven by a spring.
   late final AnimationController _open = AnimationController.unbounded(
     vsync: this,
@@ -64,6 +73,33 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
     super.didChangeDependencies();
     final img = _image;
     if (img != null) BreakImageBackground.precache(context, img);
+    _syncRotation();
+  }
+
+  /// Cycles the bundled photos with a cross-dissolve. Not for a custom photo,
+  /// a PageView-driven slideshow, or frozen (preview / reduced motion) frames.
+  void _syncRotation() {
+    _rotator?.cancel();
+    _rotator = null;
+    final photos = AppConstants.wellnessSlideshow;
+    if (_assetKey == null ||
+        photos.length < 2 ||
+        widget.pageController != null ||
+        breakShouldFreeze(context)) {
+      return;
+    }
+    _rotator = Timer.periodic(_slideEvery, (_) {
+      if (!mounted) return;
+      final next = photos[(photos.indexOf(_assetKey!) + 1) % photos.length];
+      final image = ResizeImage(AssetImage(next), width: 2560);
+      BreakImageBackground.precache(context, image).whenComplete(() {
+        if (!mounted) return;
+        setState(() {
+          _assetKey = next;
+          _image = image;
+        });
+      });
+    });
   }
 
   @override
@@ -74,11 +110,13 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
       _image = _resolveImage();
       final img = _image;
       if (img != null) BreakImageBackground.precache(context, img);
+      _syncRotation();
     }
   }
 
   @override
   void dispose() {
+    _rotator?.cancel();
     _open.dispose();
     super.dispose();
   }
@@ -86,6 +124,7 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
   /// The user's custom photo when enabled and present, else the single
   /// slideshow asset. Null leaves the gradient fallback on screen.
   ImageProvider? _resolveImage() {
+    _assetKey = null;
     final path = widget.settings.customImagePath;
     final isCustomEnabled = path != null && !path.startsWith('disabled:');
     final actualPath = path != null && path.startsWith('disabled:')
@@ -107,9 +146,9 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
         : (AppConstants.wellnessSlideshow.isNotEmpty
               ? AppConstants.wellnessSlideshow.first
               : null);
-    return (img != null && img.isNotEmpty)
-        ? ResizeImage(AssetImage(img), width: 2560)
-        : null;
+    if (img == null || img.isEmpty) return null;
+    _assetKey = img;
+    return ResizeImage(AssetImage(img), width: 2560);
   }
 
   void _toggle() {
@@ -158,14 +197,21 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
     final hasExercise =
         widget.exerciseTitle != null && widget.exerciseInstructions != null;
 
-    Widget photo = BreakImageBackground(
-      image: _image,
-      fallback: _fallback,
-      imageBuilder: _kenBurns,
+    // Each photo is keyed by its asset, so a change cross-dissolves.
+    Widget photo = AnimatedSwitcher(
+      duration: breakShouldFreeze(context) ? Duration.zero : _dissolve,
+      child: KeyedSubtree(
+        key: ValueKey(_assetKey ?? ''),
+        child: BreakImageBackground(
+          image: _image,
+          fallback: _fallback,
+          imageBuilder: _kenBurns,
+        ),
+      ),
     );
     // No photo and no bundled slideshow: paint misty ridges instead of a flat
     // gradient, so the tile still reads as a landscape.
-    if (_image == null && AppConstants.wellnessSlideshow.isEmpty) {
+    if (_image == null) {
       photo = Stack(
         fit: StackFit.expand,
         children: [

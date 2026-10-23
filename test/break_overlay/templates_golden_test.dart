@@ -30,6 +30,15 @@ void main() {
             breakInfo: id == 'activities' ? longBreak : shortBreak,
             onSkip: () {},
           );
+          if (id == 'classic') {
+            // The bundled photo decodes on the real event loop.
+            for (var i = 0; i < 3; i++) {
+              await tester.runAsync(
+                () => Future<void>.delayed(const Duration(milliseconds: 300)),
+              );
+              await tester.pump(const Duration(milliseconds: 400));
+            }
+          }
           await expectLater(
             find.byType(MaterialApp),
             matchesGoldenFile('goldens/$name.png'),

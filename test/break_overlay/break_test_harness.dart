@@ -96,6 +96,14 @@ class TestAssetBundle extends CachingAssetBundle {
     if (key == 'AssetManifest.bin') {
       return const StandardMessageCodec().encodeMessage(<String, Object>{})!;
     }
+    // The bundled slideshow photos are real files, so Gallery Focus goldens
+    // show what ships; every other image is a 1x1 stand-in.
+    if (key.startsWith('assets/slideshow/')) {
+      final file = File(key);
+      if (file.existsSync()) {
+        return ByteData.sublistView(file.readAsBytesSync());
+      }
+    }
     return ByteData.sublistView(_png);
   }
 

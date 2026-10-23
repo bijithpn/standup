@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/time_slice_template.dart';
@@ -57,6 +58,42 @@ void main() {
     await settle();
     expect(find.text(shortBreak.tip), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('classic: bundled photos cross-dissolve every 20 s', (
+    tester,
+  ) async {
+    ValueKey<String> key(String asset) => ValueKey(asset);
+    await pumpBreakTemplate(tester, 'classic');
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    expect(find.byKey(key(AppConstants.wellnessSlideshow[0])), findsOneWidget);
+
+    // The next photo is decoded off-screen, then dissolves in over 1.2 s.
+    await tester.pump(const Duration(seconds: 19));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 500)),
+    );
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byKey(key(AppConstants.wellnessSlideshow[1])), findsOneWidget);
+    expect(
+      find.byKey(key(AppConstants.wellnessSlideshow[0])),
+      findsOneWidget,
+      reason: 'both photos are on screen while dissolving',
+    );
+    await tester.pump(const Duration(milliseconds: 1500));
+    expect(find.byKey(key(AppConstants.wellnessSlideshow[0])), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  test('every bundled photo exists and stays under 400 KB', () {
+    expect(AppConstants.wellnessSlideshow, hasLength(greaterThanOrEqualTo(6)));
+    for (final path in AppConstants.wellnessSlideshow) {
+      final file = File(path);
+      expect(file.existsSync(), isTrue, reason: path);
+      expect(file.lengthSync(), lessThan(400 * 1024), reason: path);
+    }
   });
 
   group('activities', () {

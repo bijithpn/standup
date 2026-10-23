@@ -452,13 +452,25 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     await _timerEngine.finishBreak(skipped: false);
     if (lookedAway) _statsService.recordWellnessAction();
-    if (_settingsRepo.currentSettings.breakChimeEnabled) _playChime();
+    // Never a sound while the user is in a meeting or presenting.
+    final context = _timerEngine.contextManager;
+    if (_settingsRepo.currentSettings.breakChimeEnabled &&
+        !context.isMeetingActive() &&
+        !context.isPresentationActive()) {
+      _playChime();
+    }
     notifyListeners();
   }
+
+  /// Replaces the audio player in tests.
+  @visibleForTesting
+  Future<void> Function()? onChime;
 
   /// A short, soft bell for a break that ran to its end. Fire and forget: a
   /// missing audio device must never affect the break flow.
   Future<void> _playChime() async {
+    final override = onChime;
+    if (override != null) return override();
     try {
       final player = AudioPlayer();
       player.onPlayerComplete.first.then((_) => player.dispose());

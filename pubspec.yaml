@@ -78,6 +78,7 @@ flutter:
     - assets/avatars/animation_covers/
     - assets/icons/
     - assets/audio/
+    - assets/slideshow/
 
   fonts:
     - family: Inter
