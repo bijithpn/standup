@@ -1,8 +1,10 @@
-import 'dart:math';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/physics.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 class QuietPillTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -25,236 +27,317 @@ class QuietPillTemplate extends StatefulWidget {
 }
 
 class _QuietPillTemplateState extends State<QuietPillTemplate>
-    with SingleTickerProviderStateMixin {
-  double? _x;
-  double? _y;
-  double? _lastWidth;
-  double? _lastHeight;
-  bool _drag = false;
+    with TickerProviderStateMixin {
   bool _hover = false;
+  bool _focus = false;
+  bool _pinned = false; // Enter toggles this for keyboard users
 
-  late AnimationController _pulse;
+  bool get _expanded => _hover || _focus || _pinned;
 
-  Color get _accent => BreakOverlayTheme.resolveAccent(
-    widget.settings.templateAccentOverrides,
-    'quiet_pill',
-    BreakOverlayTheme.accentShort,
+  /// 0 = collapsed (200x36), 1 = expanded (320x56). Unbounded so the spring
+  /// can overshoot a touch.
+  late final AnimationController _size = AnimationController.unbounded(
+    vsync: this,
+    value: 0,
   );
-  static const double _closedW = 224;
-  static const double _openW = 310;
-  static const double _h = 56;
+
+  /// Liquid ripple phase, continuous.
+  late final AnimationController _ripple = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 2),
+  );
+
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+
+  Color get _accent => BreakPalette.of(context).accentOn(
+    BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'quiet_pill',
+      _kind.accent,
+    ),
+  );
 
   @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    breakSyncLoop(_ripple, context, park: 0.0);
   }
 
   @override
   void dispose() {
-    _pulse.dispose();
+    _size.dispose();
+    _ripple.dispose();
     super.dispose();
   }
 
-  void _snapCorner(double sw, double sh) {
-    if (_x == null || _y == null) return;
-    final corners = [
-      Offset(16, 16),
-      Offset(sw - _openW - 16, 16),
-      Offset(16, sh - _h - 16),
-      Offset(sw - _openW - 16, sh - _h - 16),
-    ];
-    Offset nearest = corners.first;
-    double minD = double.infinity;
-    for (final c in corners) {
-      final d = sqrt(pow(_x! - c.dx, 2) + pow(_y! - c.dy, 2));
-      if (d < minD) {
-        minD = d;
-        nearest = c;
-      }
+  void _syncSize() {
+    final target = _expanded ? 1.0 : 0.0;
+    if (breakShouldFreeze(context)) {
+      _size.value = target;
+      return;
     }
-    setState(() {
-      _x = nearest.dx;
-      _y = nearest.dy;
-    });
-  }
-
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildHoverContent() {
-    return Row(
-      children: [
-        Container(
-          width: 0.5,
-          height: 24,
-          color: Colors.white.withValues(alpha: 0.15),
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-        ),
-        Expanded(
-          child: Text(
-            widget.breakInfo.tip,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.5),
-              fontSize: 10,
-              fontFamily: BreakOverlayTheme.fontFamily,
-              height: 1.35,
-            ),
-          ),
-        ),
-        if (!widget.settings.strictMode && widget.onSkip != null) ...[
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: widget.onSkip,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Text(
-                'Skip',
-                style: TextStyle(
-                  color: BreakOverlayTheme.textDim,
-                  fontSize: 11,
-                  fontFamily: BreakOverlayTheme.fontFamily,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ],
+    _size.animateWith(
+      SpringSimulation(BreakMotion.spring, _size.value, target, _size.velocity),
     );
+  }
+
+  void _setHover(bool v) {
+    setState(() => _hover = v);
+    _syncSize();
+  }
+
+  void _setFocus(bool v) {
+    setState(() => _focus = v);
+    _syncSize();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isShort = widget.breakInfo.type == BreakType.short;
-    final label = isShort ? 'Eye rest' : 'Pause rest';
+    final palette = BreakPalette.of(context);
+    final progress = breakProgress(
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
+    final canSkip = breakCanSkip(widget.settings, widget.onSkip);
+    final showTip =
+        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
+    final reduced = BreakMotion.reduced(context);
 
-    return Material(
-      color: Colors.transparent,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (_lastWidth != constraints.maxWidth ||
-              _lastHeight != constraints.maxHeight) {
-            if (_x != null && _lastWidth != null && _lastWidth! > 0) {
-              _x = (_x! / _lastWidth!) * constraints.maxWidth;
-            } else {
-              _x = constraints.maxWidth - _openW - 16;
-            }
-            if (_y != null && _lastHeight != null && _lastHeight! > 0) {
-              _y = (_y! / _lastHeight!) * constraints.maxHeight;
-            } else {
-              _y = constraints.maxHeight - _h - 80;
-            }
-            _lastWidth = constraints.maxWidth;
-            _lastHeight = constraints.maxHeight;
-          }
-
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              ColoredBox(color: Colors.black.withValues(alpha: 0.38)),
-              AnimatedPositioned(
-                duration: _drag
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
-                curve: Curves.easeOutBack,
-                left: _x,
-                top: _y,
-                child: MouseRegion(
-                  onEnter: (_) => setState(() => _hover = true),
-                  onExit: (_) => setState(() => _hover = false),
-                  child: GestureDetector(
-                    onPanStart: (_) => setState(() => _drag = true),
-                    onPanUpdate: (d) {
-                      setState(() {
-                        _x = (_x! + d.delta.dx).clamp(
-                          0.0,
-                          constraints.maxWidth - _openW,
-                        );
-                        _y = (_y! + d.delta.dy).clamp(
-                          0.0,
-                          constraints.maxHeight - _h - 40,
-                        );
-                      });
-                    },
-                    onPanEnd: (_) {
-                      setState(() => _drag = false);
-                      _snapCorner(constraints.maxWidth, constraints.maxHeight);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 220),
-                      curve: Curves.easeOutBack,
-                      width: _hover ? _openW : _closedW,
-                      height: _h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xE60F1015),
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: Row(
-                          children: [
-                            AnimatedBuilder(
-                              animation: _pulse,
-                              builder: (_, _) => Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: _accent.withValues(
-                                    alpha: 0.3 + 0.55 * _pulse.value,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _formatTime(widget.remainingSeconds),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                fontFamily: BreakOverlayTheme.fontFamily,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              label,
-                              style: TextStyle(
-                                color: BreakOverlayTheme.textMuted,
-                                fontSize: 11,
-                                fontFamily: BreakOverlayTheme.fontFamily,
-                              ),
-                            ),
-                            if (_hover)
-                              Expanded(
-                                child: ClipRect(
-                                  child: AnimatedOpacity(
-                                    opacity: _hover ? 1.0 : 0.0,
-                                    duration: const Duration(milliseconds: 150),
-                                    child: _buildHoverContent(),
-                                  ),
-                                ),
-                              ),
-                          ],
+    final pill = AnimatedBuilder(
+      animation: _size,
+      builder: (context, _) {
+        final t = _size.value;
+        final w = 200 + 120 * t;
+        final h = 36 + 20 * t;
+        final actionsOpacity = _expanded ? 1.0 : 0.0;
+        return BreakGlass(
+          radius: BreakOverlayTheme.radiusPill,
+          fillAlpha: 0.85,
+          borderAlpha: 0,
+          blur: false,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
+            child: SizedBox(
+              width: w,
+              height: h,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Liquid fill: elapsed share, wavy leading edge.
+                  BreakSmoothProgress(
+                    progress: progress,
+                    builder: (context, anim) => RepaintBoundary(
+                      child: CustomPaint(
+                        painter: _LiquidPainter(
+                          progress: anim,
+                          ripple: _ripple,
+                          color: _accent.withValues(alpha: 0.35),
+                          still: reduced,
                         ),
                       ),
                     ),
                   ),
-                ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        BreakOverlayTheme.radiusPill,
+                      ),
+                      border: Border.all(color: palette.border),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12 + 2 * t),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _accent,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        BreakCountdown(
+                          seconds: widget.remainingSeconds,
+                          style: BreakOverlayTheme.body.copyWith(
+                            fontWeight: FontWeight.w600,
+                            fontFeatures: BreakOverlayTheme.tabular,
+                            height: 1.0,
+                          ),
+                          color: breakClockColor(widget.settings, palette),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _kind.label.toUpperCase(),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.ellipsis,
+                            style: BreakOverlayTheme.micro.copyWith(
+                              color: palette.textMuted,
+                              height: 1.0,
+                            ),
+                          ),
+                        ),
+                        if (t > 0.6 && canSkip)
+                          _Staggered(
+                            visible: actionsOpacity > 0,
+                            index: 0,
+                            child: BreakSkipIcon(
+                              onPressed: widget.onSkip!,
+                              accent: _accent,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        );
+      },
+    );
+
+    return BreakScaffold(
+      canvas: Colors.transparent,
+      scrim: palette.canvas.withValues(alpha: 0.20),
+      scaled: false,
+      showSkip: false,
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: _accent,
+      child: BreakDraggable(
+        initialAnchor: Alignment.bottomCenter,
+        inset: 40,
+        child: Semantics(
+          container: true,
+          label: 'Break timer, ${widget.remainingSeconds} seconds remaining',
+          child: MouseRegion(
+            onEnter: (_) => _setHover(true),
+            onExit: (_) => _setHover(false),
+            child: FocusableActionDetector(
+              onShowFocusHighlight: _setFocus,
+              actions: {
+                ActivateIntent: CallbackAction<ActivateIntent>(
+                  onInvoke: (_) {
+                    setState(() => _pinned = !_pinned);
+                    _syncSize();
+                    return null;
+                  },
+                ),
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The tip lives in a bubble above the pill while expanded.
+                  AnimatedSize(
+                    duration: BreakMotion.fast,
+                    curve: BreakMotion.enter,
+                    alignment: Alignment.bottomCenter,
+                    child: _expanded && showTip
+                        ? Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 320),
+                              child: BreakGlass(
+                                radius: BreakOverlayTheme.radiusMd,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 10,
+                                ),
+                                child: Text(
+                                  widget.breakInfo.tip,
+                                  textAlign: TextAlign.center,
+                                  style: BreakOverlayTheme.body.copyWith(
+                                    color: palette.textSecondary,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox(width: 0, height: 0),
+                  ),
+                  pill,
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
+}
+
+/// Fades a child in over [BreakMotion.fast], offset by 40ms per [index].
+class _Staggered extends StatelessWidget {
+  final bool visible;
+  final int index;
+  final Widget child;
+
+  const _Staggered({
+    required this.visible,
+    required this.index,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(end: visible ? 1.0 : 0.0),
+      duration: BreakMotion.fast + Duration(milliseconds: 40 * index),
+      curve: Interval(
+        (40.0 * index) / (160 + 40.0 * index),
+        1.0,
+        curve: Curves.easeOut,
+      ),
+      builder: (context, v, c) => Opacity(opacity: v, child: c),
+      child: child,
+    );
+  }
+}
+
+class _LiquidPainter extends CustomPainter {
+  final Animation<double> progress;
+  final Animation<double> ripple;
+  final Color color;
+  final bool still;
+
+  final Paint _paint = Paint();
+  final Path _path = Path();
+
+  _LiquidPainter({
+    required this.progress,
+    required this.ripple,
+    required this.color,
+    required this.still,
+  }) : super(repaint: Listenable.merge([progress, ripple]));
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = progress.value.clamp(0.0, 1.0);
+    if (p <= 0) return;
+    final edge = size.width * p;
+    final phase = still ? 0.0 : ripple.value * 2 * math.pi;
+    _paint.color = color;
+
+    // Leading edge: 2px-amplitude sine with a 6px wavelength.
+    _path
+      ..reset()
+      ..moveTo(0, 0)
+      ..lineTo(edge, 0);
+    for (var y = 0.0; y <= size.height; y += 1.5) {
+      _path.lineTo(edge + 2 * math.sin(y / 6 * 2 * math.pi + phase), y);
+    }
+    _path
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(_path, _paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _LiquidPainter old) =>
+      old.color != color || old.still != still;
 }

@@ -1,0 +1,180 @@
+part of 'break_appearance_settings.dart';
+
+const _categories = [
+  'All',
+  'Interactive',
+  'Minimal & Zen',
+  'Classic & Focus',
+  'Art & Nature',
+];
+
+const _templates = [
+  (
+    id: 'classic',
+    name: 'Gallery Focus',
+    desc: 'Image-backed rest view with a compact progress panel.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'minimal',
+    name: 'Quiet Grid',
+    desc: 'Fast-loading custom dial with low-stimulus geometry.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'companion',
+    name: 'Companion Dock',
+    desc: 'Draggable companion layer with a clean command rail.',
+    category: 'Interactive',
+  ),
+  (
+    id: 'zen',
+    name: 'Zen Mode',
+    desc: 'Minimal breathing guide on a quiet lined surface.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'breathe_line',
+    name: 'Breathe Line',
+    desc: 'Animated expanding horizontal breath rhythm guidance.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'hud',
+    name: 'Productivity HUD',
+    desc: 'Spacious telemetry timer with a single progress bar.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'activities',
+    name: 'Activity Studio',
+    desc: 'Guided breathing & eye sync exercises.',
+    category: 'Interactive',
+  ),
+  (
+    id: 'floating',
+    name: 'Soft Floating',
+    desc: 'Glassmorphic floating timer card with dynamic spring physics.',
+    category: 'Interactive',
+  ),
+  (
+    id: 'clock_face',
+    name: 'Clock Face',
+    desc: 'Analog-style clock ring with a progress arc.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'one_word',
+    name: 'One Word',
+    desc: '"Rest" or "Pause" — giant, quiet, minimal typography.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'pulse_dot',
+    name: 'Pulse Dot',
+    desc: 'Pulsing circle border with countdown center.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'focus_orb',
+    name: 'Focus Orb',
+    desc: 'Concentric radial orb glow with rhythmic focus pacing.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'wave_calm',
+    name: 'Wave Calm',
+    desc: 'Animated sine waves behind a centered timer.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'ring_only',
+    name: 'Ring Only',
+    desc: 'Ultra-minimalist circular stroke countdown.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'soft_arc',
+    name: 'Soft Arc',
+    desc: 'Sweeping radial velocity arc with micro-progress ticks.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'iris_rest',
+    name: 'Iris Rest',
+    desc: 'Dynamic geometric aperture rest guide for eye relaxation.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'quiet_pill',
+    name: 'Quiet Pill',
+    desc: 'Compact floating capsule progress indicator.',
+    category: 'Minimal & Zen',
+  ),
+  (
+    id: 'mono_time',
+    name: 'Mono Time',
+    desc: 'Monospaced high-contrast retro terminal timer.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'time_slice',
+    name: 'Time Slice',
+    desc: 'Segmented circular arc interval timer.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'day_stack',
+    name: 'Day Stack',
+    desc: 'Timeline stack reflecting daily completed focus sessions.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'split_view',
+    name: 'Split View',
+    desc: 'Dual-pane layout with timer and ergonomic posture tips.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'step_guide',
+    name: 'Step Guide',
+    desc: 'Staged sequential stretching and physical wellness steps.',
+    category: 'Classic & Focus',
+  ),
+  (
+    id: 'haiku_card',
+    name: 'Haiku Card',
+    desc: 'Rotating mindfulness poetry cards with serene typography.',
+    category: 'Art & Nature',
+  ),
+  (
+    id: 'warm_amber',
+    name: 'Warm Amber',
+    desc: 'Warm circadian amber gradient reducing blue-light exposure.',
+    category: 'Art & Nature',
+  ),
+  (
+    id: 'open_field',
+    name: 'Open Field',
+    desc: 'Expansive outdoor horizon landscape calm.',
+    category: 'Art & Nature',
+  ),
+  (
+    id: 'dusk_glow',
+    name: 'Dusk Glow',
+    desc: 'Atmospheric evening twilight gradient transition.',
+    category: 'Art & Nature',
+  ),
+  (
+    id: 'paper_light',
+    name: 'Paper Light',
+    desc: 'Clean editorial warm cream and charcoal aesthetics.',
+    category: 'Art & Nature',
+  ),
+  (
+    id: 'night_sky',
+    name: 'Night Sky',
+    desc: 'Starlit countdown that dawns into a warm, ready-to-go finish.',
+    category: 'Art & Nature',
+  ),
+];

@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:math' as math;
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -6,6 +9,8 @@ import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/pet_animation_state.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/companion_sprite_widget.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/domain/break_tips.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
 class CompanionInteractiveTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -29,14 +34,77 @@ class CompanionInteractiveTemplate extends StatefulWidget {
 }
 
 class _CompanionInteractiveTemplateState
-    extends State<CompanionInteractiveTemplate> {
+    extends State<CompanionInteractiveTemplate>
+    with TickerProviderStateMixin {
   double? _x;
   double? _y;
   double? _lastWidth;
   double? _lastHeight;
   bool _isDragging = false;
+  bool _hasDragged = false;
+  bool _petHovered = false;
 
   static const double _widgetSize = 130.0;
+
+  /// Idle bob: one full sine period every 2.4s.
+  late final AnimationController _bob = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2400),
+  );
+
+  /// One-shot effects: landing squash (260ms) and the completion hop (400ms).
+  late final AnimationController _fx = AnimationController(vsync: this);
+  bool _hopping = false;
+
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+
+  /// The break's own tip first, then library tips that rotate every 12 s.
+  late final List<String> _tips = [
+    if (widget.breakInfo.tip.isNotEmpty) widget.breakInfo.tip,
+    ...BreakTips.extra(widget.breakInfo),
+  ];
+  int _tipIndex = 0;
+  Timer? _tipTimer;
+
+  Color get _accent => BreakPalette.of(context).accentOn(
+    BreakOverlayTheme.resolveAccent(
+      widget.settings.templateAccentOverrides,
+      'companion',
+      _kind.accent,
+    ),
+  );
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    breakSyncLoop(_bob, context, park: 0.0);
+    _tipTimer?.cancel();
+    if (_tips.length > 1 && !breakShouldFreeze(context)) {
+      _tipTimer = Timer.periodic(const Duration(seconds: 12), (_) {
+        if (mounted && !_isDragging) setState(() => _tipIndex++);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CompanionInteractiveTemplate old) {
+    super.didUpdateWidget(old);
+    if (widget.remainingSeconds <= 0 &&
+        old.remainingSeconds > 0 &&
+        !breakShouldFreeze(context)) {
+      _hopping = true;
+      _fx.duration = const Duration(milliseconds: 400);
+      _fx.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _tipTimer?.cancel();
+    _bob.dispose();
+    _fx.dispose();
+    super.dispose();
+  }
 
   void _snapToEdge(double sw, double sh) {
     if (_x == null || _y == null) return;
@@ -65,22 +133,61 @@ class _CompanionInteractiveTemplateState
     });
   }
 
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  void _land() {
+    if (breakShouldFreeze(context)) return;
+    _hopping = false;
+    _fx.duration = const Duration(milliseconds: 260);
+    _fx.forward(from: 0);
+  }
+
+  Matrix4 _petTransform() {
+    final bobY = 3 * math.sin(_bob.value * 2 * math.pi);
+    var sx = 1.0, sy = 1.0, dy = bobY;
+    if (_fx.isAnimating || _fx.value > 0) {
+      final t = _fx.value;
+      if (_hopping) {
+        dy += -12 * math.sin(math.pi * t);
+      } else {
+        final k = Curves.elasticOut.transform(t);
+        sx = 1.08 + (1.0 - 1.08) * k;
+        sy = 0.9 + (1.0 - 0.9) * k;
+      }
+    }
+    if (_isDragging) {
+      sx *= 1.05;
+      sy *= 1.05;
+    }
+    return Matrix4.translationValues(0, dy, 0)..scaleByDouble(sx, sy, 1.0, 1.0);
   }
 
   @override
   Widget build(BuildContext context) {
+    final palette = BreakPalette.of(context);
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
-    final isShort = widget.breakInfo.type == BreakType.short;
-    final compact = MediaQuery.of(context).size.width < 760;
+    final reduced = BreakMotion.reduced(context);
+    final scrimBase = palette.canvas;
 
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
+    return BreakScaffold(
+      canvas: Colors.transparent,
+      scrim: scrimBase.withValues(alpha: 0.55),
+      scaled: false,
+      showSkip: false,
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: _accent,
+      background: const IgnorePointer(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: RadialGradient(
+              radius: 0.95,
+              colors: [Colors.transparent, Color(0x40000000)],
+            ),
+          ),
+        ),
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final compact = constraints.maxWidth < 760;
           if (_lastWidth != constraints.maxWidth ||
               _lastHeight != constraints.maxHeight) {
             if (_x != null && _lastWidth != null && _lastWidth! > 0) {
@@ -91,87 +198,29 @@ class _CompanionInteractiveTemplateState
             if (_y != null && _lastHeight != null && _lastHeight! > 0) {
               _y = (_y! / _lastHeight!) * constraints.maxHeight;
             } else {
-              _y = constraints.maxHeight - _widgetSize - 130;
+              _y = math.max(
+                0.0,
+                (constraints.maxHeight - _widgetSize) / 2 - 24,
+              );
             }
             _lastWidth = constraints.maxWidth;
             _lastHeight = constraints.maxHeight;
           }
 
+          final settle = _isDragging || reduced
+              ? Duration.zero
+              : const Duration(milliseconds: 300);
+          final bubbleAbove = _y! > 120;
+
           return Stack(
             fit: StackFit.expand,
             children: [
-              Positioned(
-                top: compact ? 20 : 36,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0F1116).withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(100),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: BreakOverlayTheme.resolveAccent(
-                              widget.settings.templateAccentOverrides,
-                              'companion',
-                              BreakOverlayTheme.accentShort,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          _formatTime(widget.remainingSeconds),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w300,
-                            fontFamily: BreakOverlayTheme.fontFamily,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 1,
-                          height: 14,
-                          color: Colors.white.withValues(alpha: 0.12),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          isShort ? 'Mindful rest' : 'Step away & unwind',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.55),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
-                            fontFamily: BreakOverlayTheme.fontFamily,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
               AnimatedPositioned(
-                duration: _isDragging
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
+                duration: settle,
                 curve: Curves.easeOutCubic,
-                left: _x! - 40,
-                top: _y! - 90,
+                left: math.max(8.0, _x! - 45),
+                top: bubbleAbove ? null : _y! + _widgetSize + 12,
+                bottom: bubbleAbove ? constraints.maxHeight - _y! + 12 : null,
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 220),
                   child: Container(
@@ -180,23 +229,18 @@ class _CompanionInteractiveTemplateState
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: BreakOverlayTheme.surfaceSubtle.withValues(
-                        alpha: 0.85,
+                      color: palette.surface.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(
+                        BreakOverlayTheme.radiusMd,
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
+                      border: Border.all(color: palette.border),
                     ),
                     child: Text(
-                      widget.breakInfo.tip,
+                      _tips[_tipIndex % _tips.length],
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        height: 1.45,
+                      style: BreakOverlayTheme.body.copyWith(
+                        color: palette.textSecondary,
+                        fontSize: 13,
                       ),
                     ),
                   ),
@@ -204,90 +248,175 @@ class _CompanionInteractiveTemplateState
               ),
 
               AnimatedPositioned(
-                duration: _isDragging
-                    ? Duration.zero
-                    : const Duration(milliseconds: 300),
+                duration: settle,
+                curve: Curves.easeOutCubic,
+                left: 0,
+                right: 0,
+                // Below the pet, unless the tip bubble is there: then above.
+                top: bubbleAbove
+                    ? _y! + _widgetSize + 32
+                    : math.max(8.0, _y! - 32),
+                child: ExcludeSemantics(
+                  child: AnimatedOpacity(
+                    opacity: _hasDragged ? 0 : 1,
+                    duration: BreakMotion.medium,
+                    child: Text(
+                      'Drag companion anywhere',
+                      textAlign: TextAlign.center,
+                      style: BreakOverlayTheme.body.copyWith(
+                        color: palette.textMuted,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              AnimatedPositioned(
+                duration: settle,
                 curve: Curves.easeOutCubic,
                 left: _x,
                 top: _y,
-                child: GestureDetector(
-                  onPanStart: (_) => setState(() => _isDragging = true),
-                  onPanUpdate: (d) {
-                    setState(() {
-                      _x = (_x! + d.delta.dx).clamp(
-                        0.0,
-                        constraints.maxWidth - _widgetSize,
-                      );
-                      _y = (_y! + d.delta.dy).clamp(
-                        0.0,
-                        constraints.maxHeight - _widgetSize - 80,
-                      );
-                    });
-                  },
-                  onPanEnd: (_) {
-                    setState(() => _isDragging = false);
-                    _snapToEdge(constraints.maxWidth, constraints.maxHeight);
-                  },
-                  child: SizedBox(
-                    width: _widgetSize,
-                    height: _widgetSize,
-                    child: CompanionSpriteWidget(
-                      petTheme: petTheme,
-                      animationState: PetAnimationState.idle,
-                      scale: 3.5,
+                child: Semantics(
+                  label: 'Companion, draggable',
+                  child: MouseRegion(
+                    cursor: _isDragging
+                        ? SystemMouseCursors.grabbing
+                        : SystemMouseCursors.grab,
+                    onEnter: (_) => setState(() => _petHovered = true),
+                    onExit: (_) => setState(() => _petHovered = false),
+                    child: GestureDetector(
+                      onPanStart: (_) => setState(() {
+                        _isDragging = true;
+                        _hasDragged = true;
+                      }),
+                      onPanUpdate: (d) {
+                        setState(() {
+                          _x = (_x! + d.delta.dx).clamp(
+                            0.0,
+                            constraints.maxWidth - _widgetSize,
+                          );
+                          _y = (_y! + d.delta.dy).clamp(
+                            0.0,
+                            math.max(
+                              0.0,
+                              constraints.maxHeight - _widgetSize - 80,
+                            ),
+                          );
+                        });
+                      },
+                      onPanEnd: (_) {
+                        setState(() => _isDragging = false);
+                        _snapToEdge(
+                          constraints.maxWidth,
+                          constraints.maxHeight,
+                        );
+                        _land();
+                      },
+                      child: RepaintBoundary(
+                        child: AnimatedBuilder(
+                          animation: Listenable.merge([_bob, _fx]),
+                          builder: (context, child) => Transform(
+                            alignment: Alignment.bottomCenter,
+                            transform: _petTransform(),
+                            child: child,
+                          ),
+                          child: SizedBox(
+                            width: _widgetSize,
+                            height: _widgetSize,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                AnimatedContainer(
+                                  duration: BreakMotion.fast,
+                                  width: _widgetSize - 8,
+                                  height: _widgetSize - 8,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: _accent.withValues(alpha: 0.4),
+                                      width: 1.5,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: _accent.withValues(
+                                          alpha: _petHovered ? 0.28 : 0.18,
+                                        ),
+                                        blurRadius: 24,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                CompanionSpriteWidget(
+                                  petTheme: petTheme,
+                                  animationState: PetAnimationState.idle,
+                                  scale: 3.5,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
 
               Positioned(
-                bottom: compact ? 20 : 36,
+                bottom: compact ? 20 : 48,
+                left: 0,
+                right: 0,
+                child: Center(child: _buildDock(palette, compact)),
+              ),
+
+              Positioned(
+                bottom: compact ? 36 : 64,
                 left: compact ? 24 : 40,
-                right: compact ? 24 : 40,
-                child: Row(
-                  children: [
-                    Text(
-                      DateFormat('HH:mm').format(DateTime.now()),
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.3),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                      ),
+                child: Semantics(
+                  label: 'Current time',
+                  excludeSemantics: true,
+                  child: Text(
+                    DateFormat('HH:mm').format(clock.now()),
+                    style: BreakOverlayTheme.micro.copyWith(
+                      color: palette.textMuted,
+                      fontFeatures: BreakOverlayTheme.tabular,
                     ),
-                    const Spacer(),
-                    Text(
-                      'Drag companion anywhere',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.22),
-                        fontSize: 11,
-                        fontStyle: FontStyle.italic,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (!widget.settings.strictMode && widget.onSkip != null)
-                      GestureDetector(
-                        onTap: widget.onSkip,
-                        child: MouseRegion(
-                          cursor: SystemMouseCursors.click,
-                          child: Text(
-                            'Skip',
-                            style: TextStyle(
-                              color: BreakOverlayTheme.textDim,
-                              fontSize: BreakOverlayTheme.labelFontSize,
-                              fontWeight: FontWeight.w400,
-                              fontFamily: BreakOverlayTheme.fontFamily,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                  ),
                 ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildDock(BreakPalette palette, bool compact) {
+    final canSkip = breakCanSkip(widget.settings, widget.onSkip);
+    return BreakGlass(
+      radius: BreakOverlayTheme.radiusPill,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: SizedBox(
+        height: 56,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BreakCountdown(
+              seconds: widget.remainingSeconds,
+              style: BreakOverlayTheme.title,
+              color: breakClockColor(widget.settings, palette),
+            ),
+            if (!compact) ...[
+              const SizedBox(width: 12),
+              BreakLabel(_kind.label),
+            ],
+            if (canSkip) ...[
+              const SizedBox(width: 12),
+              Container(width: 1, height: 20, color: palette.border),
+              const SizedBox(width: 8),
+              BreakSkipButton(onPressed: widget.onSkip!, accent: _accent),
+            ],
+          ],
+        ),
       ),
     );
   }

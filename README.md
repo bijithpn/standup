@@ -4,12 +4,12 @@
 
 **A desktop break-reminder and wellness companion that protects your eyes, posture, and focus — without breaking your flow.**
 
-[![Version](https://img.shields.io/badge/version-1.8.2-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/github/v/release/bijithpn/standup?label=version&color=blue)](https://github.com/bijithpn/standup/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#installation)
 [![Flutter](https://img.shields.io/badge/Flutter-3.41-02569B?logo=flutter)](https://flutter.dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-[Download](https://github.com/bijithpn/standup/releases) · [Features](#features) · [Getting Started](#development-setup) · [Architecture](#architecture) · [Changelog](CHANGELOG.md)
+[Download](https://github.com/bijithpn/standup/releases) · [Features](#features) · [Getting Started](#development-setup) · [Architecture](#architecture) · [Changelog](CHANGELOG.md) · [Author](#author)
 
 <a href="screenshots/walkthrough.mp4"><img src="screenshots/tour.gif" alt="BreakMate product tour — click to watch the full walkthrough" width="860"></a>
 
@@ -30,8 +30,9 @@
 - [Testing & Quality](#testing--quality)
 - [Release Pipeline](#release-pipeline)
 - [Project Structure](#project-structure)
-- [Documentation](#documentation)
 - [Contributing](#contributing)
+- [Author](#author)
+- [Acknowledgements](#acknowledgements)
 - [License](#license)
 
 ---
@@ -45,7 +46,7 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 | **Physical protection** | Eye-rest (20-20-20), stretch, and movement prompts with guided exercises. |
 | **Mental clarity** | Pomodoro, Deep Work, Developer, and Health presets to prevent cognitive fatigue. |
 | **Context awareness** | Detects meetings, presentations, idle time, and calendar events, and adapts. |
-| **Ambient companion** | A customizable 3D/animated desktop pet that reflects your state and celebrates streaks. |
+| **Ambient companion** | An animated desktop pet that reflects your state and celebrates streaks. |
 | **Insight** | Local-only analytics for breaks, focus, and app usage. |
 
 ## Screenshots
@@ -84,7 +85,6 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 - **Snooze and skip** from the tray, dashboard, or overlay.
 - **Global hotkey** — `⌘⌥B` (macOS) / `Ctrl+Alt+B` (Windows/Linux) starts a break immediately, or skips the active one.
 - **Adaptive scheduling** that learns from how often you skip or postpone breaks.
-- **Clock-out flow** — a wind-down session and guided end-of-day reflection with a daily summary.
 
 ### Break overlay
 
@@ -104,10 +104,10 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 
 ### Desktop companion
 
-- Customizable 3D avatars: shape, species, breed, colors, expressions, and a saved name.
+- Pick a companion from the bundled species and breeds, and give it a name.
 - `PetBehaviorBrain` — a weighted-decision engine with personality traits (playfulness, curiosity, sociability), context awareness (cursor proximity, meetings), and a recency penalty to avoid repetitive animation.
 - Draggable, resizable **Picture-in-Picture** window; optional **wandering** across the desktop.
-- **Environment builder** — themes, parallax skies, dynamic ground, ambient lighting, particles, and background wildlife.
+- **Scene themes** — selectable environments with parallax skies, ambient lighting, and avatar scene styles.
 - Reacts to break/focus streak milestones (3 / 7 / 14 / 30 / 60 / 100 days).
 - Low-distraction mode and a resource-saving optimization toggle.
 
@@ -150,7 +150,7 @@ Download the latest build from the [**Releases**](https://github.com/bijithpn/st
 
 1. Launch BreakMate; the onboarding flow lets you pick a break profile.
 2. The app lives in the menu bar / system tray. Click it for the countdown and quick actions.
-3. Open the dashboard to adjust **General, Breaks, Focus mode, Exercises, Notifications, Clock Out, Companion,** and **Statistics**.
+3. Open the dashboard to adjust **General, Breaks, Focus mode, Exercises, Notifications, Companion,** and **Statistics**.
 4. Press the global hotkey any time to take a break right now.
 
 ---
@@ -232,7 +232,7 @@ BreakMate runs several Flutter engines (via `FlutterEngineGroup`) so heavy secon
 | --- | --- |
 | **Main** | Dashboard, settings, timer engine, statistics, native hooks. |
 | **Overlay** (`overlayMain`) | Full-screen break, warning, and reminder overlays. |
-| **Companion** (`companionMain`) | 3D avatar web renderer for the desktop pet and PiP window. |
+| **Companion** (`companionMain`) | Desktop pet and PiP window. |
 | **Background polling** | Lightweight activity, meeting, and app-usage sampling. |
 
 - **IPC** — a MethodChannel layer syncs timer state, meeting/sleep state, and interactions across isolates in real time.
@@ -240,8 +240,6 @@ BreakMate runs several Flutter engines (via `FlutterEngineGroup`) so heavy secon
 - **Single-instance lock** — a localhost TCP listener (port `10425` for production, `10426` for the dev flavor, so the two can run side by side); a second launch of the same flavor asks the running instance to shut down, with stale-process cleanup.
 - **Storage** — unified `StorageService` with migrations, lock-file cleanup, and a mirrored key-value store for critical settings.
 - **State & DI** — `provider` + `get_it`, with a dedicated bootstrapper for startup ordering.
-
-See [`docs/architecture.md`](docs/architecture.md) for the full write-up.
 
 ---
 
@@ -252,7 +250,7 @@ flutter analyze   # static analysis
 flutter test      # unit, widget, and property-based tests (glados, mocktail, fake_async)
 ```
 
-Manual macOS/Windows smoke checks are documented in [`docs/dev-checks.md`](docs/dev-checks.md). CI runs on every push via `.github/workflows/cross_platform_ci.yml`.
+CI runs on every push via `.github/workflows/cross_platform_ci.yml`.
 
 ---
 
@@ -273,10 +271,10 @@ Local release helpers live in `scripts/`:
 
 ```bash
 cp .env.example .env.release          # then edit values
-./scripts/create_dmg.sh --version 1.8.1 --build 38 --notes "What changed"
+./scripts/create_dmg.sh --version <version> --build <build> --notes "What changed"
 ```
 
-Useful flags: `--skip-build`, `--skip-github`, `--dry-run`. Never commit your Sparkle private key. Full walkthrough: [`docs/release_guide.md`](docs/release_guide.md).
+Useful flags: `--skip-build`, `--skip-github`, `--dry-run`. Never commit your Sparkle private key.
 
 ---
 
@@ -287,27 +285,15 @@ lib/
 ├── app/            # App shell, bootstrapper, dependency injection
 ├── core/           # Services (timer, storage, IPC, native), config, utilities
 ├── features/
-│   ├── break_system/   break_overlay/   clock_out/
+│   ├── break_system/   break_overlay/   calendar/
 │   ├── companion/      analytics/       wellness/
 │   ├── dashboard/      settings/        themes/
 │   └── menu_bar/       onboarding/
 ├── shared/         # Shared theme, widgets, utilities
 ├── main_dev.dart / main_prod.dart      # Flavor entry points
 macos/  windows/  linux/                # Native runners and bridges
-scripts/  docs/  test/  screenshots/
+scripts/  test/  screenshots/
 ```
-
----
-
-## Documentation
-
-| Document | Contents |
-| --- | --- |
-| [`CHANGELOG.md`](CHANGELOG.md) | Version history and release notes |
-| [`docs/architecture.md`](docs/architecture.md) | Isolates, engines, and responsibilities |
-| [`docs/release_guide.md`](docs/release_guide.md) | Sparkle keys, signing, and release steps |
-| [`docs/dev-checks.md`](docs/dev-checks.md) | Manual smoke checks per platform |
-| [`docs/project-audit.md`](docs/project-audit.md) | Codebase audit and findings |
 
 ---
 
@@ -324,8 +310,23 @@ Please report bugs via [GitHub Issues](https://github.com/bijithpn/standup/issue
 
 ---
 
+## Author
+
+Built and maintained by **Bijith P N**.
+
+- 🌐 Portfolio: [bijith.in](https://bijith.in)
+- 💻 GitHub: [@bijithpn](https://github.com/bijithpn)
+
+If BreakMate helps you, a ⭐ on the [repo](https://github.com/bijithpn/standup) is appreciated.
+
+---
+
+## Acknowledgements
+
+The desktop companion's avatar assets (species, breeds, pixel styles under `assets/avatars/`) come from [oneworks-ai/avatar](https://github.com/oneworks-ai/avatar) by the One Works contributors, used under the MIT License. Their license text is kept at [`assets/avatars/LICENSE`](assets/avatars/LICENSE).
+
+---
+
 ## License
 
-Released under the [MIT License](LICENSE).
-
-Developed by **Bijith P N**.
+Released under the [MIT License](LICENSE). Third-party avatar assets keep their own MIT license; see [Acknowledgements](#acknowledgements).

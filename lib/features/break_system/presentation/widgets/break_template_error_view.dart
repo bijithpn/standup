@@ -52,7 +52,7 @@ class _BreakTemplateErrorViewState extends State<BreakTemplateErrorView> {
         widget.onSkip != null && !(widget.settings?.strictMode ?? false);
 
     return ColoredBox(
-      color: BreakOverlayTheme.background,
+      color: BreakPalette.dark.canvas,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -93,44 +93,44 @@ class _BreakTemplateErrorViewState extends State<BreakTemplateErrorView> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Template Error',
                     style: TextStyle(
                       fontFamily: BreakOverlayTheme.fontFamily,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: BreakOverlayTheme.textPrimary,
+                      color: BreakPalette.dark.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Template "${widget.templateName}" could not be loaded.',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: BreakOverlayTheme.fontFamily,
                       fontSize: 14,
-                      color: BreakOverlayTheme.textSecondary,
+                      color: BreakPalette.dark.textSecondary,
                       height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text(
                     _formatTime(widget.remainingSeconds),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: BreakOverlayTheme.fontFamily,
                       fontSize: 40,
                       fontWeight: FontWeight.w200,
-                      color: BreakOverlayTheme.textPrimary,
+                      color: BreakPalette.dark.textPrimary,
                       letterSpacing: -1.0,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     widget.breakInfo.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: BreakOverlayTheme.fontFamily,
                       fontSize: 12,
-                      color: BreakOverlayTheme.textDim,
+                      color: BreakPalette.dark.textMuted,
                     ),
                   ),
                 ],
@@ -143,13 +143,13 @@ class _BreakTemplateErrorViewState extends State<BreakTemplateErrorView> {
               right: BreakOverlayTheme.skipRight,
               child: GestureDetector(
                 onTap: widget.onSkip,
-                child: const MouseRegion(
+                child: MouseRegion(
                   cursor: SystemMouseCursors.click,
                   child: Text(
                     'Skip',
                     style: TextStyle(
-                      color: BreakOverlayTheme.textDim,
-                      fontSize: BreakOverlayTheme.labelFontSize,
+                      color: BreakPalette.dark.textMuted,
+                      fontSize: 13.0,
                       fontWeight: FontWeight.w400,
                       fontFamily: BreakOverlayTheme.fontFamily,
                     ),

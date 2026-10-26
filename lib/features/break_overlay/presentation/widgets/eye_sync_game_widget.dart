@@ -1,9 +1,14 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class EyeSyncGameWidget extends StatefulWidget {
   final int targetSessions;
+
+  /// Test hook: supplies the random source so the orb path is reproducible.
+  @visibleForTesting
+  static math.Random Function()? randomFactory;
 
   const EyeSyncGameWidget({super.key, this.targetSessions = 3});
 
@@ -27,7 +32,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
   Timer? _sessionTimer;
 
   static const _sessionSeconds = 20;
-  final _rand = math.Random();
+  final _rand = EyeSyncGameWidget.randomFactory?.call() ?? math.Random();
 
   Timer? _orbDelayTimer;
 
@@ -139,7 +144,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           'Focus on the drifting orb and blink naturally.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             fontFamily: 'Inter',
           ),
@@ -152,7 +157,9 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
               '${_sessionSeconds - elapsed}s remaining in this session',
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: const Color(0xFF93C5FD).withValues(alpha: 0.6),
+                color: BreakPalette.of(
+                  context,
+                ).accentOn(const Color(0xFF93C5FD)).withValues(alpha: 0.8),
                 fontSize: 12,
                 fontFamily: 'Inter',
                 fontFeatures: const [FontFeature.tabularFigures()],
@@ -190,7 +197,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
         Text(
           'Eyes refreshed',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: BreakPalette.of(context).textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w300,
             fontFamily: 'Inter',
@@ -202,7 +209,7 @@ class _EyeSyncGameWidgetState extends State<EyeSyncGameWidget>
           'You completed ${widget.targetSessions} sessions.\nYour eye strain should feel reduced.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             height: 1.5,
             fontFamily: 'Inter',
@@ -239,7 +246,7 @@ class _SessionIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             color: isActive
                 ? color.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.1),
+                : BreakPalette.of(context).track,
           ),
         );
       }),
@@ -269,9 +276,9 @@ class _EyeSyncViewport extends StatelessWidget {
             width: 320,
             height: 200,
             decoration: BoxDecoration(
-              color: const Color(0xFF07080A),
+              color: BreakPalette.of(context).canvasRaised,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+              border: Border.all(color: BreakPalette.of(context).border),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),

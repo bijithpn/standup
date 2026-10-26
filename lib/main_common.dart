@@ -334,6 +334,29 @@ Future<void> gracefulShutdown([String? reason]) async {
   await _gracefulShutdown(_globalSingleInstanceServer, reason);
 }
 
+/// Linux hosts the break overlay, companion and picture-in-picture pet in extra
+/// windows of the same executable, each with its own engine. The runner tells
+/// them apart with `--breakmate-role=<role>` because the embedder cannot choose
+/// a Dart entrypoint. Returns true when [args] selected one and it was started.
+bool runSecondaryEntrypoint(List<String> args) {
+  const prefix = '--breakmate-role=';
+  for (final arg in args) {
+    if (!arg.startsWith(prefix)) continue;
+    switch (arg.substring(prefix.length)) {
+      case 'overlay':
+        unawaited(overlayMain());
+        return true;
+      case 'companion':
+        unawaited(companionMain());
+        return true;
+      case 'pip':
+        unawaited(pipMain());
+        return true;
+    }
+  }
+  return false;
+}
+
 void mainCommon(FlavorConfig config) async {
   final isolateName = Isolate.current.debugName ?? '';
   final isMainIsolate =
@@ -667,7 +690,10 @@ void mainCommon(FlavorConfig config) async {
           } else if (call.method == 'skipBreak') {
             sl<BreakController>().skipCurrentBreak();
           } else if (call.method == 'completeBreak') {
-            sl<BreakController>().completeCurrentBreak();
+            final args = call.arguments;
+            sl<BreakController>().completeCurrentBreak(
+              lookedAway: args is Map && args['lookedAway'] == true,
+            );
           } else if (call.method == 'hideOverlay') {
             await sl<OverlayWindowService>().hideOverlay();
           } else if (call.method == 'quitApp') {
@@ -676,15 +702,9 @@ void mainCommon(FlavorConfig config) async {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
             sl<TimerEngine>().handleSystemWake();
+            // The overlay window keeps its own end time; send the extended one.
+            sl<BreakController>().refreshSettings();
             sl<DailyResetService>().onSystemWake();
-          } else if (call.method == 'onAvatarSaved') {
-            final urlParams = call.arguments?['urlParams'] as String?;
-            if (urlParams != null &&
-                sl.isRegistered<CompanionOverlayController>()) {
-              await sl<CompanionOverlayController>().saveAvatarUrlParams(
-                urlParams,
-              );
-            }
           } else if (call.method == 'onPipBackgroundStyleChanged') {
             final style = call.arguments?['style'] as String?;
             if (style != null &&
@@ -969,10 +989,10 @@ class FakeStatsService extends ChangeNotifier implements StatsService {
 
 class FakeBreakController extends ChangeNotifier implements BreakController {
   @override
-  Future<void> completeCurrentBreak() async {
+  Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     const MethodChannel(
       'com.breakmate.desktop/bridge',
-    ).invokeMethod('completeBreak');
+    ).invokeMethod('completeBreak', {'lookedAway': lookedAway});
   }
 
   @override

@@ -144,7 +144,7 @@ class CompanionPetState extends State<CompanionPet>
   }
 
   Future<void> _refreshOrigin() async {
-    if (!Platform.isMacOS && !Platform.isWindows) return;
+    if (!Platform.isMacOS && !Platform.isWindows && !Platform.isLinux) return;
     try {
       _windowOrigin = await windowManager.getPosition();
     } catch (_) {

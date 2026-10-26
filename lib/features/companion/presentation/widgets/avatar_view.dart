@@ -128,7 +128,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
   Offset _cachedWindowOrigin = Offset.zero;
 
   void _updateWindowOrigin() async {
-    if (Platform.isMacOS || Platform.isWindows) {
+    if (Platform.isMacOS || Platform.isWindows || Platform.isLinux) {
       try {
         _cachedWindowOrigin = await windowManager.getPosition();
       } catch (_) {}
@@ -153,7 +153,7 @@ class _AvatarViewState extends State<AvatarView> with TickerProviderStateMixin {
     _feedSub?.cancel();
     if (!widget.isStatic &&
         widget.externalLookAt == null &&
-        (Platform.isMacOS || Platform.isWindows)) {
+        (Platform.isMacOS || Platform.isWindows || Platform.isLinux)) {
       _feedSub = CursorFeed.instance.subscribe((sample) {
         if (!mounted || widget.externalLookAt != null) return;
         _handleScreenCursor(sample.position);

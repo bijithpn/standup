@@ -170,6 +170,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'breaksCompleted': _statsService.stats.breaksCompleted,
           'clockFaceTextColorHex': settings.clockFaceTextColorHex,
           'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'overlayThemeMode': settings.overlayThemeMode,
+          'breathPreset': settings.breathPreset,
+          'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
           'customImagePath': settings.customImagePath ?? '',
         },
       );
@@ -429,6 +432,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
         'breaksCompleted': _statsService.stats.breaksCompleted,
         'clockFaceTextColorHex': settings.clockFaceTextColorHex,
         'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+        'overlayThemeMode': settings.overlayThemeMode,
+        'breathPreset': settings.breathPreset,
+        'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
         'customImagePath': settings.customImagePath ?? '',
       },
     );
@@ -441,9 +447,37 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     });
   }
 
-  Future<void> completeCurrentBreak() async {
+  /// [lookedAway] is true when the user confirmed they looked away from the
+  /// screen during an eye-rest break; it counts as a wellness action.
+  Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     await _timerEngine.finishBreak(skipped: false);
+    if (lookedAway) _statsService.recordWellnessAction();
+    // Never a sound while the user is in a meeting or presenting.
+    final context = _timerEngine.contextManager;
+    if (_settingsRepo.currentSettings.breakChimeEnabled &&
+        !context.isMeetingActive() &&
+        !context.isPresentationActive()) {
+      _playChime();
+    }
     notifyListeners();
+  }
+
+  /// Replaces the audio player in tests.
+  @visibleForTesting
+  Future<void> Function()? onChime;
+
+  /// A short, soft bell for a break that ran to its end. Fire and forget: a
+  /// missing audio device must never affect the break flow.
+  Future<void> _playChime() async {
+    final override = onChime;
+    if (override != null) return override();
+    try {
+      final player = AudioPlayer();
+      player.onPlayerComplete.first.then((_) => player.dispose());
+      await player.play(AssetSource('audio/break_chime.wav'), volume: 0.6);
+    } catch (e) {
+      _logger.warning('Failed to play completion chime: $e');
+    }
   }
 
   Future<void> skipCurrentBreak() async {
@@ -508,6 +542,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
           'breaksCompleted': _statsService.stats.breaksCompleted,
           'clockFaceTextColorHex': settings.clockFaceTextColorHex,
           'clockFaceBlurEnabled': settings.clockFaceBlurEnabled,
+          'overlayThemeMode': settings.overlayThemeMode,
+          'breathPreset': settings.breathPreset,
+          'lookedAwayPromptEnabled': settings.lookedAwayPromptEnabled,
           'customImagePath': settings.customImagePath ?? '',
         },
       );

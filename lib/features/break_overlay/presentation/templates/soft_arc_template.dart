@@ -1,11 +1,11 @@
-import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-class SoftArcTemplate extends StatelessWidget {
+class SoftArcTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final int remainingSeconds;
@@ -21,156 +21,229 @@ class SoftArcTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
+  @override
+  State<SoftArcTemplate> createState() => _SoftArcTemplateState();
+}
+
+class _SoftArcTemplateState extends State<SoftArcTemplate>
+    with SingleTickerProviderStateMixin {
+  static const double _gaugeWidth = 560;
+
+  /// 0 -> 1 over 300ms each second: the current tick brightens briefly.
+  late final AnimationController _tickFlash;
+
+  @override
+  void initState() {
+    super.initState();
+    // Created eagerly: a lazy initializer first touched in dispose() would try
+    // to look up the (already deactivated) ticker mode.
+    _tickFlash = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+      value: 1,
+    );
   }
 
-  String _label() {
-    final isShort = breakInfo.type == BreakType.short;
-    final mins = totalSeconds ~/ 60;
-    final secs = totalSeconds % 60;
-    final dur = mins > 0
-        ? (secs > 0 ? '$mins min $secs sec' : '$mins min')
-        : '$totalSeconds sec';
-    return isShort ? 'Eye rest · $dur' : 'Pause · $dur';
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+
+  @override
+  void didUpdateWidget(covariant SoftArcTemplate old) {
+    super.didUpdateWidget(old);
+    if (old.remainingSeconds != widget.remainingSeconds &&
+        !breakShouldFreeze(context)) {
+      _tickFlash.forward(from: 0);
+    }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final isShort = breakInfo.type == BreakType.short;
-    final defaultAccent = isShort
-        ? BreakOverlayTheme.accentShort
-        : BreakOverlayTheme.accentLong;
-    final baseAccent = settings.clockFaceTextColorHex != 0xFFFFFFFF
-        ? Color(settings.clockFaceTextColorHex)
-        : defaultAccent;
-    final accent = BreakOverlayTheme.resolveAccent(
-      settings.templateAccentOverrides,
-      'soft_arc',
-      baseAccent,
-    );
-    final progress = totalSeconds > 0
-        ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
-        : 0.0;
+  void dispose() {
+    _tickFlash.dispose();
+    super.dispose();
+  }
 
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isShort ? LucideIcons.eye : LucideIcons.leaf,
-                  size: 20,
-                  color: accent.withValues(alpha: 0.45),
+  String get _readout =>
+      '${_kind.label} · ${breakDurationLabel(widget.totalSeconds)}';
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = BreakPalette.of(context);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'soft_arc', _kind.accent),
+    );
+    final progress = breakProgress(
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
+    final reduced = BreakMotion.reduced(context);
+
+    return BreakScaffold(
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: accent,
+      child: Center(
+        child: BreakEntrance(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ExcludeSemantics(
+                child: Icon(_kind.icon, size: 20, color: accent),
+              ),
+              const SizedBox(height: 16),
+              BreakCountdown(
+                seconds: widget.remainingSeconds,
+                color: breakClockColor(
+                  widget.settings,
+                  palette,
+                  fallback: accent,
                 ),
-                const SizedBox(height: 20),
-                RepaintBoundary(
-                  child: SizedBox(
-                    width: 200,
-                    height: 200,
+              ),
+              const SizedBox(height: 28),
+              BreakSmoothProgress(
+                progress: progress,
+                builder: (context, anim) => TweenAnimationBuilder<double>(
+                  tween: Tween(end: complete ? 1.0 : 0.0),
+                  duration: const Duration(milliseconds: 400),
+                  builder: (context, glow, _) => RepaintBoundary(
                     child: CustomPaint(
-                      painter: _SoftArcPainter(
+                      size: const Size(_gaugeWidth, 64),
+                      painter: _GaugePainter(
+                        progress: anim,
+                        tickFlash: reduced ? null : _tickFlash,
                         accent: accent,
-                        progress: progress,
+                        minorTick: palette.track,
+                        majorTick: palette.textMuted,
+                        glow: glow,
                       ),
-                      child: Center(
-                        child: Text(
-                          _formatTime(remainingSeconds),
-                          style: TextStyle(
-                            color: Color(settings.clockFaceTextColorHex),
-                            fontSize: 48,
-                            fontWeight: FontWeight.w200,
-                            fontFamily: BreakOverlayTheme.fontFamily,
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                            letterSpacing: -1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  _label(),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: BreakOverlayTheme.labelFontSize,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: BreakOverlayTheme.fontFamily,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (!settings.strictMode && onSkip != null)
-            Positioned(
-              bottom: BreakOverlayTheme.skipBottom,
-              right: BreakOverlayTheme.skipRight,
-              child: GestureDetector(
-                onTap: onSkip,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: BreakOverlayTheme.textDim,
-                      fontSize: BreakOverlayTheme.labelFontSize,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+              const SizedBox(height: 20),
+              BreakLabel(_readout),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _SoftArcPainter extends CustomPainter {
+class _GaugePainter extends CustomPainter {
+  final Animation<double> progress;
+  final Animation<double>? tickFlash;
   final Color accent;
-  final double progress;
+  final Color minorTick;
+  final Color majorTick;
+  final double glow;
 
-  const _SoftArcPainter({required this.accent, required this.progress});
+  static const int _ticks = 48;
+  static const double _inset = 12;
+  static const double _trackY = 44;
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 4;
+  final Paint _line = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 3
+    ..strokeCap = StrokeCap.round;
+  final Paint _dot = Paint();
+  final Paint _halo = Paint()
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
+  final Paint _flash = Paint()
+    ..strokeCap = StrokeCap.round
+    ..strokeWidth = 2;
 
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..color = Colors.white.withValues(alpha: 0.1),
+  ui.Picture? _static;
+  Size? _staticSize;
+
+  _GaugePainter({
+    required this.progress,
+    required this.tickFlash,
+    required this.accent,
+    required this.minorTick,
+    required this.majorTick,
+    required this.glow,
+  }) : super(repaint: Listenable.merge([progress, ?tickFlash]));
+
+  double _x(Size size, double t) => _inset + (size.width - 2 * _inset) * t;
+
+  /// Ruler: ticks above a track. They never change, so record them once.
+  ui.Picture _record(Size size) {
+    final rec = ui.PictureRecorder();
+    final canvas = Canvas(rec);
+
+    _line.color = minorTick;
+    canvas.drawLine(
+      Offset(_x(size, 0), _trackY),
+      Offset(_x(size, 1), _trackY),
+      _line,
     );
 
-    if (progress > 0) {
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        math.pi * 2 * progress,
-        false,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1.5
-          ..strokeCap = StrokeCap.round
-          ..color = accent.withValues(alpha: 0.55),
+    final tick = Paint()..strokeCap = StrokeCap.round;
+    for (var i = 0; i <= _ticks; i++) {
+      final major = i % 6 == 0;
+      tick
+        ..strokeWidth = major ? 1.6 : 1.0
+        ..color = major ? majorTick : minorTick;
+      final x = _x(size, i / _ticks);
+      canvas.drawLine(
+        Offset(x, _trackY - 10 - (major ? 12 : 6)),
+        Offset(x, _trackY - 10),
+        tick,
       );
     }
+    return rec.endRecording();
   }
 
   @override
-  bool shouldRepaint(covariant _SoftArcPainter old) =>
-      old.progress != progress || old.accent != accent;
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) return;
+    if (_static == null || _staticSize != size) {
+      _static = _record(size);
+      _staticSize = size;
+    }
+    canvas.drawPicture(_static!);
+
+    final p = progress.value.clamp(0.0, 1.0);
+
+    if (p > 0) {
+      _line.color = accent;
+      canvas.drawLine(
+        Offset(_x(size, 0), _trackY),
+        Offset(_x(size, p), _trackY),
+        _line,
+      );
+    }
+
+    // Brighten the tick for the second that just completed.
+    final f = tickFlash;
+    if (f != null && f.value < 1) {
+      final i = (p * _ticks).floor().clamp(0, _ticks);
+      final major = i % 6 == 0;
+      final x = _x(size, i / _ticks);
+      _flash.color = accent.withValues(alpha: 1 - f.value);
+      canvas.drawLine(
+        Offset(x, _trackY - 10 - (major ? 12 : 6)),
+        Offset(x, _trackY - 10),
+        _flash,
+      );
+    }
+
+    // Needle dot at the head, with a halo that peaks on completion.
+    final head = Offset(_x(size, p), _trackY);
+    _halo.color = accent.withValues(alpha: 0.35 + 0.45 * glow);
+    canvas.drawCircle(head, 8 + 4 * glow, _halo);
+    _dot.color = accent;
+    canvas.drawCircle(head, 4, _dot);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GaugePainter old) =>
+      old.accent != accent ||
+      old.minorTick != minorTick ||
+      old.majorTick != majorTick ||
+      old.glow != glow;
 }

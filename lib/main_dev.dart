@@ -16,7 +16,8 @@ void pipMain() {
   common.pipMain();
 }
 
-void main() {
+void main(List<String> args) {
+  if (common.runSecondaryEntrypoint(args)) return;
   FlavorConfig(
     appName: 'BreakMate Dev',
     bundleId: 'com.bijith.breakmate.dev',

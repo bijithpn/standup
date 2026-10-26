@@ -4,9 +4,17 @@ class AppConstants {
   static const String appName = 'BreakMate';
   static const String appVersion = '1.0.0';
 
-  /// Wellness slideshow images — removed in avatar-main asset migration.
-  /// Reserved for future content; currently unused.
-  static const List<String> wellnessSlideshow = [];
+  /// Bundled landscape photos for the Gallery Focus break template (CC0; see
+  /// `assets/slideshow/CREDITS.md`). Each is 1600 px wide and under 300 KB.
+  static const List<String> wellnessSlideshow = [
+    'assets/slideshow/lake_reflection.jpg',
+    'assets/slideshow/misty_lake.jpg',
+    'assets/slideshow/mountain_valley.jpg',
+    'assets/slideshow/forest_sunrise.jpg',
+    'assets/slideshow/sunset_sea.jpg',
+    'assets/slideshow/river_valley.jpg',
+    'assets/slideshow/lone_tree.jpg',
+  ];
 
   static const int defaultShortBreakIntervalMinutes = 20;
   static const int defaultShortBreakDurationSeconds = 20;
@@ -64,8 +72,6 @@ class AppConstants {
   static const String keyPostponeCount = 'postpone_count';
   static const String keyActivityPatterns = 'activity_patterns';
   static const String keyCompanionPetTheme = 'companion_pet_theme';
-  static const String keyCompanionAvatarUrlParams =
-      'companion_avatar_url_params';
   static const String legacyKeyCompanionCatTheme = 'companion_cat_theme';
 
   static const int breaksPerDayForStreak = 5;

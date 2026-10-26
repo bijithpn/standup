@@ -33,9 +33,15 @@ class SettingsPersistence {
       final appData = Platform.environment['APPDATA'] ?? '';
       return '$appData\\breakmate\\pet_config_v2.json';
     }
+    if (Platform.isLinux) {
+      final configHome =
+          Platform.environment['XDG_CONFIG_HOME'] ??
+          '${Platform.environment['HOME'] ?? ''}/.config';
+      return '$configHome/breakmate/pet_config_v2.json';
+    }
     throw UnsupportedError(
       'SettingsPersistence: unsupported platform. '
-      'Only macOS and Windows are supported.',
+      'Only macOS, Windows and Linux are supported.',
     );
   }
 

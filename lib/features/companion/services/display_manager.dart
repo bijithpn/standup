@@ -7,7 +7,7 @@ import 'package:breakmate/core/native/native_bridge.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
 
-abstract class DisplayManager {
+abstract class CompanionDisplayManager {
   Future<List<DisplayBounds>> enumerateDisplays();
 
   List<DisplayBounds> get displays;
@@ -23,7 +23,7 @@ abstract class DisplayManager {
   void onDisplayChanged(List<DisplayBounds> newBounds);
 }
 
-class NativeDisplayManager implements DisplayManager {
+class NativeDisplayManager implements CompanionDisplayManager {
   NativeDisplayManager({
     NativeBridgePlatform? bridge,
     EventBus? eventBus,
@@ -58,7 +58,7 @@ class NativeDisplayManager implements DisplayManager {
     _unionBounds = _computeUnion(bounds);
     _previousDisplayIds = bounds.map((d) => d.id).toSet();
     _logger.info(
-      'DisplayManager: enumerated ${bounds.length} display(s), '
+      'CompanionDisplayManager: enumerated ${bounds.length} display(s), '
       'union=$_unionBounds',
     );
     return List.unmodifiable(bounds);
@@ -128,7 +128,9 @@ class NativeDisplayManager implements DisplayManager {
 
     for (final prevId in _previousDisplayIds) {
       if (!newIds.contains(prevId)) {
-        _logger.warning('DisplayManager: display "$prevId" disconnected.');
+        _logger.warning(
+          'CompanionDisplayManager: display "$prevId" disconnected.',
+        );
         _eventBus.emit(DisplayDisconnectedEvent(displayId: prevId));
       }
     }
@@ -138,7 +140,7 @@ class NativeDisplayManager implements DisplayManager {
     _previousDisplayIds = newIds;
 
     _logger.info(
-      'DisplayManager: display list updated — ${newBounds.length} display(s), '
+      'CompanionDisplayManager: display list updated — ${newBounds.length} display(s), '
       'union=$_unionBounds',
     );
 

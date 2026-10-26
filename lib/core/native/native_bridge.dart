@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:breakmate/core/display/models/display_info.dart';
 import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/linux_bridge.dart';
 import 'package:breakmate/core/native/windows_bridge.dart';
 
 class OverlayArgs {
@@ -75,8 +76,6 @@ class PipWindowArgs {
   final String? companionToyType;
   final String? companionTreatType;
   final String? previewBackground;
-  final String? avatarUrl;
-  final String? urlParams;
 
   /// The companion's full appearance as JSON, so the overlay engine can render
   /// the exact breed, palette, and seed the user picked rather than falling
@@ -126,8 +125,6 @@ class PipWindowArgs {
     this.companionToyType,
     this.companionTreatType,
     this.previewBackground,
-    this.avatarUrl,
-    this.urlParams,
     this.avatarDefinitionJson,
     this.renderMode,
     this.keepOnScreen,
@@ -171,8 +168,6 @@ class PipWindowArgs {
       map['companionTreatType'] = companionTreatType;
     }
     if (previewBackground != null) map['previewBackground'] = previewBackground;
-    if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
-    if (urlParams != null) map['urlParams'] = urlParams;
     if (avatarDefinitionJson != null) {
       map['avatarDefinitionJson'] = avatarDefinitionJson;
     }
@@ -208,8 +203,6 @@ class PipWindowArgs {
       companionToyType: map['companionToyType'] as String?,
       companionTreatType: map['companionTreatType'] as String?,
       previewBackground: map['previewBackground'] as String?,
-      avatarUrl: map['avatarUrl'] as String?,
-      urlParams: map['urlParams'] as String?,
       avatarDefinitionJson: map['avatarDefinitionJson'] as String?,
       renderMode: map['renderMode'] as String?,
       keepOnScreen: map['keepOnScreen'] as bool?,
@@ -376,13 +369,9 @@ abstract class NativeBridgePlatform {
 
   Future<void> hidePipWindow();
 
-  Future<void> openAvatarEditor(String editorUrl);
 
-  Future<void> showCustomizerViewport(Map<String, dynamic> args);
 
-  Future<void> updateCustomizerViewport(Map<String, dynamic> args);
 
-  Future<void> hideCustomizerViewport();
 }
 
 class FallbackBridge implements NativeBridgePlatform {
@@ -509,17 +498,9 @@ class FallbackBridge implements NativeBridgePlatform {
   @override
   Future<void> hidePipWindow() async {}
 
-  @override
-  Future<void> openAvatarEditor(String editorUrl) async {}
 
-  @override
-  Future<void> showCustomizerViewport(Map<String, dynamic> args) async {}
 
-  @override
-  Future<void> updateCustomizerViewport(Map<String, dynamic> args) async {}
 
-  @override
-  Future<void> hideCustomizerViewport() async {}
 }
 
 class NativeBridge {
@@ -532,6 +513,8 @@ class NativeBridge {
       return MacOSBridge();
     } else if (Platform.isWindows) {
       return WindowsBridge();
+    } else if (Platform.isLinux) {
+      return LinuxBridge();
     } else {
       return const FallbackBridge();
     }
@@ -676,15 +659,7 @@ class NativeBridge {
 
   static Future<void> hidePipWindow() => _platform.hidePipWindow();
 
-  static Future<void> openAvatarEditor(String editorUrl) =>
-      _platform.openAvatarEditor(editorUrl);
 
-  static Future<void> showCustomizerViewport(Map<String, dynamic> args) =>
-      _platform.showCustomizerViewport(args);
 
-  static Future<void> updateCustomizerViewport(Map<String, dynamic> args) =>
-      _platform.updateCustomizerViewport(args);
 
-  static Future<void> hideCustomizerViewport() =>
-      _platform.hideCustomizerViewport();
 }

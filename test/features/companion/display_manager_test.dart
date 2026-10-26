@@ -6,7 +6,7 @@ import 'package:glados/glados.dart' hide test, group, expect;
 
 // The tests in this file exercise standalone geometry helpers copied from
 // the production NativeDisplayManager.  No live NativeBridgePlatform or
-// DisplayManager subclass is needed.
+// CompanionDisplayManager subclass is needed.
 
 // We re-implement the geometry methods directly here to unit-test them
 // without needing a live NativeBridge.  The production NativeDisplayManager
@@ -82,7 +82,7 @@ bool _areAdjacent(Rect a, Rect b) {
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 void main() {
-  group('DisplayManager.areAdjacent (Task 7.3)', () {
+  group('CompanionDisplayManager.areAdjacent (Task 7.3)', () {
     test('side-by-side displays with touching edge are adjacent', () {
       final a = Rect.fromLTWH(0, 0, 1920, 1080);
       final b = Rect.fromLTWH(1920, 0, 1920, 1080);
@@ -108,7 +108,7 @@ void main() {
     });
   });
 
-  group('DisplayManager.unionBounds (Task 7.3)', () {
+  group('CompanionDisplayManager.unionBounds (Task 7.3)', () {
     test('single display returns its own rect', () {
       final r = Rect.fromLTWH(0, 0, 1920, 1080);
       final union = [r].fold<Rect>(r, (acc, d) => acc.expandToInclude(d));
@@ -125,7 +125,7 @@ void main() {
     });
   });
 
-  group('DisplayManager.nearestDisplayPoint (Task 7.3)', () {
+  group('CompanionDisplayManager.nearestDisplayPoint (Task 7.3)', () {
     test('point inside a display is returned unchanged', () {
       final rects = [Rect.fromLTWH(0, 0, 1920, 1080)];
       const point = Offset(500, 500);

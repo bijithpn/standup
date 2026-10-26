@@ -30,7 +30,7 @@ void main() {
     );
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(find.text('Time to Switch Off'), findsOneWidget);
+    expect(find.text('Recovery'), findsOneWidget);
     expect(find.text('Recharged & Ready'), findsNothing);
     expect(find.text('Skip'), findsNothing); // onSkip is null
   });
@@ -55,7 +55,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.text('Recharged & Ready'), findsOneWidget);
-      expect(find.text('Time to Switch Off'), findsNothing);
+      expect(find.text('Recovery'), findsNothing);
       expect(find.text('Complete Session'), findsOneWidget);
 
       await tester.tap(find.text('Complete Session'));

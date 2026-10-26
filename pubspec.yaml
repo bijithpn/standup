@@ -1,7 +1,7 @@
 name: breakmate
 description: "BreakMate — a desktop break-reminder and wellness companion for macOS, Windows and Linux that protects your eyes, posture, and focus."
 publish_to: "none"
-version: 1.9.0+41
+version: 1.11.0+43
 #BreakMate
 environment:
   sdk: ^3.10.4
@@ -22,19 +22,15 @@ dependencies:
   fl_chart: ^1.2.0
   intl: ^0.20.2
   flutter_acrylic: ^1.0.4
-  flutter_markdown: ^0.7.7+1
   path_provider: ^2.1.2
   audioplayers: ^6.7.1
   url_launcher: ^6.3.2
   lucide_icons_flutter: ^3.1.14+1
-  flutter_widget_from_html_core: ^0.17.3
-  markdown: ^7.3.1
   sentry_flutter: ^9.20.0
   path: ^1.9.1
   objectbox: ^5.3.2
   objectbox_flutter_libs: ^5.3.2
   file_picker: ^11.0.3
-  flutter_flavor: ^3.1.4
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   clock: ^1.1.2
@@ -49,7 +45,6 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
-  change_app_package_name: ^1.5.0
   build_runner: ^2.15.1
   objectbox_generator: ^5.3.2
   glados: ^1.1.7
@@ -72,15 +67,17 @@ flutter:
     - assets/avatars/pixel/
     # OneWorks Avatar — authored 3D scenes (primitives, face, camera, light)
     - assets/avatars/scenes/
-    # OneWorks Avatar — Animation Cover SVGs (idle, happy, celebrate, etc.)
-    - assets/avatars/web/
-    - assets/avatars/web/assets/
-    - assets/avatars/animation_covers/
     - assets/icons/
+    - assets/audio/
+    - assets/slideshow/
 
   fonts:
     - family: Inter
       fonts:
+        - asset: assets/fonts/Inter/Inter-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Inter/Inter-Light.ttf
+          weight: 300
         - asset: assets/fonts/Inter/Inter-Regular.ttf
           weight: 400
         - asset: assets/fonts/Inter/Inter-Medium.ttf
@@ -89,3 +86,16 @@ flutter:
           weight: 600
         - asset: assets/fonts/Inter/Inter-Bold.ttf
           weight: 700
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono/JetBrainsMono-Medium.ttf
+          weight: 500
+    - family: Source Serif 4
+      fonts:
+        - asset: assets/fonts/SourceSerif4/SourceSerif4-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/SourceSerif4/SourceSerif4-It.ttf
+          weight: 400
+          style: italic

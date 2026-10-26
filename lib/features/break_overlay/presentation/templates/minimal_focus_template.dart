@@ -1,11 +1,12 @@
-import 'dart:math' as math;
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
+import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-class MinimalFocusTemplate extends StatelessWidget {
+class MinimalFocusTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final int remainingSeconds;
@@ -21,100 +22,127 @@ class MinimalFocusTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  String _durationLabel() {
-    final isShort = breakInfo.type == BreakType.short;
-    final mins = totalSeconds ~/ 60;
-    final secs = totalSeconds % 60;
-    final dur = mins > 0
-        ? (secs > 0 ? '$mins min $secs sec' : '$mins min')
-        : '$totalSeconds sec';
-    return isShort ? 'Eye rest · $dur' : 'Pause · $dur';
+  @override
+  State<MinimalFocusTemplate> createState() => _MinimalFocusTemplateState();
+}
+
+class _MinimalFocusTemplateState extends State<MinimalFocusTemplate>
+    with SingleTickerProviderStateMixin {
+  /// Grid alpha breathes 3% -> 5% -> 3% over 8s.
+  late final AnimationController _breath = AnimationController(
+    vsync: this,
+    duration: const Duration(seconds: 4),
+  );
+
+  final _DotGridCache _grid = _DotGridCache();
+  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reduced motion / thumbnails: static grid at 3%.
+    breakSyncLoop(_breath, context, reverse: true);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final isShort = breakInfo.type == BreakType.short;
-    final defaultAccent = isShort
-        ? BreakOverlayTheme.accentShort
-        : BreakOverlayTheme.accentLong;
-    final baseAccent = settings.clockFaceTextColorHex != 0xFFFFFFFF
-        ? Color(settings.clockFaceTextColorHex)
-        : defaultAccent;
-    final accent = BreakOverlayTheme.resolveAccent(
-      settings.templateAccentOverrides,
-      'minimal',
-      baseAccent,
-    );
+  void dispose() {
+    _breath.dispose();
+    super.dispose();
+  }
 
-    return ColoredBox(
-      color: BreakOverlayTheme.background,
+  String _durationLabel() =>
+      '${_kind.label} · ${breakDurationLabel(widget.totalSeconds)}';
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = BreakPalette.of(context);
+    final accent = palette.accentOn(
+      breakAccent(widget.settings, 'minimal', _kind.accent),
+    );
+    final progress = breakProgress(
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
+    final complete = breakIsComplete(
+      context,
+      widget.remainingSeconds,
+      widget.totalSeconds,
+    );
+    final showTip =
+        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
+
+    return BreakScaffold(
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: accent,
+      background: CustomPaint(
+        painter: _DotGridPainter(
+          cache: _grid,
+          breath: _breath,
+          color: palette.isDark ? Colors.white : const Color(0xFF1C1F24),
+        ),
+      ),
       child: Stack(
-        fit: StackFit.expand,
         children: [
-          Center(
+          Positioned(
+            left: 640 - 110,
+            top: 250,
+            child: BreakEntrance(
+              child: BreakCompletionPulse(
+                complete: complete,
+                child: BreakProgressRing(
+                  size: 220,
+                  strokeWidth: 3,
+                  progress: progress,
+                  color: accent,
+                  trackColor: palette.track,
+                  tickCount: 60,
+                  tickLength: 6,
+                  tickWidth: 1.5,
+                  tickGap: 12,
+                  ticksRemainingLit: true,
+                  cometDegrees: 40,
+                  flash: complete ? 0.5 : 0,
+                  child: ExcludeSemantics(
+                    child: Icon(_kind.icon, size: 28, color: accent),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            top: 250 + 220 + 28,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  isShort ? LucideIcons.eye : LucideIcons.leaf,
-                  size: 20,
-                  color: accent.withValues(alpha: 0.55),
-                ),
-                const SizedBox(height: 20),
-                _FocusTimerDisplay(
-                  remainingSeconds: remainingSeconds,
-                  totalSeconds: totalSeconds,
-                  accent: accent,
-                  clockColorHex: settings.clockFaceTextColorHex,
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  _durationLabel(),
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.4),
-                    fontSize: BreakOverlayTheme.labelFontSize,
-                    fontWeight: FontWeight.w400,
-                    fontFamily: BreakOverlayTheme.fontFamily,
+                BreakEntrance(
+                  delay: BreakEntrance.stagger(1),
+                  scale: false,
+                  child: BreakCountdown(
+                    seconds: widget.remainingSeconds,
+                    color: breakClockColor(widget.settings, palette),
                   ),
                 ),
-                if (settings.showExercisesInBreak &&
-                    breakInfo.tip.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  SizedBox(
-                    width: 320,
-                    child: Text(
-                      breakInfo.tip,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: BreakOverlayTheme.textMuted,
-                        fontSize: BreakOverlayTheme.labelFontSize,
-                        fontWeight: FontWeight.w400,
-                        fontFamily: BreakOverlayTheme.fontFamily,
-                        height: 1.6,
-                      ),
-                    ),
-                  ),
-                ],
+                const SizedBox(height: 12),
+                BreakEntrance(
+                  delay: BreakEntrance.stagger(2),
+                  scale: false,
+                  child: BreakLabel(_durationLabel()),
+                ),
               ],
             ),
           ),
-          if (!settings.strictMode && onSkip != null)
+          if (showTip)
             Positioned(
-              bottom: BreakOverlayTheme.skipBottom,
-              right: BreakOverlayTheme.skipRight,
-              child: GestureDetector(
-                onTap: onSkip,
-                child: MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Text(
-                    'Skip',
-                    style: TextStyle(
-                      color: BreakOverlayTheme.textDim,
-                      fontSize: BreakOverlayTheme.labelFontSize,
-                      fontWeight: FontWeight.w400,
-                      fontFamily: BreakOverlayTheme.fontFamily,
-                    ),
-                  ),
+              left: 0,
+              right: 0,
+              bottom: 72,
+              child: Center(
+                child: BreakEntrance(
+                  delay: BreakEntrance.stagger(3),
+                  scale: false,
+                  child: BreakTip(widget.breakInfo.tip),
                 ),
               ),
             ),
@@ -124,92 +152,53 @@ class MinimalFocusTemplate extends StatelessWidget {
   }
 }
 
-class _ArcPainter extends CustomPainter {
-  final Color accent;
-  final double progress;
+/// Holds the dot positions for one size so they are built once, not per frame.
+class _DotGridCache {
+  Size? _size;
+  Float32List? _points;
 
-  const _ArcPainter({required this.accent, required this.progress});
+  Float32List pointsFor(Size size) {
+    if (_size == size && _points != null) return _points!;
+    const pitch = 24.0;
+    final rowStep = pitch * 0.866; // isometric
+    final out = <double>[];
+    var row = 0;
+    for (var y = 0.0; y <= size.height; y += rowStep, row++) {
+      final dx = row.isOdd ? pitch / 2 : 0.0;
+      for (var x = dx; x <= size.width; x += pitch) {
+        out
+          ..add(x)
+          ..add(y);
+      }
+    }
+    _size = size;
+    return _points = Float32List.fromList(out);
+  }
+}
+
+class _DotGridPainter extends CustomPainter {
+  final _DotGridCache cache;
+  final Animation<double> breath;
+  final Color color;
+
+  final Paint _paint = Paint()
+    ..strokeWidth = 1.2
+    ..strokeCap = StrokeCap.round;
+
+  _DotGridPainter({
+    required this.cache,
+    required this.breath,
+    required this.color,
+  }) : super(repaint: breath);
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (size.width <= 0 || size.height <= 0) return;
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 4;
-
-    final trackPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..color = Colors.white.withValues(alpha: 0.08);
-    canvas.drawCircle(center, radius, trackPaint);
-
-    if (progress > 0) {
-      final arcPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..strokeCap = StrokeCap.round
-        ..color = accent.withValues(alpha: 0.55);
-      canvas.drawArc(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        math.pi * 2 * progress,
-        false,
-        arcPaint,
-      );
-    }
+    final t = Curves.easeInOutSine.transform(breath.value);
+    _paint.color = color.withValues(alpha: 0.03 + 0.02 * t);
+    canvas.drawRawPoints(ui.PointMode.points, cache.pointsFor(size), _paint);
   }
 
   @override
-  bool shouldRepaint(covariant _ArcPainter old) =>
-      old.progress != progress || old.accent != accent;
-}
-
-/// Isolates the per-second countdown repaint from the static parts of the
-/// template (icon, duration label, tip), which never change during a break.
-class _FocusTimerDisplay extends StatelessWidget {
-  final int remainingSeconds;
-  final int totalSeconds;
-  final Color accent;
-  final int clockColorHex;
-
-  const _FocusTimerDisplay({
-    required this.remainingSeconds,
-    required this.totalSeconds,
-    required this.accent,
-    required this.clockColorHex,
-  });
-
-  String _formatTime(int s) {
-    final m = s ~/ 60;
-    final sec = s % 60;
-    return '${m.toString().padLeft(2, '0')}:${sec.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = totalSeconds > 0
-        ? (1 - remainingSeconds / totalSeconds).clamp(0.0, 1.0)
-        : 0.0;
-    return RepaintBoundary(
-      child: SizedBox(
-        width: 220,
-        height: 220,
-        child: CustomPaint(
-          painter: _ArcPainter(accent: accent, progress: progress),
-          child: Center(
-            child: Text(
-              _formatTime(remainingSeconds),
-              style: TextStyle(
-                color: Color(clockColorHex),
-                fontSize: BreakOverlayTheme.timerFontSizeMd,
-                fontWeight: FontWeight.w200,
-                fontFamily: BreakOverlayTheme.fontFamily,
-                fontFeatures: const [FontFeature.tabularFigures()],
-                letterSpacing: -1.5,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  bool shouldRepaint(covariant _DotGridPainter old) =>
+      old.color != color || old.cache != cache;
 }

@@ -6,13 +6,11 @@ import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork.dart';
 import 'package:breakmate/features/companion/render/avatar_artwork_recipe.dart';
 import 'package:breakmate/features/companion/controllers/companion_overlay_controller.dart';
-import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:blobatar_flutter/blobatar_flutter.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_companion_widget.dart';
 import 'package:breakmate/features/companion/presentation/widgets/blobatar_name_dialog.dart';
-import 'package:breakmate/features/companion/presentation/customizer/avatar_customizer_page.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
@@ -137,28 +135,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
         }
       });
     }
-  }
-
-  void _openCustomizer() {
-    final theme = PetTheme.getTheme(_displayedThemeId);
-    final def =
-        theme.avatarDefinition ??
-        AvatarDefinition.fromSpecies(
-          AvatarSpecies.tryParse(widget.controller.companionPetTheme) ??
-              AvatarSpecies.cat,
-        );
-
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<AvatarDefinition>(
-        fullscreenDialog: true,
-        builder: (_) => AvatarCustomizerPage(
-          initialDefinition: def,
-          onSaved: (newDef) {
-            widget.controller.changeTheme('avatar_${newDef.species.name}');
-          },
-        ),
-      ),
-    );
   }
 
   @override
@@ -741,23 +717,6 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                     onPressed: _openBlobatarRenameDialog,
                     icon: const Icon(Icons.edit_rounded, size: 16),
                     label: const Text('Name & Morph Blob'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.accentColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  )
-                else
-                  FilledButton.icon(
-                    onPressed: _openCustomizer,
-                    icon: const Icon(Icons.tune_rounded, size: 16),
-                    label: const Text('Open 3D Customizer'),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.accentColor,
                       foregroundColor: Colors.white,

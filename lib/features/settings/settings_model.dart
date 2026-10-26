@@ -35,6 +35,20 @@ class SettingsModel {
 
   final int clockFaceTextColorHex;
   final bool clockFaceBlurEnabled;
+
+  /// Break overlay appearance: `dark` (default), `light`, or `system`.
+  final String overlayThemeMode;
+
+  /// Default breathing pattern for Zen Mode and Breathe Line (`box`, `relax`,
+  /// `even`).
+  final String breathPreset;
+
+  /// Play a soft chime when a break finishes on its own.
+  final bool breakChimeEnabled;
+
+  /// Show an "I looked away" button during eye-rest breaks; each tap that is
+  /// followed by a completed break counts as a wellness action.
+  final bool lookedAwayPromptEnabled;
   final String? customImagePath;
 
   final int resetTimerAfterMinutes;
@@ -75,7 +89,6 @@ class SettingsModel {
   final bool companionWanderingEnabled;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
-  final String? companionAvatarUrlParams;
 
   /// The companion's full appearance as JSON-encoded `AvatarDefinition`.
   ///
@@ -198,6 +211,10 @@ class SettingsModel {
     this.breakTemplate = 'minimal',
     this.clockFaceTextColorHex = 0xFFFFFFFF,
     this.clockFaceBlurEnabled = true,
+    this.overlayThemeMode = 'dark',
+    this.breathPreset = 'box',
+    this.breakChimeEnabled = false,
+    this.lookedAwayPromptEnabled = false,
     this.customImagePath,
     this.resetTimerAfterMinutes = 15,
     this.workingHoursEnabled = false,
@@ -231,7 +248,6 @@ class SettingsModel {
     this.companionWanderingEnabled = true,
     this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
-    this.companionAvatarUrlParams,
     this.companionAvatarDefinition,
     this.companionKeepOnScreen = true,
     this.companionWindowWidth = 280.0,
@@ -305,6 +321,10 @@ class SettingsModel {
     bool? autoPauseMedia,
     int? clockFaceTextColorHex,
     bool? clockFaceBlurEnabled,
+    String? overlayThemeMode,
+    String? breathPreset,
+    bool? breakChimeEnabled,
+    bool? lookedAwayPromptEnabled,
     String? customImagePath,
     int? resetTimerAfterMinutes,
     bool? workingHoursEnabled,
@@ -333,7 +353,6 @@ class SettingsModel {
     bool? companionWanderingEnabled,
     String? companionPreviewBackground,
     List<String>? unlockedPets,
-    String? companionAvatarUrlParams,
     String? companionAvatarDefinition,
     bool? companionKeepOnScreen,
     double? companionWindowWidth,
@@ -420,6 +439,11 @@ class SettingsModel {
       clockFaceTextColorHex:
           clockFaceTextColorHex ?? this.clockFaceTextColorHex,
       clockFaceBlurEnabled: clockFaceBlurEnabled ?? this.clockFaceBlurEnabled,
+      overlayThemeMode: overlayThemeMode ?? this.overlayThemeMode,
+      breathPreset: breathPreset ?? this.breathPreset,
+      breakChimeEnabled: breakChimeEnabled ?? this.breakChimeEnabled,
+      lookedAwayPromptEnabled:
+          lookedAwayPromptEnabled ?? this.lookedAwayPromptEnabled,
       customImagePath: customImagePath != null
           ? (customImagePath == "" ? null : customImagePath)
           : this.customImagePath,
@@ -455,8 +479,6 @@ class SettingsModel {
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
       unlockedPets: unlockedPets ?? this.unlockedPets,
-      companionAvatarUrlParams:
-          companionAvatarUrlParams ?? this.companionAvatarUrlParams,
       companionAvatarDefinition:
           companionAvatarDefinition ?? this.companionAvatarDefinition,
       companionKeepOnScreen:
@@ -555,6 +577,10 @@ class SettingsModel {
     'autoPauseMedia': autoPauseMedia,
     'clockFaceTextColorHex': clockFaceTextColorHex,
     'clockFaceBlurEnabled': clockFaceBlurEnabled,
+    'overlayThemeMode': overlayThemeMode,
+    'breathPreset': breathPreset,
+    'breakChimeEnabled': breakChimeEnabled,
+    'lookedAwayPromptEnabled': lookedAwayPromptEnabled,
     'customImagePath': customImagePath,
     'resetTimerAfterMinutes': resetTimerAfterMinutes,
     'workingHoursEnabled': workingHoursEnabled,
@@ -583,7 +609,6 @@ class SettingsModel {
     'companionWanderingEnabled': companionWanderingEnabled,
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
-    'companionAvatarUrlParams': companionAvatarUrlParams,
     'companionAvatarDefinition': companionAvatarDefinition,
     'companionKeepOnScreen': companionKeepOnScreen,
     'pettingEnabled': pettingEnabled,
@@ -666,6 +691,10 @@ class SettingsModel {
       autoPauseMedia: map['autoPauseMedia'] as bool? ?? true,
       clockFaceTextColorHex: map['clockFaceTextColorHex'] as int? ?? 0xFFFFFFFF,
       clockFaceBlurEnabled: map['clockFaceBlurEnabled'] as bool? ?? true,
+      overlayThemeMode: map['overlayThemeMode'] as String? ?? 'dark',
+      breathPreset: map['breathPreset'] as String? ?? 'box',
+      breakChimeEnabled: map['breakChimeEnabled'] as bool? ?? false,
+      lookedAwayPromptEnabled: map['lookedAwayPromptEnabled'] as bool? ?? false,
       customImagePath: map['customImagePath'] as String?,
       resetTimerAfterMinutes: map['resetTimerAfterMinutes'] as int? ?? 15,
       workingHoursEnabled: map['workingHoursEnabled'] as bool? ?? false,
@@ -709,7 +738,6 @@ class SettingsModel {
               ?.map((e) => e.toString())
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
-      companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
       companionAvatarDefinition: map['companionAvatarDefinition'] as String?,
       companionKeepOnScreen: map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,

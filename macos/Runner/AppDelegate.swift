@@ -72,6 +72,32 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
   // The updater is started a couple of seconds after launch (see applicationDidFinishLaunching) so
   // Sparkle's setup does not sit on the main thread while the first window is being created.
   lazy var updaterController = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
+  private var updaterStarted = false
+
+  /// Starts Sparkle once; safe to call from the launch timer and from a
+  /// user-initiated check that arrives before the timer fires.
+  func ensureUpdaterStarted() {
+    guard !updaterStarted else { return }
+    updaterStarted = true
+    updaterController.startUpdater()
+  }
+
+  // Set once Sparkle is about to relaunch us after installing an update. The menu-bar
+  // app (tray, prevent-close window, Dart exit handlers) can otherwise veto Sparkle's
+  // quit request, leaving the update session open and the app never restarting.
+  private var isInstallingUpdate = false
+
+  override func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+    if isInstallingUpdate {
+      return .terminateNow
+    }
+    return super.applicationShouldTerminate(sender)
+  }
+
+  func updaterWillRelaunchApplication(_ updater: SPUUpdater) {
+    NSLog("Sparkle: Relaunching to finish installing update")
+    isInstallingUpdate = true
+  }
 
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
     return false
@@ -95,9 +121,6 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     OverlayWindowManager.shared.destroyAllInstances()
     CompanionWindowManager.shared.hideCompanion()
     PiPFlutterWindowManager.shared.hidePipWindow()
-    // The WebView build of this window is no longer routed to, but tear it down
-    // too in case an older session left one on screen.
-    PiPWindowManager.shared.hidePipWindow()
     super.applicationWillTerminate(notification)
   }
 
@@ -158,7 +181,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
       focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)
       windowBridge = WindowBridge(registrar: registrar)
-      sparkleBridge = SparkleBridge(registrar: registrar, updater: updaterController.updater)
+      sparkleBridge = SparkleBridge(registrar: registrar, updater: updaterController.updater, ensureStarted: { [weak self] in self?.ensureUpdaterStarted() })
       appTrackingBridge = AppTrackingBridge(registrar: registrar)
       NSLog("Sparkle: Initialized SparkleBridge with updater: \(updaterController.updater)")
     }
@@ -167,7 +190,7 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
     NSLog("Sparkle: applicationDidFinishLaunching completed")
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-      self?.updaterController.startUpdater()
+      self?.ensureUpdaterStarted()
     }
     
     DispatchQueue.main.async { [weak self] in
@@ -516,14 +539,16 @@ class WindowBridge: NSObject, FlutterPlugin {
 class SparkleBridge: NSObject {
     private let channel: FlutterMethodChannel
     private let updater: SPUUpdater
+    private let ensureStarted: () -> Void
     
-    init(registrar: FlutterPluginRegistrar, updater: SPUUpdater) {
+    init(registrar: FlutterPluginRegistrar, updater: SPUUpdater, ensureStarted: @escaping () -> Void) {
         NSLog("SparkleBridge: Initializing channel com.breakmate/sparkle")
         self.channel = FlutterMethodChannel(
             name: "com.breakmate/sparkle",
             binaryMessenger: registrar.messenger
         )
         self.updater = updater
+        self.ensureStarted = ensureStarted
         super.init()
         
         channel.setMethodCallHandler { [weak self] (call, result) in
@@ -537,13 +562,11 @@ class SparkleBridge: NSObject {
                     result(FlutterError(code: "UPDATER_UNAVAILABLE", message: "The updater is unavailable.", details: nil))
                     return
                 }
-                guard self.updater.canCheckForUpdates else {
-                    result(FlutterError(code: "UPDATE_CHECK_UNAVAILABLE", message: "An update check cannot be started right now.", details: nil))
-                    return
-                }
-                NSLog("SparkleBridge: Triggering checkForUpdateInformation")
-                self.updater.checkForUpdateInformation()
-                result(nil)
+                // The updater starts a few seconds after launch and refuses new
+                // checks while a background session runs, so start it now and
+                // retry briefly before reporting failure.
+                self.ensureStarted()
+                self.startInformationalCheck(attemptsLeft: 20, result: result)
             case "startUpdate":
                 NSLog("SparkleBridge: Triggering checkForUpdates (User-facing)")
                 // Standard Sparkle user-facing update check and installation flow
@@ -556,6 +579,20 @@ class SparkleBridge: NSObject {
         }
     }
     
+    private func startInformationalCheck(attemptsLeft: Int, result: @escaping FlutterResult) {
+        if updater.canCheckForUpdates {
+            NSLog("SparkleBridge: Triggering checkForUpdateInformation")
+            updater.checkForUpdateInformation()
+            result(nil)
+        } else if attemptsLeft > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.startInformationalCheck(attemptsLeft: attemptsLeft - 1, result: result)
+            }
+        } else {
+            result(FlutterError(code: "UPDATE_CHECK_UNAVAILABLE", message: "An update check cannot be started right now. Please try again in a moment.", details: nil))
+        }
+    }
+
     func updater(_ updater: SPUUpdater, didFindValidUpdate item: SUAppcastItem) {
         let notes = item.itemDescription ?? "No release notes available."
         let version = item.displayVersionString

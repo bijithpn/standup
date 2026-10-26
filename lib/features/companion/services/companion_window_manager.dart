@@ -3,25 +3,35 @@ import 'package:breakmate/core/errors/error_handler.dart';
 import 'dart:math' as math;
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
+import 'package:breakmate/core/events/app_events.dart';
+import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/services/simple_prefs.dart';
+import 'package:breakmate/core/services/window_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
-import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
 class CompanionWindowManager {
   CompanionWindowManager({
-    CompanionWindowController? windowController,
+    WindowService? windowService,
+    EventBus? eventBus,
     SettingsRepository? settingsRepository,
-    DisplayManager? displayManager,
+    CompanionDisplayManager? displayManager,
     AppLogger? logger,
-  }) : _windowController = windowController ?? CompanionWindowController(),
+    @visibleForTesting Future<Map<String, dynamic>> Function()? readWindowFrame,
+  }) : _windowService = windowService ?? WindowService.instance,
+       _eventBus = eventBus ?? EventBus.instance,
+       _readWindowFrame = readWindowFrame,
        _displayManager = displayManager,
        _logger = logger ?? AppLogger();
 
-  final CompanionWindowController _windowController;
-  final DisplayManager? _displayManager;
+  final WindowService _windowService;
+  final EventBus _eventBus;
+  final Future<Map<String, dynamic>> Function()? _readWindowFrame;
+  final CompanionDisplayManager? _displayManager;
   final AppLogger _logger;
 
   Future<double> _getPrimaryScreenHeight() async {
@@ -45,7 +55,7 @@ class CompanionWindowManager {
   Size get currentSize => _currentSize;
   Offset get currentPosition => _currentPosition;
 
-  DisplayManager? get displayManager => _displayManager;
+  CompanionDisplayManager? get displayManager => _displayManager;
 
   static const Size defaultSize = Size(280, 320);
   static const Size minSize = Size(180, 210);
@@ -111,7 +121,7 @@ class CompanionWindowManager {
       'size=$_currentSize position=$_currentPosition',
     );
 
-    await _windowController.setSize(_currentSize.width, _currentSize.height);
+    await _applySize(_currentSize.width, _currentSize.height);
 
     final needsRecovery = await _isOffScreen(_currentPosition, _currentSize);
     if (needsRecovery) {
@@ -133,17 +143,17 @@ class CompanionWindowManager {
       final primaryHeight = await _getPrimaryScreenHeight();
       targetY = primaryHeight - _currentPosition.dy - _currentSize.height;
     }
-    await _windowController.setPosition(_currentPosition.dx, targetY);
+    await _applyPosition(_currentPosition.dx, targetY);
 
-    await _windowController.setNonActivating(true);
+    await _windowService.setNonActivating(true);
 
-    await _windowController.show();
+    await _show();
   }
 
   Future<void> setSize(Size size) async {
     _currentSize = _clampSize(size);
     _logger.info('CompanionWindowManager.setSize(): $_currentSize');
-    await _windowController.setSize(_currentSize.width, _currentSize.height);
+    await _applySize(_currentSize.width, _currentSize.height);
     _persistSize(_currentSize);
   }
 
@@ -165,7 +175,7 @@ class CompanionWindowManager {
       final primaryHeight = await _getPrimaryScreenHeight();
       targetY = primaryHeight - resolved.dy - _currentSize.height;
     }
-    await _windowController.setPosition(resolved.dx, targetY);
+    await _applyPosition(resolved.dx, targetY);
     _persistPosition(_currentPosition);
   }
 
@@ -188,7 +198,7 @@ class CompanionWindowManager {
 
     // Never animated: the caller is already drawing the motion frame by frame,
     // and on macOS an animated move blocks the main thread until it finishes.
-    await _windowController.setPosition(position.dx, targetY, animate: false);
+    await _applyPosition(position.dx, targetY, animate: false);
   }
 
   /// Writes the current position to preferences. Pairs with [moveTo].
@@ -222,19 +232,50 @@ class CompanionWindowManager {
   DateTime? _primaryHeightMeasuredAt;
 
   Future<void> setOpacity(double opacity) async {
-    await _windowController.setOpacity(opacity);
+    _opacity = opacity.clamp(0.1, 1.0);
+    await _windowService.setWindowOpacity(_opacity);
   }
 
   Future<void> startDrag() async {
-    await _windowController.startDrag();
+    await _windowService.startDrag();
   }
 
   Future<void> setNonActivating(bool nonActivating) async {
-    await _windowController.setNonActivating(nonActivating);
+    await _windowService.setNonActivating(nonActivating);
   }
 
   Future<void> setAcceptsMouse(bool accepts) async {
-    await _windowController.setAcceptsMouse(accepts);
+    _acceptsMouse = accepts;
+    await _windowService.setIgnoresMouseEvents(!accepts);
+  }
+
+  // ── Native window ─────────────────────────────────────────────────────────
+
+  bool _isVisible = false;
+  double _opacity = 0.9;
+  bool _acceptsMouse = true;
+
+  Future<void> _show() async {
+    if (_isVisible) return;
+    _isVisible = true;
+    await _windowService.showWindow();
+    await _windowService.setWindowLevel('floating');
+    await _windowService.setIgnoresMouseEvents(!_acceptsMouse);
+    await _windowService.setHasShadow(false);
+    await _windowService.setAcceptsMouseMovedEvents(true);
+    await _windowService.setWindowOpacity(_opacity);
+    _eventBus.emit(OverlayShownEvent(overlayType: 'companion'));
+    _logger.info('Companion window shown');
+  }
+
+  Future<void> _applyPosition(double x, double y, {bool animate = true}) async {
+    await _windowService.setWindowPosition(x: x, y: y, animate: animate);
+    _eventBus.emit(CompanionPositionChangedEvent(x: x, y: y));
+  }
+
+  Future<void> _applySize(double width, double height) async {
+    await _windowService.setWindowSize(width: width, height: height);
+    _logger.info('Companion window resized to ${width}x$height');
   }
 
   /// Forgets what was learned about the displays.
@@ -249,7 +290,7 @@ class CompanionWindowManager {
   }
 
   Future<Offset> getPosition() async {
-    final pos = await _windowController.getPosition();
+    final pos = await (_readWindowFrame ?? _windowService.getWindowPosition)();
 
     // The size is read first: the flip below depends on the window's height.
     if (pos.containsKey('width') && pos.containsKey('height')) {

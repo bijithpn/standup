@@ -20,6 +20,13 @@ class OverlayWindowManager: NSObject {
     var lastShowArgs: [String: Any]? // Persisted arguments for active overlay
     private var wasMainWindowVisible: Bool = false
     private var lastScreensHash: Int = 0
+    private var isObservingSpaces = false
+    private var escapeMonitor: Any?
+    private var escapePresses: [Date] = []
+
+    private static func currentScreensHash() -> Int {
+        NSScreen.screens.map { "\($0.frame)-\($0.visibleFrame)" }.joined().hashValue
+    }
     private var showGeneration: Int = 0
     
     struct OverlayInstance {
@@ -119,7 +126,21 @@ class OverlayWindowManager: NSObject {
             }
         }
 
+        // Baseline the display layout now. Swiping between Spaces / full-screen
+        // apps also posts this notification with an unchanged layout; with a
+        // zero baseline that counted as a "change" and tore down the live
+        // overlay engines, leaving an opaque black panel with no UI on top.
+        lastScreensHash = OverlayWindowManager.currentScreensHash()
         NotificationCenter.default.addObserver(self, selector: #selector(screenParametersChanged), name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        if !isObservingSpaces {
+            isObservingSpaces = true
+            NSWorkspace.shared.notificationCenter.addObserver(self, selector: #selector(activeSpaceChanged), name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
+        }
+
+        if !isReminder {
+            installEscapeFailsafe()
+            scheduleHealthCheck(attempt: 0)
+        }
 
         // Reminders can't become key windows (by design, so they don't steal
         // focus), so they can only be dismissed by the Dart side's own timer.
@@ -147,6 +168,7 @@ class OverlayWindowManager: NSObject {
     func hideOverlay(restoreMainWindow: Bool = true) {
         showGeneration += 1
         lastHideTime = Date()
+        removeEscapeFailsafe()
         NativePowerAssertionManager.shared.releaseDisplaySleep()
         if overlayInstances.isEmpty { return }
 
@@ -195,6 +217,97 @@ class OverlayWindowManager: NSObject {
         }
 
         NotificationCenter.default.removeObserver(self, name: NSApplication.didChangeScreenParametersNotification, object: nil)
+        if isObservingSpaces {
+            isObservingSpaces = false
+            NSWorkspace.shared.notificationCenter.removeObserver(self, name: NSWorkspace.activeSpaceDidChangeNotification, object: nil)
+        }
+    }
+
+    /// Native recovery that never depends on Flutter. A full break overlay is an
+    /// opaque black panel, so if its engine hangs or never receives data the
+    /// screen would be black and undismissable. Ask each engine whether it has
+    /// rendered; re-send the data once, then give up and dismiss the break.
+    private func scheduleHealthCheck(attempt: Int) {
+        let generation = showGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+            guard let self = self, self.showGeneration == generation,
+                  !self.overlayInstances.isEmpty,
+                  !(self.overlayInstances.values.first?.window.isReminder ?? true) else { return }
+
+            let instances = Array(self.overlayInstances.values)
+            var pending = instances.count
+            var allReady = true
+            var answered = false
+
+            let finish = { [weak self] in
+                guard let self = self, self.showGeneration == generation, !answered else { return }
+                answered = true
+                if allReady { return }
+                if attempt == 0, let args = self.lastShowArgs {
+                    self.updateData(args)
+                    self.scheduleHealthCheck(attempt: 1)
+                } else {
+                    NSLog("[Overlay] Break overlay never rendered; dismissing it")
+                    self.emergencyDismiss()
+                }
+            }
+
+            for instance in instances {
+                let channel = FlutterMethodChannel(name: "com.breakmate.desktop/bridge", binaryMessenger: instance.engine.binaryMessenger)
+                channel.invokeMethod("isReady", arguments: nil) { value in
+                    DispatchQueue.main.async {
+                        if (value as? Bool) != true { allReady = false }
+                        pending -= 1
+                        if pending == 0 { finish() }
+                    }
+                }
+            }
+            // An engine that is hung never answers at all.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                if pending > 0 { allReady = false; finish() }
+            }
+        }
+    }
+
+    /// Hide the overlay and tell the main app the break was skipped.
+    func emergencyDismiss() {
+        if let appDelegate = NSApp.delegate as? AppDelegate,
+           let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
+            mainWindow.bridgeChannel?.invokeMethod("skipBreak", arguments: nil)
+        }
+        hideOverlay()
+    }
+
+    /// Pressing Escape three times quickly always closes a full break overlay,
+    /// even in strict mode or when the Flutter UI is dead.
+    private func installEscapeFailsafe() {
+        guard escapeMonitor == nil else { return }
+        escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self, event.keyCode == 53 else { return event }
+            let now = Date()
+            self.escapePresses = self.escapePresses.filter { now.timeIntervalSince($0) < 2 } + [now]
+            if self.escapePresses.count >= 3 {
+                self.escapePresses.removeAll()
+                self.emergencyDismiss()
+            }
+            return event
+        }
+    }
+
+    private func removeEscapeFailsafe() {
+        if let monitor = escapeMonitor { NSEvent.removeMonitor(monitor) }
+        escapeMonitor = nil
+        escapePresses.removeAll()
+    }
+
+    /// The user switched Space / full-screen app while an overlay is up. Put the
+    /// panels back in front on the new Space so the break UI is shown there
+    /// instead of leaving a stale, empty panel behind.
+    @objc private func activeSpaceChanged() {
+        for instance in overlayInstances.values {
+            instance.window.orderFrontRegardless()
+            if !instance.window.isReminder { instance.window.makeKey() }
+        }
     }
 
     private func destroyInstance(_ instance: OverlayInstance) {
@@ -260,8 +373,7 @@ class OverlayWindowManager: NSObject {
     }
     
     @objc private func screenParametersChanged() {
-        let screens = NSScreen.screens
-        let screensHash = screens.map { "\($0.frame)-\($0.visibleFrame)" }.joined().hashValue
+        let screensHash = OverlayWindowManager.currentScreensHash()
         if screensHash == lastScreensHash {
             return
         }
@@ -355,7 +467,7 @@ class OverlayWindowManager: NSObject {
             case "completeBreak":
                 if let appDelegate = NSApp.delegate as? AppDelegate,
                    let mainWindow = appDelegate.mainFlutterWindow as? MainFlutterWindow {
-                    mainWindow.bridgeChannel?.invokeMethod("completeBreak", arguments: nil)
+                    mainWindow.bridgeChannel?.invokeMethod("completeBreak", arguments: call.arguments)
                 }
                 OverlayWindowManager.shared.hideOverlay()
                 result(nil)
@@ -582,30 +694,6 @@ class MainFlutterWindow: NSWindow {
 
       case "hidePipWindow":
         PiPFlutterWindowManager.shared.hidePipWindow()
-        result(nil)
-
-      case "openAvatarEditor":
-        if let args = call.arguments as? [String: Any], let editorUrl = args["editorUrl"] as? String {
-          AvatarEditorWindowManager.shared.openEditor(editorUrl: editorUrl, parentWindow: self) { [weak self] query in
-            self?.bridgeChannel?.invokeMethod("onAvatarSaved", arguments: ["urlParams": query])
-          }
-          result(nil)
-        } else {
-          result(FlutterError(code: "INVALID_ARGS", message: "Missing editorUrl", details: nil))
-        }
-
-      case "showCustomizerViewport":
-        CustomizerViewportManager.shared.showViewport(args: call.arguments as? [String: Any]) { [weak self] query in
-          self?.bridgeChannel?.invokeMethod("onAvatarSaved", arguments: ["urlParams": query])
-        }
-        result(nil)
-
-      case "updateCustomizerViewport":
-        CustomizerViewportManager.shared.updateViewport(args: call.arguments as? [String: Any])
-        result(nil)
-
-      case "hideCustomizerViewport":
-        CustomizerViewportManager.shared.hideViewport()
         result(nil)
 
       // ── Behavior Engine PAL methods ───────────────────────────────────────

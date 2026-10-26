@@ -4,11 +4,10 @@ import 'dart:ui';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:breakmate/features/companion/domain/behavior_engine_models.dart';
-import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 
-class _CountingDisplays implements DisplayManager {
+class _CountingDisplays implements CompanionDisplayManager {
   _CountingDisplays(this.height);
 
   double height;
@@ -41,8 +40,8 @@ class _CountingDisplays implements DisplayManager {
   void onDisplayChanged(List<DisplayBounds> newBounds) {}
 }
 
-class _FakeController extends CompanionWindowController {
-  _FakeController();
+class _FakeFrame {
+  _FakeFrame();
 
   /// AppKit coordinates: origin bottom-left of the primary display.
   Map<String, dynamic> next = <String, dynamic>{
@@ -52,8 +51,7 @@ class _FakeController extends CompanionWindowController {
     'height': 320.0,
   };
 
-  @override
-  Future<Map<String, dynamic>> getPosition() async => next;
+  Future<Map<String, dynamic>> read() async => next;
 }
 
 void main() {
@@ -65,7 +63,7 @@ void main() {
     () async {
       final displays = _CountingDisplays(900);
       final manager = CompanionWindowManager(
-        windowController: _FakeController(),
+        readWindowFrame: _FakeFrame().read,
         displayManager: displays,
       );
 
@@ -83,7 +81,7 @@ void main() {
     () async {
       final displays = _CountingDisplays(900);
       final manager = CompanionWindowManager(
-        windowController: _FakeController(),
+        readWindowFrame: _FakeFrame().read,
         displayManager: displays,
       );
 
@@ -98,7 +96,7 @@ void main() {
   test('a display change invalidates the cached height', () async {
     final displays = _CountingDisplays(900);
     final manager = CompanionWindowManager(
-      windowController: _FakeController(),
+      readWindowFrame: _FakeFrame().read,
       displayManager: displays,
     );
     await manager.getPosition();
@@ -116,7 +114,7 @@ void main() {
     'a window on a display above the primary keeps a negative top',
     () async {
       final displays = _CountingDisplays(900);
-      final controller = _FakeController()
+      final frame = _FakeFrame()
         // Bottom edge 1200pt above the primary's bottom: well above its top.
         ..next = <String, dynamic>{
           'x': -300.0,
@@ -125,7 +123,7 @@ void main() {
           'height': 320.0,
         };
       final manager = CompanionWindowManager(
-        windowController: controller,
+        readWindowFrame: frame.read,
         displayManager: displays,
       );
 

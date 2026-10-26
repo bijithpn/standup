@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 
 class GuidedBreathingWidget extends StatefulWidget {
   final int targetCycles;
@@ -211,11 +212,16 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                       0.0,
                       1.0,
                     );
-                    return CustomPaint(
-                      size: const Size.square(ringRadius * 2),
-                      painter: _PhaseArcPainter(
-                        color: phase.color,
-                        progress: progress,
+                    return Semantics(
+                      label: 'Breathing phase',
+                      value: '${(progress * 100).round()} percent complete',
+                      child: CustomPaint(
+                        size: const Size.square(ringRadius * 2),
+                        painter: _PhaseArcPainter(
+                          color: phase.color,
+                          track: BreakPalette.of(context).track,
+                          progress: progress,
+                        ),
                       ),
                     );
                   },
@@ -245,7 +251,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                     Text(
                       phase.label,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: BreakPalette.of(context).textPrimary,
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
                         fontFamily: 'Inter',
@@ -258,7 +264,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
                         return Text(
                           '${phase.durationSeconds - elapsed}s',
                           style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.4),
+                            color: BreakPalette.of(context).textSecondary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                             fontFamily: 'Inter',
@@ -278,7 +284,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           phase.sublabel,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             fontFamily: 'Inter',
           ),
@@ -313,7 +319,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
         Text(
           'Session complete',
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
+            color: BreakPalette.of(context).textPrimary,
             fontSize: 20,
             fontWeight: FontWeight.w300,
             fontFamily: 'Inter',
@@ -325,7 +331,7 @@ class _GuidedBreathingWidgetState extends State<GuidedBreathingWidget>
           'You completed ${widget.targetCycles} breathing cycles.\nYour nervous system thanks you.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.45),
+            color: BreakPalette.of(context).textSecondary,
             fontSize: 13,
             height: 1.5,
             fontFamily: 'Inter',
@@ -362,7 +368,7 @@ class _CycleIndicator extends StatelessWidget {
             borderRadius: BorderRadius.circular(3),
             color: isActive
                 ? activeColor.withValues(alpha: 0.7)
-                : Colors.white.withValues(alpha: 0.1),
+                : BreakPalette.of(context).track,
           ),
         );
       }),
@@ -372,9 +378,14 @@ class _CycleIndicator extends StatelessWidget {
 
 class _PhaseArcPainter extends CustomPainter {
   final Color color;
+  final Color track;
   final double progress;
 
-  const _PhaseArcPainter({required this.color, required this.progress});
+  const _PhaseArcPainter({
+    required this.color,
+    required this.track,
+    required this.progress,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -383,7 +394,7 @@ class _PhaseArcPainter extends CustomPainter {
     final radius = size.width / 2;
 
     final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.05)
+      ..color = track
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -408,5 +419,5 @@ class _PhaseArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_PhaseArcPainter old) =>
-      old.progress != progress || old.color != color;
+      old.progress != progress || old.color != color || old.track != track;
 }

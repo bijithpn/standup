@@ -35,7 +35,6 @@
 		33CCB00C2044BFA00003C045 /* AppTrackingBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */; };
 		33CCB00E2044BFA00003C045 /* CalendarBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00D2044BFA00003C045 /* CalendarBridge.swift */; };
 		33CCB0102044BFA00003C045 /* BehaviorEngineBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB00F2044BFA00003C045 /* BehaviorEngineBridge.swift */; };
-		33CCB0122044BFA00003C045 /* PiPWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0112044BFA00003C045 /* PiPWindowManager.swift */; };
 		33CCB0A22044BFA00003C045 /* PiPFlutterWindowManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0A12044BFA00003C045 /* PiPFlutterWindowManager.swift */; };
 		33CCB0512044BFA00003C045 /* NativeSmartDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0502044BFA00003C045 /* NativeSmartDetector.swift */; };
 		33CCB0532044BFA00003C045 /* NativeCursorCountdownWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CCB0522044BFA00003C045 /* NativeCursorCountdownWindow.swift */; };
@@ -100,7 +99,6 @@
 		33CCB00B2044BFA00003C045 /* AppTrackingBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppTrackingBridge.swift; sourceTree = "<group>"; };
 		33CCB00D2044BFA00003C045 /* CalendarBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarBridge.swift; sourceTree = "<group>"; };
 		33CCB00F2044BFA00003C045 /* BehaviorEngineBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BehaviorEngineBridge.swift; sourceTree = "<group>"; };
-		33CCB0112044BFA00003C045 /* PiPWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPWindowManager.swift; sourceTree = "<group>"; };
 		33CCB0A12044BFA00003C045 /* PiPFlutterWindowManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PiPFlutterWindowManager.swift; sourceTree = "<group>"; };
 		33CCB0502044BFA00003C045 /* NativeSmartDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeSmartDetector.swift; sourceTree = "<group>"; };
 		33CCB0522044BFA00003C045 /* NativeCursorCountdownWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeCursorCountdownWindow.swift; sourceTree = "<group>"; };
@@ -262,7 +260,6 @@
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33CCB0072044BFA00003C045 /* CompanionWindowManager.swift */,
-				33CCB0112044BFA00003C045 /* PiPWindowManager.swift */,
 				33CCB0A12044BFA00003C045 /* PiPFlutterWindowManager.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
@@ -523,7 +520,6 @@
 				33CCB00C2044BFA00003C045 /* AppTrackingBridge.swift in Sources */,
 				33CCB00E2044BFA00003C045 /* CalendarBridge.swift in Sources */,
 				33CCB0102044BFA00003C045 /* BehaviorEngineBridge.swift in Sources */,
-				33CCB0122044BFA00003C045 /* PiPWindowManager.swift in Sources */,
 				33CCB0A22044BFA00003C045 /* PiPFlutterWindowManager.swift in Sources */,
 				33CCB0512044BFA00003C045 /* NativeSmartDetector.swift in Sources */,
 				33CCB0532044BFA00003C045 /* NativeCursorCountdownWindow.swift in Sources */,

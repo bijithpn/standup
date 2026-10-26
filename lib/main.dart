@@ -18,10 +18,10 @@ void pipMain() {
   common.pipMain();
 }
 
-void main() {
+void main(List<String> args) {
   if (kDebugMode) {
-    dev.main();
+    dev.main(args);
   } else {
-    prod.main();
+    prod.main(args);
   }
 }

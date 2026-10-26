@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:breakmate/core/native/focus_mode_service.dart';
-import 'package:breakmate/core/services/smart_detection_coordinator.dart';
+import 'package:breakmate/core/services/smart_detection_service.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
 /// Service managing macOS Focus Mode & Do Not Disturb state, leveraging
@@ -8,7 +8,7 @@ import 'package:breakmate/core/utils/logger.dart';
 /// matching DeskRest's FocusFilterService implementation.
 class FocusFilterService {
   final FocusModeService _focusModeService;
-  final SmartDetectionCoordinator _smartCoordinator;
+  final SmartDetectionService _smartDetection;
   final AppLogger _logger = AppLogger();
 
   final _focusStatusController = StreamController<bool>.broadcast();
@@ -22,10 +22,9 @@ class FocusFilterService {
 
   FocusFilterService({
     FocusModeService? focusModeService,
-    SmartDetectionCoordinator? smartCoordinator,
+    required SmartDetectionService smartDetection,
   }) : _focusModeService = focusModeService ?? FocusModeService(),
-       _smartCoordinator =
-           smartCoordinator ?? SmartDetectionCoordinator.instance {
+       _smartDetection = smartDetection {
     _init();
   }
 
@@ -38,15 +37,15 @@ class FocusFilterService {
       },
     );
 
-    // 2. Cross-correlate with SmartDetectionCoordinator (com.breakmate/smart_detection_events)
-    _smartSub = _smartCoordinator.stateStream.listen(
+    // 2. Cross-correlate with SmartDetectionService (com.breakmate/smart_detection_events)
+    _smartSub = _smartDetection.stateStream.listen(
       (state) {
         if (state.isFocusModeActive != _isFocusActive) {
           _updateFocusState(state.isFocusModeActive);
         }
       },
       onError: (err) {
-        _logger.error('FocusFilterService error from smartCoordinator: $err');
+        _logger.error('FocusFilterService error from smartDetection: $err');
       },
     );
   }

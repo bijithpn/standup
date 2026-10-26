@@ -64,6 +64,7 @@ OPENCODE.md
 CODEX.md
 RULEBOOK_REPORT.md
 graphify-out/
+.graphifyignore
 .superpowers/
 docs/
 # raw screen recordings
@@ -72,3 +73,6 @@ docs/
 
 # Release installer output (built by scripts/create_dmg.sh and CI)
 /release_dmg/
+
+# Flutter golden-test diff artifacts
+test/**/failures/

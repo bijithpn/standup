@@ -946,6 +946,9 @@ class TimerEngine extends ChangeNotifier {
     _logger.info(
       'System sleep or screen lock detected: pausing break/work timers',
     );
+    // Lock then sleep fire back to back; keep the first timestamp so the
+    // whole away period is measured.
+    if (_stateData.systemSleepPaused) return;
     _stateData.systemSleepPaused = true;
     final now = clock.now();
     _stateData.lastTickTime = now;
@@ -1010,11 +1013,27 @@ class TimerEngine extends ChangeNotifier {
     }
 
     if (state == TimerState.breakActive) {
+      // The break deadline is wall-clock, so push it out by the time spent
+      // asleep/locked: the break countdown pauses while the user is away.
+      final end = _stateData.breakEndTime;
+      final slept = _stateData.lastTickTime;
+      if (wasAsleep && end != null && slept != null) {
+        final away = clock.now().difference(slept);
+        if (!away.isNegative) _stateData.breakEndTime = end.add(away);
+      }
       final remaining = _remainingUntilBreakEnd();
       if (remaining != null && remaining <= Duration.zero) {
-        _logger.info('Break deadline passed during sleep: completing break');
+        _logger.info('Break deadline passed: completing break');
         finishBreak(skipped: false);
       } else {
+        _emit(
+          TimerStateChangedEvent(
+            state: TimerStateEvent.breakActive,
+            countdownSeconds: countdownSeconds,
+            workElapsedSeconds: _stateData.workElapsed.inSeconds,
+            targetEndTime: targetEndTime,
+          ),
+        );
         _stateData.lastTickTime = clock.now();
         _stateData.countdownSeconds = countdownSeconds;
         syncNotifiersFromState();
