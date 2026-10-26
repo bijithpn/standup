@@ -206,6 +206,9 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
     _bridge.setMethodCallHandler((call) async {
       if (call.method == 'updateOverlayData') {
         _applyOverlayData(call.arguments as Map);
+      } else if (call.method == 'isReady') {
+        // Native watchdog: has this overlay received data and drawn content?
+        return mounted && _initialized && _hasReceivedOverlayData;
       } else if (call.method == 'resetOverlay') {
         // Engine is kept warm between breaks: drop the last break's state so
         // its time/content never shows before the next data arrives.
