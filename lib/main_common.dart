@@ -334,6 +334,29 @@ Future<void> gracefulShutdown([String? reason]) async {
   await _gracefulShutdown(_globalSingleInstanceServer, reason);
 }
 
+/// Linux hosts the break overlay, companion and picture-in-picture pet in extra
+/// windows of the same executable, each with its own engine. The runner tells
+/// them apart with `--breakmate-role=<role>` because the embedder cannot choose
+/// a Dart entrypoint. Returns true when [args] selected one and it was started.
+bool runSecondaryEntrypoint(List<String> args) {
+  const prefix = '--breakmate-role=';
+  for (final arg in args) {
+    if (!arg.startsWith(prefix)) continue;
+    switch (arg.substring(prefix.length)) {
+      case 'overlay':
+        unawaited(overlayMain());
+        return true;
+      case 'companion':
+        unawaited(companionMain());
+        return true;
+      case 'pip':
+        unawaited(pipMain());
+        return true;
+    }
+  }
+  return false;
+}
+
 void mainCommon(FlavorConfig config) async {
   final isolateName = Isolate.current.debugName ?? '';
   final isMainIsolate =

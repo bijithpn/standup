@@ -12,8 +12,11 @@ class NativeEnhancementsService {
   );
   final AppLogger _logger = AppLogger();
 
+  static bool get _supported =>
+      Platform.isMacOS || Platform.isWindows || Platform.isLinux;
+
   Future<void> showCursorCountdown({int seconds = 15}) async {
-    if (!Platform.isMacOS) return;
+    if (!_supported) return;
     try {
       await _channel.invokeMethod('showCursorCountdown', {'seconds': seconds});
     } catch (e) {
@@ -22,7 +25,7 @@ class NativeEnhancementsService {
   }
 
   Future<void> hideCursorCountdown() async {
-    if (!Platform.isMacOS) return;
+    if (!_supported) return;
     try {
       await _channel.invokeMethod('hideCursorCountdown');
     } catch (e) {
@@ -36,7 +39,7 @@ class NativeEnhancementsService {
     double opacity = 0.35,
     String colorHex = '#000000',
   }) async {
-    if (!Platform.isMacOS) return;
+    if (!_supported) return;
     try {
       await _channel.invokeMethod('triggerFlashReminder', {
         'text': text,
@@ -52,7 +55,7 @@ class NativeEnhancementsService {
   Future<void> preventDisplaySleep({
     String reason = 'BreakMate Break Active',
   }) async {
-    if (!Platform.isMacOS) return;
+    if (!_supported) return;
     try {
       await _channel.invokeMethod('preventDisplaySleep', {'reason': reason});
     } catch (e) {
@@ -61,7 +64,7 @@ class NativeEnhancementsService {
   }
 
   Future<void> releaseDisplaySleep() async {
-    if (!Platform.isMacOS) return;
+    if (!_supported) return;
     try {
       await _channel.invokeMethod('releaseDisplaySleep');
     } catch (e) {

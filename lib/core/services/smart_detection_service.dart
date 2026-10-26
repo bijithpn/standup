@@ -44,8 +44,9 @@ class SmartDetectionState {
 
 /// Detects video calls, meetings, media playback, and macOS Focus/DND to pause reminders.
 ///
-/// On macOS the native detector pushes state over [_eventChannel]; elsewhere
-/// the background polling isolate reports through [updateDetectionStatus].
+/// The native detector (macOS, Windows, Linux) pushes state over
+/// [_eventChannel]. If it is unavailable the background polling isolate
+/// reports through [updateDetectionStatus] instead.
 class SmartDetectionService {
   static const _eventChannel = EventChannel(
     'com.breakmate/smart_detection_events',
@@ -61,7 +62,7 @@ class SmartDetectionService {
   bool _isVideoPlaying = false;
   bool _isFocusModeActive = false;
 
-  /// Native state changes (macOS only); empty elsewhere.
+  /// Native state changes; empty while the polling fallback is in use.
   Stream<SmartDetectionState> get stateStream => _stateController.stream;
   SmartDetectionState get currentState => _currentState;
 
@@ -71,22 +72,29 @@ class SmartDetectionService {
   bool get isVideoPlaying => _isVideoPlaying;
   bool get isFocusModeActive => _isFocusModeActive;
 
+  bool _usingPollingFallback = false;
+
   void start() {
-    if (Platform.isMacOS) {
-      _subscription?.cancel();
-      _subscription = _eventChannel.receiveBroadcastStream().listen(
-        _onNativeState,
-        onError: (Object err) {
-          _logger.error('SmartDetection stream error: $err');
-        },
-      );
-      _logger.info('SmartDetectionService connected to NativeSmartDetector');
-    } else {
-      BackgroundPollingService.instance.start();
-      _logger.info(
-        'SmartDetectionService started delegating to background isolate',
-      );
-    }
+    _usingPollingFallback = false;
+    _subscription?.cancel();
+    _subscription = _eventChannel.receiveBroadcastStream().listen(
+      _onNativeState,
+      onError: (Object err) {
+        _logger.error('SmartDetection stream error: $err');
+        // A runner without the native detector (older build, unsupported
+        // desktop session) still gets meeting and focus detection by polling.
+        if (!Platform.isMacOS && !_usingPollingFallback) {
+          _usingPollingFallback = true;
+          _subscription?.cancel();
+          _subscription = null;
+          BackgroundPollingService.instance.start();
+          _logger.info(
+            'SmartDetectionService falling back to background isolate',
+          );
+        }
+      },
+    );
+    _logger.info('SmartDetectionService connected to native detector');
   }
 
   void _onNativeState(dynamic data) {
@@ -106,11 +114,11 @@ class SmartDetectionService {
   }
 
   void stop() {
-    if (Platform.isMacOS) {
-      _subscription?.cancel();
-      _subscription = null;
-    } else {
+    _subscription?.cancel();
+    _subscription = null;
+    if (_usingPollingFallback) {
       BackgroundPollingService.instance.stop();
+      _usingPollingFallback = false;
     }
     _logger.info('SmartDetectionService stopped');
   }

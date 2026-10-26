@@ -17,6 +17,8 @@
 #include "overlay_window_plugin.h"
 #include "display_bridge.h"
 #include "app_tracking_bridge.h"
+#include "native_enhancements_bridge.h"
+#include "constraint_window.h"
 
 // ... rest of stream handlers ...
 
@@ -291,6 +293,9 @@ bool FlutterWindow::OnCreate() {
     SetupOverlayBridge();
     RegisterDisplayBridge(flutter_controller_->engine(), &g_display_stream_handler);
     RegisterAppTrackingBridge(flutter_controller_->engine());
+    RegisterNativeEnhancementsBridge(flutter_controller_->engine());
+    RegisterSmartDetectionBridge(flutter_controller_->engine());
+    RegisterConstraintWindowBridge(flutter_controller_->engine());
     // Set up a timer to poll for focus/meeting updates (every 2 seconds)
     SetTimer(GetHandle(), 1, 2000, NULL);
   }
@@ -624,9 +629,22 @@ void FlutterWindow::SetupBridge() {
           result->Success(flutter::EncodableValue(encodable_list));
         }
         else if (method_name == "showConstraintWindow") {
+          double x = 100, y = 100, w = 300, h = 300;
+          if (const auto* args = std::get_if<flutter::EncodableMap>(call.arguments())) {
+            auto num = [args](const char* key, double fallback) {
+              auto it = args->find(flutter::EncodableValue(key));
+              if (it == args->end()) return fallback;
+              if (const auto* d = std::get_if<double>(&it->second)) return *d;
+              if (const auto* i = std::get_if<int32_t>(&it->second)) return static_cast<double>(*i);
+              return fallback;
+            };
+            x = num("x", x); y = num("y", y); w = num("width", w); h = num("height", h);
+          }
+          ShowConstraintWindow(x, y, w, h);
           result->Success();
         }
         else if (method_name == "hideConstraintWindow") {
+          HideConstraintWindow();
           result->Success();
         }
         else if (method_name == "focusApp") {

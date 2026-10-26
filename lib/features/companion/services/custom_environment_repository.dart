@@ -28,6 +28,12 @@ class CustomEnvironmentRepository {
       final appData = Platform.environment['APPDATA'] ?? '';
       return '$appData\\breakmate\\custom_environments.json';
     }
+    if (Platform.isLinux) {
+      final configHome =
+          Platform.environment['XDG_CONFIG_HOME'] ??
+          '${Platform.environment['HOME'] ?? ''}/.config';
+      return '$configHome/breakmate/custom_environments.json';
+    }
     throw UnsupportedError(
       'CustomEnvironmentRepository: unsupported platform.',
     );

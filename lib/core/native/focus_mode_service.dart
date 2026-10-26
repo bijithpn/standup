@@ -6,7 +6,8 @@ class FocusModeService {
 
   Stream<bool> get isFocusModeActiveStream {
     if (defaultTargetPlatform != TargetPlatform.macOS &&
-        defaultTargetPlatform != TargetPlatform.windows) {
+        defaultTargetPlatform != TargetPlatform.windows &&
+        defaultTargetPlatform != TargetPlatform.linux) {
       return const Stream<bool>.empty();
     }
     return _channel

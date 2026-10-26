@@ -5,6 +5,7 @@
 #include <gdk/gdkx.h>
 #endif
 
+#include "bridges.h"
 #include "flutter/generated_plugin_registrant.h"
 
 struct _MyApplication {
@@ -85,6 +86,9 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_realize(GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+
+  // Native channels the Dart side shares with the macOS and Windows runners.
+  bm::RegisterMainBridges(view, GTK_WINDOW(window));
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 import 'package:breakmate/core/display/models/display_info.dart';
 import 'package:breakmate/core/native/macos_bridge.dart';
+import 'package:breakmate/core/native/linux_bridge.dart';
 import 'package:breakmate/core/native/windows_bridge.dart';
 
 class OverlayArgs {
@@ -512,6 +513,8 @@ class NativeBridge {
       return MacOSBridge();
     } else if (Platform.isWindows) {
       return WindowsBridge();
+    } else if (Platform.isLinux) {
+      return LinuxBridge();
     } else {
       return const FallbackBridge();
     }

@@ -66,8 +66,8 @@ class OverlayWindowService extends ChangeNotifier {
       await windowManager.setIgnoreMouseEvents(false);
 
       if (type != OverlayType.clockPreview) {
-        if (Platform.isWindows) {
-          // Use unified bridge for Windows overlay configuration
+        if (Platform.isWindows || Platform.isLinux) {
+          // Use unified bridge for Windows/Linux overlay configuration
           final args = <String, dynamic>{
             'type': type.name,
             'overlayType': type.name,
@@ -163,6 +163,8 @@ class OverlayWindowService extends ChangeNotifier {
 
       if (Platform.isWindows) {
         await _windowsChannel.invokeMethod('resetToNormal');
+      } else if (Platform.isLinux) {
+        await NativeBridge.hideOverlay(restoreMainWindow: true);
       } else if (Platform.isMacOS) {
         await NativeBridge.hideOverlay(restoreMainWindow: true);
         await NativeBridge.setPresentationOptions(
@@ -218,6 +220,14 @@ class OverlayWindowService extends ChangeNotifier {
       if (Platform.isWindows) {
         try {
           await _windowsChannel.invokeMethod('resetToNormal');
+        } catch (e, st) {
+          ErrorHandler().handleError(e, st);
+        }
+      } else if (Platform.isLinux) {
+        try {
+          await NativeBridge.hideOverlay(
+            restoreMainWindow: _wasMainVisibleBeforeOverlay,
+          );
         } catch (e, st) {
           ErrorHandler().handleError(e, st);
         }
@@ -286,6 +296,8 @@ class OverlayWindowService extends ChangeNotifier {
     _currentOverlayType = null;
     if (Platform.isWindows) {
       await _windowsChannel.invokeMethod('resetToNormal');
+    } else if (Platform.isLinux) {
+      await NativeBridge.hideOverlay();
     } else if (Platform.isMacOS) {
       await NativeBridge.hideOverlay();
       await NativeBridge.setPresentationOptions(

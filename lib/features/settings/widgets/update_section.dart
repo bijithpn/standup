@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:breakmate/core/services/feed_update_checker.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -31,6 +34,7 @@ class _UpdateSectionState extends State<UpdateSection> {
   String _updateVersion = '';
   String _errorMessage = '';
   Timer? _checkTimeout;
+  FeedUpdate? _feedUpdate;
 
   @override
   void initState() {
@@ -112,6 +116,10 @@ class _UpdateSectionState extends State<UpdateSection> {
             'The update server did not respond. Check your connection and try again.';
       });
     });
+    if (!Platform.isMacOS) {
+      await _checkFeed();
+      return;
+    }
     try {
       debugPrint('UpdateSection: Invoking checkForUpdates method channel');
       await _channel.invokeMethod('checkForUpdates');
@@ -130,6 +138,33 @@ class _UpdateSectionState extends State<UpdateSection> {
     }
   }
 
+  /// Windows and Linux have no Sparkle; compare against the appcast instead.
+  Future<void> _checkFeed() async {
+    try {
+      final update = await FeedUpdateChecker().check();
+      _checkTimeout?.cancel();
+      if (!mounted) return;
+      setState(() {
+        _feedUpdate = update;
+        _isChecking = false;
+        _checked = true;
+        _hasUpdate = update != null;
+        _updateVersion = update?.version ?? '';
+        _errorMessage = '';
+      });
+    } catch (e) {
+      _checkTimeout?.cancel();
+      debugPrint('UpdateSection: feed check failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _isChecking = false;
+        _checked = true;
+        _errorMessage =
+            'Unable to connect to update server. Please check your internet connection.';
+      });
+    }
+  }
+
   @override
   void dispose() {
     _checkTimeout?.cancel();
@@ -138,6 +173,11 @@ class _UpdateSectionState extends State<UpdateSection> {
 
   Future<void> _startUpdate() async {
     debugPrint('UpdateSection: _startUpdate called');
+    final feedUpdate = _feedUpdate;
+    if (!Platform.isMacOS && feedUpdate != null) {
+      await launchUrl(feedUpdate.downloadUrl, mode: LaunchMode.externalApplication);
+      return;
+    }
     try {
       await _channel.invokeMethod('startUpdate');
     } catch (e) {
