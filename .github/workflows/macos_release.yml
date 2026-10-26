@@ -176,7 +176,24 @@ jobs:
             if [ -n "$OTHER" ]; then printf '### Other Changes\n%s\n\n' "$OTHER"; fi
             if [ -n "$PREV_TAG" ]; then
               echo "**Full changelog:** https://github.com/${REPO}/compare/${PREV_TAG}...${TAG_NAME}"
+              echo
             fi
+            cat <<EOF
+          ### 🍎 Installing on macOS
+
+          BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show *"Apple could not verify BreakMate…"*. Use either fix:
+
+          **Option 1: one-line install (recommended)**
+          \`\`\`bash
+          curl -fsSL https://github.com/${REPO}/releases/latest/download/install.sh | bash
+          \`\`\`
+
+          **Option 2: you already downloaded the DMG**
+          \`\`\`bash
+          xattr -cr /Applications/BreakMate.app
+          \`\`\`
+          or open **System Settings → Privacy & Security → Open Anyway**.
+          EOF
           } > release_notes.md
 
           cat release_notes.md
@@ -238,12 +255,14 @@ jobs:
           if [ -f release_notes.md ] && [ -s release_notes.md ]; then
             gh release create "$TAG_NAME" \
               "$DMG_PATH" \
+              scripts/install.sh \
               --target "$GITHUB_SHA" \
               --title "BreakMate v${VERSION}" \
               --notes-file release_notes.md
           else
             gh release create "$TAG_NAME" \
               "$DMG_PATH" \
+              scripts/install.sh \
               --target "$GITHUB_SHA" \
               --title "BreakMate v${VERSION}" \
               --generate-notes

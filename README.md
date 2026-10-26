@@ -142,6 +142,14 @@ Download the latest build from the [**Releases**](https://github.com/bijithpn/st
 | **Windows** | Installer (`BreakMate-Setup-<version>`) | Inno Setup installer. |
 | **Linux** | Release archive | Includes a `.desktop` entry (`com.bijith.breakmate.desktop`). |
 
+**macOS first launch** — BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show *"Apple could not verify BreakMate is free of malware"*. Either install with one command (`curl` downloads aren't quarantined, so no warning appears):
+
+```bash
+curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/install.sh | bash
+```
+
+or, if you already installed the DMG, run `xattr -cr /Applications/BreakMate.app`, or go to **System Settings → Privacy & Security → Open Anyway**. Local builds and in-app Sparkle updates are not affected.
+
 **macOS permissions** — BreakMate may ask for Calendar access (to avoid scheduling breaks over meetings) and Accessibility/Screen-related access for meeting, idle, and app-usage detection. Every feature degrades gracefully if you decline.
 
 ---
