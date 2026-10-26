@@ -196,6 +196,14 @@ jobs:
           \`\`\`
           or open **System Settings → Privacy & Security → Open Anyway**.
 
+          **Homebrew**
+          \`\`\`bash
+          brew tap bijithpn/standup https://github.com/${REPO}
+          brew install --cask breakmate
+          \`\`\`
+
+          **Uninstall:** \`curl -fsSL https://github.com/${REPO}/releases/latest/download/uninstall.sh | bash\` (add \`-s -- --purge\` to also delete settings). Linux: \`uninstall_linux.sh\`, Windows: \`uninstall.ps1\`.
+
           ### 🐧 Linux / 🪟 Windows one-liners
 
           \`\`\`bash
@@ -233,14 +241,22 @@ jobs:
             --url "$DOWNLOAD_URL" \
             $NOTES_FLAG
 
+      - name: Update Homebrew Cask
+        env:
+          VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+        run: |
+          SHA=$(awk '{print $1}' release_dmg/BreakMate-Installer.dmg.sha256)
+          sed -i '' -E "s/^  version \".*\"/  version \"${VERSION}\"/; s/^  sha256 .*/  sha256 \"${SHA}\"/" Casks/breakmate.rb
+          grep -nE '^  (version|sha256)' Casks/breakmate.rb
+
       - name: Commit and Push Appcast
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if ! git diff --quiet appcast.xml; then
-            git add appcast.xml
-            git commit -m "chore: update appcast.xml for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]"
+          git add appcast.xml Casks/breakmate.rb
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update appcast and cask for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]"
             for attempt in 1 2 3; do
               git fetch origin main
               git rebase origin/main && git push origin HEAD:main && break
@@ -248,9 +264,9 @@ jobs:
               git rebase --abort 2>/dev/null || true
               sleep $((attempt * 5))
             done
-            echo "✅ appcast.xml committed and pushed to main"
+            echo "✅ appcast.xml and cask committed and pushed to main"
           else
-            echo "appcast.xml unchanged — nothing to commit."
+            echo "appcast and cask unchanged — nothing to commit."
           fi
 
       - name: Publish GitHub Release
@@ -259,7 +275,7 @@ jobs:
           TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
           VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
         run: |
-          ASSETS=(release_dmg/BreakMate-Installer.dmg release_dmg/BreakMate-Installer.dmg.sha256 scripts/install.sh scripts/install_linux.sh scripts/install.ps1)
+          ASSETS=(release_dmg/BreakMate-Installer.dmg release_dmg/BreakMate-Installer.dmg.sha256 scripts/install.sh scripts/install_linux.sh scripts/install.ps1 scripts/uninstall.sh scripts/uninstall_linux.sh scripts/uninstall.ps1)
 
           if [ -s release_notes.md ]; then
             NOTES=(--notes-file release_notes.md)
