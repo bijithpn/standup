@@ -205,7 +205,7 @@ void SecondaryWindows::AddOverlayChannels(Surface* surface) {
           HideOverlay();
           Ok(call);
         } else if (method == "setIgnoreMouseEvents") {
-          SetClickThrough(surface->window, Bool(args, "ignore", false));
+          SetClickThrough(surface->window, GetBool(args, "ignore", false));
           Ok(call);
         } else {
           NotImplemented(call);
@@ -252,10 +252,10 @@ void SecondaryWindows::ShowOverlay(FlValue* args) {
   if (last_overlay_args_ != nullptr) fl_value_unref(last_overlay_args_);
   last_overlay_args_ = fl_value_ref(args);
 
-  const bool ignore_mouse = Bool(args, "ignoreMouseEvents", false);
-  const bool all_displays = Bool(args, "showOnAllDisplays", true);
-  const bool transparent = Bool(args, "isTransparent", false);
-  overlay_strict_ = Bool(args, "strictMode", false);
+  const bool ignore_mouse = GetBool(args, "ignoreMouseEvents", false);
+  const bool all_displays = GetBool(args, "showOnAllDisplays", true);
+  const bool transparent = GetBool(args, "isTransparent", false);
+  overlay_strict_ = GetBool(args, "strictMode", false);
 
   GdkDisplay* display = gdk_display_get_default();
   GdkMonitor* primary = gdk_display_get_primary_monitor(display);
@@ -373,7 +373,7 @@ void SecondaryWindows::AddCompanionChannels(Surface* surface, FlValue* initial_s
         FlValue* args = fl_method_call_get_args(call);
         if (HandleSystemCall(call, false)) return;
         if (method == "setIgnoreMouseEvents") {
-          SetClickThrough(surface->window, Bool(args, "ignore", false));
+          SetClickThrough(surface->window, GetBool(args, "ignore", false));
           Ok(call);
         } else {
           NotImplemented(call);
@@ -404,7 +404,7 @@ void SecondaryWindows::ShowCompanion(FlValue* args) {
   const std::string theme = Str(args, "themeId", "grey_cat");
   const std::string pet = Str(args, "petName", "Mochi");
   const double scale = Num(args, "scale", 6.0);
-  const bool click_through = Bool(args, "clickThrough", false);
+  const bool click_through = GetBool(args, "clickThrough", false);
 
   if (companion_ != nullptr) {
     UpdateCompanion(args);
@@ -483,14 +483,14 @@ void SecondaryWindows::UpdateCompanion(FlValue* params) {
   if (companion_ == nullptr) return;
 
   if (Has(params, "clickThrough")) {
-    const bool ct = Bool(params, "clickThrough", companion_click_through_);
+    const bool ct = GetBool(params, "clickThrough", companion_click_through_);
     if (ct != companion_click_through_) {
       companion_click_through_ = ct;
       SetClickThrough(companion_->window, ct);
     }
   }
   if (Has(params, "followMouse")) {
-    companion_follow_mouse_ = Bool(params, "followMouse", companion_follow_mouse_);
+    companion_follow_mouse_ = GetBool(params, "followMouse", companion_follow_mouse_);
   }
   Invoke(companion_->data, "syncCompanionSettings", params);
 }
@@ -515,7 +515,7 @@ void SecondaryWindows::ShowPip(FlValue* args) {
   const int y = static_cast<int>(Num(args, "y", 100));
   const int w = static_cast<int>(Bound(Num(args, "width", 280), 180, 360));
   const int h = static_cast<int>(Bound(Num(args, "height", 320), 210, 420));
-  const bool click_through = Bool(args, "clickThrough", false);
+  const bool click_through = GetBool(args, "clickThrough", false);
 
   if (pip_ != nullptr) {
     // Settings updates reuse this call without geometry; leave a window the

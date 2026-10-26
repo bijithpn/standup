@@ -88,7 +88,7 @@ FlMethodChannel* NewWindowChannel(FlBinaryMessenger* messenger, GtkWidget* windo
       gtk_widget_set_opacity(widget, Num(args, "opacity", 1.0));
       Ok(call);
     } else if (method == "setIgnoresMouseEvents") {
-      SetClickThrough(widget, Bool(args, "ignore", false));
+      SetClickThrough(widget, GetBool(args, "ignore", false));
       Ok(call);
     } else if (method == "orderFrontRegardless" || method == "showWindow") {
       gtk_window_present(win);
@@ -104,7 +104,7 @@ FlMethodChannel* NewWindowChannel(FlBinaryMessenger* messenger, GtkWidget* windo
       BeginDrag(win);
       Ok(call);
     } else if (method == "setNonActivating") {
-      bool non_activating = Bool(args, "nonActivating", false);
+      bool non_activating = GetBool(args, "nonActivating", false);
       gtk_window_set_accept_focus(win, !non_activating);
       gtk_window_set_focus_on_map(win, !non_activating);
       Ok(call);

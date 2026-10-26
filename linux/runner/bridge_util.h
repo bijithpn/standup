@@ -29,7 +29,7 @@ inline double Num(FlValue* map, const char* key, double fallback) {
   return fallback;
 }
 
-inline bool Bool(FlValue* map, const char* key, bool fallback) {
+inline bool GetBool(FlValue* map, const char* key, bool fallback) {
   FlValue* v = Lookup(map, key);
   if (v != nullptr && fl_value_get_type(v) == FL_VALUE_TYPE_BOOL) {
     return fl_value_get_bool(v);

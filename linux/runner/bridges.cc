@@ -256,7 +256,7 @@ void RegisterAppTracking(FlBinaryMessenger* messenger) {
     if (method == "getActiveApp") {
       // The window title is only read when explicitly requested; there is no
       // portable way to read a browser's address bar, so no URL is reported.
-      const bool include_title = Bool(args, "includeTitle", false);
+      const bool include_title = GetBool(args, "includeTitle", false);
       const sys::ActiveWindow active = sys::GetActiveWindow();
       if (!active.ok) {
         Ok(call);
@@ -307,7 +307,7 @@ void HandleMainBridgeCall(FlMethodCall* call) {
     gtk_window_set_keep_above(g_main_window, Str(args, "level") != "normal");
     Ok(call);
   } else if (method == "setIgnoreMouseEvents") {
-    SetClickThrough(GTK_WIDGET(g_main_window), Bool(args, "ignore", false));
+    SetClickThrough(GTK_WIDGET(g_main_window), GetBool(args, "ignore", false));
     Ok(call);
   } else if (method == "showOverlay") {
     windows.ShowOverlay(args);
@@ -326,7 +326,7 @@ void HandleMainBridgeCall(FlMethodCall* call) {
     Ok(call);
   } else if (method == "setCompanionClickThrough") {
     g_autoptr(FlValue) params = fl_value_new_map();
-    SetBool(params, "clickThrough", Bool(args, "ignore", false));
+    SetBool(params, "clickThrough", GetBool(args, "ignore", false));
     windows.UpdateCompanion(params);
     Ok(call);
   } else if (method.find("updateCompanion") != std::string::npos ||
