@@ -368,10 +368,6 @@ abstract class NativeBridgePlatform {
   Future<void> showPipWindow(PipWindowArgs args);
 
   Future<void> hidePipWindow();
-
-
-
-
 }
 
 class FallbackBridge implements NativeBridgePlatform {
@@ -497,10 +493,6 @@ class FallbackBridge implements NativeBridgePlatform {
 
   @override
   Future<void> hidePipWindow() async {}
-
-
-
-
 }
 
 class NativeBridge {
@@ -658,8 +650,4 @@ class NativeBridge {
       _platform.showPipWindow(args);
 
   static Future<void> hidePipWindow() => _platform.hidePipWindow();
-
-
-
-
 }

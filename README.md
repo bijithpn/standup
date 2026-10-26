@@ -150,6 +150,15 @@ curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/install.
 
 or, if you already installed the DMG, run `xattr -cr /Applications/BreakMate.app`, or go to **System Settings → Privacy & Security → Open Anyway**. Local builds and in-app Sparkle updates are not affected.
 
+**Linux / Windows one-liners** — per-user installs that skip the browser download:
+
+```bash
+curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh | bash
+```
+```powershell
+irm https://github.com/bijithpn/standup/releases/latest/download/install.ps1 | iex
+```
+
 **macOS permissions** — BreakMate may ask for Calendar access (to avoid scheduling breaks over meetings) and Accessibility/Screen-related access for meeting, idle, and app-usage detection. Every feature degrades gracefully if you decline.
 
 ---

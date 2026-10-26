@@ -21,10 +21,11 @@ if [ "$(uname -s)" != "Darwin" ]; then
 fi
 
 if [ "$TAG" = "latest" ]; then
-  URL="https://github.com/${REPO}/releases/latest/download/${DMG_NAME}"
+  BASE_URL="https://github.com/${REPO}/releases/latest/download"
 else
-  URL="https://github.com/${REPO}/releases/download/${TAG}/${DMG_NAME}"
+  BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
 fi
+URL="${BASE_URL}/${DMG_NAME}"
 
 WORK_DIR="$(mktemp -d)"
 MOUNT_POINT="${WORK_DIR}/mount"
@@ -36,6 +37,19 @@ trap cleanup EXIT
 
 echo "Downloading ${APP_NAME} (${TAG})..."
 curl -fL --progress-bar -o "${WORK_DIR}/${DMG_NAME}" "$URL"
+
+# Verify integrity. Releases older than the checksum asset have none, so skip.
+if curl -fsSL -o "${WORK_DIR}/${DMG_NAME}.sha256" "${URL}.sha256" 2>/dev/null; then
+  EXPECTED="$(awk '{print $1}' "${WORK_DIR}/${DMG_NAME}.sha256")"
+  ACTUAL="$(shasum -a 256 "${WORK_DIR}/${DMG_NAME}" | awk '{print $1}')"
+  if [ "$EXPECTED" != "$ACTUAL" ]; then
+    echo "Checksum mismatch - aborting. expected=${EXPECTED} actual=${ACTUAL}" >&2
+    exit 1
+  fi
+  echo "Checksum OK."
+else
+  echo "No checksum published for this release; skipping verification."
+fi
 
 echo "Installing to /Applications..."
 mkdir -p "$MOUNT_POINT"

@@ -703,4 +703,3 @@ class ProductivityEmptyState extends StatelessWidget {
     );
   }
 }
-

@@ -36,7 +36,8 @@ class FeedUpdateChecker {
   /// Returns the newest build for this OS if it is newer than the running one,
   /// otherwise null. Throws on network or feed errors.
   Future<FeedUpdate?> check() async {
-    final current = int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
+    final current =
+        int.tryParse((await PackageInfo.fromPlatform()).buildNumber) ?? 0;
     final xml = await _fetch();
     return newestFor(xml, os: _osKey, currentBuild: current);
   }

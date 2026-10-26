@@ -294,10 +294,6 @@ class MacOSBridge implements NativeBridgePlatform {
     await _invokeSafely('hidePipWindow');
   }
 
-
-
-
-
   Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {
       return await _channel.invokeMethod<T>(method, arguments);
