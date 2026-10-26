@@ -257,6 +257,8 @@ jobs:
           git add appcast.xml Casks/breakmate.rb
           if ! git diff --cached --quiet; then
             git commit -m "chore: update appcast and cask for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]"
+            # Drop build byproducts (e.g. Podfile.lock) so the rebase has a clean tree.
+            git reset --hard HEAD
             for attempt in 1 2 3; do
               git fetch origin main
               git rebase origin/main && git push origin HEAD:main && break
