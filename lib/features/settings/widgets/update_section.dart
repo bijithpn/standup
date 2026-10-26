@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -132,7 +133,7 @@ class _UpdateSectionState extends State<UpdateSection> {
           _checked = true;
           _errorMessage = e is PlatformException && e.message != null
               ? e.message!
-              : 'Failed to check for updates';
+              : 'Failed to check for updates .Please try again later.${kDebugMode ? "($e)" : ''}';
         });
       }
     }

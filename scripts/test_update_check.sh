@@ -62,10 +62,11 @@ XML
 /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsLocalNetworking bool true" "$PLIST" 2>/dev/null || true
 codesign --force --deep -s - "$WORK/App.app" >/dev/null 2>&1
 
-(cd "$WORK" && python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1) &
+lsof -ti tcp:"$PORT" | xargs kill 2>/dev/null || true
+(cd "$WORK" && exec python3 -m http.server "$PORT" --bind 127.0.0.1 >/dev/null 2>&1) &
 SERVER_PID=$!
 
-log stream --predicate 'eventMessage CONTAINS "Sparkle"' --style compact &
+log stream --predicate 'process == "BreakMate Dev" AND eventMessage CONTAINS "Sparkle"' --style compact &
 LOG_PID=$!
 
 echo "App $SHORT ($BUILD_NO) -> feed advertises $FAKE_SHORT ($FAKE_BUILD) [mode: $MODE]"
