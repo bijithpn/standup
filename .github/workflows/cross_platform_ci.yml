@@ -23,10 +23,6 @@ concurrency:
 permissions:
   contents: read
 
-env:
-  # Keep in sync with macos_release.yml and desktop_release.yml.
-  FLUTTER_VERSION: '3.41.9'
-
 jobs:
   static-analysis-and-tests:
     name: Analyze & Test
@@ -39,7 +35,7 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 
@@ -49,10 +45,7 @@ jobs:
       - name: Install Dependencies
         run: flutter pub get
 
-      # Advisory for now: a large part of the codebase predates the formatter
-      # check. Flip continue-on-error off after a one-off `dart format lib test`.
-      - name: Check Code Formatting (advisory)
-        continue-on-error: true
+      - name: Check Code Formatting
         run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Static Analysis
@@ -113,7 +106,7 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 
@@ -154,7 +147,7 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 
@@ -177,7 +170,7 @@ jobs:
       - name: Setup Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 

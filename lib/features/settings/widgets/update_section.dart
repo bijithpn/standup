@@ -176,7 +176,10 @@ class _UpdateSectionState extends State<UpdateSection> {
     debugPrint('UpdateSection: _startUpdate called');
     final feedUpdate = _feedUpdate;
     if (!Platform.isMacOS && feedUpdate != null) {
-      await launchUrl(feedUpdate.downloadUrl, mode: LaunchMode.externalApplication);
+      await launchUrl(
+        feedUpdate.downloadUrl,
+        mode: LaunchMode.externalApplication,
+      );
       return;
     }
     try {

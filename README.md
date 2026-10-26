@@ -139,8 +139,39 @@ Download the latest build from the [**Releases**](https://github.com/bijithpn/st
 | Platform | Package | Notes |
 | --- | --- | --- |
 | **macOS** 12+ | `.dmg` | Drag to Applications. Updates automatically via Sparkle. |
-| **Windows** | Installer (`BreakMate-Setup-<version>`) | Inno Setup installer. |
-| **Linux** | Release archive | Includes a `.desktop` entry (`com.bijith.breakmate.desktop`). |
+| **Windows** | Installer (`BreakMate-Setup-<version>`) or `.zip` | Inno Setup installer. Unsigned, so a browser download may trigger SmartScreen; use the one-liner below. |
+| **Linux** | `BreakMate-<version>-linux-x64.tar.gz` | Includes a `.desktop` entry (`com.bijith.breakmate.desktop`). |
+
+**macOS first launch** — BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show *"Apple could not verify BreakMate is free of malware"*. Either install with one command (`curl` downloads aren't quarantined, so no warning appears):
+
+```bash
+curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/install.sh | bash
+```
+
+or, if you already installed the DMG, run `xattr -cr /Applications/BreakMate.app`, or go to **System Settings → Privacy & Security → Open Anyway**. Local builds and in-app Sparkle updates are not affected.
+
+**Linux / Windows one-liners** — per-user installs that skip the browser download:
+
+```bash
+curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh | bash
+```
+
+```powershell
+irm https://github.com/bijithpn/standup/releases/latest/download/install.ps1 | iex
+```
+
+**Homebrew (macOS)** — `brew tap bijithpn/standup https://github.com/bijithpn/standup && brew install --cask breakmate` (the cask removes the quarantine flag for you; `brew uninstall --cask --zap breakmate` also removes app data).
+
+**Uninstall** — run the matching script from the latest release:
+
+```bash
+curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall.sh | bash -s -- --purge   # macOS (--purge also deletes data)
+curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall_linux.sh | bash           # Linux
+```
+
+```powershell
+irm https://github.com/bijithpn/standup/releases/latest/download/uninstall.ps1 | iex                        # Windows
+```
 
 **macOS permissions** — BreakMate may ask for Calendar access (to avoid scheduling breaks over meetings) and Accessibility/Screen-related access for meeting, idle, and app-usage detection. Every feature degrades gracefully if you decline.
 
@@ -246,11 +277,12 @@ BreakMate runs several Flutter engines (via `FlutterEngineGroup`) so heavy secon
 ## Testing & Quality
 
 ```bash
+dart format --output=none --set-exit-if-changed lib test   # formatting (enforced in CI)
 flutter analyze   # static analysis
 flutter test      # unit, widget, and property-based tests (glados, mocktail, fake_async)
 ```
 
-CI runs on every push via `.github/workflows/cross_platform_ci.yml`.
+CI (`.github/workflows/cross_platform_ci.yml`) runs on pushes to `dev` and on PRs to `main`/`dev`: format check, analyze, tests, release-readiness checks (required files and the `SPARKLE_PRIVATE_KEY` secret), and debug builds for macOS, Linux and Windows. The Flutter SDK version for every workflow is pinned in one place, `.github/flutter-version.yaml`.
 
 ---
 
@@ -258,8 +290,10 @@ CI runs on every push via `.github/workflows/cross_platform_ci.yml`.
 
 Releases are automated through GitHub Actions:
 
-1. **`macos_release.yml`** — builds, signs (Sparkle Ed25519), packages the DMG, publishes the GitHub release, and updates `appcast.xml`.
+1. **`macos_release.yml`** (on push to `main`) — builds, ad-hoc signs, packages the DMG, signs it with Sparkle (the job fails if the signing key is missing), writes a SHA-256 checksum, generates release notes, updates `appcast.xml` and `Casks/breakmate.rb`, and publishes the GitHub release. Re-running for the same version updates the existing release in place and moves its tag, so download links stay valid.
 2. **`desktop_release.yml`** — after the macOS release succeeds, builds and attaches the Linux and Windows artifacts to the same release.
+
+Each release also attaches the install/uninstall scripts (`install.sh`, `install_linux.sh`, `install.ps1`, `uninstall.sh`, `uninstall_linux.sh`, `uninstall.ps1`) and `BreakMate-Installer.dmg.sha256`. The macOS build is not notarized (no Apple Developer account), which is why the installers use `curl`/`Invoke-WebRequest`: those downloads aren't quarantined. `install.sh` verifies the DMG against the checksum.
 
 Local release helpers live in `scripts/`:
 
@@ -268,6 +302,8 @@ Local release helpers live in `scripts/`:
 | `generate_sparkle_keys.sh` | One-time Ed25519 key setup for Sparkle auto-updates. |
 | `create_dmg.sh` | Full local pipeline: build → DMG → sign → GitHub release → appcast. |
 | `publish_release.sh` | Sign an already-built DMG and patch `appcast.xml`. |
+| `install.sh` / `install_linux.sh` / `install.ps1` | End-user installers for macOS, Linux and Windows (shipped with each release). |
+| `uninstall.sh` / `uninstall_linux.sh` / `uninstall.ps1` | End-user uninstallers (macOS `--purge` also deletes data). |
 
 ```bash
 cp .env.example .env.release          # then edit values
@@ -293,6 +329,7 @@ lib/
 ├── main_dev.dart / main_prod.dart      # Flavor entry points
 macos/  windows/  linux/                # Native runners and bridges
 scripts/  test/  screenshots/
+Casks/                                  # Homebrew cask (auto-updated on release)
 ```
 
 ---

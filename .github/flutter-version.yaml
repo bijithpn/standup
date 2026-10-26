@@ -1,0 +1,4 @@
+# Single source of truth for the Flutter SDK used by every workflow
+# (read by subosito/flutter-action via `flutter-version-file`).
+environment:
+  flutter: 3.41.9

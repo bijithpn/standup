@@ -2,8 +2,8 @@ name: "Release · 2 · Linux & Windows"
 
 # Runs after the macOS pipeline has published the GitHub release for this
 # version, then attaches the Linux and Windows builds to that same release.
-# (macos_release.yml deletes and recreates the release on each run, so these
-# jobs must run after it, never in parallel with it.)
+# (macos_release.yml creates the release, so these jobs must run after it,
+# never in parallel with it.)
 on:
   workflow_run:
     workflows: ['Release · 1 · macOS']
@@ -16,10 +16,6 @@ concurrency:
 
 permissions:
   contents: write
-
-env:
-  # Keep in sync with macos_release.yml and cross_platform_ci.yml.
-  FLUTTER_VERSION: '3.41.9'
 
 jobs:
   linux:
@@ -56,7 +52,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 
@@ -130,7 +126,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 

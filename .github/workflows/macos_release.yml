@@ -16,10 +16,6 @@ concurrency:
   group: macos-release
   cancel-in-progress: false
 
-env:
-  # Keep in sync with cross_platform_ci.yml and desktop_release.yml.
-  FLUTTER_VERSION: '3.41.9'
-
 jobs:
   build-and-release:
     name: Build, publish & update appcast
@@ -53,7 +49,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version-file: .github/flutter-version.yaml
           channel: stable
           cache: true
 
@@ -107,6 +103,10 @@ jobs:
           echo "✅ DMG created successfully at $DMG_PATH"
           ls -la "$DMG_PATH"
 
+          # Checksum used by scripts/install.sh to verify the download.
+          (cd release_dmg && shasum -a 256 BreakMate-Installer.dmg > BreakMate-Installer.dmg.sha256)
+          cat release_dmg/BreakMate-Installer.dmg.sha256
+
       - name: Sign DMG with Sparkle
         id: signing
         env:
@@ -138,10 +138,12 @@ jobs:
             if [ -n "$SIGNATURE" ]; then
               echo "✅ Successfully generated Sparkle Ed25519 signature."
             else
-              echo "::warning::sign_update did not produce a signature. Output: $SIGN_OUTPUT"
+              echo "::error::sign_update did not produce a signature. Output: $SIGN_OUTPUT"
+              exit 1
             fi
           else
-            echo "::warning::SPARKLE_PRIVATE_KEY secret is not configured or sign_update tool is missing. Skipping Sparkle signature."
+            echo "::error::SPARKLE_PRIVATE_KEY secret is not configured or sign_update tool is missing - refusing to publish an unsigned update."
+            exit 1
           fi
 
           echo "signature=$SIGNATURE" >> $GITHUB_OUTPUT
@@ -176,7 +178,41 @@ jobs:
             if [ -n "$OTHER" ]; then printf '### Other Changes\n%s\n\n' "$OTHER"; fi
             if [ -n "$PREV_TAG" ]; then
               echo "**Full changelog:** https://github.com/${REPO}/compare/${PREV_TAG}...${TAG_NAME}"
+              echo
             fi
+            cat <<EOF
+          ### 🍎 Installing on macOS
+
+          BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show *"Apple could not verify BreakMate…"*. Use either fix:
+
+          **Option 1: one-line install (recommended)**
+          \`\`\`bash
+          curl -fsSL https://github.com/${REPO}/releases/latest/download/install.sh | bash
+          \`\`\`
+
+          **Option 2: you already downloaded the DMG**
+          \`\`\`bash
+          xattr -cr /Applications/BreakMate.app
+          \`\`\`
+          or open **System Settings → Privacy & Security → Open Anyway**.
+
+          **Homebrew**
+          \`\`\`bash
+          brew tap bijithpn/standup https://github.com/${REPO}
+          brew install --cask breakmate
+          \`\`\`
+
+          **Uninstall:** \`curl -fsSL https://github.com/${REPO}/releases/latest/download/uninstall.sh | bash\` (add \`-s -- --purge\` to also delete settings). Linux: \`uninstall_linux.sh\`, Windows: \`uninstall.ps1\`.
+
+          ### 🐧 Linux / 🪟 Windows one-liners
+
+          \`\`\`bash
+          curl -fsSL https://github.com/${REPO}/releases/latest/download/install_linux.sh | bash
+          \`\`\`
+          \`\`\`powershell
+          irm https://github.com/${REPO}/releases/latest/download/install.ps1 | iex
+          \`\`\`
+          EOF
           } > release_notes.md
 
           cat release_notes.md
@@ -205,18 +241,32 @@ jobs:
             --url "$DOWNLOAD_URL" \
             $NOTES_FLAG
 
+      - name: Update Homebrew Cask
+        env:
+          VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
+        run: |
+          SHA=$(awk '{print $1}' release_dmg/BreakMate-Installer.dmg.sha256)
+          sed -i '' -E "s/^  version \".*\"/  version \"${VERSION}\"/; s/^  sha256 .*/  sha256 \"${SHA}\"/" Casks/breakmate.rb
+          grep -nE '^  (version|sha256)' Casks/breakmate.rb
+
       - name: Commit and Push Appcast
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          if ! git diff --quiet appcast.xml; then
-            git add appcast.xml
-            git commit -m "chore: update appcast.xml for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]"
-            git push origin HEAD:main
-            echo "✅ appcast.xml committed and pushed to main"
+          git add appcast.xml Casks/breakmate.rb
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: update appcast and cask for ${{ steps.version_info.outputs.TAG_NAME }} [skip ci]"
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git rebase origin/main && git push origin HEAD:main && break
+              if [ "$attempt" = 3 ]; then echo "::error::Could not push appcast.xml after 3 attempts"; exit 1; fi
+              git rebase --abort 2>/dev/null || true
+              sleep $((attempt * 5))
+            done
+            echo "✅ appcast.xml and cask committed and pushed to main"
           else
-            echo "appcast.xml unchanged — nothing to commit."
+            echo "appcast and cask unchanged — nothing to commit."
           fi
 
       - name: Publish GitHub Release
@@ -225,28 +275,30 @@ jobs:
           TAG_NAME: ${{ steps.version_info.outputs.TAG_NAME }}
           VERSION: ${{ steps.version_info.outputs.SHORT_VERSION }}
         run: |
-          DMG_PATH="release_dmg/BreakMate-Installer.dmg"
+          ASSETS=(release_dmg/BreakMate-Installer.dmg release_dmg/BreakMate-Installer.dmg.sha256 scripts/install.sh scripts/install_linux.sh scripts/install.ps1 scripts/uninstall.sh scripts/uninstall_linux.sh scripts/uninstall.ps1)
 
-          # Delete existing release/tag if it exists to allow safe re-runs (matching create_dmg.sh)
-          if gh release view "$TAG_NAME" &>/dev/null; then
-            echo "Release $TAG_NAME already exists — deleting and recreating..."
-            gh release delete "$TAG_NAME" --yes --cleanup-tag
-          fi
-          # The checkout may hold a local copy of the tag that no longer exists on the remote.
-          git tag -d "$TAG_NAME" 2>/dev/null || true
-
-          if [ -f release_notes.md ] && [ -s release_notes.md ]; then
-            gh release create "$TAG_NAME" \
-              "$DMG_PATH" \
-              --target "$GITHUB_SHA" \
-              --title "BreakMate v${VERSION}" \
-              --notes-file release_notes.md
+          if [ -s release_notes.md ]; then
+            NOTES=(--notes-file release_notes.md)
           else
-            gh release create "$TAG_NAME" \
-              "$DMG_PATH" \
+            NOTES=(--generate-notes)
+          fi
+
+          if gh release view "$TAG_NAME" &>/dev/null; then
+            # Re-run: update the existing release in place so the download URLs
+            # stay valid and the release is never missing, then move the tag to
+            # the commit that was just built.
+            echo "Release $TAG_NAME already exists - updating in place..."
+            gh release upload "$TAG_NAME" "${ASSETS[@]}" --clobber
+            if [ -s release_notes.md ]; then
+              gh release edit "$TAG_NAME" --title "BreakMate v${VERSION}" --notes-file release_notes.md
+            fi
+            gh api -X PATCH "repos/${{ github.repository }}/git/refs/tags/${TAG_NAME}" \
+              -f sha="$GITHUB_SHA" -F force=true
+          else
+            gh release create "$TAG_NAME" "${ASSETS[@]}" \
               --target "$GITHUB_SHA" \
               --title "BreakMate v${VERSION}" \
-              --generate-notes
+              "${NOTES[@]}"
           fi
 
           echo "✅ Release $TAG_NAME published successfully."
@@ -258,3 +310,4 @@ jobs:
           name: BreakMate-macOS-Installer
           path: |
             release_dmg/BreakMate-Installer.dmg
+            release_dmg/BreakMate-Installer.dmg.sha256
