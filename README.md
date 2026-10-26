@@ -32,6 +32,7 @@
 - [Project Structure](#project-structure)
 - [Contributing](#contributing)
 - [Author](#author)
+- [Acknowledgements](#acknowledgements)
 - [License](#license)
 
 ---
@@ -320,6 +321,12 @@ If BreakMate helps you, a ⭐ on the [repo](https://github.com/bijithpn/standup)
 
 ---
 
+## Acknowledgements
+
+The desktop companion's avatar assets (species, breeds, pixel styles, animation covers and the web avatar renderer under `assets/avatars/`) come from [oneworks-ai/avatar](https://github.com/oneworks-ai/avatar) by the One Works, used under the MIT License. Their license text is kept at [`assets/avatars/LICENSE`](assets/avatars/LICENSE).
+
+---
+
 ## License
 
-Released under the [MIT License](LICENSE).
+Released under the [MIT License](LICENSE). Third-party avatar assets keep their own MIT license; see [Acknowledgements](#acknowledgements).

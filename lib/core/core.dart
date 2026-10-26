@@ -20,7 +20,6 @@ export 'native/focus_mode_service.dart';
 export 'native/macos_bridge.dart';
 export 'native/meeting_detection_service.dart';
 export 'native/native_bridge.dart';
-export 'native/native_bridge_facade.dart';
 export 'native/permission_model.dart';
 export 'native/windows_bridge.dart';
 export 'plugins/windows_overlay_plugin.dart';

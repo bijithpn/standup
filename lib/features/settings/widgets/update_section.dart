@@ -3,8 +3,6 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
-import 'package:markdown/markdown.dart' as md;
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -31,7 +29,6 @@ class _UpdateSectionState extends State<UpdateSection> {
   bool _checked = false;
   bool _hasUpdate = false;
   String _updateVersion = '';
-  String _updateNotes = '';
   String _errorMessage = '';
   Timer? _checkTimeout;
 
@@ -45,7 +42,6 @@ class _UpdateSectionState extends State<UpdateSection> {
         final args = Map<String, dynamic>.from(call.arguments);
         final hasUpdate = args['hasUpdate'] as bool? ?? false;
         final version = args['version'] as String? ?? '';
-        final notes = args['notes'] as String? ?? '';
         debugPrint(
           'UpdateSection: onUpdateResult: hasUpdate=$hasUpdate, version=$version',
         );
@@ -55,7 +51,6 @@ class _UpdateSectionState extends State<UpdateSection> {
             _checked = true;
             _hasUpdate = hasUpdate;
             _updateVersion = version;
-            _updateNotes = notes;
             _errorMessage = '';
           });
         }
@@ -148,36 +143,6 @@ class _UpdateSectionState extends State<UpdateSection> {
     } catch (e) {
       debugPrint('UpdateSection: Error invoking startUpdate: $e');
     }
-  }
-
-  String _formatReleaseNotes(String rawNotes) {
-    if (rawNotes.isEmpty) return 'No release notes available.';
-
-    // The appcast now ships ready-made HTML; only legacy Markdown notes need
-    // converting (and unescaping would corrupt entities in HTML text).
-    if (RegExp(
-      r'<(h[1-6]|p|ul|ol)\b',
-      caseSensitive: false,
-    ).hasMatch(rawNotes)) {
-      return rawNotes;
-    }
-
-    String notes = rawNotes
-        .replaceAll('&amp;', '&')
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'");
-
-    String html = md.markdownToHtml(
-      notes,
-      extensionSet: md.ExtensionSet.gitHubFlavored,
-    );
-
-    // 3. SURGICAL FIX: Restore the HTML tags that the markdown parser escaped.
-    html = html.replaceAll(RegExp(r'&lt;(/?[a-z0-9]+.*?)&gt;'), r'<$1>');
-
-    return html;
   }
 
   @override
@@ -307,71 +272,13 @@ class _UpdateSectionState extends State<UpdateSection> {
 
                 if (_hasUpdate) ...[
                   Padding(
-                    padding: EdgeInsets.only(top: 32, bottom: 12),
+                    padding: const EdgeInsets.only(top: 20),
                     child: Text(
-                      'RELEASE NOTES',
+                      'Release notes are shown in the update window when you install.',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
                         color: AppTheme.textSecondary,
-                        letterSpacing: 1.5,
                         fontFamily: 'Inter',
-                      ),
-                    ),
-                  ),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.04),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.06),
-                      ),
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 320),
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      child: HtmlWidget(
-                        _formatReleaseNotes(_updateNotes),
-                        textStyle: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.textPrimary,
-                          fontFamily: 'Inter',
-                          height: 1.6,
-                        ),
-                        customStylesBuilder: (element) {
-                          if (element.localName == 'h4' ||
-                              element.localName == 'h5') {
-                            return {
-                              'font-weight': 'bold',
-                              'font-size': '15px',
-                              'margin-top': '12px',
-                              'margin-bottom': '8px',
-                              'color': '#ffffff',
-                            };
-                          }
-                          if (element.localName == 'h3' ||
-                              element.localName == 'h2') {
-                            return {
-                              'font-weight': 'bold',
-                              'font-size': '18px',
-                              'margin-bottom': '12px',
-                              'margin-top': '8px',
-                              'color': '#ffffff',
-                            };
-                          }
-                          if (element.localName == 'li') {
-                            return {
-                              'margin-bottom': '8px',
-                              'line-height': '1.5',
-                            };
-                          }
-                          if (element.localName == 'p') {
-                            return {'margin-bottom': '16px'};
-                          }
-                          return null;
-                        },
                       ),
                     ),
                   ),

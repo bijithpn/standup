@@ -8,7 +8,7 @@ import 'package:breakmate/features/companion/services/companion_window_controlle
 import 'package:breakmate/features/companion/services/companion_window_manager.dart';
 import 'package:breakmate/features/companion/services/display_manager.dart';
 
-class _CountingDisplays implements DisplayManager {
+class _CountingDisplays implements CompanionDisplayManager {
   _CountingDisplays(this.height);
 
   double height;

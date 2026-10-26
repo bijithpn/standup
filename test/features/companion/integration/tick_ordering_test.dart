@@ -10,7 +10,7 @@
 //   the *ordering contract* by replicating the relevant sequences from
 //   CompanionGame.onLoad() and CompanionGame._runSubsystemTick() using stub
 //   implementations that record exactly when their methods are called relative
-//   to SettingsPersistence.loadSync() and DisplayManager.enumerateDisplays().
+//   to SettingsPersistence.loadSync() and CompanionDisplayManager.enumerateDisplays().
 
 import 'dart:async';
 import 'dart:io';
@@ -63,7 +63,7 @@ class _CallRecord {
   bool calledBeforeSettingsLoaded = false;
 }
 
-class _StubDisplayManager implements DisplayManager {
+class _StubDisplayManager implements CompanionDisplayManager {
   final _CallRecord pollRecord = _CallRecord();
   final _CallRecord enumerateRecord = _CallRecord();
   final bool Function() _isSettingsLoaded;
@@ -258,7 +258,7 @@ void main() {
       expect(
         displayManager.pollRecord.called,
         isTrue,
-        reason: 'DisplayManager.poll() must be called during tick',
+        reason: 'CompanionDisplayManager.poll() must be called during tick',
       );
       expect(
         cursorTracker.sampleRecord.called,
@@ -285,7 +285,7 @@ void main() {
       expect(
         displayManager.pollRecord.calledBeforeSettingsLoaded,
         isFalse,
-        reason: 'DisplayManager.poll() must NOT fire before loadSync() returns',
+        reason: 'CompanionDisplayManager.poll() must NOT fire before loadSync() returns',
       );
       expect(
         cursorTracker.sampleRecord.calledBeforeSettingsLoaded,
@@ -556,7 +556,7 @@ class _RecordingSettingsPersistence {
   }
 }
 
-class _RecordingDisplayManager implements DisplayManager {
+class _RecordingDisplayManager implements CompanionDisplayManager {
   _RecordingDisplayManager(this._log);
   final List<String> _log;
 

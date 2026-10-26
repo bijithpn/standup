@@ -1,6 +1,6 @@
 // Integration test: display enumeration timing
 //
-// Verifies that DisplayManager.enumerateDisplays() completes within 500 ms
+// Verifies that CompanionDisplayManager.enumerateDisplays() completes within 500 ms
 // even when the underlying native bridge takes 400 ms to respond.
 
 import 'dart:ui';
@@ -52,7 +52,7 @@ class _SlowDisplayBridge extends FallbackBridge {
 // ---------------------------------------------------------------------------
 
 void main() {
-  group('DisplayManager.enumerateDisplays() — timing and parsing (Task 20.2)', () {
+  group('CompanionDisplayManager.enumerateDisplays() — timing and parsing (Task 20.2)', () {
     late _SlowDisplayBridge mockBridge;
     late NativeDisplayManager displayManager;
 

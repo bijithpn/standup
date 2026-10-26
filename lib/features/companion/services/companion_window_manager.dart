@@ -14,14 +14,14 @@ class CompanionWindowManager {
   CompanionWindowManager({
     CompanionWindowController? windowController,
     SettingsRepository? settingsRepository,
-    DisplayManager? displayManager,
+    CompanionDisplayManager? displayManager,
     AppLogger? logger,
   }) : _windowController = windowController ?? CompanionWindowController(),
        _displayManager = displayManager,
        _logger = logger ?? AppLogger();
 
   final CompanionWindowController _windowController;
-  final DisplayManager? _displayManager;
+  final CompanionDisplayManager? _displayManager;
   final AppLogger _logger;
 
   Future<double> _getPrimaryScreenHeight() async {
@@ -45,7 +45,7 @@ class CompanionWindowManager {
   Size get currentSize => _currentSize;
   Offset get currentPosition => _currentPosition;
 
-  DisplayManager? get displayManager => _displayManager;
+  CompanionDisplayManager? get displayManager => _displayManager;
 
   static const Size defaultSize = Size(280, 320);
   static const Size minSize = Size(180, 210);
