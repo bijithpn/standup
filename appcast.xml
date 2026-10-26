@@ -4,7 +4,35 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                                                                                <item>
+                                                                                        <item>
+            <title>Version 1.11.0</title>
+            <pubDate>Mon, 26 Oct 2026 08:37:35 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.11.0</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>Enhance overlay health check and add escape failsafe for improved user experience</li><li>Update version to 1.11.0 and add entry to changelog for upcoming release</li><li>Improve error message for update check and enhance local server handling in test script</li><li>Add window channel and utility functions for enhanced window management</li><li>add companion overlay setting actions and break appearance sections</li><li>update dependencies and remove unused tests</li><li>add avatar customizer preview and top bar components</li><li>add bundled landscape photos and slideshow functionality for Gallery Focus</li><li>enhance break overlay settings and user experience</li><li>Update BreakTemplateErrorView to use new color palette and improve text styles</li><li>enhance Sparkle updater integration with improved update handling and checks</li></ul>
+                <h5>🐛 Bug Fixes</h5>
+                <ul><li>resend extended break end time to overlay after wake</li><li>pause break countdown while system is asleep or locked</li><li>gallery tile row shrinks, pill label ellipsizes; deterministic goldens via package:clock</li><li>keep overlay dark by default, separate a11y nodes, light-theme legibility</li></ul>
+                <h5>⚡ Improvements</h5>
+                <ul><li>Rename Bool function to GetBool for clarity and consistency</li></ul>
+                <h5>🔧 Build &amp; Maintenance</h5>
+                <ul><li>drop golden failure artifacts and ignore them</li><li>render matrix, behavior, palette and golden tests for all 29 templates</li></ul>
+                <h5>Other Changes</h5>
+                <ul><li>redesign(wind_down): warm evening canvas, stat tiles and autofocused Done button</li><li>redesign(night_sky): starfield with constellations, meteors and dawn; headline uses the break label</li><li>redesign(paper_light): editorial page with hairline, serif countdown and e-ink flash</li><li>redesign(dusk_glow): violet twilight with real moon phase and aurora curtains; own label copy</li><li>redesign(open_field): procedural landscape fallback, swaying grass, drifting mist, horizon focal point</li><li>redesign(warm_amber): blue-free sunset canvas, breathing horizon glow, amber action</li><li>redesign(haiku_card): paper card with staggered poem lines, sumi-e ridges and grain</li><li>redesign(step_guide): step chain with filling tracks and number-to-check morph</li><li>redesign(split_view): timer pane and guidance carousel with glowing divider</li><li>redesign(day_stack): block stack that builds up with the day, glowing active block</li><li>redesign(time_slice): segmented ring, one slice per 5s, pop on elapse</li><li>redesign(mono_time): phosphor terminal with typed entrance, blinking cursor and CRT layer</li><li>redesign(clock_face): Swiss dial with cached bezel, growing sector and seconds hand</li><li>redesign(hud): reticle canvas, hero countdown, ticked progress bar with pulsing head</li><li>redesign(classic): Gallery Focus with gradient fallback, Ken Burns, collapsible glass card</li><li>redesign(quiet_pill): spring-expanding glass pill with liquid fill and tip bubble</li><li>redesign(iris_rest): eight-blade aperture, compliance dots with labels, streak chart retained</li><li>redesign(soft_arc): open 240-degree gauge with cached ticks, needle dot and tick flash</li><li>redesign(ring_only): hairline ring with tapered head, flash and haptic on completion</li><li>redesign(wave_calm): three filled sine waves with crest particles</li><li>redesign(focus_orb): layered glowing sphere with evening amber tint</li><li>redesign(pulse_dot): staggered ripples, spring hover core, static ring fallback</li><li>redesign(one_word): draining accent word with widening tracking</li><li>redesign(breathe_line): glowing line with reflection, live-region phase text</li><li>redesign(zen): Catmull-Rom breathing blob, live-region phase text, reduced-motion swell</li><li>redesign(minimal): Quiet Grid with ticked comet ring and breathing dot grid</li><li>redesign(floating): 280x72 glass card, micro arc, 6-anchor spring snap, hover tip</li><li>redesign(companion): glass dock, rimmed pet with bob/squash/hop, scrim and vignette</li><li>redesign(activities): glass segmented control with spring capsule, keyboard tabs, palette tokens</li><li>redesign(tokens): break overlay palette, motion tokens, break_kit and gallery preview fixes</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.9.0...v1.11.0">https://github.com/bijithpn/standup/compare/v1.9.0...v1.11.0</a></p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.11.0/BreakMate-Installer.dmg"
+                       sparkle:version="43"
+                       sparkle:shortVersionString="1.11.0"
+                       sparkle:edSignature="yY7v9xKFDr1PLslBgeiLIm6/j4DfXjc9jVLCNJuIAEecMKWjrKviyzgQ/bhErdvTejS/HTzmV8tfej/I4LchAA=="
+                       length="35970325"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.9.0</title>
             <pubDate>Fri, 23 Oct 2026 06:27:45 +0000</pubDate>
             <description><![CDATA[
