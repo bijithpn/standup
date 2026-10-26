@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.11.0` | 1.11.0 | 43 | 2026-10-26 | Gallery Focus slideshow, avatar customizer, companion overlay settings, break appearance sections and break-timer sleep/lock fixes (unreleased) |
 | `v1.10.0` | 1.10.0 | 42 | 2026-10-23 | Break template polish: breathing presets, bundled fonts, light-theme coverage and tips (unreleased) |
 | `v1.8.2` | 1.8.2 | 39 | 2026-10-22 | Release pipeline fixes: ad-hoc signed macOS builds and release readiness checks |
 | `v1.8.0` | 1.8.0 | 37 | 2026-10-17 | Companion customization, productivity charts, smarter break warnings & overlay improvements |
