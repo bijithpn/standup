@@ -46,7 +46,7 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 | **Physical protection** | Eye-rest (20-20-20), stretch, and movement prompts with guided exercises. |
 | **Mental clarity** | Pomodoro, Deep Work, Developer, and Health presets to prevent cognitive fatigue. |
 | **Context awareness** | Detects meetings, presentations, idle time, and calendar events, and adapts. |
-| **Ambient companion** | A customizable 3D/animated desktop pet that reflects your state and celebrates streaks. |
+| **Ambient companion** | An animated desktop pet that reflects your state and celebrates streaks. |
 | **Insight** | Local-only analytics for breaks, focus, and app usage. |
 
 ## Screenshots
@@ -104,7 +104,7 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 
 ### Desktop companion
 
-- Customizable 3D avatars: shape, species, breed, colors, expressions, and a saved name.
+- Pick a companion from the bundled species and breeds, and give it a name.
 - `PetBehaviorBrain` — a weighted-decision engine with personality traits (playfulness, curiosity, sociability), context awareness (cursor proximity, meetings), and a recency penalty to avoid repetitive animation.
 - Draggable, resizable **Picture-in-Picture** window; optional **wandering** across the desktop.
 - **Scene themes** — selectable environments with parallax skies, ambient lighting, and avatar scene styles.
@@ -232,7 +232,7 @@ BreakMate runs several Flutter engines (via `FlutterEngineGroup`) so heavy secon
 | --- | --- |
 | **Main** | Dashboard, settings, timer engine, statistics, native hooks. |
 | **Overlay** (`overlayMain`) | Full-screen break, warning, and reminder overlays. |
-| **Companion** (`companionMain`) | 3D avatar web renderer for the desktop pet and PiP window. |
+| **Companion** (`companionMain`) | Desktop pet and PiP window. |
 | **Background polling** | Lightweight activity, meeting, and app-usage sampling. |
 
 - **IPC** — a MethodChannel layer syncs timer state, meeting/sleep state, and interactions across isolates in real time.
@@ -323,7 +323,7 @@ If BreakMate helps you, a ⭐ on the [repo](https://github.com/bijithpn/standup)
 
 ## Acknowledgements
 
-The desktop companion's avatar assets (species, breeds, pixel styles, animation covers and the web avatar renderer under `assets/avatars/`) come from [oneworks-ai/avatar](https://github.com/oneworks-ai/avatar) by the One Works, used under the MIT License. Their license text is kept at [`assets/avatars/LICENSE`](assets/avatars/LICENSE).
+The desktop companion's avatar assets (species, breeds, pixel styles under `assets/avatars/`) come from [oneworks-ai/avatar](https://github.com/oneworks-ai/avatar) by the One Works contributors, used under the MIT License. Their license text is kept at [`assets/avatars/LICENSE`](assets/avatars/LICENSE).
 
 ---
 

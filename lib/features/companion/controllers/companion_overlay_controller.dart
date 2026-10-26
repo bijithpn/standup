@@ -12,7 +12,6 @@ import 'package:breakmate/features/companion/domain/avatar_definition.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
 import 'package:breakmate/features/companion/domain/avatar_species.dart';
 import 'package:breakmate/features/companion/domain/pet_type.dart';
-import 'package:breakmate/features/companion/services/avatar_web_server.dart';
 import 'package:breakmate/features/companion/assets/pet_asset_loader.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -332,14 +331,6 @@ class CompanionOverlayController extends ChangeNotifier {
   }
 
   String get companionPreviewBackground => _companionPreviewBackground;
-
-  Future<void> _ensureServerStarted() async {
-    try {
-      await sl<AvatarWebServer>().start();
-    } catch (e, st) {
-      ErrorHandler().handleError(e, st);
-    }
-  }
 
   Future<void> init() async {
     final settings = _settingsRepo.currentSettings;
@@ -852,27 +843,6 @@ class CompanionOverlayController extends ChangeNotifier {
       query += '&palette=$paletteId';
     }
     return query;
-  }
-
-  Future<void> saveAvatarUrlParams(String params) async {
-    final updated = _settingsRepo.currentSettings.copyWith(
-      companionAvatarUrlParams: params,
-    );
-    await _settingsRepo.save(updated);
-    if (_pipModeEnabled) {
-      NativeBridge.showPipWindow(PipWindowArgs.fromMap(_companionPayload()));
-    }
-    notifyListeners();
-  }
-
-  Future<void> openAvatarEditor() async {
-    await _ensureServerStarted();
-    final webServer = sl<AvatarWebServer>();
-    final query = _getAvatarQueryParams();
-    final editorUrl = webServer
-        .buildEditorUrl(queryParams: '$query&animationPanel=0')
-        .toString();
-    await NativeBridge.openAvatarEditor(editorUrl);
   }
 
   /// Which renderer the overlay should use for the current theme.

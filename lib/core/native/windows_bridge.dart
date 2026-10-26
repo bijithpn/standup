@@ -296,22 +296,9 @@ class WindowsBridge implements NativeBridgePlatform {
     await _invokeSafely('hidePipWindow');
   }
 
-  @override
-  Future<void> openAvatarEditor(String editorUrl) async {
-    developer.log(
-      'openAvatarEditor not supported on Windows',
-      name: 'BreakMate',
-    );
-  }
 
-  @override
-  Future<void> showCustomizerViewport(Map<String, dynamic> args) async {}
 
-  @override
-  Future<void> updateCustomizerViewport(Map<String, dynamic> args) async {}
 
-  @override
-  Future<void> hideCustomizerViewport() async {}
 
   static Future<T?> _invokeSafely<T>(String method, [Object? arguments]) async {
     try {

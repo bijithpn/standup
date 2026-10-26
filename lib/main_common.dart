@@ -682,14 +682,6 @@ void mainCommon(FlavorConfig config) async {
             // The overlay window keeps its own end time; send the extended one.
             sl<BreakController>().refreshSettings();
             sl<DailyResetService>().onSystemWake();
-          } else if (call.method == 'onAvatarSaved') {
-            final urlParams = call.arguments?['urlParams'] as String?;
-            if (urlParams != null &&
-                sl.isRegistered<CompanionOverlayController>()) {
-              await sl<CompanionOverlayController>().saveAvatarUrlParams(
-                urlParams,
-              );
-            }
           } else if (call.method == 'onPipBackgroundStyleChanged') {
             final style = call.arguments?['style'] as String?;
             if (style != null &&
