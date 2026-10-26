@@ -128,7 +128,9 @@ class NativeDisplayManager implements CompanionDisplayManager {
 
     for (final prevId in _previousDisplayIds) {
       if (!newIds.contains(prevId)) {
-        _logger.warning('CompanionDisplayManager: display "$prevId" disconnected.');
+        _logger.warning(
+          'CompanionDisplayManager: display "$prevId" disconnected.',
+        );
         _eventBus.emit(DisplayDisconnectedEvent(displayId: prevId));
       }
     }

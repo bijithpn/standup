@@ -331,15 +331,6 @@ class SettingsRepository extends ChangeNotifier {
         'stand_up_reminder_enabled',
         defaultValue: false,
       ),
-      companionAvatarUrlParams:
-          _storage
-              .getString(
-                AppConstants.keyCompanionAvatarUrlParams,
-                defaultValue: '',
-              )
-              .isNotEmpty
-          ? _storage.getString(AppConstants.keyCompanionAvatarUrlParams)
-          : null,
     );
   }
 
@@ -501,9 +492,6 @@ class SettingsRepository extends ChangeNotifier {
           AppConstants.legacyKeyCompanionCatTheme,
           defaultValue: 'grey_cat',
         ),
-      ),
-      companionAvatarUrlParams: _storage.getString(
-        AppConstants.keyCompanionAvatarUrlParams,
       ),
       companionPetName: _storage.getString(
         'companion_pet_name',
@@ -806,10 +794,6 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       AppConstants.keyCompanionPetTheme,
       settings.companionPetTheme,
-    );
-    await _storage.setString(
-      AppConstants.keyCompanionAvatarUrlParams,
-      settings.companionAvatarUrlParams ?? '',
     );
     await _storage.setDouble('companion_scale', settings.companionScale);
     await _storage.setBool('petting_enabled', settings.pettingEnabled);

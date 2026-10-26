@@ -285,7 +285,8 @@ void main() {
       expect(
         displayManager.pollRecord.calledBeforeSettingsLoaded,
         isFalse,
-        reason: 'CompanionDisplayManager.poll() must NOT fire before loadSync() returns',
+        reason:
+            'CompanionDisplayManager.poll() must NOT fire before loadSync() returns',
       );
       expect(
         cursorTracker.sampleRecord.calledBeforeSettingsLoaded,

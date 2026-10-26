@@ -50,7 +50,6 @@ import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/native/focus_mode_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
 import 'package:breakmate/features/companion/services/companion_state_manager.dart';
-import 'package:breakmate/features/companion/services/companion_window_controller.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
 import 'package:breakmate/features/menu_bar/controllers/menu_bar_controller.dart';
 import 'package:breakmate/features/themes/application/theme_controller.dart';
@@ -230,13 +229,12 @@ Future<void> initDependencies() async {
 
   sl.registerSingleton<FocusModeService>(FocusModeService());
   sl.registerSingleton<FocusFilterService>(
-    FocusFilterService(focusModeService: sl()),
+    FocusFilterService(focusModeService: sl(), smartDetection: sl()),
   );
   sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
 
   sl.registerSingleton<CompanionStateManager>(
     CompanionStateManager(eventBus: sl()),
   );
-  sl.registerSingleton<CompanionWindowController>(CompanionWindowController());
   sl.registerSingleton<ThemeController>(ThemeController(storage: sl()));
 }

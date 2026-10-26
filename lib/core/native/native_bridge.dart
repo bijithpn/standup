@@ -75,8 +75,6 @@ class PipWindowArgs {
   final String? companionToyType;
   final String? companionTreatType;
   final String? previewBackground;
-  final String? avatarUrl;
-  final String? urlParams;
 
   /// The companion's full appearance as JSON, so the overlay engine can render
   /// the exact breed, palette, and seed the user picked rather than falling
@@ -126,8 +124,6 @@ class PipWindowArgs {
     this.companionToyType,
     this.companionTreatType,
     this.previewBackground,
-    this.avatarUrl,
-    this.urlParams,
     this.avatarDefinitionJson,
     this.renderMode,
     this.keepOnScreen,
@@ -171,8 +167,6 @@ class PipWindowArgs {
       map['companionTreatType'] = companionTreatType;
     }
     if (previewBackground != null) map['previewBackground'] = previewBackground;
-    if (avatarUrl != null) map['avatarUrl'] = avatarUrl;
-    if (urlParams != null) map['urlParams'] = urlParams;
     if (avatarDefinitionJson != null) {
       map['avatarDefinitionJson'] = avatarDefinitionJson;
     }
@@ -208,8 +202,6 @@ class PipWindowArgs {
       companionToyType: map['companionToyType'] as String?,
       companionTreatType: map['companionTreatType'] as String?,
       previewBackground: map['previewBackground'] as String?,
-      avatarUrl: map['avatarUrl'] as String?,
-      urlParams: map['urlParams'] as String?,
       avatarDefinitionJson: map['avatarDefinitionJson'] as String?,
       renderMode: map['renderMode'] as String?,
       keepOnScreen: map['keepOnScreen'] as bool?,

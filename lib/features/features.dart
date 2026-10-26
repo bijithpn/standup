@@ -67,7 +67,6 @@ export 'companion/overlay/companion_overlay_window.dart';
 export 'companion/overlay/pip_overlay_window.dart';
 export 'companion/services/companion_behavior_engine.dart';
 export 'companion/services/companion_state_manager.dart';
-export 'companion/services/companion_window_controller.dart';
 export 'companion/services/companion_window_manager.dart';
 export 'companion/services/cursor_tracker.dart';
 export 'companion/services/display_manager.dart';

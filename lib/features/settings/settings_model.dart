@@ -89,7 +89,6 @@ class SettingsModel {
   final bool companionWanderingEnabled;
   final String companionPreviewBackground;
   final List<String> unlockedPets;
-  final String? companionAvatarUrlParams;
 
   /// The companion's full appearance as JSON-encoded `AvatarDefinition`.
   ///
@@ -249,7 +248,6 @@ class SettingsModel {
     this.companionWanderingEnabled = true,
     this.companionPreviewBackground = '',
     this.unlockedPets = const ['grey_cat', 'orange_cat', 'black_cat'],
-    this.companionAvatarUrlParams,
     this.companionAvatarDefinition,
     this.companionKeepOnScreen = true,
     this.companionWindowWidth = 280.0,
@@ -355,7 +353,6 @@ class SettingsModel {
     bool? companionWanderingEnabled,
     String? companionPreviewBackground,
     List<String>? unlockedPets,
-    String? companionAvatarUrlParams,
     String? companionAvatarDefinition,
     bool? companionKeepOnScreen,
     double? companionWindowWidth,
@@ -482,8 +479,6 @@ class SettingsModel {
       companionPreviewBackground:
           companionPreviewBackground ?? this.companionPreviewBackground,
       unlockedPets: unlockedPets ?? this.unlockedPets,
-      companionAvatarUrlParams:
-          companionAvatarUrlParams ?? this.companionAvatarUrlParams,
       companionAvatarDefinition:
           companionAvatarDefinition ?? this.companionAvatarDefinition,
       companionKeepOnScreen:
@@ -614,7 +609,6 @@ class SettingsModel {
     'companionWanderingEnabled': companionWanderingEnabled,
     'companionPreviewBackground': companionPreviewBackground,
     'unlockedPets': unlockedPets,
-    'companionAvatarUrlParams': companionAvatarUrlParams,
     'companionAvatarDefinition': companionAvatarDefinition,
     'companionKeepOnScreen': companionKeepOnScreen,
     'pettingEnabled': pettingEnabled,
@@ -744,7 +738,6 @@ class SettingsModel {
               ?.map((e) => e.toString())
               .toList() ??
           const ['grey_cat', 'orange_cat', 'black_cat'],
-      companionAvatarUrlParams: map['companionAvatarUrlParams'] as String?,
       companionAvatarDefinition: map['companionAvatarDefinition'] as String?,
       companionKeepOnScreen: map['companionKeepOnScreen'] as bool? ?? true,
       pettingEnabled: map['pettingEnabled'] as bool? ?? true,
