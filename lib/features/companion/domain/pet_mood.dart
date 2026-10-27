@@ -28,7 +28,6 @@ extension PetMoodCalculator on PetMood {
     if (needs.happiness > 80.0 || needs.happinessNormalized > 0.80) {
       return PetMood.happy;
     }
-    if (needs.focusMode) return PetMood.relaxed;
     if (needs.affection > 0.7) return PetMood.affectionate;
     if (needs.playfulness > 0.7) return PetMood.playful;
     return PetMood.relaxed;

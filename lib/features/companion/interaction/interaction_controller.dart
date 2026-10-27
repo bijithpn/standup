@@ -195,7 +195,6 @@ class InteractionController with WidgetsBindingObserver {
     const blockedStates = {
       PetState.breakReminder,
       PetState.meetingPaused,
-      PetState.focusMode,
       PetState.drag,
     };
     if (blockedStates.contains(_stateMachine.currentState)) {
@@ -378,11 +377,7 @@ class InteractionController with WidgetsBindingObserver {
     if (!_isFeatureEnabled('companionEnabled')) return;
     if (!_isFeatureEnabled('developerReactions')) return;
 
-    const blockedStates = {
-      PetState.breakReminder,
-      PetState.meetingPaused,
-      PetState.focusMode,
-    };
+    const blockedStates = {PetState.breakReminder, PetState.meetingPaused};
 
     if (blockedStates.contains(targetState)) {
       _logger.warning(
@@ -429,11 +424,7 @@ class InteractionController with WidgetsBindingObserver {
 
     if (!_isFeatureEnabled(featureKey)) return false;
 
-    const blockedStates = {
-      PetState.breakReminder,
-      PetState.meetingPaused,
-      PetState.focusMode,
-    };
+    const blockedStates = {PetState.breakReminder, PetState.meetingPaused};
     if (blockedStates.contains(_stateMachine.currentState)) return false;
 
     if (reducedMotion && featureKey == 'ballThrowEnabled') return false;

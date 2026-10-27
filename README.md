@@ -59,7 +59,7 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 | | |
 | --- | --- |
 | <img src="screenshots/today.jpg" alt="Today dashboard"><br>**Today** — live countdown, next-break reasoning, quiet mode | <img src="screenshots/break-templates.jpg" alt="Break template gallery"><br>**Break templates** — searchable gallery with accent colors |
-| <img src="screenshots/focus-mode.jpg" alt="Smart detection settings"><br>**Smart detection** — meetings, Focus mode, presentation pause | <img src="screenshots/companion-gallery.jpg" alt="Companion gallery"><br>**Companion** — 3D species, breeds, and streaks |
+| <img src="screenshots/focus-mode.jpg" alt="Smart detection settings"><br>**Smart detection** — meetings, video calls, presentation pause | <img src="screenshots/companion-gallery.jpg" alt="Companion gallery"><br>**Companion** — 3D species, breeds, and streaks |
 | <img src="screenshots/statistics.jpg" alt="Statistics dashboard"><br>**Statistics** — productivity and wellness scores | <img src="screenshots/themes.jpg" alt="Theme presets"><br>**Themes** — 12 curated presets plus auto light/dark |
 | <img src="screenshots/overlay_6.jpg" alt="Zen Mode breathing break"><br>**Zen Mode break** — paced breathing circle | <img src="screenshots/overlay_5.jpg" alt="Quiet pill reminder"><br>**Quiet Pill** — subtle reminder during meetings |
 
@@ -181,7 +181,7 @@ irm https://github.com/bijithpn/standup/releases/latest/download/uninstall.ps1 |
 
 1. Launch BreakMate; the onboarding flow lets you pick a break profile.
 2. The app lives in the menu bar / system tray. Click it for the countdown and quick actions.
-3. Open the dashboard to adjust **General, Breaks, Focus mode, Exercises, Notifications, Companion,** and **Statistics**.
+3. Open the dashboard to adjust **General, Breaks, Smart detection, Exercises, Notifications, Companion,** and **Statistics**.
 4. Press the global hotkey any time to take a break right now.
 
 ---

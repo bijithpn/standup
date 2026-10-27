@@ -95,10 +95,6 @@ class IpcBridge {
     );
   }
 
-  Future<void> notifyFocusMode(bool isActive) async {
-    await dispatch(IpcEvent.focusMode(isActive: isActive));
-  }
-
   Future<void> notifyTrayAction(String action) async {
     await dispatch(IpcEvent.trayAction(action: action));
   }

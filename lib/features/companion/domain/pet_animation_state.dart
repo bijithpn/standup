@@ -15,7 +15,6 @@ enum PetAnimationState {
   stretch,
   blink,
   breakMode,
-  focusMode,
   angry,
   notification,
   celebrate,
@@ -50,7 +49,6 @@ extension PetAnimationStateAvatarExtension on PetAnimationState {
       case PetAnimationState.sleep:
         return AvatarAnimationClip.sleep;
       case PetAnimationState.typing:
-      case PetAnimationState.focusMode:
         return AvatarAnimationClip.idle;
       case PetAnimationState.excited:
         return AvatarAnimationClip.celebrate;

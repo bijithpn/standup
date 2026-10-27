@@ -51,9 +51,6 @@ std::vector<DisplayRect> GetDisplays();
 // "dark" or "light".
 std::string GetAppearance();
 
-// True when the desktop's Do Not Disturb is on (GNOME banners disabled).
-bool IsDoNotDisturb();
-
 // True if |wm_class| / |exe_name| belongs to a known meeting application.
 bool IsMeetingApp(const std::string& wm_class, const std::string& exe_name);
 

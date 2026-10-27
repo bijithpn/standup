@@ -113,11 +113,7 @@ InteractionController _makeController({
 
 // ── Shared constants ──────────────────────────────────────────────────────────
 
-const _blockedStates = [
-  PetState.breakReminder,
-  PetState.meetingPaused,
-  PetState.focusMode,
-];
+const _blockedStates = [PetState.breakReminder, PetState.meetingPaused];
 
 const _playAffectionEvents = {
   PetEvent.userClick,
@@ -221,7 +217,7 @@ void main() {
   // ── Property 3 ─────────────────────────────────────────────────────────────
   // Feature: desktop-companion-interaction, Property 3: Blocked states suppress all play and affection events
   //
-  // While the FSM is in breakReminder, meetingPaused, or focusMode, calling
+  // While the FSM is in breakReminder or meetingPaused, calling
   // onPetClicked or onPetDoubleClicked must not forward any play/affection
   // PetEvent and the FSM state must remain unchanged.
   //
@@ -349,7 +345,7 @@ void main() {
   // ── Property 11 ────────────────────────────────────────────────────────────
   // Feature: desktop-companion-interaction, Property 11: triggerCompanionReaction blocks protected states
   //
-  // For targetState ∈ {breakReminder, meetingPaused, focusMode}:
+  // For targetState ∈ {breakReminder, meetingPaused}:
   //   - handleEvent must NOT be called.
   //   - The FSM state must remain unchanged.
   // (AppLogger.warning is called internally — verified indirectly by ensuring

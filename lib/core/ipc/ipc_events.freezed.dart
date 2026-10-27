@@ -35,10 +35,6 @@ IpcEvent _$IpcEventFromJson(
           return MeetingDetectedIpcEvent.fromJson(
             json
           );
-                case 'focusMode':
-          return FocusModeIpcEvent.fromJson(
-            json
-          );
                 case 'trayAction':
           return TrayActionIpcEvent.fromJson(
             json
@@ -117,7 +113,7 @@ extension IpcEventPatterns on IpcEvent {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TimerStateChangedIpcEvent value)?  timerStateChanged,TResult Function( BreakStartedIpcEvent value)?  breakStarted,TResult Function( BreakEndedIpcEvent value)?  breakEnded,TResult Function( CompanionInteractionIpcEvent value)?  companionInteraction,TResult Function( MeetingDetectedIpcEvent value)?  meetingDetected,TResult Function( FocusModeIpcEvent value)?  focusMode,TResult Function( TrayActionIpcEvent value)?  trayAction,TResult Function( CompanionCloseIpcEvent value)?  companionClose,TResult Function( CompanionPositionChangedIpcEvent value)?  companionPositionChanged,TResult Function( CompanionStateChangedIpcEvent value)?  companionStateChanged,TResult Function( UnknownIpcEvent value)?  unknown,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( TimerStateChangedIpcEvent value)?  timerStateChanged,TResult Function( BreakStartedIpcEvent value)?  breakStarted,TResult Function( BreakEndedIpcEvent value)?  breakEnded,TResult Function( CompanionInteractionIpcEvent value)?  companionInteraction,TResult Function( MeetingDetectedIpcEvent value)?  meetingDetected,TResult Function( TrayActionIpcEvent value)?  trayAction,TResult Function( CompanionCloseIpcEvent value)?  companionClose,TResult Function( CompanionPositionChangedIpcEvent value)?  companionPositionChanged,TResult Function( CompanionStateChangedIpcEvent value)?  companionStateChanged,TResult Function( UnknownIpcEvent value)?  unknown,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case TimerStateChangedIpcEvent() when timerStateChanged != null:
@@ -125,8 +121,7 @@ return timerStateChanged(_that);case BreakStartedIpcEvent() when breakStarted !=
 return breakStarted(_that);case BreakEndedIpcEvent() when breakEnded != null:
 return breakEnded(_that);case CompanionInteractionIpcEvent() when companionInteraction != null:
 return companionInteraction(_that);case MeetingDetectedIpcEvent() when meetingDetected != null:
-return meetingDetected(_that);case FocusModeIpcEvent() when focusMode != null:
-return focusMode(_that);case TrayActionIpcEvent() when trayAction != null:
+return meetingDetected(_that);case TrayActionIpcEvent() when trayAction != null:
 return trayAction(_that);case CompanionCloseIpcEvent() when companionClose != null:
 return companionClose(_that);case CompanionPositionChangedIpcEvent() when companionPositionChanged != null:
 return companionPositionChanged(_that);case CompanionStateChangedIpcEvent() when companionStateChanged != null:
@@ -149,7 +144,7 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TimerStateChangedIpcEvent value)  timerStateChanged,required TResult Function( BreakStartedIpcEvent value)  breakStarted,required TResult Function( BreakEndedIpcEvent value)  breakEnded,required TResult Function( CompanionInteractionIpcEvent value)  companionInteraction,required TResult Function( MeetingDetectedIpcEvent value)  meetingDetected,required TResult Function( FocusModeIpcEvent value)  focusMode,required TResult Function( TrayActionIpcEvent value)  trayAction,required TResult Function( CompanionCloseIpcEvent value)  companionClose,required TResult Function( CompanionPositionChangedIpcEvent value)  companionPositionChanged,required TResult Function( CompanionStateChangedIpcEvent value)  companionStateChanged,required TResult Function( UnknownIpcEvent value)  unknown,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( TimerStateChangedIpcEvent value)  timerStateChanged,required TResult Function( BreakStartedIpcEvent value)  breakStarted,required TResult Function( BreakEndedIpcEvent value)  breakEnded,required TResult Function( CompanionInteractionIpcEvent value)  companionInteraction,required TResult Function( MeetingDetectedIpcEvent value)  meetingDetected,required TResult Function( TrayActionIpcEvent value)  trayAction,required TResult Function( CompanionCloseIpcEvent value)  companionClose,required TResult Function( CompanionPositionChangedIpcEvent value)  companionPositionChanged,required TResult Function( CompanionStateChangedIpcEvent value)  companionStateChanged,required TResult Function( UnknownIpcEvent value)  unknown,}){
 final _that = this;
 switch (_that) {
 case TimerStateChangedIpcEvent():
@@ -157,8 +152,7 @@ return timerStateChanged(_that);case BreakStartedIpcEvent():
 return breakStarted(_that);case BreakEndedIpcEvent():
 return breakEnded(_that);case CompanionInteractionIpcEvent():
 return companionInteraction(_that);case MeetingDetectedIpcEvent():
-return meetingDetected(_that);case FocusModeIpcEvent():
-return focusMode(_that);case TrayActionIpcEvent():
+return meetingDetected(_that);case TrayActionIpcEvent():
 return trayAction(_that);case CompanionCloseIpcEvent():
 return companionClose(_that);case CompanionPositionChangedIpcEvent():
 return companionPositionChanged(_that);case CompanionStateChangedIpcEvent():
@@ -177,7 +171,7 @@ return unknown(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TimerStateChangedIpcEvent value)?  timerStateChanged,TResult? Function( BreakStartedIpcEvent value)?  breakStarted,TResult? Function( BreakEndedIpcEvent value)?  breakEnded,TResult? Function( CompanionInteractionIpcEvent value)?  companionInteraction,TResult? Function( MeetingDetectedIpcEvent value)?  meetingDetected,TResult? Function( FocusModeIpcEvent value)?  focusMode,TResult? Function( TrayActionIpcEvent value)?  trayAction,TResult? Function( CompanionCloseIpcEvent value)?  companionClose,TResult? Function( CompanionPositionChangedIpcEvent value)?  companionPositionChanged,TResult? Function( CompanionStateChangedIpcEvent value)?  companionStateChanged,TResult? Function( UnknownIpcEvent value)?  unknown,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( TimerStateChangedIpcEvent value)?  timerStateChanged,TResult? Function( BreakStartedIpcEvent value)?  breakStarted,TResult? Function( BreakEndedIpcEvent value)?  breakEnded,TResult? Function( CompanionInteractionIpcEvent value)?  companionInteraction,TResult? Function( MeetingDetectedIpcEvent value)?  meetingDetected,TResult? Function( TrayActionIpcEvent value)?  trayAction,TResult? Function( CompanionCloseIpcEvent value)?  companionClose,TResult? Function( CompanionPositionChangedIpcEvent value)?  companionPositionChanged,TResult? Function( CompanionStateChangedIpcEvent value)?  companionStateChanged,TResult? Function( UnknownIpcEvent value)?  unknown,}){
 final _that = this;
 switch (_that) {
 case TimerStateChangedIpcEvent() when timerStateChanged != null:
@@ -185,8 +179,7 @@ return timerStateChanged(_that);case BreakStartedIpcEvent() when breakStarted !=
 return breakStarted(_that);case BreakEndedIpcEvent() when breakEnded != null:
 return breakEnded(_that);case CompanionInteractionIpcEvent() when companionInteraction != null:
 return companionInteraction(_that);case MeetingDetectedIpcEvent() when meetingDetected != null:
-return meetingDetected(_that);case FocusModeIpcEvent() when focusMode != null:
-return focusMode(_that);case TrayActionIpcEvent() when trayAction != null:
+return meetingDetected(_that);case TrayActionIpcEvent() when trayAction != null:
 return trayAction(_that);case CompanionCloseIpcEvent() when companionClose != null:
 return companionClose(_that);case CompanionPositionChangedIpcEvent() when companionPositionChanged != null:
 return companionPositionChanged(_that);case CompanionStateChangedIpcEvent() when companionStateChanged != null:
@@ -208,15 +201,14 @@ return unknown(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String stateName,  int countdownSeconds,  int workElapsedSeconds,  int? targetEndTime,  int? totalWorkTodaySeconds)?  timerStateChanged,TResult Function( bool isLongBreak,  int durationSeconds,  String title)?  breakStarted,TResult Function( bool skipped)?  breakEnded,TResult Function( String interactionType,  Map<String, dynamic>? metadata)?  companionInteraction,TResult Function( bool isActive,  String bundleId)?  meetingDetected,TResult Function( bool isActive)?  focusMode,TResult Function( String action)?  trayAction,TResult Function()?  companionClose,TResult Function( double x,  double y)?  companionPositionChanged,TResult Function( String state)?  companionStateChanged,TResult Function( String eventName,  Map<String, dynamic> payload)?  unknown,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String stateName,  int countdownSeconds,  int workElapsedSeconds,  int? targetEndTime,  int? totalWorkTodaySeconds)?  timerStateChanged,TResult Function( bool isLongBreak,  int durationSeconds,  String title)?  breakStarted,TResult Function( bool skipped)?  breakEnded,TResult Function( String interactionType,  Map<String, dynamic>? metadata)?  companionInteraction,TResult Function( bool isActive,  String bundleId)?  meetingDetected,TResult Function( String action)?  trayAction,TResult Function()?  companionClose,TResult Function( double x,  double y)?  companionPositionChanged,TResult Function( String state)?  companionStateChanged,TResult Function( String eventName,  Map<String, dynamic> payload)?  unknown,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case TimerStateChangedIpcEvent() when timerStateChanged != null:
 return timerStateChanged(_that.stateName,_that.countdownSeconds,_that.workElapsedSeconds,_that.targetEndTime,_that.totalWorkTodaySeconds);case BreakStartedIpcEvent() when breakStarted != null:
 return breakStarted(_that.isLongBreak,_that.durationSeconds,_that.title);case BreakEndedIpcEvent() when breakEnded != null:
 return breakEnded(_that.skipped);case CompanionInteractionIpcEvent() when companionInteraction != null:
 return companionInteraction(_that.interactionType,_that.metadata);case MeetingDetectedIpcEvent() when meetingDetected != null:
-return meetingDetected(_that.isActive,_that.bundleId);case FocusModeIpcEvent() when focusMode != null:
-return focusMode(_that.isActive);case TrayActionIpcEvent() when trayAction != null:
+return meetingDetected(_that.isActive,_that.bundleId);case TrayActionIpcEvent() when trayAction != null:
 return trayAction(_that.action);case CompanionCloseIpcEvent() when companionClose != null:
 return companionClose();case CompanionPositionChangedIpcEvent() when companionPositionChanged != null:
 return companionPositionChanged(_that.x,_that.y);case CompanionStateChangedIpcEvent() when companionStateChanged != null:
@@ -239,15 +231,14 @@ return unknown(_that.eventName,_that.payload);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String stateName,  int countdownSeconds,  int workElapsedSeconds,  int? targetEndTime,  int? totalWorkTodaySeconds)  timerStateChanged,required TResult Function( bool isLongBreak,  int durationSeconds,  String title)  breakStarted,required TResult Function( bool skipped)  breakEnded,required TResult Function( String interactionType,  Map<String, dynamic>? metadata)  companionInteraction,required TResult Function( bool isActive,  String bundleId)  meetingDetected,required TResult Function( bool isActive)  focusMode,required TResult Function( String action)  trayAction,required TResult Function()  companionClose,required TResult Function( double x,  double y)  companionPositionChanged,required TResult Function( String state)  companionStateChanged,required TResult Function( String eventName,  Map<String, dynamic> payload)  unknown,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String stateName,  int countdownSeconds,  int workElapsedSeconds,  int? targetEndTime,  int? totalWorkTodaySeconds)  timerStateChanged,required TResult Function( bool isLongBreak,  int durationSeconds,  String title)  breakStarted,required TResult Function( bool skipped)  breakEnded,required TResult Function( String interactionType,  Map<String, dynamic>? metadata)  companionInteraction,required TResult Function( bool isActive,  String bundleId)  meetingDetected,required TResult Function( String action)  trayAction,required TResult Function()  companionClose,required TResult Function( double x,  double y)  companionPositionChanged,required TResult Function( String state)  companionStateChanged,required TResult Function( String eventName,  Map<String, dynamic> payload)  unknown,}) {final _that = this;
 switch (_that) {
 case TimerStateChangedIpcEvent():
 return timerStateChanged(_that.stateName,_that.countdownSeconds,_that.workElapsedSeconds,_that.targetEndTime,_that.totalWorkTodaySeconds);case BreakStartedIpcEvent():
 return breakStarted(_that.isLongBreak,_that.durationSeconds,_that.title);case BreakEndedIpcEvent():
 return breakEnded(_that.skipped);case CompanionInteractionIpcEvent():
 return companionInteraction(_that.interactionType,_that.metadata);case MeetingDetectedIpcEvent():
-return meetingDetected(_that.isActive,_that.bundleId);case FocusModeIpcEvent():
-return focusMode(_that.isActive);case TrayActionIpcEvent():
+return meetingDetected(_that.isActive,_that.bundleId);case TrayActionIpcEvent():
 return trayAction(_that.action);case CompanionCloseIpcEvent():
 return companionClose();case CompanionPositionChangedIpcEvent():
 return companionPositionChanged(_that.x,_that.y);case CompanionStateChangedIpcEvent():
@@ -266,15 +257,14 @@ return unknown(_that.eventName,_that.payload);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String stateName,  int countdownSeconds,  int workElapsedSeconds,  int? targetEndTime,  int? totalWorkTodaySeconds)?  timerStateChanged,TResult? Function( bool isLongBreak,  int durationSeconds,  String title)?  breakStarted,TResult? Function( bool skipped)?  breakEnded,TResult? Function( String interactionType,  Map<String, dynamic>? metadata)?  companionInteraction,TResult? Function( bool isActive,  String bundleId)?  meetingDetected,TResult? Function( bool isActive)?  focusMode,TResult? Function( String action)?  trayAction,TResult? Function()?  companionClose,TResult? Function( double x,  double y)?  companionPositionChanged,TResult? Function( String state)?  companionStateChanged,TResult? Function( String eventName,  Map<String, dynamic> payload)?  unknown,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String stateName,  int countdownSeconds,  int workElapsedSeconds,  int? targetEndTime,  int? totalWorkTodaySeconds)?  timerStateChanged,TResult? Function( bool isLongBreak,  int durationSeconds,  String title)?  breakStarted,TResult? Function( bool skipped)?  breakEnded,TResult? Function( String interactionType,  Map<String, dynamic>? metadata)?  companionInteraction,TResult? Function( bool isActive,  String bundleId)?  meetingDetected,TResult? Function( String action)?  trayAction,TResult? Function()?  companionClose,TResult? Function( double x,  double y)?  companionPositionChanged,TResult? Function( String state)?  companionStateChanged,TResult? Function( String eventName,  Map<String, dynamic> payload)?  unknown,}) {final _that = this;
 switch (_that) {
 case TimerStateChangedIpcEvent() when timerStateChanged != null:
 return timerStateChanged(_that.stateName,_that.countdownSeconds,_that.workElapsedSeconds,_that.targetEndTime,_that.totalWorkTodaySeconds);case BreakStartedIpcEvent() when breakStarted != null:
 return breakStarted(_that.isLongBreak,_that.durationSeconds,_that.title);case BreakEndedIpcEvent() when breakEnded != null:
 return breakEnded(_that.skipped);case CompanionInteractionIpcEvent() when companionInteraction != null:
 return companionInteraction(_that.interactionType,_that.metadata);case MeetingDetectedIpcEvent() when meetingDetected != null:
-return meetingDetected(_that.isActive,_that.bundleId);case FocusModeIpcEvent() when focusMode != null:
-return focusMode(_that.isActive);case TrayActionIpcEvent() when trayAction != null:
+return meetingDetected(_that.isActive,_that.bundleId);case TrayActionIpcEvent() when trayAction != null:
 return trayAction(_that.action);case CompanionCloseIpcEvent() when companionClose != null:
 return companionClose();case CompanionPositionChangedIpcEvent() when companionPositionChanged != null:
 return companionPositionChanged(_that.x,_that.y);case CompanionStateChangedIpcEvent() when companionStateChanged != null:
@@ -670,79 +660,6 @@ class _$MeetingDetectedIpcEventCopyWithImpl<$Res>
 isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
 as bool,bundleId: null == bundleId ? _self.bundleId : bundleId // ignore: cast_nullable_to_non_nullable
 as String,
-  ));
-}
-
-
-}
-
-/// @nodoc
-@JsonSerializable()
-
-class FocusModeIpcEvent extends IpcEvent {
-  const FocusModeIpcEvent({required this.isActive, final  String? $type}): $type = $type ?? 'focusMode',super._();
-  factory FocusModeIpcEvent.fromJson(Map<String, dynamic> json) => _$FocusModeIpcEventFromJson(json);
-
- final  bool isActive;
-
-@JsonKey(name: 'runtimeType')
-final String $type;
-
-
-/// Create a copy of IpcEvent
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$FocusModeIpcEventCopyWith<FocusModeIpcEvent> get copyWith => _$FocusModeIpcEventCopyWithImpl<FocusModeIpcEvent>(this, _$identity);
-
-@override
-Map<String, dynamic> toJson() {
-  return _$FocusModeIpcEventToJson(this, );
-}
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FocusModeIpcEvent&&(identical(other.isActive, isActive) || other.isActive == isActive));
-}
-
-@JsonKey(includeFromJson: false, includeToJson: false)
-@override
-int get hashCode => Object.hash(runtimeType,isActive);
-
-@override
-String toString() {
-  return 'IpcEvent.focusMode(isActive: $isActive)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $FocusModeIpcEventCopyWith<$Res> implements $IpcEventCopyWith<$Res> {
-  factory $FocusModeIpcEventCopyWith(FocusModeIpcEvent value, $Res Function(FocusModeIpcEvent) _then) = _$FocusModeIpcEventCopyWithImpl;
-@useResult
-$Res call({
- bool isActive
-});
-
-
-
-
-}
-/// @nodoc
-class _$FocusModeIpcEventCopyWithImpl<$Res>
-    implements $FocusModeIpcEventCopyWith<$Res> {
-  _$FocusModeIpcEventCopyWithImpl(this._self, this._then);
-
-  final FocusModeIpcEvent _self;
-  final $Res Function(FocusModeIpcEvent) _then;
-
-/// Create a copy of IpcEvent
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? isActive = null,}) {
-  return _then(FocusModeIpcEvent(
-isActive: null == isActive ? _self.isActive : isActive // ignore: cast_nullable_to_non_nullable
-as bool,
   ));
 }
 

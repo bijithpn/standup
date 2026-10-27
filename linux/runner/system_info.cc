@@ -329,23 +329,6 @@ std::string GetAppearance() {
   return dark ? "dark" : "light";
 }
 
-bool IsDoNotDisturb() {
-  GSettingsSchemaSource* source = g_settings_schema_source_get_default();
-  if (source == nullptr) return false;
-  GSettingsSchema* schema =
-      g_settings_schema_source_lookup(source, "org.gnome.desktop.notifications", TRUE);
-  if (schema == nullptr) return false;
-
-  bool dnd = false;
-  if (g_settings_schema_has_key(schema, "show-banners")) {
-    GSettings* settings = g_settings_new("org.gnome.desktop.notifications");
-    dnd = !g_settings_get_boolean(settings, "show-banners");
-    g_object_unref(settings);
-  }
-  g_settings_schema_unref(schema);
-  return dnd;
-}
-
 bool IsMeetingApp(const std::string& wm_class, const std::string& exe_name) {
   static const char* const kMeetingApps[] = {"zoom",  "teams", "teams-for-linux", "webex",
                                              "skype", "slack", "discord"};

@@ -44,7 +44,6 @@ void main() {
     when(() => calendar.isMeetingActive()).thenAnswer((_) async => false);
     when(() => detection.isVideoCallActive).thenReturn(false);
     when(() => detection.isVideoPlaying).thenReturn(false);
-    when(() => detection.isFocusModeActive).thenReturn(false);
     reminders = [];
     sub = EventBus.instance.stream.listen((e) {
       if (e is HealthReminderEvent) reminders.add(e);

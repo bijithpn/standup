@@ -71,9 +71,6 @@ class AppBootstrapper {
             MeetingDetectedEvent(isActive: isActive, bundleId: bundleId),
           );
         },
-        focusMode: (isActive) {
-          eventBus.emit(FocusModeEvent(isActive: isActive));
-        },
         trayAction: (action) {
           if (action == 'start') {
             timerEngine.startTimers();

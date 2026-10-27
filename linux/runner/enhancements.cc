@@ -342,7 +342,7 @@ class SmartDetector {
   static constexpr gint64 kCameraGraceUs = 15 * G_USEC_PER_SEC;
 
   struct Snapshot {
-    bool mic = false, camera = false, video = false, focus = false;
+    bool mic = false, camera = false, video = false;
   };
 
   static gboolean OnPoll(gpointer data) {
@@ -357,7 +357,6 @@ class SmartDetector {
       snapshot->mic = sys::IsMicrophoneInUse();
       snapshot->camera = sys::IsCameraInUse();
       snapshot->video = sys::IsVideoPlaying();
-      snapshot->focus = sys::IsDoNotDisturb();
       g_task_return_pointer(t, snapshot, [](gpointer p) { delete static_cast<Snapshot*>(p); });
     });
     g_object_unref(task);
@@ -396,10 +395,6 @@ class SmartDetector {
       video_ = s.video;
       changed = true;
     }
-    if (s.focus != focus_) {
-      focus_ = s.focus;
-      changed = true;
-    }
     if (changed) Push();
   }
 
@@ -409,14 +404,13 @@ class SmartDetector {
     SetBool(map, "isCameraActive", camera_);
     SetBool(map, "isInMeeting", mic_ || camera_);
     SetBool(map, "isVideoPlaying", video_);
-    SetBool(map, "isFocusModeActive", focus_);
-    SetBool(map, "shouldPauseBreaks", mic_ || camera_ || video_ || focus_);
+    SetBool(map, "shouldPauseBreaks", mic_ || camera_ || video_);
     stream_.Send(map);
   }
 
   EventStream stream_;
   bool busy_ = false;
-  bool mic_ = false, camera_ = false, video_ = false, focus_ = false;
+  bool mic_ = false, camera_ = false, video_ = false;
   gint64 mic_seen_ = 0, camera_seen_ = 0;
 };
 

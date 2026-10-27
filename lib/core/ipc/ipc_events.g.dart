@@ -90,18 +90,6 @@ Map<String, dynamic> _$MeetingDetectedIpcEventToJson(
   'runtimeType': instance.$type,
 };
 
-FocusModeIpcEvent _$FocusModeIpcEventFromJson(Map<String, dynamic> json) =>
-    FocusModeIpcEvent(
-      isActive: json['isActive'] as bool,
-      $type: json['runtimeType'] as String?,
-    );
-
-Map<String, dynamic> _$FocusModeIpcEventToJson(FocusModeIpcEvent instance) =>
-    <String, dynamic>{
-      'isActive': instance.isActive,
-      'runtimeType': instance.$type,
-    };
-
 TrayActionIpcEvent _$TrayActionIpcEventFromJson(Map<String, dynamic> json) =>
     TrayActionIpcEvent(
       action: json['action'] as String,

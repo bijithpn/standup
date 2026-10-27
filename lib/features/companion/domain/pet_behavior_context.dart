@@ -14,7 +14,6 @@ class PetBehaviorContext {
   final Size screenSize;
   final bool isBreakActive;
   final bool isMeetingDetected;
-  final bool isFocusMode;
   final bool isIdle;
   final double ambientNoiseLevel;
   final int interactionCount;
@@ -37,7 +36,6 @@ class PetBehaviorContext {
     Size? screenSize,
     this.isBreakActive = false,
     this.isMeetingDetected = false,
-    this.isFocusMode = false,
     this.isIdle = false,
     this.ambientNoiseLevel = 0.0,
     this.interactionCount = 0,
@@ -62,7 +60,6 @@ class PetBehaviorContext {
     Size? screenSize,
     bool? isBreakActive,
     bool? isMeetingDetected,
-    bool? isFocusMode,
     bool? isIdle,
     double? ambientNoiseLevel,
     int? interactionCount,
@@ -84,7 +81,6 @@ class PetBehaviorContext {
       screenSize: screenSize ?? this.screenSize,
       isBreakActive: isBreakActive ?? this.isBreakActive,
       isMeetingDetected: isMeetingDetected ?? this.isMeetingDetected,
-      isFocusMode: isFocusMode ?? this.isFocusMode,
       isIdle: isIdle ?? this.isIdle,
       ambientNoiseLevel: ambientNoiseLevel ?? this.ambientNoiseLevel,
       interactionCount: interactionCount ?? this.interactionCount,

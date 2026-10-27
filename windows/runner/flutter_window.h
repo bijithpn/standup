@@ -108,7 +108,6 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> overlay_channel_;
 
   // Event channels for streams
-  std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> focus_mode_channel_;
   std::unique_ptr<flutter::EventChannel<flutter::EncodableValue>> meeting_detection_channel_;
 
   // Companion state

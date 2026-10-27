@@ -11,7 +11,6 @@ public class NativeSmartDetector: NSObject, FlutterStreamHandler {
     private var isMicrophoneActive = false
     private var isCameraActive = false
     private var isVideoPlaying = false
-    private var isFocusModeActive = false
     
     private var micGraceTimer: Timer?
     private var cameraGraceTimer: Timer?
@@ -27,7 +26,6 @@ public class NativeSmartDetector: NSObject, FlutterStreamHandler {
         setupCoreAudioListener()
         setupCoreMediaListener()
         setupPowerAssertionMonitoring()
-        setupFocusModeListener()
     }
     
     public func onListen(withArguments arguments: Any?, eventSink events: @escaping FlutterEventSink) -> FlutterError? {
@@ -207,48 +205,13 @@ public class NativeSmartDetector: NSObject, FlutterStreamHandler {
         }
     }
     
-    // MARK: - Focus Mode Detection
-    private func setupFocusModeListener() {
-        let center = DistributedNotificationCenter.default()
-        center.addObserver(
-            self,
-            selector: #selector(handleFocusStatusChanged),
-            name: NSNotification.Name("com.apple.controlcenter.focus.changed"),
-            object: nil
-        )
-        center.addObserver(
-            self,
-            selector: #selector(handleFocusStatusChanged),
-            name: NSNotification.Name("com.apple.donotdisturb.state.changed"),
-            object: nil
-        )
-        center.addObserver(
-            self,
-            selector: #selector(handleFocusStatusChanged),
-            name: NSNotification.Name("com.apple.notificationcenterui.dndprefs_changed"),
-            object: nil
-        )
-        
-        handleFocusStatusChanged()
-    }
-    
-    @objc private func handleFocusStatusChanged() {
-        let focused = UserDefaults(suiteName: "com.apple.notificationcenterui")?.bool(forKey: "doNotDisturb") ?? false
-        
-        if isFocusModeActive != focused {
-            isFocusModeActive = focused
-            pushCurrentState()
-        }
-    }
-    
     private func pushCurrentState() {
         let payload: [String: Any] = [
             "isMicrophoneActive": isMicrophoneActive,
             "isCameraActive": isCameraActive,
             "isInMeeting": isMicrophoneActive || isCameraActive,
             "isVideoPlaying": isVideoPlaying,
-            "isFocusModeActive": isFocusModeActive,
-            "shouldPauseBreaks": isMicrophoneActive || isCameraActive || isVideoPlaying || isFocusModeActive
+            "shouldPauseBreaks": isMicrophoneActive || isCameraActive || isVideoPlaying
         ]
         DispatchQueue.main.async { [weak self] in
             self?.eventSink?(payload)

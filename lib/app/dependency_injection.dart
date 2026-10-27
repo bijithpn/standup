@@ -6,7 +6,6 @@ import 'package:breakmate/core/services/app_navigation_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
 import 'package:breakmate/core/services/session_state_repository.dart';
 import 'package:breakmate/core/services/smart_detection_service.dart';
-import 'package:breakmate/core/services/focus_filter_service.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
@@ -47,7 +46,6 @@ import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/core/native/global_hotkey_service.dart';
 import 'package:breakmate/core/native/explain_hotkey_service.dart';
 import 'package:breakmate/core/native/presentation_detection_service.dart';
-import 'package:breakmate/core/native/focus_mode_service.dart';
 import 'package:breakmate/features/break_system/application/strict_mode_controller.dart';
 import 'package:breakmate/features/companion/services/companion_state_manager.dart';
 import 'package:breakmate/features/companion/services/companion_streak_service.dart';
@@ -227,11 +225,7 @@ Future<void> initDependencies() async {
   sl.registerSingleton<GlobalHotkeyService>(GlobalHotkeyService());
   sl.registerSingleton<ExplainHotkeyService>(ExplainHotkeyService());
 
-  sl.registerSingleton<FocusModeService>(FocusModeService());
-  sl.registerSingleton<FocusFilterService>(
-    FocusFilterService(focusModeService: sl(), smartDetection: sl()),
-  );
-  sl.registerSingleton<StrictModeController>(StrictModeController(sl(), sl()));
+  sl.registerSingleton<StrictModeController>(StrictModeController(sl()));
 
   sl.registerSingleton<CompanionStateManager>(
     CompanionStateManager(eventBus: sl()),

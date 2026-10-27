@@ -64,7 +64,7 @@ void main() {
         final settings = const SettingsModel(detectVideoCalls: true);
         final repo = FakeSettingsRepository(settings);
         final smartDetection = SmartDetectionService()
-          ..updateDetectionStatus(true, false, 'zoom.us');
+          ..updateDetectionStatus(true, 'zoom.us');
 
         final contextManager = TimerContextManager(
           settingsRepository: repo,
@@ -108,24 +108,14 @@ void main() {
         // Simulate rapid app switching: meeting app frontmost, then not,
         // then frontmost again — none of this should ever report a pause.
         for (final active in [true, false, true, false, true]) {
-          smartDetection.updateDetectionStatus(active, false, 'zoom.us');
+          smartDetection.updateDetectionStatus(active, 'zoom.us');
           expect(contextManager.isSmartPauseActive(), isFalse);
           expect(contextManager.shouldRunWorkTimer(), isTrue);
         }
       },
     );
 
-    test('Focus Mode and presentation mode still auto-pause when enabled', () {
-      final focusSettings = const SettingsModel(respectFocusMode: true);
-      final focusRepo = FakeSettingsRepository(focusSettings);
-      final smartDetection = SmartDetectionService()
-        ..updateDetectionStatus(false, true, null);
-      final focusContext = TimerContextManager(
-        settingsRepository: focusRepo,
-        smartDetectionService: smartDetection,
-      );
-      expect(focusContext.isSmartPauseActive(), isTrue);
-
+    test('presentation mode still auto-pauses when enabled', () {
       final presentationSettings = const SettingsModel(
         presentationPauseEnabled: true,
       );

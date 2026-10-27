@@ -185,7 +185,6 @@ class SettingsRepository extends ChangeNotifier {
       dailyWorkGoalHours: s.dailyWorkGoalHours,
       pauseTimerAfterMinutes: s.pauseTimerAfterMinutes,
       menuBarStyle: s.menuBarStyle,
-      focusModeEnabled: s.focusModeEnabled,
       shortBreakIntervalMinutes: s.shortBreakIntervalMinutes,
       shortBreakDurationSeconds: s.shortBreakDurationSeconds,
       preBreakWarningSeconds: s.preBreakWarningSeconds,
@@ -218,7 +217,6 @@ class SettingsRepository extends ChangeNotifier {
       workEndTime: s.workEndTime,
       detectVideoCalls: s.detectVideoCalls,
       detectMeetings: s.detectMeetings,
-      respectFocusMode: s.respectFocusMode,
       globalHotkeyEnabled: _storage.getBool(
         'global_hotkey_enabled',
         defaultValue: true,
@@ -407,7 +405,6 @@ class SettingsRepository extends ChangeNotifier {
         'break_template',
         defaultValue: 'minimal',
       ),
-      focusModeEnabled: _storage.getBool('focus_mode_enabled'),
       clockFaceStyle: _storage.getString(
         'clock_face_style',
         defaultValue: 'breakloop',
@@ -444,10 +441,6 @@ class SettingsRepository extends ChangeNotifier {
         defaultValue: true,
       ),
       detectMeetings: _storage.getBool('detect_meetings', defaultValue: true),
-      respectFocusMode: _storage.getBool(
-        'respect_focus_mode',
-        defaultValue: true,
-      ),
       globalHotkeyEnabled: _storage.getBool(
         'global_hotkey_enabled',
         defaultValue: true,
@@ -656,7 +649,6 @@ class SettingsRepository extends ChangeNotifier {
       dailyWorkGoalHours: settings.dailyWorkGoalHours,
       pauseTimerAfterMinutes: settings.pauseTimerAfterMinutes,
       menuBarStyle: settings.menuBarStyle,
-      focusModeEnabled: settings.focusModeEnabled,
       shortBreakIntervalMinutes: settings.shortBreakIntervalMinutes,
       shortBreakDurationSeconds: settings.shortBreakDurationSeconds,
       preBreakWarningSeconds: settings.preBreakWarningSeconds,
@@ -688,7 +680,6 @@ class SettingsRepository extends ChangeNotifier {
       workEndTime: settings.workEndTime,
       detectVideoCalls: settings.detectVideoCalls,
       detectMeetings: settings.detectMeetings,
-      respectFocusMode: settings.respectFocusMode,
       enableClockOut: settings.enableClockOut,
       clockOutTime: settings.clockOutTime,
       exercisesJson: jsonEncode(
@@ -769,7 +760,6 @@ class SettingsRepository extends ChangeNotifier {
 
     await _storage.setBool('detect_video_calls', settings.detectVideoCalls);
     await _storage.setBool('detect_meetings', settings.detectMeetings);
-    await _storage.setBool('respect_focus_mode', settings.respectFocusMode);
     await _storage.setBool(
       'global_hotkey_enabled',
       settings.globalHotkeyEnabled,

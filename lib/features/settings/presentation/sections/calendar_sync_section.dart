@@ -7,7 +7,7 @@ import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 /// The one place to connect a calendar and configure how BreakMate uses it.
-/// Everything else (Today, Focus Mode) links here instead of repeating it.
+/// Everything else (Today, Smart detection) links here instead of repeating it.
 class CalendarSyncSection extends StatefulWidget {
   const CalendarSyncSection({super.key});
 

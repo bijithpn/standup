@@ -19,7 +19,6 @@ class CompanionStateManager {
   String _currentTheme = 'grey';
   bool _isDragging = false;
   bool _meetingPaused = false;
-  bool _focusModeActive = false;
 
   CompanionState get state => _state;
   bool get isVisible => _isVisible;
@@ -28,7 +27,6 @@ class CompanionStateManager {
   String get currentTheme => _currentTheme;
   bool get isDragging => _isDragging;
   bool get meetingPaused => _meetingPaused;
-  bool get focusModeActive => _focusModeActive;
 
   void startListening() {
     _subscription = _eventBus.stream.listen(_handleEvent);
@@ -49,8 +47,6 @@ class CompanionStateManager {
         _onBreakEnded(e);
       case MeetingDetectedEvent e:
         _onMeetingDetected(e);
-      case FocusModeEvent e:
-        _onFocusMode(e);
       case IdleDetectedEvent e:
         _onIdleDetected(e);
       case CompanionInteractionEvent e:
@@ -67,7 +63,7 @@ class CompanionStateManager {
   void _onTimerStateChanged(TimerStateChangedEvent event) {
     switch (event.state) {
       case TimerStateEvent.running:
-        if (_meetingPaused || _focusModeActive) return;
+        if (_meetingPaused) return;
         _setState(CompanionState.idle);
       case TimerStateEvent.breakActive:
         _setState(CompanionState.breakReminder);
@@ -85,8 +81,6 @@ class CompanionStateManager {
   void _onBreakEnded(BreakEndedEvent event) {
     if (_meetingPaused) {
       _setState(CompanionState.meetingPaused);
-    } else if (_focusModeActive) {
-      _setState(CompanionState.focusMode);
     } else {
       _setState(CompanionState.happy);
       Future.delayed(const Duration(seconds: 3), () {
@@ -102,15 +96,6 @@ class CompanionStateManager {
     if (event.isActive) {
       _setState(CompanionState.meetingPaused);
     } else if (_state == CompanionState.meetingPaused) {
-      _setState(CompanionState.idle);
-    }
-  }
-
-  void _onFocusMode(FocusModeEvent event) {
-    _focusModeActive = event.isActive;
-    if (event.isActive) {
-      _setState(CompanionState.focusMode);
-    } else if (_state == CompanionState.focusMode) {
       _setState(CompanionState.idle);
     }
   }
@@ -166,7 +151,7 @@ class CompanionStateManager {
 
   void _resetToIdleAfter(Duration duration) {
     Future.delayed(duration, () {
-      if (!_isDragging && !_meetingPaused && !_focusModeActive) {
+      if (!_isDragging && !_meetingPaused) {
         _setState(CompanionState.idle);
       }
     });

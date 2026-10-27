@@ -210,11 +210,6 @@
           "type": 9
         },
         {
-          "id": "10:8841369957436756813",
-          "name": "focusModeEnabled",
-          "type": 1
-        },
-        {
           "id": "11:1964609736912734259",
           "name": "shortBreakIntervalMinutes",
           "type": 6
@@ -367,11 +362,6 @@
         {
           "id": "41:2911141618608597720",
           "name": "detectMeetings",
-          "type": 1
-        },
-        {
-          "id": "42:2914338189209368645",
-          "name": "respectFocusMode",
           "type": 1
         },
         {
@@ -580,7 +570,10 @@
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    2914338189209368645,
+    8841369957436756813
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

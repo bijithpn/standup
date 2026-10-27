@@ -34,9 +34,6 @@ sealed class IpcEvent with _$IpcEvent {
     required String bundleId,
   }) = MeetingDetectedIpcEvent;
 
-  const factory IpcEvent.focusMode({required bool isActive}) =
-      FocusModeIpcEvent;
-
   const factory IpcEvent.trayAction({required String action}) =
       TrayActionIpcEvent;
 
@@ -64,7 +61,6 @@ sealed class IpcEvent with _$IpcEvent {
     breakEnded: (_) => IpcEventNames.breakEnded,
     companionInteraction: (_, _) => IpcEventNames.companionInteraction,
     meetingDetected: (_, _) => IpcEventNames.detectionMeeting,
-    focusMode: (_) => IpcEventNames.detectionFocusMode,
     trayAction: (_) => IpcEventNames.trayAction,
     companionClose: () => IpcEventNames.companionClose,
     companionPositionChanged: (_, _) => IpcEventNames.companionPositionChanged,
@@ -93,9 +89,6 @@ sealed class IpcEvent with _$IpcEvent {
       case IpcEventNames.detectionMeeting:
         jsonWithRuntimeType['runtimeType'] = 'meetingDetected';
         break;
-      case IpcEventNames.detectionFocusMode:
-        jsonWithRuntimeType['runtimeType'] = 'focusMode';
-        break;
       case IpcEventNames.trayAction:
         jsonWithRuntimeType['runtimeType'] = 'trayAction';
         break;
@@ -123,7 +116,6 @@ class IpcEventNames {
   static const String breakEnded = 'timer.breakEnded';
   static const String companionInteraction = 'companion.interaction';
   static const String detectionMeeting = 'detection.meeting';
-  static const String detectionFocusMode = 'detection.focusMode';
   static const String trayAction = 'tray.action';
   static const String companionClose = 'companion.close';
   static const String companionPositionChanged = 'companion.positionChanged';

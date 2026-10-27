@@ -21,7 +21,6 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
 
   bool isIdle = false;
   bool isVideoCallActive = false;
-  bool isFocusModeActive = false;
 
   Timer? idleTimer;
   Timer? smartTimer;
@@ -151,19 +150,11 @@ void _backgroundPollingEntry(Map<String, dynamic> initialData) {
         }
       }
 
-      // Check Focus Mode
-      final bool? activeFocus =
-          (await invokeMethodProxy('isFocusModeActive')) as bool?;
-      final newFocusActive = activeFocus ?? false;
-
-      if (newVideoCallActive != isVideoCallActive ||
-          newFocusActive != isFocusModeActive) {
+      if (newVideoCallActive != isVideoCallActive) {
         isVideoCallActive = newVideoCallActive;
-        isFocusModeActive = newFocusActive;
         sendPort.send({
           'type': 'smartDetectionChanged',
           'isVideoCallActive': isVideoCallActive,
-          'isFocusModeActive': isFocusModeActive,
           'frontApp': frontApp,
         });
       }
@@ -222,12 +213,10 @@ class BackgroundPollingService {
             }
           } else if (type == 'smartDetectionChanged') {
             final isVideoCallActive = message['isVideoCallActive'] as bool;
-            final isFocusModeActive = message['isFocusModeActive'] as bool;
             final frontApp = message['frontApp'] as String?;
             try {
               sl<SmartDetectionService>().updateDetectionStatus(
                 isVideoCallActive,
-                isFocusModeActive,
                 frontApp,
               );
             } catch (e, st) {

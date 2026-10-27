@@ -9,7 +9,7 @@
 void RegisterNativeEnhancementsBridge(flutter::FlutterEngine* engine);
 
 // Registers the `com.breakmate/smart_detection_events` stream: microphone,
-// camera, fullscreen/presentation and Focus Assist state.
+// camera, fullscreen/presentation state.
 void RegisterSmartDetectionBridge(flutter::FlutterEngine* engine);
 
 #endif  // RUNNER_NATIVE_ENHANCEMENTS_BRIDGE_H_

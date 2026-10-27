@@ -138,21 +138,15 @@ class SmartDetector {
     changed |= Latch(IsCapabilityActive(L"webcam", self_), kCameraGraceMs, camera_, camera_seen_);
 
     bool video = false;
-    bool focus = false;
     QUERY_USER_NOTIFICATION_STATE state;
     if (SHQueryUserNotificationState(&state) == S_OK) {
       // Exclusive-fullscreen games/players and PowerPoint-style presentation
       // mode. QUNS_BUSY (any maximised app) is deliberately not treated as video:
       // it flags ordinary maximised windows.
       video = state == QUNS_RUNNING_D3D_FULL_SCREEN || state == QUNS_PRESENTATION_MODE;
-      focus = state == QUNS_QUIET_TIME;
     }
     if (video != video_) {
       video_ = video;
-      changed = true;
-    }
-    if (focus != focus_) {
-      focus_ = focus;
       changed = true;
     }
 
@@ -166,9 +160,8 @@ class SmartDetector {
     payload[EncodableValue("isCameraActive")] = EncodableValue(camera_);
     payload[EncodableValue("isInMeeting")] = EncodableValue(mic_ || camera_);
     payload[EncodableValue("isVideoPlaying")] = EncodableValue(video_);
-    payload[EncodableValue("isFocusModeActive")] = EncodableValue(focus_);
     payload[EncodableValue("shouldPauseBreaks")] =
-        EncodableValue(mic_ || camera_ || video_ || focus_);
+        EncodableValue(mic_ || camera_ || video_);
     sink_->Success(EncodableValue(payload));
   }
 
@@ -179,7 +172,7 @@ class SmartDetector {
   UINT_PTR timer_ = 0;
   std::wstring self_;
 
-  bool mic_ = false, camera_ = false, video_ = false, focus_ = false;
+  bool mic_ = false, camera_ = false, video_ = false;
   ULONGLONG mic_seen_ = 0, camera_seen_ = 0;
 };
 

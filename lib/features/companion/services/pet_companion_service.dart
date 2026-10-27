@@ -31,7 +31,6 @@ class PetCompanionService extends ChangeNotifier {
 
   bool _isBreakActive = false;
   bool _isMeetingDetected = false;
-  bool _isFocusMode = false;
   bool _isIdle = false;
 
   double _curiosity = 0.5;
@@ -170,13 +169,11 @@ class PetCompanionService extends ChangeNotifier {
   void syncContextFlags({
     bool? isBreakActive,
     bool? isMeetingDetected,
-    bool? isFocusMode,
     bool? isIdle,
     int? totalWorkTodaySeconds,
   }) {
     _isBreakActive = isBreakActive ?? _isBreakActive;
     _isMeetingDetected = isMeetingDetected ?? _isMeetingDetected;
-    _isFocusMode = isFocusMode ?? _isFocusMode;
     _isIdle = isIdle ?? _isIdle;
     if (totalWorkTodaySeconds != null) {
       _totalWorkToday = Duration(seconds: totalWorkTodaySeconds);
@@ -184,7 +181,6 @@ class PetCompanionService extends ChangeNotifier {
     _context = _context.copyWith(
       isBreakActive: _isBreakActive,
       isMeetingDetected: _isMeetingDetected,
-      isFocusMode: _isFocusMode,
       isIdle: _isIdle,
       totalWorkToday: _totalWorkToday,
     );
@@ -287,7 +283,6 @@ class PetCompanionService extends ChangeNotifier {
           cur == PetState.angry ||
           cur == PetState.breakReminder ||
           cur == PetState.meetingPaused ||
-          cur == PetState.focusMode ||
           cur == PetState.drag ||
           cur == PetState.sleep) {
         return; // Don't interrupt these states

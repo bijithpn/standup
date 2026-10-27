@@ -19,7 +19,6 @@ class PetNeeds {
     this.hunger = 0.0,
     this.boredom = 0.0,
     this.happiness = 50.0,
-    this.focusMode = false,
     this.breakMode = false,
   });
 
@@ -30,7 +29,6 @@ class PetNeeds {
   final double hunger;
   final double boredom;
   final double happiness;
-  final bool focusMode;
   final bool breakMode;
 
   double get energyLevel => energy <= 1.0 ? energy * 100.0 : energy;
@@ -46,7 +44,6 @@ class PetNeeds {
     double? hunger,
     double? boredom,
     double? happiness,
-    bool? focusMode,
     bool? breakMode,
   }) {
     return PetNeeds(
@@ -57,7 +54,6 @@ class PetNeeds {
       hunger: (hunger ?? this.hunger).clamp(0.0, 100.0),
       boredom: (boredom ?? this.boredom).clamp(0.0, 100.0),
       happiness: (happiness ?? this.happiness).clamp(0.0, 100.0),
-      focusMode: focusMode ?? this.focusMode,
       breakMode: breakMode ?? this.breakMode,
     );
   }
@@ -70,7 +66,6 @@ class PetNeeds {
     double hungerDelta = 0.0,
     double boredomDelta = 0.0,
     double happinessDelta = 0.0,
-    bool? focusMode,
     bool? breakMode,
   }) {
     return PetNeeds(
@@ -81,7 +76,6 @@ class PetNeeds {
       hunger: (hunger + hungerDelta).clamp(0.0, 100.0),
       boredom: (boredom + boredomDelta).clamp(0.0, 100.0),
       happiness: (happiness + happinessDelta).clamp(0.0, 100.0),
-      focusMode: focusMode ?? this.focusMode,
       breakMode: breakMode ?? this.breakMode,
     );
   }
@@ -95,7 +89,6 @@ class PetNeeds {
       'hunger': hunger,
       'boredom': boredom,
       'happiness': happiness,
-      'focusMode': focusMode,
       'breakMode': breakMode,
     };
   }
@@ -112,7 +105,6 @@ class PetNeeds {
       boredom: (json['boredom'] as num?)?.toDouble().clamp(0.0, 100.0) ?? 0.0,
       happiness:
           (json['happiness'] as num?)?.toDouble().clamp(0.0, 100.0) ?? 50.0,
-      focusMode: json['focusMode'] as bool? ?? false,
       breakMode: json['breakMode'] as bool? ?? false,
     );
   }
@@ -128,7 +120,6 @@ class PetNeeds {
         other.hunger == hunger &&
         other.boredom == boredom &&
         other.happiness == happiness &&
-        other.focusMode == focusMode &&
         other.breakMode == breakMode;
   }
 
@@ -141,7 +132,6 @@ class PetNeeds {
     hunger,
     boredom,
     happiness,
-    focusMode,
     breakMode,
   );
 
@@ -149,7 +139,7 @@ class PetNeeds {
   String toString() =>
       'PetNeeds(affection: $affection, playfulness: $playfulness, '
       'energy: $energy, restfulness: $restfulness, hunger: $hunger, '
-      'boredom: $boredom, happiness: $happiness, focusMode: $focusMode, breakMode: $breakMode)';
+      'boredom: $boredom, happiness: $happiness, breakMode: $breakMode)';
 }
 
 class NeedsEngine {
@@ -201,10 +191,6 @@ class NeedsEngine {
 
   void setHappiness(double value) {
     _needs = _needs.copyWith(happiness: value);
-  }
-
-  void setFocusMode(bool active) {
-    _needs = _needs.copyWith(focusMode: active);
   }
 
   void setBreakMode(bool active) {

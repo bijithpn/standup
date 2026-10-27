@@ -69,7 +69,7 @@ class _MainLayoutState extends State<MainLayout> {
       section: 'Breaks & Profiles',
     ),
     _NavItem(
-      label: AppStrings.navFocusMode,
+      label: AppStrings.navSmartDetection,
       icon: CupertinoIcons.eye,
       section: 'Intelligent Detection',
     ),

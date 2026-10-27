@@ -30,7 +30,7 @@ enum CalendarConnectionState {
 
 /// The single owner of Calendar Sync: connection state, permission, sync
 /// preferences, and the (de-duplicated, throttled) event query that every
-/// screen — Calendar Sync settings, Today, Focus Mode — reads from.
+/// screen — Calendar Sync settings, Today, Smart detection — reads from.
 class CalendarSyncController extends ChangeNotifier {
   static const Duration minRefreshInterval = Duration(seconds: 30);
 

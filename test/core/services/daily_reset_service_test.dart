@@ -47,7 +47,6 @@ void main() {
     when(() => calendar.isMeetingActive()).thenAnswer((_) async => false);
     when(() => detection.isVideoCallActive).thenReturn(false);
     when(() => detection.isVideoPlaying).thenReturn(false);
-    when(() => detection.isFocusModeActive).thenReturn(false);
   });
 
   /// Runs [body] with a controllable local clock starting at [start].

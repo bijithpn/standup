@@ -9,7 +9,6 @@ class SmartDetectionState {
   final bool isCameraActive;
   final bool isInMeeting;
   final bool isVideoPlaying;
-  final bool isFocusModeActive;
   final bool shouldPauseBreaks;
 
   const SmartDetectionState({
@@ -17,7 +16,6 @@ class SmartDetectionState {
     required this.isCameraActive,
     required this.isInMeeting,
     required this.isVideoPlaying,
-    required this.isFocusModeActive,
     required this.shouldPauseBreaks,
   });
 
@@ -27,7 +25,6 @@ class SmartDetectionState {
       isCameraActive: map['isCameraActive'] as bool? ?? false,
       isInMeeting: map['isInMeeting'] as bool? ?? false,
       isVideoPlaying: map['isVideoPlaying'] as bool? ?? false,
-      isFocusModeActive: map['isFocusModeActive'] as bool? ?? false,
       shouldPauseBreaks: map['shouldPauseBreaks'] as bool? ?? false,
     );
   }
@@ -37,12 +34,11 @@ class SmartDetectionState {
     isCameraActive: false,
     isInMeeting: false,
     isVideoPlaying: false,
-    isFocusModeActive: false,
     shouldPauseBreaks: false,
   );
 }
 
-/// Detects video calls, meetings, media playback, and macOS Focus/DND to pause reminders.
+/// Detects video calls, meetings, media playback, and to pause reminders.
 ///
 /// The native detector (macOS, Windows, Linux) pushes state over
 /// [_eventChannel]. If it is unavailable the background polling isolate
@@ -60,17 +56,14 @@ class SmartDetectionService {
 
   bool _isVideoCallActive = false;
   bool _isVideoPlaying = false;
-  bool _isFocusModeActive = false;
 
   /// Native state changes; empty while the polling fallback is in use.
   Stream<SmartDetectionState> get stateStream => _stateController.stream;
   SmartDetectionState get currentState => _currentState;
 
-  bool get shouldPauseReminders =>
-      _isVideoCallActive || _isVideoPlaying || _isFocusModeActive;
+  bool get shouldPauseReminders => _isVideoCallActive || _isVideoPlaying;
   bool get isVideoCallActive => _isVideoCallActive;
   bool get isVideoPlaying => _isVideoPlaying;
-  bool get isFocusModeActive => _isFocusModeActive;
 
   bool _usingPollingFallback = false;
 
@@ -103,12 +96,11 @@ class SmartDetectionService {
     _currentState = state;
     _isVideoCallActive = state.isInMeeting;
     _isVideoPlaying = state.isVideoPlaying;
-    _isFocusModeActive = state.isFocusModeActive;
     _stateController.add(state);
 
     if (state.shouldPauseBreaks) {
       _logger.info(
-        'SmartDetection: Breaks paused (Meeting: ${state.isInMeeting}, Video: ${state.isVideoPlaying}, Focus: ${state.isFocusModeActive})',
+        'SmartDetection: Breaks paused (Meeting: ${state.isInMeeting}, Video: ${state.isVideoPlaying})',
       );
     }
   }
@@ -123,28 +115,16 @@ class SmartDetectionService {
     _logger.info('SmartDetectionService stopped');
   }
 
-  void updateDetectionStatus(
-    bool isVideoCallActive,
-    bool isFocusModeActive,
-    String? frontApp,
-  ) {
+  void updateDetectionStatus(bool isVideoCallActive, String? frontApp) {
     final wasVideoCallActive = _isVideoCallActive;
-    final wasFocusModeActive = _isFocusModeActive;
 
     _isVideoCallActive = isVideoCallActive;
-    _isFocusModeActive = isFocusModeActive;
 
     if (wasVideoCallActive != _isVideoCallActive) {
       _logger.info(
         _isVideoCallActive
             ? 'Video call detected: $frontApp'
             : 'Video call ended',
-      );
-    }
-
-    if (wasFocusModeActive != _isFocusModeActive) {
-      _logger.info(
-        _isFocusModeActive ? 'Focus/DND mode active' : 'Focus/DND mode ended',
       );
     }
   }

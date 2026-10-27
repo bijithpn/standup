@@ -82,45 +82,8 @@ LRESULT CALLBACK FlutterWindow::LowLevelKeyboardProc(int nCode, WPARAM wParam, L
   return CallNextHookEx(keyboard_hook_, nCode, wParam, lParam);
 }
 
-class FocusModeStreamHandler;
-static FocusModeStreamHandler* g_focus_mode_handler = nullptr;
-
 class MeetingDetectionStreamHandler;
 static MeetingDetectionStreamHandler* g_meeting_detection_handler = nullptr;
-
-class FocusModeStreamHandler : public flutter::StreamHandler<flutter::EncodableValue> {
- public:
-  FocusModeStreamHandler() {}
-  virtual ~FocusModeStreamHandler() {
-    if (g_focus_mode_handler == this) {
-      g_focus_mode_handler = nullptr;
-    }
-  }
-
-  void SendUpdate(bool is_active) {
-    if (event_sink_) {
-      event_sink_->Success(flutter::EncodableValue(is_active));
-    }
-  }
-
- protected:
-  std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> OnListenInternal(
-      const flutter::EncodableValue* arguments,
-      std::unique_ptr<flutter::EventSink<flutter::EncodableValue>>&& events) override {
-    event_sink_ = std::move(events);
-    event_sink_->Success(flutter::EncodableValue(bridge_utils::IsFocusModeActive()));
-    return nullptr;
-  }
-
-  std::unique_ptr<flutter::StreamHandlerError<flutter::EncodableValue>> OnCancelInternal(
-      const flutter::EncodableValue* arguments) override {
-    event_sink_ = nullptr;
-    return nullptr;
-  }
-
- private:
-  std::unique_ptr<flutter::EventSink<flutter::EncodableValue>> event_sink_;
-};
 
 // Stream handler for Meeting Detection
 class MeetingDetectionStreamHandler : public flutter::StreamHandler<flutter::EncodableValue> {
@@ -535,13 +498,6 @@ void FlutterWindow::SetupCompanionBridge() {
 }
 
 void FlutterWindow::SetupEventChannels() {
-  auto focus_handler = std::make_unique<FocusModeStreamHandler>();
-  g_focus_mode_handler = focus_handler.get();
-  focus_mode_channel_ = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
-      flutter_controller_->engine()->messenger(), "com.breakmate/focus_mode",
-      &flutter::StandardMethodCodec::GetInstance());
-  focus_mode_channel_->SetStreamHandler(std::move(focus_handler));
-
   auto meeting_handler = std::make_unique<MeetingDetectionStreamHandler>();
   g_meeting_detection_handler = meeting_handler.get();
   meeting_detection_channel_ = std::make_unique<flutter::EventChannel<flutter::EncodableValue>>(
@@ -1265,9 +1221,6 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       break;
     case WM_TIMER:
       if (wparam == 1) {
-        if (g_focus_mode_handler) {
-          g_focus_mode_handler->SendUpdate(bridge_utils::IsFocusModeActive());
-        }
         if (g_meeting_detection_handler) {
           std::string bundle_id;
           bool is_active = bridge_utils::IsMeetingActive(bundle_id);

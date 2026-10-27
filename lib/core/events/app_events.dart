@@ -57,7 +57,6 @@ enum CompanionState {
   blink,
   breakReminder,
   meetingPaused,
-  focusMode,
 }
 
 class CompanionStateChangedEvent extends AppEvent {
@@ -93,11 +92,6 @@ class MeetingDetectedEvent extends AppEvent {
     this.bundleId,
     super.timestamp,
   });
-}
-
-class FocusModeEvent extends AppEvent {
-  final bool isActive;
-  FocusModeEvent({required this.isActive, super.timestamp});
 }
 
 class IdleDetectedEvent extends AppEvent {

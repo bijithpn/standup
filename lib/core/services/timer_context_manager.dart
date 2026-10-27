@@ -79,16 +79,13 @@ class TimerContextManager {
   /// which only affects how break reminders are displayed.
   bool isSmartPauseActive() {
     final settings = _settingsRepository.currentSettings;
-    final pauseForFocus =
-        settings.respectFocusMode &&
-        (_smartDetectionService?.isFocusModeActive ?? false);
     final pauseForPresentation =
         settings.presentationPauseEnabled &&
         (_presentationDetectionService?.isPresenting ?? false);
     final pauseForVideo =
         settings.detectVideoCalls &&
         (_smartDetectionService?.isVideoPlaying ?? false);
-    return pauseForFocus || pauseForPresentation || pauseForVideo;
+    return pauseForPresentation || pauseForVideo;
   }
 
   /// Whether the user currently appears to be in a meeting or video call —

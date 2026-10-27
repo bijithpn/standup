@@ -620,11 +620,6 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setFocusMode(bool enabled) {
-    _emit(FocusModeEvent(isActive: enabled));
-    notifyListeners();
-  }
-
   void _triggerBreak() {
     _stateData.state = TimerState.breakActive;
     _stateData.workElapsed = Duration.zero;

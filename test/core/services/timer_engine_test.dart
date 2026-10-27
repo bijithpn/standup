@@ -182,7 +182,6 @@ void main() {
 
     when(() => mockSmartDetectionService.isVideoCallActive).thenReturn(false);
     when(() => mockSmartDetectionService.isVideoPlaying).thenReturn(false);
-    when(() => mockSmartDetectionService.isFocusModeActive).thenReturn(false);
     when(
       () => mockCalendarService.getUpcomingEvents(window: any(named: 'window')),
     ).thenAnswer((_) async => []);
@@ -382,7 +381,7 @@ void main() {
       fakeAsync((async) {
         fakeSettingsRepository.setSettings(
           fakeSettingsRepository.currentSettings.copyWith(
-            respectFocusMode: true,
+            detectVideoCalls: true,
           ),
         );
 
@@ -397,22 +396,18 @@ void main() {
         async.elapse(const Duration(minutes: 5));
         expect(engine.state, equals(TimerState.running));
 
-        // Focus mode starts
-        when(
-          () => mockSmartDetectionService.isFocusModeActive,
-        ).thenReturn(true);
+        // Video playback starts
+        when(() => mockSmartDetectionService.isVideoPlaying).thenReturn(true);
         async.elapse(const Duration(seconds: 1));
         expect(engine.state, equals(TimerState.paused));
         expect(engine.stateData.isManuallyPaused, isFalse);
 
-        // Advance during focus mode
+        // Advance during video playback
         async.elapse(const Duration(minutes: 15));
         expect(engine.state, equals(TimerState.paused));
 
-        // Focus mode ends
-        when(
-          () => mockSmartDetectionService.isFocusModeActive,
-        ).thenReturn(false);
+        // Video playback ends
+        when(() => mockSmartDetectionService.isVideoPlaying).thenReturn(false);
         async.elapse(const Duration(seconds: 1));
         // Timer should automatically resume without manual intervention!
         expect(engine.state, equals(TimerState.running));
