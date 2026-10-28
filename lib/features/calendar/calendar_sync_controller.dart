@@ -156,6 +156,10 @@ class CalendarSyncController extends ChangeNotifier {
     }
   }
 
+  /// Events in [start, end) for views that browse beyond today (month view).
+  Future<List<CalendarEvent>> eventsBetween(DateTime start, DateTime end) =>
+      _calendar.getEvents(start, end);
+
   /// Requests macOS access (or opens System Settings if it can no longer be
   /// requested) and turns sync on when granted.
   Future<bool> connect() async {
@@ -184,6 +188,12 @@ class CalendarSyncController extends ChangeNotifier {
         status = granted
             ? CalendarPermissionStatus.granted
             : await _permissions.getStatus();
+      }
+      // macOS refused without showing a prompt: the entry in System Settings
+      // is stale (e.g. toggled on for an older build of the app). Surface the
+      // blocked state instead of silently snapping back.
+      if (status == CalendarPermissionStatus.denied) {
+        status = CalendarPermissionStatus.permanentlyDenied;
       }
       _permission = status;
       if (status != CalendarPermissionStatus.granted) return false;

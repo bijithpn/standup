@@ -32,6 +32,13 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 
 @main
 class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
+  static func main() {
+    #if DEBUG
+    DebugDisclaim.relaunchIfNeeded()
+    #endif
+    _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+  }
+
   var meetingBridge: MeetingDetectionBridge?
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?

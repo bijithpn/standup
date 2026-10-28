@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
+import 'package:breakmate/features/settings/presentation/sections/calendar_events_view.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
@@ -75,7 +76,9 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
             ]),
             if (c.state == CalendarConnectionState.connected) ...[
               sectionHeader('Today'),
-              _EventsCard(controller: c),
+              TodayAgendaCard(controller: c),
+              sectionHeader('Calendar'),
+              MonthCalendarCard(controller: c),
             ],
           ],
         ),
@@ -125,8 +128,9 @@ class _StatusCard extends StatelessWidget {
         Icons.lock_outline_rounded,
         AppTheme.warning,
         'Calendar access blocked',
-        'macOS is blocking access. Enable BreakMate under Privacy & '
-            'Security → Calendars, then come back.',
+        'macOS is blocking access. In Privacy & Security → Calendars, '
+            'turn BreakMate off and on again (or remove it with “−” and '
+            'click Connect again), then come back.',
       ),
       CalendarConnectionState.error => (
         Icons.error_outline_rounded,
@@ -255,35 +259,5 @@ class _StatusCard extends StatelessWidget {
     final h = at.hour.toString().padLeft(2, '0');
     final m = at.minute.toString().padLeft(2, '0');
     return 'Last synced $h:$m';
-  }
-}
-
-class _EventsCard extends StatelessWidget {
-  final CalendarSyncController controller;
-  const _EventsCard({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final events = controller.events;
-    final String text;
-    if (controller.isLoadingEvents && events == null) {
-      text = 'Loading…';
-    } else if (events == null || events.isEmpty) {
-      text = 'No events today.';
-    } else {
-      final timed = events.where((e) => !e.isAllDay).length;
-      text =
-          '${events.length} event${events.length == 1 ? '' : 's'} today'
-          '${timed == events.length ? '' : ' ($timed with a set time)'}.';
-    }
-    return buildCard([
-      Padding(
-        padding: const EdgeInsets.all(18),
-        child: Text(
-          text,
-          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-        ),
-      ),
-    ]);
   }
 }
