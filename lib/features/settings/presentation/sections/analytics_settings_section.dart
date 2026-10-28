@@ -179,15 +179,7 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        border: Border.all(color: AppTheme.border),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [ringColor.withValues(alpha: 0.12), AppTheme.surfaceCard],
-        ),
-      ),
+      decoration: AppTheme.cardDecoration(),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final tiles = _buildDetailGrid(m);

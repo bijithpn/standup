@@ -125,9 +125,10 @@ void main() {
 
     testWidgets('shows progress against each target', (tester) async {
       await pump(tester);
-      expect(find.text('0m of 6h today'), findsOneWidget);
-      expect(find.text('0 of 8 today'), findsOneWidget);
-      expect(find.text('0 of 5 days'), findsOneWidget);
+      expect(find.text('0m'), findsOneWidget);
+      expect(find.text('of 6h'), findsOneWidget);
+      expect(find.text('of 8'), findsOneWidget);
+      expect(find.text('of 5 days'), findsOneWidget);
     });
 
     testWidgets('app time budgets explain why they are unavailable', (
@@ -137,11 +138,11 @@ void main() {
       expect(find.textContaining('Turn it on in Privacy'), findsOneWidget);
     });
 
-    testWidgets('dragging a slider saves the new target', (tester) async {
+    testWidgets('tapping + saves the new target', (tester) async {
       await pump(tester);
-      await tester.drag(find.byType(Slider).first, const Offset(60, 0));
+      await tester.tap(find.byTooltip('Increase target').first);
       await tester.pump();
-      expect(settings.currentSettings.dailyWorkGoalHours, isNot(6));
+      expect(settings.currentSettings.dailyWorkGoalHours, 7);
     });
   });
 }

@@ -207,7 +207,7 @@ class AppTheme {
   static BoxDecoration cardDecoration({bool elevated = false}) {
     return BoxDecoration(
       color: elevated ? surfaceElevated : surfaceCard,
-      borderRadius: BorderRadius.circular(radiusMd),
+      borderRadius: BorderRadius.circular(radiusSm),
       border: Border.all(color: border, width: 1),
     );
   }

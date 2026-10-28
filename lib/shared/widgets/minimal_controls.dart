@@ -118,15 +118,6 @@ class _MinimalButtonState extends State<MinimalButton>
                       width: 1,
                     )
                   : null,
-              boxShadow: (!isDisabled && !widget.isSecondary && _isHovering)
-                  ? [
-                      BoxShadow(
-                        color: activeColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [],
             ),
             child: DefaultTextStyle(
               style: TextStyle(

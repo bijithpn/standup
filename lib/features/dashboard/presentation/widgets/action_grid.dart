@@ -14,35 +14,31 @@ class ActionGrid extends StatelessWidget {
       builder: (context, controller, _) {
         final companionActive = controller.companionEnabled;
 
-        return Row(
+        return Column(
           children: [
-            Expanded(
-              child: _ActionCard(
-                title: AppStrings.companion,
-                subtitle: companionActive
-                    ? (controller.timerEngine.state == TimerState.running
-                          ? 'Active and watching'
-                          : 'Resting')
-                    : 'Disabled in settings',
-                icon: Icons.pets_rounded,
-                isActive: companionActive,
-                onTap: () => controller.toggleCompanion(),
-                semanticsLabel: 'Toggle desktop companion',
-              ),
+            _ActionCard(
+              title: AppStrings.companion,
+              subtitle: companionActive
+                  ? (controller.timerEngine.state == TimerState.running
+                        ? 'Active and watching'
+                        : 'Resting')
+                  : 'Disabled in settings',
+              icon: Icons.pets_rounded,
+              isActive: companionActive,
+              onTap: () => controller.toggleCompanion(),
+              semanticsLabel: 'Toggle desktop companion',
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _ActionCard(
-                title: AppStrings.quietMode,
-                subtitle: controller.quietModeEnabled
-                    ? 'All alerts silenced'
-                    : 'Notifications on',
-                icon: Icons.do_not_disturb_on_rounded,
-                isActive: controller.quietModeEnabled,
-                onTap: () => controller.toggleQuietMode(),
-                semanticsLabel: 'Toggle quiet mode',
-              ),
+            _ActionCard(
+              title: AppStrings.quietMode,
+              subtitle: controller.quietModeEnabled
+                  ? 'All alerts silenced'
+                  : 'Notifications on',
+              icon: Icons.do_not_disturb_on_rounded,
+              isActive: controller.quietModeEnabled,
+              onTap: () => controller.toggleQuietMode(),
+              semanticsLabel: 'Toggle quiet mode',
             ),
+            Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
           ],
         );
       },
@@ -74,54 +70,54 @@ class _ActionCard extends StatelessWidget {
       button: true,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: AppTheme.cardDecoration(),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? AppTheme.accent.withValues(alpha: 0.1)
-                      : AppTheme.surfaceElevated,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: isActive ? AppTheme.accent : AppTheme.textMuted,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: isActive
-                            ? AppTheme.textPrimary
-                            : AppTheme.textSecondary,
-                      ),
+        child: Column(
+          children: [
+            Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
+              child: Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: isActive ? AppTheme.textPrimary : AppTheme.textMuted,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppTheme.textSecondary,
-                      ),
+                  ),
+                  Text(
+                    isActive ? 'On' : 'Off',
+                    style: TextStyle(
+                      fontFamilyFallback: const ['Menlo', 'monospace'],
+                      fontSize: 12,
+                      color: isActive ? AppTheme.success : AppTheme.textMuted,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

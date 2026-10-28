@@ -30,82 +30,68 @@ class CategoryBudgetsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-            child: Text(
-              'Set a soft daily budget per category. A note appears once you '
-              'reach it — nothing is ever blocked.',
-              style: TextStyle(fontSize: 12, color: AppTheme.textSecondary),
-            ),
-          ),
-          for (final category in _budgetableCategories)
-            _buildRow(category, budgetMinutes[category.name] ?? 0),
-          const SizedBox(height: 4),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final category in _budgetableCategories)
+          _buildRow(category, budgetMinutes[category.name] ?? 0),
+        Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
+      ],
     );
   }
 
   Widget _buildRow(AppCategory category, int minutes) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        children: [
-          Icon(category.icon, size: 16, color: category.color),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              category.label,
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          _buildStepper(category, minutes),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepper(AppCategory category, int minutes) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    final isSet = minutes > 0;
+    return Column(
       children: [
-        _stepperButton(
-          icon: CupertinoIcons.minus,
-          enabled: minutes > 0,
-          onPressed: () => _setMinutes(
-            category,
-            (minutes - _stepMinutes).clamp(0, _maxMinutes),
-          ),
-        ),
-        SizedBox(
-          width: 76,
-          child: Text(
-            minutes <= 0 ? 'No budget' : formatUsageDuration(minutes * 60),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: minutes > 0 ? AppTheme.textPrimary : AppTheme.textMuted,
-            ),
-          ),
-        ),
-        _stepperButton(
-          icon: CupertinoIcons.plus,
-          enabled: minutes < _maxMinutes,
-          onPressed: () => _setMinutes(
-            category,
-            (minutes + _stepMinutes).clamp(0, _maxMinutes),
+        Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
+          child: Row(
+            children: [
+              Icon(category.icon, size: 16, color: AppTheme.textSecondary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  category.label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ),
+              _stepperButton(
+                icon: CupertinoIcons.minus,
+                tooltip: 'Decrease ${category.label} budget',
+                enabled: isSet,
+                onPressed: () => _setMinutes(
+                  category,
+                  (minutes - _stepMinutes).clamp(0, _maxMinutes),
+                ),
+              ),
+              SizedBox(
+                width: 76,
+                child: Text(
+                  isSet ? formatUsageDuration(minutes * 60) : 'Off',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamilyFallback: const ['Menlo', 'monospace'],
+                    fontSize: 13,
+                    color: isSet ? AppTheme.textPrimary : AppTheme.textMuted,
+                  ),
+                ),
+              ),
+              _stepperButton(
+                icon: CupertinoIcons.plus,
+                tooltip: 'Increase ${category.label} budget',
+                enabled: minutes < _maxMinutes,
+                onPressed: () => _setMinutes(
+                  category,
+                  (minutes + _stepMinutes).clamp(0, _maxMinutes),
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -114,20 +100,28 @@ class CategoryBudgetsCard extends StatelessWidget {
 
   Widget _stepperButton({
     required IconData icon,
+    required String tooltip,
     required bool enabled,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: 28,
-      height: 28,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        iconSize: 14,
-        icon: Icon(
-          icon,
-          color: enabled ? AppTheme.accentColor : AppTheme.textMuted,
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: enabled ? onPressed : null,
+        borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppTheme.radiusXs),
+            border: Border.all(color: AppTheme.border),
+          ),
+          child: Icon(
+            icon,
+            size: 13,
+            color: enabled ? AppTheme.textPrimary : AppTheme.textMuted,
+          ),
         ),
-        onPressed: enabled ? onPressed : null,
       ),
     );
   }

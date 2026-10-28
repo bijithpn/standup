@@ -44,8 +44,10 @@ class DailySummarySection extends StatelessWidget {
         final rate = total == 0 ? null : (done / total * 100).round();
 
         return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: AppTheme.cardDecoration(),
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            border: Border(top: BorderSide(color: AppTheme.borderSubtle)),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -58,7 +60,7 @@ class DailySummarySection extends StatelessWidget {
                         Text(
                           'Break activity',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: AppTheme.textPrimary,
                           ),
@@ -79,11 +81,11 @@ class DailySummarySection extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               ClipRRect(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
                   value: goal <= 0 ? 0 : (done / goal).clamp(0.0, 1.0),
-                  minHeight: 8,
-                  color: done >= goal ? AppTheme.success : AppTheme.accent,
+                  minHeight: 4,
+                  color: done >= goal ? AppTheme.success : AppTheme.textPrimary,
                   backgroundColor: AppTheme.border,
                 ),
               ),
@@ -108,22 +110,22 @@ class DailySummarySection extends StatelessWidget {
                         _StatItem(
                           label: AppStrings.completed,
                           value: '$done',
-                          color: AppTheme.success,
+                          color: AppTheme.textPrimary,
                         ),
                         _StatItem(
                           label: AppStrings.skipped,
                           value: '$skipped',
-                          color: AppTheme.error,
+                          color: AppTheme.textPrimary,
                         ),
                         _StatItem(
                           label: 'Kept',
                           value: rate == null ? '–' : '$rate%',
-                          color: AppTheme.accent,
+                          color: AppTheme.textPrimary,
                         ),
                         _StatItem(
                           label: 'Worked',
                           value: _formatWork(workToday),
-                          color: AppTheme.warning,
+                          color: AppTheme.textPrimary,
                         ),
                       ],
                     );
@@ -182,20 +184,12 @@ class _GoalChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final met = done >= goal && goal > 0;
-    final color = met ? AppTheme.success : AppTheme.accent;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        met ? 'Goal reached · $done / $goal' : '$done / $goal breaks',
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: color,
-        ),
+    return Text(
+      met ? 'Goal reached · $done / $goal' : '$done / $goal breaks',
+      style: TextStyle(
+        fontFamilyFallback: const ['Menlo', 'monospace'],
+        fontSize: 12,
+        color: met ? AppTheme.success : AppTheme.textSecondary,
       ),
     );
   }
@@ -212,10 +206,10 @@ class _EventChip extends StatelessWidget {
     final h = event.time.hour.toString().padLeft(2, '0');
     final m = event.time.minute.toString().padLeft(2, '0');
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppTheme.border),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXs),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -229,9 +223,9 @@ class _EventChip extends StatelessWidget {
           Text(
             '$h:$m',
             style: TextStyle(
+              fontFamilyFallback: const ['Menlo', 'monospace'],
               fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
+              color: AppTheme.textPrimary,
             ),
           ),
         ],
@@ -272,20 +266,9 @@ class _RecommendationChip extends StatelessWidget {
   }
 
   Widget _buildChip(String recommendation) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppTheme.accent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(100),
-      ),
-      child: Text(
-        recommendation,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: AppTheme.accent,
-        ),
-      ),
+    return Text(
+      recommendation,
+      style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
     );
   }
 }
@@ -308,9 +291,9 @@ class _StatItem extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            fontSize: 32,
-            fontWeight: FontWeight.w600,
-            color: color,
+            fontFamilyFallback: const ['Georgia', 'Times New Roman'],
+            fontSize: 34,
+            color: AppTheme.textPrimary,
             letterSpacing: -1,
           ),
         ),

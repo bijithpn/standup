@@ -55,66 +55,62 @@ class GoalsSection extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _SummaryHero(overall: overall, metCount: metCount),
-                const SizedBox(height: 16),
-                _GoalCard(
-                  icon: Icons.timer_outlined,
-                  color: AppTheme.accent,
+                _Summary(overall: overall, metCount: metCount),
+                _GoalRow(
+                  index: 1,
                   title: 'Daily focus time',
                   effect:
                       'Counts the time your work timer has run today. '
                       'Resets each morning.',
-                  progressLabel:
-                      '${_hm(worked)} of ${s.dailyWorkGoalHours}h today',
+                  current: _hm(worked),
+                  target: '${s.dailyWorkGoalHours}h',
                   progress: focusP,
                   value: s.dailyWorkGoalHours.toDouble(),
                   min: 1,
                   max: 12,
-                  valueLabel: '${s.dailyWorkGoalHours}h',
                   onChanged: (v) =>
                       repo.save(s.copyWith(dailyWorkGoalHours: v.round())),
                 ),
-                _GoalCard(
-                  icon: Icons.self_improvement_rounded,
-                  color: AppTheme.shortBreak,
+                _GoalRow(
+                  index: 2,
                   title: 'Daily breaks',
                   effect:
                       'Counts breaks you complete (skipped ones don\'t). '
                       'Resets each morning.',
-                  progressLabel:
-                      '${stats.breaksCompleted} of ${s.dailyBreakGoalCount} today',
+                  current: '${stats.breaksCompleted}',
+                  target: '${s.dailyBreakGoalCount}',
                   progress: breakP,
                   value: s.dailyBreakGoalCount.toDouble(),
                   min: 1,
                   max: 30,
-                  valueLabel: '${s.dailyBreakGoalCount}',
                   onChanged: (v) =>
                       repo.save(s.copyWith(dailyBreakGoalCount: v.round())),
                 ),
-                _GoalCard(
-                  icon: Icons.local_fire_department_outlined,
-                  color: AppTheme.warning,
+                _GoalRow(
+                  index: 3,
                   title: 'Weekly consistency',
                   effect:
                       'A day counts when you complete at least one break. '
                       'Looks at the last 7 days.',
-                  progressLabel:
-                      '$activeDays of ${s.weeklyConsistencyTargetDays} days',
+                  current: '$activeDays',
+                  target:
+                      '${s.weeklyConsistencyTargetDays} day${s.weeklyConsistencyTargetDays == 1 ? '' : 's'}',
                   progress: weekP,
                   value: s.weeklyConsistencyTargetDays.toDouble(),
                   min: 1,
                   max: 7,
-                  valueLabel:
-                      '${s.weeklyConsistencyTargetDays} day${s.weeklyConsistencyTargetDays == 1 ? '' : 's'}',
                   onChanged: (v) => repo.save(
                     s.copyWith(weeklyConsistencyTargetDays: v.round()),
                   ),
+                  last: true,
                 ),
+                const SizedBox(height: 20),
                 sectionHeader(
                   'App time budgets',
                   subtitle: s.appUsageTrackingEnabled
-                      ? 'Daily limits per kind of app. You get a gentle nudge '
-                            'in your insights when one is exceeded.'
+                      ? 'Soft daily limits per kind of app. A note shows in '
+                            'your insights once you reach one. Nothing is '
+                            'ever blocked.'
                       : 'Needs app usage tracking, which is off. Turn it on '
                             'in Privacy to use budgets.',
                 ),
@@ -140,89 +136,71 @@ class GoalsSection extends StatelessWidget {
   }
 }
 
-class _SummaryHero extends StatelessWidget {
+const _serif = ['Georgia', 'Times New Roman'];
+
+/// Hairline used between goals instead of boxing each one in a card.
+Widget _rule() =>
+    Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle);
+
+class _Summary extends StatelessWidget {
   final double overall;
   final int metCount;
 
-  const _SummaryHero({required this.overall, required this.metCount});
+  const _Summary({required this.overall, required this.metCount});
 
   @override
   Widget build(BuildContext context) {
-    final accent = AppTheme.accent;
-    final headline = metCount == 3
-        ? 'All goals reached'
-        : metCount == 0
-        ? 'Let\'s get started'
-        : '$metCount of 3 goals reached';
-    return Container(
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [accent.withValues(alpha: 0.22), AppTheme.surfaceCard],
-        ),
-        border: Border.all(color: accent.withValues(alpha: 0.25)),
-      ),
-      child: Row(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 28),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: overall.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 700),
-            curve: Curves.easeOutCubic,
-            builder: (context, v, _) => SizedBox(
-              width: 92,
-              height: 92,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox.expand(
-                    child: CircularProgressIndicator(
-                      value: v,
-                      strokeWidth: 9,
-                      strokeCap: StrokeCap.round,
-                      color: metCount == 3 ? AppTheme.success : accent,
-                      backgroundColor: AppTheme.border,
-                    ),
-                  ),
-                  Text(
-                    '${(v * 100).round()}%',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+          Text(
+            'TODAY',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.2,
+              color: AppTheme.textMuted,
             ),
           ),
-          const SizedBox(width: 22),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  headline,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                    color: AppTheme.textPrimary,
-                  ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                '$metCount',
+                style: TextStyle(
+                  fontFamilyFallback: _serif,
+                  fontSize: 52,
+                  height: 1,
+                  letterSpacing: -1.5,
+                  color: AppTheme.textPrimary,
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  'Targets to aim for. BreakMate tracks your progress but '
-                  'never blocks you or forces a break when you reach one.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.4,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'of 3 goals reached',
+                style: TextStyle(fontSize: 15, color: AppTheme.textSecondary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 18),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: overall.clamp(0.0, 1.0)),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOutCubic,
+            builder: (context, v, _) => _Hairline(value: v, height: 3),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            'Targets to aim for. BreakMate tracks your progress but never '
+            'blocks you or forces a break when you reach one.',
+            style: TextStyle(
+              fontSize: 12.5,
+              height: 1.5,
+              color: AppTheme.textSecondary,
             ),
           ),
         ],
@@ -231,174 +209,182 @@ class _SummaryHero extends StatelessWidget {
   }
 }
 
-class _GoalCard extends StatelessWidget {
-  final IconData icon;
-  final Color color;
+/// Flat progress line: square ends, no rounded caps.
+class _Hairline extends StatelessWidget {
+  final double value;
+  final double height;
+  final bool met;
+
+  const _Hairline({required this.value, this.height = 2, this.met = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) => Stack(
+        children: [
+          Container(height: height, color: AppTheme.border),
+          Container(
+            height: height,
+            width: c.maxWidth * value.clamp(0.0, 1.0),
+            color: met ? AppTheme.success : AppTheme.textPrimary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalRow extends StatelessWidget {
+  final int index;
   final String title;
   final String effect;
-  final String progressLabel;
+  final String current;
+  final String target;
   final double progress;
   final double value;
   final double min;
   final double max;
-  final String valueLabel;
   final ValueChanged<double> onChanged;
+  final bool last;
 
-  const _GoalCard({
-    required this.icon,
-    required this.color,
+  const _GoalRow({
+    required this.index,
     required this.title,
     required this.effect,
-    required this.progressLabel,
+    required this.current,
+    required this.target,
     required this.progress,
     required this.value,
     required this.min,
     required this.max,
-    required this.valueLabel,
     required this.onChanged,
+    this.last = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final met = progress >= 1;
-    final tint = met ? AppTheme.success : color;
-    final pct = (progress.clamp(0.0, 1.0) * 100).round();
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-      decoration: AppTheme.cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _rule(),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 20, 4, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                ),
-                child: Icon(
-                  met ? Icons.check_rounded : icon,
-                  size: 22,
-                  color: tint,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    '0$index',
+                    style: TextStyle(
+                      fontFamilyFallback: const ['Menlo', 'monospace'],
+                      fontSize: 11,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
                       title,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         color: AppTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                  ),
+                  if (met)
                     Text(
-                      progressLabel,
+                      'Reached',
                       style: TextStyle(
-                        fontSize: 12.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: tint,
+                        color: AppTheme.success,
                       ),
                     ),
-                  ],
-                ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: tint.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  met ? 'Reached' : '$pct%',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: tint,
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    current,
+                    style: TextStyle(
+                      fontFamilyFallback: _serif,
+                      fontSize: 30,
+                      height: 1,
+                      letterSpacing: -0.8,
+                      color: AppTheme.textPrimary,
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'of $target',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
-            duration: const Duration(milliseconds: 600),
-            curve: Curves.easeOutCubic,
-            builder: (context, v, _) => ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: LinearProgressIndicator(
-                value: v,
-                minHeight: 8,
-                color: tint,
-                backgroundColor: AppTheme.border,
+              const SizedBox(height: 14),
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: progress.clamp(0.0, 1.0)),
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.easeOutCubic,
+                builder: (context, v, _) => _Hairline(value: v, met: met),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            effect,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.35,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Divider(height: 1, thickness: 0.5, color: AppTheme.separatorColor),
-          Row(
-            children: [
+              const SizedBox(height: 12),
               Text(
-                'Target',
-                style: TextStyle(fontSize: 12.5, color: AppTheme.textSecondary),
-              ),
-              Expanded(
-                child: Slider(
-                  value: value.clamp(min, max),
-                  min: min,
-                  max: max,
-                  divisions: (max - min).round(),
-                  label: valueLabel,
-                  activeColor: color,
-                  onChanged: onChanged,
+                effect,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 1.5,
+                  color: AppTheme.textSecondary,
                 ),
               ),
-              _StepButton(
-                icon: Icons.remove_rounded,
-                tooltip: 'Decrease target',
-                onTap: value > min ? () => onChanged(value - 1) : null,
-              ),
-              SizedBox(
-                width: 64,
-                child: Text(
-                  valueLabel,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Text(
+                    'Target',
+                    style: TextStyle(fontSize: 12.5, color: AppTheme.textMuted),
                   ),
-                ),
-              ),
-              _StepButton(
-                icon: Icons.add_rounded,
-                tooltip: 'Increase target',
-                onTap: value < max ? () => onChanged(value + 1) : null,
+                  const Spacer(),
+                  _StepButton(
+                    icon: Icons.remove,
+                    tooltip: 'Decrease target',
+                    onTap: value > min ? () => onChanged(value - 1) : null,
+                  ),
+                  SizedBox(
+                    width: 64,
+                    child: Text(
+                      target,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamilyFallback: const ['Menlo', 'monospace'],
+                        fontSize: 13,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ),
+                  _StepButton(
+                    icon: Icons.add,
+                    tooltip: 'Increase target',
+                    onTap: value < max ? () => onChanged(value + 1) : null,
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        ),
+        if (last) _rule(),
+      ],
     );
   }
 }
@@ -420,18 +406,17 @@ class _StepButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+        borderRadius: BorderRadius.circular(AppTheme.radiusXs),
         child: Container(
-          width: 30,
-          height: 30,
+          width: 28,
+          height: 28,
           decoration: BoxDecoration(
-            color: AppTheme.surfaceElevated,
-            borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            borderRadius: BorderRadius.circular(AppTheme.radiusXs),
             border: Border.all(color: AppTheme.border),
           ),
           child: Icon(
             icon,
-            size: 16,
+            size: 14,
             color: onTap == null ? AppTheme.textMuted : AppTheme.textPrimary,
           ),
         ),

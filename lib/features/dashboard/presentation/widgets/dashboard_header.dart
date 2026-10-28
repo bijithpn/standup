@@ -13,17 +13,18 @@ class DashboardHeader extends StatelessWidget {
         Text(
           _getGreeting(),
           style: TextStyle(
-            fontSize: 28,
-            fontWeight: FontWeight.w600,
+            fontFamilyFallback: const ['Georgia', 'Times New Roman'],
+            fontSize: 34,
+            height: 1.1,
             color: AppTheme.textPrimary,
-            letterSpacing: -0.5,
+            letterSpacing: -1,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           AppStrings.dashboardSubtitle,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.w400,
             color: AppTheme.textSecondary,
           ),

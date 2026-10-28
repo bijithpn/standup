@@ -36,23 +36,21 @@ Widget sectionHeader(String title, {String? subtitle}) {
   );
 }
 
+/// A group of rows: no box, just hairlines above and below (same as Goals).
 Widget buildCard(List<Widget> children) {
   return Container(
     margin: const EdgeInsets.only(bottom: 32),
-    decoration: AppTheme.cardDecoration(),
-    clipBehavior: Clip.antiAlias,
+    decoration: BoxDecoration(
+      border: Border.symmetric(
+        horizontal: BorderSide(color: AppTheme.borderSubtle),
+      ),
+    ),
     child: Column(children: children),
   );
 }
 
 Widget divider() {
-  return Divider(
-    height: 1,
-    thickness: 0.5,
-    color: AppTheme.separatorColor,
-    indent: 16,
-    endIndent: 16,
-  );
+  return Divider(height: 1, thickness: 1, color: AppTheme.borderSubtle);
 }
 
 Widget toggleRow(
@@ -63,7 +61,7 @@ Widget toggleRow(
 ) {
   return MergeSemantics(
     child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
       child: Row(
         children: [
           Expanded(
@@ -114,7 +112,7 @@ Widget inputRow(
   Widget? trailing,
 }) {
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 14),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -280,7 +278,7 @@ Widget textFieldRow(
   ValueChanged<String> onChanged,
 ) {
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -325,18 +323,11 @@ Widget buildListRow(
   Widget? trailing,
 }) {
   final content = Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
     child: Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.05),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(icon, color: AppTheme.accentColor, size: 18),
-        ),
-        const SizedBox(width: 16),
+        Icon(icon, color: AppTheme.textSecondary, size: 18),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -537,57 +528,57 @@ Widget segmentedControl(
   bool isSmall = false,
 }) {
   return Container(
-    padding: const EdgeInsets.all(2),
+    width: double.infinity,
     decoration: BoxDecoration(
-      color: AppTheme.surfaceElevated,
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: AppTheme.border, width: 0.5),
+      border: Border(bottom: BorderSide(color: AppTheme.borderSubtle)),
     ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: options.asMap().entries.map((entry) {
-        final isSelected = entry.key == selected;
-        return Semantics(
-          button: true,
-          selected: isSelected,
-          label: entry.value,
-          excludeSemantics: true,
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () => onSelected(entry.key),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmall ? 12 : 16,
-                  vertical: isSmall ? 6 : 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.accentColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppTheme.accentColor.withValues(alpha: 0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : null,
-                ),
-                child: Text(
-                  entry.value,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : AppTheme.textSecondary,
-                    fontSize: isSmall ? 11 : 12,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: options.asMap().entries.map((entry) {
+          final isSelected = entry.key == selected;
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            label: entry.value,
+            excludeSemantics: true,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onSelected(entry.key),
+                child: Container(
+                  margin: const EdgeInsets.only(right: 24),
+                  padding: EdgeInsets.symmetric(vertical: isSmall ? 8 : 10),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        width: 2,
+                        color: isSelected
+                            ? AppTheme.textPrimary
+                            : Colors.transparent,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    entry.value,
+                    style: TextStyle(
+                      color: isSelected
+                          ? AppTheme.textPrimary
+                          : AppTheme.textMuted,
+                      fontSize: isSmall ? 12 : 13,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     ),
   );
 }
@@ -605,7 +596,7 @@ Widget actionRow({
       : (buttonColor ?? AppTheme.accentColor);
 
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
     child: Row(
       children: [
         Expanded(
@@ -656,7 +647,7 @@ Widget actionRow({
 
 Widget colorRow(String label, Color color) {
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 16),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -676,9 +667,6 @@ Widget colorRow(String label, Color color) {
             color: color,
             borderRadius: BorderRadius.circular(6),
             border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-            boxShadow: [
-              BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 6),
-            ],
           ),
         ),
       ],

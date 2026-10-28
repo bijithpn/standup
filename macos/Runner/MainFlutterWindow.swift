@@ -532,6 +532,10 @@ class MainFlutterWindow: NSWindow {
   }
 
   override func awakeFromNib() {
+    // A debug launch inherits the terminal's cwd; when macOS denies access to
+    // it (e.g. a protected folder), Dart's Uri.base / package:path throw and
+    // storage init fails. Start from a directory we can always read.
+    FileManager.default.changeCurrentDirectoryPath(NSHomeDirectory())
     MainFlutterWindow.shared = self
     // Open on whichever Space the user is on (including full-screen apps)
     // instead of switching back to the Space the window was created in.
