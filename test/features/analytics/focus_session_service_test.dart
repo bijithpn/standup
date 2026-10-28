@@ -44,6 +44,34 @@ void main() {
     });
   });
 
+  test('clear removes sessions from memory, storage and notifies', () {
+    withClock(testClock, () {
+      final service = FocusSessionService(storage: StorageService());
+      service.recordSession(
+        FocusSession(
+          category: AppCategory.coding,
+          start: DateTime(2026, 8, 31, 9, 0),
+          durationSeconds: 1200,
+        ),
+      );
+      var notified = 0;
+      service.addListener(() => notified++);
+
+      service.clear();
+
+      expect(service.sessionsForDate('2026-08-31'), isEmpty);
+      expect(service.focusSecondsForDate('2026-08-31'), 0);
+      expect(notified, 1);
+      // A fresh instance reading storage sees nothing either.
+      expect(
+        FocusSessionService(
+          storage: StorageService(),
+        ).sessionsForDate('2026-08-31'),
+        isEmpty,
+      );
+    });
+  });
+
   test('focusScore is the share of total active seconds', () {
     withClock(testClock, () {
       final service = FocusSessionService(storage: StorageService());

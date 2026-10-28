@@ -1,6 +1,6 @@
 import 'dart:developer' as developer;
 import 'package:flutter/services.dart';
-import 'package:breakmate/core/native/native_bridge.dart';
+import 'package:breakmate/core/native/native_bridge_types.dart';
 import 'package:breakmate/core/utils/logger.dart';
 
 class WindowsBridge implements NativeBridgePlatform {
