@@ -182,6 +182,15 @@ class CalendarBridge {
             return
         }
 
+        // A menu-bar app is not frontmost by default, and macOS only shows the
+        // Calendar prompt for an active app; without this the request silently
+        // never surfaces.
+        if Thread.isMainThread {
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            DispatchQueue.main.sync { NSApp.activate(ignoringOtherApps: true) }
+        }
+
         // We create a fresh store for the request.
         let requestStore = EKEventStore()
         self.activeRequestStore = requestStore

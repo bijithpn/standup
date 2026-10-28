@@ -136,23 +136,57 @@ class _StatusCard extends StatelessWidget {
       ),
     };
 
+    ButtonStyle filled() => FilledButton.styleFrom(
+      backgroundColor: AppTheme.accentColor,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: AppTheme.accentColor.withValues(alpha: 0.5),
+      disabledForegroundColor: Colors.white70,
+    );
+    ButtonStyle outlined() => OutlinedButton.styleFrom(
+      foregroundColor: AppTheme.textPrimary,
+      side: BorderSide(color: AppTheme.border),
+    );
+
     final actions = <Widget>[
       switch (c.state) {
         CalendarConnectionState.disconnected ||
         CalendarConnectionState.permissionNeeded => FilledButton(
+          style: filled(),
           onPressed: c.isRequesting ? null : c.connect,
-          child: Text(c.isRequesting ? 'Requesting…' : 'Connect'),
+          child: c.isRequesting
+              ? const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text('Requesting…'),
+                  ],
+                )
+              : const Text('Connect'),
         ),
         CalendarConnectionState.permissionBlocked => FilledButton(
+          style: filled(),
           onPressed: c.openSystemSettings,
           child: const Text('Open System Settings'),
         ),
         CalendarConnectionState.connected ||
         CalendarConnectionState.error => OutlinedButton(
+          style: outlined(),
           onPressed: () => c.refresh(force: true),
           child: const Text('Sync now'),
         ),
-        CalendarConnectionState.checking => const SizedBox.shrink(),
+        CalendarConnectionState.checking => OutlinedButton(
+          style: outlined(),
+          onPressed: null,
+          child: const Text('Checking…'),
+        ),
       },
       if (c.state == CalendarConnectionState.permissionBlocked ||
           c.state == CalendarConnectionState.permissionNeeded)

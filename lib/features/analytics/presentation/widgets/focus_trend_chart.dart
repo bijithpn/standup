@@ -3,89 +3,103 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:breakmate/features/analytics/focus_trend.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
-/// A line chart of daily Focus Score over [points] — the trend view the
-/// single "today" percentage on [FocusScoreCard] doesn't give: is focus
-/// improving or slipping, not just what it is right now. Mirrors
-/// [ProductivityTrendChart]'s visual language (accent color, no grid,
-/// bordered tooltips) so the two read as one system.
+/// Daily Focus Score over [points]: a smooth line with a soft gradient fill,
+/// faint 0/50/100 guides, and a marker only on the latest day. Touch a point
+/// for its exact value.
 class FocusTrendChart extends StatelessWidget {
   final List<FocusTrendPoint> points;
 
   const FocusTrendChart({super.key, required this.points});
 
+  static const _weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  static const _months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   @override
   Widget build(BuildContext context) {
     if (points.isEmpty) return const SizedBox.shrink();
 
-    final spots = points.asMap().entries.map((e) {
-      return FlSpot(e.key.toDouble(), (e.value.focusScore * 100).clamp(0, 100));
-    }).toList();
-
-    const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    // Weekday names above ~10 points crowd the axis, so a longer trend (the
-    // 30-day "Month" view) falls back to a sparse day-of-month label.
-    final useWeekdayLabels = points.length <= 10;
-    // Roughly 6 labels across the axis regardless of how many points there
-    // are, always including the last (most recent) point.
-    final labelInterval = (points.length / 6).ceil().clamp(1, points.length);
-    String labelFor(int i) => useWeekdayLabels
-        ? weekdayLabels[points[i].date.weekday % 7]
+    final accent = AppTheme.accentColor;
+    final last = points.length - 1;
+    final spots = [
+      for (var i = 0; i < points.length; i++)
+        FlSpot(i.toDouble(), (points[i].focusScore * 100).clamp(0, 100)),
+    ];
+    // Weekday names crowd the axis past ~10 points; fall back to day numbers.
+    final weekly = points.length <= 10;
+    final step = weekly ? 1 : (points.length / 6).ceil();
+    String label(int i) => weekly
+        ? _weekdays[points[i].date.weekday % 7]
         : '${points[i].date.day}';
-    bool shouldShowLabel(int i) =>
-        useWeekdayLabels || i == points.length - 1 || i % labelInterval == 0;
 
     return LineChart(
       LineChartData(
         minY: 0,
         maxY: 100,
-        gridData: const FlGridData(show: false),
+        minX: 0,
+        maxX: last.toDouble(),
         borderData: FlBorderData(show: false),
-        lineTouchData: LineTouchData(
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipColor: (_) => Colors.black.withValues(alpha: 0.8),
-            tooltipBorderRadius: BorderRadius.circular(8),
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                final label = labelFor(spot.x.toInt());
-                return LineTooltipItem(
-                  '$label\n${spot.y.round()}% focus',
-                  const TextStyle(color: Colors.white, fontSize: 12),
-                );
-              }).toList();
-            },
+        gridData: FlGridData(
+          drawVerticalLine: false,
+          horizontalInterval: 50,
+          getDrawingHorizontalLine: (_) => FlLine(
+            color: AppTheme.border.withValues(alpha: 0.7),
+            strokeWidth: 1,
+            dashArray: [4, 4],
           ),
         ),
         titlesData: FlTitlesData(
-          rightTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          topTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
-          ),
-          leftTitles: const AxisTitles(
-            sideTitles: SideTitles(showTitles: false),
+          topTitles: const AxisTitles(),
+          rightTitles: const AxisTitles(),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 34,
+              interval: 50,
+              getTitlesWidget: (v, meta) => SideTitleWidget(
+                meta: meta,
+                child: Text(
+                  '${v.toInt()}%',
+                  style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
+                ),
+              ),
+            ),
           ),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 28,
+              reservedSize: 26,
               interval: 1,
-              getTitlesWidget: (value, meta) {
-                final i = value.toInt();
-                if (i < 0 || i >= points.length) return const SizedBox.shrink();
-                if (!shouldShowLabel(i)) return const SizedBox.shrink();
-                final isToday = i == points.length - 1;
+              getTitlesWidget: (v, meta) {
+                final i = v.toInt();
+                if (v != i.toDouble() || i < 0 || i > last) {
+                  return const SizedBox.shrink();
+                }
+                if (i != last && (i % step != 0 || last - i < step ~/ 2 + 1)) {
+                  return const SizedBox.shrink();
+                }
+                final today = i == last;
                 return SideTitleWidget(
                   meta: meta,
                   space: 6,
                   child: Text(
-                    labelFor(i),
-                    style: AppTheme.sectionTitle.copyWith(
-                      fontSize: 11,
-                      fontWeight: isToday ? FontWeight.w700 : FontWeight.w500,
-                      color: isToday
-                          ? AppTheme.accentColor
-                          : AppTheme.textMuted.withValues(alpha: 0.8),
+                    today ? 'Today' : label(i),
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: today ? FontWeight.w700 : FontWeight.w500,
+                      color: today ? accent : AppTheme.textMuted,
                     ),
                   ),
                 );
@@ -93,16 +107,74 @@ class FocusTrendChart extends StatelessWidget {
             ),
           ),
         ),
+        lineTouchData: LineTouchData(
+          getTouchedSpotIndicator: (bar, indexes) => [
+            for (final _ in indexes)
+              TouchedSpotIndicatorData(
+                FlLine(color: accent.withValues(alpha: 0.4), strokeWidth: 1),
+                FlDotData(
+                  getDotPainter: (s, p, b, i) => FlDotCirclePainter(
+                    radius: 5,
+                    color: accent,
+                    strokeWidth: 2,
+                    strokeColor: AppTheme.surfaceCard,
+                  ),
+                ),
+              ),
+          ],
+          touchTooltipData: LineTouchTooltipData(
+            getTooltipColor: (_) => AppTheme.surfaceElevated,
+            tooltipBorder: BorderSide(color: AppTheme.border),
+            tooltipBorderRadius: BorderRadius.circular(8),
+            getTooltipItems: (touched) => [
+              for (final s in touched)
+                LineTooltipItem(
+                  '${points[s.x.toInt()].date.day} '
+                  '${_months[points[s.x.toInt()].date.month - 1]}\n',
+                  TextStyle(fontSize: 11, color: AppTheme.textMuted),
+                  children: [
+                    TextSpan(
+                      text: '${s.y.round()}% focus',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
         lineBarsData: [
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: AppTheme.accentColor,
-            barWidth: 3,
-            dotData: const FlDotData(show: true),
+            curveSmoothness: 0.25,
+            preventCurveOverShooting: true,
+            color: accent,
+            barWidth: 2.5,
+            isStrokeCapRound: true,
+            dotData: FlDotData(
+              show: true,
+              checkToShowDot: (s, _) => s.x == last.toDouble(),
+              getDotPainter: (s, p, b, i) => FlDotCirclePainter(
+                radius: 4.5,
+                color: accent,
+                strokeWidth: 2.5,
+                strokeColor: AppTheme.surfaceCard,
+              ),
+            ),
             belowBarData: BarAreaData(
               show: true,
-              color: AppTheme.accentColor.withValues(alpha: 0.1),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  accent.withValues(alpha: 0.28),
+                  accent.withValues(alpha: 0.0),
+                ],
+              ),
             ),
           ),
         ],

@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:breakmate/core/errors/app_exception.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:macos_ui/macos_ui.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart' as p;
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -19,7 +18,6 @@ import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
-import 'package:breakmate/core/errors/error_handler.dart';
 import 'package:breakmate/core/utils/file_permissions.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
 
@@ -51,25 +49,55 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     }
   }
 
+  static String _stamp() {
+    final n = DateTime.now();
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${n.year}-${two(n.month)}-${two(n.day)}_${two(n.hour)}${two(n.minute)}';
+  }
+
+  /// Asks the user where to save, so the export works inside the macOS sandbox
+  /// and never silently overwrites an earlier file. Returns the path, or null
+  /// if cancelled.
+  Future<String?> _saveText(
+    String dialogTitle,
+    String fileName,
+    String ext,
+    String content,
+  ) async {
+    final path = await FilePicker.saveFile(
+      dialogTitle: dialogTitle,
+      fileName: fileName,
+      type: FileType.custom,
+      allowedExtensions: [ext],
+    );
+    if (path == null) return null;
+    final target = path.toLowerCase().endsWith('.$ext') ? path : '$path.$ext';
+    final file = File(target);
+    await file.writeAsString(content);
+    await restrictToOwner(file.path);
+    return target;
+  }
+
+  /// Lets the user choose a backup file; null if cancelled.
+  Future<({String path, String content})?> _pickFile(List<String> exts) async {
+    final result = await FilePicker.pickFiles(
+      dialogTitle: 'Import Data',
+      type: FileType.custom,
+      allowedExtensions: exts,
+    );
+    final path = result?.files.single.path;
+    if (path == null) return null;
+    return (path: path, content: await File(path).readAsString());
+  }
+
   Future<void> _exportBackupJson() async {
     try {
-      Directory? dir;
-      bool isDownloads = true;
-      try {
-        dir = await getDownloadsDirectory();
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
-      }
-
-      if (dir == null) {
-        dir = await getApplicationDocumentsDirectory();
-        isDownloads = false;
-      }
-
-      final Map<String, dynamic> backup = {
+      final backup = <String, dynamic>{
         'schemaVersion': AppConstants.backupSchemaVersion,
         'timestamp': DateTime.now().toIso8601String(),
-        'settings': _storage.settingsBox?.get(1)?.toMap() ?? {},
+        // The app's own settings format, so restore reads back what it wrote.
+        'settingsFormat': 'model',
+        'settings': sl<SettingsRepository>().currentSettings.toMap(),
         'companion': _storage.companionPreferencesBox?.get(1)?.toMap() ?? {},
         'global_stats': _storage.globalStatsBox?.get(1)?.toMap() ?? {},
         'daily_stats':
@@ -83,134 +111,157 @@ class _DataManagementSectionState extends State<DataManagementSection> {
             [],
       };
 
-      File file = File(p.join(dir.path, 'breakmate_backup.json'));
-      try {
-        await file.writeAsString(jsonEncode(backup));
-        await restrictToOwner(file.path);
-      } catch (e) {
-        if (isDownloads) {
-          dir = await getApplicationDocumentsDirectory();
-          isDownloads = false;
-          file = File(p.join(dir.path, 'breakmate_backup.json'));
-          await file.writeAsString(jsonEncode(backup));
-          await restrictToOwner(file.path);
-        } else {
-          rethrow;
-        }
-      }
-
-      if (mounted) {
-        Toast.showSuccess(
-          context,
-          isDownloads
-              ? 'Backup saved to Downloads'
-              : 'Backup saved to Documents (Downloads restricted)',
-        );
+      final saved = await _saveText(
+        'Export Backup',
+        'breakmate_backup_${_stamp()}.json',
+        'json',
+        const JsonEncoder.withIndent('  ').convert(backup),
+      );
+      if (saved != null && mounted) {
+        Toast.showSuccess(context, 'Backup saved to $saved');
       }
     } catch (e) {
       if (mounted) Toast.showError(context, 'Failed to export backup: $e');
     }
   }
 
-  Future<void> _exportStatsCsv() async {
+  Future<void> _exportStatsTable({
+    String delimiter = ',',
+    String ext = 'csv',
+  }) async {
     try {
-      Directory? dir;
-      bool isDownloads = true;
-      try {
-        dir = await getDownloadsDirectory();
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
-      }
-
-      if (dir == null) {
-        dir = await getApplicationDocumentsDirectory();
-        isDownloads = false;
-      }
-
       final stats = _storage.dailyStatsBox?.getAll() ?? [];
       stats.sort((a, b) => b.date.compareTo(a.date));
 
-      final buffer = StringBuffer();
-      buffer.writeln(
-        'Date,BreaksCompleted,BreaksSkipped,UsageMinutes,WellnessActions',
-      );
-
+      final header = [
+        'Date',
+        'BreaksCompleted',
+        'BreaksSkipped',
+        'UsageMinutes',
+        'WellnessActions',
+      ].join(delimiter);
+      final buffer = StringBuffer()..writeln(header);
       for (final s in stats) {
         buffer.writeln(
-          '${s.date},${s.breaksCompleted},${s.breaksSkipped},${s.usageMinutes},${s.wellnessActions}',
+          [
+            s.date,
+            s.breaksCompleted,
+            s.breaksSkipped,
+            s.usageMinutes,
+            s.wellnessActions,
+          ].join(delimiter),
         );
       }
 
-      File file = File(p.join(dir.path, 'breakmate_stats.csv'));
-      try {
-        await file.writeAsString(buffer.toString());
-      } catch (e) {
-        if (isDownloads) {
-          dir = await getApplicationDocumentsDirectory();
-          isDownloads = false;
-          file = File(p.join(dir.path, 'breakmate_stats.csv'));
-          await file.writeAsString(buffer.toString());
-        } else {
-          rethrow;
-        }
-      }
-
-      if (mounted) {
-        Toast.showSuccess(
-          context,
-          isDownloads
-              ? 'Stats exported to Downloads'
-              : 'Stats exported to Documents (Downloads restricted)',
-        );
+      final saved = await _saveText(
+        'Export Stats (${ext.toUpperCase()})',
+        'breakmate_stats_${_stamp()}.$ext',
+        ext,
+        buffer.toString(),
+      );
+      if (saved != null && mounted) {
+        Toast.showSuccess(context, 'Stats exported to $saved');
       }
     } catch (e) {
-      if (mounted) Toast.showError(context, 'Failed to export CSV: $e');
+      if (mounted) {
+        Toast.showError(context, 'Failed to export ${ext.toUpperCase()}: $e');
+      }
     }
   }
 
-  Future<void> _importBackupJson() async {
+  Future<void> _showExportOptions() async {
+    final choice = await showCupertinoModalPopup<String>(
+      context: context,
+      builder: (ctx) => CupertinoActionSheet(
+        title: const Text('Export as'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(ctx, 'json'),
+            child: const Text('JSON — full backup (settings + stats)'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(ctx, 'csv'),
+            child: const Text('CSV — daily stats'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(ctx, 'tsv'),
+            child: const Text('TSV — daily stats (tab separated)'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('Cancel'),
+        ),
+      ),
+    );
+    switch (choice) {
+      case 'json':
+        await _exportBackupJson();
+      case 'csv':
+        await _exportStatsTable();
+      case 'tsv':
+        await _exportStatsTable(delimiter: '\t', ext: 'tsv');
+    }
+  }
+
+  /// One import entry point: the file's type decides how it is read.
+  Future<void> _importData() async {
     try {
-      Directory? dir;
-      try {
-        dir = await getDownloadsDirectory();
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
+      final picked = await _pickFile(['json', 'csv', 'tsv']);
+      if (picked == null) return;
+      final isJson =
+          picked.path.toLowerCase().endsWith('.json') ||
+          picked.content.trimLeft().startsWith('{');
+      if (isJson) {
+        await _importBackupJson(picked.content);
+      } else {
+        await _importStatsTable(picked.content);
       }
+    } catch (e) {
+      if (mounted) Toast.showError(context, 'Failed to import: $e');
+    }
+  }
 
-      dir ??= await getApplicationDocumentsDirectory();
+  Future<bool> _confirmReplace(String what) async {
+    final ok = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (ctx) => CupertinoAlertDialog(
+        title: const Text('Replace existing data?'),
+        content: Text('Importing will replace your current $what.'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Import'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
 
-      File file = File(p.join(dir.path, 'breakmate_backup.json'));
-      if (!await file.exists()) {
-        final altDir = dir.path.contains('Downloads')
-            ? await getApplicationDocumentsDirectory()
-            : await getDownloadsDirectory();
-        if (altDir != null) {
-          final altFile = File(p.join(altDir.path, 'breakmate_backup.json'));
-          if (await altFile.exists()) {
-            file = altFile;
-            dir = altDir;
-          }
-        }
-      }
-
-      if (!await file.exists()) {
-        throw AppException(
-          type: AppErrorType.backup,
-          message: "breakmate_backup.json not found in Downloads or Documents",
-        );
-      }
-
-      final content = await file.readAsString();
-      final Map<String, dynamic> data = jsonDecode(content);
-
-      if (!data.containsKey('timestamp')) {
+  Future<void> _importBackupJson(String content) async {
+    try {
+      final decoded = jsonDecode(content);
+      if (decoded is! Map<String, dynamic> ||
+          !decoded.containsKey('timestamp')) {
         throw AppException(
           type: AppErrorType.backup,
           message: "Invalid backup file format",
         );
       }
+      final Map<String, dynamic> data = decoded;
+      if (!await _confirmReplace('settings and statistics')) return;
 
-      if (data.containsKey('settings') && data['settings'] is Map) {
+      // Older backups stored the database's internal settings layout, which
+      // the model cannot read; those restore through the key-value records.
+      if (data['settingsFormat'] == 'model' &&
+          data.containsKey('settings') &&
+          data['settings'] is Map) {
         final settingsMap = Map<String, dynamic>.from(data['settings']);
         if (settingsMap.isNotEmpty) {
           final settingsModel = SettingsModel.fromMap(settingsMap);
@@ -295,39 +346,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     }
   }
 
-  Future<void> _importStatsCsv() async {
+  Future<void> _importStatsTable(String picked) async {
     try {
-      Directory? dir;
-      try {
-        dir = await getDownloadsDirectory();
-      } catch (e, st) {
-        ErrorHandler().handleError(e, st);
-      }
-
-      dir ??= await getApplicationDocumentsDirectory();
-
-      File file = File(p.join(dir.path, 'breakmate_stats.csv'));
-      if (!await file.exists()) {
-        final altDir = dir.path.contains('Downloads')
-            ? await getApplicationDocumentsDirectory()
-            : await getDownloadsDirectory();
-        if (altDir != null) {
-          final altFile = File(p.join(altDir.path, 'breakmate_stats.csv'));
-          if (await altFile.exists()) {
-            file = altFile;
-            dir = altDir;
-          }
-        }
-      }
-
-      if (!await file.exists()) {
-        throw AppException(
-          type: AppErrorType.backup,
-          message: "breakmate_stats.csv not found in Downloads or Documents",
-        );
-      }
-
-      final content = await file.readAsString();
+      // Spreadsheet apps often prepend a byte-order mark.
+      final content = picked.replaceFirst('\uFEFF', '');
       final lines = content.split(RegExp(r'\r?\n'));
       if (lines.length <= 1) {
         throw AppException(
@@ -336,31 +358,46 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         );
       }
 
+      String clean(String v) => v.trim().replaceAll('"', '');
+      final delimiter = lines.first.contains('\t')
+          ? '\t'
+          : lines.first.contains(';') && !lines.first.contains(',')
+          ? ';'
+          : ',';
+      final header = lines.first
+          .split(delimiter)
+          .map((h) => clean(h).toLowerCase());
+      final cols = header.toList();
+      int col(String name, int fallback) {
+        final i = cols.indexOf(name);
+        return i >= 0 ? i : fallback;
+      }
+
+      final iDate = col('date', 0);
+      final iDone = col('breakscompleted', 1);
+      final iSkip = col('breaksskipped', 2);
+      final iUsage = col('usageminutes', 3);
+      final iWell = col('wellnessactions', 4);
+
       final List<DailyStats> statsList = [];
       for (int i = 1; i < lines.length; i++) {
         final line = lines[i].trim();
         if (line.isEmpty) continue;
-        final parts = line.split(',');
-        if (parts.length >= 4) {
-          final date = parts[0].trim();
-          final breaksCompleted = int.tryParse(parts[1].trim()) ?? 0;
-          final breaksSkipped = int.tryParse(parts[2].trim()) ?? 0;
-          final usageMinutes = int.tryParse(parts[3].trim()) ?? 0;
-          final wellnessActions = parts.length > 4
-              ? (int.tryParse(parts[4].trim()) ?? 0)
-              : 0;
+        final parts = line.split(delimiter).map(clean).toList();
+        String at(int idx) => idx < parts.length ? parts[idx] : '';
+        final date = at(iDate);
+        if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) continue;
 
-          statsList.add(
-            DailyStats(
-              id: 0,
-              date: date,
-              breaksCompleted: breaksCompleted,
-              breaksSkipped: breaksSkipped,
-              usageMinutes: usageMinutes,
-              wellnessActions: wellnessActions,
-            ),
-          );
-        }
+        statsList.add(
+          DailyStats(
+            id: 0,
+            date: date,
+            breaksCompleted: int.tryParse(at(iDone)) ?? 0,
+            breaksSkipped: int.tryParse(at(iSkip)) ?? 0,
+            usageMinutes: int.tryParse(at(iUsage)) ?? 0,
+            wellnessActions: int.tryParse(at(iWell)) ?? 0,
+          ),
+        );
       }
 
       if (statsList.isEmpty) {
@@ -370,6 +407,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         );
       }
 
+      if (!await _confirmReplace('daily statistics')) return;
       _storage.dailyStatsBox?.removeAll();
       for (final s in statsList) {
         _storage.dailyStatsBox?.put(s);
@@ -446,7 +484,7 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         Toast.showSuccess(context, 'Stats imported from CSV successfully!');
       }
     } catch (e) {
-      if (mounted) Toast.showError(context, 'Failed to import CSV: $e');
+      if (mounted) Toast.showError(context, 'Failed to import table: $e');
     }
   }
 
@@ -530,127 +568,66 @@ class _DataManagementSectionState extends State<DataManagementSection> {
 
         sectionHeader(
           'Backup & Restore',
-          subtitle: 'Securely move your data between devices.',
+          subtitle:
+              'Export as JSON, CSV or TSV. Import detects the type automatically.',
         ),
         buildCard([
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: Column(
+            child: Row(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: MinimalButton(
-                        onPressed: _exportBackupJson,
-                        isSecondary: true,
-                        borderRadius: BorderRadius.circular(10),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.cloud_upload,
-                              size: 16,
-                              color: AppTheme.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Export Backup',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                Expanded(
+                  child: MinimalButton(
+                    onPressed: _showExportOptions,
+                    isSecondary: true,
+                    borderRadius: BorderRadius.circular(10),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          CupertinoIcons.cloud_upload,
+                          size: 16,
+                          color: AppTheme.textSecondary,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: MinimalButton(
-                        onPressed: _exportStatsCsv,
-                        isSecondary: true,
-                        borderRadius: BorderRadius.circular(10),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.table,
-                              size: 16,
-                              color: AppTheme.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Export CSV',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 8),
+                        Text(
+                          'Export',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: MinimalButton(
-                        onPressed: _importBackupJson,
-                        isSecondary: true,
-                        borderRadius: BorderRadius.circular(10),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.folder_badge_plus,
-                              size: 16,
-                              color: AppTheme.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Restore JSON',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: MinimalButton(
+                    onPressed: _importData,
+                    isSecondary: true,
+                    borderRadius: BorderRadius.circular(10),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          CupertinoIcons.folder_badge_plus,
+                          size: 16,
+                          color: AppTheme.textSecondary,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: MinimalButton(
-                        onPressed: _importStatsCsv,
-                        isSecondary: true,
-                        borderRadius: BorderRadius.circular(10),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              CupertinoIcons.table_badge_more,
-                              size: 16,
-                              color: AppTheme.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Import CSV',
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 8),
+                        Text(
+                          'Import',
+                          style: TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

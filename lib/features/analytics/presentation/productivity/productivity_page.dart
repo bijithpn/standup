@@ -87,6 +87,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
   void initState() {
     super.initState();
     _repository?.addListener(_onDataChanged);
+    _settings?.addListener(_onSettingsChanged);
     _repository?.refreshToday();
     // Keeps the numbers current while the screen is open, since a long stretch
     // in one app is only written when it ends.
@@ -103,6 +104,7 @@ class _ProductivityPageState extends State<ProductivityPage> {
   void dispose() {
     _refreshTimer?.cancel();
     _repository?.removeListener(_onDataChanged);
+    _settings?.removeListener(_onSettingsChanged);
     super.dispose();
   }
 
@@ -111,6 +113,12 @@ class _ProductivityPageState extends State<ProductivityPage> {
     super.didUpdateWidget(oldWidget);
     final next = widget.range;
     if (next != null && next != _range) _selectRange(next);
+  }
+
+  // Settings can finish loading (or change from another screen) after the
+  // first build; without this the page kept showing "tracking disabled".
+  void _onSettingsChanged() {
+    if (mounted) setState(() {});
   }
 
   void _onDataChanged() {
@@ -353,12 +361,26 @@ class _ProductivityPageState extends State<ProductivityPage> {
             : 'What the recorded activity shows',
         child: _insights.isEmpty
             ? _NotEnoughInsights()
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  for (final insight in _insights)
-                    InsightCard(insight: insight),
-                ],
+            : Container(
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceCard,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                  border: Border.all(color: AppTheme.border),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    for (var i = 0; i < _insights.length; i++) ...<Widget>[
+                      if (i > 0)
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: AppTheme.borderSubtle,
+                        ),
+                      InsightCard(insight: _insights[i]),
+                    ],
+                  ],
+                ),
               ),
       ),
     ];

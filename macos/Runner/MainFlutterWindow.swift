@@ -611,6 +611,13 @@ class MainFlutterWindow: NSWindow {
 
     bridgeChannel?.setMethodCallHandler { call, result in
       switch call.method {
+      case "armLiveTrayMenu":
+        LiveTrayMenuText.shared.arm()
+        result(nil)
+
+      case "updateTrayMenu":
+        result(LiveTrayMenuText.shared.update(call.arguments as? [Any] ?? []))
+
       case "showOverlay":
         OverlayWindowManager.shared.showOverlay(args: call.arguments as? [String: Any])
         result(nil)
@@ -900,4 +907,49 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
         
         return displays
     }
+}
+
+
+/// Keeps the countdown rows of the tray menu current while it is open. The
+/// menu itself is shown by the tray plugin; this only watches for it opening
+/// and rewrites item titles in place.
+final class LiveTrayMenuText: NSObject {
+  static let shared = LiveTrayMenuText()
+  private var armed = false
+  private var tracked: NSMenu?
+
+  override init() {
+    super.init()
+    let nc = NotificationCenter.default
+    nc.addObserver(self, selector: #selector(began(_:)), name: NSMenu.didBeginTrackingNotification, object: nil)
+    nc.addObserver(self, selector: #selector(ended(_:)), name: NSMenu.didEndTrackingNotification, object: nil)
+  }
+
+  func arm() {
+    armed = true
+    tracked = nil
+  }
+
+  @objc private func began(_ n: Notification) {
+    if armed, tracked == nil { tracked = n.object as? NSMenu }
+  }
+
+  @objc private func ended(_ n: Notification) {
+    if let m = tracked, (n.object as? NSMenu) === m {
+      tracked = nil
+      armed = false
+    }
+  }
+
+  /// Returns false once the menu has closed so the sender can stop.
+  func update(_ labels: [Any]) -> Bool {
+    guard armed else { return false }
+    guard let m = tracked, m.items.count == labels.count else { return true }
+    for (item, label) in zip(m.items, labels) {
+      if let text = label as? String, !item.isSeparatorItem, item.title != text {
+        item.title = text
+      }
+    }
+    return true
+  }
 }

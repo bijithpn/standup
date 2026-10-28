@@ -23,6 +23,7 @@ import 'app/startup_splash.dart';
 import 'app/bootstrapping/ipc_coordinator.dart';
 import 'app/bootstrapping/service_bootstrapper.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:screen_retriever/screen_retriever.dart';
 import 'core/core.dart';
 import 'core/ipc/single_instance_token.dart';
 import 'core/utils/file_permissions.dart';
@@ -701,7 +702,9 @@ void mainCommon(FlavorConfig config) async {
           } else if (call.method == 'systemSleep') {
             sl<TimerEngine>().handleSystemSleep();
           } else if (call.method == 'systemWake') {
-            sl<TimerEngine>().handleSystemWake();
+            final engine = sl<TimerEngine>();
+            engine.onNeedsRestart ??= _promptRestartTimer;
+            engine.handleSystemWake();
             // The overlay window keeps its own end time; send the extended one.
             sl<BreakController>().refreshSettings();
             sl<DailyResetService>().onSystemWake();
@@ -1004,4 +1007,118 @@ class FakeBreakController extends ChangeNotifier implements BreakController {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+bool _restartPromptOpen = false;
+
+/// Centers the main window on the display the cursor is on, so the prompt
+/// appears where the user is actually looking.
+Future<void> _moveWindowToActiveDisplay() async {
+  try {
+    final cursor = await screenRetriever.getCursorScreenPoint();
+    final displays = await screenRetriever.getAllDisplays();
+    final size = await windowManager.getSize();
+    for (final d in displays) {
+      final origin = d.visiblePosition ?? Offset.zero;
+      final area = origin & (d.visibleSize ?? d.size);
+      if (area.contains(cursor)) {
+        await windowManager.setPosition(
+          Offset(
+            area.left + (area.width - size.width) / 2,
+            area.top + (area.height - size.height) / 2,
+          ),
+        );
+        return;
+      }
+    }
+  } catch (_) {}
+}
+
+/// After a long sleep/lock the timer is reset to idle; ask the user to restart.
+Future<void> _promptRestartTimer() async {
+  if (_restartPromptOpen) return;
+  await sl<OverlayWindowService>().showDashboard(forceShow: true);
+  await _moveWindowToActiveDisplay();
+  await windowManager.focus();
+  final context = ErrorToastService.navigatorKey.currentContext;
+  if (context == null || !context.mounted) return;
+  _restartPromptOpen = true;
+  final start = await showDialog<bool>(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: 340,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceElevated,
+          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+          border: Border.all(
+            color: AppTheme.accentColor.withValues(alpha: 0.25),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.4),
+              blurRadius: 30,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.timer_outlined, size: 28, color: AppTheme.accentColor),
+            const SizedBox(height: 12),
+            Text(
+              'Welcome back',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'The break timer was reset while you were away. Start it again?',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                height: 1.3,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(false),
+                    child: Text(
+                      'Not now',
+                      style: TextStyle(color: AppTheme.textSecondary),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppTheme.accentColor,
+                    ),
+                    onPressed: () => Navigator.of(ctx).pop(true),
+                    child: const Text('Start timer'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+  _restartPromptOpen = false;
+  if (start == true && sl<TimerEngine>().state == TimerState.idle) {
+    sl<TimerEngine>().startTimers();
+  }
 }

@@ -352,6 +352,17 @@ class TimerEngine extends ChangeNotifier {
   void _startTicking() {
     _tickTimer?.cancel();
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      // An exception in one tick must not leave the countdown frozen.
+      try {
+        _tickOnce();
+      } catch (e, st) {
+        ErrorHandler().handleError(e, st);
+      }
+    });
+  }
+
+  void _tickOnce() {
+    {
       final now = clock.now();
 
       // Skip processing while the system is asleep to avoid state corruption from stale deltas.
@@ -451,7 +462,7 @@ class TimerEngine extends ChangeNotifier {
         );
         notifyListeners();
       }
-    });
+    }
   }
 
   bool _checkClockOut(DateTime now) {
@@ -579,6 +590,17 @@ class TimerEngine extends ChangeNotifier {
   /// (seconds), sampled every few seconds. Stepping away is real relief: it
   /// resets the matching reminder instead of nagging right after.
   void reportIdleSeconds(double idleSeconds) {
+    // Self-heal a stuck sleep/lock flag: a missed unlock/wake notification
+    // would otherwise freeze the tick loop while the UI still says "running".
+    // Fresh input while the flag has been set for a while means we're awake.
+    final since = _stateData.lastTickTime;
+    if (_stateData.systemSleepPaused &&
+        idleSeconds < 3 &&
+        since != null &&
+        clock.now().difference(since) > const Duration(seconds: 15)) {
+      _logger.warning('Input detected while sleep flag stuck: recovering');
+      handleSystemWake();
+    }
     final relieved = _healthScheduler.onIdleSample(idleSeconds, clock.now());
     relieved.forEach(_resetElapsed);
   }
@@ -937,6 +959,10 @@ class TimerEngine extends ChangeNotifier {
 
   /// Handles the transition when the system goes to sleep or the screen locks.
   /// We persist the current timestamp to storage to calculate elapsed sleep time on wake.
+  /// Invoked when a wake left the timer idle (away longer than a break
+  /// interval), so the UI can ask the user to start it again.
+  VoidCallback? onNeedsRestart;
+
   void handleSystemSleep() {
     _logger.info(
       'System sleep or screen lock detected: pausing break/work timers',
@@ -1053,6 +1079,7 @@ class TimerEngine extends ChangeNotifier {
         'Away for ${durationAway.inMinutes}m. Resetting focus session.',
       );
       resetTimers();
+      onNeedsRestart?.call();
     } else if (state == TimerState.running || state == TimerState.paused) {
       _stateData.lastTickTime = clock.now();
       resumeTimers();

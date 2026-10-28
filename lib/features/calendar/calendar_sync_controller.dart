@@ -164,6 +164,15 @@ class CalendarSyncController extends ChangeNotifier {
     notifyListeners();
     try {
       var status = await _permissions.getStatus();
+      // "Denied" before this session is often a stale entry (e.g. a rebuilt
+      // dev binary with a new signature), so ask once more; macOS answers
+      // immediately without a prompt if it really is denied.
+      if (status == CalendarPermissionStatus.permanentlyDenied) {
+        final granted = await _permissions.requestPermission();
+        status = granted
+            ? CalendarPermissionStatus.granted
+            : CalendarPermissionStatus.permanentlyDenied;
+      }
       if (status == CalendarPermissionStatus.permanentlyDenied ||
           status == CalendarPermissionStatus.restricted) {
         _permission = status;

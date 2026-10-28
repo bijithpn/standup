@@ -304,6 +304,11 @@ class SettingsRepository extends ChangeNotifier {
       categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
         _storage.getString('category_daily_budget_minutes', defaultValue: ''),
       ),
+      appUsageTrackingEnabled: _storage.getBool('app_usage_tracking_enabled'),
+      activityHistoryRetentionDays: _storage.getInt(
+        'activity_history_retention_days',
+        defaultValue: 30,
+      ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
         defaultValue: '',
@@ -560,6 +565,11 @@ class SettingsRepository extends ChangeNotifier {
       ),
       categoryDailyBudgetMinutes: _decodeCategoryDailyBudgetMinutes(
         _storage.getString('category_daily_budget_minutes', defaultValue: ''),
+      ),
+      appUsageTrackingEnabled: _storage.getBool('app_usage_tracking_enabled'),
+      activityHistoryRetentionDays: _storage.getInt(
+        'activity_history_retention_days',
+        defaultValue: 30,
       ),
       companionPreviewBackground: _storage.getString(
         'companion_preview_background',
@@ -831,6 +841,14 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString(
       'category_daily_budget_minutes',
       jsonEncode(settings.categoryDailyBudgetMinutes),
+    );
+    await _storage.setBool(
+      'app_usage_tracking_enabled',
+      settings.appUsageTrackingEnabled,
+    );
+    await _storage.setInt(
+      'activity_history_retention_days',
+      settings.activityHistoryRetentionDays,
     );
     await _storage.setString(
       'companion_preview_background',

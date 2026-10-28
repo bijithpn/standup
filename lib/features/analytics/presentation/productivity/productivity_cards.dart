@@ -433,21 +433,21 @@ class InsightCard extends StatelessWidget {
   String get _kind {
     switch (insight.type) {
       case InsightType.focusWindow:
-        return 'WHEN YOU FOCUS';
+        return 'When you focus';
       case InsightType.contextSwitching:
-        return 'ATTENTION';
+        return 'Attention';
       case InsightType.applicationPattern:
-        return 'APPS';
+        return 'Apps';
       case InsightType.breakPattern:
-        return 'BREAKS';
+        return 'Breaks';
       case InsightType.idleTime:
-        return 'TIME AWAY';
+        return 'Time away';
       case InsightType.focusOpportunity:
-        return 'TIP';
+        return 'Tip';
       case InsightType.goalProgress:
-        return 'GOAL';
+        return 'Goal';
       case InsightType.comparison:
-        return 'VS YOUR USUAL';
+        return 'Compared with usual';
     }
   }
 
@@ -468,147 +468,93 @@ class InsightCard extends StatelessWidget {
     }
   }
 
-  /// What the card calls itself. A low-confidence finding announces that it is
-  /// a possibility in its own heading, so the claim is hedged even if the
-  /// reader only skims.
-  String get _heading => insight.confidence == InsightConfidence.low
-      ? 'Possible pattern'
-      : insight.title;
-
+  /// One finding, written as a plain entry in a list rather than a card: the
+  /// finding first, what it means under it, and the suggestion as a sentence.
+  /// The only colour is a small marker that says what kind of finding it is.
   @override
   Widget build(BuildContext context) {
     final accent = _accent;
     final suggestion = insight.suggestion;
+    final low = insight.confidence == InsightConfidence.low;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceCard,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-        border: Border.all(color: AppTheme.border),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: <Widget>[
-            Container(width: 4, color: accent),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Row(
-                      children: <Widget>[
-                        Icon(_icon, size: 14, color: accent),
-                        const SizedBox(width: 6),
-                        Text(
-                          _kind,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.6,
-                            color: accent,
-                          ),
-                        ),
-                      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(_icon, size: 18, color: accent),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 640),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    low ? 'Possible pattern: ${insight.title}' : insight.title,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
                     ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: <Widget>[
-                        Flexible(
-                          child: Text(
-                            _heading,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    insight.description,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      height: 1.5,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  if (suggestion != null) ...<Widget>[
+                    const SizedBox(height: 8),
+                    Text.rich(
+                      TextSpan(
+                        children: <InlineSpan>[
+                          TextSpan(
+                            text: 'Try this: ',
                             style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              letterSpacing: -0.2,
                               color: AppTheme.textPrimary,
                             ),
                           ),
-                        ),
-                        if (insight.confidence ==
-                            InsightConfidence.low) ...<Widget>[
-                          const SizedBox(width: 6),
-                          Text(
-                            insight.title,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11,
-                              color: AppTheme.textMuted,
-                            ),
-                          ),
+                          TextSpan(text: suggestion),
                         ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      insight.description,
+                      ),
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        fontSize: 12.5,
+                        fontSize: 13,
                         height: 1.5,
                         color: AppTheme.textSecondary,
                       ),
                     ),
-                    if (suggestion != null) ...<Widget>[
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: accent.withValues(alpha: 0.09),
-                          borderRadius: BorderRadius.circular(
-                            AppTheme.radiusSm,
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: <Widget>[
-                            Icon(
-                              Icons.lightbulb_outline_rounded,
-                              size: 14,
-                              color: accent,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                suggestion,
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 12,
-                                  height: 1.45,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    if (insight.needsEvidenceNote) ...<Widget>[
-                      const SizedBox(height: 8),
-                      Text(
-                        'Based on ${insight.evidenceDayCount} '
-                        '${insight.evidenceDayCount == 1 ? 'day' : 'days'} '
-                        'of activity.',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 10.5,
-                          fontStyle: FontStyle.italic,
-                          color: AppTheme.textMuted,
-                        ),
-                      ),
-                    ],
                   ],
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    [
+                      _kind,
+                      if (insight.needsEvidenceNote)
+                        'from ${insight.evidenceDayCount} '
+                            '${insight.evidenceDayCount == 1 ? 'day' : 'days'}'
+                            ' of activity',
+                    ].join(', '),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11.5,
+                      color: AppTheme.textMuted,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

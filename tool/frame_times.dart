@@ -35,8 +35,7 @@ final List<String> _ids = _only.isEmpty
 
 const _all = [
   'activities',
-  // 'companion' is skipped: its pet asks window_manager for window bounds,
-  // which needs the main app's native window setup this harness lacks.
+  'companion',
   'floating',
   'minimal',
   'zen',
@@ -104,8 +103,8 @@ class _Controller extends ChangeNotifier implements BreakController {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
   if (_fullscreen) {
-    await windowManager.ensureInitialized();
     await windowManager.setFullScreen(true);
     await Future<void>.delayed(const Duration(seconds: 2));
   }
@@ -167,6 +166,9 @@ class _HarnessState extends State<_Harness> with TickerProviderStateMixin {
       _index++;
       _remaining = 55;
     });
+    // A template that stops animating would otherwise never schedule the
+    // frame this callback waits for.
+    WidgetsBinding.instance.scheduleFrame();
     WidgetsBinding.instance.addPostFrameCallback((_) => _runNext());
   }
 

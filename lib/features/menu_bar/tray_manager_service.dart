@@ -832,6 +832,10 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   Future<void> _buildMenu() async {
+    await trayManager.setContextMenu(Menu(items: _buildItems()));
+  }
+
+  List<MenuItem> _buildItems() {
     String statusLabel = 'BreakMate';
 
     final state = _timerEngine?.state;
@@ -845,16 +849,19 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         statusLabel = 'On Break';
       } else if (isPaused) {
         statusLabel = 'Timer Paused';
-      } else if (state == TimerState.running) {
-        statusLabel = 'Timer Running';
       } else {
-        statusLabel = 'Timer Idle';
+        statusLabel = '';
       }
     }
 
     final List<MenuItem> items = [];
 
-    items.add(MenuItem(label: statusLabel, disabled: true));
+    if (statusLabel.isNotEmpty) {
+      items.add(MenuItem(label: statusLabel, disabled: true));
+    }
+    for (final line in _statusLines()) {
+      items.add(MenuItem(label: line, disabled: true));
+    }
     items.add(MenuItem.separator());
 
     if (isBreakActive) {
@@ -891,11 +898,81 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
       MenuItem(key: 'open_notifications', label: 'Notification Settings'),
       MenuItem(key: 'open_stats', label: 'View Statistics'),
       MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Quit BreakMate'),
+      MenuItem(key: 'quit', label: '⏻ Quit BreakMate'),
     ]);
 
-    final menu = Menu(items: items);
-    await trayManager.setContextMenu(menu);
+    return items;
+  }
+
+  // ---- live menu text (macOS) ------------------------------------------
+  // The tray plugin shows the menu, so it opens like any native menu (also
+  // over full-screen apps). While it is open the native side edits the
+  // visible items' titles in place from the labels sent here every second.
+  static const MethodChannel _bridge = MethodChannel(
+    'com.breakmate.desktop/bridge',
+  );
+  Timer? _liveMenuTimer;
+
+  Future<void> _armLiveMenu() async {
+    _liveMenuTimer?.cancel();
+    try {
+      await _bridge.invokeMethod('armLiveTrayMenu');
+    } catch (_) {
+      return;
+    }
+    _liveMenuTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
+      try {
+        final open = await _bridge.invokeMethod<bool>('updateTrayMenu', [
+          for (final i in _buildItems())
+            if (i.type == 'separator') null else i.label ?? '',
+        ]);
+        if (open != true) t.cancel();
+      } catch (_) {
+        t.cancel();
+      }
+    });
+  }
+
+  static String _mmss(Duration d) {
+    final s = d.inSeconds < 0 ? 0 : d.inSeconds;
+    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+  }
+
+  static String _clock(DateTime t) {
+    final h = t.hour % 12 == 0 ? 12 : t.hour % 12;
+    final m = t.minute.toString().padLeft(2, '0');
+    return '$h:$m ${t.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  /// Countdown line(s) under the title: when the next break is, or why the
+  /// countdown is frozen.
+  List<String> _statusLines() {
+    final engine = _timerEngine;
+    if (engine == null) return const [];
+    final ctx = engine.contextManager;
+    final until = engine.timeUntilNextShortBreak;
+
+    switch (engine.state) {
+      case TimerState.breakActive:
+        return [
+          'Break ends in ${_mmss(Duration(seconds: engine.countdownSeconds))}',
+        ];
+      case TimerState.paused:
+        final why = engine.stateData.isManuallyPaused
+            ? 'paused by you'
+            : ctx.isSmartPauseActive()
+            ? 'Focus / presentation'
+            : !ctx.isWithinWorkingHours()
+            ? 'outside working hours'
+            : 'you were idle';
+        return ['Next break paused at ${_mmss(until)} ($why)'];
+      case TimerState.running:
+        if (engine.systemSleepPaused) return ['Waiting for screen unlock'];
+        final at = _clock(DateTime.now().add(until));
+        return ['Next break in ${_mmss(until)} (at $at)'];
+      default:
+        return ['Not started'];
+    }
   }
 
   void _handleAction(String action) {
@@ -987,7 +1064,15 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   @override
   void onTrayIconMouseDown() {
-    trayManager.popUpContextMenu();
+    _popUpMenu();
+  }
+
+  void _popUpMenu() {
+    // Rebuilt right before showing so the countdown is current when it opens.
+    _buildMenu().whenComplete(() async {
+      if (Platform.isMacOS) await _armLiveMenu();
+      await trayManager.popUpContextMenu();
+    });
   }
 
   @override
@@ -995,7 +1080,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
 
   @override
   void onTrayIconRightMouseDown() {
-    trayManager.popUpContextMenu();
+    _popUpMenu();
   }
 
   @override
@@ -1030,6 +1115,7 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
   }
 
   void dispose() {
+    _liveMenuTimer?.cancel();
     _animTimer?.cancel();
     _progressAnimTimer?.cancel();
     _pulseTimer?.cancel();
