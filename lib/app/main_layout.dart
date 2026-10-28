@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'dart:io';
 import 'package:breakmate/core/config/flavor_config.dart';
 import 'package:flutter/cupertino.dart';
@@ -318,7 +319,8 @@ class _MainLayoutState extends State<MainLayout> {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(
                     children: [
-                      GestureDetector(
+                      TapTarget(
+                        semanticLabel: 'Toggle menu',
                         onTap: () => setState(() => _isMenuOpen = !_isMenuOpen),
                         child: Container(
                           padding: const EdgeInsets.all(6),
@@ -601,7 +603,7 @@ class _SidebarNavItemState extends State<_SidebarNavItem> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
+      child: TapTarget(
         onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 150),

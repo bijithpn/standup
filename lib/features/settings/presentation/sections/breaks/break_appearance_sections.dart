@@ -55,7 +55,8 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
                 children: _colorPresets.map((preset) {
                   final isSelected =
                       baseColor.toARGB32() == preset.color.toARGB32();
-                  return GestureDetector(
+                  return TapTarget(
+                    selected: isSelected,
                     onTap: () {
                       final newColorHex = preset.color
                           .withValues(alpha: currentOpacity)
@@ -442,7 +443,8 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
                         .settings
                         .templateAccentOverrides[_accentOverrideTemplateId];
                     final isSelected = overrideInt == preset.color.toARGB32();
-                    return GestureDetector(
+                    return TapTarget(
+                      selected: isSelected,
                       onTap: () {
                         final updated =
                             Map<String, int>.from(
@@ -489,7 +491,8 @@ extension _BreakAppearanceSections on _BreakAppearanceSettingsState {
                   if (widget.settings.templateAccentOverrides.containsKey(
                     _accentOverrideTemplateId,
                   ))
-                    GestureDetector(
+                    TapTarget(
+                      semanticLabel: 'Reset accent colour',
                       onTap: () {
                         final updated = Map<String, int>.from(
                           widget.settings.templateAccentOverrides,

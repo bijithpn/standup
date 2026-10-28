@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/material.dart';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -101,8 +102,9 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return TapTarget(
       onTap: onTap,
+      selected: selected,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: 120,

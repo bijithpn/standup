@@ -301,7 +301,8 @@ class _AnalyticsSettingsSectionState extends State<AnalyticsSettingsSection> {
   }
 
   Widget _foldButton({required bool expanded, required VoidCallback onTap}) {
-    return GestureDetector(
+    return TapTarget(
+      semanticLabel: expanded ? 'Collapse' : 'Expand',
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: MouseRegion(

@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -810,7 +811,8 @@ class _CompanionSettingsSectionState extends State<CompanionSettingsSection> {
                         ? 'Blobatar: tap to select or rename'
                         : ''),
               waitDuration: const Duration(milliseconds: 400),
-              child: GestureDetector(
+              child: TapTarget(
+                selected: isSelected,
                 onTap: isLocked
                     ? null
                     : () {

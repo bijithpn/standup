@@ -208,7 +208,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
             ),
           ),
           suffix: _searchQuery.isNotEmpty
-              ? GestureDetector(
+              ? TapTarget(
+                  semanticLabel: 'Clear search',
                   behavior: HitTestBehavior.opaque,
                   onTap: () {
                     _searchController.clear();
@@ -263,7 +264,8 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
           final isSelected = _selectedCategory == category;
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
-            child: GestureDetector(
+            child: TapTarget(
+              selected: isSelected,
               onTap: () {
                 setState(() {
                   _selectedCategory = category;
@@ -395,7 +397,7 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
       onEnter: (_) => setState(() => _hoveredId = id),
       onExit: (_) => setState(() => _hoveredId = null),
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
+      child: TapTarget(
         onTap: onTap,
         child: SizedBox(
           width: double.infinity,

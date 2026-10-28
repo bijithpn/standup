@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -215,7 +216,7 @@ class _AboutSectionState extends State<AboutSection> {
               ),
               const SizedBox(height: 20),
 
-              GestureDetector(
+              TapTarget(
                 onTap: () => _launchUrl('https://buymeacoffee.com/bijithpn'),
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,
