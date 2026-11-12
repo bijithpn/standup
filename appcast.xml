@@ -4,7 +4,41 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                                                                                        <item>
+                                                                                                <item>
+            <title>Version 1.11.1</title>
+            <pubDate>Thu, 12 Nov 2026 07:26:42 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.11.1</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>optimize usage data persistence by scheduling commits to improve performance</li><li>update changelog for version 1.11.1 and improve overlay handling across multiple displays</li><li>add calendar events view and improve calendar sync functionality</li><li>replace GestureDetector with TapTarget for improved accessibility and semantics</li></ul>
+                <h5>⚡ Improvements</h5>
+                <ul><li>remove unused Focus Mode detection and companion focus state</li></ul>
+                <h5>🔧 Build &amp; Maintenance</h5>
+                <ul><li>upgrade macOS runner version to 15 in CI workflows and update package versions in pubspec.lock</li><li>remove dead pet-3D subsystem, unused widgets/deps and pixel avatars</li></ul>
+                <h5>Other Changes</h5>
+                <ul><li>Refactor dashboard and settings UI components for improved styling and functionality</li><li>Refactor calendar sync buttons and improve data management export/import functionality</li><li>Refactor native bridge implementation and update dependencies</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.11.0...v1.11.1">https://github.com/bijithpn/standup/compare/v1.11.0...v1.11.1</a></p>
+                <h5>🍎 Installing on macOS</h5>
+                <p>BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show <em>"Apple could not verify BreakMate…"</em>. Use either fix:</p>
+                <p><strong>Option 1: one-line install (recommended)</strong><br>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install.sh">https://github.com/bijithpn/standup/releases/latest/download/install.sh</a> | bash<br>```</p>
+                <p><strong>Option 2: you already downloaded the DMG</strong><br>```bash<br>xattr -cr /Applications/BreakMate.app<br>```<br>or open <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</p>
+                <p><strong>Homebrew</strong><br>```bash<br>brew tap bijithpn/standup <a href="https://github.com/bijithpn/standup">https://github.com/bijithpn/standup</a><br>brew install --cask breakmate<br>```</p>
+                <p><strong>Uninstall:</strong> <code>curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall.sh | bash</code> (add <code>-s -- --purge</code> to also delete settings). Linux: <code>uninstall_linux.sh</code>, Windows: <code>uninstall.ps1</code>.</p>
+                <h5>🐧 Linux / 🪟 Windows one-liners</h5>
+                <p>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh">https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh</a> | bash<br>```<br>```powershell<br>irm <a href="https://github.com/bijithpn/standup/releases/latest/download/install.ps1">https://github.com/bijithpn/standup/releases/latest/download/install.ps1</a> | iex<br>```</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.11.1/BreakMate-Installer.dmg"
+                       sparkle:version="44"
+                       sparkle:shortVersionString="1.11.1"
+                       sparkle:edSignature="SKN7AJE8RP2tSmQH+ntRLcmzM+nRC76/82Ba8LYwcijDUBNIhteaV70C0AzPq+z5APtmCN6ZsgCTvY04pSumAg=="
+                       length="35860823"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.11.0</title>
             <pubDate>Mon, 26 Oct 2026 08:37:35 +0000</pubDate>
             <description><![CDATA[
