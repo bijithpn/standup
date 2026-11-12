@@ -3,7 +3,37 @@
     <channel>
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
-        <language>en</language>                                                              <item>
+        <language>en</language>                                                                      <item>
+            <title>Version 1.12.0</title>
+            <pubDate>Thu, 12 Nov 2026 11:23:11 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.12.0</h3>
+                <h5>✨ New Features</h5>
+                <ul><li>implement idle time management and testing in timer engine</li><li>add blink reminder functionality and associated audio cues</li><li>update CI workflows for macOS 15 and enhance Linux build dependency installation feat: add evening eye care reminder and focus session management features</li><li>add custom reminders feature with audio notifications and settings integration</li><li>update README and changelog for health reminders and macOS overlay improvements</li><li>implement system sleep/wake handling in TimerEngine and update toast notifications</li><li>enhance CI workflows for native builds and artifact management</li></ul>
+                <h5>🔧 Build &amp; Maintenance</h5>
+                <ul><li>update version to 1.12.0 and add changelog for new features and fixes</li></ul>
+                <p><strong>Full changelog:</strong> <a href="https://github.com/bijithpn/standup/compare/v1.11.1...v1.12.0">https://github.com/bijithpn/standup/compare/v1.11.1...v1.12.0</a></p>
+                <h5>🍎 Installing on macOS</h5>
+                <p>BreakMate is not notarized by Apple, so a DMG downloaded in a browser may show <em>"Apple could not verify BreakMate…"</em>. Use either fix:</p>
+                <p><strong>Option 1: one-line install (recommended)</strong><br>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install.sh">https://github.com/bijithpn/standup/releases/latest/download/install.sh</a> | bash<br>```</p>
+                <p><strong>Option 2: you already downloaded the DMG</strong><br>```bash<br>xattr -cr /Applications/BreakMate.app<br>```<br>or open <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>.</p>
+                <p><strong>Homebrew</strong><br>```bash<br>brew tap bijithpn/standup <a href="https://github.com/bijithpn/standup">https://github.com/bijithpn/standup</a><br>brew install --cask breakmate<br>```</p>
+                <p><strong>Uninstall:</strong> <code>curl -fsSL https://github.com/bijithpn/standup/releases/latest/download/uninstall.sh | bash</code> (add <code>-s -- --purge</code> to also delete settings). Linux: <code>uninstall_linux.sh</code>, Windows: <code>uninstall.ps1</code>.</p>
+                <h5>🐧 Linux / 🪟 Windows one-liners</h5>
+                <p>```bash<br>curl -fsSL <a href="https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh">https://github.com/bijithpn/standup/releases/latest/download/install_linux.sh</a> | bash<br>```<br>```powershell<br>irm <a href="https://github.com/bijithpn/standup/releases/latest/download/install.ps1">https://github.com/bijithpn/standup/releases/latest/download/install.ps1</a> | iex<br>```</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.12.0/BreakMate-Installer.dmg"
+                       sparkle:version="48"
+                       sparkle:shortVersionString="1.12.0"
+                       sparkle:edSignature="k2GgUd7ltVc4n8Jnmcp57o+18FtTCeOVEiwzMvvm3vI28N1erpoihEDJnDsJ8PkvW10j7iP1quFewGwFF/LgCg=="
+                       length="36171764"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.11.2</title>
             <pubDate>Thu, 12 Nov 2026 09:43:10 +0000</pubDate>
             <description><![CDATA[
