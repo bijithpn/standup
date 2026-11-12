@@ -210,37 +210,6 @@ void main() {
     });
   });
 
-  group('zen presets', () {
-    testWidgets('a new preset starts at the next cycle', (tester) async {
-      await pumpBreakTemplate(tester, 'zen'); // 2 s into the box cycle
-      expect(find.text('4-7-8'), findsOneWidget);
-      await tester.tap(find.text('4-7-8'));
-      var now = 2.0;
-      Future<void> at(double seconds) async {
-        await tester.pump(
-          Duration(milliseconds: ((seconds - now) * 1000).round()),
-        );
-        await tester.pump(const Duration(milliseconds: 400));
-        now = seconds + 0.4;
-      }
-
-      // Still on the box cycle: 8-12 s is breathe out.
-      await at(9);
-      expect(find.text('Breathe out'), findsOneWidget);
-      // Box cycle ends at 16 s; 4-7-8 begins.
-      await at(17);
-      expect(find.text('Breathe in'), findsOneWidget);
-      await at(16 + 6);
-      expect(find.text('Hold'), findsOneWidget);
-      await at(16 + 13);
-      expect(find.text('Breathe out'), findsOneWidget);
-      // 4-7-8 is 19 s long: the next breath in starts at 35 s.
-      await at(35 + 1);
-      expect(find.text('Breathe in'), findsOneWidget);
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-  });
-
   testWidgets('breathe_line holds between in and out', (tester) async {
     await pumpBreakTemplate(tester, 'breathe_line');
     expect(find.text('Breathe in'), findsOneWidget);

@@ -35,12 +35,7 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
     duration: const Duration(seconds: 6),
   );
 
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-
   late final DateTime _now = clock.now();
-
-  _OrbPainter? _painter;
-  Object? _painterKey;
 
   @override
   void didChangeDependencies() {
@@ -64,46 +59,18 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
       widget.remainingSeconds,
       widget.totalSeconds,
     );
-    final alphaScale = palette.isDark ? 1.0 : 0.85;
-
-    final key = Object.hash(hue, alphaScale);
-    if (_painterKey != key) {
-      _painterKey = key;
-      _painter = _OrbPainter(
-        breath: _breath,
-        color: hue,
-        alphaScale: alphaScale,
-      );
-    }
-
-    final shadow = [
-      Shadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 8),
-    ];
-    final countdownColor = breakClockColor(
-      widget.settings,
-      palette,
-      fallback: palette.isDark ? palette.textPrimary : const Color(0xFF1C1F24),
-    );
 
     return BreakScaffold(
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: hue,
-      background: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            radius: 0.9,
-            colors: [hue.withValues(alpha: 0.06), Colors.transparent],
-          ),
-        ),
-      ),
       child: Stack(
         children: [
           Positioned(
-            left: 640 - 140,
-            top: 380 - 140,
-            width: 280,
-            height: 280,
+            left: 640 - 160,
+            top: 380 - 160,
+            width: 320,
+            height: 320,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 1.0 : 0.0),
@@ -113,32 +80,21 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
                   children: [
                     RepaintBoundary(
                       child: CustomPaint(
-                        size: const Size(280, 280),
-                        painter: _painter!.withFinish(finish),
+                        size: const Size(320, 320),
+                        painter: _OrbPainter(
+                          breath: _breath,
+                          color: hue,
+                          finish: finish,
+                        ),
                       ),
                     ),
                     child!,
                   ],
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    BreakCountdown(
-                      seconds: widget.remainingSeconds,
-                      style: BreakOverlayTheme.display.copyWith(
-                        shadows: palette.isDark ? shadow : null,
-                      ),
-                      color: countdownColor,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _kind.label.toUpperCase(),
-                      style: BreakOverlayTheme.micro.copyWith(
-                        color: palette.textSecondary,
-                        shadows: palette.isDark ? shadow : null,
-                      ),
-                    ),
-                  ],
+                child: BreakCountdown(
+                  seconds: widget.remainingSeconds,
+                  style: BreakOverlayTheme.hero.copyWith(fontSize: 72),
+                  color: breakClockColor(widget.settings, palette),
                 ),
               ),
             ),
@@ -152,81 +108,28 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
 class _OrbPainter extends CustomPainter {
   final Animation<double> breath;
   final Color color;
-  final double alphaScale;
   final double finish;
 
-  // Layer radius ratios and alphas; shaders are built once per colour.
-  static const _ratios = [0.25, 0.5, 0.75, 1.0];
-  static const _alphas = [0.84, 0.42, 0.18, 0.07];
-  static const double _overdrive = 1.3; // headroom for the completion flash
+  final Paint _fill = Paint();
+  final Paint _ring = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.5;
 
-  late final List<Paint> _layers;
-
-  _OrbPainter({
-    required this.breath,
-    required this.color,
-    required this.alphaScale,
-  }) : finish = 0,
-       super(repaint: breath) {
-    _layers = [
-      for (var i = 0; i < _ratios.length; i++)
-        Paint()
-          ..shader =
-              RadialGradient(
-                // Plateau then fall-off: the stack reads as one soft sphere.
-                stops: const [0.0, 0.7, 1.0],
-                colors: [
-                  color.withValues(
-                    alpha: (_alphas[i] * _overdrive * alphaScale).clamp(
-                      0.0,
-                      1.0,
-                    ),
-                  ),
-                  color.withValues(
-                    alpha: (_alphas[i] * _overdrive * alphaScale * 0.7).clamp(
-                      0.0,
-                      1.0,
-                    ),
-                  ),
-                  color.withValues(alpha: 0),
-                ],
-              ).createShader(
-                Rect.fromCircle(center: Offset.zero, radius: 140 * _ratios[i]),
-              ),
-    ];
-  }
-
-  _OrbPainter._shared(_OrbPainter o, this.finish)
-    : breath = o.breath,
-      color = o.color,
-      alphaScale = o.alphaScale,
-      super(repaint: o.breath) {
-    _layers = o._layers;
-  }
-
-  /// Same cached shaders, different completion flash.
-  _OrbPainter withFinish(double f) =>
-      f == finish ? this : _OrbPainter._shared(this, f);
+  _OrbPainter({required this.breath, required this.color, required this.finish})
+    : super(repaint: breath);
 
   @override
   void paint(Canvas canvas, Size size) {
     final eased = Curves.easeInOutSine.transform(breath.value);
-    final scale = 0.97 + 0.06 * eased;
-    // 1.0 -> 1.3x brightness on completion.
-    final a = (1 / _overdrive) + (1 - 1 / _overdrive) * finish;
-    canvas.save();
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.scale(scale);
-    for (var i = 0; i < _layers.length; i++) {
-      _layers[i].color = Color.fromRGBO(255, 255, 255, a);
-      canvas.drawCircle(Offset.zero, 140 * _ratios[i], _layers[i]);
-    }
-    canvas.restore();
+    final radius = size.width / 2 * (0.94 + 0.06 * eased);
+    final center = size.center(Offset.zero);
+    _fill.color = color.withValues(alpha: 0.10 + 0.12 * finish);
+    _ring.color = color.withValues(alpha: 0.6);
+    canvas.drawCircle(center, radius, _fill);
+    canvas.drawCircle(center, radius, _ring);
   }
 
   @override
   bool shouldRepaint(covariant _OrbPainter old) =>
-      old.color != color ||
-      old.alphaScale != alphaScale ||
-      old.finish != finish;
+      old.color != color || old.finish != finish;
 }

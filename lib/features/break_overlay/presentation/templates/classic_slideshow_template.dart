@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
@@ -41,8 +40,7 @@ class ClassicSlideshowTemplate extends StatefulWidget {
       _ClassicSlideshowTemplateState();
 }
 
-class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
-    with SingleTickerProviderStateMixin {
+class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
   static const List<Color> _fallback = [Color(0xFF1E2A3A), Color(0xFF3A4F63)];
 
   ImageProvider? _image;
@@ -54,13 +52,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
   /// How long each bundled photo stays before the next dissolves in.
   static const Duration _slideEvery = Duration(seconds: 20);
   static const Duration _dissolve = Duration(milliseconds: 1200);
-
-  /// 1 = card expanded, 0 = collapsed; driven by a spring.
-  late final AnimationController _open = AnimationController.unbounded(
-    vsync: this,
-    value: 1,
-  );
-  bool _expanded = true;
 
   @override
   void initState() {
@@ -117,7 +108,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
   @override
   void dispose() {
     _rotator?.cancel();
-    _open.dispose();
     super.dispose();
   }
 
@@ -151,23 +141,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
     return ResizeImage(AssetImage(img), width: 2560);
   }
 
-  void _toggle() {
-    setState(() => _expanded = !_expanded);
-    final target = _expanded ? 1.0 : 0.0;
-    if (breakShouldFreeze(context)) {
-      _open.value = target;
-    } else {
-      _open.animateWith(
-        SpringSimulation(
-          BreakMotion.spring,
-          _open.value,
-          target,
-          _open.velocity,
-        ),
-      );
-    }
-  }
-
   /// Slow zoom and 2% pan across the photo's lifetime, from the overlay's
   /// shared Ken Burns controller. Static in thumbnails and reduced motion.
   Widget _kenBurns(Widget photo) {
@@ -191,9 +164,6 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
   Widget build(BuildContext context) {
     final kind = BreakKind.of(widget.breakInfo);
     final accent = kind.accent;
-    final title = widget.breakInfo.type == BreakType.short
-        ? 'Rest your eyes'
-        : 'Time to recharge';
     final hasExercise =
         widget.exerciseTitle != null && widget.exerciseInstructions != null;
 
@@ -281,102 +251,39 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate>
       child: Stack(
         children: [
           Positioned(
-            left: 48,
-            bottom: 48,
-            width: 380,
+            left: 64,
+            bottom: 64,
+            width: 480,
             child: BreakEntrance(
               scale: false,
-              child: BreakGlass(
-                radius: BreakOverlayTheme.radiusLg,
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              BreakLabel(
-                                breakDurationLabel(widget.totalSeconds),
-                                textAlign: TextAlign.left,
-                              ),
-                              const SizedBox(height: 4),
-                              BreakCountdown(
-                                seconds: widget.remainingSeconds,
-                                textAlign: TextAlign.left,
-                                color: breakClockColor(
-                                  widget.settings,
-                                  BreakPalette.onPhoto,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Semantics(
-                          container: true,
-                          button: true,
-                          label: _expanded
-                              ? 'Collapse details'
-                              : 'Expand details',
-                          excludeSemantics: true,
-                          child: IconButton(
-                            onPressed: _toggle,
-                            constraints: const BoxConstraints(
-                              minWidth: 44,
-                              minHeight: 44,
-                            ),
-                            icon: AnimatedRotation(
-                              turns: _expanded ? 0 : 0.5,
-                              duration: BreakMotion.medium,
-                              child: const Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                color: Color(0xFFD0D6DE),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BreakCountdown(
+                    seconds: widget.remainingSeconds,
+                    textAlign: TextAlign.left,
+                    style: BreakOverlayTheme.hero,
+                    color: breakClockColor(
+                      widget.settings,
+                      BreakPalette.onPhoto,
                     ),
-                    AnimatedBuilder(
-                      animation: _open,
-                      builder: (context, child) => ClipRect(
-                        child: Align(
-                          alignment: Alignment.topLeft,
-                          heightFactor: _open.value.clamp(0.0, 1.0),
-                          child: SizedBox(width: double.infinity, child: child),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 12),
-                          Text(
-                            title,
-                            style: BreakOverlayTheme.title.copyWith(
-                              color: BreakPalette.onPhoto.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.breakInfo.tip,
-                            style: BreakOverlayTheme.body.copyWith(
-                              color: BreakPalette.onPhoto.textSecondary,
-                            ),
-                          ),
-                          if (hasExercise)
-                            WellnessNotesPanel(
-                              title: widget.exerciseTitle!,
-                              instructions: widget.exerciseInstructions!,
-                            ),
-                        ],
-                      ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    widget.breakInfo.tip,
+                    style: BreakOverlayTheme.serif.copyWith(
+                      fontSize: 22,
+                      height: 1.4,
+                      color: BreakPalette.onPhoto.textPrimary,
                     ),
-                  ],
-                ),
+                  ),
+                  if (hasExercise)
+                    WellnessNotesPanel(
+                      title: widget.exerciseTitle!,
+                      instructions: widget.exerciseInstructions!,
+                    ),
+                ],
               ),
             ),
           ),

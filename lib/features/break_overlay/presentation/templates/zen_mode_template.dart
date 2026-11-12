@@ -27,12 +27,9 @@ class ZenModeTemplate extends StatefulWidget {
 
 class _ZenModeTemplateState extends State<ZenModeTemplate>
     with SingleTickerProviderStateMixin {
-  late BreathPreset _preset = BreathPreset.byId(widget.settings.breathPreset);
-
-  /// A preset picked mid-cycle starts at the next cycle, so a breath is never
-  /// cut short.
-  late BreathPreset _pending = _preset;
-  double _lastValue = 0;
+  late final BreathPreset _preset = BreathPreset.byId(
+    widget.settings.breathPreset,
+  );
 
   /// One controller drives both the breath and the blob morph; one value
   /// spans one cycle of the current preset.
@@ -70,31 +67,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     _updatePhase();
   }
 
-  void _selectPreset(BreathPreset p) {
-    setState(() => _pending = p);
-    // Frozen (reduced motion / preview): there is no cycle boundary to wait
-    // for, so switch now.
-    if (!_breath.isAnimating) _applyPending();
-  }
-
-  void _applyPending() {
-    _preset = _pending;
-    _lastValue = 0;
-    _breath.duration = Duration(seconds: _preset.cycleSeconds);
-    if (_breath.isAnimating) {
-      _breath.repeat();
-    } else {
-      setState(() {});
-    }
-  }
-
   void _updatePhase() {
     final v = _breath.value;
-    if (v < _lastValue - 0.5 && _pending != _preset) {
-      _applyPending();
-      return;
-    }
-    _lastValue = v;
     final phase = switch (_preset.phaseAt(v * _preset.cycleSeconds)) {
       BreathPhase.inhale => 'Breathe in',
       BreathPhase.exhale => 'Breathe out',
@@ -124,41 +98,11 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
-      background: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: RadialGradient(
-            radius: 0.75,
-            colors: [_accent.withValues(alpha: 0.05), Colors.transparent],
-          ),
-        ),
-      ),
       child: Stack(
         children: [
           Positioned(
-            top: 190,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Semantics(
-                liveRegion: true,
-                child: AnimatedSwitcher(
-                  duration: BreakMotion.medium,
-                  child: Text(
-                    _phaseText,
-                    key: ValueKey(_phaseText),
-                    textAlign: TextAlign.center,
-                    style: BreakOverlayTheme.title.copyWith(
-                      color: palette.textPrimary,
-                      letterSpacing: 0.4,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 640 - 120,
-            top: 400 - 120,
+            left: 640 - 140,
+            top: 360 - 140,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 0.9 : 1.0),
@@ -170,8 +114,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                 ),
                 child: RepaintBoundary(
                   child: SizedBox(
-                    width: 240,
-                    height: 240,
+                    width: 280,
+                    height: 280,
                     child: CustomPaint(
                       painter: _BlobPainter(
                         breath: _breath,
@@ -187,108 +131,46 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
             ),
           ),
           Positioned(
-            top: 120,
+            top: 360 - 20,
             left: 0,
             right: 0,
-            child: BreakEntrance(
-              delay: BreakEntrance.stagger(3),
-              scale: false,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (final p in BreathPreset.all)
-                    _PresetChip(
-                      preset: p,
-                      selected: p == _pending,
-                      accent: _accent,
-                      onTap: () => _selectPreset(p),
+            child: Center(
+              child: Semantics(
+                liveRegion: true,
+                child: AnimatedSwitcher(
+                  duration: BreakMotion.medium,
+                  child: Text(
+                    _phaseText,
+                    key: ValueKey(_phaseText),
+                    style: BreakOverlayTheme.serif.copyWith(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w400,
+                      color: palette.textPrimary,
                     ),
-                ],
+                  ),
+                ),
               ),
             ),
           ),
           Positioned(
-            top: 400 + 120 + 40,
+            top: 360 + 140 + 56,
             left: 0,
             right: 0,
-            child: Column(
-              children: [
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(1),
-                  scale: false,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    style: BreakOverlayTheme.title,
-                    color: breakClockColor(
-                      widget.settings,
-                      palette,
-                      fallback: palette.textSecondary,
-                    ),
-                  ),
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: BreakCountdown(
+                seconds: widget.remainingSeconds,
+                style: BreakOverlayTheme.title,
+                color: breakClockColor(
+                  widget.settings,
+                  palette,
+                  fallback: palette.textMuted,
                 ),
-                const SizedBox(height: 12),
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(2),
-                  scale: false,
-                  child: BreakLabel(_kind.label),
-                ),
-              ],
+              ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PresetChip extends StatelessWidget {
-  final BreathPreset preset;
-  final bool selected;
-  final Color accent;
-  final VoidCallback onTap;
-
-  const _PresetChip({
-    required this.preset,
-    required this.selected,
-    required this.accent,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: 'Breathing pattern ${preset.label}',
-      excludeSemantics: true,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: onTap,
-          behavior: HitTestBehavior.opaque,
-          child: AnimatedContainer(
-            duration: BreakMotion.fast,
-            margin: const EdgeInsets.symmetric(horizontal: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: selected ? accent.withValues(alpha: 0.16) : null,
-              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
-              border: Border.all(
-                color: selected
-                    ? accent.withValues(alpha: 0.6)
-                    : palette.border,
-              ),
-            ),
-            child: Text(
-              preset.label,
-              style: BreakOverlayTheme.micro.copyWith(
-                color: selected ? palette.textPrimary : palette.textSecondary,
-                fontFeatures: BreakOverlayTheme.tabular,
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -302,7 +184,7 @@ class _BlobPainter extends CustomPainter {
   final bool reduced;
 
   static const int _points = 6;
-  static const double _baseRadius = 110;
+  static const double _baseRadius = 130;
 
   final Path _path = Path();
   final Paint _fill = Paint();
@@ -317,11 +199,7 @@ class _BlobPainter extends CustomPainter {
     required this.cycleSeconds,
     required this.accent,
     required this.reduced,
-  }) : super(repaint: breath) {
-    _fill.shader = RadialGradient(
-      colors: [accent.withValues(alpha: 0.22), accent.withValues(alpha: 0.0)],
-    ).createShader(Rect.fromCircle(center: Offset.zero, radius: 120));
-  }
+  }) : super(repaint: breath);
 
   /// 0.75 empty, 1.0 full.
   double _scale() => 0.75 + 0.25 * fullness.value;
@@ -362,8 +240,8 @@ class _BlobPainter extends CustomPainter {
     canvas.scale(scale);
     // Reduced motion trades the scale change for a 60% -> 100% opacity swell.
     final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
-    _fill.color = Color.fromRGBO(255, 255, 255, fade);
-    _stroke.color = accent.withValues(alpha: 0.5 * fade);
+    _fill.color = accent.withValues(alpha: 0.08 * fade);
+    _stroke.color = accent.withValues(alpha: 0.7 * fade);
     canvas.drawPath(_path, _fill);
     canvas.drawPath(_path, _stroke);
     canvas.restore();

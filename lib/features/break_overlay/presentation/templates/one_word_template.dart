@@ -30,7 +30,6 @@ class OneWordTemplate extends StatelessWidget {
     final word = breakInfo.type == BreakType.long ? 'Pause' : 'Rest';
     final progress = breakProgress(remainingSeconds, totalSeconds);
     final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
-    final reduced = BreakMotion.reduced(context);
     final showTip = settings.showExercisesInBreak && breakInfo.tip.isNotEmpty;
     final base = palette.textSecondary.withValues(alpha: 0.5);
 
@@ -41,10 +40,10 @@ class OneWordTemplate extends StatelessWidget {
       child: Stack(
         children: [
           Positioned(
-            top: 270,
+            top: 250,
             left: 128,
             right: 128,
-            height: 180,
+            height: 210,
             child: BreakEntrance(
               scale: false,
               duration: const Duration(milliseconds: 1200),
@@ -71,15 +70,14 @@ class OneWordTemplate extends StatelessWidget {
                             colors: [accent, base],
                           ).createShader(bounds),
                           child: Text(
-                            word.toUpperCase(),
+                            word,
                             maxLines: 1,
-                            style: TextStyle(
-                              fontFamily: BreakOverlayTheme.fontFamily,
-                              fontSize: 140,
-                              fontWeight: FontWeight.w200,
+                            style: BreakOverlayTheme.serif.copyWith(
+                              fontSize: 168,
+                              fontWeight: FontWeight.w300,
                               height: 1.0,
+                              letterSpacing: -2,
                               color: Colors.white,
-                              letterSpacing: reduced ? 6 : 12 * p,
                             ),
                           ),
                         ),
@@ -91,7 +89,7 @@ class OneWordTemplate extends StatelessWidget {
             ),
           ),
           Positioned(
-            top: 454,
+            top: 484,
             left: 0,
             right: 0,
             child: BreakEntrance(
@@ -99,7 +97,9 @@ class OneWordTemplate extends StatelessWidget {
               scale: false,
               child: BreakCountdown(
                 seconds: remainingSeconds,
-                style: BreakOverlayTheme.title,
+                style: BreakOverlayTheme.title.copyWith(
+                  fontWeight: FontWeight.w400,
+                ),
                 color: breakClockColor(
                   settings,
                   palette,

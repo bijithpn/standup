@@ -1,12 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:breakmate/app/dependency_injection.dart';
-import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
-import 'package:breakmate/features/break_system/presentation/widgets/break_activity_graph.dart';
 
 class IrisRestTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -30,12 +27,6 @@ class IrisRestTemplate extends StatefulWidget {
 
 class _IrisRestTemplateState extends State<IrisRestTemplate>
     with SingleTickerProviderStateMixin {
-  bool _showStreak = false;
-
-  static const Color _good = Color(0xFF4ADE80);
-  static const Color _fair = Color(0xFFF59E0B);
-  static const Color _low = Color(0xFFEF4444);
-
   /// Dilate over 2.5s, constrict over 2.5s: a 5s cycle.
   late final AnimationController _iris = AnimationController(
     vsync: this,
@@ -63,40 +54,6 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
     super.dispose();
   }
 
-  /// Last (up to) 10 days of break history, oldest first, padded to at
-  /// least 2 entries so [BreakActivityGraph] never divides by zero when
-  /// history is thin (e.g. a brand-new install).
-  List<DailyStats> _recentDays(List<DailyStats> weeklyData) {
-    final recent = weeklyData.length > 10
-        ? weeklyData.sublist(weeklyData.length - 10)
-        : weeklyData;
-    if (recent.length >= 2) return recent;
-    final placeholder = DailyStats(
-      date: '0000-00-00',
-      breaksCompleted: 0,
-      breaksSkipped: 0,
-      usageMinutes: 0,
-    );
-    return [for (var i = recent.length; i < 2; i++) placeholder, ...recent];
-  }
-
-  Color _colorForDay(DailyStats day) {
-    final total = day.breaksCompleted + day.breaksSkipped;
-    if (total == 0) return BreakOverlayTheme.nature;
-    final rate = day.breaksCompleted / total;
-    if (rate >= 0.75) return _good;
-    if (rate >= 0.4) return _fair;
-    return _low;
-  }
-
-  String _dayLabel(DailyStats day, bool isToday) {
-    final total = day.breaksCompleted + day.breaksSkipped;
-    if (total == 0) return '${isToday ? 'Today' : day.date}, no breaks yet';
-    final pct = (day.breaksCompleted / total * 100).round();
-    final grade = pct >= 75 ? 'good' : (pct >= 40 ? 'fair' : 'low');
-    return '${isToday ? 'Today' : day.date}, $pct percent, $grade';
-  }
-
   @override
   Widget build(BuildContext context) {
     final palette = BreakPalette.of(context);
@@ -104,7 +61,7 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
       BreakOverlayTheme.resolveAccent(
         widget.settings.templateAccentOverrides,
         'iris_rest',
-        _good,
+        BreakOverlayTheme.nature,
       ),
     );
     final complete = breakIsComplete(
@@ -113,169 +70,87 @@ class _IrisRestTemplateState extends State<IrisRestTemplate>
       widget.totalSeconds,
     );
     final reduced = BreakMotion.reduced(context);
+    final showTip =
+        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 
-    return ListenableBuilder(
-      listenable: sl<StatsService>(),
-      builder: (context, _) {
-        final recentDays = _recentDays(sl<StatsService>().stats.weeklyData);
-        final dataPoints = recentDays.map((d) => d.breaksCompleted).toList();
-        final pointColors = recentDays.map(_colorForDay).toList();
-
-        return BreakScaffold(
-          onSkip: widget.onSkip,
-          strictMode: widget.settings.strictMode,
-          accent: accent,
-          background: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: RadialGradient(
-                radius: 0.8,
-                colors: [accent.withValues(alpha: 0.05), Colors.transparent],
-              ),
-            ),
-          ),
-          child: Stack(
-            children: [
-              Positioned(
-                top: 96,
-                left: 64,
-                right: 64,
-                child: BreakEntrance(
-                  scale: false,
-                  child: Column(
-                    children: [
-                      Text(
-                        'Rest Your Eyes, Refresh Your Mind',
-                        textAlign: TextAlign.center,
-                        style: BreakOverlayTheme.title.copyWith(
-                          color: palette.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 520),
-                        child: Text(
-                          'Gentle reminders to protect your vision '
-                          'and boost focus. Take a moment - your '
-                          'eyes deserve it.',
-                          textAlign: TextAlign.center,
-                          style: BreakOverlayTheme.body.copyWith(
-                            color: palette.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
+    return BreakScaffold(
+      onSkip: widget.onSkip,
+      strictMode: widget.settings.strictMode,
+      accent: accent,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 640 - 130,
+            top: 330 - 130,
+            child: BreakEntrance(
+              child: TweenAnimationBuilder<double>(
+                // Completion: the aperture opens fully and fades.
+                tween: Tween(end: complete ? 1.0 : 0.0),
+                duration: BreakMotion.slow,
+                curve: BreakMotion.enter,
+                builder: (context, finish, _) => RepaintBoundary(
+                  child: CustomPaint(
+                    size: const Size(260, 260),
+                    painter: _AperturePainter(
+                      open: _iris,
+                      fixed: reduced || BreakPreviewScope.isPreview(context),
+                      accent: accent,
+                      bladeA: Color.lerp(
+                        palette.surface,
+                        palette.isDark ? Colors.white : Colors.black,
+                        0.08,
+                      )!,
+                      bladeB: palette.canvasRaised,
+                      edge: palette.isDark
+                          ? Colors.white.withValues(alpha: 0.16)
+                          : const Color(0xFF1C1F24).withValues(alpha: 0.14),
+                      housing: palette.border,
+                      finish: finish,
+                    ),
                   ),
                 ),
               ),
-              Positioned(
-                left: 640 - 130,
-                top: 370 - 130,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(1),
-                  child: TweenAnimationBuilder<double>(
-                    // Completion: the aperture opens fully and fades.
-                    tween: Tween(end: complete ? 1.0 : 0.0),
-                    duration: BreakMotion.slow,
-                    curve: BreakMotion.enter,
-                    builder: (context, finish, _) => RepaintBoundary(
-                      child: CustomPaint(
-                        size: const Size(260, 260),
-                        painter: _AperturePainter(
-                          open: _iris,
-                          fixed:
-                              reduced || BreakPreviewScope.isPreview(context),
-                          accent: accent,
-                          bladeA: Color.lerp(
-                            palette.surface,
-                            palette.isDark ? Colors.white : Colors.black,
-                            0.08,
-                          )!,
-                          bladeB: palette.canvasRaised,
-                          edge: palette.isDark
-                              ? Colors.white.withValues(alpha: 0.16)
-                              : const Color(0xFF1C1F24).withValues(alpha: 0.14),
-                          housing: palette.border,
-                          finish: finish,
-                        ),
+            ),
+          ),
+          Positioned(
+            top: 330 + 130 + 40,
+            left: 0,
+            right: 0,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: BreakCountdown(
+                seconds: widget.remainingSeconds,
+                color: breakClockColor(widget.settings, palette),
+              ),
+            ),
+          ),
+          if (showTip)
+            Positioned(
+              top: 330 + 130 + 40 + 72,
+              left: 0,
+              right: 0,
+              child: BreakEntrance(
+                delay: BreakEntrance.stagger(2),
+                scale: false,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Text(
+                      widget.breakInfo.tip,
+                      textAlign: TextAlign.center,
+                      style: BreakOverlayTheme.serif.copyWith(
+                        fontSize: 20,
+                        height: 1.5,
+                        color: palette.textSecondary,
                       ),
                     ),
                   ),
                 ),
               ),
-              Positioned(
-                top: 370 + 130 + 32,
-                left: 0,
-                right: 0,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(2),
-                  scale: false,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    color: breakClockColor(widget.settings, palette),
-                  ),
-                ),
-              ),
-              // Compliance strip: dots, with the streak chart behind a toggle.
-              Positioned(
-                left: 0,
-                right: 0,
-                top: 596,
-                child: BreakEntrance(
-                  delay: BreakEntrance.stagger(3),
-                  scale: false,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          for (var i = 0; i < recentDays.length; i++) ...[
-                            if (i > 0) const SizedBox(width: 8),
-                            Semantics(
-                              label: _dayLabel(
-                                recentDays[i],
-                                i == recentDays.length - 1,
-                              ),
-                              child: Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color: pointColors[i],
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: () =>
-                            setState(() => _showStreak = !_showStreak),
-                        style: TextButton.styleFrom(
-                          foregroundColor: palette.textSecondary,
-                          textStyle: BreakOverlayTheme.micro,
-                        ),
-                        child: Text(
-                          _showStreak ? 'Hide streak' : 'Your streak',
-                        ),
-                      ),
-                      if (_showStreak)
-                        SizedBox(
-                          width: 360,
-                          height: 64,
-                          child: BreakActivityGraph(
-                            dataPoints: dataPoints,
-                            pointColors: pointColors,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+        ],
+      ),
     );
   }
 }

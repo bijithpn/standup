@@ -1,7 +1,4 @@
-import 'dart:async';
 import 'dart:math' as math;
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
@@ -49,22 +46,11 @@ class HaikuCardTemplate extends StatefulWidget {
 }
 
 class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
-  /// Fixed for the whole break so the poem does not change when the minute
-  /// rolls over.
+  // Fixed for the whole break so the poem does not change at a minute rollover.
   late final List<String> _poem =
       HaikuCardTemplate._haikus[clock.now().minute % 4];
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
   final _MountainCache _mountains = _MountainCache();
-
-  @override
-  void initState() {
-    super.initState();
-    if (_Grain.tile == null) {
-      _Grain.load().then((_) {
-        if (mounted) setState(() {});
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -83,152 +69,91 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
     );
     final reduced = BreakMotion.reduced(context);
     final ink = palette.isDark ? Colors.white : const Color(0xFF1C1F24);
-    final cardFill = palette.isDark
-        ? const Color(0xFFF5F0E6).withValues(alpha: 0.06)
-        : Colors.white;
-    final cardBorder = palette.isDark
-        ? Colors.white.withValues(alpha: 0.10)
-        : const Color(0xFF1C1F24).withValues(alpha: 0.10);
 
     return BreakScaffold(
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: accent,
-      background: Stack(
-        fit: StackFit.expand,
-        children: [
-          BreakSmoothProgress(
-            progress: progress,
-            builder: (context, anim) => CustomPaint(
-              painter: _MountainPainter(
-                cache: _mountains,
-                progress: reduced ? null : anim,
-                color: ink,
-              ),
-            ),
+      background: BreakSmoothProgress(
+        progress: progress,
+        builder: (context, anim) => CustomPaint(
+          painter: _MountainPainter(
+            cache: _mountains,
+            progress: reduced ? null : anim,
+            color: ink,
           ),
-          if (_Grain.tile != null)
-            IgnorePointer(
-              child: CustomPaint(painter: _GrainPainter(tint: ink)),
-            ),
-        ],
+        ),
       ),
       child: Center(
         child: AnimatedOpacity(
-          // Completion: the card fades.
           opacity: complete ? 0 : 1,
           duration: BreakMotion.slow,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              BreakEntrance(
-                scale: false,
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 460),
-                  padding: const EdgeInsets.all(40),
-                  decoration: BoxDecoration(
-                    color: cardFill,
-                    borderRadius: BorderRadius.circular(
-                      BreakOverlayTheme.radiusLg,
-                    ),
-                    border: Border.all(color: cardBorder),
-                    boxShadow: palette.isDark
-                        ? null
-                        : BreakOverlayTheme.surfaceShadow,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          _Badge(_kind.label, palette),
-                          const SizedBox(width: 8),
-                          _Badge(
-                            breakDurationLabel(widget.totalSeconds),
-                            palette,
+              Semantics(
+                container: true,
+                label: _poem.join(' '),
+                excludeSemantics: true,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < _poem.length; i++)
+                      BreakEntrance(
+                        delay: Duration(milliseconds: 500 * i),
+                        scale: false,
+                        duration: const Duration(milliseconds: 900),
+                        child: Text(
+                          _poem[i],
+                          textAlign: TextAlign.center,
+                          style: BreakOverlayTheme.serif.copyWith(
+                            fontSize: 34,
+                            fontWeight: FontWeight.w300,
+                            fontStyle: FontStyle.italic,
+                            height: 1.7,
+                            color: palette.textPrimary,
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // The poem is read as a single block.
-                      Semantics(
-                        container: true,
-                        label: _poem.join(' '),
-                        excludeSemantics: true,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            for (var i = 0; i < _poem.length; i++)
-                              BreakEntrance(
-                                delay: Duration(milliseconds: 400 * i),
-                                scale: false,
-                                duration: const Duration(milliseconds: 700),
-                                child: Text(
-                                  _poem[i],
-                                  textAlign: TextAlign.center,
-                                  style: BreakOverlayTheme.serif.copyWith(
-                                    fontSize: 22,
-                                    fontStyle: FontStyle.italic,
-                                    height: 1.8,
-                                    color: palette.textPrimary,
-                                  ),
-                                ),
-                              ),
-                          ],
                         ),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 56),
               BreakEntrance(
-                delay: BreakEntrance.stagger(2),
+                delay: BreakEntrance.stagger(4),
                 scale: false,
-                child: BreakProgressRing(
-                  size: 64,
-                  strokeWidth: 2,
-                  progress: progress,
-                  color: accent,
-                  trackColor: palette.track,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    style: BreakOverlayTheme.body.copyWith(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                      height: 1.0,
-                      fontFeatures: BreakOverlayTheme.tabular,
-                    ),
-                    color: breakClockColor(widget.settings, palette),
+                child: SizedBox(
+                  width: 120,
+                  child: Column(
+                    children: [
+                      BreakSmoothProgress(
+                        progress: progress,
+                        builder: (context, anim) => AnimatedBuilder(
+                          animation: anim,
+                          builder: (context, _) => LinearProgressIndicator(
+                            value: anim.value,
+                            minHeight: 1,
+                            color: accent,
+                            backgroundColor: palette.track,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      BreakCountdown(
+                        seconds: widget.remainingSeconds,
+                        style: BreakOverlayTheme.body.copyWith(
+                          fontSize: 14,
+                          fontFeatures: BreakOverlayTheme.tabular,
+                        ),
+                        color: breakClockColor(widget.settings, palette),
+                      ),
+                    ],
                   ),
                 ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  final String text;
-  final BreakPalette palette;
-
-  const _Badge(this.text, this.palette);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
-        border: Border.all(color: palette.border),
-      ),
-      child: Text(
-        text.toUpperCase(),
-        style: BreakOverlayTheme.micro.copyWith(color: palette.textMuted),
       ),
     );
   }
@@ -302,59 +227,4 @@ class _MountainPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MountainPainter old) => old.color != color;
-}
-
-/// A 128px noise tile generated once and repeated at 3% for paper grain.
-class _Grain {
-  static ui.Image? tile;
-  static Future<void>? _loading;
-
-  static Future<void> load() => _loading ??= _make();
-
-  static Future<void> _make() async {
-    const n = 128;
-    final rnd = math.Random(42);
-    final px = Uint8List(n * n * 4);
-    for (var i = 0; i < n * n; i++) {
-      final v = rnd.nextInt(256);
-      px[i * 4] = v;
-      px[i * 4 + 1] = v;
-      px[i * 4 + 2] = v;
-      px[i * 4 + 3] = 255;
-    }
-    final completer = Completer<ui.Image>();
-    ui.decodeImageFromPixels(
-      px,
-      n,
-      n,
-      ui.PixelFormat.rgba8888,
-      completer.complete,
-    );
-    tile = await completer.future;
-  }
-}
-
-class _GrainPainter extends CustomPainter {
-  final Color tint;
-
-  _GrainPainter({required this.tint});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final t = _Grain.tile;
-    if (t == null) return;
-    final paint = Paint()
-      ..shader = ImageShader(
-        t,
-        TileMode.repeated,
-        TileMode.repeated,
-        Matrix4.identity().storage,
-      )
-      ..color = tint.withValues(alpha: 0.03)
-      ..blendMode = BlendMode.softLight;
-    canvas.drawRect(Offset.zero & size, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _GrainPainter old) => old.tint != tint;
 }

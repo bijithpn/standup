@@ -100,7 +100,7 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
       child: Stack(
         children: [
           Positioned(
-            top: 400 - 28 - 26,
+            top: 400 - 90,
             left: 0,
             right: 0,
             child: Center(
@@ -111,8 +111,10 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                   child: Text(
                     _phaseText,
                     key: ValueKey(_phaseText),
-                    style: BreakOverlayTheme.title.copyWith(
-                      color: palette.textSecondary,
+                    style: BreakOverlayTheme.serif.copyWith(
+                      fontSize: 34,
+                      fontWeight: FontWeight.w400,
+                      color: palette.textPrimary,
                     ),
                   ),
                 ),
@@ -121,9 +123,9 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
           ),
           Positioned(
             left: 640 - 220,
-            top: 400 - 50,
+            top: 400 - 10,
             width: 440,
-            height: 100,
+            height: 20,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 1.0 : 0.0),
@@ -134,9 +136,8 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                     painter: _LinePainter(
                       progress: _fullness,
                       accent: accent,
+                      track: palette.border,
                       reduced: reduced,
-                      maxGlow: palette.isDark ? 0.55 : 0.18,
-                      minGlow: palette.isDark ? 0.25 : 0.10,
                       finish: finish,
                     ),
                   ),
@@ -145,31 +146,21 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
             ),
           ),
           Positioned(
-            top: 400 + 40,
+            top: 400 + 64,
             left: 0,
             right: 0,
-            child: Column(
-              children: [
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(1),
-                  scale: false,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    style: BreakOverlayTheme.title,
-                    color: breakClockColor(
-                      widget.settings,
-                      palette,
-                      fallback: palette.textPrimary,
-                    ),
-                  ),
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: BreakCountdown(
+                seconds: widget.remainingSeconds,
+                style: BreakOverlayTheme.title,
+                color: breakClockColor(
+                  widget.settings,
+                  palette,
+                  fallback: palette.textMuted,
                 ),
-                const SizedBox(height: 12),
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(2),
-                  scale: false,
-                  child: BreakLabel(_kind.label),
-                ),
-              ],
+              ),
             ),
           ),
         ],
@@ -181,81 +172,47 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
 class _LinePainter extends CustomPainter {
   final Animation<double> progress;
   final Color accent;
+  final Color track;
   final bool reduced;
-  final double maxGlow;
-  final double minGlow;
 
-  /// 0..1: extends the line to 420 and fades it out (completion).
+  /// 0..1: extends the line to full width and fades it out (completion).
   final double finish;
 
-  final Paint _glow = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
-    ..strokeCap = StrokeCap.round
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+  final Paint _track = Paint()..strokeWidth = 1;
   final Paint _line = Paint()
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
+    ..strokeWidth = 2
     ..strokeCap = StrokeCap.round;
-  final Paint _reflection = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 3
-    ..strokeCap = StrokeCap.round;
-  final Paint _fade = Paint();
 
   _LinePainter({
     required this.progress,
     required this.accent,
+    required this.track,
     required this.reduced,
-    required this.maxGlow,
-    required this.minGlow,
     required this.finish,
-  }) : super(repaint: progress) {
-    _fade.shader = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [accent.withValues(alpha: 0.07), accent.withValues(alpha: 0)],
-    ).createShader(const Rect.fromLTWH(0, 0, 420, 40));
-  }
+  }) : super(repaint: progress);
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Already eased by the breath preset; holds keep the line full or short.
     final eased = progress.value;
-    // Width 60 -> 380; reduced motion pins it at 220 and pulses the glow.
     final base = reduced ? 220.0 : 60 + 320 * eased;
-    final width = base + (420 - base) * finish;
-    final glow = (minGlow + (maxGlow - minGlow) * eased) * (1 - finish);
-    final body = 1 - finish;
-
+    final width = base + (size.width - base) * finish;
     final cy = size.height / 2;
     final x0 = (size.width - width) / 2;
-    final a = Offset(x0, cy);
-    final b = Offset(x0 + width, cy);
 
-    _glow.color = accent.withValues(alpha: glow);
-    canvas.drawLine(a, b, _glow);
+    _track.color = track;
+    canvas.drawLine(Offset(0, cy), Offset(size.width, cy), _track);
 
-    _line.color = accent.withValues(alpha: body);
-    canvas.drawLine(a, b, _line);
-
-    // Mirrored reflection 10px below, fading out over 40px.
-    final ry = cy + 10;
-    _reflection.color = accent.withValues(alpha: 0.12 * body);
-    canvas.drawLine(Offset(x0, ry), Offset(x0 + width, ry), _reflection);
-    canvas
-      ..save()
-      ..clipRect(Rect.fromLTWH(x0, ry, width, 40))
-      ..translate((size.width - 420) / 2, ry)
-      ..drawRect(const Rect.fromLTWH(0, 0, 420, 40), _fade)
-      ..restore();
+    // Reduced motion pins the width, so the breath shows as opacity instead.
+    final breath = reduced ? 0.5 + 0.5 * eased : 1.0;
+    _line.color = accent.withValues(alpha: breath * (1 - finish));
+    canvas.drawLine(Offset(x0, cy), Offset(x0 + width, cy), _line);
   }
 
   @override
   bool shouldRepaint(covariant _LinePainter old) =>
       old.accent != accent ||
+      old.track != track ||
       old.reduced != reduced ||
-      old.maxGlow != maxGlow ||
-      old.minGlow != minGlow ||
       old.finish != finish;
 }

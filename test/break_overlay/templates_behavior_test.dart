@@ -74,7 +74,7 @@ void main() {
             kind: PointerDeviceKind.mouse,
           );
           await mouse.addPointer(location: Offset.zero);
-          await mouse.moveTo(tester.getCenter(find.text('EYE REST')));
+          await mouse.moveTo(tester.getCenter(find.text('Eye rest')));
           await tester.pump(); // starts the expand spring
           await tester.pump(const Duration(seconds: 1));
         }

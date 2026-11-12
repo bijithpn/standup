@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/companion/domain/pet_theme.dart';
@@ -42,7 +40,6 @@ class _CompanionInteractiveTemplateState
   double? _lastHeight;
   bool _isDragging = false;
   bool _hasDragged = false;
-  bool _petHovered = false;
 
   static const double _widgetSize = 130.0;
 
@@ -175,19 +172,8 @@ class _CompanionInteractiveTemplateState
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
-      background: const IgnorePointer(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: RadialGradient(
-              radius: 0.95,
-              colors: [Colors.transparent, Color(0x40000000)],
-            ),
-          ),
-        ),
-      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compact = constraints.maxWidth < 760;
           if (_lastWidth != constraints.maxWidth ||
               _lastHeight != constraints.maxHeight) {
             if (_x != null && _lastWidth != null && _lastWidth! > 0) {
@@ -238,9 +224,10 @@ class _CompanionInteractiveTemplateState
                     child: Text(
                       _tips[_tipIndex % _tips.length],
                       textAlign: TextAlign.center,
-                      style: BreakOverlayTheme.body.copyWith(
+                      style: BreakOverlayTheme.serif.copyWith(
                         color: palette.textSecondary,
-                        fontSize: 13,
+                        fontSize: 15,
+                        height: 1.4,
                       ),
                     ),
                   ),
@@ -282,8 +269,6 @@ class _CompanionInteractiveTemplateState
                     cursor: _isDragging
                         ? SystemMouseCursors.grabbing
                         : SystemMouseCursors.grab,
-                    onEnter: (_) => setState(() => _petHovered = true),
-                    onExit: (_) => setState(() => _petHovered = false),
                     child: GestureDetector(
                       onPanStart: (_) => setState(() {
                         _isDragging = true;
@@ -323,35 +308,10 @@ class _CompanionInteractiveTemplateState
                           child: SizedBox(
                             width: _widgetSize,
                             height: _widgetSize,
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                AnimatedContainer(
-                                  duration: BreakMotion.fast,
-                                  width: _widgetSize - 8,
-                                  height: _widgetSize - 8,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: _accent.withValues(alpha: 0.4),
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: _accent.withValues(
-                                          alpha: _petHovered ? 0.28 : 0.18,
-                                        ),
-                                        blurRadius: 24,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                CompanionSpriteWidget(
-                                  petTheme: petTheme,
-                                  animationState: PetAnimationState.idle,
-                                  scale: 3.5,
-                                ),
-                              ],
+                            child: CompanionSpriteWidget(
+                              petTheme: petTheme,
+                              animationState: PetAnimationState.idle,
+                              scale: 3.5,
                             ),
                           ),
                         ),
@@ -362,26 +322,10 @@ class _CompanionInteractiveTemplateState
               ),
 
               Positioned(
-                bottom: compact ? 20 : 48,
+                bottom: 48,
                 left: 0,
                 right: 0,
-                child: Center(child: _buildDock(palette, compact)),
-              ),
-
-              Positioned(
-                bottom: compact ? 36 : 64,
-                left: compact ? 24 : 40,
-                child: Semantics(
-                  label: 'Current time',
-                  excludeSemantics: true,
-                  child: Text(
-                    DateFormat('HH:mm').format(clock.now()),
-                    style: BreakOverlayTheme.micro.copyWith(
-                      color: palette.textMuted,
-                      fontFeatures: BreakOverlayTheme.tabular,
-                    ),
-                  ),
-                ),
+                child: Center(child: _buildDock(palette)),
               ),
             ],
           );
@@ -390,34 +334,21 @@ class _CompanionInteractiveTemplateState
     );
   }
 
-  Widget _buildDock(BreakPalette palette, bool compact) {
+  Widget _buildDock(BreakPalette palette) {
     final canSkip = breakCanSkip(widget.settings, widget.onSkip);
-    return BreakGlass(
-      radius: BreakOverlayTheme.radiusPill,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: SizedBox(
-        height: 56,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            BreakCountdown(
-              seconds: widget.remainingSeconds,
-              style: BreakOverlayTheme.title,
-              color: breakClockColor(widget.settings, palette),
-            ),
-            if (!compact) ...[
-              const SizedBox(width: 12),
-              BreakLabel(_kind.label),
-            ],
-            if (canSkip) ...[
-              const SizedBox(width: 12),
-              Container(width: 1, height: 20, color: palette.border),
-              const SizedBox(width: 8),
-              BreakSkipButton(onPressed: widget.onSkip!, accent: _accent),
-            ],
-          ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        BreakCountdown(
+          seconds: widget.remainingSeconds,
+          style: BreakOverlayTheme.display,
+          color: breakClockColor(widget.settings, palette),
         ),
-      ),
+        if (canSkip) ...[
+          const SizedBox(width: 16),
+          BreakSkipButton(onPressed: widget.onSkip!, accent: _accent),
+        ],
+      ],
     );
   }
 }
