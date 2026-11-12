@@ -6,6 +6,7 @@ All notable changes to BreakMate are documented in this file.
 
 | Tag | Version | Build | Date | Summary |
 | --- | ---: | ---: | --- | --- |
+| `v1.12.0` | 1.12.0 | 48 | 2026-11-12 | Custom reminders, focus sessions, quick stretch, per-reminder sounds, accessibility options and idle-time timer fix |
 | `v1.11.1` | 1.11.1 | 44 | 2026-11-12 | Multi-display break overlay fixes, undismissable-overlay recovery and debug key-state hang fix (unreleased) |
 | `v1.11.0` | 1.11.0 | 43 | 2026-10-26 | Gallery Focus slideshow, avatar customizer, companion overlay settings, break appearance sections and break-timer sleep/lock fixes (unreleased) |
 | `v1.10.0` | 1.10.0 | 42 | 2026-10-23 | Break template polish: breathing presets, bundled fonts, light-theme coverage and tips (unreleased) |
@@ -29,6 +30,34 @@ All notable changes to BreakMate are documented in this file.
 Note: the local Git tags show `v1.1.0` and `v1.1.1` on the same commit, and `v1.1.4` and `v1.2.0` on the same merge commit. The release entries below preserve the intended appcast/package version history and feature descriptions.
 
 ## [Released]
+
+## [1.12.0] - 2026-11-12
+
+Tags: `v1.12.0`
+
+Build: `48`
+
+Release title: Focus, Custom Reminders & Accessibility
+
+### Added
+
+- Custom reminders: add your own recurring nudges (text and interval) under Settings > Notifications. They use the same pill/poster as health reminders and wait out meetings and presentations.
+- A distinct sound for every reminder type (eye rest, blink, posture, hydration, stretch, stand up, custom), played when the Sound setting is on.
+- Optional blink and screen-distance reminder (off by default).
+- Focus sessions from the tray (25 or 50 minutes): pauses breaks and reminders, logs the block to focus analytics, survives an app restart and logs the time actually focused if ended early. Optional Do Not Disturb via "BreakMate Focus On/Off" Shortcuts on macOS.
+- Quick Stretch from the tray: a one-off guided neck, wrist, shoulder or back stretch that counts as a break and a wellness action.
+- Tray snooze: 15 minutes, 1 hour and the rest of today.
+- End-of-day summary notification (breaks taken and focus time) when the workday wrap-up starts.
+- Evening eye care (off by default): at 8 pm, turns on Night Shift on macOS and nudges you to lower brightness.
+- Onboarding asks what you do and how long you sit at a screen, then recommends a break preset.
+- Accessibility: Reduce motion and Larger text settings for break screens, reminders, the companion and the main window.
+- "Move breaks out of this hour" action on the skipped-breaks insight, with a setting to turn it off.
+- History export: break and focus history as CSV.
+
+### Fixed
+
+- The break countdown no longer loses the minutes spent idle before idle detection pauses it; the idle time is given back when the timer pauses.
+- CI: moved macOS jobs to the macos-15 runner, installed Linux build dependencies with apt, upgraded paths-filter to v4 and fixed a formatting failure.
 
 ## [1.11.1] - 2026-11-12 (unreleased)
 
