@@ -73,6 +73,8 @@ class BreakOverlayConfigLoader {
           showWellnessNotes: showNotes,
           strictMode: strict,
           enableAnimations: anim,
+          reduceMotion: SimplePrefs.instance.getBool('reduce_motion'),
+          largeText: SimplePrefs.instance.getBool('large_overlay_text'),
           intensityLevel: intensity,
           clockFaceTextColorHex: textColor,
           clockFaceBlurEnabled: blurEnabled,

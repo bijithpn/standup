@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:breakmate/core/constants/app_constants.dart';
@@ -18,6 +19,7 @@ import 'package:breakmate/core/services/timer_engine.dart';
 import 'package:breakmate/core/services/timer_repository.dart';
 
 import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/analytics/daily_insight_notifier_service.dart';
 import 'package:breakmate/features/analytics/stats_service.dart';
 import 'package:breakmate/features/menu_bar/tray_manager_service.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
@@ -173,6 +175,9 @@ class TimerOrchestrator {
 
     trayManagerService.setBreakActive(true);
 
+    if (timerEngine.state == TimerState.windDown) {
+      sl<DailyInsightNotifierService>().showEndOfDaySummary();
+    }
     if (event.isLongBreak) {
       notificationService.showClockOutReminder();
     } else {
@@ -240,7 +245,19 @@ class TimerOrchestrator {
   void _handleHealthReminder(HealthReminderEvent event) {
     final settings = settingsRepository.currentSettings;
 
-    if (settings.companionEnabled) {
+    if (settings.soundEnabled) {
+      final tone = HealthReminderCopy.isCustom(event.reminderType)
+          ? 'custom'
+          : event.reminderType;
+      final player = AudioPlayer();
+      player.onPlayerComplete.first.then((_) => player.dispose());
+      player
+          .play(AssetSource('audio/reminder_$tone.wav'), volume: 0.5)
+          .catchError((_) => player.dispose());
+    }
+
+    if (settings.companionEnabled &&
+        !HealthReminderCopy.isCustom(event.reminderType)) {
       final interactionType = switch (event.reminderType) {
         'posture' || 'stretch' || 'standup' => 'stretch',
         _ => 'blink',

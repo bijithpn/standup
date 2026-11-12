@@ -890,6 +890,9 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         ),
         MenuItem(key: 'take_break', label: 'Instant Break'),
         MenuItem(key: 'skip_next', label: 'Skip Next Break'),
+        MenuItem(key: 'snooze_15', label: 'Snooze 15 min'),
+        MenuItem(key: 'snooze_60', label: 'Snooze 1 hour'),
+        MenuItem(key: 'snooze_today', label: 'Snooze rest of today'),
         MenuItem.separator(),
       ]);
     }

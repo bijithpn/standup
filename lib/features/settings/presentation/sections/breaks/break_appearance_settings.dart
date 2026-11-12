@@ -252,6 +252,23 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
         ..._buildColorsSection(context),
         const SizedBox(height: 32),
         ..._buildAccentPinSection(context),
+        const SizedBox(height: 32),
+        sectionHeader('Accessibility'),
+        buildCard([
+          toggleRow(
+            'Reduce motion',
+            'Freeze decorative animations in break screens and reminders.',
+            widget.settings.reduceMotion,
+            (v) => widget.onSave(widget.settings.copyWith(reduceMotion: v)),
+          ),
+          divider(),
+          toggleRow(
+            'Larger text',
+            'Scale up text in break screens and reminders.',
+            widget.settings.largeOverlayText,
+            (v) => widget.onSave(widget.settings.copyWith(largeOverlayText: v)),
+          ),
+        ]),
       ],
     );
   }

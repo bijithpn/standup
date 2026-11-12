@@ -45,6 +45,15 @@ class SettingsModel {
   /// Play a soft chime when a break finishes on its own.
   final bool breakChimeEnabled;
 
+  /// User-defined recurring reminders, shown alongside the health reminders.
+  final List<CustomReminder> customReminders;
+
+  /// Freeze decorative motion in break overlays, regardless of the OS setting.
+  final bool reduceMotion;
+
+  /// Scale up text in break overlays and reminders.
+  final bool largeOverlayText;
+
   /// Show an "I looked away" button during eye-rest breaks; each tap that is
   /// followed by a completed break counts as a wellness action.
   final bool lookedAwayPromptEnabled;
@@ -211,6 +220,9 @@ class SettingsModel {
     this.overlayThemeMode = 'dark',
     this.breathPreset = 'box',
     this.breakChimeEnabled = false,
+    this.customReminders = const [],
+    this.reduceMotion = false,
+    this.largeOverlayText = false,
     this.lookedAwayPromptEnabled = false,
     this.customImagePath,
     this.resetTimerAfterMinutes = 15,
@@ -319,6 +331,9 @@ class SettingsModel {
     String? overlayThemeMode,
     String? breathPreset,
     bool? breakChimeEnabled,
+    List<CustomReminder>? customReminders,
+    bool? reduceMotion,
+    bool? largeOverlayText,
     bool? lookedAwayPromptEnabled,
     String? customImagePath,
     int? resetTimerAfterMinutes,
@@ -435,6 +450,9 @@ class SettingsModel {
       overlayThemeMode: overlayThemeMode ?? this.overlayThemeMode,
       breathPreset: breathPreset ?? this.breathPreset,
       breakChimeEnabled: breakChimeEnabled ?? this.breakChimeEnabled,
+      customReminders: customReminders ?? this.customReminders,
+      reduceMotion: reduceMotion ?? this.reduceMotion,
+      largeOverlayText: largeOverlayText ?? this.largeOverlayText,
       lookedAwayPromptEnabled:
           lookedAwayPromptEnabled ?? this.lookedAwayPromptEnabled,
       customImagePath: customImagePath != null
@@ -571,6 +589,9 @@ class SettingsModel {
     'overlayThemeMode': overlayThemeMode,
     'breathPreset': breathPreset,
     'breakChimeEnabled': breakChimeEnabled,
+    'customReminders': [for (final r in customReminders) r.toJson()],
+    'reduceMotion': reduceMotion,
+    'largeOverlayText': largeOverlayText,
     'lookedAwayPromptEnabled': lookedAwayPromptEnabled,
     'customImagePath': customImagePath,
     'resetTimerAfterMinutes': resetTimerAfterMinutes,
@@ -683,6 +704,12 @@ class SettingsModel {
       overlayThemeMode: map['overlayThemeMode'] as String? ?? 'dark',
       breathPreset: map['breathPreset'] as String? ?? 'box',
       breakChimeEnabled: map['breakChimeEnabled'] as bool? ?? false,
+      reduceMotion: map['reduceMotion'] as bool? ?? false,
+      largeOverlayText: map['largeOverlayText'] as bool? ?? false,
+      customReminders: [
+        for (final r in map['customReminders'] as List? ?? const [])
+          CustomReminder.fromJson(Map<String, dynamic>.from(r as Map)),
+      ],
       lookedAwayPromptEnabled: map['lookedAwayPromptEnabled'] as bool? ?? false,
       customImagePath: map['customImagePath'] as String?,
       resetTimerAfterMinutes: map['resetTimerAfterMinutes'] as int? ?? 15,
@@ -775,4 +802,18 @@ class SettingsModel {
           const {},
     );
   }
+}
+
+class CustomReminder {
+  final String title;
+  final int minutes;
+
+  const CustomReminder({required this.title, required this.minutes});
+
+  Map<String, dynamic> toJson() => {'title': title, 'minutes': minutes};
+
+  factory CustomReminder.fromJson(Map<String, dynamic> j) => CustomReminder(
+    title: j['title'] as String? ?? '',
+    minutes: j['minutes'] as int? ?? 60,
+  );
 }

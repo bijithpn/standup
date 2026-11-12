@@ -151,6 +151,10 @@ class NotificationService {
     await _show(id: 32, title: 'Something worth noticing', body: text);
   }
 
+  Future<void> showEndOfDaySummary(String text) async {
+    await _show(id: 33, title: 'Your day in review', body: text);
+  }
+
   Future<void> showReminder({required String message}) async {
     await _show(id: 0, title: 'BreakMate', body: message);
   }

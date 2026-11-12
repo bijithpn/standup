@@ -95,6 +95,27 @@ class DailyInsightNotifierService {
     _storage.setString(AppConstants.keyLastDailyInsightDateKey, todayKey);
   }
 
+  /// Fired at clock-out: breaks taken and focus time for today.
+  void showEndOfDaySummary({DateTime? now}) {
+    final today = now ?? clock.now();
+    final events = _breakHistoryService.eventsBetween(
+      DateTime(today.year, today.month, today.day),
+      today.add(const Duration(seconds: 1)),
+    );
+    final taken = events.where((e) => e.completed).length;
+    final focus = Duration(
+      seconds: _focusSessionService.focusSecondsForPeriod(
+        UsagePeriod.today,
+        now: today,
+      ),
+    );
+    if (events.isEmpty && focus == Duration.zero) return;
+    _notificationService.showEndOfDaySummary(
+      '$taken/${events.length} breaks taken · '
+      '${focus.inHours}h ${focus.inMinutes % 60}m focused',
+    );
+  }
+
   OverviewInsight? _topInsight(DateTime today) {
     final settings = _settingsRepository.currentSettings;
 

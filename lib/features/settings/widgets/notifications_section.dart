@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/app/dependency_injection.dart';
@@ -61,6 +62,38 @@ class NotificationsSection extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 24),
+        sectionHeader(
+          'Custom Reminders',
+          subtitle:
+              'Your own recurring nudges, shown with the health reminders.',
+        ),
+        buildCard([
+          for (final r in settings.customReminders) ...[
+            ListTile(
+              dense: true,
+              title: Text(r.title),
+              subtitle: Text('Every ${r.minutes} min'),
+              trailing: IconButton(
+                tooltip: 'Remove',
+                icon: const Icon(CupertinoIcons.delete, size: 16),
+                onPressed: () => onSave(
+                  settings.copyWith(
+                    customReminders: [...settings.customReminders]..remove(r),
+                  ),
+                ),
+              ),
+            ),
+            divider(),
+          ],
+          _CustomReminderForm(
+            onAdd: (r) => onSave(
+              settings.copyWith(
+                customReminders: [...settings.customReminders, r],
+              ),
+            ),
+          ),
+        ]),
       ],
     );
   }
@@ -68,7 +101,7 @@ class NotificationsSection extends StatelessWidget {
   Widget _buildSoundEnabled() {
     return toggleRow(
       'Sound',
-      'Play sound notifications for breaks',
+      'Play sound notifications for breaks and a distinct tone for each reminder',
       settings.soundEnabled,
       (v) {
         onSave(settings.copyWith(soundEnabled: v));
@@ -183,6 +216,74 @@ class NotificationsSection extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomReminderForm extends StatefulWidget {
+  final ValueChanged<CustomReminder> onAdd;
+  const _CustomReminderForm({required this.onAdd});
+
+  @override
+  State<_CustomReminderForm> createState() => _CustomReminderFormState();
+}
+
+class _CustomReminderFormState extends State<_CustomReminderForm> {
+  final _title = TextEditingController();
+  final _minutes = TextEditingController(text: '60');
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _minutes.dispose();
+    super.dispose();
+  }
+
+  void _add() {
+    final title = _title.text.trim();
+    final minutes = int.tryParse(_minutes.text);
+    if (title.isEmpty || minutes == null || minutes < 1) return;
+    widget.onAdd(CustomReminder(title: title, minutes: minutes));
+    _title.clear();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _title,
+              decoration: const InputDecoration(
+                hintText: 'Reminder text',
+                isDense: true,
+              ),
+              onSubmitted: (_) => _add(),
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 72,
+            child: TextField(
+              controller: _minutes,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(
+                suffixText: 'min',
+                isDense: true,
+              ),
+              onSubmitted: (_) => _add(),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Add',
+            icon: const Icon(CupertinoIcons.add_circled),
+            onPressed: _add,
           ),
         ],
       ),

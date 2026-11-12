@@ -33,10 +33,19 @@ class HealthReminderCopy {
     ],
   };
 
-  static bool isKnown(String? type) => _variants.containsKey(type);
+  static const customPrefix = 'custom:';
+
+  static bool isCustom(String? type) => type?.startsWith(customPrefix) ?? false;
+
+  static String _customTitle(String type) =>
+      type.substring(customPrefix.length);
+
+  static bool isKnown(String? type) =>
+      _variants.containsKey(type) || isCustom(type);
 
   /// One random line for [type]; falls back to the eye-rest wording.
   static String text(String? type, [Random? random]) {
+    if (isCustom(type)) return _customTitle(type!);
     final list = _variants[type] ?? _variants['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
@@ -55,16 +64,19 @@ class HealthReminderCopy {
 
   /// Short label for the compact pill (one of a few variants).
   static String pill(String? type, [Random? random]) {
+    if (isCustom(type)) return _customTitle(type!);
     final list = _pills[type] ?? _pills['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
 
   /// Big wording for the full-screen poster.
-  static String poster(String? type) => switch (type) {
-    'posture' => 'Watch your posture!',
-    'hydration' => 'Drink some water!',
-    'stretch' => 'Time to stretch!',
-    'standup' => 'Stand up and move!',
-    _ => 'Rest your eyes!',
-  };
+  static String poster(String? type) => isCustom(type)
+      ? _customTitle(type!)
+      : switch (type) {
+          'posture' => 'Watch your posture!',
+          'hydration' => 'Drink some water!',
+          'stretch' => 'Time to stretch!',
+          'standup' => 'Stand up and move!',
+          _ => 'Rest your eyes!',
+        };
 }

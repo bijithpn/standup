@@ -51,6 +51,22 @@ class MenuBarController {
       case 'skip_next':
         breakController.skipNextBreak();
         break;
+      case 'snooze_15':
+        breakController.snooze(minutes: 15);
+        break;
+      case 'snooze_60':
+        breakController.snooze(minutes: 60);
+        break;
+      case 'snooze_today':
+        final now = DateTime.now();
+        breakController.snooze(
+          minutes: DateTime(
+            now.year,
+            now.month,
+            now.day + 1,
+          ).difference(now).inMinutes,
+        );
+        break;
       case 'complete_break':
         await breakController.completeCurrentBreak();
         break;

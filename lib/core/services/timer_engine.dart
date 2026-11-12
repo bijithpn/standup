@@ -15,6 +15,7 @@ import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
@@ -557,6 +558,8 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
+    if (_checkCustomReminders(settings)) return;
+
     // Cadence follows evidence-based baselines (eye rest: the 20-20-20 rule,
     // posture: roughly every 30 minutes); the break interval only nudges it by
     // up to ±20%. All timing decisions — real relief from idle time, holding
@@ -595,6 +598,30 @@ class TimerEngine extends ChangeNotifier {
     _resetElapsed(due);
     covered.forEach(_resetElapsed);
     _triggerHealthReminder(due.typeName, 'overlay');
+  }
+
+  final Map<String, DateTime> _customLastFired = {};
+
+  /// Fires at most one due user-defined reminder; waits out meetings and
+  /// presentations. Counts from first sight, so a new reminder isn't instant.
+  bool _checkCustomReminders(SettingsModel settings) {
+    if (_contextManager.isMeetingActive() ||
+        _contextManager.isPresentationActive()) {
+      return false;
+    }
+    final now = clock.now();
+    for (final r in settings.customReminders) {
+      final key = '${r.title}|${r.minutes}';
+      final last = _customLastFired.putIfAbsent(key, () => now);
+      if (now.difference(last) < Duration(minutes: r.minutes)) continue;
+      _customLastFired[key] = now;
+      _triggerHealthReminder(
+        '${HealthReminderCopy.customPrefix}${r.title}',
+        'overlay',
+      );
+      return true;
+    }
+    return false;
   }
 
   /// Feed of how long the user has been without keyboard/mouse input

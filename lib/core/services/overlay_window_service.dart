@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/core/errors/error_handler.dart';
+import 'package:breakmate/app/dependency_injection.dart';
+import 'package:breakmate/features/settings/settings_repository.dart';
 
 class OverlayWindowService extends ChangeNotifier {
   final AppLogger _logger = AppLogger();
@@ -28,6 +30,12 @@ class OverlayWindowService extends ChangeNotifier {
     String? reminderType,
     Map<String, dynamic>? overlayData,
   }) async {
+    final settings = sl<SettingsRepository>().currentSettings;
+    overlayData = {
+      'reduceMotion': settings.reduceMotion,
+      'largeText': settings.largeOverlayText,
+      ...?overlayData,
+    };
     if (_isOverlayVisible && _currentOverlayType == type && !isPreview) {
       if (type != OverlayType.clockPreview) {
         // If the overlay is already showing, we can still update its data in real-time
@@ -43,7 +51,7 @@ class OverlayWindowService extends ChangeNotifier {
           'ignoreMouseEvents':
               type == OverlayType.quickReminder ||
               type == OverlayType.preBreakWarning,
-          ...?overlayData,
+          ...overlayData,
         };
         if (reminderType != null) args['reminderType'] = reminderType;
         await NativeBridge.showOverlay(OverlayArgs(args: args));
@@ -80,7 +88,7 @@ class OverlayWindowService extends ChangeNotifier {
             'ignoreMouseEvents':
                 type == OverlayType.quickReminder ||
                 type == OverlayType.preBreakWarning,
-            ...?overlayData,
+            ...overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(OverlayArgs(args: args));
@@ -106,7 +114,7 @@ class OverlayWindowService extends ChangeNotifier {
             'ignoreMouseEvents':
                 type == OverlayType.quickReminder ||
                 type == OverlayType.preBreakWarning,
-            ...?overlayData,
+            ...overlayData,
           };
           if (reminderType != null) args['reminderType'] = reminderType;
           await NativeBridge.showOverlay(OverlayArgs(args: args));

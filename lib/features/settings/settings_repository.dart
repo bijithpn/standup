@@ -46,6 +46,18 @@ class SettingsRepository extends ChangeNotifier {
 
   SettingsModel get currentSettings => _current;
 
+  List<CustomReminder> _loadCustomReminders() {
+    try {
+      return [
+        for (final r
+            in jsonDecode(_storage.getString('custom_reminders')) as List)
+          CustomReminder.fromJson(Map<String, dynamic>.from(r as Map)),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> load() async {
     if (!_storage.isReady) {
       debugPrint(
@@ -297,6 +309,9 @@ class SettingsRepository extends ChangeNotifier {
       ),
       breathPreset: _storage.getString('breath_preset', defaultValue: 'box'),
       breakChimeEnabled: _storage.getBool('break_chime_enabled'),
+      customReminders: _loadCustomReminders(),
+      reduceMotion: _storage.getBool('reduce_motion'),
+      largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
@@ -559,6 +574,9 @@ class SettingsRepository extends ChangeNotifier {
       ),
       breathPreset: _storage.getString('breath_preset', defaultValue: 'box'),
       breakChimeEnabled: _storage.getBool('break_chime_enabled'),
+      customReminders: _loadCustomReminders(),
+      reduceMotion: _storage.getBool('reduce_motion'),
+      largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
@@ -830,6 +848,12 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('overlay_theme_mode', settings.overlayThemeMode);
     await _storage.setString('breath_preset', settings.breathPreset);
     await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
+    await _storage.setBool('reduce_motion', settings.reduceMotion);
+    await _storage.setBool('large_overlay_text', settings.largeOverlayText);
+    await _storage.setString(
+      'custom_reminders',
+      jsonEncode([for (final r in settings.customReminders) r.toJson()]),
+    );
     await _storage.setBool(
       'looked_away_prompt_enabled',
       settings.lookedAwayPromptEnabled,
