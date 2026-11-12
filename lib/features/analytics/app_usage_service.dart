@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
@@ -60,9 +61,21 @@ class AppUsageService extends ChangeNotifier {
       seconds: existingSeconds + seconds,
     );
 
-    _pruneOldDates();
-    _persist();
-    notifyListeners();
+    _scheduleCommit();
+  }
+
+  bool _commitScheduled = false;
+
+  // A flush adds one entry per app; commit once per batch, not per entry.
+  void _scheduleCommit() {
+    if (_commitScheduled) return;
+    _commitScheduled = true;
+    scheduleMicrotask(() {
+      _commitScheduled = false;
+      _pruneOldDates();
+      _persist();
+      notifyListeners();
+    });
   }
 
   /// Returns usage entries for [period], sorted by time spent descending.
