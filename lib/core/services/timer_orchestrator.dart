@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/services/storage_service.dart';
 import 'package:breakmate/core/events/app_events.dart';
@@ -265,9 +266,17 @@ class TimerOrchestrator {
     // defaults to the full break-timer template ('breakScreen') when that
     // key is missing. Without it, health reminders rendered the wrong
     // overlay.
+    final macos = Platform.isMacOS;
     NativeEnhancementsService.instance.triggerFlashReminder(
       text: HealthReminderCopy.text(event.reminderType),
+      // The Flutter overlay engine was unreliable on macOS, so the native
+      // window carries the whole reminder there.
+      durationMs: macos
+          ? AppConstants.healthReminderDismissDuration.inMilliseconds
+          : 250,
+      opacity: macos ? 0.2 : 0.35,
     );
+    if (macos) return;
 
     sl<OverlayWindowService>().showOverlay(
       type: OverlayType.quickReminder,

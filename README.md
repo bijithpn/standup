@@ -1,8 +1,12 @@
 <div align="center">
 
+<img src="assets/icons/app_icon.jpeg" alt="BreakMate icon" width="112" height="112">
+
 # BreakMate
 
 **A desktop break-reminder and wellness companion that protects your eyes, posture, and focus — without breaking your flow.**
+
+![Eye rest](https://img.shields.io/badge/👁️_Eye_rest-20--20--20-4c9aff) ![Posture](https://img.shields.io/badge/🧍_Posture-reminders-34c759) ![Hydration](https://img.shields.io/badge/💧_Hydration-reminders-5ac8fa) ![Focus](https://img.shields.io/badge/🎯_Focus-insights-af52de)
 
 [![Version](https://img.shields.io/github/v/release/bijithpn/standup?label=version&color=blue)](https://github.com/bijithpn/standup/releases/latest)
 [![Platforms](https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey)](#installation)
@@ -53,7 +57,7 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 
 <p align="center">
   <a href="screenshots/walkthrough.mp4"><img src="screenshots/tour.gif" alt="Watch the 46-second walkthrough" width="640"></a><br>
-  <sub>▶ <a href="screenshots/walkthrough.mp4"><b>Watch the 46-second walkthrough</b></a> (MP4)</sub>
+  <sub><a href="screenshots/walkthrough.mp4"><b>Watch the 46-second walkthrough</b></a> (MP4)</sub>
 </p>
 
 | | |
@@ -66,6 +70,24 @@ Long stretches at a screen lead to eye strain, stiff necks, and "tunnel-vision" 
 ---
 
 ## Features
+
+### Health reminders
+
+One **Health reminders** switch turns on five gentle nudges, scheduled around how you actually work rather than on a fixed clock.
+
+| Reminder | Baseline cadence | Counts as done when you… |
+| --- | --- | --- |
+| **Eye rest** (20-20-20) | every ~20 min | look away for 20 s |
+| **Posture** | every ~30 min | step away for 2 min |
+| **Stretch** | every ~40 min | step away for 2 min |
+| **Hydration** | every ~50 min | step away for 5 min |
+| **Stand up** | every ~60 min | step away for 2 min |
+
+- **Workload-aware** — busy days (long hours, constant app switching) remind more often; light days less.
+- **Varied, not mechanical** — intervals are jittered ±15% and the reminder shown is a weighted random pick.
+- **Real relief counts** — stepping away or finishing a break resets the matching reminders.
+- **Never in the way** — deferred during meetings, calls and presentations; spaced at least 4 min apart with an hourly cap; reminders you keep ignoring back off.
+- **Shown as a small pill** — a brief, dismissing pill on screen (native window on macOS).
 
 ### Break orchestration
 

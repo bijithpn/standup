@@ -40,6 +40,7 @@ Release title: Multi-Display Overlay Fixes
 
 ### Fixed
 
+- Health reminders now always appear on macOS: they use the native reminder window (centered pill, 4 s) instead of the Flutter overlay engine, which could fail to render.
 - A break that started while a reminder or pre-break warning was already showing now appears on every display instead of only the one the reminder used.
 - Switching Spaces no longer tears down and rebuilds the break overlay, and a break dismissed during a display change is no longer re-opened.
 - Break overlays are force-hidden shortly after dismissal, and the Escape and render-health failsafes also cover breaks that took over from a reminder, so an overlay can no longer get stuck on screen.
