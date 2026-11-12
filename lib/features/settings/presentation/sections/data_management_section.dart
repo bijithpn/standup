@@ -18,6 +18,9 @@ import 'package:breakmate/core/storage/models/key_value_record.dart';
 import 'package:breakmate/features/analytics/stats_service.dart'
     show StatsService;
 import 'package:breakmate/core/constants/app_constants.dart';
+import 'package:breakmate/features/analytics/app_usage_models.dart';
+import 'package:breakmate/features/analytics/break_history_service.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
 import 'package:breakmate/core/utils/file_permissions.dart';
 import 'package:breakmate/features/settings/local_data_wiper.dart';
 
@@ -169,6 +172,34 @@ class _DataManagementSectionState extends State<DataManagementSection> {
     }
   }
 
+  Future<void> _exportHistory() async {
+    try {
+      final rows = <(DateTime, String, String)>[
+        for (final b in sl<BreakHistoryService>().events)
+          (b.time, 'break', b.completed ? 'completed' : 'skipped'),
+        for (final s in sl<FocusSessionService>().sessionsForPeriod(
+          UsagePeriod.month,
+        ))
+          (s.start, 'focus', '${s.durationSeconds ~/ 60} min'),
+      ]..sort((a, b) => b.$1.compareTo(a.$1));
+      final buffer = StringBuffer()..writeln('Time,Type,Detail');
+      for (final r in rows) {
+        buffer.writeln('${r.$1.toIso8601String()},${r.$2},${r.$3}');
+      }
+      final saved = await _saveText(
+        'Export History',
+        'breakmate_history_${_stamp()}.csv',
+        'csv',
+        buffer.toString(),
+      );
+      if (saved != null && mounted) {
+        Toast.showSuccess(context, 'History exported to $saved');
+      }
+    } catch (e) {
+      if (mounted) Toast.showError(context, 'Failed to export history: $e');
+    }
+  }
+
   Future<void> _showExportOptions() async {
     final choice = await showCupertinoModalPopup<String>(
       context: context,
@@ -182,6 +213,10 @@ class _DataManagementSectionState extends State<DataManagementSection> {
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(ctx, 'csv'),
             child: const Text('CSV — daily stats'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(ctx, 'history'),
+            child: const Text('CSV — break & focus history'),
           ),
           CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(ctx, 'tsv'),
@@ -199,6 +234,8 @@ class _DataManagementSectionState extends State<DataManagementSection> {
         await _exportBackupJson();
       case 'csv':
         await _exportStatsTable();
+      case 'history':
+        await _exportHistory();
       case 'tsv':
         await _exportStatsTable(delimiter: '\t', ext: 'tsv');
     }

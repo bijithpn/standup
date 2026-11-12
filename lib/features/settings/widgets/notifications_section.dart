@@ -46,6 +46,13 @@ class NotificationsSection extends StatelessWidget {
             divider(),
             _buildReminderPreviewRow(onPreview: _previewRandom),
           ],
+          divider(),
+          toggleRow(
+            'Evening eye care',
+            'At 8 pm, a nudge to warm your screen and lower brightness.',
+            settings.eveningEyeCare,
+            (v) => onSave(settings.copyWith(eveningEyeCare: v)),
+          ),
         ]),
         Padding(
           padding: const EdgeInsets.only(left: 4, bottom: 8),

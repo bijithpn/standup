@@ -311,6 +311,7 @@ class SettingsRepository extends ChangeNotifier {
       breakChimeEnabled: _storage.getBool('break_chime_enabled'),
       customReminders: _loadCustomReminders(),
       reduceMotion: _storage.getBool('reduce_motion'),
+      eveningEyeCare: _storage.getBool('evening_eye_care'),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
@@ -576,6 +577,7 @@ class SettingsRepository extends ChangeNotifier {
       breakChimeEnabled: _storage.getBool('break_chime_enabled'),
       customReminders: _loadCustomReminders(),
       reduceMotion: _storage.getBool('reduce_motion'),
+      eveningEyeCare: _storage.getBool('evening_eye_care'),
       largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
@@ -849,6 +851,7 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('breath_preset', settings.breathPreset);
     await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
     await _storage.setBool('reduce_motion', settings.reduceMotion);
+    await _storage.setBool('evening_eye_care', settings.eveningEyeCare);
     await _storage.setBool('large_overlay_text', settings.largeOverlayText);
     await _storage.setString(
       'custom_reminders',

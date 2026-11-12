@@ -10,6 +10,8 @@ class HealthReminderCopy {
       'Rest your eyes — look 20 feet away for 20 seconds',
       'Blink a few times and look into the distance',
       'Look away from the screen for a moment',
+      'Distance check — keep the screen an arm\'s length away',
+      'Blink slowly 10 times to rewet your eyes',
     ],
     'posture': [
       'Sit tall and relax your shoulders',
@@ -51,7 +53,12 @@ class HealthReminderCopy {
   }
 
   static const Map<String, List<String>> _pills = {
-    'eyeblink': ['Rest your eyes', 'Look away for a moment', 'Blink & refocus'],
+    'eyeblink': [
+      'Rest your eyes',
+      'Look away for a moment',
+      'Blink & refocus',
+      'Check screen distance',
+    ],
     'posture': ['Posture check', 'Sit tall', 'Relax your shoulders'],
     'hydration': ['Drink some water', 'Time for water', 'Stay hydrated'],
     'stretch': [

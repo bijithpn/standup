@@ -890,6 +890,13 @@ class TrayManagerService with TrayListener, WidgetsBindingObserver {
         ),
         MenuItem(key: 'take_break', label: 'Instant Break'),
         MenuItem(key: 'skip_next', label: 'Skip Next Break'),
+        MenuItem(key: 'micro_session', label: 'Quick Stretch'),
+        if (_breakController?.isFocusSessionActive ?? false)
+          MenuItem(key: 'focus_end', label: 'End Focus Session')
+        else ...[
+          MenuItem(key: 'focus_25', label: 'Focus 25 min'),
+          MenuItem(key: 'focus_50', label: 'Focus 50 min'),
+        ],
         MenuItem(key: 'snooze_15', label: 'Snooze 15 min'),
         MenuItem(key: 'snooze_60', label: 'Snooze 1 hour'),
         MenuItem(key: 'snooze_today', label: 'Snooze rest of today'),

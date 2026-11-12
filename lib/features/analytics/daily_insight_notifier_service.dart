@@ -62,7 +62,10 @@ class DailyInsightNotifierService {
        _notificationService = notificationService;
 
   void start() {
-    _checkTimer ??= Timer.periodic(_checkInterval, (_) => checkAndMaybeShow());
+    _checkTimer ??= Timer.periodic(_checkInterval, (_) {
+      checkAndMaybeShow();
+      _maybeShowEveningEyeCare();
+    });
     checkAndMaybeShow();
   }
 
@@ -93,6 +96,17 @@ class DailyInsightNotifierService {
       ),
     );
     _storage.setString(AppConstants.keyLastDailyInsightDateKey, todayKey);
+  }
+
+  void _maybeShowEveningEyeCare() {
+    final now = clock.now();
+    if (now.hour < 20 ||
+        !_settingsRepository.currentSettings.eveningEyeCare ||
+        _storage.getString('last_evening_eye_care') == _dateKey(now)) {
+      return;
+    }
+    _notificationService.showEveningEyeCare();
+    _storage.setString('last_evening_eye_care', _dateKey(now));
   }
 
   /// Fired at clock-out: breaks taken and focus time for today.

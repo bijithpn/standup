@@ -155,6 +155,15 @@ class NotificationService {
     await _show(id: 33, title: 'Your day in review', body: text);
   }
 
+  Future<void> showEveningEyeCare() async {
+    await _show(
+      id: 34,
+      title: 'Evening eye care',
+      body:
+          'Turn on Night Shift / a warm display tint and lower your brightness.',
+    );
+  }
+
   Future<void> showReminder({required String message}) async {
     await _show(id: 0, title: 'BreakMate', body: message);
   }

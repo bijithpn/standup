@@ -51,6 +51,9 @@ class SettingsModel {
   /// Freeze decorative motion in break overlays, regardless of the OS setting.
   final bool reduceMotion;
 
+  /// Nudge at 8 pm to warm and dim the screen.
+  final bool eveningEyeCare;
+
   /// Scale up text in break overlays and reminders.
   final bool largeOverlayText;
 
@@ -222,6 +225,7 @@ class SettingsModel {
     this.breakChimeEnabled = false,
     this.customReminders = const [],
     this.reduceMotion = false,
+    this.eveningEyeCare = false,
     this.largeOverlayText = false,
     this.lookedAwayPromptEnabled = false,
     this.customImagePath,
@@ -333,6 +337,7 @@ class SettingsModel {
     bool? breakChimeEnabled,
     List<CustomReminder>? customReminders,
     bool? reduceMotion,
+    bool? eveningEyeCare,
     bool? largeOverlayText,
     bool? lookedAwayPromptEnabled,
     String? customImagePath,
@@ -452,6 +457,7 @@ class SettingsModel {
       breakChimeEnabled: breakChimeEnabled ?? this.breakChimeEnabled,
       customReminders: customReminders ?? this.customReminders,
       reduceMotion: reduceMotion ?? this.reduceMotion,
+      eveningEyeCare: eveningEyeCare ?? this.eveningEyeCare,
       largeOverlayText: largeOverlayText ?? this.largeOverlayText,
       lookedAwayPromptEnabled:
           lookedAwayPromptEnabled ?? this.lookedAwayPromptEnabled,
@@ -591,6 +597,7 @@ class SettingsModel {
     'breakChimeEnabled': breakChimeEnabled,
     'customReminders': [for (final r in customReminders) r.toJson()],
     'reduceMotion': reduceMotion,
+    'eveningEyeCare': eveningEyeCare,
     'largeOverlayText': largeOverlayText,
     'lookedAwayPromptEnabled': lookedAwayPromptEnabled,
     'customImagePath': customImagePath,
@@ -705,6 +712,7 @@ class SettingsModel {
       breathPreset: map['breathPreset'] as String? ?? 'box',
       breakChimeEnabled: map['breakChimeEnabled'] as bool? ?? false,
       reduceMotion: map['reduceMotion'] as bool? ?? false,
+      eveningEyeCare: map['eveningEyeCare'] as bool? ?? false,
       largeOverlayText: map['largeOverlayText'] as bool? ?? false,
       customReminders: [
         for (final r in map['customReminders'] as List? ?? const [])

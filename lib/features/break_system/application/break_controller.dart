@@ -25,6 +25,9 @@ import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/services/timer_explanation.dart';
 import 'package:breakmate/core/services/timer_explanation_overlay_service.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:breakmate/features/analytics/focus_session_models.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
@@ -122,7 +125,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       _lastOverlayState = TimerState.breakActive;
 
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
-      _currentTemplate = settings.breakTemplate;
+      _currentTemplate = _microExercise != null
+          ? 'activities'
+          : settings.breakTemplate;
 
       if (isMeetingActive || isPresenting) {
         if (!_hasShownMeetingBreakNotice) {
@@ -218,12 +223,76 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   String? _currentExerciseId;
 
-  void _pickRandomExercise() {
-    final exercise = ExerciseModel.pickForBreak(
-      _settingsRepo.getExercises(),
+  ExerciseModel? _microExercise;
+
+  /// A one-off guided stretch (neck, wrists, back…) shown as a short break
+  /// with that exercise; finishing it counts as a wellness action.
+  void startMicroSession() {
+    final stretches = _settingsRepo
+        .getExercises()
+        .where(
+          (e) =>
+              e.category == ExerciseCategory.stretch ||
+              e.category == ExerciseCategory.posture,
+        )
+        .toList();
+    _microExercise = ExerciseModel.pickForBreak(
+      stretches,
       Random(),
       avoidId: _currentExerciseId,
     );
+    takeBreakNow();
+  }
+
+  DateTime? _focusEndsAt;
+  Timer? _focusTimer;
+  int _focusMinutes = 0;
+
+  bool get isFocusSessionActive => _focusEndsAt != null;
+
+  /// Pauses breaks and reminders for [minutes], then logs the block to
+  /// analytics and nudges you to take a break.
+  void startFocusSession(int minutes) {
+    endFocusSession(completed: false);
+    _focusMinutes = minutes;
+    _focusEndsAt = DateTime.now().add(Duration(minutes: minutes));
+    _timerEngine.pauseTimers(isManual: true);
+    _focusTimer = Timer(Duration(minutes: minutes), () {
+      endFocusSession(completed: true);
+    });
+    notifyListeners();
+  }
+
+  void endFocusSession({required bool completed}) {
+    final end = _focusEndsAt;
+    if (end == null) return;
+    _focusTimer?.cancel();
+    _focusEndsAt = null;
+    if (isPaused) _timerEngine.resumeTimers();
+    if (completed) {
+      sl<FocusSessionService>().recordSession(
+        FocusSession(
+          category: AppCategory.general,
+          start: end.subtract(Duration(minutes: _focusMinutes)),
+          durationSeconds: _focusMinutes * 60,
+        ),
+      );
+      sl<NotificationService>().showReminder(
+        message: 'Focus session complete — time for a break.',
+      );
+    }
+    notifyListeners();
+  }
+
+  void _pickRandomExercise() {
+    final micro = _microExercise;
+    final exercise =
+        micro ??
+        ExerciseModel.pickForBreak(
+          _settingsRepo.getExercises(),
+          Random(),
+          avoidId: _currentExerciseId,
+        );
     if (exercise == null) return;
     _currentExerciseId = exercise.id;
     _currentExerciseTitle = exercise.title;
@@ -450,7 +519,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   /// screen during an eye-rest break; it counts as a wellness action.
   Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     await _timerEngine.finishBreak(skipped: false);
-    if (lookedAway) _statsService.recordWellnessAction();
+    if (lookedAway || _microExercise != null) {
+      _statsService.recordWellnessAction();
+    }
+    _microExercise = null;
     // Never a sound while the user is in a meeting or presenting.
     final context = _timerEngine.contextManager;
     if (_settingsRepo.currentSettings.breakChimeEnabled &&
@@ -480,6 +552,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> skipCurrentBreak() async {
+    _microExercise = null;
     await _timerEngine.finishBreak(skipped: true);
     notifyListeners();
   }
@@ -627,6 +700,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _timerEngine.removeListener(_onTimerChanged);
     _settingsRepo.removeListener(_onSettingsChanged);
+    _focusTimer?.cancel();
     _audioPlayer?.dispose();
     super.dispose();
   }

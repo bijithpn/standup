@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build-and-release:
     name: Build, publish & update appcast
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 60
 
     permissions:

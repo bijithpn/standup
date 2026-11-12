@@ -51,6 +51,18 @@ class MenuBarController {
       case 'skip_next':
         breakController.skipNextBreak();
         break;
+      case 'micro_session':
+        breakController.startMicroSession();
+        break;
+      case 'focus_25':
+        breakController.startFocusSession(25);
+        break;
+      case 'focus_50':
+        breakController.startFocusSession(50);
+        break;
+      case 'focus_end':
+        breakController.endFocusSession(completed: false);
+        break;
       case 'snooze_15':
         breakController.snooze(minutes: 15);
         break;
