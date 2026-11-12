@@ -6,6 +6,7 @@ import 'package:breakmate/core/events/app_events.dart';
 import 'package:breakmate/core/events/event_bus.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/services/overlay_window_service.dart';
 import 'package:breakmate/core/services/notification_service.dart';
@@ -25,6 +26,10 @@ import 'package:breakmate/core/native/presentation_detection_service.dart';
 import 'package:breakmate/core/services/timer_explanation.dart';
 import 'package:breakmate/core/services/timer_explanation_overlay_service.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:breakmate/core/services/storage_service.dart';
+import 'package:breakmate/features/analytics/focus_session_models.dart';
+import 'package:breakmate/features/analytics/focus_session_service.dart';
+import 'package:breakmate/features/wellness/domain/app_categorizer.dart';
 
 class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   final AppLogger _logger = AppLogger();
@@ -122,7 +127,9 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       _lastOverlayState = TimerState.breakActive;
 
       final isLong = _timerEngine.activeBreak?.type == BreakType.long;
-      _currentTemplate = settings.breakTemplate;
+      _currentTemplate = _microExercise != null
+          ? 'activities'
+          : settings.breakTemplate;
 
       if (isMeetingActive || isPresenting) {
         if (!_hasShownMeetingBreakNotice) {
@@ -218,12 +225,127 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
 
   String? _currentExerciseId;
 
-  void _pickRandomExercise() {
-    final exercise = ExerciseModel.pickForBreak(
-      _settingsRepo.getExercises(),
+  ExerciseModel? _microExercise;
+
+  /// A one-off guided stretch (neck, wrists, back…) shown as a short break
+  /// with that exercise; finishing it counts as a wellness action.
+  void startMicroSession() {
+    final stretches = _settingsRepo
+        .getExercises()
+        .where(
+          (e) =>
+              e.category == ExerciseCategory.stretch ||
+              e.category == ExerciseCategory.posture,
+        )
+        .toList();
+    _microExercise = ExerciseModel.pickForBreak(
+      stretches,
       Random(),
       avoidId: _currentExerciseId,
     );
+    _timerEngine.triggerBreakNow(
+      durationSeconds: _microExercise?.durationSeconds,
+    );
+    notifyListeners();
+  }
+
+  DateTime? _focusStartedAt;
+  DateTime? _focusEndsAt;
+  Timer? _focusTimer;
+
+  bool get isFocusSessionActive => _focusEndsAt != null;
+
+  /// Pauses breaks and reminders for [minutes] (and optionally turns on Do
+  /// Not Disturb), then logs the block to analytics and nudges you to break.
+  void startFocusSession(int minutes) {
+    endFocusSession(completed: false);
+    final now = DateTime.now();
+    _beginFocus(now, now.add(Duration(minutes: minutes)));
+    _timerEngine.pauseTimers(isManual: true);
+    _setDoNotDisturb(true);
+    notifyListeners();
+  }
+
+  void _beginFocus(DateTime start, DateTime end) {
+    _focusStartedAt = start;
+    _focusEndsAt = end;
+    final storage = sl<StorageService>();
+    storage.setInt('focus_started_ms', start.millisecondsSinceEpoch);
+    storage.setInt('focus_ends_ms', end.millisecondsSinceEpoch);
+    _focusTimer?.cancel();
+    _focusTimer = Timer(end.difference(DateTime.now()), () {
+      endFocusSession(completed: true);
+    });
+  }
+
+  /// A session that was running when the app quit resumes, or is logged as
+  /// finished if its time ran out while the app was closed.
+  void restoreFocusSession() {
+    final storage = sl<StorageService>();
+    final endMs = storage.getInt('focus_ends_ms', defaultValue: 0);
+    if (endMs == 0 || _focusEndsAt != null) return;
+    final start = DateTime.fromMillisecondsSinceEpoch(
+      storage.getInt('focus_started_ms', defaultValue: endMs),
+    );
+    final end = DateTime.fromMillisecondsSinceEpoch(endMs);
+    _beginFocus(start, end);
+    if (end.isAfter(DateTime.now())) {
+      _timerEngine.pauseTimers(isManual: true);
+      notifyListeners();
+    } else {
+      endFocusSession(completed: true);
+    }
+  }
+
+  void endFocusSession({required bool completed}) {
+    final start = _focusStartedAt;
+    final end = _focusEndsAt;
+    if (start == null || end == null) return;
+    _focusTimer?.cancel();
+    _focusStartedAt = null;
+    _focusEndsAt = null;
+    final storage = sl<StorageService>();
+    storage.setInt('focus_started_ms', 0);
+    storage.setInt('focus_ends_ms', 0);
+    if (isPaused) _timerEngine.resumeTimers();
+    _setDoNotDisturb(false);
+
+    final worked = (completed ? end : DateTime.now()).difference(start);
+    if (worked >= const Duration(minutes: 1)) {
+      sl<FocusSessionService>().recordSession(
+        FocusSession(
+          category: AppCategory.general,
+          start: start,
+          durationSeconds: worked.inSeconds,
+        ),
+      );
+    }
+    if (completed) {
+      sl<NotificationService>().showReminder(
+        message: 'Focus session complete — time for a break.',
+      );
+    }
+    notifyListeners();
+  }
+
+  /// Runs the user's "BreakMate Focus On"/"BreakMate Focus Off" Shortcut —
+  /// macOS has no public API to toggle Focus modes. Silent if it's absent.
+  void _setDoNotDisturb(bool on) {
+    if (!Platform.isMacOS || !_settingsRepo.currentSettings.focusDndEnabled) {
+      return;
+    }
+    Process.run('shortcuts', ['run', 'BreakMate Focus ${on ? 'On' : 'Off'}']);
+  }
+
+  void _pickRandomExercise() {
+    final micro = _microExercise;
+    final exercise =
+        micro ??
+        ExerciseModel.pickForBreak(
+          _settingsRepo.getExercises(),
+          Random(),
+          avoidId: _currentExerciseId,
+        );
     if (exercise == null) return;
     _currentExerciseId = exercise.id;
     _currentExerciseTitle = exercise.title;
@@ -450,7 +572,10 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   /// screen during an eye-rest break; it counts as a wellness action.
   Future<void> completeCurrentBreak({bool lookedAway = false}) async {
     await _timerEngine.finishBreak(skipped: false);
-    if (lookedAway) _statsService.recordWellnessAction();
+    if (lookedAway || _microExercise != null) {
+      _statsService.recordWellnessAction();
+    }
+    _microExercise = null;
     // Never a sound while the user is in a meeting or presenting.
     final context = _timerEngine.contextManager;
     if (_settingsRepo.currentSettings.breakChimeEnabled &&
@@ -480,6 +605,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> skipCurrentBreak() async {
+    _microExercise = null;
     await _timerEngine.finishBreak(skipped: true);
     notifyListeners();
   }
@@ -627,6 +753,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _timerEngine.removeListener(_onTimerChanged);
     _settingsRepo.removeListener(_onSettingsChanged);
+    _focusTimer?.cancel();
     _audioPlayer?.dispose();
     super.dispose();
   }

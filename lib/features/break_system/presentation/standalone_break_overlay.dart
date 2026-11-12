@@ -305,39 +305,46 @@ class _StandaloneBreakOverlayState extends State<StandaloneBreakOverlay>
       MediaQuery.platformBrightnessOf(context),
     );
 
-    return PopScope(
-      canPop: false,
-      child: BreakPaletteScope(
-        palette: palette,
-        child: FadeTransition(
-          opacity: _fadeController,
-          child: Material(
-            color: _config.overlayType == 'preBreakWarning'
-                ? Colors.transparent
-                : (isDimmedOverlay
-                      ? Colors.black.withValues(alpha: 0.25)
-                      : palette.canvas),
-            child: BreakOverlayKeyboardHandler(
-              canDismiss: _canDismiss,
-              onSkip: _skipBreak,
-              onQuitApp: _quitApp,
-              child: RepaintBoundary(
-                child: ValueListenableBuilder<bool>(
-                  valueListenable: completing,
-                  builder: (_, done, child) =>
-                      BreakCompletionScope(completing: done, child: child!),
-                  child: BreakOverlayContent(
-                    config: _config,
-                    fadeAnimation: _fadeController,
-                    remainingSecondsNotifier: remainingSecondsNotifier,
-                    onSkip: _skipBreak,
-                    canDismiss: _canDismiss,
-                    breakInfo: _cachedBreakModel!,
-                    settings: _cachedSettingsModel!,
-                    currentTemplate: _currentTemplate,
-                    kenBurnsController: _kenBurnsController,
-                    lookedAway: lookedAway,
-                    onLookedAway: () => setState(() => lookedAway = true),
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+      data: media.copyWith(
+        disableAnimations: media.disableAnimations || _config.reduceMotion,
+        textScaler: _config.largeText ? const TextScaler.linear(1.35) : null,
+      ),
+      child: PopScope(
+        canPop: false,
+        child: BreakPaletteScope(
+          palette: palette,
+          child: FadeTransition(
+            opacity: _fadeController,
+            child: Material(
+              color: _config.overlayType == 'preBreakWarning'
+                  ? Colors.transparent
+                  : (isDimmedOverlay
+                        ? Colors.black.withValues(alpha: 0.25)
+                        : palette.canvas),
+              child: BreakOverlayKeyboardHandler(
+                canDismiss: _canDismiss,
+                onSkip: _skipBreak,
+                onQuitApp: _quitApp,
+                child: RepaintBoundary(
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable: completing,
+                    builder: (_, done, child) =>
+                        BreakCompletionScope(completing: done, child: child!),
+                    child: BreakOverlayContent(
+                      config: _config,
+                      fadeAnimation: _fadeController,
+                      remainingSecondsNotifier: remainingSecondsNotifier,
+                      onSkip: _skipBreak,
+                      canDismiss: _canDismiss,
+                      breakInfo: _cachedBreakModel!,
+                      settings: _cachedSettingsModel!,
+                      currentTemplate: _currentTemplate,
+                      kenBurnsController: _kenBurnsController,
+                      lookedAway: lookedAway,
+                      onLookedAway: () => setState(() => lookedAway = true),
+                    ),
                   ),
                 ),
               ),

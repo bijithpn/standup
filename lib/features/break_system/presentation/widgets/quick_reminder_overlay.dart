@@ -80,10 +80,13 @@ class _QuickReminderOverlayState extends State<QuickReminderOverlay> {
     final icon = isMeetingBreak
         ? Icons.videocam_rounded
         : switch (reminderType) {
+            'blink' => Icons.visibility_rounded,
             'posture' => Icons.accessibility_new_rounded,
             'hydration' => Icons.water_drop_rounded,
             'stretch' => Icons.self_improvement_rounded,
             'standup' => Icons.directions_walk_rounded,
+            _ when HealthReminderCopy.isCustom(reminderType) =>
+              Icons.notifications_active_rounded,
             _ => Icons.remove_red_eye_rounded,
           };
     final pillText = isMeetingBreak

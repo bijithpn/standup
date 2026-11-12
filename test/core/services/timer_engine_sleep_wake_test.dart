@@ -78,6 +78,26 @@ void main() {
       });
     });
 
+    test('idle time counted before idle detection is given back on pause', () {
+      fakeAsync((async) {
+        final engine = newEngine()..startTimers();
+        async.elapse(const Duration(seconds: 5));
+        final before = engine.timeUntilNextShortBreak;
+
+        async.elapse(const Duration(minutes: 3));
+        expect(engine.timeUntilNextShortBreak, lessThan(before));
+
+        engine.discardIdleTime(const Duration(minutes: 3));
+        engine.pauseTimers();
+
+        expect(
+          (engine.timeUntilNextShortBreak - before).inSeconds.abs(),
+          lessThanOrEqualTo(1),
+        );
+        engine.dispose();
+      });
+    });
+
     test('long sleep does not finish the break; it resumes with time left', () {
       fakeAsync((async) {
         final engine = newEngine()..startTimers();

@@ -13,6 +13,8 @@ abstract class OverlayWindowConfig with _$OverlayWindowConfig {
     @Default('breakScreen') String overlayType,
     @Default(false) bool strictMode,
     @Default(true) bool enableAnimations,
+    @Default(false) bool reduceMotion,
+    @Default(false) bool largeText,
     @Default('standard') String intensityLevel,
     @Default(true) bool showWellnessNotes,
     @Default(false) bool isPreview,

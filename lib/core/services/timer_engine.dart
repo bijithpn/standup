@@ -15,6 +15,7 @@ import 'package:breakmate/core/native/meeting_detection_service.dart';
 import 'package:breakmate/features/analytics/context_switch_tracker.dart';
 import 'package:breakmate/core/utils/logger.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
+import 'package:breakmate/core/services/health_reminder_copy.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 
@@ -70,6 +71,7 @@ class TimerEngine extends ChangeNotifier {
   // [TimerStateData] so all of them survive a restart.
   int _elapsedFor(HealthReminderKind kind) => switch (kind) {
     HealthReminderKind.eyeRest => _stateData.eyeBlinkElapsedSeconds,
+    HealthReminderKind.blink => _stateData.blinkElapsedSeconds,
     HealthReminderKind.posture => _stateData.postureElapsedSeconds,
     HealthReminderKind.hydration => _stateData.hydrationElapsedSeconds,
     HealthReminderKind.stretch => _stateData.stretchElapsedSeconds,
@@ -80,6 +82,8 @@ class TimerEngine extends ChangeNotifier {
     switch (kind) {
       case HealthReminderKind.eyeRest:
         _stateData.eyeBlinkElapsedSeconds = 0;
+      case HealthReminderKind.blink:
+        _stateData.blinkElapsedSeconds = 0;
       case HealthReminderKind.posture:
         _stateData.postureElapsedSeconds = 0;
       case HealthReminderKind.hydration:
@@ -91,9 +95,11 @@ class TimerEngine extends ChangeNotifier {
     }
   }
 
-  /// One switch controls them all; the scheduler picks which one to show.
+  /// One switch controls them all (blink is opt-in); the scheduler picks which
+  /// one to show.
   bool _reminderEnabled(HealthReminderKind kind, SettingsModel s) =>
-      s.healthRemindersEnabled;
+      s.healthRemindersEnabled &&
+      (kind != HealthReminderKind.blink || s.blinkRemindersEnabled);
 
   void _resetAllReminderCounters() {
     for (final kind in HealthReminderKind.values) {
@@ -385,6 +391,17 @@ class TimerEngine extends ChangeNotifier {
         return;
       }
 
+      // A 1s ticker never legitimately stalls this long: the machine was
+      // suspended. Covers platforms/paths with no native sleep notification.
+      final lastTick = _stateData.lastTickTime;
+      if (lastTick != null &&
+          now.difference(lastTick) > const Duration(seconds: 15)) {
+        _logger.info('Tick gap detected: treating as system sleep');
+        _stateData.systemSleepPaused = true;
+        handleSystemWake();
+        return;
+      }
+
       final delta = now.difference(_stateData.lastTickTime ?? now);
       _stateData.lastTickTime = now;
 
@@ -406,6 +423,7 @@ class TimerEngine extends ChangeNotifier {
         _stateData.totalWorkToday += delta;
         _stateData.postureElapsedSeconds += delta.inSeconds;
         _stateData.eyeBlinkElapsedSeconds += delta.inSeconds;
+        _stateData.blinkElapsedSeconds += delta.inSeconds;
         _stateData.hydrationElapsedSeconds += delta.inSeconds;
         _stateData.stretchElapsedSeconds += delta.inSeconds;
         _stateData.standUpElapsedSeconds += delta.inSeconds;
@@ -507,6 +525,15 @@ class TimerEngine extends ChangeNotifier {
     if (_stateData.workElapsed >= interval) {
       _stateData.isPreBreak = false;
 
+      final now = clock.now();
+      if (_settingsRepository.currentSettings.avoidBreakHour == now.hour) {
+        final delay = Duration(minutes: 60 - now.minute);
+        _stateData.workElapsed =
+            interval - (delay > interval ? interval : delay);
+        notifyListeners();
+        return;
+      }
+
       _contextManager.isMeetingUpcoming().then((isMeeting) {
         if (state != TimerState.running) {
           _logger.info(
@@ -546,6 +573,8 @@ class TimerEngine extends ChangeNotifier {
       }
     }
 
+    if (_checkCustomReminders(settings)) return;
+
     // Cadence follows evidence-based baselines (eye rest: the 20-20-20 rule,
     // posture: roughly every 30 minutes); the break interval only nudges it by
     // up to ±20%. All timing decisions — real relief from idle time, holding
@@ -584,6 +613,30 @@ class TimerEngine extends ChangeNotifier {
     _resetElapsed(due);
     covered.forEach(_resetElapsed);
     _triggerHealthReminder(due.typeName, 'overlay');
+  }
+
+  final Map<String, DateTime> _customLastFired = {};
+
+  /// Fires at most one due user-defined reminder; waits out meetings and
+  /// presentations. Counts from first sight, so a new reminder isn't instant.
+  bool _checkCustomReminders(SettingsModel settings) {
+    if (_contextManager.isMeetingActive() ||
+        _contextManager.isPresentationActive()) {
+      return false;
+    }
+    final now = clock.now();
+    for (final r in settings.customReminders) {
+      final key = '${r.title}|${r.minutes}';
+      final last = _customLastFired.putIfAbsent(key, () => now);
+      if (now.difference(last) < Duration(minutes: r.minutes)) continue;
+      _customLastFired[key] = now;
+      _triggerHealthReminder(
+        '${HealthReminderCopy.customPrefix}${r.title}',
+        'overlay',
+      );
+      return true;
+    }
+    return false;
   }
 
   /// Feed of how long the user has been without keyboard/mouse input
@@ -642,14 +695,15 @@ class TimerEngine extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _triggerBreak() {
+  void _triggerBreak({int? durationOverride}) {
     _stateData.state = TimerState.breakActive;
     _stateData.workElapsed = Duration.zero;
 
     final isLongBreak = isLongBreakDue();
 
-    final durationSeconds = _breakDeterminationStrategy
-        .determineBreakDurationSeconds(
+    final durationSeconds =
+        durationOverride ??
+        _breakDeterminationStrategy.determineBreakDurationSeconds(
           isLongBreak: isLongBreak,
           shortBreakDurationSeconds: _shortBreakDurationSeconds,
           longBreakDurationMinutes: _longBreakDurationMinutes,
@@ -774,6 +828,17 @@ class TimerEngine extends ChangeNotifier {
       repeatCycle: repeatCycle,
       longBreakIntervalMinutes: _longBreakIntervalMinutes,
     );
+  }
+
+  /// Idle is only detected after the threshold passes, by which time the tick
+  /// loop has already counted that stretch as work; take it back.
+  void discardIdleTime(Duration idle) {
+    if (idle <= Duration.zero) return;
+    Duration back(Duration v) => v > idle ? v - idle : Duration.zero;
+    _stateData.workElapsed = back(_stateData.workElapsed);
+    _stateData.totalWorkToday = back(_stateData.totalWorkToday);
+    workElapsedNotifier.value = _stateData.workElapsed;
+    totalWorkTodayNotifier.value = _stateData.totalWorkToday;
   }
 
   void resetCycleOnIdle() {
@@ -925,13 +990,13 @@ class TimerEngine extends ChangeNotifier {
     return true;
   }
 
-  void triggerBreakNow({bool isLong = false}) {
+  void triggerBreakNow({bool isLong = false, int? durationSeconds}) {
     if (isLong) {
       _stateData.longBreakWindowStartedAt = clock.now().subtract(
         Duration(minutes: _longBreakIntervalMinutes),
       );
     }
-    _triggerBreak();
+    _triggerBreak(durationOverride: durationSeconds);
   }
 
   void skipNextBreak() {
@@ -963,7 +1028,7 @@ class TimerEngine extends ChangeNotifier {
   /// interval), so the UI can ask the user to start it again.
   VoidCallback? onNeedsRestart;
 
-  void handleSystemSleep() {
+  void handleSystemSleep({DateTime? at}) {
     _logger.info(
       'System sleep or screen lock detected: pausing break/work timers',
     );
@@ -971,7 +1036,8 @@ class TimerEngine extends ChangeNotifier {
     // whole away period is measured.
     if (_stateData.systemSleepPaused) return;
     _stateData.systemSleepPaused = true;
-    final now = clock.now();
+    // The channel message can reach Dart only after wake; use the native time.
+    final now = at ?? clock.now();
     _stateData.lastTickTime = now;
     try {
       sl<StorageService>().setInt(

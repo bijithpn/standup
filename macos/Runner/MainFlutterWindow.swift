@@ -618,7 +618,7 @@ class MainFlutterWindow: NSWindow {
   }
 
   @objc private func handleSystemSleep() {
-    bridgeChannel?.invokeMethod("systemSleep", arguments: nil)
+    bridgeChannel?.invokeMethod("systemSleep", arguments: Int(Date().timeIntervalSince1970 * 1000))
   }
 
   @objc private func handleSystemWake() {
@@ -636,6 +636,9 @@ class MainFlutterWindow: NSWindow {
       case "armLiveTrayMenu":
         LiveTrayMenuText.shared.arm()
         result(nil)
+
+      case "setNightShift":
+        result(NightShift.set(call.arguments as? Bool ?? false))
 
       case "updateTrayMenu":
         result(LiveTrayMenuText.shared.update(call.arguments as? [Any] ?? []))
@@ -973,5 +976,22 @@ final class LiveTrayMenuText: NSObject {
       }
     }
     return true
+  }
+}
+
+/// Night Shift has no public API; this drives the private CoreBrightness
+/// client resolved at runtime, so a missing/changed class just returns false.
+enum NightShift {
+  static func set(_ on: Bool) -> Bool {
+    guard
+      let bundle = Bundle(path: "/System/Library/PrivateFrameworks/CoreBrightness.framework"),
+      bundle.load(),
+      let cls = NSClassFromString("CBBlueLightClient") as? NSObject.Type
+    else { return false }
+    let client = cls.init()
+    let sel = NSSelectorFromString("setEnabled:")
+    guard client.responds(to: sel) else { return false }
+    typealias Fn = @convention(c) (AnyObject, Selector, Bool) -> Bool
+    return unsafeBitCast(client.method(for: sel), to: Fn.self)(client, sel, on)
   }
 }

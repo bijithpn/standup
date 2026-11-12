@@ -709,7 +709,10 @@ void mainCommon(FlavorConfig config) async {
           } else if (call.method == 'quitApp') {
             sl<MenuBarController>().handleAction('quit');
           } else if (call.method == 'systemSleep') {
-            sl<TimerEngine>().handleSystemSleep();
+            final ms = call.arguments;
+            sl<TimerEngine>().handleSystemSleep(
+              at: ms is int ? DateTime.fromMillisecondsSinceEpoch(ms) : null,
+            );
           } else if (call.method == 'systemWake') {
             final engine = sl<TimerEngine>();
             engine.onNeedsRestart ??= _promptRestartTimer;

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:clock/clock.dart';
 import 'package:breakmate/core/constants/app_constants.dart';
 import 'package:breakmate/core/ipc/ipc_bridge.dart';
@@ -62,7 +64,10 @@ class DailyInsightNotifierService {
        _notificationService = notificationService;
 
   void start() {
-    _checkTimer ??= Timer.periodic(_checkInterval, (_) => checkAndMaybeShow());
+    _checkTimer ??= Timer.periodic(_checkInterval, (_) {
+      checkAndMaybeShow();
+      _maybeShowEveningEyeCare();
+    });
     checkAndMaybeShow();
   }
 
@@ -93,6 +98,49 @@ class DailyInsightNotifierService {
       ),
     );
     _storage.setString(AppConstants.keyLastDailyInsightDateKey, todayKey);
+  }
+
+  void _maybeShowEveningEyeCare() {
+    final now = clock.now();
+    if (now.hour < 20 ||
+        !_settingsRepository.currentSettings.eveningEyeCare ||
+        _storage.getString('last_evening_eye_care') == _dateKey(now)) {
+      return;
+    }
+    _storage.setString('last_evening_eye_care', _dateKey(now));
+    _enableNightShift().then(_notificationService.showEveningEyeCare);
+  }
+
+  static const _bridge = MethodChannel('com.breakmate.desktop/bridge');
+
+  Future<bool> _enableNightShift() async {
+    if (!Platform.isMacOS) return false;
+    try {
+      return await _bridge.invokeMethod<bool>('setNightShift', true) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Fired at clock-out: breaks taken and focus time for today.
+  void showEndOfDaySummary({DateTime? now}) {
+    final today = now ?? clock.now();
+    final events = _breakHistoryService.eventsBetween(
+      DateTime(today.year, today.month, today.day),
+      today.add(const Duration(seconds: 1)),
+    );
+    final taken = events.where((e) => e.completed).length;
+    final focus = Duration(
+      seconds: _focusSessionService.focusSecondsForPeriod(
+        UsagePeriod.today,
+        now: today,
+      ),
+    );
+    if (events.isEmpty && focus == Duration.zero) return;
+    _notificationService.showEndOfDaySummary(
+      '$taken/${events.length} breaks taken · '
+      '${focus.inHours}h ${focus.inMinutes % 60}m focused',
+    );
   }
 
   OverviewInsight? _topInsight(DateTime today) {

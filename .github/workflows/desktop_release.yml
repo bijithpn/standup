@@ -1,17 +1,20 @@
 name: "Release · 2 · Linux & Windows"
 
-# Runs after the macOS pipeline has published the GitHub release for this
-# version, then attaches the Linux and Windows builds to that same release.
-# (macos_release.yml creates the release, so these jobs must run after it,
-# never in parallel with it.)
+# Builds Linux and Windows in parallel with the macOS pipeline. The cheap
+# `attach` job waits for macos_release.yml to create the GitHub release, then
+# uploads both builds to it.
 on:
-  workflow_run:
-    workflows: ['Release · 1 · macOS']
-    types: [completed]
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'appcast.xml'
+      - '*.md'
+      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
-  group: desktop-release-${{ github.event.workflow_run.head_sha || github.sha }}
+  group: desktop-release-${{ github.sha }}
   cancel-in-progress: true
 
 permissions:
@@ -20,14 +23,13 @@ permissions:
 jobs:
   linux:
     name: Build & attach Linux
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Extract Version Info
         id: version
@@ -42,10 +44,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            clang cmake ninja-build pkg-config git curl unzip xz-utils \
-            libgtk-3-dev liblzma-dev \
-            libayatana-appindicator3-dev \
-            libkeybinder-3.0-dev \
+            clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev \
+            libayatana-appindicator3-dev libkeybinder-3.0-dev \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
             libcurl4-openssl-dev
 
@@ -81,29 +81,15 @@ jobs:
           tar -czf "dist/${STAGE}.tar.gz" "$STAGE"
           ls -la dist
 
-      - name: Upload to GitHub Release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.version.outputs.tag }}
-        run: |
-          if gh release view "$TAG_NAME" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" dist/* --clobber --repo "${{ github.repository }}"
-          else
-            echo "::warning::Release $TAG_NAME does not exist yet; files are only available as workflow artifacts."
-          fi
-
       - name: Upload Build Artifacts
-        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: BreakMate-Linux
           path: dist/*
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   windows:
     name: Build & attach Windows
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: windows-2022
     timeout-minutes: 60
     defaults:
@@ -113,7 +99,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
 
       - name: Extract Version Info
         id: version
@@ -163,21 +149,43 @@ jobs:
           cp "build/windows/installer/BreakMate-Setup-${VERSION}.exe" dist/
           ls -la dist
 
-      - name: Upload to GitHub Release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_NAME: ${{ steps.version.outputs.tag }}
-        run: |
-          if gh release view "$TAG_NAME" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release upload "$TAG_NAME" dist/* --clobber --repo "${{ github.repository }}"
-          else
-            echo "::warning::Release $TAG_NAME does not exist yet; files are only available as workflow artifacts."
-          fi
-
       - name: Upload Build Artifacts
-        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: BreakMate-Windows
           path: dist/*
-          if-no-files-found: ignore
+          if-no-files-found: error
+
+  attach:
+    name: Attach to release
+    needs: [linux, windows]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Wait for release and upload
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RAW_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          TAG_NAME="v$(echo "$RAW_VERSION" | cut -d'+' -f1)"
+          for _ in $(seq 1 80); do
+            if gh release view "$TAG_NAME" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+              gh release upload "$TAG_NAME" dist/* --clobber --repo "${{ github.repository }}"
+              exit 0
+            fi
+            echo "Waiting for release $TAG_NAME (macOS pipeline)..."
+            sleep 30
+          done
+          echo "::error::Release $TAG_NAME was not created within 40 minutes."
+          exit 1

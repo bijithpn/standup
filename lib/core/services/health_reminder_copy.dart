@@ -11,6 +11,11 @@ class HealthReminderCopy {
       'Blink a few times and look into the distance',
       'Look away from the screen for a moment',
     ],
+    'blink': [
+      'Blink slowly 10 times to rewet your eyes',
+      'Screens make us blink less — blink fully a few times',
+      'Distance check — keep the screen an arm\'s length away',
+    ],
     'posture': [
       'Sit tall and relax your shoulders',
       'Posture check — feet flat, back supported',
@@ -33,16 +38,26 @@ class HealthReminderCopy {
     ],
   };
 
-  static bool isKnown(String? type) => _variants.containsKey(type);
+  static const customPrefix = 'custom:';
+
+  static bool isCustom(String? type) => type?.startsWith(customPrefix) ?? false;
+
+  static String _customTitle(String type) =>
+      type.substring(customPrefix.length);
+
+  static bool isKnown(String? type) =>
+      _variants.containsKey(type) || isCustom(type);
 
   /// One random line for [type]; falls back to the eye-rest wording.
   static String text(String? type, [Random? random]) {
+    if (isCustom(type)) return _customTitle(type!);
     final list = _variants[type] ?? _variants['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
 
   static const Map<String, List<String>> _pills = {
     'eyeblink': ['Rest your eyes', 'Look away for a moment', 'Blink & refocus'],
+    'blink': ['Blink slowly', 'Blink a few times', 'Check screen distance'],
     'posture': ['Posture check', 'Sit tall', 'Relax your shoulders'],
     'hydration': ['Drink some water', 'Time for water', 'Stay hydrated'],
     'stretch': [
@@ -55,16 +70,20 @@ class HealthReminderCopy {
 
   /// Short label for the compact pill (one of a few variants).
   static String pill(String? type, [Random? random]) {
+    if (isCustom(type)) return _customTitle(type!);
     final list = _pills[type] ?? _pills['eyeblink']!;
     return list[(random ?? Random()).nextInt(list.length)];
   }
 
   /// Big wording for the full-screen poster.
-  static String poster(String? type) => switch (type) {
-    'posture' => 'Watch your posture!',
-    'hydration' => 'Drink some water!',
-    'stretch' => 'Time to stretch!',
-    'standup' => 'Stand up and move!',
-    _ => 'Rest your eyes!',
-  };
+  static String poster(String? type) => isCustom(type)
+      ? _customTitle(type!)
+      : switch (type) {
+          'blink' => 'Blink slowly!',
+          'posture' => 'Watch your posture!',
+          'hydration' => 'Drink some water!',
+          'stretch' => 'Time to stretch!',
+          'standup' => 'Stand up and move!',
+          _ => 'Rest your eyes!',
+        };
 }

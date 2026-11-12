@@ -24,6 +24,30 @@ permissions:
   contents: read
 
 jobs:
+  # On dev pushes the platform builds only matter when native code or
+  # dependencies changed; Dart-only changes are covered by analyze & test.
+  # PRs and manual runs always build everything.
+  changes:
+    name: Detect native changes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      native: ${{ github.event_name != 'push' || steps.f.outputs.native == 'true' }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
+        id: f
+        if: github.event_name == 'push'
+        with:
+          filters: |
+            native:
+              - 'linux/**'
+              - 'windows/**'
+              - 'macos/**'
+              - 'pubspec.yaml'
+              - 'pubspec.lock'
+              - '.github/workflows/cross_platform_ci.yml'
+
   static-analysis-and-tests:
     name: Analyze & Test
     runs-on: macos-15
@@ -96,6 +120,8 @@ jobs:
           exit $fail
 
   build-macos:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     name: Build macOS
     runs-on: macos-15
     timeout-minutes: 45
@@ -120,6 +146,8 @@ jobs:
         run: flutter build macos --debug --flavor dev --no-pub
 
   build-linux:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     name: Build Linux
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -137,10 +165,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            clang cmake ninja-build pkg-config git curl unzip xz-utils \
-            libgtk-3-dev liblzma-dev \
-            libayatana-appindicator3-dev \
-            libkeybinder-3.0-dev \
+            clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev \
+            libayatana-appindicator3-dev libkeybinder-3.0-dev \
             libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
             libcurl4-openssl-dev
 
@@ -160,6 +186,8 @@ jobs:
         run: flutter build linux --debug --no-pub
 
   build-windows:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     name: Build Windows
     runs-on: windows-2022
     timeout-minutes: 45

@@ -1,11 +1,12 @@
 import 'dart:math';
 
-enum HealthReminderKind { eyeRest, posture, hydration, stretch, standUp }
+enum HealthReminderKind { eyeRest, blink, posture, hydration, stretch, standUp }
 
 extension HealthReminderKindInfo on HealthReminderKind {
   /// Name carried by `HealthReminderEvent.reminderType` and the overlay.
   String get typeName => switch (this) {
     HealthReminderKind.eyeRest => 'eyeblink',
+    HealthReminderKind.blink => 'blink',
     HealthReminderKind.posture => 'posture',
     HealthReminderKind.hydration => 'hydration',
     HealthReminderKind.stretch => 'stretch',
@@ -15,6 +16,7 @@ extension HealthReminderKindInfo on HealthReminderKind {
   /// Minutes of active work between reminders on a normal day.
   int get baselineMinutes => switch (this) {
     HealthReminderKind.eyeRest => 20, // the 20-20-20 rule
+    HealthReminderKind.blink => 12,
     HealthReminderKind.posture => 30,
     HealthReminderKind.stretch => 40,
     HealthReminderKind.hydration => 50,
@@ -24,6 +26,7 @@ extension HealthReminderKindInfo on HealthReminderKind {
   /// Idle time (no keyboard/mouse) that counts as the user having done it.
   double get reliefIdleSeconds => switch (this) {
     HealthReminderKind.eyeRest => 20,
+    HealthReminderKind.blink => 10,
     HealthReminderKind.posture => 120,
     HealthReminderKind.stretch => 120,
     HealthReminderKind.standUp => 120,
@@ -39,6 +42,7 @@ extension HealthReminderKindInfo on HealthReminderKind {
 
   /// Reminders that this one also satisfies (standing up fixes posture, etc.).
   Set<HealthReminderKind> get alsoSatisfies => switch (this) {
+    HealthReminderKind.eyeRest => {HealthReminderKind.blink},
     HealthReminderKind.standUp => {
       HealthReminderKind.posture,
       HealthReminderKind.stretch,

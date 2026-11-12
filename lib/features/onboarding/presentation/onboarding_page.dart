@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/settings/settings_repository.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
+import 'package:breakmate/features/settings/break_profile.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/core/constants/app_strings.dart';
@@ -22,7 +23,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   @override
   void initState() {
     super.initState();
-    _pendingSettings = sl<SettingsRepository>().currentSettings;
+    _pendingSettings = _withProfile(sl<SettingsRepository>().currentSettings);
   }
 
   @override
@@ -177,43 +178,82 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
+  static const _workOptions = {
+    'coding': 'Coding',
+    'creative': 'Writing & design',
+    'meetings': 'Meetings & calls',
+    'study': 'Studying',
+  };
+  static const _hourOptions = {
+    4: 'Under 5 hours',
+    6: '5–8 hours',
+    9: '8+ hours',
+  };
+
+  String _work = 'coding';
+  int _hours = 6;
+
+  SettingsModel _withProfile(SettingsModel s) {
+    final p = BreakProfile.recommend(work: _work, hours: _hours);
+    return s.copyWith(
+      selectedProfileId: p.id,
+      shortBreakIntervalMinutes: p.shortIntervalMinutes,
+      shortBreakDurationSeconds: p.shortDurationSeconds,
+      longBreakIntervalMinutes: p.longIntervalMinutes,
+      longBreakDurationMinutes: p.longDurationMinutes,
+    );
+  }
+
+  void _pickProfile({String? work, int? hours}) {
+    _work = work ?? _work;
+    _hours = hours ?? _hours;
+    setState(() => _pendingSettings = _withProfile(_pendingSettings));
+  }
+
+  Widget _chips<T>(Map<T, String> options, T selected, ValueChanged<T> onTap) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      alignment: WrapAlignment.center,
+      children: [
+        for (final e in options.entries)
+          ChoiceChip(
+            label: Text(e.value),
+            selected: e.key == selected,
+            onSelected: (_) => onTap(e.key),
+          ),
+      ],
+    );
+  }
+
   Widget _buildBreakProfileStep() {
+    final p = BreakProfile.recommend(work: _work, hours: _hours);
     return _buildStepContainer(
       title: AppStrings.chooseRhythm,
       subtitle: AppStrings.rhythmSubtitle,
       child: Column(
         children: [
-          _ProfileOption(
-            title: 'Balanced',
-            description: 'Short break every 20m. Great for eye health.',
-            isSelected: _pendingSettings.shortBreakIntervalMinutes == 20,
-            onTap: () => setState(
-              () => _pendingSettings = _pendingSettings.copyWith(
-                shortBreakIntervalMinutes: 20,
-              ),
-            ),
+          Text(
+            'What do you mostly do?',
+            style: TextStyle(color: AppTheme.textSecondary),
           ),
-          const SizedBox(height: 12),
-          _ProfileOption(
-            title: 'Deep Work',
-            description: 'Short break every 45m. For focused sessions.',
-            isSelected: _pendingSettings.shortBreakIntervalMinutes == 45,
-            onTap: () => setState(
-              () => _pendingSettings = _pendingSettings.copyWith(
-                shortBreakIntervalMinutes: 45,
-              ),
-            ),
+          const SizedBox(height: 8),
+          _chips(_workOptions, _work, (v) => _pickProfile(work: v)),
+          const SizedBox(height: 24),
+          Text(
+            'Time at the screen per day',
+            style: TextStyle(color: AppTheme.textSecondary),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          _chips(_hourOptions, _hours, (v) => _pickProfile(hours: v)),
+          const SizedBox(height: 24),
           _ProfileOption(
-            title: 'Pomodoro',
-            description: 'Break every 25m. The classic productivity cycle.',
-            isSelected: _pendingSettings.shortBreakIntervalMinutes == 25,
-            onTap: () => setState(
-              () => _pendingSettings = _pendingSettings.copyWith(
-                shortBreakIntervalMinutes: 25,
-              ),
-            ),
+            title: '${p.name} (recommended)',
+            description:
+                'Break every ${p.shortIntervalMinutes} min, '
+                'long break every ${p.longIntervalMinutes} min.',
+            isSelected: true,
+            onTap: () {},
           ),
         ],
       ),

@@ -46,6 +46,18 @@ class SettingsRepository extends ChangeNotifier {
 
   SettingsModel get currentSettings => _current;
 
+  List<CustomReminder> _loadCustomReminders() {
+    try {
+      return [
+        for (final r
+            in jsonDecode(_storage.getString('custom_reminders')) as List)
+          CustomReminder.fromJson(Map<String, dynamic>.from(r as Map)),
+      ];
+    } catch (_) {
+      return const [];
+    }
+  }
+
   Future<void> load() async {
     if (!_storage.isReady) {
       debugPrint(
@@ -297,6 +309,13 @@ class SettingsRepository extends ChangeNotifier {
       ),
       breathPreset: _storage.getString('breath_preset', defaultValue: 'box'),
       breakChimeEnabled: _storage.getBool('break_chime_enabled'),
+      customReminders: _loadCustomReminders(),
+      reduceMotion: _storage.getBool('reduce_motion'),
+      eveningEyeCare: _storage.getBool('evening_eye_care'),
+      focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
+      blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
+      largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
@@ -559,6 +578,13 @@ class SettingsRepository extends ChangeNotifier {
       ),
       breathPreset: _storage.getString('breath_preset', defaultValue: 'box'),
       breakChimeEnabled: _storage.getBool('break_chime_enabled'),
+      customReminders: _loadCustomReminders(),
+      reduceMotion: _storage.getBool('reduce_motion'),
+      eveningEyeCare: _storage.getBool('evening_eye_care'),
+      focusDndEnabled: _storage.getBool('focus_dnd_enabled'),
+      blinkRemindersEnabled: _storage.getBool('blink_reminders_enabled'),
+      avoidBreakHour: _storage.getInt('avoid_break_hour', defaultValue: -1),
+      largeOverlayText: _storage.getBool('large_overlay_text'),
       lookedAwayPromptEnabled: _storage.getBool('looked_away_prompt_enabled'),
       templateAccentOverrides: _decodeTemplateAccentOverrides(
         _storage.getString('template_accent_overrides', defaultValue: ''),
@@ -830,6 +856,19 @@ class SettingsRepository extends ChangeNotifier {
     await _storage.setString('overlay_theme_mode', settings.overlayThemeMode);
     await _storage.setString('breath_preset', settings.breathPreset);
     await _storage.setBool('break_chime_enabled', settings.breakChimeEnabled);
+    await _storage.setBool('reduce_motion', settings.reduceMotion);
+    await _storage.setBool('evening_eye_care', settings.eveningEyeCare);
+    await _storage.setBool('focus_dnd_enabled', settings.focusDndEnabled);
+    await _storage.setBool(
+      'blink_reminders_enabled',
+      settings.blinkRemindersEnabled,
+    );
+    await _storage.setInt('avoid_break_hour', settings.avoidBreakHour);
+    await _storage.setBool('large_overlay_text', settings.largeOverlayText);
+    await _storage.setString(
+      'custom_reminders',
+      jsonEncode([for (final r in settings.customReminders) r.toJson()]),
+    );
     await _storage.setBool(
       'looked_away_prompt_enabled',
       settings.lookedAwayPromptEnabled,

@@ -1193,6 +1193,15 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       }
       return 0;
     }
+    case WM_POWERBROADCAST:
+      if (this == main_window_ && bridge_channel_) {
+        if (wparam == PBT_APMSUSPEND) {
+          bridge_channel_->InvokeMethod("systemSleep", nullptr);
+        } else if (wparam == PBT_APMRESUMEAUTOMATIC) {
+          bridge_channel_->InvokeMethod("systemWake", nullptr);
+        }
+      }
+      break;
     case WM_DISPLAYCHANGE:
     case WM_DPICHANGED:
       if (this == main_window_) {

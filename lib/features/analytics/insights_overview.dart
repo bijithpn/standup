@@ -155,6 +155,10 @@ List<OverviewInsight> buildOverviewInsights({
               'Breaks around ${formatHourLabel(worstHour)} get skipped '
               '${(rate * 100).round()}% of the time — your other break '
               'times work better for you.',
+          action: InsightAction(
+            label: 'Move breaks out of ${formatHourLabel(worstHour)}',
+            apply: (s) => s.copyWith(avoidBreakHour: worstHour),
+          ),
         ),
       );
     }

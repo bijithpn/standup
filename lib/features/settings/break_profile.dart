@@ -49,4 +49,15 @@ class BreakProfile {
       longDurationMinutes: 15,
     ),
   ];
+
+  /// Picks a preset from what the user does and how long they sit at a screen.
+  static BreakProfile recommend({required String work, required int hours}) {
+    final id = switch (work) {
+      'coding' => 'developer',
+      'meetings' => 'health',
+      'study' => 'pomodoro',
+      _ => hours >= 8 ? 'developer' : 'deep_work',
+    };
+    return presets.firstWhere((p) => p.id == id);
+  }
 }

@@ -205,5 +205,24 @@ void main() {
         });
       },
     );
+
+    test('a suspend with no native event does not count as work time', () {
+      fakeAsync((async) {
+        final engine = TimerEngine(
+          settingsRepository: settingsRepo,
+          smartDetectionService: mockDetection,
+          calendarService: mockCalendar,
+          eventBus: eventBus,
+        );
+        engine.startTimers();
+        async.elapse(const Duration(minutes: 5));
+
+        async.elapseBlocking(const Duration(minutes: 10));
+        async.elapse(const Duration(seconds: 2));
+
+        expect(engine.state, equals(TimerState.running));
+        expect(engine.workElapsed.inMinutes, equals(5));
+      });
+    });
   });
 }

@@ -94,6 +94,11 @@ class ServiceBootstrapper {
     sl<TimerOrchestrator>().initialize();
     sl<DailyResetService>().start();
     sl<BreakController>().initialize();
+    // ponytail: fixed delay so the timer engine has started before we pause it
+    Future<void>.delayed(
+      const Duration(seconds: 3),
+      sl<BreakController>().restoreFocusSession,
+    );
     mark('orchestrator+break controller');
 
     // Pre-cache tray animation frames on startup to avoid frame drops on macOS Menubar updates.

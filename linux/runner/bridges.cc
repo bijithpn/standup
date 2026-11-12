@@ -434,6 +434,21 @@ void RegisterMainBridges(FlView* view, GtkWindow* window) {
   RegisterSmartDetection(messenger);
 
   WatchDisplays();
+
+  g_autoptr(GDBusConnection) system_bus = g_bus_get_sync(G_BUS_TYPE_SYSTEM, nullptr, nullptr);
+  if (system_bus != nullptr) {
+    g_dbus_connection_signal_subscribe(
+        system_bus, "org.freedesktop.login1", "org.freedesktop.login1.Manager", "PrepareForSleep",
+        "/org/freedesktop/login1", nullptr, G_DBUS_SIGNAL_FLAGS_NONE,
+        [](GDBusConnection*, const gchar*, const gchar*, const gchar*, const gchar*,
+           GVariant* params, gpointer data) {
+          gboolean sleeping = FALSE;
+          g_variant_get(params, "(b)", &sleeping);
+          Invoke(static_cast<FlMethodChannel*>(data), sleeping ? "systemSleep" : "systemWake",
+                 nullptr);
+        },
+        bridge, nullptr);
+  }
 }
 
 }  // namespace bm
