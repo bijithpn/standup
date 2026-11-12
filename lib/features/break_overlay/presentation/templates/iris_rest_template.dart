@@ -295,6 +295,7 @@ class _AperturePainter extends CustomPainter {
 
   final List<Path> _paths = List.generate(_blades, (_) => Path());
   final Paint _fill = Paint();
+  final Paint _flat = Paint();
   final Paint _stroke = Paint()
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
@@ -318,6 +319,7 @@ class _AperturePainter extends CustomPainter {
       end: Alignment.bottomRight,
       colors: [bladeA, bladeB],
     ).createShader(Rect.fromCircle(center: Offset.zero, radius: _outer));
+    _flat.color = Color.lerp(bladeA, bladeB, 0.5)!;
     _stroke.color = edge;
     _ring.color = housing;
   }
@@ -328,11 +330,11 @@ class _AperturePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final eased = fixed ? 0.5 : Curves.easeInOutSine.transform(open.value);
-    // Opening radius 40 -> 110px; completion opens it fully.
-    final base = fixed ? 85.0 : 40 + 70 * eased;
+    // Opening radius 0 (fully shut) -> 104px; completion opens it fully.
+    final base = fixed ? 85.0 : 104 * eased;
     final r = base + (125 - base) * finish;
-    final dotR = fixed ? 4.0 : (10 - 7 * eased) / 2;
-    final twist = -(1 - (r - 40) / 85) * 0.45;
+    final dotR = fixed ? 4.0 : 5 - 3 * eased;
+    final twist = -(1 - (r / 125).clamp(0.0, 1.0)) * 0.45;
     final step = 2 * math.pi / _blades;
     final vertexR = r / math.cos(step / 2);
 
@@ -346,25 +348,24 @@ class _AperturePainter extends CustomPainter {
       Path()..addOval(Rect.fromCircle(center: Offset.zero, radius: _outer)),
     );
 
+    const reach = _outer * 2.2;
     for (var i = 0; i < _blades; i++) {
       final a = i * step + twist;
-      // Inner edge is one side of the octagonal opening; the blade sweeps
-      // outward past its neighbours so the leaves overlap like a real iris.
+      // Each leaf is the half-plane beyond one tangent edge of the opening,
+      // so leaves tile the annulus and fully overlap when the iris shuts.
       final v0 = _p(vertexR, a - step / 2);
       final v1 = _p(vertexR, a + step / 2);
-      // Far corners lie outside the housing (clipped), so the leaves always
-      // cover the whole annulus however far the iris opens.
-      final o1 = _p(_outer * 1.8, a + step / 2 + step * 1.1);
-      final o0 = _p(_outer * 1.8, a - step / 2 - step * 0.1);
+      final along = _p(reach, a + math.pi / 2);
+      final out = _p(reach, a);
       _paths[i]
         ..reset()
         ..moveTo(v0.dx, v0.dy)
-        ..lineTo(v1.dx, v1.dy)
-        ..lineTo(o1.dx, o1.dy)
-        ..lineTo(o0.dx, o0.dy)
+        ..lineTo(v0.dx + along.dx, v0.dy + along.dy)
+        ..lineTo(v0.dx + along.dx + out.dx, v0.dy + along.dy + out.dy)
+        ..lineTo(v0.dx + out.dx, v0.dy + out.dy)
         ..close();
-      canvas.drawPath(_paths[i], _fill);
-      canvas.drawPath(_paths[i], _stroke);
+      canvas.drawPath(_paths[i], i.isEven ? _fill : _flat);
+      canvas.drawLine(v0, v1, _stroke);
     }
     canvas.restore();
     canvas.drawCircle(Offset.zero, _outer, _ring);
