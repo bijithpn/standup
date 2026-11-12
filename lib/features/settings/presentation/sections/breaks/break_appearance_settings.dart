@@ -46,7 +46,6 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
   /// Templates whose accent color can be pinned independently of the app
   /// theme (see `BreakOverlayTheme.resolveAccent`).
   static const _overridableTemplates = [
-    (id: 'warm_amber', name: 'Warm Amber'),
     (id: 'iris_rest', name: 'Iris Rest'),
     (id: 'split_view', name: 'Split View'),
     (id: 'breathe_line', name: 'Breathe Line'),
@@ -56,10 +55,9 @@ class _BreakAppearanceSettingsState extends State<BreakAppearanceSettings> {
     (id: 'hud', name: 'Productivity HUD'),
     (id: 'floating', name: 'Soft Floating'),
     (id: 'quiet_pill', name: 'Quiet Pill'),
-    (id: 'soft_arc', name: 'Soft Arc'),
     (id: 'zen', name: 'Zen Mode'),
   ];
-  String _accentOverrideTemplateId = 'warm_amber';
+  String _accentOverrideTemplateId = 'iris_rest';
   final ScrollController _gridScrollController = ScrollController();
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();

@@ -149,7 +149,7 @@ class SettingsModel {
   final String companionTreatType;
 
   /// Per-break-template accent color overrides, keyed by template id (e.g.
-  /// 'warm_amber') with values as 0xAARRGGBB ints. A template not present
+  /// 'iris_rest') with values as 0xAARRGGBB ints. A template not present
   /// here falls back to its built-in [BreakOverlayTheme] accent.
   final Map<String, int> templateAccentOverrides;
 

@@ -70,33 +70,9 @@ const _templates = [
     category: 'Minimal & Zen',
   ),
   (
-    id: 'pulse_dot',
-    name: 'Pulse Dot',
-    desc: 'Pulsing circle border with countdown center.',
-    category: 'Minimal & Zen',
-  ),
-  (
     id: 'focus_orb',
     name: 'Focus Orb',
     desc: 'Concentric radial orb glow with rhythmic focus pacing.',
-    category: 'Minimal & Zen',
-  ),
-  (
-    id: 'wave_calm',
-    name: 'Wave Calm',
-    desc: 'Animated sine waves behind a centered timer.',
-    category: 'Minimal & Zen',
-  ),
-  (
-    id: 'ring_only',
-    name: 'Ring Only',
-    desc: 'Ultra-minimalist circular stroke countdown.',
-    category: 'Minimal & Zen',
-  ),
-  (
-    id: 'soft_arc',
-    name: 'Soft Arc',
-    desc: 'Sweeping radial velocity arc with micro-progress ticks.',
     category: 'Minimal & Zen',
   ),
   (
@@ -110,24 +86,6 @@ const _templates = [
     name: 'Quiet Pill',
     desc: 'Compact floating capsule progress indicator.',
     category: 'Minimal & Zen',
-  ),
-  (
-    id: 'mono_time',
-    name: 'Mono Time',
-    desc: 'Monospaced high-contrast retro terminal timer.',
-    category: 'Classic & Focus',
-  ),
-  (
-    id: 'time_slice',
-    name: 'Time Slice',
-    desc: 'Segmented circular arc interval timer.',
-    category: 'Classic & Focus',
-  ),
-  (
-    id: 'day_stack',
-    name: 'Day Stack',
-    desc: 'Timeline stack reflecting daily completed focus sessions.',
-    category: 'Classic & Focus',
   ),
   (
     id: 'split_view',
@@ -145,24 +103,6 @@ const _templates = [
     id: 'haiku_card',
     name: 'Haiku Card',
     desc: 'Rotating mindfulness poetry cards with serene typography.',
-    category: 'Art & Nature',
-  ),
-  (
-    id: 'warm_amber',
-    name: 'Warm Amber',
-    desc: 'Warm circadian amber gradient reducing blue-light exposure.',
-    category: 'Art & Nature',
-  ),
-  (
-    id: 'open_field',
-    name: 'Open Field',
-    desc: 'Expansive outdoor horizon landscape calm.',
-    category: 'Art & Nature',
-  ),
-  (
-    id: 'dusk_glow',
-    name: 'Dusk Glow',
-    desc: 'Atmospheric evening twilight gradient transition.',
     category: 'Art & Nature',
   ),
   (

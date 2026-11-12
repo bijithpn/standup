@@ -28,14 +28,6 @@ class CompanionSpriteWidget extends StatefulWidget {
 
   static void clearCache() {}
 
-  static Future<void> precacheSpriteSheet(String path) async {
-    try {
-      await PetAssetLoader.loadImage(path);
-    } catch (e) {
-      debugPrint('CompanionSpriteWidget: Precache error for $path: $e');
-    }
-  }
-
   const CompanionSpriteWidget({
     super.key,
     required this.petTheme,

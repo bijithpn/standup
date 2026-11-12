@@ -79,18 +79,6 @@ class BreakPalette {
     isDark: true,
   );
 
-  static const BreakPalette terminal = BreakPalette(
-    canvas: Color(0xFF0B0F0A),
-    canvasRaised: Color(0xFF121910),
-    surface: Color(0xFF141A12),
-    border: Color(0x33B5CC7A),
-    track: Color(0x33B5CC7A),
-    textPrimary: BreakOverlayTheme.phosphor,
-    textSecondary: Color(0xFFA9BE72),
-    textMuted: Color(0xFF8FA25F),
-    isDark: true,
-  );
-
   /// A printed page is always light, whatever the theme.
   static const BreakPalette paper = BreakPalette(
     canvas: Color(0xFFF5F3EE),
@@ -252,21 +240,9 @@ abstract final class BreakOverlayTheme {
   static const Color amber = Color(0xFFD4A55A);
   static const Color nature = Color(0xFF74C69D);
   static const Color mint = Color(0xFF6EE7B7);
-  static const Color periwinkle = Color(0xFFA5B4FC);
   static const Color sage = Color(0xFF5BB898);
   static const Color sky = Color(0xFF93C5FD);
   static const Color dusk = Color(0xFFC4B5FD);
-  static const Color phosphor = Color(0xFFB5CC7A);
-
-  /// Accent at 18 % alpha, for halos.
-  static Color accentGlow(Color c) => c.withValues(alpha: 0.18);
-
-  // ── Spacing / radii ──
-  static const double space1 = 4;
-  static const double space2 = 8;
-  static const double space3 = 16;
-  static const double space4 = 24;
-  static const double space5 = 40;
 
   static const double radiusSm = 8;
   static const double radiusMd = 14;

@@ -1,4 +1,3 @@
-import 'package:breakmate/features/break_overlay/presentation/templates/time_slice_template.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
@@ -51,22 +50,13 @@ void main() {
       'zen',
       'breathe_line',
       'one_word',
-      'pulse_dot',
       'focus_orb',
-      'wave_calm',
-      'ring_only',
-      'soft_arc',
       'classic',
       'hud',
       'clock_face',
-      'mono_time',
-      'time_slice',
-      'day_stack',
       'split_view',
       'step_guide',
       'haiku_card',
-      'open_field',
-      'dusk_glow',
       'paper_light',
       'activities',
       'iris_rest',
@@ -136,36 +126,5 @@ void main() {
     await advanceTo(18.4, 14.4); // wraps: breathe in
     expect(find.text('Breathe in'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  group('Time Slice segment count matches the break duration', () {
-    test('one slice per 5 seconds, between 1 and 24', () {
-      expect(TimeSliceTemplate.segmentCountFor(20), 4);
-      expect(TimeSliceTemplate.segmentCountFor(60), 12);
-      expect(TimeSliceTemplate.segmentCountFor(7), 2);
-      expect(TimeSliceTemplate.segmentCountFor(1), 1);
-      expect(TimeSliceTemplate.segmentCountFor(300), 24);
-      expect(TimeSliceTemplate.segmentCountFor(120), 24);
-    });
-
-    for (final c in const [(60, 12), (20, 4), (300, 24)]) {
-      testWidgets('${c.$1}s break -> ${c.$2} segments', (tester) async {
-        final handle = tester.ensureSemantics();
-        await pumpBreakTemplate(
-          tester,
-          'time_slice',
-          remaining: c.$1,
-          total: c.$1,
-        );
-        expect(
-          find.bySemanticsLabel(
-            RegExp('^${c.$2} of ${c.$2} segments remaining'),
-          ),
-          findsOneWidget,
-        );
-        await tester.pumpWidget(const SizedBox.shrink());
-        handle.dispose();
-      });
-    }
   });
 }

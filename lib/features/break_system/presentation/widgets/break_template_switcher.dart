@@ -7,28 +7,18 @@ import 'package:breakmate/features/break_overlay/presentation/templates/breathe_
 import 'package:breakmate/features/break_overlay/presentation/templates/classic_slideshow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/clock_face_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/companion_interactive_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/day_stack_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/dusk_glow_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/focus_orb_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/haiku_card_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/iris_rest_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/minimal_focus_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/mono_time_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/night_sky_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/one_word_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/open_field_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/paper_light_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/productivity_hud_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/pulse_dot_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/quiet_pill_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/ring_only_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/soft_arc_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/soft_floating_widget_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/split_view_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/step_guide_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/time_slice_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/warm_amber_template.dart';
-import 'package:breakmate/features/break_overlay/presentation/templates/wave_calm_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/wind_down_template.dart';
 import 'package:breakmate/features/break_overlay/presentation/templates/zen_mode_template.dart';
 import 'package:breakmate/features/break_system/presentation/widgets/break_template_error_view.dart';
@@ -85,22 +75,6 @@ class BreakTemplateSwitcher extends StatelessWidget {
           exerciseTitle: exerciseTitle,
           exerciseInstructions: exerciseInstructions,
         );
-      case 'dusk_glow':
-        return DuskGlowTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-      case 'open_field':
-        return OpenFieldTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
       case 'companion':
         return CompanionInteractiveTemplate(
           breakInfo: breakInfo,
@@ -125,32 +99,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
           totalSeconds: total,
           onSkip: onSkip,
         );
-      case 'warm_amber':
-        return WarmAmberTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
       case 'hud':
         return ProductivityHudTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-      case 'time_slice':
-        return TimeSliceTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-      case 'mono_time':
-        return MonoTimeTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
@@ -189,24 +139,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
           totalSeconds: total,
           onSkip: onSkip,
         );
-      case 'ring_only':
-        return RingOnlyTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
       case 'one_word':
         return OneWordTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-      case 'pulse_dot':
-        return PulseDotTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
@@ -221,32 +155,8 @@ class BreakTemplateSwitcher extends StatelessWidget {
           totalSeconds: total,
           onSkip: onSkip,
         );
-      case 'wave_calm':
-        return WaveCalmTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-      case 'soft_arc':
-        return SoftArcTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
       case 'haiku_card':
         return HaikuCardTemplate(
-          breakInfo: breakInfo,
-          settings: settings,
-          remainingSeconds: remaining,
-          totalSeconds: total,
-          onSkip: onSkip,
-        );
-      case 'day_stack':
-        return DayStackTemplate(
           breakInfo: breakInfo,
           settings: settings,
           remainingSeconds: remaining,
@@ -295,6 +205,16 @@ class BreakTemplateSwitcher extends StatelessWidget {
         );
       case 'wind_down':
         return const WindDownTemplate();
+      case 'ring_only':
+      case 'soft_arc':
+      case 'pulse_dot':
+      case 'wave_calm':
+      case 'mono_time':
+      case 'time_slice':
+      case 'day_stack':
+      case 'dusk_glow':
+      case 'warm_amber':
+      case 'open_field':
       case 'minimal':
         return MinimalFocusTemplate(
           breakInfo: breakInfo,
