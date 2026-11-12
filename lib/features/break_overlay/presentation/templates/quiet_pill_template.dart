@@ -5,6 +5,10 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+const _mint = Color(0xFF8FD8C2);
+const _smoke = Color(0xFF12171E);
+const _mist = Color(0xFFE6EEF0);
+
 class QuietPillTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -42,12 +46,10 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'quiet_pill',
-      _kind.accent,
-    ),
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'quiet_pill',
+    _mint,
   );
 
   @override
@@ -79,7 +81,6 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,
@@ -96,69 +97,88 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
         final h = 36 + 20 * t;
         return Opacity(
           opacity: 0.7 + 0.3 * t.clamp(0.0, 1.0),
-          child: BreakGlass(
-            radius: BreakOverlayTheme.radiusPill,
-            fillAlpha: 0.85,
-            borderColor: palette.border,
-            shadow: false,
-            blur: false,
-            child: SizedBox(
-              width: w,
-              height: h,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  BreakSmoothProgress(
-                    progress: progress,
-                    builder: (context, anim) => AnimatedBuilder(
-                      animation: anim,
-                      builder: (context, _) => Align(
-                        alignment: Alignment.centerLeft,
-                        child: FractionallySizedBox(
-                          widthFactor: anim.value.clamp(0.0, 1.0),
-                          heightFactor: 1,
-                          child: ColoredBox(
-                            color: _accent.withValues(alpha: 0.18),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: _smoke.withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
+              border: Border.all(color: _mist.withValues(alpha: 0.10)),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(BreakOverlayTheme.radiusPill),
+              child: SizedBox(
+                width: w,
+                height: h,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    BreakSmoothProgress(
+                      progress: progress,
+                      builder: (context, anim) => AnimatedBuilder(
+                        animation: anim,
+                        builder: (context, _) => Align(
+                          alignment: Alignment.bottomLeft,
+                          child: FractionallySizedBox(
+                            widthFactor: anim.value.clamp(0.0, 1.0),
+                            child: SizedBox(
+                              height: 2,
+                              child: ColoredBox(
+                                color: _accent.withValues(alpha: 0.8),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 14 + 2 * t),
-                    child: Row(
-                      children: [
-                        BreakCountdown(
-                          seconds: widget.remainingSeconds,
-                          style: BreakOverlayTheme.body.copyWith(
-                            fontWeight: FontWeight.w400,
-                            fontFeatures: BreakOverlayTheme.tabular,
-                            height: 1.0,
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16 + 2 * t, 0, 14, 0),
+                      child: Row(
+                        children: [
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: _accent,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const SizedBox.square(dimension: 6),
                           ),
-                          color: breakClockColor(widget.settings, palette),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _kind.label,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.ellipsis,
-                            style: BreakOverlayTheme.micro.copyWith(
-                              color: palette.textMuted,
+                          const SizedBox(width: 10),
+                          BreakCountdown(
+                            seconds: widget.remainingSeconds,
+                            style: const TextStyle(
+                              fontFamily: BreakOverlayTheme.monoFamily,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              fontFeatures: BreakOverlayTheme.tabular,
                               height: 1.0,
                             ),
+                            color: breakClockColor(
+                              widget.settings,
+                              BreakPalette.dark,
+                              fallback: _mist,
+                            ),
                           ),
-                        ),
-                        if (t > 0.6 && canSkip)
-                          BreakSkipIcon(
-                            onPressed: widget.onSkip!,
-                            accent: _accent,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _kind.label,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: BreakOverlayTheme.micro.copyWith(
+                                color: _mist.withValues(alpha: 0.55),
+                                height: 1.0,
+                              ),
+                            ),
                           ),
-                      ],
+                          if (t > 0.6 && canSkip)
+                            BreakSkipIcon(
+                              onPressed: widget.onSkip!,
+                              accent: _accent,
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -168,7 +188,7 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
 
     return BreakScaffold(
       canvas: Colors.transparent,
-      scrim: palette.canvas.withValues(alpha: 0.20),
+      scrim: _smoke.withValues(alpha: 0.20),
       scaled: false,
       showSkip: false,
       onSkip: widget.onSkip,
@@ -206,20 +226,28 @@ class _QuietPillTemplateState extends State<QuietPillTemplate>
                             padding: const EdgeInsets.only(bottom: 10),
                             child: ConstrainedBox(
                               constraints: const BoxConstraints(maxWidth: 320),
-                              child: BreakGlass(
-                                radius: BreakOverlayTheme.radiusMd,
-                                shadow: false,
-                                borderColor: palette.border,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 10,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: _smoke.withValues(alpha: 0.82),
+                                  borderRadius: BorderRadius.circular(
+                                    BreakOverlayTheme.radiusMd,
+                                  ),
+                                  border: Border.all(
+                                    color: _mist.withValues(alpha: 0.10),
+                                  ),
                                 ),
-                                child: Text(
-                                  widget.breakInfo.tip,
-                                  textAlign: TextAlign.center,
-                                  style: BreakOverlayTheme.body.copyWith(
-                                    color: palette.textSecondary,
-                                    fontSize: 13,
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  child: Text(
+                                    widget.breakInfo.tip,
+                                    textAlign: TextAlign.center,
+                                    style: BreakOverlayTheme.body.copyWith(
+                                      color: _mist.withValues(alpha: 0.75),
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                               ),

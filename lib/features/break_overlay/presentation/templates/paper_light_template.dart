@@ -4,7 +4,7 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
-class PaperLightTemplate extends StatefulWidget {
+class PaperLightTemplate extends StatelessWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
   final int remainingSeconds;
@@ -20,39 +20,19 @@ class PaperLightTemplate extends StatefulWidget {
     this.onSkip,
   });
 
-  @override
-  State<PaperLightTemplate> createState() => _PaperLightTemplateState();
-}
-
-class _PaperLightTemplateState extends State<PaperLightTemplate>
-    with SingleTickerProviderStateMixin {
-  static const Color _ink = Color(
-    0xFF1A1814,
-  ); // == BreakPalette.paper.textPrimary
-  static const Color _stone = Color(0xFF6B6560); // 5.2:1 on the cream
-  static const Color _forest = Color(0xFF2D6A4F);
-
-  /// Black for 120ms, then a 200ms fade: a page turn on entrance.
-  late final AnimationController _flash = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 320),
+  static const _page = BreakPalette(
+    canvas: Color(0xFFF2F6FB),
+    canvasRaised: Color(0xFFF8FAFD),
+    surface: Color(0xFFFFFFFF),
+    border: Color(0x2639506B),
+    track: Color(0x3339506B),
+    textPrimary: Color(0xFF3A3F47),
+    textSecondary: Color(0xFF555C66),
+    textMuted: Color(0xFF6B7380),
+    isDark: false,
   );
-  bool _started = false;
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_started) return;
-    _started = true;
-    if (!breakShouldFreeze(context)) _flash.forward();
-  }
-
-  @override
-  void dispose() {
-    _flash.dispose();
-    super.dispose();
-  }
+  static const _penBlue = Color(0xFF2F5FA8);
+  static const double _rule = 48;
 
   TextStyle _serif(double size, Color color, {FontWeight? weight}) =>
       BreakOverlayTheme.serif.copyWith(
@@ -64,105 +44,96 @@ class _PaperLightTemplateState extends State<PaperLightTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final forest = BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
+    final pen = BreakOverlayTheme.resolveAccent(
+      settings.templateAccentOverrides,
       'paper_light',
-      _forest,
+      _penBlue,
     );
-    final progress = breakProgress(
-      widget.remainingSeconds,
-      widget.totalSeconds,
-    );
-    final showTip =
-        widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
+    final progress = breakProgress(remainingSeconds, totalSeconds);
+    final showTip = settings.showExercisesInBreak && breakInfo.tip.isNotEmpty;
 
     return BreakScaffold(
-      palette: BreakPalette.paper,
-      canvas: BreakPalette.paper.canvas,
-      onSkip: widget.onSkip,
-      strictMode: widget.settings.strictMode,
-      accent: forest,
+      palette: _page,
+      canvas: _page.canvas,
+      onSkip: onSkip,
+      strictMode: settings.strictMode,
+      accent: pen,
+      background: const CustomPaint(painter: _NotebookPainter()),
       child: Stack(
         children: [
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                BreakEntrance(
-                  scale: false,
-                  child: Text(_kind.label, style: _serif(20, _stone)),
+          Positioned(
+            left: 224,
+            top: _rule * 2,
+            right: 128,
+            child: BreakEntrance(
+              scale: false,
+              child: Text(
+                BreakKind.of(breakInfo).label,
+                style: _serif(
+                  28,
+                  pen,
+                  weight: FontWeight.w600,
+                ).copyWith(height: _rule / 28),
+              ),
+            ),
+          ),
+          if (showTip)
+            Positioned(
+              left: 224,
+              top: _rule * 4,
+              width: 620,
+              child: BreakEntrance(
+                delay: BreakEntrance.stagger(1),
+                scale: false,
+                child: Text(
+                  breakInfo.tip,
+                  style: _serif(
+                    32,
+                    _page.textPrimary,
+                  ).copyWith(height: _rule / 32, fontStyle: FontStyle.italic),
                 ),
-                const SizedBox(height: 20),
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(1),
-                  scale: false,
-                  child: BreakCountdown(
-                    seconds: widget.remainingSeconds,
+              ),
+            ),
+          Positioned(
+            left: 224,
+            bottom: _rule * 2,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(2),
+              scale: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BreakCountdown(
+                    seconds: remainingSeconds,
+                    textAlign: TextAlign.left,
                     style: _serif(
-                      112,
-                      _ink,
+                      176,
+                      _page.textPrimary,
                       weight: FontWeight.w300,
-                    ).copyWith(height: 1.0, letterSpacing: -2),
+                    ).copyWith(height: 1.0, letterSpacing: -4),
                     color: breakClockColor(
-                      widget.settings,
-                      BreakPalette.paper,
-                      fallback: _ink,
+                      settings,
+                      _page,
+                      fallback: _page.textPrimary,
                     ),
                   ),
-                ),
-                const SizedBox(height: 40),
-                BreakEntrance(
-                  delay: BreakEntrance.stagger(2),
-                  scale: false,
-                  child: SizedBox(
-                    width: 240,
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: 420,
                     child: BreakSmoothProgress(
                       progress: progress,
                       builder: (context, anim) => AnimatedBuilder(
                         animation: anim,
                         builder: (context, _) => LinearProgressIndicator(
                           value: anim.value,
-                          minHeight: 1,
-                          color: forest,
-                          backgroundColor: BreakPalette.paper.track,
+                          minHeight: 3,
+                          color: pen,
+                          backgroundColor: _page.track,
                         ),
                       ),
                     ),
                   ),
-                ),
-                if (showTip) ...[
-                  const SizedBox(height: 32),
-                  BreakEntrance(
-                    delay: BreakEntrance.stagger(3),
-                    scale: false,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 440),
-                      child: Text(
-                        widget.breakInfo.tip,
-                        textAlign: TextAlign.center,
-                        style: _serif(
-                          20,
-                          BreakPalette.paper.textSecondary,
-                        ).copyWith(height: 1.5, fontStyle: FontStyle.italic),
-                      ),
-                    ),
-                  ),
                 ],
-              ],
-            ),
-          ),
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _flash,
-                builder: (context, _) {
-                  if (!_flash.isAnimating) return const SizedBox.shrink();
-                  final t = _flash.value;
-                  final opacity = t <= 0.375 ? 1.0 : 1.0 - (t - 0.375) / 0.625;
-                  return ColoredBox(
-                    color: Colors.black.withValues(alpha: opacity.clamp(0, 1)),
-                  );
-                },
               ),
             ),
           ),
@@ -170,4 +141,44 @@ class _PaperLightTemplateState extends State<PaperLightTemplate>
       ),
     );
   }
+}
+
+class _NotebookPainter extends CustomPainter {
+  const _NotebookPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = (size.width / 1280 < size.height / 800)
+        ? size.width / 1280
+        : size.height / 800;
+    final left = (size.width - 1280 * scale) / 2;
+    final top = (size.height - 800 * scale) / 2;
+    final rule = Paint()
+      ..color = const Color(0xFFBFD0E6)
+      ..strokeWidth = 1;
+    final step = PaperLightTemplate._rule * scale;
+    for (var y = (top + 42 * scale) % step; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), rule);
+    }
+    final marginX = left + 176 * scale;
+    canvas.drawLine(
+      Offset(marginX, 0),
+      Offset(marginX, size.height),
+      Paint()
+        ..color = const Color(0xFFE59A9A)
+        ..strokeWidth = 1.5,
+    );
+    final hole = Paint()..color = const Color(0xFFDCE5F0);
+    final edge = Paint()
+      ..color = const Color(0xFFB3C3D9)
+      ..style = PaintingStyle.stroke;
+    for (final fy in [0.2, 0.5, 0.8]) {
+      final c = Offset(left + 72 * scale, top + 800 * scale * fy);
+      canvas.drawCircle(c, 15 * scale, hole);
+      canvas.drawCircle(c, 15 * scale, edge);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NotebookPainter old) => false;
 }

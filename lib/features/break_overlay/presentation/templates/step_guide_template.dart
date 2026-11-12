@@ -4,6 +4,20 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+const _plum = Color(0xFF3B1F3E);
+
+const _print = BreakPalette(
+  canvas: Color(0xFFF7F0E1),
+  canvasRaised: Color(0xFFEFE5D0),
+  surface: Color(0xFFEFE5D0),
+  border: Color(0x2E3B1F3E),
+  track: Color(0x333B1F3E),
+  textPrimary: _plum,
+  textSecondary: Color(0xFF5E4361),
+  textMuted: Color(0xFF9A8A99),
+  isDark: false,
+);
+
 class StepGuideTemplate extends StatelessWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -20,8 +34,9 @@ class StepGuideTemplate extends StatelessWidget {
     this.onSkip,
   });
 
-  static const double _pitch = 64;
-  static const double _left = 400;
+  static const double _pitch = 128;
+  static const double _left = 520;
+  static const double _top = 150;
 
   /// Steps are the sentences of the break's tip (up to four).
   List<String> _steps(bool preview) {
@@ -45,10 +60,9 @@ class StepGuideTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    final accent = palette.accentOn(
-      breakAccent(settings, 'step_guide', BreakOverlayTheme.mint),
-    );
+    const palette = _print;
+    final accent = breakAccent(settings, 'step_guide', _plum);
+    final kind = BreakKind.of(breakInfo);
     final progress = breakProgress(remainingSeconds, totalSeconds);
     final complete = breakIsComplete(context, remainingSeconds, totalSeconds);
     final steps = _steps(BreakPreviewScope.isPreview(context));
@@ -57,28 +71,58 @@ class StepGuideTemplate extends StatelessWidget {
     final active = complete ? n : (progress * n).floor().clamp(0, n - 1);
 
     return BreakScaffold(
+      palette: palette,
       onSkip: onSkip,
       strictMode: settings.strictMode,
       accent: accent,
       child: Stack(
         children: [
           Positioned(
-            left: _left,
+            left: 88,
             top: 150,
+            child: BreakEntrance(
+              scale: false,
+              child: Text(
+                kind.label,
+                style: BreakOverlayTheme.serif.copyWith(
+                  fontSize: 28,
+                  fontStyle: FontStyle.italic,
+                  color: palette.textSecondary,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 80,
+            top: 196,
             child: BreakEntrance(
               scale: false,
               child: BreakCountdown(
                 seconds: remainingSeconds,
                 textAlign: TextAlign.left,
+                style: BreakOverlayTheme.serif.copyWith(
+                  fontSize: 96,
+                  fontWeight: FontWeight.w300,
+                  letterSpacing: -3,
+                  fontFeatures: BreakOverlayTheme.tabular,
+                ),
                 color: breakClockColor(settings, palette),
               ),
             ),
           ),
+          Positioned(
+            left: _left - 40,
+            top: _top - 20,
+            width: 1,
+            height: n * _pitch + 40,
+            child: ColoredBox(color: palette.border),
+          ),
           for (var i = 0; i < n; i++)
             Positioned(
               left: _left,
-              top: 300 + i * _pitch,
-              width: 480,
+              top: _top + i * _pitch,
+              width: 660,
+              height: _pitch,
               child: BreakEntrance(
                 delay: BreakEntrance.stagger(i + 1),
                 scale: false,
@@ -86,37 +130,52 @@ class StepGuideTemplate extends StatelessWidget {
                   label:
                       'Step ${i + 1} of $n, ${i < active ? 'done' : (i == active ? 'active' : 'upcoming')}',
                   excludeSemantics: true,
-                  child: Row(
-                    children: [
-                      AnimatedContainer(
-                        duration: BreakMotion.medium,
-                        width: 10,
-                        height: 10,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: i == active
-                              ? accent
-                              : (i < active ? palette.textMuted : null),
-                          border: i > active
-                              ? Border.all(color: palette.track, width: 1.5)
-                              : null,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: i == 0 ? _plum : palette.border,
+                          width: i == 0 ? 2 : 1,
                         ),
                       ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        child: AnimatedDefaultTextStyle(
-                          duration: BreakMotion.medium,
-                          style: BreakOverlayTheme.serif.copyWith(
-                            fontSize: 22,
-                            height: 1.35,
-                            color: i == active
-                                ? palette.textPrimary
-                                : palette.textMuted,
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 88,
+                          child: AnimatedDefaultTextStyle(
+                            duration: BreakMotion.medium,
+                            style: BreakOverlayTheme.serif.copyWith(
+                              fontSize: 64,
+                              fontWeight: FontWeight.w300,
+                              fontStyle: FontStyle.italic,
+                              color: i == active ? accent : palette.textMuted,
+                            ),
+                            child: Text('${i + 1}'),
                           ),
-                          child: Text(steps[i]),
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: AnimatedDefaultTextStyle(
+                            duration: BreakMotion.medium,
+                            style: BreakOverlayTheme.serif.copyWith(
+                              fontSize: 28,
+                              height: 1.3,
+                              fontWeight: i == active
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: i == active
+                                  ? palette.textPrimary
+                                  : palette.textMuted,
+                              decoration: i < active
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              decorationColor: palette.textMuted,
+                            ),
+                            child: Text(steps[i]),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

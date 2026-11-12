@@ -5,6 +5,20 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+const _forest = BreakPalette(
+  canvas: Color(0xFF0F1A16),
+  canvasRaised: Color(0xFF16251F),
+  surface: Color(0xFF16251F),
+  border: Color(0x339DB8A0),
+  track: Color(0x339DB8A0),
+  textPrimary: Color(0xFFE6EEDF),
+  textSecondary: Color(0xFFB9CBB7),
+  textMuted: Color(0xFF8DA591),
+  isDark: true,
+);
+const _sage = Color(0xFF9DB8A0);
+const _moss = Color(0xFF2F4A3A);
+
 class ZenModeTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -41,17 +55,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
     BreathFullness(() => _preset),
   );
   String _phaseText = 'Breathe in';
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    breakTimeTinted(
-      BreakOverlayTheme.resolveAccent(
-        widget.settings.templateAccentOverrides,
-        'zen',
-        _kind.accent,
-      ),
-    ),
-  );
+  Color get _accent => breakAccent(widget.settings, 'zen', _sage);
 
   @override
   void initState() {
@@ -86,7 +91,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
+    const palette = _forest;
     final reduced = BreakMotion.reduced(context);
     final complete = breakIsComplete(
       context,
@@ -98,11 +103,21 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
+      palette: _forest,
+      background: const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFF16261F), Color(0xFF0B130F)],
+          ),
+        ),
+      ),
       child: Stack(
         children: [
           Positioned(
-            left: 640 - 140,
-            top: 360 - 140,
+            left: 640 - 210,
+            top: 340 - 210,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 0.9 : 1.0),
@@ -114,8 +129,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                 ),
                 child: RepaintBoundary(
                   child: SizedBox(
-                    width: 280,
-                    height: 280,
+                    width: 420,
+                    height: 420,
                     child: CustomPaint(
                       painter: _BlobPainter(
                         breath: _breath,
@@ -131,7 +146,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
             ),
           ),
           Positioned(
-            top: 360 - 20,
+            top: 340 - 34,
             left: 0,
             right: 0,
             child: Center(
@@ -143,8 +158,8 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
                     _phaseText,
                     key: ValueKey(_phaseText),
                     style: BreakOverlayTheme.serif.copyWith(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 56,
+                      height: 1.0,
                       color: palette.textPrimary,
                     ),
                   ),
@@ -153,7 +168,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
             ),
           ),
           Positioned(
-            top: 360 + 140 + 56,
+            top: 340 + 210 + 36,
             left: 0,
             right: 0,
             child: BreakEntrance(
@@ -161,7 +176,7 @@ class _ZenModeTemplateState extends State<ZenModeTemplate>
               scale: false,
               child: BreakCountdown(
                 seconds: widget.remainingSeconds,
-                style: BreakOverlayTheme.title,
+                style: BreakOverlayTheme.display.copyWith(letterSpacing: 6),
                 color: breakClockColor(
                   widget.settings,
                   palette,
@@ -184,7 +199,7 @@ class _BlobPainter extends CustomPainter {
   final bool reduced;
 
   static const int _points = 6;
-  static const double _baseRadius = 130;
+  static const double _baseRadius = 190;
 
   final Path _path = Path();
   final Paint _fill = Paint();
@@ -192,6 +207,13 @@ class _BlobPainter extends CustomPainter {
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.5;
   final List<Offset> _ctrl = List.filled(_points, Offset.zero);
+
+  /// Outer to inner: size, phase offset, fill.
+  static const _layers = [
+    (1.0, 0.0, _moss, 0.55),
+    (0.8, 0.35, _sage, 0.22),
+    (0.58, 0.7, _sage, 0.3),
+  ];
 
   _BlobPainter({
     required this.breath,
@@ -214,13 +236,29 @@ class _BlobPainter extends CustomPainter {
     final periods = (cycle / 8).round().clamp(1, 4);
     final t = v * periods;
 
+    canvas.save();
+    canvas.translate(size.width / 2, size.height / 2);
+    canvas.scale(scale);
+    // Reduced motion trades the scale change for a 60% -> 100% opacity swell.
+    final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
+    for (final (span, phase, color, alpha) in _layers) {
+      _shape(t + phase, span);
+      _fill.color = color.withValues(alpha: alpha * fade);
+      canvas.drawPath(_path, _fill);
+    }
+    _shape(t, 1.0);
+    _stroke.color = accent.withValues(alpha: 0.6 * fade);
+    canvas.drawPath(_path, _stroke);
+    canvas.restore();
+  }
+
+  void _shape(double t, double size) {
     for (var i = 0; i < _points; i++) {
       final a = (math.pi * 2 / _points) * i - math.pi / 2;
-      final noise = reduced ? 0.0 : 0.06 * math.sin(2 * math.pi * t + i * 1.3);
-      final r = _baseRadius * (1 + noise);
+      final noise = reduced ? 0.0 : 0.07 * math.sin(2 * math.pi * t + i * 1.3);
+      final r = _baseRadius * size * (1 + noise);
       _ctrl[i] = Offset(math.cos(a) * r, math.sin(a) * r);
     }
-
     // Closed Catmull-Rom spline as cubic Beziers.
     _path.reset();
     _path.moveTo(_ctrl[0].dx, _ctrl[0].dy);
@@ -234,17 +272,6 @@ class _BlobPainter extends CustomPainter {
       _path.cubicTo(c1.dx, c1.dy, c2.dx, c2.dy, p2.dx, p2.dy);
     }
     _path.close();
-
-    canvas.save();
-    canvas.translate(size.width / 2, size.height / 2);
-    canvas.scale(scale);
-    // Reduced motion trades the scale change for a 60% -> 100% opacity swell.
-    final fade = reduced ? 0.6 + 0.4 * fullness.value : 1.0;
-    _fill.color = accent.withValues(alpha: 0.08 * fade);
-    _stroke.color = accent.withValues(alpha: 0.7 * fade);
-    canvas.drawPath(_path, _fill);
-    canvas.drawPath(_path, _stroke);
-    canvas.restore();
   }
 
   @override

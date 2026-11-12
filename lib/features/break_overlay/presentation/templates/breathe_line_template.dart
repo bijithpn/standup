@@ -4,6 +4,19 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+const _dusk = BreakPalette(
+  canvas: Color(0xFF08242F),
+  canvasRaised: Color(0xFF0F3441),
+  surface: Color(0xFF0F3441),
+  border: Color(0x33F8EBDD),
+  track: Color(0x33F8EBDD),
+  textPrimary: Color(0xFFFBF0E4),
+  textSecondary: Color(0xFFF1DCC6),
+  textMuted: Color(0xFFE6CDB5),
+  isDark: true,
+);
+const _peach = Color(0xFFF6BE9A);
+
 class BreatheLineTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -40,7 +53,6 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
   );
   String _phaseText = 'Breathe in';
   bool _started = false;
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
   @override
   void initState() {
@@ -82,10 +94,8 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    final accent = palette.accentOn(
-      breakAccent(widget.settings, 'breathe_line', _kind.accent),
-    );
+    const palette = _dusk;
+    final accent = breakAccent(widget.settings, 'breathe_line', _peach);
     final reduced = BreakMotion.reduced(context);
     final complete = breakIsComplete(
       context,
@@ -97,10 +107,12 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: accent,
+      palette: palette,
+      background: const _SkyAndWater(),
       child: Stack(
         children: [
           Positioned(
-            top: 400 - 90,
+            top: 400 - 110,
             left: 0,
             right: 0,
             child: Center(
@@ -112,8 +124,8 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                     _phaseText,
                     key: ValueKey(_phaseText),
                     style: BreakOverlayTheme.serif.copyWith(
-                      fontSize: 34,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 52,
+                      height: 1.0,
                       color: palette.textPrimary,
                     ),
                   ),
@@ -122,10 +134,10 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
             ),
           ),
           Positioned(
-            left: 640 - 220,
+            left: 640 - 280,
             top: 400 - 10,
-            width: 440,
-            height: 20,
+            width: 560,
+            height: 180,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 1.0 : 0.0),
@@ -136,7 +148,6 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
                     painter: _LinePainter(
                       progress: _fullness,
                       accent: accent,
-                      track: palette.border,
                       reduced: reduced,
                       finish: finish,
                     ),
@@ -146,7 +157,7 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
             ),
           ),
           Positioned(
-            top: 400 + 64,
+            top: 400 + 190,
             left: 0,
             right: 0,
             child: BreakEntrance(
@@ -154,11 +165,11 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
               scale: false,
               child: BreakCountdown(
                 seconds: widget.remainingSeconds,
-                style: BreakOverlayTheme.title,
+                style: BreakOverlayTheme.display,
                 color: breakClockColor(
                   widget.settings,
                   palette,
-                  fallback: palette.textMuted,
+                  fallback: palette.textSecondary,
                 ),
               ),
             ),
@@ -172,22 +183,19 @@ class _BreatheLineTemplateState extends State<BreatheLineTemplate>
 class _LinePainter extends CustomPainter {
   final Animation<double> progress;
   final Color accent;
-  final Color track;
   final bool reduced;
 
   /// 0..1: extends the line to full width and fades it out (completion).
   final double finish;
 
-  final Paint _track = Paint()..strokeWidth = 1;
   final Paint _line = Paint()
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 2
+    ..strokeWidth = 3
     ..strokeCap = StrokeCap.round;
 
   _LinePainter({
     required this.progress,
     required this.accent,
-    required this.track,
     required this.reduced,
     required this.finish,
   }) : super(repaint: progress);
@@ -195,24 +203,61 @@ class _LinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final eased = progress.value;
-    final base = reduced ? 220.0 : 60 + 320 * eased;
+    final base = reduced ? 300.0 : 120 + 440 * eased;
     final width = base + (size.width - base) * finish;
-    final cy = size.height / 2;
-    final x0 = (size.width - width) / 2;
-
-    _track.color = track;
-    canvas.drawLine(Offset(0, cy), Offset(size.width, cy), _track);
-
+    final cx = size.width / 2;
     // Reduced motion pins the width, so the breath shows as opacity instead.
     final breath = reduced ? 0.5 + 0.5 * eased : 1.0;
-    _line.color = accent.withValues(alpha: breath * (1 - finish));
-    canvas.drawLine(Offset(x0, cy), Offset(x0 + width, cy), _line);
+    final fade = breath * (1 - finish);
+
+    // Ripples in the water: shorter and fainter the further below the horizon.
+    for (var i = 0; i < 5; i++) {
+      final w = width * (0.82 - i * 0.14);
+      final y = 10 + 18.0 * (i + 1) + 3.0 * i * i;
+      _line
+        ..strokeWidth = 2
+        ..color = accent.withValues(alpha: fade * (0.85 - i * 0.15));
+      canvas.drawLine(Offset(cx - w / 2, y), Offset(cx + w / 2, y), _line);
+    }
+    _line
+      ..strokeWidth = 4
+      ..color = const Color(0xFFFFF6EA).withValues(alpha: fade);
+    canvas.drawLine(
+      Offset(cx - width / 2, 10),
+      Offset(cx + width / 2, 10),
+      _line,
+    );
   }
 
   @override
   bool shouldRepaint(covariant _LinePainter old) =>
-      old.accent != accent ||
-      old.track != track ||
-      old.reduced != reduced ||
-      old.finish != finish;
+      old.accent != accent || old.reduced != reduced || old.finish != finish;
+}
+
+/// Sky from deep teal to peach at the horizon (the vertical middle), and dark
+/// water below.
+class _SkyAndWater extends StatelessWidget {
+  const _SkyAndWater();
+
+  @override
+  Widget build(BuildContext context) {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          stops: [0, 0.3, 0.46, 0.5, 0.5, 1],
+          colors: [
+            Color(0xFF08242F),
+            Color(0xFF1D4F5C),
+            Color(0xFFC98F7D),
+            _peach,
+            Color(0xFF1B4753),
+            Color(0xFF061B24),
+          ],
+        ),
+      ),
+      child: SizedBox.expand(),
+    );
+  }
 }

@@ -220,12 +220,12 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  group('paper_light e-ink flash', () {
+  group('paper_light entrance', () {
     bool hasBlackFlash(WidgetTester tester) => tester
         .widgetList<ColoredBox>(find.byType(ColoredBox))
         .any((b) => b.color.a > 0.9 && b.color.r < 0.05 && b.color.g < 0.05);
 
-    testWidgets('runs on entrance', (tester) async {
+    testWidgets('has no black flash on entrance', (tester) async {
       await pumpBreakTemplate(tester, 'paper_light', remaining: 39);
       // pumpBreakTemplate waits 2 s; re-enter to catch the first frames.
       await tester.pumpWidget(const SizedBox.shrink());
@@ -234,11 +234,11 @@ void main() {
         'paper_light',
         settleFor: const Duration(milliseconds: 50),
       );
-      expect(hasBlackFlash(tester), isTrue);
+      expect(hasBlackFlash(tester), isFalse);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
-    testWidgets('is skipped under reduced motion', (tester) async {
+    testWidgets('has no black flash under reduced motion', (tester) async {
       await pumpBreakTemplate(
         tester,
         'paper_light',

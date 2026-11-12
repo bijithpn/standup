@@ -229,18 +229,38 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
         fit: StackFit.expand,
         children: [
           ClipRect(child: photo),
-          // Bottom scrim: transparent -> black 65% over the bottom 45%.
           const Align(
-            alignment: Alignment.bottomCenter,
+            alignment: Alignment.topCenter,
             child: FractionallySizedBox(
-              heightFactor: 0.45,
+              heightFactor: 0.22,
               widthFactor: 1,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Colors.transparent, Color(0xA6000000)],
+                    colors: [Color(0x66000000), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const Align(
+            alignment: Alignment.bottomCenter,
+            child: FractionallySizedBox(
+              heightFactor: 0.62,
+              widthFactor: 1,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0, 0.55, 1],
+                    colors: [
+                      Colors.transparent,
+                      Color(0x8C05080D),
+                      Color(0xE605080D),
+                    ],
                   ),
                 ),
               ),
@@ -251,30 +271,20 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
       child: Stack(
         children: [
           Positioned(
-            left: 64,
-            bottom: 64,
-            width: 480,
+            left: 72,
+            bottom: 72,
+            width: 640,
             child: BreakEntrance(
               scale: false,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  BreakCountdown(
-                    seconds: widget.remainingSeconds,
-                    textAlign: TextAlign.left,
-                    style: BreakOverlayTheme.hero,
-                    color: breakClockColor(
-                      widget.settings,
-                      BreakPalette.onPhoto,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                   Text(
                     widget.breakInfo.tip,
                     style: BreakOverlayTheme.serif.copyWith(
-                      fontSize: 22,
-                      height: 1.4,
+                      fontSize: 30,
+                      height: 1.3,
                       color: BreakPalette.onPhoto.textPrimary,
                     ),
                   ),
@@ -283,7 +293,44 @@ class _ClassicSlideshowTemplateState extends State<ClassicSlideshowTemplate> {
                       title: widget.exerciseTitle!,
                       instructions: widget.exerciseInstructions!,
                     ),
+                  const SizedBox(height: 28),
+                  Container(width: 56, height: 2, color: accent),
+                  const SizedBox(height: 8),
+                  BreakCountdown(
+                    seconds: widget.remainingSeconds,
+                    textAlign: TextAlign.left,
+                    style: BreakOverlayTheme.hero.copyWith(
+                      fontSize: 168,
+                      fontWeight: FontWeight.w200,
+                      height: 0.95,
+                      letterSpacing: -7,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                    color: breakClockColor(
+                      widget.settings,
+                      BreakPalette.onPhoto,
+                    ),
+                  ),
                 ],
+              ),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 3,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FractionallySizedBox(
+                widthFactor: breakProgress(
+                  widget.remainingSeconds,
+                  widget.totalSeconds,
+                ),
+                child: ColoredBox(
+                  color: accent,
+                  child: const SizedBox.expand(),
+                ),
               ),
             ),
           ),

@@ -4,6 +4,21 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
 
+const _apricot = Color(0xFFF0B27A);
+const _umber = Color(0xFF211A17);
+const _cream = Color(0xFFF6ECE0);
+const _warm = BreakPalette(
+  canvas: _umber,
+  canvasRaised: _umber,
+  surface: _umber,
+  border: Color(0x1FF0B27A),
+  track: Color(0x1FF6ECE0),
+  textPrimary: _cream,
+  textSecondary: _cream,
+  textMuted: _cream,
+  isDark: true,
+);
+
 class SoftFloatingWidgetTemplate extends StatefulWidget {
   final BreakModel breakInfo;
   final SettingsModel settings;
@@ -36,17 +51,14 @@ class _SoftFloatingWidgetTemplateState
 
   late final BreakKind _kind = BreakKind.of(widget.breakInfo);
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'floating',
-      _kind.accent,
-    ),
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'floating',
+    _apricot,
   );
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,
@@ -60,87 +72,101 @@ class _SoftFloatingWidgetTemplateState
     final showTip =
         widget.settings.showExercisesInBreak && widget.breakInfo.tip.isNotEmpty;
 
-    final card = BreakGlass(
-      radius: BreakOverlayTheme.radiusLg,
-      fillAlpha: palette.isDark ? 0.6 : 0.7,
-      borderColor: palette.border,
-      shadow: false,
-      child: SizedBox(
-        width: 260,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        BreakCountdown(
-                          seconds: widget.remainingSeconds,
-                          style: BreakOverlayTheme.title.copyWith(
-                            fontWeight: FontWeight.w300,
-                            height: 1.1,
+    final card = BreakPaletteScope(
+      palette: _warm,
+      child: BreakGlass(
+        radius: BreakOverlayTheme.radiusLg,
+        fillAlpha: 0.78,
+        borderColor: _apricot.withValues(alpha: 0.22),
+        shadow: false,
+        child: SizedBox(
+          width: 260,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          BreakLabel(
+                            _kind.label,
+                            color: _accent,
+                            textAlign: TextAlign.left,
                           ),
-                          color: breakClockColor(widget.settings, palette),
-                          textAlign: TextAlign.left,
-                        ),
-                        const SizedBox(height: 2),
-                        BreakLabel(_kind.label, textAlign: TextAlign.left),
-                      ],
+                          const SizedBox(height: 4),
+                          BreakCountdown(
+                            seconds: widget.remainingSeconds,
+                            style: const TextStyle(
+                              fontFamily: BreakOverlayTheme.serifFamily,
+                              fontSize: 38,
+                              fontWeight: FontWeight.w300,
+                              fontFeatures: BreakOverlayTheme.tabular,
+                              height: 1.0,
+                            ),
+                            color: breakClockColor(
+                              widget.settings,
+                              BreakPalette.dark,
+                              fallback: _cream,
+                            ),
+                            textAlign: TextAlign.left,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  if (canSkip)
-                    BreakSkipIcon(onPressed: widget.onSkip!, accent: _accent),
-                ],
-              ),
-              AnimatedSize(
-                duration: BreakMotion.fast,
-                curve: BreakMotion.enter,
-                alignment: Alignment.topCenter,
-                child: _hovered && showTip
-                    ? Padding(
-                        padding: const EdgeInsets.only(top: 12, right: 8),
-                        child: Text(
-                          widget.breakInfo.tip,
-                          style: BreakOverlayTheme.body.copyWith(
-                            color: palette.textSecondary,
-                            fontSize: 13,
+                    if (canSkip)
+                      BreakSkipIcon(onPressed: widget.onSkip!, accent: _accent),
+                  ],
+                ),
+                AnimatedSize(
+                  duration: BreakMotion.fast,
+                  curve: BreakMotion.enter,
+                  alignment: Alignment.topCenter,
+                  child: _hovered && showTip
+                      ? Padding(
+                          padding: const EdgeInsets.only(top: 12, right: 8),
+                          child: Text(
+                            widget.breakInfo.tip,
+                            style: BreakOverlayTheme.body.copyWith(
+                              color: _cream.withValues(alpha: 0.75),
+                              fontSize: 13,
+                            ),
                           ),
-                        ),
-                      )
-                    : const SizedBox(width: double.infinity),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 12, right: 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(1),
-                  child: SizedBox(
-                    height: 2,
-                    child: Stack(
-                      children: [
-                        ColoredBox(
-                          color: palette.track,
-                          child: const SizedBox.expand(),
-                        ),
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(end: progress),
-                          duration: const Duration(seconds: 1),
-                          builder: (context, v, _) => FractionallySizedBox(
-                            widthFactor: v,
-                            alignment: Alignment.centerLeft,
-                            child: ColoredBox(color: _accent),
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 14, right: 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(1.5),
+                    child: SizedBox(
+                      height: 3,
+                      child: Stack(
+                        children: [
+                          ColoredBox(
+                            color: _cream.withValues(alpha: 0.12),
+                            child: const SizedBox.expand(),
                           ),
-                        ),
-                      ],
+                          TweenAnimationBuilder<double>(
+                            tween: Tween(end: progress),
+                            duration: const Duration(seconds: 1),
+                            builder: (context, v, _) => FractionallySizedBox(
+                              widthFactor: v,
+                              alignment: Alignment.centerLeft,
+                              child: ColoredBox(color: _accent),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -148,7 +174,7 @@ class _SoftFloatingWidgetTemplateState
 
     return BreakScaffold(
       canvas: Colors.transparent,
-      scrim: palette.canvas.withValues(alpha: 0.15),
+      scrim: _umber.withValues(alpha: 0.15),
       scaled: false,
       showSkip: false,
       onSkip: widget.onSkip,

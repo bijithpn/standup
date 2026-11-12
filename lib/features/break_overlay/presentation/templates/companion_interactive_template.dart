@@ -53,8 +53,6 @@ class _CompanionInteractiveTemplateState
   late final AnimationController _fx = AnimationController(vsync: this);
   bool _hopping = false;
 
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
-
   /// The break's own tip first, then library tips that rotate every 12 s.
   late final List<String> _tips = [
     if (widget.breakInfo.tip.isNotEmpty) widget.breakInfo.tip,
@@ -63,12 +61,22 @@ class _CompanionInteractiveTemplateState
   int _tipIndex = 0;
   Timer? _tipTimer;
 
-  Color get _accent => BreakPalette.of(context).accentOn(
-    BreakOverlayTheme.resolveAccent(
-      widget.settings.templateAccentOverrides,
-      'companion',
-      _kind.accent,
-    ),
+  static const BreakPalette _mint = BreakPalette(
+    canvas: Color(0xFFD7F2E6),
+    canvasRaised: Color(0xFFE8F8F0),
+    surface: Color(0xFFFFFFFF),
+    border: Color(0x1F0F4A3A),
+    track: Color(0x260F4A3A),
+    textPrimary: Color(0xFF0F4A3A),
+    textSecondary: Color(0xFF1F6B55),
+    textMuted: Color(0xFF3F7F6B),
+    isDark: false,
+  );
+
+  Color get _accent => BreakOverlayTheme.resolveAccent(
+    widget.settings.templateAccentOverrides,
+    'companion',
+    const Color(0xFF1F9D78),
   );
 
   @override
@@ -159,16 +167,14 @@ class _CompanionInteractiveTemplateState
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
+    final palette = _mint;
     final petTheme = PetTheme.getTheme(widget.settings.companionPetTheme);
     final reduced = BreakMotion.reduced(context);
-    final scrimBase = palette.canvas;
 
     return BreakScaffold(
-      canvas: Colors.transparent,
-      scrim: scrimBase.withValues(alpha: 0.55),
+      palette: palette,
+      background: const CustomPaint(painter: _RoomPainter()),
       scaled: false,
-      showSkip: false,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: _accent,
@@ -184,10 +190,7 @@ class _CompanionInteractiveTemplateState
             if (_y != null && _lastHeight != null && _lastHeight! > 0) {
               _y = (_y! / _lastHeight!) * constraints.maxHeight;
             } else {
-              _y = math.max(
-                0.0,
-                (constraints.maxHeight - _widgetSize) / 2 - 24,
-              );
+              _y = math.max(0.0, constraints.maxHeight * 0.74 - _widgetSize);
             }
             _lastWidth = constraints.maxWidth;
             _lastHeight = constraints.maxHeight;
@@ -211,21 +214,18 @@ class _CompanionInteractiveTemplateState
                   constraints: const BoxConstraints(maxWidth: 220),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
+                      horizontal: 16,
+                      vertical: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: palette.surface.withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(
-                        BreakOverlayTheme.radiusMd,
-                      ),
-                      border: Border.all(color: palette.border),
+                      color: palette.surface,
+                      borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       _tips[_tipIndex % _tips.length],
                       textAlign: TextAlign.center,
                       style: BreakOverlayTheme.serif.copyWith(
-                        color: palette.textSecondary,
+                        color: palette.textPrimary,
                         fontSize: 15,
                         height: 1.4,
                       ),
@@ -322,10 +322,18 @@ class _CompanionInteractiveTemplateState
               ),
 
               Positioned(
-                bottom: 48,
-                left: 0,
-                right: 0,
-                child: Center(child: _buildDock(palette)),
+                top: math.min(40.0, constraints.maxHeight * 0.1),
+                left: math.min(56.0, constraints.maxWidth * 0.08),
+                child: BreakCountdown(
+                  seconds: widget.remainingSeconds,
+                  textAlign: TextAlign.left,
+                  style: BreakOverlayTheme.display.copyWith(
+                    fontSize: (constraints.maxHeight * 0.14).clamp(28.0, 64.0),
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -2,
+                  ),
+                  color: breakClockColor(widget.settings, palette),
+                ),
               ),
             ],
           );
@@ -333,22 +341,101 @@ class _CompanionInteractiveTemplateState
       ),
     );
   }
+}
 
-  Widget _buildDock(BreakPalette palette) {
-    final canSkip = breakCanSkip(widget.settings, widget.onSkip);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        BreakCountdown(
-          seconds: widget.remainingSeconds,
-          style: BreakOverlayTheme.display,
-          color: breakClockColor(widget.settings, palette),
-        ),
-        if (canSkip) ...[
-          const SizedBox(width: 16),
-          BreakSkipButton(onPressed: widget.onSkip!, accent: _accent),
-        ],
-      ],
+/// Pastel room: mint wall, a sunlit window, a wooden floor and a round rug.
+class _RoomPainter extends CustomPainter {
+  const _RoomPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width, h = size.height;
+    final floorY = h * 0.72;
+
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, w, floorY),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFBFEBD8), Color(0xFFE3F6EC)],
+        ).createShader(Rect.fromLTWH(0, 0, w, floorY)),
+    );
+
+    final win = Rect.fromLTWH(w * 0.7, h * 0.12, w * 0.16, h * 0.34);
+    final winRRect = RRect.fromRectAndCorners(
+      win,
+      topLeft: Radius.circular(w * 0.08),
+      topRight: Radius.circular(w * 0.08),
+      bottomLeft: const Radius.circular(10),
+      bottomRight: const Radius.circular(10),
+    );
+    canvas.drawRRect(
+      winRRect.inflate(math.max(4, w * 0.008)),
+      Paint()..color = Colors.white,
+    );
+    canvas.drawRRect(
+      winRRect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFBDE3FF), Color(0xFFFFF3D6)],
+        ).createShader(win),
+    );
+    final mullion = Paint()
+      ..color = Colors.white
+      ..strokeWidth = math.max(3, w * 0.005);
+    canvas.drawLine(win.topCenter, win.bottomCenter, mullion);
+    canvas.drawLine(
+      Offset(win.left, win.center.dy),
+      Offset(win.right, win.center.dy),
+      mullion,
+    );
+
+    final beam = Path()
+      ..moveTo(win.left, win.bottom)
+      ..lineTo(win.right, win.bottom)
+      ..lineTo(win.right - w * 0.22, h)
+      ..lineTo(win.left - w * 0.34, h)
+      ..close();
+    canvas.drawPath(beam, Paint()..color = const Color(0x59FFF6DA));
+
+    final floor = Rect.fromLTRB(0, floorY, w, h);
+    canvas.drawRect(
+      floor,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFF1D9B5), Color(0xFFE6C597)],
+        ).createShader(floor),
+    );
+    final plank = Paint()
+      ..color = const Color(0x1F8A5A2B)
+      ..strokeWidth = 1.5;
+    for (var i = 1; i < 4; i++) {
+      final y = floorY + (h - floorY) * i / 4;
+      canvas.drawLine(Offset(0, y), Offset(w, y), plank);
+    }
+    canvas.drawLine(
+      Offset(0, floorY),
+      Offset(w, floorY),
+      Paint()
+        ..color = Colors.white
+        ..strokeWidth = math.max(3, h * 0.008),
+    );
+
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.85),
+        width: w * 0.36,
+        height: h * 0.12,
+      ),
+      Paint()..color = const Color(0xFF8FD3B6),
     );
   }
+
+  @override
+  bool shouldRepaint(covariant _RoomPainter old) => false;
 }

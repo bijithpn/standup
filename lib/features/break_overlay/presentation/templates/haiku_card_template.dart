@@ -49,15 +49,24 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
   // Fixed for the whole break so the poem does not change at a minute rollover.
   late final List<String> _poem =
       HaikuCardTemplate._haikus[clock.now().minute % 4];
-  late final BreakKind _kind = BreakKind.of(widget.breakInfo);
   final _MountainCache _mountains = _MountainCache();
+
+  static const _washi = BreakPalette(
+    canvas: Color(0xFFEFE6D2),
+    canvasRaised: Color(0xFFF4ECDA),
+    surface: Color(0xFFF4ECDA),
+    border: Color(0x261B1A17),
+    track: Color(0x331B1A17),
+    textPrimary: Color(0xFF1B1A17),
+    textSecondary: Color(0xFF4A463E),
+    textMuted: Color(0xFF6B665B),
+    isDark: false,
+  );
+  static const _vermilion = Color(0xFFC8402B);
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    final accent = palette.accentOn(
-      breakTimeTinted(breakAccent(widget.settings, 'haiku_card', _kind.accent)),
-    );
+    final seal = breakAccent(widget.settings, 'haiku_card', _vermilion);
     final progress = breakProgress(
       widget.remainingSeconds,
       widget.totalSeconds,
@@ -68,91 +77,102 @@ class _HaikuCardTemplateState extends State<HaikuCardTemplate> {
       widget.totalSeconds,
     );
     final reduced = BreakMotion.reduced(context);
-    final ink = palette.isDark ? Colors.white : const Color(0xFF1C1F24);
 
     return BreakScaffold(
+      palette: _washi,
+      canvas: _washi.canvas,
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
-      accent: accent,
+      accent: seal,
       background: BreakSmoothProgress(
         progress: progress,
         builder: (context, anim) => CustomPaint(
           painter: _MountainPainter(
             cache: _mountains,
             progress: reduced ? null : anim,
-            color: ink,
           ),
         ),
       ),
-      child: Center(
-        child: AnimatedOpacity(
-          opacity: complete ? 0 : 1,
-          duration: BreakMotion.slow,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Semantics(
+      child: AnimatedOpacity(
+        opacity: complete ? 0 : 1,
+        duration: BreakMotion.slow,
+        child: Stack(
+          children: [
+            Positioned(
+              left: 128,
+              top: 150,
+              child: Semantics(
                 container: true,
                 label: _poem.join(' '),
                 excludeSemantics: true,
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (var i = 0; i < _poem.length; i++)
                       BreakEntrance(
                         delay: Duration(milliseconds: 500 * i),
                         scale: false,
                         duration: const Duration(milliseconds: 900),
-                        child: Text(
-                          _poem[i],
-                          textAlign: TextAlign.center,
-                          style: BreakOverlayTheme.serif.copyWith(
-                            fontSize: 34,
-                            fontWeight: FontWeight.w300,
-                            fontStyle: FontStyle.italic,
-                            height: 1.7,
-                            color: palette.textPrimary,
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 56.0 * i),
+                          child: Text(
+                            _poem[i],
+                            style: BreakOverlayTheme.serif.copyWith(
+                              fontSize: 44,
+                              fontWeight: FontWeight.w300,
+                              fontStyle: FontStyle.italic,
+                              height: 1.55,
+                              color: _washi.textPrimary,
+                            ),
                           ),
                         ),
                       ),
                   ],
                 ),
               ),
-              const SizedBox(height: 56),
-              BreakEntrance(
+            ),
+            Positioned(
+              right: 128,
+              top: 96,
+              child: BreakEntrance(
                 delay: BreakEntrance.stagger(4),
                 scale: false,
-                child: SizedBox(
-                  width: 120,
-                  child: Column(
-                    children: [
-                      BreakSmoothProgress(
-                        progress: progress,
-                        builder: (context, anim) => AnimatedBuilder(
-                          animation: anim,
-                          builder: (context, _) => LinearProgressIndicator(
-                            value: anim.value,
-                            minHeight: 1,
-                            color: accent,
-                            backgroundColor: palette.track,
-                          ),
-                        ),
+                child: Container(
+                  width: 124,
+                  height: 124,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: seal,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Container(
+                    width: 108,
+                    height: 108,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _washi.canvas.withValues(alpha: 0.6),
                       ),
-                      const SizedBox(height: 14),
-                      BreakCountdown(
-                        seconds: widget.remainingSeconds,
-                        style: BreakOverlayTheme.body.copyWith(
-                          fontSize: 14,
-                          fontFeatures: BreakOverlayTheme.tabular,
-                        ),
-                        color: breakClockColor(widget.settings, palette),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: BreakCountdown(
+                      seconds: widget.remainingSeconds,
+                      style: BreakOverlayTheme.serif.copyWith(
+                        fontSize: 34,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: BreakOverlayTheme.tabular,
                       ),
-                    ],
+                      color: breakClockColor(
+                        widget.settings,
+                        _washi,
+                        fallback: _washi.canvas,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -163,20 +183,21 @@ class _MountainCache {
   Size? size;
   final List<Path> paths = [];
 
+  static const _ridges = [
+    (base: 0.62, amp: 0.10, seed: 3.0),
+    (base: 0.72, amp: 0.12, seed: 7.0),
+    (base: 0.84, amp: 0.10, seed: 11.0),
+    (base: 0.95, amp: 0.07, seed: 17.0),
+  ];
+
   void build(Size s) {
     if (size == s) return;
     size = s;
     paths.clear();
-    // Three overlapping ridgelines in the lower third.
-    const ridges = [
-      (base: 0.74, amp: 0.07, seed: 3.0),
-      (base: 0.82, amp: 0.09, seed: 7.0),
-      (base: 0.90, amp: 0.06, seed: 11.0),
-    ];
-    for (final r in ridges) {
+    for (final r in _ridges) {
       final path = Path()..moveTo(-20, s.height);
-      for (var i = 0; i <= 48; i++) {
-        final t = i / 48;
+      for (var i = 0; i <= 64; i++) {
+        final t = i / 64;
         final x = -20 + (s.width + 40) * t;
         final y =
             s.height *
@@ -200,31 +221,50 @@ class _MountainCache {
 class _MountainPainter extends CustomPainter {
   final _MountainCache cache;
   final Animation<double>? progress;
-  final Color color;
 
-  static const _alphas = [0.04, 0.055, 0.07];
+  static const _ridgeColors = [
+    Color(0xFFD9D2BE),
+    Color(0xFFB3B2A3),
+    Color(0xFF7C8582),
+    Color(0xFF3A413F),
+  ];
   final Paint _p = Paint();
 
-  _MountainPainter({
-    required this.cache,
-    required this.progress,
-    required this.color,
-  }) : super(repaint: progress);
+  _MountainPainter({required this.cache, required this.progress})
+    : super(repaint: progress);
 
   @override
   void paint(Canvas canvas, Size size) {
     cache.build(size);
-    // Drift 8px across the whole break.
+    _p.color = const Color(0xFFE2CDA3);
+    canvas.drawCircle(
+      Offset(size.width * 0.66, size.height * 0.5),
+      size.height * 0.13,
+      _p,
+    );
     final double dx = 8 * (progress?.value ?? 0.0);
     canvas.save();
     canvas.translate(-dx, 0);
     for (var i = 0; i < cache.paths.length; i++) {
-      _p.color = color.withValues(alpha: _alphas[i]);
+      _p.color = _ridgeColors[i];
       canvas.drawPath(cache.paths[i], _p);
+      if (i < 2) {
+        final top = size.height * (0.55 + 0.1 * i);
+        _p.shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [const Color(0x00EFE6D2), const Color(0xB3EFE6D2)],
+        ).createShader(Rect.fromLTWH(0, top, size.width, size.height * 0.2));
+        canvas.drawRect(
+          Rect.fromLTWH(-20, top, size.width + 40, size.height * 0.2),
+          _p,
+        );
+        _p.shader = null;
+      }
     }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant _MountainPainter old) => old.color != color;
+  bool shouldRepaint(covariant _MountainPainter old) => false;
 }

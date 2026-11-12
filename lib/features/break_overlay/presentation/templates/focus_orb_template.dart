@@ -1,9 +1,23 @@
-import 'package:clock/clock.dart';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:breakmate/features/break_system/domain/break_model.dart';
 import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:breakmate/features/break_overlay/domain/break_overlay_theme.dart';
 import 'package:breakmate/features/break_overlay/presentation/widgets/break_kit/break_kit.dart';
+
+const _night = BreakPalette(
+  canvas: Color(0xFF0C1030),
+  canvasRaised: Color(0xFF161A4A),
+  surface: Color(0xFF161A4A),
+  border: Color(0x33C9CCF5),
+  track: Color(0x33C9CCF5),
+  textPrimary: Color(0xFFF1F0FF),
+  textSecondary: Color(0xFFC9CCF5),
+  textMuted: Color(0xFFA9ADDD),
+  isDark: true,
+);
+const _ink = Color(0xFF1A1440);
+const _sun = Color(0xFFFF9E6B);
 
 class FocusOrbTemplate extends StatefulWidget {
   final BreakModel breakInfo;
@@ -27,15 +41,11 @@ class FocusOrbTemplate extends StatefulWidget {
 
 class _FocusOrbTemplateState extends State<FocusOrbTemplate>
     with SingleTickerProviderStateMixin {
-  static const Color _cyan = Color(0xFF8BC9D4);
-
   /// Scale 0.97 -> 1.03 over 6s.
   late final AnimationController _breath = AnimationController(
     vsync: this,
     duration: const Duration(seconds: 6),
   );
-
-  late final DateTime _now = clock.now();
 
   @override
   void didChangeDependencies() {
@@ -51,9 +61,8 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
 
   @override
   Widget build(BuildContext context) {
-    final palette = BreakPalette.of(context);
-    final base = breakAccent(widget.settings, 'focus_orb', _cyan);
-    final hue = palette.accentOn(breakTimeTinted(base, now: _now));
+    final hue = breakAccent(widget.settings, 'focus_orb', _sun);
+    final kind = BreakKind.of(widget.breakInfo);
     final complete = breakIsComplete(
       context,
       widget.remainingSeconds,
@@ -64,13 +73,15 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
       onSkip: widget.onSkip,
       strictMode: widget.settings.strictMode,
       accent: hue,
+      palette: _night,
+      background: const _Sky(),
       child: Stack(
         children: [
           Positioned(
-            left: 640 - 160,
-            top: 380 - 160,
-            width: 320,
-            height: 320,
+            left: 640 - 210,
+            top: 370 - 210,
+            width: 420,
+            height: 420,
             child: BreakEntrance(
               child: TweenAnimationBuilder<double>(
                 tween: Tween(end: complete ? 1.0 : 0.0),
@@ -80,7 +91,7 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
                   children: [
                     RepaintBoundary(
                       child: CustomPaint(
-                        size: const Size(320, 320),
+                        size: const Size(420, 420),
                         painter: _OrbPainter(
                           breath: _breath,
                           color: hue,
@@ -93,8 +104,33 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
                 ),
                 child: BreakCountdown(
                   seconds: widget.remainingSeconds,
-                  style: BreakOverlayTheme.hero.copyWith(fontSize: 72),
-                  color: breakClockColor(widget.settings, palette),
+                  style: BreakOverlayTheme.hero.copyWith(
+                    fontSize: 96,
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: -3,
+                  ),
+                  color: breakClockColor(
+                    widget.settings,
+                    _night,
+                    fallback: _ink,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 370 + 210 + 44,
+            left: 0,
+            right: 0,
+            child: BreakEntrance(
+              delay: BreakEntrance.stagger(1),
+              scale: false,
+              child: Text(
+                kind.label,
+                textAlign: TextAlign.center,
+                style: BreakOverlayTheme.serif.copyWith(
+                  fontSize: 26,
+                  color: _night.textSecondary,
                 ),
               ),
             ),
@@ -105,15 +141,52 @@ class _FocusOrbTemplateState extends State<FocusOrbTemplate>
   }
 }
 
+class _Sky extends StatelessWidget {
+  const _Sky();
+
+  @override
+  Widget build(BuildContext context) =>
+      const CustomPaint(painter: _SkyPainter(), size: Size.infinite);
+}
+
+class _SkyPainter extends CustomPainter {
+  const _SkyPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF080A24), Color(0xFF191B5C), Color(0xFF3A2670)],
+        ).createShader(rect),
+    );
+    final rng = math.Random(11);
+    final star = Paint();
+    for (var i = 0; i < 70; i++) {
+      final r = rng.nextDouble();
+      star.color = const Color(0xFFE8E6FF).withValues(alpha: 0.25 + 0.5 * r);
+      canvas.drawCircle(
+        Offset(rng.nextDouble() * size.width, rng.nextDouble() * size.height),
+        0.6 + 1.2 * r,
+        star,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _SkyPainter old) => false;
+}
+
 class _OrbPainter extends CustomPainter {
   final Animation<double> breath;
   final Color color;
   final double finish;
 
   final Paint _fill = Paint();
-  final Paint _ring = Paint()
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.5;
 
   _OrbPainter({required this.breath, required this.color, required this.finish})
     : super(repaint: breath);
@@ -123,10 +196,18 @@ class _OrbPainter extends CustomPainter {
     final eased = Curves.easeInOutSine.transform(breath.value);
     final radius = size.width / 2 * (0.94 + 0.06 * eased);
     final center = size.center(Offset.zero);
-    _fill.color = color.withValues(alpha: 0.10 + 0.12 * finish);
-    _ring.color = color.withValues(alpha: 0.6);
+    final rim = Color.lerp(color, const Color(0xFFD23F8B), 0.7)!;
+    _fill.shader = RadialGradient(
+      center: const Alignment(-0.3, -0.35),
+      radius: 1.05,
+      colors: [
+        Color.lerp(color, const Color(0xFFFFF3D6), 0.75 + 0.25 * finish)!,
+        color,
+        rim,
+      ],
+      stops: const [0, 0.55, 1],
+    ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, _fill);
-    canvas.drawCircle(center, radius, _ring);
   }
 
   @override
