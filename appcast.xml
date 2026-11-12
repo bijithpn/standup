@@ -4,7 +4,25 @@
         <title>BreakMate Updates</title>
         <description>Most recent updates to BreakMate.</description>
         <language>en</language>
-                                                                                <item>
+                                                                                        <item>
+            <title>Version 1.11.2</title>
+            <pubDate>Thu, 12 Nov 2026 09:43:10 +0000</pubDate>
+            <description><![CDATA[
+                <h3>BreakMate v1.11.2</h3>
+                <p>Bug fixes and performance improvements</p>
+                <h4>Installation Note (macOS)</h4>
+                <p>Since BreakMate is not notarized by Apple, macOS may show a security
+                warning on first launch. Open System Settings &gt; Privacy and Security
+                and click Allow Anyway next to BreakMate.</p>
+            ]]></description>
+            <enclosure url="https://github.com/bijithpn/standup/releases/download/v1.11.2/BreakMate-Installer.dmg"
+                       sparkle:version="47"
+                       sparkle:shortVersionString="1.11.2"
+                       sparkle:edSignature="1PAZP5rl3+bvT7qNItOIDI75GIgHqzkW7v0VtH75Yn55DgSI/W5lWw3Cv2INX6y6S6BTaR6BpiJAwNfnygtbBg=="
+                       length="36174998"
+                       type="application/octet-stream" />
+        </item>
+<item>
             <title>Version 1.11.1</title>
             <pubDate>Thu, 12 Nov 2026 08:55:35 +0000</pubDate>
             <description><![CDATA[
