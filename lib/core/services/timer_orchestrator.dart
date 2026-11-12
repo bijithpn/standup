@@ -423,6 +423,9 @@ class TimerOrchestrator {
           !timerEngine.stateData.isManuallyPaused) {
         timerEngine.resumeTimers();
       } else if (!isActive && state == TimerState.running) {
+        timerEngine.discardIdleTime(
+          Duration(seconds: activityMonitor.lastIdleSeconds.round()),
+        );
         timerEngine.pauseTimers();
         _pauseAutoResumeTimer?.cancel();
         _pauseAutoResumeTimer = Timer(

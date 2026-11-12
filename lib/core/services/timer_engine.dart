@@ -830,6 +830,17 @@ class TimerEngine extends ChangeNotifier {
     );
   }
 
+  /// Idle is only detected after the threshold passes, by which time the tick
+  /// loop has already counted that stretch as work; take it back.
+  void discardIdleTime(Duration idle) {
+    if (idle <= Duration.zero) return;
+    Duration back(Duration v) => v > idle ? v - idle : Duration.zero;
+    _stateData.workElapsed = back(_stateData.workElapsed);
+    _stateData.totalWorkToday = back(_stateData.totalWorkToday);
+    workElapsedNotifier.value = _stateData.workElapsed;
+    totalWorkTodayNotifier.value = _stateData.totalWorkToday;
+  }
+
   void resetCycleOnIdle() {
     _stateData.workElapsed = Duration.zero;
     _stateData.completedShortBreaksInCycle = 0;

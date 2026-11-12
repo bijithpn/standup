@@ -8,6 +8,9 @@ class ActivityMonitor {
   final AppLogger _logger = AppLogger();
 
   bool _isIdle = false;
+
+  /// Idle time reported with the most recent idle/active change.
+  double lastIdleSeconds = 0;
   ActivityCallback? _onActivityChanged;
 
   void setIdleThreshold(int minutes) {
@@ -40,6 +43,7 @@ class ActivityMonitor {
   void updateIdleStatus(bool isIdle, double idleSeconds) {
     final wasIdle = _isIdle;
     _isIdle = isIdle;
+    lastIdleSeconds = idleSeconds;
 
     AwayBreakService.instance.handleIdleTimeUpdate(idleSeconds);
 
