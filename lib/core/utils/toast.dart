@@ -39,7 +39,10 @@ class Toast {
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(
             opacity: t,
-            child: Transform.translate(offset: Offset(0, 8 * (1 - t)), child: child),
+            child: Transform.translate(
+              offset: Offset(0, 8 * (1 - t)),
+              child: child,
+            ),
           ),
           child: Material(
             color: Colors.transparent,
