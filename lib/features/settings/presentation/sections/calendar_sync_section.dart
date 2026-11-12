@@ -3,11 +3,12 @@ import 'package:provider/provider.dart';
 
 import 'package:breakmate/app/dependency_injection.dart';
 import 'package:breakmate/features/calendar/calendar_sync_controller.dart';
+import 'package:breakmate/features/settings/presentation/sections/calendar_events_view.dart';
 import 'package:breakmate/features/settings/widgets/settings_widgets.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
 
 /// The one place to connect a calendar and configure how BreakMate uses it.
-/// Everything else (Today, Focus Mode) links here instead of repeating it.
+/// Everything else (Today, Smart detection) links here instead of repeating it.
 class CalendarSyncSection extends StatefulWidget {
   const CalendarSyncSection({super.key});
 
@@ -75,7 +76,9 @@ class _CalendarSyncSectionState extends State<CalendarSyncSection>
             ]),
             if (c.state == CalendarConnectionState.connected) ...[
               sectionHeader('Today'),
-              _EventsCard(controller: c),
+              TodayAgendaCard(controller: c),
+              sectionHeader('Calendar'),
+              MonthCalendarCard(controller: c),
             ],
           ],
         ),
@@ -125,8 +128,9 @@ class _StatusCard extends StatelessWidget {
         Icons.lock_outline_rounded,
         AppTheme.warning,
         'Calendar access blocked',
-        'macOS is blocking access. Enable BreakMate under Privacy & '
-            'Security → Calendars, then come back.',
+        'macOS is blocking access. In Privacy & Security → Calendars, '
+            'turn BreakMate off and on again (or remove it with “−” and '
+            'click Connect again), then come back.',
       ),
       CalendarConnectionState.error => (
         Icons.error_outline_rounded,
@@ -136,23 +140,57 @@ class _StatusCard extends StatelessWidget {
       ),
     };
 
+    ButtonStyle filled() => FilledButton.styleFrom(
+      backgroundColor: AppTheme.accentColor,
+      foregroundColor: Colors.white,
+      disabledBackgroundColor: AppTheme.accentColor.withValues(alpha: 0.5),
+      disabledForegroundColor: Colors.white70,
+    );
+    ButtonStyle outlined() => OutlinedButton.styleFrom(
+      foregroundColor: AppTheme.textPrimary,
+      side: BorderSide(color: AppTheme.border),
+    );
+
     final actions = <Widget>[
       switch (c.state) {
         CalendarConnectionState.disconnected ||
         CalendarConnectionState.permissionNeeded => FilledButton(
+          style: filled(),
           onPressed: c.isRequesting ? null : c.connect,
-          child: Text(c.isRequesting ? 'Requesting…' : 'Connect'),
+          child: c.isRequesting
+              ? const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Text('Requesting…'),
+                  ],
+                )
+              : const Text('Connect'),
         ),
         CalendarConnectionState.permissionBlocked => FilledButton(
+          style: filled(),
           onPressed: c.openSystemSettings,
           child: const Text('Open System Settings'),
         ),
         CalendarConnectionState.connected ||
         CalendarConnectionState.error => OutlinedButton(
+          style: outlined(),
           onPressed: () => c.refresh(force: true),
           child: const Text('Sync now'),
         ),
-        CalendarConnectionState.checking => const SizedBox.shrink(),
+        CalendarConnectionState.checking => OutlinedButton(
+          style: outlined(),
+          onPressed: null,
+          child: const Text('Checking…'),
+        ),
       },
       if (c.state == CalendarConnectionState.permissionBlocked ||
           c.state == CalendarConnectionState.permissionNeeded)
@@ -221,35 +259,5 @@ class _StatusCard extends StatelessWidget {
     final h = at.hour.toString().padLeft(2, '0');
     final m = at.minute.toString().padLeft(2, '0');
     return 'Last synced $h:$m';
-  }
-}
-
-class _EventsCard extends StatelessWidget {
-  final CalendarSyncController controller;
-  const _EventsCard({required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final events = controller.events;
-    final String text;
-    if (controller.isLoadingEvents && events == null) {
-      text = 'Loading…';
-    } else if (events == null || events.isEmpty) {
-      text = 'No events today.';
-    } else {
-      final timed = events.where((e) => !e.isAllDay).length;
-      text =
-          '${events.length} event${events.length == 1 ? '' : 's'} today'
-          '${timed == events.length ? '' : ' ($timed with a set time)'}.';
-    }
-    return buildCard([
-      Padding(
-        padding: const EdgeInsets.all(18),
-        child: Text(
-          text,
-          style: TextStyle(fontSize: 13, color: AppTheme.textSecondary),
-        ),
-      ),
-    ]);
   }
 }

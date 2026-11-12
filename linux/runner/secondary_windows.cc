@@ -247,7 +247,14 @@ void SecondaryWindows::ForwardToMain(const char* method) {
 }
 
 void SecondaryWindows::ShowOverlay(FlValue* args) {
-  if (!overlays_.empty()) return;  // a break overlay is already up
+  if (!overlays_.empty()) {
+    // A reminder may be up on the primary monitor only; a break that wants
+    // every monitor rebuilds from the pool instead of being ignored.
+    const bool want_all = GetBool(args, "showOnAllDisplays", true);
+    const int monitors = gdk_display_get_n_monitors(gdk_display_get_default());
+    if (!want_all || static_cast<int>(overlays_.size()) >= monitors) return;
+    HideOverlay();
+  }
 
   if (last_overlay_args_ != nullptr) fl_value_unref(last_overlay_args_);
   last_overlay_args_ = fl_value_ref(args);

@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'dart:math';
 
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -147,7 +148,7 @@ class NotificationsSection extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          GestureDetector(
+          TapTarget(
             onTap: onPreview,
             child: MouseRegion(
               cursor: SystemMouseCursors.click,

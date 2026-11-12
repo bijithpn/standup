@@ -25,7 +25,7 @@ class OverlayWindowManager: NSObject {
     private var escapePresses: [Date] = []
 
     private static func currentScreensHash() -> Int {
-        NSScreen.screens.map { "\($0.frame)-\($0.visibleFrame)" }.joined().hashValue
+        NSScreen.screens.map { "\($0.frame)" }.joined().hashValue
     }
     private var showGeneration: Int = 0
     
@@ -41,6 +41,8 @@ class OverlayWindowManager: NSObject {
         let type = args?["type"] as? String ?? args?["overlayType"] as? String ?? "breakScreen"
         let isReminder = type == "quickReminder" || type == "preBreakWarning"
         let isPreview = args?["isPreview"] as? Bool ?? false
+        let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
+        let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
         
         if !overlayInstances.isEmpty {
             // Cancel any pending reminder auto-dismiss timer
@@ -62,6 +64,12 @@ class OverlayWindowManager: NSObject {
                     instance.window.orderFrontRegardless()
                     instance.window.makeKey()
                 }
+                // A reminder/pre-break warning may have opened on one display only.
+                for screen in screens where overlayInstances[screen] == nil {
+                    present(screen, args: args, isReminder: false)
+                }
+                installEscapeFailsafe()
+                scheduleHealthCheck(attempt: 0)
             }
             
             if let args = args {
@@ -82,48 +90,8 @@ class OverlayWindowManager: NSObject {
             NativePowerAssertionManager.shared.preventDisplaySleep(reason: "Active Break in Progress")
         }
         
-        let showOnAllDisplays = args?["showOnAllDisplays"] as? Bool ?? true
-        let screens = showOnAllDisplays ? NSScreen.screens : (NSScreen.main.map { [$0] } ?? NSScreen.screens)
-        
         for screen in screens {
-            let instance: OverlayInstance
-            var fadeDelay: TimeInterval = 0
-            if let warm = warmPool.removeValue(forKey: screen) {
-                prepareReusedInstance(warm, for: screen, args: args)
-                instance = warm
-                // The reused engine still holds the previous break's frame. Stay
-                // invisible until the new data has been delivered and rebuilt,
-                // otherwise the old break/skip time flashes before the new one.
-                fadeDelay = 0.2
-            } else {
-                instance = createOverlayInstance(for: screen, args: args)
-            }
-            instance.window.isReminder = isReminder
-            overlayInstances[screen] = instance
-
-            instance.window.alphaValue = 0.0
-            
-            // For reminders, use orderFront to avoid stealing focus from other apps
-            // For full screens, make the (non-activating) panel key so it actually
-            // receives keyboard events (Escape / any-key dismiss) — a panel that is
-            // merely ordered front never becomes key and silently swallows no input,
-            // it just never gets any. `.nonactivatingPanel` means this does not
-            // steal focus from the owning app or other apps, so it's still safe to
-            // do over fullscreen apps.
-            if isReminder {
-                instance.window.orderFront(nil)
-            } else {
-                instance.window.orderFrontRegardless()
-                instance.window.makeKey()
-            }
-            
-            let window = instance.window
-            DispatchQueue.main.asyncAfter(deadline: .now() + fadeDelay) {
-                NSAnimationContext.runAnimationGroup { context in
-                    context.duration = 0.5
-                    window.animator().alphaValue = 1.0
-                }
-            }
+            present(screen, args: args, isReminder: isReminder)
         }
 
         // Baseline the display layout now. Swiping between Spaces / full-screen
@@ -160,6 +128,40 @@ class OverlayWindowManager: NSObject {
         }
     }
 
+    private func present(_ screen: NSScreen, args: [String: Any]?, isReminder: Bool) {
+        let instance: OverlayInstance
+        var fadeDelay: TimeInterval = 0
+        if let warm = warmPool.removeValue(forKey: screen) {
+            prepareReusedInstance(warm, for: screen, args: args)
+            instance = warm
+            // The reused engine still holds the previous break's frame. Stay
+            // invisible until the new data has been delivered and rebuilt.
+            fadeDelay = 0.2
+        } else {
+            instance = createOverlayInstance(for: screen, args: args)
+        }
+        instance.window.isReminder = isReminder
+        overlayInstances[screen] = instance
+        instance.window.alphaValue = 0.0
+
+        // Full screens must become key to receive Escape / any-key dismiss;
+        // the panel is non-activating so this does not steal app focus.
+        if isReminder {
+            instance.window.orderFront(nil)
+        } else {
+            instance.window.orderFrontRegardless()
+            instance.window.makeKey()
+        }
+
+        let window = instance.window
+        DispatchQueue.main.asyncAfter(deadline: .now() + fadeDelay) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.5
+                window.animator().alphaValue = 1.0
+            }
+        }
+    }
+
     /// Last time a full overlay was dismissed; used to ignore the spurious
     /// "reopen" macOS sends when the overlay panels disappear.
     var lastHideTime: Date = .distantPast
@@ -170,7 +172,10 @@ class OverlayWindowManager: NSObject {
         lastHideTime = Date()
         removeEscapeFailsafe()
         NativePowerAssertionManager.shared.releaseDisplaySleep()
-        if overlayInstances.isEmpty { return }
+        if overlayInstances.isEmpty {
+            for instance in warmPool.values { instance.window.orderOut(nil) }
+            return
+        }
 
         let entries = overlayInstances
         overlayInstances.removeAll()
@@ -207,6 +212,16 @@ class OverlayWindowManager: NSObject {
                 channel.invokeMethod("resetOverlay", arguments: nil)
             }
         })
+
+        // The fade-out completion can be skipped (Space switch, busy main
+        // thread). Never leave an opaque panel behind: force-hide regardless.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            guard let self = self else { return }
+            for instance in instances where !self.overlayInstances.values.contains(where: { $0.window === instance.window }) {
+                instance.window.orderOut(nil)
+                instance.window.alphaValue = 0.0
+            }
+        }
 
         // Keep the engines alive, hidden, for instant reuse next time —
         // see `warmPool`. They're only ever actually torn down when the
@@ -384,7 +399,10 @@ class OverlayWindowManager: NSObject {
         // warm for reuse, they have to be rebuilt against the new screens.
         let savedArgs = self.lastShowArgs
         destroyAllInstances()
+        let generation = showGeneration
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Dismissed (or replaced) during the rebuild: don't resurrect it.
+            guard self.showGeneration == generation else { return }
             self.showOverlay(args: savedArgs)
         }
     }
@@ -532,6 +550,10 @@ class MainFlutterWindow: NSWindow {
   }
 
   override func awakeFromNib() {
+    // A debug launch inherits the terminal's cwd; when macOS denies access to
+    // it (e.g. a protected folder), Dart's Uri.base / package:path throw and
+    // storage init fails. Start from a directory we can always read.
+    FileManager.default.changeCurrentDirectoryPath(NSHomeDirectory())
     MainFlutterWindow.shared = self
     // Open on whichever Space the user is on (including full-screen apps)
     // instead of switching back to the Space the window was created in.
@@ -611,6 +633,13 @@ class MainFlutterWindow: NSWindow {
 
     bridgeChannel?.setMethodCallHandler { call, result in
       switch call.method {
+      case "armLiveTrayMenu":
+        LiveTrayMenuText.shared.arm()
+        result(nil)
+
+      case "updateTrayMenu":
+        result(LiveTrayMenuText.shared.update(call.arguments as? [Any] ?? []))
+
       case "showOverlay":
         OverlayWindowManager.shared.showOverlay(args: call.arguments as? [String: Any])
         result(nil)
@@ -706,14 +735,6 @@ class MainFlutterWindow: NSWindow {
         // Cheap AppKit read — safe and fast on the main thread. Polled every
         // ~10s by the smart-detection background isolate.
         result(NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
-
-      case "isFocusModeActive":
-        // No public, stable API exists for reading macOS Focus/DND status
-        // across OS versions — reporting "not active" here is honest about
-        // that gap and (unlike leaving this unimplemented) avoids throwing
-        // a MissingPluginException on every ~10s poll for every user, since
-        // `respectFocusMode` defaults on.
-        result(false)
 
       case "setWindowLevel":
         if let args = call.arguments as? [String: Any],
@@ -908,4 +929,49 @@ class DisplayBridgeManager: NSObject, FlutterStreamHandler {
         
         return displays
     }
+}
+
+
+/// Keeps the countdown rows of the tray menu current while it is open. The
+/// menu itself is shown by the tray plugin; this only watches for it opening
+/// and rewrites item titles in place.
+final class LiveTrayMenuText: NSObject {
+  static let shared = LiveTrayMenuText()
+  private var armed = false
+  private var tracked: NSMenu?
+
+  override init() {
+    super.init()
+    let nc = NotificationCenter.default
+    nc.addObserver(self, selector: #selector(began(_:)), name: NSMenu.didBeginTrackingNotification, object: nil)
+    nc.addObserver(self, selector: #selector(ended(_:)), name: NSMenu.didEndTrackingNotification, object: nil)
+  }
+
+  func arm() {
+    armed = true
+    tracked = nil
+  }
+
+  @objc private func began(_ n: Notification) {
+    if armed, tracked == nil { tracked = n.object as? NSMenu }
+  }
+
+  @objc private func ended(_ n: Notification) {
+    if let m = tracked, (n.object as? NSMenu) === m {
+      tracked = nil
+      armed = false
+    }
+  }
+
+  /// Returns false once the menu has closed so the sender can stop.
+  func update(_ labels: [Any]) -> Bool {
+    guard armed else { return false }
+    guard let m = tracked, m.items.count == labels.count else { return true }
+    for (item, label) in zip(m.items, labels) {
+      if let text = label as? String, !item.isSeparatorItem, item.title != text {
+        item.title = text
+      }
+    }
+    return true
+  }
 }

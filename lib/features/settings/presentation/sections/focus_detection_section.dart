@@ -49,13 +49,6 @@ class FocusDetectionSection extends StatelessWidget {
           ),
           divider(),
           toggleRow(
-            'Focus Mode Detection',
-            'Respect macOS Do Not Disturb & Focus Modes',
-            settings.respectFocusMode,
-            (v) => onSave(settings.copyWith(respectFocusMode: v)),
-          ),
-          divider(),
-          toggleRow(
             'Presentation Pause',
             'Pause breaks while a fullscreen slideshow or presentation is showing',
             settings.presentationPauseEnabled,

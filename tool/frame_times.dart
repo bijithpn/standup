@@ -4,6 +4,8 @@
 //
 //   flutter run --profile -d macos --flavor dev -t tool/frame_times.dart
 //
+// Add `--dart-define=FULLSCREEN=true` for a full-screen window.
+//
 // Prints one `FT` line per template and exits. Not part of the shipped app.
 import 'dart:async';
 import 'dart:io';
@@ -18,9 +20,14 @@ import 'package:breakmate/features/settings/settings_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get_it/get_it.dart';
+import 'package:window_manager/window_manager.dart';
 
 /// `--dart-define=TEMPLATES=zen,iris_rest` measures only those.
 const _only = String.fromEnvironment('TEMPLATES');
+
+/// `--dart-define=FULLSCREEN=true` measures in a full-screen window, which is
+/// the size the real overlay uses.
+const _fullscreen = bool.fromEnvironment('FULLSCREEN');
 
 final List<String> _ids = _only.isEmpty
     ? _all
@@ -28,8 +35,7 @@ final List<String> _ids = _only.isEmpty
 
 const _all = [
   'activities',
-  // 'companion' is skipped: its pet asks window_manager for window bounds,
-  // which needs the main app's native window setup this harness lacks.
+  'companion',
   'floating',
   'minimal',
   'zen',
@@ -95,8 +101,13 @@ class _Controller extends ChangeNotifier implements BreakController {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await windowManager.ensureInitialized();
+  if (_fullscreen) {
+    await windowManager.setFullScreen(true);
+    await Future<void>.delayed(const Duration(seconds: 2));
+  }
   final sl = GetIt.instance;
   sl.registerSingleton<StatsService>(_Stats());
   sl.registerSingleton<BreakController>(_Controller());
@@ -155,6 +166,9 @@ class _HarnessState extends State<_Harness> with TickerProviderStateMixin {
       _index++;
       _remaining = 55;
     });
+    // A template that stops animating would otherwise never schedule the
+    // frame this callback waits for.
+    WidgetsBinding.instance.scheduleFrame();
     WidgetsBinding.instance.addPostFrameCallback((_) => _runNext());
   }
 

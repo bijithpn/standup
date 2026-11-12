@@ -55,9 +55,8 @@ void main() {
     );
     expect(find.text('Grant Access'), findsNothing);
     expect(find.text('Calendar access granted'), findsNothing);
-    // Video calls, Focus Mode Detection and Presentation Pause remain —
-    // none of them is a calendar switch.
-    expect(find.byType(CupertinoSwitch), findsNWidgets(3));
+    // Video calls and Presentation Pause remain — neither is a calendar switch.
+    expect(find.byType(CupertinoSwitch), findsNWidgets(2));
   });
 
   testWidgets('links to the single Calendar Sync screen', (tester) async {

@@ -8,9 +8,6 @@
 
 namespace bridge_utils {
 
-// Checks if Windows "Focus Assist" or any full-screen app is running (DND equivalent)
-bool IsFocusModeActive();
-
 // Checks if any known meeting applications are currently frontmost
 bool IsMeetingActive(std::string& out_bundle_id);
 

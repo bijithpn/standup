@@ -38,7 +38,6 @@ void main() {
     when(() => calendar.isMeetingActive()).thenAnswer((_) async => false);
     when(() => detection.isVideoCallActive).thenReturn(false);
     when(() => detection.isVideoPlaying).thenReturn(false);
-    when(() => detection.isFocusModeActive).thenReturn(false);
     sl.registerSingleton<StorageService>(storage);
     sl.registerSingleton<TimerEngine>(
       TimerEngine(

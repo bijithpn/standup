@@ -41,8 +41,6 @@ TimerExplanation buildTimerExplanation({
       reasons.add(
         'A presentation or screen share is active, so the timer is paused.',
       );
-    } else if (settings.respectFocusMode) {
-      reasons.add('Focus Mode is on, so the timer is paused.');
     }
   }
   if (inMeeting) {
@@ -70,7 +68,6 @@ TimerExplanation buildTimerExplanation({
   };
 
   final activeFeatures = <String>[
-    if (settings.respectFocusMode) 'Focus Mode detection',
     if (settings.presentationPauseEnabled) 'Presentation pause',
     if (settings.detectMeetings) 'Meeting detection',
     if (settings.detectVideoCalls) 'Video call detection',

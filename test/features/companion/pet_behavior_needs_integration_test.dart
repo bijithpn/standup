@@ -15,27 +15,23 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('PetNeeds & PetMood Calculations', () {
-    test(
-      'PetNeeds supports hunger, energy, happiness, boredom, focusMode, breakMode',
-      () {
-        final needs = const PetNeeds(
-          affection: 0.8,
-          playfulness: 0.6,
-          energy: 0.15,
-          restfulness: 0.4,
-          hunger: 80.0,
-          boredom: 75.0,
-          happiness: 85.0,
-          focusMode: false,
-          breakMode: false,
-        );
+    test('PetNeeds supports hunger, energy, happiness, boredom, breakMode', () {
+      final needs = const PetNeeds(
+        affection: 0.8,
+        playfulness: 0.6,
+        energy: 0.15,
+        restfulness: 0.4,
+        hunger: 80.0,
+        boredom: 75.0,
+        happiness: 85.0,
+        breakMode: false,
+      );
 
-        expect(needs.hunger, equals(80.0));
-        expect(needs.boredom, equals(75.0));
-        expect(needs.happiness, equals(85.0));
-        expect(needs.energyLevel, closeTo(15.0, 0.1));
-      },
-    );
+      expect(needs.hunger, equals(80.0));
+      expect(needs.boredom, equals(75.0));
+      expect(needs.happiness, equals(85.0));
+      expect(needs.energyLevel, closeTo(15.0, 0.1));
+    });
 
     test('PetMood.fromNeeds maps low energy (<= 20) to tired/sleep mood', () {
       final lowEnergyNeeds = const PetNeeds(

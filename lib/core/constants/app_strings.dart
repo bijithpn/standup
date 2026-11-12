@@ -26,7 +26,7 @@ class AppStrings {
       'No activity recorded yet. Start focusing to see your progress.';
 
   static const String navBreaks = 'Breaks';
-  static const String navFocusMode = 'Focus mode';
+  static const String navSmartDetection = 'Smart detection';
   static const String navNotifications = 'Notifications';
   static const String navCompanion = 'Companion';
   static const String navStatistics = 'Statistics';

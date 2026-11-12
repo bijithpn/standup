@@ -108,20 +108,6 @@ void main() {
       expect(parsed.bundleId, equals('com.apple.zoom'));
     });
 
-    test('FocusModeIpcEvent serialization and deserialization', () {
-      final original = IpcEvent.focusMode(isActive: true);
-
-      expect(original.eventName, equals(IpcEventNames.detectionFocusMode));
-
-      final payload = original.payload;
-      expect(payload['isActive'], isTrue);
-
-      final parsed =
-          IpcEvent.parse(original.eventName, payload) as FocusModeIpcEvent;
-
-      expect(parsed.isActive, isTrue);
-    });
-
     test('TrayActionIpcEvent serialization and deserialization', () {
       final original = IpcEvent.trayAction(action: 'click');
 

@@ -24,119 +24,182 @@ class TimerSection extends StatelessWidget {
 
         String statusText = AppStrings.readyToFocus;
 
-        if (isRunning) statusText = AppStrings.focusing;
+        if (isRunning) statusText = 'Focusing';
         if (isPaused) statusText = AppStrings.paused;
         if (engine.isPreBreak) statusText = AppStrings.breakComingUp;
         if (isBreak) statusText = 'Break active';
 
         final nextReason = _nextBreakReason(engine, settingsRepo);
-        final statusChips = <_StatusChipData>[
-          if (settings.quietModeEnabled)
-            _StatusChipData('QUIET', AppTheme.warning),
-          if (settings.calendarEnabled)
-            _StatusChipData('CALENDAR', const Color(0xFF6366F1)),
-          if (settings.companionEnabled)
-            _StatusChipData('COMPANION', AppTheme.success),
+
+        final totalSeconds = isBreak
+            ? (engine.activeBreak?.durationSeconds ??
+                  engine.shortBreakDurationSeconds)
+            : engine.shortBreakIntervalMinutes * 60;
+        final caption = isBreak
+            ? 'left in this break'
+            : isPaused
+            ? 'until your next break, on hold'
+            : 'until your next break';
+        final dot = isBreak
+            ? AppTheme.shortBreak
+            : isPaused
+            ? AppTheme.warning
+            : AppTheme.success;
+        final tags = [
+          if (settings.quietModeEnabled) 'Quiet mode',
+          if (settings.calendarEnabled) 'Calendar',
+          if (settings.companionEnabled) 'Companion',
         ];
 
         return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: AppTheme.cardDecoration(elevated: true),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            runSpacing: 24,
-            spacing: 24,
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          decoration: BoxDecoration(
+            border: Border.symmetric(
+              horizontal: BorderSide(color: AppTheme.borderSubtle),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(minWidth: 280, maxWidth: 440),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _StatusChip(label: statusText, color: AppTheme.accent),
-                        for (final chip in statusChips)
-                          _StatusChip(label: chip.label, color: chip.color),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ValueListenableBuilder<int>(
-                      valueListenable: engine.countdownNotifier,
-                      builder: (context, seconds, _) {
-                        final duration = Duration(seconds: seconds);
-                        final mins = duration.inMinutes.toString().padLeft(
-                          2,
-                          '0',
-                        );
-                        final secs = (duration.inSeconds % 60)
-                            .toString()
-                            .padLeft(2, '0');
-                        return Text(
-                          '$mins:$secs',
-                          style: TextStyle(
-                            fontSize: 56,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                            letterSpacing: -2,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      nextReason,
-                      style: TextStyle(
-                        fontSize: 13,
-                        height: 1.35,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      controller.pauseReason,
-                      style: TextStyle(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: AppTheme.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      if (isPaused)
-                        _SnoozeButton(
-                          onTap: () => controller.snooze(minutes: 15),
-                          label: '+15m',
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: dot,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (tags.isNotEmpty)
+                    Flexible(
+                      child: Text(
+                        tags.join('  ·  '),
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.textMuted,
                         ),
-                      const SizedBox(width: 8),
-                      _PrimaryButton(
-                        onTap: () => controller.togglePause(),
-                        label: isPaused ? AppStrings.resume : AppStrings.pause,
-                        icon: isPaused
-                            ? Icons.play_arrow_rounded
-                            : Icons.pause_rounded,
-                        isPrimary: true,
-                        semanticsLabel: isPaused
-                            ? 'Resume focus timer'
-                            : 'Pause focus timer',
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              ValueListenableBuilder<int>(
+                valueListenable: engine.countdownNotifier,
+                builder: (context, seconds, _) {
+                  final duration = Duration(seconds: seconds);
+                  final mins = duration.inMinutes.toString().padLeft(2, '0');
+                  final secs = (duration.inSeconds % 60).toString().padLeft(
+                    2,
+                    '0',
+                  );
+                  final progress = totalSeconds <= 0
+                      ? 0.0
+                      : (1 - seconds / totalSeconds).clamp(0.0, 1.0);
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$mins:$secs',
+                            style: TextStyle(
+                              fontSize: 64,
+                              height: 1,
+                              fontWeight: FontWeight.w300,
+                              color: isPaused
+                                  ? AppTheme.textMuted
+                                  : AppTheme.textPrimary,
+                              letterSpacing: -2,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Flexible(
+                            child: Text(
+                              caption,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 4,
+                          color: dot,
+                          backgroundColor: AppTheme.border,
+                        ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 12),
-                  _SecondaryButton(
-                    onTap: () => controller.takeBreakNow(),
-                    label: AppStrings.takeBreakNow,
-                    icon: Icons.coffee_rounded,
-                    semanticsLabel: 'Start break immediately',
-                  ),
+                  );
+                },
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isPaused ? controller.pauseReason : nextReason,
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.45,
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  if (isBreak)
+                    _PrimaryButton(
+                      onTap: () => controller.skipCurrentBreak(),
+                      label: 'Skip break',
+                      icon: Icons.skip_next_rounded,
+                      isPrimary: true,
+                    )
+                  else ...[
+                    _PrimaryButton(
+                      onTap: () => controller.togglePause(),
+                      label: isPaused ? AppStrings.resume : AppStrings.pause,
+                      icon: isPaused
+                          ? Icons.play_arrow_rounded
+                          : Icons.pause_rounded,
+                      isPrimary: true,
+                      semanticsLabel: isPaused
+                          ? 'Resume focus timer'
+                          : 'Pause focus timer',
+                    ),
+                    _SecondaryButton(
+                      onTap: () => controller.takeBreakNow(),
+                      label: AppStrings.takeBreakNow,
+                      icon: Icons.coffee_rounded,
+                      semanticsLabel: 'Start break immediately',
+                    ),
+                  ],
+                  if (isPaused)
+                    _SnoozeButton(
+                      onTap: () => controller.snooze(minutes: 15),
+                      label: 'Pause 15 more min',
+                    ),
                 ],
               ),
             ],
@@ -183,41 +246,6 @@ class TimerSection extends StatelessWidget {
       if (isLive || startsSoon) return event;
     }
     return null;
-  }
-}
-
-class _StatusChipData {
-  final String label;
-  final Color color;
-
-  const _StatusChipData(this.label, this.color);
-}
-
-class _StatusChip extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _StatusChip({required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: color.withValues(alpha: 0.22)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: color,
-          letterSpacing: 0.6,
-        ),
-      ),
-    );
   }
 }
 

@@ -105,24 +105,6 @@ void main() {
       );
     });
 
-    test('explains a Focus Mode pause', () {
-      final repo = FakeSettingsRepository(
-        const SettingsModel(respectFocusMode: true),
-      );
-      final explanation = buildTimerExplanation(
-        timerState: TimerState.paused,
-        contextManager: FakeTimerContextManager(
-          settingsRepository: repo,
-          smartPause: true,
-        ),
-        settings: repo.currentSettings,
-      );
-      expect(
-        explanation.reasons,
-        contains('Focus Mode is on, so the timer is paused.'),
-      );
-    });
-
     test('a manual pause with no smart-pause reason is labeled manual', () {
       final repo = FakeSettingsRepository(const SettingsModel());
       final explanation = buildTimerExplanation(
@@ -183,7 +165,6 @@ void main() {
     test('lists only the smart features actually enabled', () {
       final repo = FakeSettingsRepository(
         const SettingsModel(
-          respectFocusMode: true,
           detectMeetings: true,
           presentationPauseEnabled: false,
           detectVideoCalls: false,
@@ -196,10 +177,7 @@ void main() {
         contextManager: FakeTimerContextManager(settingsRepository: repo),
         settings: repo.currentSettings,
       );
-      expect(explanation.activeSmartFeatures, [
-        'Focus Mode detection',
-        'Meeting detection',
-      ]);
+      expect(explanation.activeSmartFeatures, ['Meeting detection']);
     });
 
     test('windDown state is summarized directly', () {

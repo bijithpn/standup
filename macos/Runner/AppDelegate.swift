@@ -32,8 +32,14 @@ func RegisterSecondaryPlugins(registry: FlutterPluginRegistry) {
 
 @main
 class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
+  static func main() {
+    #if DEBUG
+    DebugDisclaim.relaunchIfNeeded()
+    #endif
+    _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+  }
+
   var meetingBridge: MeetingDetectionBridge?
-  var focusBridge: FocusModeBridge?
   var overlayBridge: OverlayWindowBridge?
   var windowBridge: WindowBridge?
   var sparkleBridge: SparkleBridge?
@@ -178,7 +184,6 @@ class AppDelegate: FlutterAppDelegate, SPUUpdaterDelegate {
           }
       }
 
-      focusBridge = FocusModeBridge(registrar: registrar)
       overlayBridge = OverlayWindowBridge(registrar: registrar)
       windowBridge = WindowBridge(registrar: registrar)
       sparkleBridge = SparkleBridge(registrar: registrar, updater: updaterController.updater, ensureStarted: { [weak self] in self?.ensureUpdaterStarted() })

@@ -84,7 +84,7 @@ class StatsService extends ChangeNotifier {
                 usageMinutes: 0,
               ),
             );
-            if (weeklyData.length > 365) weeklyData.removeAt(0);
+            if (weeklyData.length > 400) weeklyData.removeAt(0);
             _storage.setString(
               AppConstants.keyWeeklyStats,
               jsonEncode(weeklyData.map((e) => e.toJson()).toList()),

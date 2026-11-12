@@ -147,31 +147,6 @@ class ConstraintZone {
 // Streams driven by polling
 // ---------------------------------------------------------------------------
 
-class FocusModeStream {
- public:
-  explicit FocusModeStream(FlBinaryMessenger* messenger)
-      : stream_(messenger, "com.breakmate/focus_mode", [this]() { Push(true); }) {
-    g_timeout_add_seconds(10, &FocusModeStream::OnTimer, this);
-  }
-
- private:
-  static gboolean OnTimer(gpointer data) {
-    static_cast<FocusModeStream*>(data)->Push(false);
-    return G_SOURCE_CONTINUE;
-  }
-
-  void Push(bool force) {
-    if (!stream_.listening()) return;
-    const bool dnd = sys::IsDoNotDisturb();
-    if (!force && dnd == last_) return;
-    last_ = dnd;
-    stream_.Send(fl_value_new_bool(dnd));
-  }
-
-  EventStream stream_;
-  bool last_ = false;
-};
-
 class MeetingDetectionStream {
  public:
   explicit MeetingDetectionStream(FlBinaryMessenger* messenger)
@@ -454,7 +429,6 @@ void RegisterMainBridges(FlView* view, GtkWindow* window) {
   ConstraintZone::Get().SetBoundsStream(
       new EventStream(messenger, "com.breakmate.desktop/constraintWindowBounds"));
 
-  new FocusModeStream(messenger);
   new MeetingDetectionStream(messenger);
   RegisterEnhancements(messenger);
   RegisterSmartDetection(messenger);

@@ -46,8 +46,6 @@
 	<string>BreakMate needs calendar access to automatically pause breaks during your meetings.</string>
 	<key>NSAppleEventsUsageDescription</key>
 	<string>BreakMate reads the address of your frontmost browser tab, only to recognise web meetings (e.g. Google Meet) and pause breaks. The address is never stored or sent anywhere.</string>
-	<key>NSFocusStatusUsageDescription</key>
-	<string>Allow BreakMate to detect your Focus status to intelligently manage break reminders. When you're in Focus mode, we'll pause breaks to avoid disrupting your workflow.</string>
     <key>SUEnableInstallerLauncherService</key>
     <true/>
     <key>NSAppSleepDisabled</key>

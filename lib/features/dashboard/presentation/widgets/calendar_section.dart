@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/material.dart';
 import 'package:breakmate/core/services/calendar_service.dart';
 import 'package:breakmate/shared/theme/app_theme.dart';
@@ -71,7 +72,8 @@ class CalendarSection extends StatelessWidget {
                   ),
                 )
               else
-                GestureDetector(
+                TapTarget(
+                  semanticLabel: 'Refresh calendar events',
                   onTap: onLoadEvents,
                   child: Icon(
                     Icons.refresh_rounded,
@@ -269,7 +271,7 @@ class CalendarSection extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              GestureDetector(
+              TapTarget(
                 onTap: isRequestingPermission ? null : onRequestAccess,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -316,7 +318,7 @@ class CalendarSection extends StatelessWidget {
               ),
               if (permissionDenied && !isRequestingPermission) ...[
                 const SizedBox(width: 8),
-                GestureDetector(
+                TapTarget(
                   onTap: () => sl<CalendarService>().openSettings(),
                   child: Container(
                     padding: const EdgeInsets.symmetric(

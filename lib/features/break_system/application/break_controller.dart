@@ -241,7 +241,6 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
       resetAfterMinutes: settings.resetTimerAfterMinutes,
     );
     _timerEngine.updateMenuStyle(settings.menuBarStyle);
-    _timerEngine.setFocusMode(settings.focusModeEnabled);
     sl<NotificationService>().setNotificationsEnabled(
       settings.notificationsEnabled,
     );
@@ -249,7 +248,7 @@ class BreakController extends ChangeNotifier with WidgetsBindingObserver {
     sl<TrayManagerService>().setIconModeFromStyle(settings.trayIconStyle);
 
     final smartDetection = sl<SmartDetectionService>();
-    if (settings.detectVideoCalls || settings.respectFocusMode) {
+    if (settings.detectVideoCalls) {
       smartDetection.start();
     } else {
       smartDetection.stop();

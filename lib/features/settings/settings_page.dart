@@ -141,7 +141,7 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Breaks & Profiles':
         return 'Breaks';
       case 'Intelligent Detection':
-        return 'Focus mode';
+        return 'Smart detection';
       case 'Companion':
         return 'Companion';
       default:
@@ -158,7 +158,6 @@ class _SettingsPageState extends State<SettingsPage> {
       case 'Profiles':
         return BreaksSettingsSection(settings: _settings, onSave: _save);
       case 'Intelligent Detection':
-      case 'Focus Mode':
         return FocusDetectionSection(settings: _settings, onSave: _save);
       case 'Notifications':
         return NotificationsSection(settings: _settings, onSave: _save);

@@ -13,7 +13,6 @@ class SettingsSnapshot {
   int dailyWorkGoalHours;
   int pauseTimerAfterMinutes;
   String menuBarStyle;
-  bool focusModeEnabled;
 
   int shortBreakIntervalMinutes;
   int shortBreakDurationSeconds;
@@ -52,7 +51,6 @@ class SettingsSnapshot {
 
   bool detectVideoCalls;
   bool detectMeetings;
-  bool respectFocusMode;
 
   bool enableClockOut;
   String clockOutTime;
@@ -87,7 +85,6 @@ class SettingsSnapshot {
     required this.dailyWorkGoalHours,
     required this.pauseTimerAfterMinutes,
     required this.menuBarStyle,
-    required this.focusModeEnabled,
     required this.shortBreakIntervalMinutes,
     required this.shortBreakDurationSeconds,
     required this.preBreakWarningSeconds,
@@ -119,7 +116,6 @@ class SettingsSnapshot {
     required this.workEndTime,
     required this.detectVideoCalls,
     required this.detectMeetings,
-    required this.respectFocusMode,
     required this.enableClockOut,
     required this.clockOutTime,
     required this.exercisesJson,
@@ -150,7 +146,6 @@ class SettingsSnapshot {
       'dailyWorkGoalHours': dailyWorkGoalHours,
       'pauseTimerAfterMinutes': pauseTimerAfterMinutes,
       'menuBarStyle': menuBarStyle,
-      'focusModeEnabled': focusModeEnabled,
       'shortBreakIntervalMinutes': shortBreakIntervalMinutes,
       'shortBreakDurationSeconds': shortBreakDurationSeconds,
       'preBreakWarningSeconds': preBreakWarningSeconds,
@@ -181,7 +176,6 @@ class SettingsSnapshot {
       'workEndTime': workEndTime,
       'detectVideoCalls': detectVideoCalls,
       'detectMeetings': detectMeetings,
-      'respectFocusMode': respectFocusMode,
       'enableClockOut': enableClockOut,
       'clockOutTime': clockOutTime,
       'exercisesJson': exercisesJson,

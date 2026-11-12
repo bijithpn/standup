@@ -141,7 +141,6 @@ void main() {
     when(() => mockCalendar.isMeetingActive()).thenAnswer((_) async => false);
     when(() => mockDetection.isVideoCallActive).thenReturn(false);
     when(() => mockDetection.isVideoPlaying).thenReturn(false);
-    when(() => mockDetection.isFocusModeActive).thenReturn(false);
   });
 
   group('TimerEngine OS Drift / Sleep Delta tests', () {

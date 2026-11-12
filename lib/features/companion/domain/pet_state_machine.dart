@@ -224,11 +224,6 @@ class PetStateMachine extends ChangeNotifier {
         weight: 1.0,
       ),
       PetTransition(
-        event: PetEvent.focusModeOn,
-        targetState: PetState.focusMode,
-        weight: 1.0,
-      ),
-      PetTransition(
         event: PetEvent.idleTimeout,
         targetState: PetState.sleep,
         weight: 1.0,
@@ -692,18 +687,6 @@ class PetStateMachine extends ChangeNotifier {
     PetState.meetingPaused: [
       PetTransition(
         event: PetEvent.meetingEnded,
-        targetState: PetState.idle,
-        weight: 1.0,
-      ),
-      PetTransition(
-        event: PetEvent.breakStarted,
-        targetState: PetState.breakReminder,
-        weight: 1.0,
-      ),
-    ],
-    PetState.focusMode: [
-      PetTransition(
-        event: PetEvent.focusModeOff,
         targetState: PetState.idle,
         weight: 1.0,
       ),

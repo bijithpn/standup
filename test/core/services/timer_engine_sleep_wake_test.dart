@@ -41,7 +41,6 @@ void main() {
     when(() => calendar.isMeetingActive()).thenAnswer((_) async => false);
     when(() => detection.isVideoCallActive).thenReturn(false);
     when(() => detection.isVideoPlaying).thenReturn(false);
-    when(() => detection.isFocusModeActive).thenReturn(false);
     events = [];
     eventBus.stream.listen(events.add);
   });

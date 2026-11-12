@@ -1,5 +1,4 @@
 export 'analytics/presentation/widgets/productivity_trend_chart.dart';
-export 'analytics/presentation/widgets/wellness_score_card.dart';
 export 'analytics/stats_calculator.dart';
 export 'analytics/stats_model.dart';
 export 'analytics/stats_service.dart';

@@ -9,7 +9,6 @@ class SettingsModel {
   final int dailyWorkGoalHours;
   final int pauseTimerAfterMinutes;
   final String menuBarStyle;
-  final bool focusModeEnabled;
 
   final int shortBreakIntervalMinutes;
   final int shortBreakDurationSeconds;
@@ -60,7 +59,6 @@ class SettingsModel {
 
   final bool detectVideoCalls;
   final bool detectMeetings;
-  final bool respectFocusMode;
   final bool globalHotkeyEnabled;
   final bool presentationPauseEnabled;
 
@@ -193,7 +191,6 @@ class SettingsModel {
     this.dailyWorkGoalHours = 8,
     this.pauseTimerAfterMinutes = 5,
     this.menuBarStyle = 'countdown',
-    this.focusModeEnabled = false,
     this.shortBreakIntervalMinutes = 20,
     this.shortBreakDurationSeconds = 20,
     this.preBreakWarningSeconds = 3,
@@ -223,7 +220,6 @@ class SettingsModel {
     this.workEndTime = '18:00',
     this.detectVideoCalls = true,
     this.detectMeetings = true,
-    this.respectFocusMode = true,
     this.globalHotkeyEnabled = true,
     this.presentationPauseEnabled = false,
     this.enableClockOut = false,
@@ -298,7 +294,6 @@ class SettingsModel {
     int? dailyWorkGoalHours,
     int? pauseTimerAfterMinutes,
     String? menuBarStyle,
-    bool? focusModeEnabled,
     int? shortBreakIntervalMinutes,
     int? shortBreakDurationSeconds,
     int? preBreakWarningSeconds,
@@ -333,7 +328,6 @@ class SettingsModel {
     String? workEndTime,
     bool? detectVideoCalls,
     bool? detectMeetings,
-    bool? respectFocusMode,
     bool? globalHotkeyEnabled,
     bool? presentationPauseEnabled,
     bool? enableClockOut,
@@ -404,7 +398,6 @@ class SettingsModel {
       pauseTimerAfterMinutes:
           pauseTimerAfterMinutes ?? this.pauseTimerAfterMinutes,
       menuBarStyle: menuBarStyle ?? this.menuBarStyle,
-      focusModeEnabled: focusModeEnabled ?? this.focusModeEnabled,
       shortBreakIntervalMinutes:
           shortBreakIntervalMinutes ?? this.shortBreakIntervalMinutes,
       shortBreakDurationSeconds:
@@ -455,7 +448,6 @@ class SettingsModel {
       workEndTime: workEndTime ?? this.workEndTime,
       detectVideoCalls: detectVideoCalls ?? this.detectVideoCalls,
       detectMeetings: detectMeetings ?? this.detectMeetings,
-      respectFocusMode: respectFocusMode ?? this.respectFocusMode,
       globalHotkeyEnabled: globalHotkeyEnabled ?? this.globalHotkeyEnabled,
       presentationPauseEnabled:
           presentationPauseEnabled ?? this.presentationPauseEnabled,
@@ -554,7 +546,6 @@ class SettingsModel {
     'dailyWorkGoalHours': dailyWorkGoalHours,
     'pauseTimerAfterMinutes': pauseTimerAfterMinutes,
     'menuBarStyle': menuBarStyle,
-    'focusModeEnabled': focusModeEnabled,
     'shortBreakIntervalMinutes': shortBreakIntervalMinutes,
     'shortBreakDurationSeconds': shortBreakDurationSeconds,
     'preBreakWarningSeconds': preBreakWarningSeconds,
@@ -589,7 +580,6 @@ class SettingsModel {
     'workEndTime': workEndTime,
     'detectVideoCalls': detectVideoCalls,
     'detectMeetings': detectMeetings,
-    'respectFocusMode': respectFocusMode,
     'globalHotkeyEnabled': globalHotkeyEnabled,
     'presentationPauseEnabled': presentationPauseEnabled,
     'enableClockOut': enableClockOut,
@@ -664,7 +654,6 @@ class SettingsModel {
       dailyWorkGoalHours: map['dailyWorkGoalHours'] as int? ?? 8,
       pauseTimerAfterMinutes: map['pauseTimerAfterMinutes'] as int? ?? 5,
       menuBarStyle: map['menuBarStyle'] as String? ?? 'countdown',
-      focusModeEnabled: map['focusModeEnabled'] as bool? ?? false,
       shortBreakIntervalMinutes: map['shortBreakIntervalMinutes'] as int? ?? 20,
       shortBreakDurationSeconds: map['shortBreakDurationSeconds'] as int? ?? 20,
       preBreakWarningSeconds: map['preBreakWarningSeconds'] as int? ?? 3,
@@ -707,7 +696,6 @@ class SettingsModel {
       workEndTime: map['workEndTime'] as String? ?? '18:00',
       detectVideoCalls: map['detectVideoCalls'] as bool? ?? true,
       detectMeetings: map['detectMeetings'] as bool? ?? true,
-      respectFocusMode: map['respectFocusMode'] as bool? ?? true,
       globalHotkeyEnabled: map['globalHotkeyEnabled'] as bool? ?? true,
       presentationPauseEnabled:
           map['presentationPauseEnabled'] as bool? ?? false,

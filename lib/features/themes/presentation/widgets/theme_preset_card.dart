@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../domain/app_theme_preset.dart';
 
@@ -29,8 +30,9 @@ class _ThemePresetCardState extends State<ThemePresetCard> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
+      child: TapTarget(
         onTap: widget.onTap,
+        selected: widget.isSelected,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOutCubic,

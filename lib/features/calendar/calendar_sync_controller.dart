@@ -30,7 +30,7 @@ enum CalendarConnectionState {
 
 /// The single owner of Calendar Sync: connection state, permission, sync
 /// preferences, and the (de-duplicated, throttled) event query that every
-/// screen — Calendar Sync settings, Today, Focus Mode — reads from.
+/// screen — Calendar Sync settings, Today, Smart detection — reads from.
 class CalendarSyncController extends ChangeNotifier {
   static const Duration minRefreshInterval = Duration(seconds: 30);
 
@@ -156,6 +156,10 @@ class CalendarSyncController extends ChangeNotifier {
     }
   }
 
+  /// Events in [start, end) for views that browse beyond today (month view).
+  Future<List<CalendarEvent>> eventsBetween(DateTime start, DateTime end) =>
+      _calendar.getEvents(start, end);
+
   /// Requests macOS access (or opens System Settings if it can no longer be
   /// requested) and turns sync on when granted.
   Future<bool> connect() async {
@@ -164,6 +168,15 @@ class CalendarSyncController extends ChangeNotifier {
     notifyListeners();
     try {
       var status = await _permissions.getStatus();
+      // "Denied" before this session is often a stale entry (e.g. a rebuilt
+      // dev binary with a new signature), so ask once more; macOS answers
+      // immediately without a prompt if it really is denied.
+      if (status == CalendarPermissionStatus.permanentlyDenied) {
+        final granted = await _permissions.requestPermission();
+        status = granted
+            ? CalendarPermissionStatus.granted
+            : CalendarPermissionStatus.permanentlyDenied;
+      }
       if (status == CalendarPermissionStatus.permanentlyDenied ||
           status == CalendarPermissionStatus.restricted) {
         _permission = status;
@@ -175,6 +188,12 @@ class CalendarSyncController extends ChangeNotifier {
         status = granted
             ? CalendarPermissionStatus.granted
             : await _permissions.getStatus();
+      }
+      // macOS refused without showing a prompt: the entry in System Settings
+      // is stale (e.g. toggled on for an older build of the app). Surface the
+      // blocked state instead of silently snapping back.
+      if (status == CalendarPermissionStatus.denied) {
+        status = CalendarPermissionStatus.permanentlyDenied;
       }
       _permission = status;
       if (status != CalendarPermissionStatus.granted) return false;

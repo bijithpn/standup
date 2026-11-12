@@ -118,15 +118,6 @@ class _MinimalButtonState extends State<MinimalButton>
                       width: 1,
                     )
                   : null,
-              boxShadow: (!isDisabled && !widget.isSecondary && _isHovering)
-                  ? [
-                      BoxShadow(
-                        color: activeColor.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                  : [],
             ),
             child: DefaultTextStyle(
               style: TextStyle(
@@ -328,6 +319,56 @@ class _MinimalSliderState extends State<MinimalSlider> {
           ),
         );
       },
+    );
+  }
+}
+
+/// A tappable region that is reachable by Tab, activated with Enter/Space and
+/// announced by screen readers as a button. Use it instead of a bare
+/// [GestureDetector] for cards, chips and swatches. [selected] is announced
+/// for choice controls; [semanticLabel] is only needed when the child has no
+/// readable text of its own.
+class TapTarget extends StatelessWidget {
+  final VoidCallback? onTap;
+  final Widget child;
+  final bool? selected;
+  final String? semanticLabel;
+  final HitTestBehavior behavior;
+
+  const TapTarget({
+    super.key,
+    required this.onTap,
+    required this.child,
+    this.selected,
+    this.semanticLabel,
+    this.behavior = HitTestBehavior.deferToChild,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      selected: selected,
+      label: semanticLabel,
+      child: FocusableActionDetector(
+        enabled: enabled,
+        mouseCursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+        shortcuts: const {
+          SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+          SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+        },
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onTap?.call();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(behavior: behavior, onTap: onTap, child: child),
+      ),
     );
   }
 }

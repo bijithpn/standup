@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -186,7 +187,7 @@ class _AboutSectionState extends State<AboutSection> {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.02),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
+            border: Border.all(color: AppTheme.border),
           ),
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -215,7 +216,7 @@ class _AboutSectionState extends State<AboutSection> {
               ),
               const SizedBox(height: 20),
 
-              GestureDetector(
+              TapTarget(
                 onTap: () => _launchUrl('https://buymeacoffee.com/bijithpn'),
                 child: MouseRegion(
                   cursor: SystemMouseCursors.click,

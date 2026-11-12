@@ -265,12 +265,6 @@ final _entities = <obx_int.ModelEntity>[
         flags: 0,
       ),
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(10, 8841369957436756813),
-        name: 'focusModeEnabled',
-        type: 1,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
         id: const obx_int.IdUid(11, 1964609736912734259),
         name: 'shortBreakIntervalMinutes',
         type: 6,
@@ -453,12 +447,6 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(41, 2911141618608597720),
         name: 'detectMeetings',
-        type: 1,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(42, 2914338189209368645),
-        name: 'respectFocusMode',
         type: 1,
         flags: 0,
       ),
@@ -744,7 +732,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
     retiredIndexUids: const [],
-    retiredPropertyUids: const [],
+    retiredPropertyUids: const [2914338189209368645, 8841369957436756813],
     retiredRelationUids: const [],
     modelVersion: 5,
     modelVersionParserMinimum: 5,
@@ -1057,7 +1045,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addInt64(6, object.dailyWorkGoalHours);
         fbb.addInt64(7, object.pauseTimerAfterMinutes);
         fbb.addOffset(8, menuBarStyleOffset);
-        fbb.addBool(9, object.focusModeEnabled);
         fbb.addInt64(10, object.shortBreakIntervalMinutes);
         fbb.addInt64(11, object.shortBreakDurationSeconds);
         fbb.addInt64(12, object.preBreakWarningSeconds);
@@ -1089,7 +1076,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(38, workEndTimeOffset);
         fbb.addBool(39, object.detectVideoCalls);
         fbb.addBool(40, object.detectMeetings);
-        fbb.addBool(41, object.respectFocusMode);
         fbb.addBool(42, object.enableClockOut);
         fbb.addOffset(43, clockOutTimeOffset);
         fbb.addOffset(44, exercisesJsonOffset);
@@ -1158,12 +1144,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final menuBarStyleParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 20, '');
-        final focusModeEnabledParam = const fb.BoolReader().vTableGet(
-          buffer,
-          rootOffset,
-          22,
-          false,
-        );
         final shortBreakIntervalMinutesParam = const fb.Int64Reader().vTableGet(
           buffer,
           rootOffset,
@@ -1312,12 +1292,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
           84,
           false,
         );
-        final respectFocusModeParam = const fb.BoolReader().vTableGet(
-          buffer,
-          rootOffset,
-          86,
-          false,
-        );
         final enableClockOutParam = const fb.BoolReader().vTableGet(
           buffer,
           rootOffset,
@@ -1407,7 +1381,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
           dailyWorkGoalHours: dailyWorkGoalHoursParam,
           pauseTimerAfterMinutes: pauseTimerAfterMinutesParam,
           menuBarStyle: menuBarStyleParam,
-          focusModeEnabled: focusModeEnabledParam,
           shortBreakIntervalMinutes: shortBreakIntervalMinutesParam,
           shortBreakDurationSeconds: shortBreakDurationSecondsParam,
           preBreakWarningSeconds: preBreakWarningSecondsParam,
@@ -1439,7 +1412,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
           workEndTime: workEndTimeParam,
           detectVideoCalls: detectVideoCallsParam,
           detectMeetings: detectMeetingsParam,
-          respectFocusMode: respectFocusModeParam,
           enableClockOut: enableClockOutParam,
           clockOutTime: clockOutTimeParam,
           exercisesJson: exercisesJsonParam,
@@ -1814,233 +1786,223 @@ class SettingsSnapshot_ {
     _entities[4].properties[8],
   );
 
-  /// See [SettingsSnapshot.focusModeEnabled].
-  static final focusModeEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[9],
-  );
-
   /// See [SettingsSnapshot.shortBreakIntervalMinutes].
   static final shortBreakIntervalMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[10]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[9]);
 
   /// See [SettingsSnapshot.shortBreakDurationSeconds].
   static final shortBreakDurationSeconds =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[11]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[10]);
 
   /// See [SettingsSnapshot.preBreakWarningSeconds].
   static final preBreakWarningSeconds =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[12]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[11]);
 
   /// See [SettingsSnapshot.longBreakIntervalMinutes].
   static final longBreakIntervalMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[13]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[12]);
 
   /// See [SettingsSnapshot.longBreakDurationMinutes].
   static final longBreakDurationMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[14]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[13]);
 
   /// See [SettingsSnapshot.soundEnabled].
   static final soundEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[15],
+    _entities[4].properties[14],
   );
 
   /// See [SettingsSnapshot.notificationsEnabled].
   static final notificationsEnabled =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[16]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[15]);
 
   /// See [SettingsSnapshot.postureReminderEnabled].
   static final postureReminderEnabled =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[17]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[16]);
 
   /// See [SettingsSnapshot.postureReminderIntervalMinutes].
   static final postureReminderIntervalMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[18]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[17]);
 
   /// See [SettingsSnapshot.postureReminderType].
   static final postureReminderType = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[19],
+    _entities[4].properties[18],
   );
 
   /// See [SettingsSnapshot.eyeBlinkReminderEnabled].
   static final eyeBlinkReminderEnabled =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[20]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[19]);
 
   /// See [SettingsSnapshot.eyeBlinkReminderIntervalMinutes].
   static final eyeBlinkReminderIntervalMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[21]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[20]);
 
   /// See [SettingsSnapshot.eyeBlinkReminderType].
   static final eyeBlinkReminderType = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[22],
+    _entities[4].properties[21],
   );
 
   /// See [SettingsSnapshot.showOnAllDisplays].
   static final showOnAllDisplays = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[23],
+    _entities[4].properties[22],
   );
 
   /// See [SettingsSnapshot.breakTheme].
   static final breakTheme = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[24],
+    _entities[4].properties[23],
   );
 
   /// See [SettingsSnapshot.breakTemplate].
   static final breakTemplate = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[25],
+    _entities[4].properties[24],
   );
 
   /// See [SettingsSnapshot.showExercisesInBreak].
   static final showExercisesInBreak =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[26]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[25]);
 
   /// See [SettingsSnapshot.lastExerciseDate].
   static final lastExerciseDate = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[27],
+    _entities[4].properties[26],
   );
 
   /// See [SettingsSnapshot.shownExercisesTodayJson].
   static final shownExercisesTodayJson =
-      obx.QueryStringProperty<SettingsSnapshot>(_entities[4].properties[28]);
+      obx.QueryStringProperty<SettingsSnapshot>(_entities[4].properties[27]);
 
   /// See [SettingsSnapshot.playMusicDuringBreak].
   static final playMusicDuringBreak =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[29]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[28]);
 
   /// See [SettingsSnapshot.autoPauseMedia].
   static final autoPauseMedia = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[30],
+    _entities[4].properties[29],
   );
 
   /// See [SettingsSnapshot.clockFaceTextColorHex].
   static final clockFaceTextColorHex =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[31]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[30]);
 
   /// See [SettingsSnapshot.clockFaceBlurEnabled].
   static final clockFaceBlurEnabled =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[32]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[31]);
 
   /// See [SettingsSnapshot.customImagePath].
   static final customImagePath = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[33],
+    _entities[4].properties[32],
   );
 
   /// See [SettingsSnapshot.resetTimerAfterMinutes].
   static final resetTimerAfterMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[34]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[33]);
 
   /// See [SettingsSnapshot.workingHoursEnabled].
   static final workingHoursEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[35],
+    _entities[4].properties[34],
   );
 
   /// See [SettingsSnapshot.workingDaysJson].
   static final workingDaysJson = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[36],
+    _entities[4].properties[35],
   );
 
   /// See [SettingsSnapshot.workStartTime].
   static final workStartTime = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[37],
+    _entities[4].properties[36],
   );
 
   /// See [SettingsSnapshot.workEndTime].
   static final workEndTime = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[38],
+    _entities[4].properties[37],
   );
 
   /// See [SettingsSnapshot.detectVideoCalls].
   static final detectVideoCalls = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[39],
+    _entities[4].properties[38],
   );
 
   /// See [SettingsSnapshot.detectMeetings].
   static final detectMeetings = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[40],
-  );
-
-  /// See [SettingsSnapshot.respectFocusMode].
-  static final respectFocusMode = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[41],
+    _entities[4].properties[39],
   );
 
   /// See [SettingsSnapshot.enableClockOut].
   static final enableClockOut = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[42],
+    _entities[4].properties[40],
   );
 
   /// See [SettingsSnapshot.clockOutTime].
   static final clockOutTime = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[43],
+    _entities[4].properties[41],
   );
 
   /// See [SettingsSnapshot.exercisesJson].
   static final exercisesJson = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[44],
+    _entities[4].properties[42],
   );
 
   /// See [SettingsSnapshot.autoSuggestExercises].
   static final autoSuggestExercises =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[45]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[43]);
 
   /// See [SettingsSnapshot.useCursorCountdown].
   static final useCursorCountdown = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[46],
+    _entities[4].properties[44],
   );
 
   /// See [SettingsSnapshot.enableAnimations].
   static final enableAnimations = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[47],
+    _entities[4].properties[45],
   );
 
   /// See [SettingsSnapshot.trayIconStyle].
   static final trayIconStyle = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[48],
+    _entities[4].properties[46],
   );
 
   /// See [SettingsSnapshot.hasCompletedOnboarding].
   static final hasCompletedOnboarding =
-      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[49]);
+      obx.QueryBooleanProperty<SettingsSnapshot>(_entities[4].properties[47]);
 
   /// See [SettingsSnapshot.quietModeEnabled].
   static final quietModeEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[50],
+    _entities[4].properties[48],
   );
 
   /// See [SettingsSnapshot.quietModePreset].
   static final quietModePreset = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[51],
+    _entities[4].properties[49],
   );
 
   /// See [SettingsSnapshot.lastSnoozeDurationMinutes].
   static final lastSnoozeDurationMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[52]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[50]);
 
   /// See [SettingsSnapshot.intensityLevel].
   static final intensityLevel = obx.QueryStringProperty<SettingsSnapshot>(
-    _entities[4].properties[53],
+    _entities[4].properties[51],
   );
 
   /// See [SettingsSnapshot.dailyBreakGoalCount].
   static final dailyBreakGoalCount = obx.QueryIntegerProperty<SettingsSnapshot>(
-    _entities[4].properties[54],
+    _entities[4].properties[52],
   );
 
   /// See [SettingsSnapshot.maxContinuousSittingMinutes].
   static final maxContinuousSittingMinutes =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[55]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[53]);
 
   /// See [SettingsSnapshot.weeklyConsistencyTargetDays].
   static final weeklyConsistencyTargetDays =
-      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[56]);
+      obx.QueryIntegerProperty<SettingsSnapshot>(_entities[4].properties[54]);
 
   /// See [SettingsSnapshot.calendarEnabled].
   static final calendarEnabled = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[57],
+    _entities[4].properties[55],
   );
 
   /// See [SettingsSnapshot.enableSessionResume].
   static final enableSessionResume = obx.QueryBooleanProperty<SettingsSnapshot>(
-    _entities[4].properties[58],
+    _entities[4].properties[56],
   );
 }
 

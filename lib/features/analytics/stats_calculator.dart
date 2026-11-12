@@ -206,7 +206,7 @@ class StatsCalculator {
           wellnessActions: wellnessActionsDelta,
         ),
       );
-      if (weeklyData.length > 365) {
+      if (weeklyData.length > 400) {
         weeklyData.removeAt(0);
       }
     }

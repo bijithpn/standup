@@ -1,3 +1,4 @@
+import 'package:breakmate/shared/widgets/minimal_controls.dart';
 import 'package:breakmate/features/settings/widgets/menu_bar_mode_picker.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/cupertino.dart';
@@ -271,7 +272,8 @@ class GeneralSection extends StatelessWidget {
                     style: TextStyle(fontSize: 10, color: AppTheme.textMuted),
                   ),
                   const SizedBox(height: 4),
-                  GestureDetector(
+                  TapTarget(
+                    selected: selected,
                     onTap: () {
                       final days = List<int>.from(settings.workingDays);
                       selected ? days.remove(day) : days.add(day);
